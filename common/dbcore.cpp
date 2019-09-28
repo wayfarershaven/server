@@ -4,6 +4,7 @@
 
 #include "../common/misc_functions.h"
 #include "../common/eqemu_logsys.h"
+#include "timer.h"
 
 #include "dbcore.h"
 
@@ -65,80 +66,104 @@ MySQLRequestResult DBcore::QueryDatabase(std::string query, bool retryOnFailureO
 
 MySQLRequestResult DBcore::QueryDatabase(const char* query, uint32 querylen, bool retryOnFailureOnce)
 {
-	LockMutex lock(&MDatabase);
+    BenchTimer timer;
+    timer.reset();
 
-	// Reconnect if we are not connected before hand.
-	if (pStatus != Connected)
-		Open();
+    LockMutex lock(&MDatabase);
 
-	// request query. != 0 indicates some kind of error.
-	if (mysql_real_query(&mysql, query, querylen) != 0)
-	{
-		unsigned int errorNumber = mysql_errno(&mysql);
+    // Reconnect if we are not connected before hand.
+    if (pStatus != Connected) {
+        Open();
+    }
 
-		if (errorNumber == CR_SERVER_GONE_ERROR)
-			pStatus = Error;
+    // request query. != 0 indicates some kind of error.
+    if (mysql_real_query(&mysql, query, querylen) != 0) {
+        unsigned int errorNumber = mysql_errno(&mysql);
 
-		// error appears to be a disconnect error, may need to try again.
-		if (errorNumber == CR_SERVER_LOST || errorNumber == CR_SERVER_GONE_ERROR)
-		{
+        if (errorNumber == CR_SERVER_GONE_ERROR) {
+            pStatus = Error;
+        }
 
-			if (retryOnFailureOnce)
-			{
-				std::cout << "Database Error: Lost connection, attempting to recover...." << std::endl;
-				MySQLRequestResult requestResult = QueryDatabase(query, querylen, false);
+        // error appears to be a disconnect error, may need to try again.
+        if (errorNumber == CR_SERVER_LOST || errorNumber == CR_SERVER_GONE_ERROR) {
 
-				if (requestResult.Success())
-				{
-					std::cout << "Reconnection to database successful." << std::endl;
-					return requestResult;
-				}
+            if (retryOnFailureOnce) {
+                std::cout << "Database Error: Lost connection, attempting to recover...." << std::endl;
+                MySQLRequestResult requestResult = QueryDatabase(query, querylen, false);
 
-			}
+                if (requestResult.Success()) {
+                    std::cout << "Reconnection to database successful." << std::endl;
+                    return requestResult;
+                }
 
-			pStatus = Error;
+            }
 
-			auto errorBuffer = new char[MYSQL_ERRMSG_SIZE];
+            pStatus = Error;
 
-			snprintf(errorBuffer, MYSQL_ERRMSG_SIZE, "#%i: %s", mysql_errno(&mysql), mysql_error(&mysql));
+            auto errorBuffer = new char[MYSQL_ERRMSG_SIZE];
 
-			return MySQLRequestResult(nullptr, 0, 0, 0, 0, (uint32)mysql_errno(&mysql), errorBuffer);
-		}
+            snprintf(errorBuffer, MYSQL_ERRMSG_SIZE, "#%i: %s", mysql_errno(&mysql), mysql_error(&mysql));
 
-		auto errorBuffer = new char[MYSQL_ERRMSG_SIZE];
-		snprintf(errorBuffer, MYSQL_ERRMSG_SIZE, "#%i: %s", mysql_errno(&mysql), mysql_error(&mysql));
+            return MySQLRequestResult(nullptr, 0, 0, 0, 0, (uint32)mysql_errno(&mysql), errorBuffer);
+        }
 
-		/* Implement Logging at the Root */
-		if (mysql_errno(&mysql) > 0 && strlen(query) > 0){
-			if (LogSys.log_settings[Logs::MySQLError].is_category_enabled == 1)
-				Log(Logs::General, Logs::MySQLError, "%i: %s \n %s", mysql_errno(&mysql), mysql_error(&mysql), query);
-		}
+        auto errorBuffer = new char[MYSQL_ERRMSG_SIZE];
+        snprintf(errorBuffer, MYSQL_ERRMSG_SIZE, "#%i: %s", mysql_errno(&mysql), mysql_error(&mysql));
 
-		return MySQLRequestResult(nullptr, 0, 0, 0, 0, mysql_errno(&mysql),errorBuffer);
+        /* Implement Logging at the Root */
+        if (mysql_errno(&mysql) > 0 && strlen(query) > 0){
+            if (LogSys.log_settings[Logs::MySQLError].is_category_enabled == 1)
+                Log(Logs::General, Logs::MySQLError, "%i: %s \n %s", mysql_errno(&mysql), mysql_error(&mysql), query);
+        }
 
-	}
+        return MySQLRequestResult(nullptr, 0, 0, 0, 0, mysql_errno(&mysql),errorBuffer);
 
-	// successful query. get results.
-	MYSQL_RES* res = mysql_store_result(&mysql);
-	uint32 rowCount = 0;
+    }
 
-	if (res != nullptr)
+    // successful query. get results.
+    MYSQL_RES* res = mysql_store_result(&mysql);
+    uint32 rowCount = 0;
+
+    if (res != nullptr) {
         rowCount = (uint32)mysql_num_rows(res);
+    }
 
-	MySQLRequestResult requestResult(res, (uint32)mysql_affected_rows(&mysql), rowCount, (uint32)mysql_field_count(&mysql), (uint32)mysql_insert_id(&mysql));
-	
-	if (LogSys.log_settings[Logs::MySQLQuery].is_category_enabled == 1)
-	{
-		if ((strncasecmp(query, "select", 6) == 0)) {
-			Log(Logs::General, Logs::MySQLQuery, "%s (%u row%s returned)", query, requestResult.RowCount(), requestResult.RowCount() == 1 ? "" : "s");
-		}
-		else {
-			Log(Logs::General, Logs::MySQLQuery, "%s (%u row%s affected)", query, requestResult.RowsAffected(), requestResult.RowsAffected() == 1 ? "" : "s");
-		}
-	}
+    MySQLRequestResult requestResult(
+            res,
+            (uint32)mysql_affected_rows(&mysql),
+            rowCount,
+            (uint32)mysql_field_count(&mysql),
+            (uint32)mysql_insert_id(&mysql)
+    );
 
-	return requestResult;
+    if (LogSys.log_settings[Logs::MySQLQuery].is_category_enabled == 1) {
+        if ((strncasecmp(query, "select", 6) == 0)) {
+            Log(
+                    Logs::General,
+                    Logs::MySQLQuery,
+                    "%s (%u row%s returned)",
+                    query,
+                    requestResult.RowCount(),
+                    requestResult.RowCount() == 1 ? "" : "s",
+                    std::to_string(timer.elapsed())
+            );
+        }
+        else {
+            Log(
+                    Logs::General,
+                    Logs::MySQLQuery,
+                    "%s (%u row%s affected)",
+                    query,
+                    requestResult.RowsAffected(),
+                    requestResult.RowsAffected() == 1 ? "" : "s",
+                    std::to_string(timer.elapsed())
+            );
+        }
+    }
+
+    return requestResult;
 }
+
 
 void DBcore::TransactionBegin() {
 	QueryDatabase("START TRANSACTION");
