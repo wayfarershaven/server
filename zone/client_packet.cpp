@@ -4781,116 +4781,126 @@ void Client::Handle_OP_ConsentDeny(const EQApplicationPacket *app)
 
 void Client::Handle_OP_Consider(const EQApplicationPacket *app)
 {
-	if (app->size != sizeof(Consider_Struct))
-	{
-		Log(Logs::General, Logs::None, "Size mismatch in Consider expected %i got %i", sizeof(Consider_Struct), app->size);
-		return;
-	}
-	Consider_Struct* conin = (Consider_Struct*)app->pBuffer;
-	Mob* tmob = entity_list.GetMob(conin->targetid);
-	if (tmob == 0)
-		return;
+    if (app->size != sizeof(Consider_Struct))
+    {
+        Log(Logs::General, Logs::None, "Size mismatch in Consider expected %i got %i", sizeof(Consider_Struct), app->size);
+        return;
+    }
+    Consider_Struct* conin = (Consider_Struct*)app->pBuffer;
+    Mob* tmob = entity_list.GetMob(conin->targetid);
+    if (tmob == 0)
+        return;
 
-	if (tmob->GetClass() == LDON_TREASURE)
-	{
-		Message(15, "%s", tmob->GetCleanName());
-		return;
-	}
+    if (tmob->GetClass() == LDON_TREASURE)
+    {
+        Message(15, "%s", tmob->GetCleanName());
+        return;
+    }
 
-	auto outapp = new EQApplicationPacket(OP_Consider, sizeof(Consider_Struct));
-	Consider_Struct* con = (Consider_Struct*)outapp->pBuffer;
-	con->playerid = GetID();
-	con->targetid = conin->targetid;
-	if (tmob->IsNPC())
-		con->faction = GetFactionLevel(character_id, tmob->GetNPCTypeID(), race, class_, deity, (tmob->IsNPC()) ? tmob->CastToNPC()->GetPrimaryFaction() : 0, tmob); // Dec. 20, 2001; TODO: Send the players proper deity
-	else
-		con->faction = 1;
-	con->level = GetLevelCon(tmob->GetLevel());
+    auto outapp = new EQApplicationPacket(OP_Consider, sizeof(Consider_Struct));
+    Consider_Struct* con = (Consider_Struct*)outapp->pBuffer;
+    con->playerid = GetID();
+    con->targetid = conin->targetid;
+    if (tmob->IsNPC())
+        con->faction = GetFactionLevel(character_id, tmob->GetNPCTypeID(), race, class_, deity, (tmob->IsNPC()) ? tmob->CastToNPC()->GetPrimaryFaction() : 0, tmob); // Dec. 20, 2001; TODO: Send the players proper deity
+    else
+        con->faction = 1;
+    con->level = GetLevelCon(tmob->GetLevel());
 
-	if (zone->IsPVPZone()) {
-		if (!tmob->IsNPC())
-			con->pvpcon = tmob->CastToClient()->GetPVP();
-	}
+    if (ClientVersion() <= EQEmu::versions::ClientVersion::Titanium) {
+        if (con->level == CON_GRAY)	{
+            con->level = CON_GREEN;
+        }
+        if (con->level == CON_WHITE) {
+            con->level = CON_WHITE_TITANIUM;
+        }
+    }
 
-	// If we're feigned show NPC as indifferent
-	if (tmob->IsNPC())
-	{
-		if (GetFeigned())
-			con->faction = FACTION_INDIFFERENT;
-	}
+    if (zone->IsPVPZone()) {
+        if (!tmob->IsNPC())
+            con->pvpcon = tmob->CastToClient()->GetPVP();
+    }
 
-	if (!(con->faction == FACTION_SCOWLS))
-	{
-		if (tmob->IsNPC())
-		{
-			if (tmob->CastToNPC()->IsOnHatelist(this))
-				con->faction = FACTION_THREATENLY;
-		}
-	}
+    // If we're feigned show NPC as indifferent
+    if (tmob->IsNPC())
+    {
+        if (GetFeigned())
+            con->faction = FACTION_INDIFFERENT;
+    }
 
-	if (con->faction == FACTION_APPREHENSIVE) {
-		con->faction = FACTION_SCOWLS;
-	}
-	else if (con->faction == FACTION_DUBIOUS) {
-		con->faction = FACTION_THREATENLY;
-	}
-	else if (con->faction == FACTION_SCOWLS) {
-		con->faction = FACTION_APPREHENSIVE;
-	}
-	else if (con->faction == FACTION_THREATENLY) {
-		con->faction = FACTION_DUBIOUS;
-	}
+    if (!(con->faction == FACTION_SCOWLS))
+    {
+        if (tmob->IsNPC())
+        {
+            if (tmob->CastToNPC()->IsOnHatelist(this))
+                con->faction = FACTION_THREATENLY;
+        }
+    }
 
-	mod_consider(tmob, con);
+    if (con->faction == FACTION_APPREHENSIVE) {
+        con->faction = FACTION_SCOWLS;
+    }
+    else if (con->faction == FACTION_DUBIOUS) {
+        con->faction = FACTION_THREATENLY;
+    }
+    else if (con->faction == FACTION_SCOWLS) {
+        con->faction = FACTION_APPREHENSIVE;
+    }
+    else if (con->faction == FACTION_THREATENLY) {
+        con->faction = FACTION_DUBIOUS;
+    }
+
+    mod_consider(tmob, con);
+
     QueuePacket(outapp);
-	// only wanted to check raid target once
-	// and need con to still be around so, do it here!
-	if (tmob->IsRaidTarget()) {
+    // only wanted to check raid target once
+    // and need con to still be around so, do it here!
+    if (tmob->IsRaidTarget()) {
         uint32 color = 0;
-	    switch (con->level) {
+        switch (con->level) {
             case CON_GREEN:
                 color = 2;
-				break;
+                break;
             case CON_LIGHTBLUE:
                 color = 10;
                 break;
             case CON_BLUE:
                 color = 4;
-				break;
-			case CON_WHITE_TITANIUM:
-			case CON_WHITE:
-				color = 10;
-				break;
+                break;
+            case CON_WHITE_TITANIUM:
+            case CON_WHITE:
+                color = 10;
+                break;
             case CON_YELLOW:
                 color = 15;
-				break;
+                break;
             case CON_RED:
                 color = 13;
-				break;
+                break;
             case CON_GRAY:
                 color = 6;
-				break;
-		}
+                break;
+        }
 
-		if (ClientVersion() <= EQEmu::versions::ClientVersion::Titanium) {
-			if (color == 6)	{
-				color = 2;
-			}
-		}
+        if (ClientVersion() <= EQEmu::versions::ClientVersion::Titanium) {
+            if (color == 6)	{
+                color = 2;
+            }
+        }
 
-		SendColoredText(color, std::string("This creature would take an army to defeat!"));
-	}
+        SendColoredText(color, std::string("This creature would take an army to defeat!"));
+    }
 
-	// this could be done better, but this is only called when you con so w/e
-	// Shroud of Stealth has a special message
-	if (improved_hidden && (!tmob->see_improved_hide && (tmob->see_invis || tmob->see_hide)))
-		Message_StringID(10, SOS_KEEPS_HIDDEN);
-		// we are trying to hide but they can see us
-	else if ((invisible || invisible_undead || hidden || invisible_animals) && !IsInvisible(tmob))
-		Message_StringID(10, SUSPECT_SEES_YOU);
+    // this could be done better, but this is only called when you con so w/e
+    // Shroud of Stealth has a special message
+    if (improved_hidden && (!tmob->see_improved_hide && (tmob->see_invis || tmob->see_hide)))
+        Message_StringID(10, SOS_KEEPS_HIDDEN);
+        // we are trying to hide but they can see us
+    else if ((invisible || invisible_undead || hidden || invisible_animals) && !IsInvisible(tmob))
+        Message_StringID(10, SUSPECT_SEES_YOU);
 
-	safe_delete(outapp);
-	return;
+    safe_delete(outapp);
+    return;
 }
 
 void Client::Handle_OP_ConsiderCorpse(const EQApplicationPacket *app)
