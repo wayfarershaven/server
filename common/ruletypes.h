@@ -163,6 +163,7 @@ RULE_INT(Character, AvoidanceCap, 750) // 750 Is a pretty good value, seen peopl
 RULE_BOOL(Character, AllowMQTarget, false) // Disables putting players in the 'hackers' list for targeting beyond the clip plane or attempting to target something untargetable
 RULE_BOOL(Character, UseOldBindWound, false) // Uses the original bind wound behavior
 RULE_BOOL(Character, GrantHoTTOnCreate, false) // Grant Health of Target's Target leadership AA on character creation
+RULE_BOOL(Character, UseOldConSystem, true) // Uses Old Con System
 RULE_BOOL(Character, OPClientUpdateVisualDebug, false) // Shows a pulse and forward directional particle each time the client sends its position to server
 RULE_INT(Character, UnusedAAPointCap, 30) // Cap for Unused AA Points.  Default: 30.  NOTE: DO NOT LOWER THIS WITHOUT KNOWING WHAT YOU ARE DOING.  MAY RESULT IN PLAYERS LOSING AAs.
 RULE_CATEGORY_END()
@@ -426,7 +427,8 @@ RULE_INT(Combat, PetAttackMagicLevel, 30)
 RULE_INT(Combat, LevelDifferenceRollCheck, 20)
 RULE_REAL(Combat, LevelDifferenceRollBonus, 0.5)
 RULE_BOOL(Combat, EnableFearPathing, true)
-RULE_INT(Combat, FleeGreenHPRatio, 50) //HP % when a Green NPC begins to flee.
+RULE_INT(Combat, FleeGrayHPRatio, 50) //HP % when a Green NPC begins to flee.
+RULE_INT(Combat, FleeGrayMaxLevel, 18) // NPC's above this level won't do gray/green con flee
 RULE_INT(Combat, FleeHPRatio, 25) //HP % when a NPC begins to flee.
 RULE_BOOL(Combat, AdjustProcPerMinute, true)
 RULE_REAL(Combat, AvgProcsPerMinute, 2.0)
@@ -554,6 +556,7 @@ RULE_INT(Aggro, MaxScalingProcAggro, 400) // Set to -1 for no limit. Maxmimum am
 RULE_INT(Aggro, GreenAggroLevel, 19)
 RULE_INT(Aggro, IntAggroThreshold, 75) // Int <= this will aggro regardless of level difference.
 RULE_BOOL(Aggro, AllowTickPulling, false) // tick pulling is an exploit in an NPC's call for help fixed sometime in 2006 on live
+RULE_INT(Aggro, MinAggroLevel, 18) // For use with UseLevelAggro
 RULE_BOOL(Aggro, UseLevelAggro, true) // Level 18+ and Undead will aggro regardless of level difference. (this will disabled Rule:IntAggroThreshold if set to true)
 RULE_BOOL(Aggro, UndeadAlwaysAggro, true) // should undead always aggro?
 RULE_INT(Aggro, ClientAggroCheckInterval, 6) // Interval in which clients actually check for aggro - in seconds

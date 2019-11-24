@@ -156,7 +156,7 @@ void NPC::DescribeAggro(Client *towho, Mob *mob, bool verbose) {
 		return;
 	}
 
-	if(GetINT() > RuleI(Aggro, IntAggroThreshold) && mob->GetLevelCon(GetLevel()) == CON_GREEN ) {
+    if(GetINT() > RuleI(Aggro, IntAggroThreshold) && mob->GetLevelCon(GetLevel()) == CON_GRAY ) {
 		towho->Message(0, "...%s is red to me (basically)", mob->GetName(),
 					   dist2, iAggroRange2);
 		return;
@@ -328,8 +328,8 @@ bool Mob::CheckWillAggro(Mob *mob) {
 			//old InZone check taken care of above by !mob->CastToClient()->Connected()
 			(
 					(mob->IsClient() && mob->CastToClient()->IsSitting())
-					|| (mob->GetLevelCon(GetLevel()) != CON_GREEN)
-					|| ( GetLevel() >= RuleI(Aggro, GreenAggroLevel))
+                    || (mob->GetLevelCon(GetLevel()) != CON_GRAY)
+                    || ( GetLevel() >= RuleI(Aggro, MinAggroLevel))
 					|| ( RuleB(Aggro, UndeadAlwaysAggro) && GetBodyType() == BT_Undead)
 					|| ( GetINT() <= RuleI(Aggro, IntAggroThreshold) )
 			)
@@ -382,7 +382,7 @@ Mob* EntityList::AICheckNPCtoNPCAggro(Mob* sender, float iAggroRange, float iAss
 	return nullptr;
 }
 
-int EntityList::GetHatedCount(Mob *attacker, Mob *exclude, bool incgreencon)
+int EntityList::GetHatedCount(Mob *attacker, Mob *exclude, bool inc_gray_con)
 {
 	// Return a list of how many non-feared, non-mezzed, non-green mobs, within aggro range, hate *attacker
 	if (!attacker)
@@ -404,7 +404,7 @@ int EntityList::GetHatedCount(Mob *attacker, Mob *exclude, bool incgreencon)
 			continue;
 		}
 
-		if (!incgreencon && attacker->GetLevelCon(mob->GetLevel()) == CON_GREEN) {
+        if (!inc_gray_con && attacker->GetLevelCon(mob->GetLevel()) == CON_GRAY) {
 			continue;
 		}
 
@@ -471,7 +471,7 @@ void EntityList::AIYellForHelp(Mob* sender, Mob* attacker) {
 		{
 			//if they are in range, make sure we are not green...
 			//then jump in if they are our friend
-			if(mob->GetLevel() >= 50 || attacker->GetLevelCon(mob->GetLevel()) != CON_GREEN)
+            if(mob->GetLevel() >= 50 || attacker->GetLevelCon(mob->GetLevel()) != CON_GRAY)
 			{
 				bool useprimfaction = false;
 				if(mob->GetPrimaryFaction() == sender->CastToNPC()->GetPrimaryFaction())

@@ -61,8 +61,8 @@ void Mob::CheckFlee() {
 		return;
 	}
 	// If no special flee_percent check for Green or Other con rates
-	if(GetLevelCon(hate_top->GetLevel(), GetLevel()) == CON_GREEN && fleeratio == 0) {
-		fleeratio = RuleI(Combat, FleeGreenHPRatio);
+    if(hate_top != nullptr && GetLevelCon(hate_top->GetLevel(), GetLevel()) == CON_GRAY && fleeratio == 0 && GetLevel() <= RuleI(Combat, FleeGrayMaxLevel)) {
+        fleeratio = RuleI(Combat, FleeGrayHPRatio);
 	} else if(fleeratio == 0) {
 		fleeratio = RuleI(Combat, FleeHPRatio );
 	}
@@ -89,6 +89,9 @@ void Mob::CheckFlee() {
 	int flee_chance;
 	switch(con) {
 		// these values are not 100% researched
+        case CON_GRAY:
+            flee_chance = 100;
+            break;
 		case CON_GREEN:
 			flee_chance = 90;
 			break;
@@ -105,7 +108,8 @@ void Mob::CheckFlee() {
 
 	// If we got here we are allowed to roll on flee chance if there is not other hated NPC's in the area.
 	if(zone->random.Roll(flee_chance) && entity_list.GetHatedCount(hate_top, this, true) == 0) {
-		StartFleeing();
+        currently_fleeing = true;
+	    StartFleeing();
 	}
 }
 
@@ -124,8 +128,8 @@ void Mob::ProcessFlee()
     // If no special flee_percent check for Green or Other con rates
     int fleeratio = GetSpecialAbility(FLEE_PERCENT); // if a special flee_percent exists
 
-    if(target != nullptr && GetLevelCon(target->GetLevel(), GetLevel())  == CON_GREEN && fleeratio == 0) {
-        fleeratio = RuleI(Combat, FleeGreenHPRatio);
+    if(target != nullptr && GetLevelCon(target->GetLevel(), GetLevel()) == CON_GRAY && fleeratio == 0 && GetLevel() <= RuleI(Combat, FleeGrayMaxLevel)) {
+        fleeratio = RuleI(Combat, FleeGrayHPRatio);
     } else if(fleeratio == 0) {
         fleeratio = RuleI(Combat, FleeHPRatio );
     }

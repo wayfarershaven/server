@@ -92,7 +92,7 @@ void Client::AddEXP(uint32 in_add_exp, uint8 conlevel, bool resexp, uint32 mob_l
 
 	this->EVENT_ITEM_ScriptStopReturn();
 
-	if (conlevel == CON_GREEN)
+    if (conlevel == CON_GRAY)
 		return;
 
 	uint32 add_exp = in_add_exp;
@@ -741,7 +741,7 @@ void Group::SplitExp(uint32 exp, Mob* other) {
 				if (cmember->GetLevel() < minlevel)
 					minlevel = cmember->GetLevel();
 
-				if (cmember->GetLevelCon(other->GetLevel()) != CON_GREEN) {
+                if (cmember->GetLevelCon(other->GetLevel()) != CON_GRAY) {
 					++membercount;
 					if (cmember->IsInRange(other)) {
 						weighted_levels += cmember->GetLevel();
@@ -760,15 +760,15 @@ void Group::SplitExp(uint32 exp, Mob* other) {
 	if (close_membercount < 6)
 		minlevel = 0;
 
-	bool isgreen = false;
+	bool isgray = false;
 
 	int conlevel = Mob::GetLevelCon(maxlevel, other->GetLevel());
-	if (conlevel == CON_GREEN)
-		isgreen = true;
+    if (conlevel == CON_GRAY)
+		isgray = true;
 
 	//Give XP out to lower toons from NPCs that are green to the highest player.
-	//No Exp for green cons.
-	if (isgreen) {
+	//No Exp for gray cons.
+	if (isgray) {
 		return;
 	}
 
@@ -780,7 +780,7 @@ void Group::SplitExp(uint32 exp, Mob* other) {
 			Client *cmember = members[i]->CastToClient();
 			if (!cmember->IsInLevelRange(maxlevel) &&
 				cmember->CastToClient()->GetZoneID() == zone->GetZoneID() &&
-				cmember->GetLevelCon(other->GetLevel()) != CON_GREEN) {
+                    cmember->GetLevelCon(other->GetLevel()) != CON_GRAY) {
 				if (membercount != 0 && close_membercount != 0) {
 					Log(Logs::Detail, Logs::Group, "%s is not within level range, removing from XP gain.",
 							cmember->GetName());
@@ -833,7 +833,7 @@ void Group::SplitExp(uint32 exp, Mob* other) {
 			Client *cmember = members[i]->CastToClient();
 
 			if (cmember->CastToClient()->GetZoneID() == zone->GetZoneID() &&
-				cmember->GetLevelCon(other->GetLevel()) != CON_GREEN &&
+                    cmember->GetLevelCon(other->GetLevel()) != CON_GRAY &&
 				cmember->IsInRange(other)) {
 				if (cmember->IsInLevelRange(maxlevel)) {
 					float split_percent = static_cast<float>(cmember->GetLevel()) / weighted_levels;
@@ -841,7 +841,7 @@ void Group::SplitExp(uint32 exp, Mob* other) {
 					if (splitgroupxp < 1)
 						splitgroupxp = 1;
 
-					if (conlevel == CON_GREEN)
+                    if (conlevel == CON_GRAY)
 						conlevel = Mob::GetLevelCon(cmember->GetLevel(), other->GetLevel());
 
 					cmember->AddEXP(static_cast<uint32>(splitgroupxp), conlevel, false, other->GetLevel());
@@ -884,8 +884,8 @@ void Raid::SplitExp(uint32 exp, Mob* other) {
 	groupexp = (uint32)((float)groupexp * (1.0f-(RuleR(Character, RaidExpMultiplier))));
 
 	int conlevel = Mob::GetLevelCon(maxlevel, other->GetLevel());
-	if(conlevel == CON_GREEN)
-		return;	//no exp for greenies...
+    if(conlevel == CON_GRAY)
+		return;	//no exp for grays...
 
 	if (membercount == 0)
 		return;
