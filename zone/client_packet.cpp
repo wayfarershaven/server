@@ -1298,8 +1298,6 @@ void Client::Handle_Connect_OP_ZoneEntry(const EQApplicationPacket *app)
 		struct in_addr ghost_addr;
 		ghost_addr.s_addr = eqs->GetRemoteIP();
 
-		nats.SendAdminMessage(StringFormat("Ghosting client: Account ID:%i Name:%s Character:%s IP:%s",
-										   client->AccountID(), client->AccountName(), client->GetName(), inet_ntoa(ghost_addr)));
 		Log(Logs::General, Logs::Error, "Ghosting client: Account ID:%i Name:%s Character:%s IP:%s",
 			client->AccountID(), client->AccountName(), client->GetName(), inet_ntoa(ghost_addr));
 		client->Save();

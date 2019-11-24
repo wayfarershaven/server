@@ -665,7 +665,7 @@ void NatsManager::ZoneSubscribe(const char* zonename, uint32 instance) {
 	if (s != NATS_OK)
 		Log(Logs::General, Logs::NATS, "zone.%s.%d.channel_message.in: failed to set pending limits: %s", subscribedZoneName.c_str(), subscribedZoneInstance, nats_GetLastError(&s));
 
-	SendAdminMessage(StringFormat("%s (%d) registered", subscribedZoneName.c_str(), subscribedZoneInstance).c_str());
+	//SendAdminMessage(StringFormat("%s (%d) registered", subscribedZoneName.c_str(), subscribedZoneInstance).c_str());
 }
 
 
