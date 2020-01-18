@@ -277,6 +277,11 @@ enum {
 // This is the item ID we use for say links, we use the max that fits in 5 ASCII chars
 #define SAYLINK_ITEM_ID 0xFFFFF
 
+// consumption timers for food/drink here instead of rules because the client
+// uses these. Times in ms.
+
+#define CONSUMPTION_TIMER 46000
+#define CONSUMPTION_MNK_TIMER 92000
 
 /*
 

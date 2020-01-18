@@ -537,7 +537,8 @@ struct StatBonuses {
 	int16	NoBreakAESneak;						// Percent value
 	int16	FeignedCastOnChance;				// Percent Value
 	bool	PetCommands[PET_MAXCOMMANDS];		// SPA 267
-	int	FeignedMinionChance;				// SPA 281 base1 = chance, just like normal FD
+	int	FeignedMinionChance;				    // SPA 281 base1 = chance, just like normal FD
+    bool hunger;                                // Song of Sustenance -- min caps to 3500
 };
 
 typedef struct

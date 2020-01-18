@@ -1373,7 +1373,7 @@ private:
 	uint32 GetClassHPFactor();
 	void DoHPRegen();
 	void DoManaRegen();
-	void DoStaminaUpdate();
+    void DoStaminaHungerUpdate();
 	void CalcRestState();
 
 	uint32 pLastUpdate;
@@ -1480,7 +1480,7 @@ private:
 	Timer hpupdate_timer;
 	Timer camp_timer;
 	Timer process_timer;
-	Timer stamina_timer;
+    Timer consume_food_timer;
 	Timer zoneinpacket_timer;
 	Timer linkdead_timer;
 	Timer dead_timer;
