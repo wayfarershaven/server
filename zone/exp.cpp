@@ -135,6 +135,10 @@ void Client::AddEXP(uint32 in_add_exp, uint8 conlevel, bool resexp, uint32 mob_l
 				totalexpmod  = totalexpmod * RuleR(Character, ExpMultiplierLightBlue);
 				totalaamod  = totalaamod * RuleR(Character, AAExpMultiplierLightBlue);
 				break;
+            case CON_GREEN:
+                totalexpmod  = totalexpmod * RuleR(Character, ExpMultiplierGreen);
+                totalaamod  = totalaamod * RuleR(Character, AAExpMultiplierGreen);
+                break;
 		}
 	}
 

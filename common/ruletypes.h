@@ -60,6 +60,8 @@ RULE_BOOL ( Character, SmoothEXPLoss, true)
 RULE_REAL ( Character, EXPLossMultiplier, 1.0)
 
 RULE_BOOL(Character, ExpConBasedBonus, true)
+
+RULE_REAL(Character, ExpMultiplierGreen, 0.3)
 RULE_REAL(Character, ExpMultiplierLightBlue, 1.0)
 RULE_REAL(Character, ExpMultiplierDarkBlue, 1.0)
 RULE_REAL(Character, ExpMultiplierWhite, 1.0)
@@ -68,6 +70,7 @@ RULE_REAL(Character, ExpMultiplierRed, 1.0)
 RULE_INT(Character, ExpByLevelDivsor, 100)
 RULE_REAL(Character, ExpByLevelMultiplyer, 3)
 
+RULE_REAL(Character, AAExpMultiplierGreen, 0.3)
 RULE_REAL(Character, AAExpMultiplierLightBlue, 1.0)
 RULE_REAL(Character, AAExpMultiplierDarkBlue, 1.0)
 RULE_REAL(Character, AAExpMultiplierWhite, 1.0)
