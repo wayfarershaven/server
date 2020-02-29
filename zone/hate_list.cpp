@@ -626,38 +626,37 @@ void HateList::PrintHateListToClient(Client *c)
 
 int HateList::AreaRampage(Mob *caster, Mob *target, int count, ExtraAttackOptions *opts)
 {
-	if (!target || !caster)
-		return 0;
+    if (!target || !caster)
+        return 0;
 
-	int hit_count = 0;
-	// This should prevent crashes if something dies (or mainly more than 1 thing goes away)
-	// This is a temp solution until the hate lists can be rewritten to not have that issue
-	std::vector<uint16> id_list;
-	for (auto &h : list) {
-		if (h->entity_on_hatelist && h->entity_on_hatelist != caster &&
-		    caster->CombatRange(h->entity_on_hatelist, 1.0, true)) {
-			if(caster->GetTarget()->GetID() != h->entity_on_hatelist->GetID()) {
-				id_list.push_back(h->entity_on_hatelist->GetID());
-			}// else {
-			//	caster->Shout("Excludingi: %s", h->entity_on_hatelist->GetName());
-			//}
-		}
+    // tank will be hit ONLY if they are the only target on the hate list
+    // if there is anyone else on the hate list, the tank will not be hit, even if those others aren't hit either
+    if (list.size() == 1) {
+        caster->ProcessAttackRounds(target, opts);
+        return 1;
+    }
 
-		if (count != -1 && id_list.size() > count) {
-			break;
-		}
-	}
+    int hit_count = 0;
+    // This should prevent crashes if something dies (or mainly more than 1 thing goes away)
+    // This is a temp solution until the hate lists can be rewritten to not have that issue
+    std::vector<uint16> id_list;
+    for (auto &h : list) {
+        if (h->entity_on_hatelist && h->entity_on_hatelist != caster && h->entity_on_hatelist != target &&
+            caster->CombatRange(h->entity_on_hatelist))
+            id_list.push_back(h->entity_on_hatelist->GetID());
+        if (count != -1 && id_list.size() > count)
+            break;
+    }
 
-	for (auto &id : id_list) {
-		auto mob = entity_list.GetMobID(id);
-		if (mob) {
-			++hit_count;
-			caster->ProcessAttackRounds(mob, opts);
-			//caster->Shout("Hitting: %s",mob->CastToNPC()->GetName());
-		}
-	}
+    for (auto &id : id_list) {
+        auto mob = entity_list.GetMobID(id);
+        if (mob) {
+            ++hit_count;
+            caster->ProcessAttackRounds(mob, opts);
+        }
+    }
 
-	return hit_count;
+    return hit_count;
 }
 
 /* int HateList::AreaRampage(Mob *caster, Mob *target, int count, ExtraAttackOptions *opts)
