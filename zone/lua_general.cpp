@@ -22,6 +22,7 @@
 #include "qglobals.h"
 #include "encounter.h"
 #include "lua_encounter.h"
+#include "data_bucket.h"
 #include "nats_manager.h"
 
 struct Events { };
@@ -815,6 +816,22 @@ std::string lua_say_link(const char *phrase) {
 	return std::string(text);
 }
 
+std::string lua_get_data(std::string bucket_key) {
+    return DataBucket::GetData(bucket_key);
+}
+
+void lua_set_data(std::string bucket_key, std::string bucket_value) {
+    DataBucket::SetData(bucket_key, bucket_value);
+}
+
+void lua_set_data(std::string bucket_key, std::string bucket_value, uint32 expires_at_unix) {
+    DataBucket::SetData(bucket_key, bucket_value, expires_at_unix);
+}
+
+bool lua_delete_data(std::string bucket_key) {
+    return DataBucket::DeleteData(bucket_key);
+}
+
 const char *lua_get_guild_name_by_id(uint32 guild_id) {
 	return quest_manager.getguildnamebyid(guild_id);
 }
@@ -843,8 +860,16 @@ int lua_get_instance_id(const char *zone, uint32 version) {
 	return quest_manager.GetInstanceID(zone, version);
 }
 
+int lua_get_instance_id_by_char_id(const char *zone, uint32 version, uint32 char_id) {
+    return quest_manager.GetInstanceIDByCharID(zone, version, char_id);
+}
+
 void lua_assign_to_instance(uint32 instance_id) {
 	quest_manager.AssignToInstance(instance_id);
+}
+
+void lua_assign_to_instance_by_char_id(uint32 instance_id, uint32 char_id) {
+    quest_manager.AssignToInstanceByCharID(instance_id, char_id);
 }
 
 void lua_assign_group_to_instance(uint32 instance_id) {
@@ -857,6 +882,10 @@ void lua_assign_raid_to_instance(uint32 instance_id) {
 
 void lua_remove_from_instance(uint32 instance_id) {
 	quest_manager.RemoveFromInstance(instance_id);
+}
+
+void lua_remove_from_instance_by_char_id(uint32 instance_id, uint32 char_id) {
+    quest_manager.RemoveFromInstanceByCharID(instance_id, char_id);
 }
 
 void lua_remove_all_from_instance(uint32 instance_id) {
@@ -1660,16 +1689,23 @@ luabind::scope lua_register_general() {
 					luabind::def("say_link", (std::string(*)(const char*,bool,const char*))&lua_say_link),
 					luabind::def("say_link", (std::string(*)(const char*,bool))&lua_say_link),
 					luabind::def("say_link", (std::string(*)(const char*))&lua_say_link),
+                    luabind::def("get_data", (std::string(*)(std::string))&lua_get_data),
+                    luabind::def("set_data", (void(*)(std::string, std::string))&lua_set_data),
+                    luabind::def("set_data", (void(*)(std::string, std::string, uint32))&lua_set_data),
+                    luabind::def("delete_data", (bool(*)(std::string))&lua_delete_data),
 					luabind::def("get_guild_name_by_id", &lua_get_guild_name_by_id),
 					luabind::def("create_instance", &lua_create_instance),
 					luabind::def("destroy_instance", &lua_destroy_instance),
 					luabind::def("update_instance_timer", &lua_update_instance_timer),
 					luabind::def("get_instance_id", &lua_get_instance_id),
+                    luabind::def("get_instance_id_by_char_id", &lua_get_instance_id_by_char_id),
 					luabind::def("get_characters_in_instance", &lua_get_characters_in_instance),
 					luabind::def("assign_to_instance", &lua_assign_to_instance),
+                    luabind::def("assign_to_instance_by_char_id", &lua_assign_to_instance_by_char_id),
 					luabind::def("assign_group_to_instance", &lua_assign_group_to_instance),
 					luabind::def("assign_raid_to_instance", &lua_assign_raid_to_instance),
 					luabind::def("remove_from_instance", &lua_remove_from_instance),
+                    luabind::def("remove_from_instance_by_char_id", &lua_remove_from_instance_by_char_id),
 					luabind::def("remove_all_from_instance", &lua_remove_all_from_instance),
 					luabind::def("flag_instance_by_group_leader", &lua_flag_instance_by_group_leader),
 					luabind::def("flag_instance_by_raid_leader", &lua_flag_instance_by_raid_leader),

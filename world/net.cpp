@@ -82,6 +82,7 @@ union semun {
 #include "queryserv.h"
 #include "web_interface.h"
 #include "console.h"
+#include "../zone/data_bucket.h"
 #include "nats_manager.h"
 
 #include "../common/net/servertalk_server.h"
@@ -287,6 +288,9 @@ int main(int argc, char** argv) {
 			Log(Logs::General, Logs::Zone_Server, "Current hotfix in use: '%s'", hotfix_name.c_str());
 		}
 	}
+
+    Log(Logs::General, Logs::World_Server, "Purging expired data buckets...");
+    database.PurgeAllDeletedDataBuckets();
 
 	Log(Logs::General, Logs::World_Server, "Loading zones..");
 	database.LoadZoneNames();
@@ -523,9 +527,9 @@ int main(int argc, char** argv) {
 
 		client_list.Process();
 
-		if (PurgeInstanceTimer.Check())
-		{
+		if (PurgeInstanceTimer.Check()) {
 			database.PurgeExpiredInstances();
+            database.PurgeAllDeletedDataBuckets();
 		}
 
 		if (EQTimeTimer.Check())
