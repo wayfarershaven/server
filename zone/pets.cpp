@@ -596,10 +596,14 @@ void Mob::RemovePet() {
 	Mob* mypet = this->GetPet();
 	if (!mypet)
 		;
-	else if (mypet->Charmed())
-		mypet->BuffFadeByEffect(SE_Charm);
-	else
-		mypet->CastToNPC()->Depop();
+	else if (mypet->Charmed()) {
+        if (mypet->IsPetStop()) {
+            mypet->SetPetStop(false);
+        }
+        mypet->BuffFadeByEffect(SE_Charm);
+    } else {
+        mypet->CastToNPC()->Depop();
+    }
 }
 
 void NPC::GetPetState(SpellBuff_Struct *pet_buffs, uint32 *items, char *name) {
