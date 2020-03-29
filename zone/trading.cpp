@@ -2606,6 +2606,11 @@ void Client::SellToBuyer(const EQApplicationPacket *app) {
 		return;
 	}
 
+    if(item->IsClassBag()) {
+        Message(13, "That item is a Bag.");
+        return;
+    }
+
 	if(!item->Stackable) {
 
 		for(uint32 i = 0; i < Quantity; i++) {
@@ -2959,7 +2964,7 @@ void Client::UpdateBuyLine(const EQApplicationPacket *app) {
 	Log(Logs::Detail, Logs::Trading, "UpdateBuyLine: Char: %s BuySlot: %i ItemID %i %s Quantity %i Toggle: %i Price %i ItemCount %i LoreConflict %i",
 					GetName(), BuySlot, ItemID, item->Name, Quantity, ToggleOnOff, Price, ItemCount, LoreConflict);
 
-	if((item->NoDrop != 0) && !LoreConflict && (Quantity > 0) && HasMoney(Quantity * Price) && ToggleOnOff && (ItemCount == 0)) {
+	if((item->NoDrop != 0) && (!item->IsClassBag())&& !LoreConflict && (Quantity > 0) && HasMoney(Quantity * Price) && ToggleOnOff && (ItemCount == 0)) {
 		Log(Logs::Detail, Logs::Trading, "Adding to database");
 		database.AddBuyLine(CharacterID(), BuySlot, ItemID, ItemName, Quantity, Price);
 		QueuePacket(app);
@@ -2976,6 +2981,9 @@ void Client::UpdateBuyLine(const EQApplicationPacket *app) {
 
 		else if(item->NoDrop == 0)
 			Message(13, "Buy line %s disabled as the item is NODROP.", ItemName);
+
+        else if(item->IsClassBag())
+            Message(13, "Buy line %s disabled as the item is a Bag.", ItemName);
 
 		else if(ToggleOnOff)
 			Message(13, "Buy line %s disabled due to insufficient funds.", ItemName);
