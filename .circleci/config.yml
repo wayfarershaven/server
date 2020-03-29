@@ -22,9 +22,6 @@ jobs:
       - run:
           name: Build Source
           command: 'make -j 2'
-      - run:
-          name: Test
-          command: './bin/tests'
 
 workflows:
   version: 2
