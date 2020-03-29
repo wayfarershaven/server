@@ -660,6 +660,7 @@ RULE_BOOL(Bazaar, AuditTrail, false)
 RULE_INT(Bazaar, MaxSearchResults, 50)
 RULE_BOOL(Bazaar, EnableWarpToTrader, true)
 RULE_INT(Bazaar, MaxBarterSearchResults, 200) // The max results returned in the /barter search
+RULE_BOOL(Bazaar, BuyerEnabled, true) // Allow Barter Mode
 RULE_CATEGORY_END()
 
 RULE_CATEGORY(Mail)
