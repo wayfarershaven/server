@@ -2257,11 +2257,12 @@ bool NPC::Death(Mob* killer_mob, int32 damage, uint16 spell, EQEmu::skills::Skil
 		respawn2->DeathReset(1);
 	}
 
-	std::string adminMessage = "";
+	/* std::string adminMessage = "";
 	adminMessage.append(StringFormat("Raidmob: %s has died", GetName()));
 	if (IsRaidTarget() && IsNPC()) {
 		nats.SendAdminMessage(adminMessage);
 	}
+	*/
 	if (killer_mob && GetClass() != LDON_TREASURE)
 		hate_list.AddEntToHateList(killer_mob, damage);
 
