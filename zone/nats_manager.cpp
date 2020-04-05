@@ -592,7 +592,7 @@ void NatsManager::Unregister()
 	}
 
 
-	SendAdminMessage(StringFormat("%s (%d) unregistered", subscribedZoneName.c_str(), subscribedZoneInstance).c_str());
+	//SendAdminMessage(StringFormat("%s (%d) unregistered", subscribedZoneName.c_str(), subscribedZoneInstance).c_str());
 	subscribedZoneName.clear();
 	return;
 }
