@@ -8752,7 +8752,7 @@ void Client::Handle_OP_ItemVerifyRequest(const EQApplicationPacket *app)
 	}
 
     // Modern clients don't require pet targeted for item clicks that are ST_Pet
-    if (spells[spell_id].targettype == ST_Pet) {
+    if (spell_id > 0 && spells[spell_id].targettype == ST_Pet) {
         target_id = GetPetID();
     }
 
