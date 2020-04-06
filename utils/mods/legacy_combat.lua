@@ -719,7 +719,7 @@ function GetDamageTable(attacker, skill)
 
         if attacker:GetClass() == 7 then
             local monkDamageTableBonus = 20;
-            return (dmg_table[GetLevel() - 50] * (100 + monkDamageTableBonus) / 100);
+            return (dmg_table[attacker:GetLevel() - 50] * (100 + monkDamageTableBonus) / 100);
         else
             return dmg_table[attacker:GetLevel() - 50];
         end
