@@ -372,6 +372,11 @@ void EQ::Net::DaybreakConnection::Process()
 		}
 
         ProcessInboundQueue();
+
+        if (m_outstanding_bytes == 0) {
+            m_cwnd = 4 * m_max_packet_size;
+            m_ssthresh = m_owner->m_options.max_outstanding_bytes;
+        }
 	}
 	catch (std::exception ex) {
 		LogF(Logs::Detail, Logs::Netcode, "Error processing connection: {0}", ex.what());
@@ -484,7 +489,7 @@ void EQ::Net::DaybreakConnection::ProcessOutboundQueue()
             LogF(Logs::Detail, Logs::Netcode, "Sending buffered packet {0} on stream {1}", buff.seq, i);
             m_outstanding_bytes += buff.sent.packet.Length();
             stream->outstanding_packets.insert(std::make_pair(buff.seq, buff.sent));
-            InternalSend(buff.sent.packet);
+            InternalBufferedSend(buff.sent.packet);
             stream->buffered_packets.pop_front();
         }
     }
@@ -506,7 +511,7 @@ void EQ::Net::DaybreakConnection::IncreaseCongestionWindow()
 
 void EQ::Net::DaybreakConnection::ReduceCongestionWindow()
 {
-    m_ssthresh = EQEmu::ClampLower(m_cwnd / 2, (size_t)(8 * m_max_packet_size));
+    m_ssthresh = std::max((size_t)m_cwnd / 2, (size_t)m_max_packet_size * 2);
     m_cwnd = (size_t)m_max_packet_size * 4;
     LogF(Logs::Detail, Logs::Netcode, "Reducing cwnd size new size is {0}", m_cwnd);
 }
