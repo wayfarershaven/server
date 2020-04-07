@@ -219,7 +219,7 @@ namespace EQ
 				resend_delay_ms = 150;
 				resend_delay_factor = 1.5;
 				resend_delay_min = 150;
-				resend_delay_max = 1000;
+				resend_delay_max = 4000;
 				connect_delay_ms = 500;
 				stale_connection_ms = 30000;
 				connect_stale_ms = 5000;
