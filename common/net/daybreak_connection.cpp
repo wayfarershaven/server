@@ -482,7 +482,7 @@ void EQ::Net::DaybreakConnection::ProcessOutboundQueue()
 
             stream->outstanding_bytes += buff.sent.packet.Length();
             stream->outstanding_packets.insert(std::make_pair(buff.seq, buff.sent));
-            InternalSend(buff.sent.packet);
+            InternalBufferedSend(buff.sent.packet);
             stream->buffered_packets.pop_front();
         }
     }
@@ -1137,7 +1137,7 @@ void EQ::Net::DaybreakConnection::BufferPacket(int stream, uint16_t seq, Daybrea
 	}
     s->outstanding_bytes += sent.packet.Length();
     s->outstanding_packets.insert(std::make_pair(seq, sent));
-    InternalSend(sent.packet);
+    InternalBufferedSend(sent.packet);
 }
 
 void EQ::Net::DaybreakConnection::SendAck(int stream_id, uint16_t seq)
@@ -1190,6 +1190,10 @@ void EQ::Net::DaybreakConnection::InternalBufferedSend(Packet &p)
 	if (raw_size > m_max_packet_size) {
 		FlushBuffer();
 	}
+
+    if (m_buffered_packets.size() == 0) {
+        m_hold_time = Clock::now();
+    }
 
 	DynamicPacket copy;
 	copy.PutPacket(0, p);
