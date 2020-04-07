@@ -4026,7 +4026,7 @@ void Client::SendPopupToClient(const char *Title, const char *Text, uint32 Popup
 
 	if ((strlen(Title) > (sizeof(olms->Title) - 1)) || (strlen(Text) > (sizeof(olms->Text) - 1))) {
 		safe_delete(outapp);
-		return;
+		return;/* Health Update Marquee Display: Custom*/
 	}
 
 	strcpy(olms->Title, Title);

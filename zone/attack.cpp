@@ -59,7 +59,11 @@ extern NatsManager nats;
 
 EQEmu::skills::SkillType Mob::AttackAnimation(int Hand, const EQEmu::ItemInstance* weapon, EQEmu::skills::SkillType skillinuse)
 {
-	// Determine animation
+    if (!attack_anim_timer.Check()) {
+        return skillinuse;
+    }
+
+    // Determine animation
 	int type = 0;
 	if (weapon && weapon->IsClassCommon()) {
 		const EQEmu::ItemData* item = weapon->GetItem();
