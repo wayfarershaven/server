@@ -47,6 +47,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include "../common/spdat.h"
 #include "../common/string_util.h"
 #include "../common/zone_numbers.h"
+#include "data_bucket.h"
 #include "event_codes.h"
 #include "guild_mgr.h"
 #include "merc.h"
@@ -840,6 +841,16 @@ void Client::CompleteConnect()
 			std::string event_desc = StringFormat("Connect :: Logged into zoneid:%i instid:%i", this->GetZoneID(), this->GetInstanceID());
 			QServ->PlayerLogEvent(Player_Log_Connect_State, this->CharacterID(), event_desc);
 		}
+
+        /**
+        * Update last login since this doesn't get updated until a late save later so we can update online status
+        */
+        database.QueryDatabase(
+                StringFormat(
+                        "UPDATE `character_data` SET `last_login` = UNIX_TIMESTAMP() WHERE id = %u",
+                        this->CharacterID()
+                )
+        );
 	}
 
 	if (zone) {
@@ -1766,6 +1777,16 @@ void Client::Handle_Connect_OP_ZoneEntry(const EQApplicationPacket *app)
 
 	/* Task Packets */
 	LoadClientTaskState();
+
+    /**
+    * DevTools Load Settings
+    */
+    if (Admin() > 200) {
+        std::string dev_tools_window_key = StringFormat("%i-dev-tools-window-disabled", AccountID());
+        if (DataBucket::GetData(dev_tools_window_key) == "true") {
+            dev_tools_window_enabled = false;
+        }
+    }
 
 	if (ClientVersion() >= EQEmu::versions::ClientVersion::RoF) {
 		outapp = new EQApplicationPacket(OP_ReqNewZone, 0);
@@ -11011,29 +11032,42 @@ void Client::Handle_OP_PopupResponse(const EQApplicationPacket *app)
 {
 
 	if (app->size != sizeof(PopupResponse_Struct)) {
-		Log(Logs::General, Logs::None, "Size mismatch in OP_PopupResponse expected %i got %i",
-			sizeof(PopupResponse_Struct), app->size);
+        Log(Logs::General,
+            Logs::None,
+            "Size mismatch in OP_PopupResponse expected %i got %i",
+            sizeof(PopupResponse_Struct),
+            app->size);
 		DumpPacket(app);
 		return;
 	}
-	PopupResponse_Struct *prs = (PopupResponse_Struct*)app->pBuffer;
 
-	// Handle any EQEmu defined popup Ids first
-	switch (prs->popupid)
-	{
+    PopupResponse_Struct *popup_response = (PopupResponse_Struct *) app->pBuffer;
+
+    /**
+     * Handle any EQEmu defined popup Ids first
+     */
+    switch (popup_response->popupid) {
 		case POPUPID_UPDATE_SHOWSTATSWINDOW:
-			if (GetTarget() && GetTarget()->IsClient())
+            if (GetTarget() && GetTarget()->IsClient()) {
 				GetTarget()->CastToClient()->SendStatsWindow(this, true);
-			else
-				SendStatsWindow(this, true);
+            }
+            else {
+                SendStatsWindow(this, true);
+            }
 			return;
+            break;
+
+        case EQEmu::popupresponse::MOB_INFO_DISMISS:
+            this->SetDisplayMobInfoWindow(false);
+            this->Message(15, "GM Mob display window snoozed in this zone...");
+            break;
 
 		default:
 			break;
 	}
 
 	char buf[16];
-	sprintf(buf, "%d\0", prs->popupid);
+    sprintf(buf, "%d\0", popup_response->popupid);
 
 	parse->EventPlayer(EVENT_POPUP_RESPONSE, this, buf, 0);
 

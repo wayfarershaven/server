@@ -51,6 +51,7 @@ typedef struct {
 	float min_z;
 	float max_z;
 	bool say;
+	bool proximity_set;
 } NPCProximity;
 
 struct AISpells_Struct {
@@ -331,6 +332,9 @@ public:
 
     void				AI_SetRoambox(float distance, float max_x, float min_x, float max_y, float min_y, uint32 delay = 2500, uint32 min_delay = 2500);
 
+    uint16 GetMeleeTexture1() const;
+    uint16 GetMeleeTexture2() const;
+
     //mercenary stuff
 	void	LoadMercTypes();
 	void	LoadMercs();
@@ -348,6 +352,17 @@ public:
 	inline void GiveNPCTypeData(NPCType *ours) { NPCTypedata_ours = ours; }
 	inline const uint32 GetNPCSpellsID()	const { return npc_spells_id; }
 	inline const uint32 GetNPCSpellsEffectsID()	const { return npc_spells_effects_id; }
+
+	float GetProximityMinX();
+    float GetProximityMaxX();
+    float GetProximityMinY();
+    float GetProximityMaxY();
+    float GetProximityMinZ();
+    float GetProximityMaxZ();
+    bool  IsProximitySet();
+
+    int8 GetNPCScalingType(NPC * &npc);
+    std::string GetNPCScalingTypeName(NPC * &npc);
 
 	ItemList	itemlist; //kathgar - why is this public? Doing other things or I would check the code
 
@@ -447,6 +462,17 @@ public:
 	void DeleteQuestLoot(int16 itemid1, int16 itemid2 = 0, int16 itemid3 = 0, int16 itemid4 = 0);
 
 	bool IgnoreDespawn() { return ignore_despawn; }
+
+	float GetRoamboxMaxX() const;
+    float GetRoamboxMaxY() const;
+    float GetRoamboxMinX() const;
+    float GetRoamboxMinY() const;
+    float GetRoamboxDistance() const;
+    float GetRoamboxDestinationX() const;
+    float GetRoamboxDestinationY() const;
+    float GetRoamboxDestinationZ() const;
+    uint32 GetRoamboxDelay() const;
+    uint32 GetRoamboxMinDelay() const;
 
 	std::unique_ptr<Timer> AIautocastspell_timer;
 protected:

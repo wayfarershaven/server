@@ -110,11 +110,20 @@ namespace EQEmu
 
 	} /*inventory*/
 
+    namespace popupresponse {
+        const int32 SERVER_INTERNAL_USE_BASE = 2000000000;
+        const int32 MOB_INFO_DISMISS         = 2000000001;
+    }
+
 	namespace constants {
 		const EQEmu::versions::ClientVersion CharacterCreationClient = EQEmu::versions::ClientVersion::RoF2;
 		const size_t CharacterCreationMax = RoF2::constants::CharacterCreationLimit;
 
+        const size_t SayLinkOpenerSize = 1;
 		const size_t SayLinkBodySize = RoF2::constants::SayLinkBodySize;
+        const size_t SayLinkTextSize = 256; // this may be varied until it breaks something (tested:374) - the others are constant
+        const size_t SayLinkCloserSize = 1;
+        const size_t SayLinkMaximumSize = (SayLinkOpenerSize + SayLinkBodySize + SayLinkTextSize + SayLinkCloserSize);
 
 		const int LongBuffs = RoF2::constants::LongBuffs;
 		const int ShortBuffs = RoF2::constants::ShortBuffs;

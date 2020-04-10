@@ -41,7 +41,8 @@ extern Zone* zone;
 extern WorldServer worldserver;
 extern NatsManager nats;
 
-Mob::Mob(const char* in_name,
+Mob::Mob(
+         const char *in_name,
 		 const char* in_lastname,
 		 int32		in_cur_hp,
 		 int32		in_max_hp,
@@ -125,6 +126,7 @@ Mob::Mob(const char* in_name,
 		position_update_melee_push_timer(500),
 		hate_list_cleanup_timer(6000)
 {
+
 	targeted = 0;
 	tar_ndx=0;
 	tar_vector=0;
@@ -262,7 +264,7 @@ Mob::Mob(const char* in_name,
 	oocregen = RuleI(NPC, OOCRegen); //default Out of Combat Regen
 	maxlevel = in_maxlevel;
 	scalerate = in_scalerate;
-	invisible = false;
+    invisible = 0;
 	invisible_undead = false;
 	invisible_animals = false;
 	sneaking = false;
@@ -276,10 +278,7 @@ Mob::Mob(const char* in_name,
 	InitializeBuffSlots();
 
 	// clear the proc arrays
-	int i;
-	int j;
-	for (j = 0; j < MAX_PROCS; j++)
-	{
+    for (int j = 0; j < MAX_PROCS; j++) {
 		PermaProcs[j].spellID = SPELL_UNKNOWN;
 		PermaProcs[j].chance = 0;
 		PermaProcs[j].base_spellID = SPELL_UNKNOWN;
@@ -298,8 +297,7 @@ Mob::Mob(const char* in_name,
 		RangedProcs[j].level_override = -1;
 	}
 
-	for (i = EQEmu::textures::textureBegin; i < EQEmu::textures::materialCount; i++)
-	{
+    for (int i = EQEmu::textures::textureBegin; i < EQEmu::textures::materialCount; i++) {
 		armor_tint.Slot[i].Color = in_armor_tint.Slot[i].Color;
 	}
 
@@ -308,7 +306,6 @@ Mob::Mob(const char* in_name,
 	m_Delta = glm::vec4();
 	animation = 0;
 
-	logging_enabled = false;
 	isgrouped = false;
 	israidgrouped = false;
 
@@ -405,7 +402,7 @@ Mob::Mob(const char* in_name,
 	rooted = false;
 	charmed = false;
 	has_virus = false;
-	for (i=0; i<MAX_SPELL_TRIGGER*2; i++) {
+    for (int i = 0; i < MAX_SPELL_TRIGGER * 2; i++) {
 		viral_spells[i] = 0;
 	}
 	pStandingPetOrder = SPO_Follow;
@@ -450,8 +447,13 @@ Mob::Mob(const char* in_name,
 
 	m_AllowBeneficial = false;
 	m_DisableMelee = false;
-	for (int i = 0; i < EQEmu::skills::HIGHEST_SKILL + 2; i++) { SkillDmgTaken_Mod[i] = 0; }
-	for (int i = 0; i < HIGHEST_RESIST+2; i++) { Vulnerability_Mod[i] = 0; }
+    for (int i = 0; i < EQEmu::skills::HIGHEST_SKILL + 2; i++) {
+        SkillDmgTaken_Mod[i] = 0;
+    }
+
+    for (int i = 0; i < HIGHEST_RESIST + 2; i++) {
+        Vulnerability_Mod[i] = 0;
+    }
 
 	emoteid = 0;
 	endur_upkeep = false;
@@ -3486,24 +3488,33 @@ int Mob::GetHaste()
 	return 100 + h;
 }
 
-void Mob::SetTarget(Mob* mob) {
-	if (target == mob)
-		return;
+void Mob::SetTarget(Mob *mob)
+{
+    if (target == mob) {
+        return;
+    }
 
 	target = mob;
 	entity_list.UpdateHoTT(this);
-	if(IsNPC())
+    if (IsNPC()) {
 		parse->EventNPC(EVENT_TARGET_CHANGE, CastToNPC(), mob, "", 0);
-	else if (IsClient())
-		parse->EventPlayer(EVENT_TARGET_CHANGE, CastToClient(), "", 0);
+    }
+    else if (IsClient()) {
+        parse->EventPlayer(EVENT_TARGET_CHANGE, CastToClient(), "", 0);
+
+        if (this->CastToClient()->admin > 90) {
+            this->DisplayInfo(mob);
+        }
+    }
 
 	/* P2002 doesn't use XTarget
 	if(IsPet() && GetOwner() && GetOwner()->IsClient())
 		GetOwner()->CastToClient()->UpdateXTargetType(MyPetTarget, mob);
 	*/
 
-	if (this->IsClient() && this->GetTarget() && this->CastToClient()->hp_other_update_throttle_timer.Check())
-		this->GetTarget()->SendHPUpdate(false, true);
+    if (this->IsClient() && this->GetTarget() && this->CastToClient()->hp_other_update_throttle_timer.Check()) {
+        this->GetTarget()->SendHPUpdate(false, true);
+    }
 }
 
 // For when we want a Ground Z at a location we are not at yet
@@ -5563,6 +5574,17 @@ int Mob::GetSpecialAbility(int ability) {
 	}
 
 	return SpecialAbilities[ability].level;
+}
+
+bool Mob::HasSpecialAbilities()
+{
+    for (int i = 0; i < MAX_SPECIAL_ATTACK; ++i) {
+        if (GetSpecialAbility(i)) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 int Mob::GetSpecialAbilityParam(int ability, int param) {

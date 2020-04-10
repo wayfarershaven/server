@@ -247,6 +247,12 @@ public:
 	std::unordered_map<Mob *, float> close_mobs;
 	bool is_client_moving;
 
+    void SetDisplayMobInfoWindow(bool display_mob_info_window);
+    bool GetDisplayMobInfoWindow() const;
+
+    bool IsDevToolsWindowEnabled() const;
+    void SetDevToolsWindowEnabled(bool dev_tools_window_enabled);
+
 	bool GotoPlayer(std::string player_name);
 
 	//abstract virtual function implementations required by base abstract class
@@ -852,7 +858,6 @@ public:
 	void SetAATitle(const char *Title);
 	void SetTitleSuffix(const char *txt);
 	void MemorizeSpell(uint32 slot, uint32 spellid, uint32 scribing);
-	int32 acmod();
 
 	// Item methods
 	void EVENT_ITEM_ScriptStopReturn();
@@ -1475,6 +1480,9 @@ private:
 	bool AbilityTimer;
 	int Haste; //precalced value
 	uint32 tmSitting; // time stamp started sitting, used for HP regen bonus added on MAY 5, 2004
+
+    bool display_mob_info_window;
+    bool dev_tools_window_enabled;
 
 	int32 max_end;
 	int32 current_endurance;

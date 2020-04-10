@@ -157,8 +157,6 @@ NPC::NPC(const NPCType* d, Spawn2* in_respawn, const glm::vec4& position, int if
 	spellscale = d->spellscale;
 	healscale = d->healscale;
 
-	logging_enabled = NPC_DEFAULT_LOGGING_ENABLED;
-
 	pAggroRange = d->aggroradius;
 	pAssistRange = d->assistradius;
 	findable = d->findable;
@@ -390,6 +388,51 @@ NPC::NPC(const NPCType* d, Spawn2* in_respawn, const glm::vec4& position, int if
 	}
 }
 
+float NPC::GetRoamboxMaxX() const
+{
+    return roambox_max_x;
+}
+
+float NPC::GetRoamboxMaxY() const
+{
+    return roambox_max_y;
+}
+
+float NPC::GetRoamboxMinX() const
+{
+    return roambox_min_x;
+}
+
+float NPC::GetRoamboxMinY() const
+{
+    return roambox_min_y;
+}
+
+float NPC::GetRoamboxDistance() const
+{
+    return roambox_distance;
+}
+
+float NPC::GetRoamboxDestinationX() const
+{
+    return roambox_destination_x;
+}
+
+float NPC::GetRoamboxDestinationY() const
+{
+    return roambox_destination_y;
+}
+
+uint32 NPC::GetRoamboxDelay() const
+{
+    return roambox_delay;
+}
+
+uint32 NPC::GetRoamboxMinDelay() const
+{
+    return roambox_min_delay;
+}
+
 NPC::~NPC()
 {
 	AI_Stop();
@@ -555,9 +598,7 @@ void NPC::QueryLoot(Client* to)
 		linker.SetLinkType(EQEmu::saylink::SayLinkLootItem);
 		linker.SetLootData(*cur);
 
-		auto item_link = linker.GenerateLink();
-
-		to->Message(0, "%s, ID: %u, Level: (min: %u, max: %u)", item_link.c_str(), (*cur)->item_id, (*cur)->min_level, (*cur)->max_level);
+        to->Message(0, "%s, ID: %u, Level: (min: %u, max: %u)", linker.GenerateLink().c_str(), (*cur)->item_id, (*cur)->min_level, (*cur)->max_level);
 	}
 
 	to->Message(0, "%i items on %s.", x, GetName());
@@ -2779,4 +2820,87 @@ void NPC::DeleteQuestLoot(int16 itemid1, int16 itemid2, int16 itemid3, int16 ite
 			}
 		}
 	}
+}
+
+uint16 NPC::GetMeleeTexture1() const
+{
+    return d_melee_texture1;
+}
+
+uint16 NPC::GetMeleeTexture2() const
+{
+    return d_melee_texture2;
+}
+
+float NPC::GetProximityMinX()
+{
+    return proximity->min_x;
+}
+
+float NPC::GetProximityMaxX()
+{
+    return proximity->max_x;
+}
+
+float NPC::GetProximityMinY()
+{
+    return proximity->min_y;
+}
+
+float NPC::GetProximityMaxY()
+{
+    return proximity->max_y;
+}
+
+float NPC::GetProximityMinZ()
+{
+    return proximity->min_z;
+}
+
+float NPC::GetProximityMaxZ()
+{
+    return proximity->max_z;
+}
+
+bool NPC::IsProximitySet()
+{
+    if (proximity && proximity->proximity_set) {
+        return proximity->proximity_set;
+    }
+
+    return false;
+}
+
+int8 NPC::GetNPCScalingType(NPC *&npc)
+{
+    std::string npc_name = npc->GetName();
+
+    if (npc->IsRaidTarget()) {
+        return 2;
+    }
+
+    if (npc->IsRareSpawn() || npc_name.find('#') != std::string::npos || isupper(npc_name[0])) {
+        return 1;
+    }
+
+    return 0;
+}
+
+/**
+ * @param npc
+ * @return std::string
+ */
+std::string NPC::GetNPCScalingTypeName(NPC *&npc)
+{
+    int8 scaling_type = GetNPCScalingType(npc);
+
+    if (scaling_type == 1) {
+        return "Named";
+    }
+
+    if (npc->IsRaidTarget()) {
+        return "Raid";
+    }
+
+    return "Trash";
 }

@@ -63,11 +63,50 @@ const std::string vStringFormat(const char* format, va_list args)
 	return output;
 }
 
-const std::string StringFormat(const char* format, ...)
+const std::string str_tolower(std::string s)
+{
+    std::transform(
+            s.begin(), s.end(), s.begin(),
+            [](unsigned char c) { return std::tolower(c); }
+    );
+    return s;
+}
+
+std::vector<std::string> split(std::string str_to_split, char delimiter)
+{
+    std::stringstream        ss(str_to_split);
+    std::string              item;
+    std::vector<std::string> exploded_values;
+    while (std::getline(ss, item, delimiter)) {
+        exploded_values.push_back(item);
+    }
+
+    return exploded_values;
+}
+
+const std::string str_toupper(std::string s)
+{
+    std::transform(
+            s.begin(), s.end(), s.begin(),
+            [](unsigned char c) { return std::toupper(c); }
+    );
+    return s;
+}
+
+const std::string ucfirst(std::string s)
+{
+    std::string output = s;
+    if (!s.empty())
+        output[0] = static_cast<char>(std::toupper(s[0]));
+
+    return output;
+}
+
+const std::string StringFormat(const char *format, ...)
 {
 	va_list args;
 	va_start(args, format);
-	std::string output = vStringFormat(format,args);
+    std::string output = vStringFormat(format, args);
 	va_end(args);
 	return output;
 }
