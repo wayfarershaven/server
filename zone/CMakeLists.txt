@@ -80,6 +80,7 @@ SET(zone_sources
 	merc.cpp
 	mob.cpp
 	mob_ai.cpp
+	mob_info.cpp
 	mod_functions.cpp
 	nats_manager.cpp
 	net.cpp

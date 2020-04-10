@@ -2088,7 +2088,7 @@ struct OnLevelMessage_Struct {
 /*0000*/	uint32  ButtonName1_Count;
 /*0000*/	char	ButtonName1[25];
 /*0000*/	uint8	Buttons;
-/*0000*/	uint8	Unknown4275;	// Something to do with audio controls
+/*0000*/	uint8	SoundControls;	// Something to do with audio controls
 /*0000*/	uint32  Duration;
 /*0000*/	uint32  PopupID;	// If none zero, a response packet with 00 00 00 00 <PopupID> is returned on clicking the left button
 /*0000*/	uint32  NegativeID;	// If none zero, a response packet with 01 00 00 00 <NegativeID> is returned on clicking the right button
@@ -5051,6 +5051,23 @@ struct CrystalCountUpdate_Struct
 	/*004*/	uint32	CareerRadiantCrystals;
 	/*008*/	uint32	CurrentEbonCrystals;
 	/*012*/	uint32	CareerEbonCrystals;
+};
+
+struct SayLinkBodyFrame_Struct {
+/*000*/	char ActionID[1];
+/*001*/	char ItemID[5];
+/*006*/	char Augment1[5];
+/*011*/	char Augment2[5];
+/*016*/	char Augment3[5];
+/*021*/	char Augment4[5];
+/*026*/	char Augment5[5];
+/*031*/	char Augment6[5];
+/*036*/	char IsEvolving[1];
+/*037*/	char EvolveGroup[4];
+/*041*/	char EvolveLevel[2];
+/*043*/	char OrnamentIcon[5];
+/*048*/	char Hash[8];
+/*056*/
 };
 
 	}; /*structs*/
