@@ -1959,7 +1959,7 @@ void Client::CalcRestState() {
 	// This method calculates rest state HP and mana regeneration.
 	// The client must have been out of combat for RuleI(Character, RestRegenTimeToActivate) seconds,
 	// must be sitting down, and must not have any detrimental spells affecting them.
-	//
+
 	if(!RuleI(Character, RestRegenPercent))
 		return;
 
@@ -1970,6 +1970,9 @@ void Client::CalcRestState() {
 
 	if(!rest_timer.Check(false))
 		return;
+
+    // so we don't have aggro, our timer has expired, we do not want this to cause issues
+    m_pp.RestTimer = 0;
 
 	uint32 buff_count = GetMaxTotalSlots();
 	for (unsigned int j = 0; j < buff_count; j++) {
