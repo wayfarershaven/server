@@ -20,7 +20,6 @@ void DataBucket::SetData(std::string bucket_key, std::string bucket_value, std::
 
     if (!expires_time.empty()) {
         if (isalpha(expires_time[0]) || isalpha(expires_time[expires_time.length() - 1])) {
-            Log(Logs::General, Logs::Normal, "String check successful");
             expires_time_unix = (long long) std::time(nullptr) + DataBucket::ParseStringTimeToInt(expires_time);
         } else {
             expires_time_unix = (long long) std::time(nullptr) + atoi(expires_time.c_str());
@@ -69,8 +68,9 @@ std::string DataBucket::GetData(std::string bucket_key) {
         return std::string();
     }
 
-    if (results.RowCount() != 1)
+    if (results.RowCount() != 1) {
         return std::string();
+    }
 
     auto row = results.begin();
 
@@ -95,8 +95,9 @@ uint64 DataBucket::DoesBucketExist(std::string bucket_key) {
     }
 
     auto row = results.begin();
-    if (results.RowCount() != 1)
+    if (results.RowCount() != 1) {
         return 0;
+    }
 
     return std::stoull(row[0]);
 }
@@ -128,30 +129,30 @@ uint32 DataBucket::ParseStringTimeToInt(std::string time_string)
 
     std::transform(time_string.begin(), time_string.end(), time_string.begin(), ::tolower);
 
-    if (time_string.length() < 1)
+    if (time_string.length() < 1) {
         return 0;
+    }
 
     std::string time_unit = time_string;
     time_unit.erase(remove_if(time_unit.begin(), time_unit.end(), [](char c) { return !isdigit(c); }), time_unit.end());
 
-    Log(Logs::General, Logs::Normal, "ParseStringTimeToInt after erase %s", time_unit.c_str());
-
     uint32 unit = static_cast<uint32>(atoi(time_unit.c_str()));
 
-    Log(Logs::General, Logs::Normal, "ParseStringTimeToInt seconds %u string %s", unit, time_string.c_str());
-
-    if (time_string.find('s') != std::string::npos)
+    if (time_string.find('s') != std::string::npos) {
         duration = unit;
-    if (time_string.find('m') != std::string::npos)
+    }
+    if (time_string.find('m') != std::string::npos) {
         duration = unit * 60;
-    if (time_string.find('h') != std::string::npos)
+    }
+    if (time_string.find('h') != std::string::npos) {
         duration = unit * 3600;
-    if (time_string.find('d') != std::string::npos)
+    }
+    if (time_string.find('d') != std::string::npos) {
         duration = unit * 86400;
-    if (time_string.find('y') != std::string::npos)
+    }
+    if (time_string.find('y') != std::string::npos) {
         duration = unit * 31556926;
-
-    Log(Logs::General, Logs::Normal, "ParseStringTimeToInt returning %u", duration);
+    }
 
     return duration;
 } 
