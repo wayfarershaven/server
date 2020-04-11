@@ -1699,6 +1699,8 @@ luabind::scope lua_register_general() {
 					luabind::def("update_instance_timer", &lua_update_instance_timer),
 					luabind::def("get_instance_id", &lua_get_instance_id),
                     luabind::def("get_instance_id_by_char_id", &lua_get_instance_id_by_char_id),
+                    luabind::def("get_instance_timer", &lua_get_instance_timer),
+                    luabind::def("get_instance_timer_by_id", &lua_get_instance_timer_by_id),
 					luabind::def("get_characters_in_instance", &lua_get_characters_in_instance),
 					luabind::def("assign_to_instance", &lua_assign_to_instance),
                     luabind::def("assign_to_instance_by_char_id", &lua_assign_to_instance_by_char_id),
