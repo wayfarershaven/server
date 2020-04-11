@@ -38,6 +38,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <boost/concept_check.hpp>
 
 #ifdef BOTS
 #include "bot.h"
@@ -2057,8 +2058,9 @@ bool NPC::Attack(Mob* other, int Hand, bool bRiposte, bool IsStrikethrough, bool
 		if (other->IsClient() && IsPet() && GetOwner()->IsClient()) {
 			//pets do half damage to clients in pvp
 			my_hit.damage_done /= 2;
-			if (my_hit.damage_done < 1)
-				my_hit.damage_done = 1;
+			if (my_hit.damage_done < 1) {
+                my_hit.damage_done = 1;
+            }
 		}
 	}
 	else {
@@ -2068,38 +2070,41 @@ bool NPC::Attack(Mob* other, int Hand, bool bRiposte, bool IsStrikethrough, bool
 	if (GetHP() > 0 && !other->HasDied()) {
 		other->Damage(this, my_hit.damage_done, SPELL_UNKNOWN, my_hit.skill, true, -1, false, m_specialattacks); // Not avoidable client already had thier chance to Avoid
 	}
-	else
-		return false;
+	else {
+        return false;
+    }
 
-	if (HasDied()) //killed by damage shield ect
-		return false;
+	if (HasDied()) { //killed by damage shield ect
+        return false;
+    }
 
 	MeleeLifeTap(my_hit.damage_done);
 
 	CommonBreakInvisibleFromCombat();
 
 	//I doubt this works...
-	if (!GetTarget())
-		return true; //We killed them
+	if (!GetTarget()) {
+        return true; //We killed them
+    }
 
-	if (!bRiposte && !other->HasDied()) {
-		TryWeaponProc(nullptr, weapon, other, Hand);	//no weapon
+    bool hasHit = my_hit.damage_done > 0;
+    if (hasHit && !bRiposte && !other->HasDied()) {
+        TryWeaponProc(nullptr, weapon, other, Hand);
 
-		if (!other->HasDied())
-			TrySpellProc(nullptr, weapon, other, Hand);
+        if (!other->HasDied()) {
+            TrySpellProc(nullptr, weapon, other, Hand);
+        }
 
-		if (my_hit.damage_done > 0 && HasSkillProcSuccess() && !other->HasDied())
-			TrySkillProc(other, my_hit.skill, 0, true, Hand);
-	}
+        if (HasSkillProcSuccess() && !other->HasDied()) {
+            TrySkillProc(other, my_hit.skill, 0, true, Hand);
+        }
+    }
 
-	if (GetHP() > 0 && !other->HasDied())
-		TriggerDefensiveProcs(other, Hand, true, my_hit.damage_done);
+	if (GetHP() > 0 && !other->HasDied()) {
+        TriggerDefensiveProcs(other, Hand, true, my_hit.damage_done);
+    }
 
-	if (my_hit.damage_done > 0)
-		return true;
-
-	else
-		return false;
+    return hasHit;
 }
 
 void NPC::Damage(Mob* other, int32 damage, uint16 spell_id, EQEmu::skills::SkillType attack_skill, bool avoidable, int8 buffslot, bool iBuffTic, eSpecialAttacks special) {
@@ -2257,11 +2262,12 @@ bool NPC::Death(Mob* killer_mob, int32 damage, uint16 spell, EQEmu::skills::Skil
 		respawn2->DeathReset(1);
 	}
 
-	std::string adminMessage = "";
+	/* std::string adminMessage = "";
 	adminMessage.append(StringFormat("Raidmob: %s has died", GetName()));
 	if (IsRaidTarget() && IsNPC()) {
 		nats.SendAdminMessage(adminMessage);
 	}
+	*/
 	if (killer_mob && GetClass() != LDON_TREASURE)
 		hate_list.AddEntToHateList(killer_mob, damage);
 
@@ -5842,4 +5848,14 @@ void Mob::DoOffHandAttackRounds(Mob *target, ExtraAttackOptions *opts)
 			}
 		}
 	}
+}
+
+int32 Mob::GetHPRegen() const
+{
+    return hp_regen;
+}
+
+int32 Mob::GetManaRegen() const
+{
+    return mana_regen;
 }

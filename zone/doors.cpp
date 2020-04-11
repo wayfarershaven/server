@@ -846,3 +846,18 @@ void Doors::CreateDatabaseEntry()
 			GetSize()
 	);
 }
+
+float Doors::GetX()
+{
+    return m_Position.x;
+}
+
+float Doors::GetY()
+{
+    return m_Position.y;
+}
+
+float Doors::GetZ()
+{
+    return m_Position.z;
+}
