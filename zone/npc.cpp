@@ -225,8 +225,8 @@ NPC::NPC(const NPCType* d, Spawn2* in_respawn, const glm::vec4& position, int if
 	roambox_max_y = -2;
 	roambox_min_x = -2;
 	roambox_min_y = -2;
-	roambox_movingto_x = -2;
-	roambox_movingto_y = -2;
+    roambox_destination_x = -2;
+    roambox_destination_y = -2;
 	roambox_min_delay = 1000;
 	roambox_delay = 1000;
 	p_depop = false;
@@ -2757,7 +2757,7 @@ bool NPC::AddQuestLoot(int16 itemid)
 
 void NPC::DisplayRoamBox(Client* c) {
 	c->Message(0, "Roam Box: d=%.3f (%.3f->%.3f,%.3f->%.3f): Go To (%.3f,%.3f)",
-		roambox_distance, roambox_min_x, roambox_max_x, roambox_min_y, roambox_max_y, roambox_movingto_x, roambox_movingto_y);
+		roambox_distance, roambox_min_x, roambox_max_x, roambox_min_y, roambox_max_y, roambox_destination_x, roambox_destination_y);
 }
 
 void NPC::DeleteQuestLoot(int16 itemid1, int16 itemid2, int16 itemid3, int16 itemid4)

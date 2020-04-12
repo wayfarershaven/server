@@ -319,11 +319,19 @@ public:
 	void				SaveGuardSpot(bool iClearGuardSpot = false);
 	inline bool			IsGuarding() const { return(m_GuardPoint.w != 0); }
 	void				SaveGuardSpotCharm();
-	void				RestoreGuardSpotCharm();
-	void				AI_SetRoambox(float iDist, float iRoamDist, uint32 iDelay = 2500, uint32 iMinDelay = 2500);
-	void				AI_SetRoambox(float iDist, float iMaxX, float iMinX, float iMaxY, float iMinY, uint32 iDelay = 2500, uint32 iMinDelay = 2500);
 
-	//mercenary stuff
+	void				RestoreGuardSpotCharm();
+
+    void AI_SetRoambox(
+            float max_distance,
+            float roam_distance_variance,
+            uint32 delay = 2500,
+            uint32 min_delay = 2500
+    );
+
+    void				AI_SetRoambox(float distance, float max_x, float min_x, float max_y, float min_y, uint32 delay = 2500, uint32 min_delay = 2500);
+
+    //mercenary stuff
 	void	LoadMercTypes();
 	void	LoadMercs();
 	std::list<MercType> GetMercTypesList() {return mercTypeList; };
@@ -523,8 +531,8 @@ protected:
 	float roambox_min_x;
 	float roambox_min_y;
 	float roambox_distance;
-	float roambox_movingto_x;
-	float roambox_movingto_y;
+    float roambox_destination_x;
+    float roambox_destination_y;
 	uint32 roambox_delay;
 	uint32 roambox_min_delay;
 
