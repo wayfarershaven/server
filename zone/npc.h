@@ -434,7 +434,7 @@ public:
 	void	SetHeroForgeModel(uint32 model) { herosforgemodel = model; }
 
 	bool IsRaidTarget() const { return raid_target; };
-	void ResetHPUpdateTimer() { sendhpupdate_timer.Start(); }
+    void ResetHPUpdateTimer() { send_hp_update_timer.Start(); }
 	bool AddQuestLoot(int16 itemid);
 	void DeleteQuestLoot(int16 itemid1, int16 itemid2 = 0, int16 itemid3 = 0, int16 itemid4 = 0);
 
@@ -467,7 +467,7 @@ protected:
 	Timer	qglobal_purge_timer;
 
 	bool	combat_event;	//true if we are in combat, false otherwise
-	Timer	sendhpupdate_timer;
+    Timer	send_hp_update_timer;
 	Timer	enraged_timer;
 	Timer *reface_timer;
 
