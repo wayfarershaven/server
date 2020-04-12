@@ -149,19 +149,21 @@ void Mob::ProcessFlee()
     }
 }
 
-void Mob::CalculateNewFearpoint()
-{
-	if(RuleB(Pathing, Fear) && zone->pathing)
-	{
+void Mob::CalculateNewFearpoint() {
+    if (RuleB(Pathing, Fear) && zone->pathing) {
 		auto Node = zone->pathing->GetRandomLocation();
 		if (Node.x != 0.0f || Node.y != 0.0f || Node.z != 0.0f) {
 
 			++Node.z;
 			m_FearWalkTarget = Node;
+            currently_fleeing = true;
 
+            return;
 		}
 
-		Log(Logs::Detail, Logs::None, "No path found to selected node. Falling through to old fear point selection.");
+        Log(Logs::Detail,
+            Logs::Pathing,
+            "No path found to selected node. Falling through to old fear point selection.");
 	}
 
 	int loop = 0;
@@ -178,8 +180,7 @@ void Mob::CalculateNewFearpoint()
 		if (ranz == BEST_Z_INVALID)
 			continue;
 		float fdist = ranz - GetZ();
-		if (fdist >= -12 && fdist <= 12 && CheckCoordLosNoZLeaps(GetX(),GetY(),GetZ(),ranx,rany,ranz))
-		{
+        if (fdist >= -12 && fdist <= 12 && CheckCoordLosNoZLeaps(GetX(), GetY(), GetZ(), ranx, rany, ranz)) {
 			break;
 		}
 	}

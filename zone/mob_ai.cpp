@@ -1138,12 +1138,18 @@ void Mob::AI_Process() {
                     } else {
                         bool WaypointChanged, NodeReached;
 
-                        glm::vec3 Goal = UpdatePath(m_FearWalkTarget.x, m_FearWalkTarget.y, m_FearWalkTarget.z,
-                                                    GetFearSpeed(), WaypointChanged, NodeReached);
+                        glm::vec3 Goal = UpdatePath(
+                                m_FearWalkTarget.x,
+                                m_FearWalkTarget.y,
+                                m_FearWalkTarget.z,
+                                GetFearSpeed(),
+                                WaypointChanged,
+                                NodeReached
+                        );
 
-                        if (WaypointChanged)
+                        if (WaypointChanged) {
                             tar_ndx = 20;
-
+                        }
                         CalculateNewPosition(Goal.x, Goal.y, Goal.z, GetFearSpeed());
                     }
                 }
