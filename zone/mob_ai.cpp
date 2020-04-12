@@ -753,226 +753,216 @@ void Client::AI_SpellCast()
 
 }
 
-void Client::AI_Process()
-{
+void Client::AI_Process() {
 
-	if (!IsAIControlled())
-		return;
+    if (!IsAIControlled())
+        return;
 
-	if (!(AI_think_timer->Check() || attack_timer.Check(false)))
-		return;
+    if (!(AI_think_timer->Check() || attack_timer.Check(false)))
+        return;
 
-	if (IsCasting())
-		return;
+    if (IsCasting())
+        return;
 
-	bool engaged = IsEngaged();
+    bool engaged = IsEngaged();
 
-	Mob *ow = GetOwner();
-	if(!engaged)
-	{
-		if(ow)
-		{
-			if(ow->IsEngaged())
-			{
-				Mob *tar = ow->GetTarget();
-				if(tar)
-				{
-					AddToHateList(tar, 1, 0, false);
-				}
-			}
-		}
-	}
+    Mob *ow = GetOwner();
+    if (!engaged) {
+        if (ow) {
+            if (ow->IsEngaged()) {
+                Mob *tar = ow->GetTarget();
+                if (tar) {
+                    AddToHateList(tar, 1, 0, false);
+                }
+            }
+        }
+    }
 
-	if(!ow)
-	{
-		if(!IsFeared() && !IsLD())
-		{
-			BuffFadeByEffect(SE_Charm);
-			return;
-		}
-	}
+    if (!ow) {
+        if (!IsFeared() && !IsLD()) {
+            BuffFadeByEffect(SE_Charm);
+            return;
+        }
+    }
 
-	if(RuleB(Combat, EnableFearPathing)){
-		if(currently_fleeing) {
-			if (fix_z_timer_engaged.Check()) {
-				this->FixZ(1);
-			}
+    if (RuleB(Combat, EnableFearPathing)) {
+        if (currently_fleeing) {
+            if (fix_z_timer.Check()) {
+                this->FixZ(5, true);
+            }
 
-			if(IsRooted()) {
-				//make sure everybody knows were not moving, for appearance sake
-				if(IsMoving())
-				{
-					if(GetTarget())
-						SetHeading(CalculateHeadingToTarget(GetTarget()->GetX(), GetTarget()->GetY()));
-					SetCurrentSpeed(0);
-				}
-				//continue on to attack code, ensuring that we execute the engaged code
-				engaged = true;
-			} else {
-				if(AI_movement_timer->Check()) {
-					int speed = GetFearSpeed();
-					animation = speed;
-					speed *= 2;
-					SetCurrentSpeed(speed);
-					// Check if we have reached the last fear point
-					if ((std::abs(GetX() - m_FearWalkTarget.x) < 0.1) &&
-						(std::abs(GetY() - m_FearWalkTarget.y) < 0.1)) {
-						// Calculate a new point to run to
-						CalculateNewFearpoint();
-					}
-					if(!RuleB(Pathing, Fear) || !zone->pathing)
-						CalculateNewPosition(m_FearWalkTarget.x, m_FearWalkTarget.y, m_FearWalkTarget.z, speed, true);
-					else
-					{
-						bool WaypointChanged, NodeReached;
+            if (IsRooted()) {
+                //make sure everybody knows were not moving, for appearance sake
+                if (IsMoving()) {
+                    if (GetTarget()) {
+                        SetHeading(CalculateHeadingToTarget(GetTarget()->GetX(), GetTarget()->GetY()));
+                    }
+                    SetCurrentSpeed(0);
+                }
+                //continue on to attack code, ensuring that we execute the engaged code
+                engaged = true;
+            } else {
+                if (AI_movement_timer->Check()) {
+                    int speed = GetFearSpeed();
+                    animation = speed;
+                    speed *= 2;
+                    SetCurrentSpeed(speed);
+                    // Check if we have reached the last fear point
+                    if ((std::abs(GetX() - m_FearWalkTarget.x) < 0.1) &&
+                        (std::abs(GetY() - m_FearWalkTarget.y) < 0.1)) {
+                        // Calculate a new point to run to
+                        CalculateNewFearpoint();
+                    }
+                    if (!RuleB(Pathing, Fear) || !zone->pathing) {
+                        CalculateNewPosition(m_FearWalkTarget.x, m_FearWalkTarget.y, m_FearWalkTarget.z, speed, true);
+                    } else {
+                        bool waypoint_changed, node_reached;
 
-						glm::vec3 Goal = UpdatePath(m_FearWalkTarget.x, m_FearWalkTarget.y, m_FearWalkTarget.z,
-													speed, WaypointChanged, NodeReached);
+                        glm::vec3 Goal = UpdatePath(
+                                m_FearWalkTarget.x,
+                                m_FearWalkTarget.y,
+                                m_FearWalkTarget.z,
+                                speed,
+                                waypoint_changed,
+                                node_reached
+                        );
 
-						if(WaypointChanged)
-							tar_ndx = 20;
+                        if (waypoint_changed) {
+                            tar_ndx = 20;
+                        }
+                        CalculateNewPosition(Goal.x, Goal.y, Goal.z, speed);
+                    }
+                }
+                return;
+            }
+        }
+    }
 
-						CalculateNewPosition(Goal.x, Goal.y, Goal.z, speed);
-					}
-				}
-				return;
-			}
+    if (engaged) {
+        if (IsRooted()) {
+            SetTarget(hate_list.GetClosestEntOnHateList(this));
+        } else {
+            if (AI_target_check_timer->Check()) {
+                SetTarget(hate_list.GetEntWithMostHateOnList(this));
+            }
+        }
 
-		}
-	}
+        if (!GetTarget()) {
+            return;
+        }
 
-	if (engaged)
-	{
-		if (IsRooted())
-			SetTarget(hate_list.GetClosestEntOnHateList(this));
-		else
-		{
-			if(AI_target_check_timer->Check())
-			{
-				SetTarget(hate_list.GetEntWithMostHateOnList(this));
-			}
-		}
+        if (GetTarget()->IsCorpse()) {
+            RemoveFromHateList(this);
+            return;
+        }
 
-		if (!GetTarget())
-			return;
+        if (DivineAura()) {
+            return;
+        }
 
-		if (GetTarget()->IsCorpse()) {
-			RemoveFromHateList(this);
-			return;
-		}
+        bool is_combat_range = CombatRange(GetTarget());
 
-		if(DivineAura())
-			return;
+        if (is_combat_range) {
+            if (charm_class_attacks_timer.Check()) {
+                DoClassAttacks(GetTarget());
+            }
 
-		bool is_combat_range = CombatRange(GetTarget());
+            if (AI_movement_timer->Check()) {
+                if (CalculateHeadingToTarget(GetTarget()->GetX(), GetTarget()->GetY()) !=
+                    m_Position.w) {
+                    SetHeading(CalculateHeadingToTarget(GetTarget()->GetX(), GetTarget()->GetY()));
+                    SendPosition();
+                }
+                SetCurrentSpeed(0);
+            }
+            if (GetTarget() && !IsStunned() && !IsMezzed() && !GetFeigned()) {
+                if (attack_timer.Check()) {
+                    // Should charmed clients not be procing?
+                    DoAttackRounds(GetTarget(), EQEmu::inventory::slotPrimary);
+                }
+            }
 
-		if (is_combat_range) {
-			if (charm_class_attacks_timer.Check()) {
-				DoClassAttacks(GetTarget());
-			}
+            if (CanThisClassDualWield() && GetTarget() && !IsStunned() && !IsMezzed() && !GetFeigned()) {
+                if (attack_dw_timer.Check()) {
+                    if (CheckDualWield()) {
+                        // Should charmed clients not be procing?
+                        DoAttackRounds(GetTarget(), EQEmu::inventory::slotSecondary);
+                    }
+                }
+            }
+        } else {
+            if (!IsRooted()) {
+                if (AI_movement_timer->Check()) {
+                    int newspeed = GetRunspeed();
+                    animation = newspeed;
+                    newspeed *= 2;
+                    SetCurrentSpeed(newspeed);
+                    if (!RuleB(Pathing, Aggro) || !zone->pathing) {
+                        CalculateNewPosition(GetTarget()->GetX(), GetTarget()->GetY(), GetTarget()->GetZ(), newspeed);
+                    } else {
+                        bool WaypointChanged, NodeReached;
+                        glm::vec3 Goal = UpdatePath(GetTarget()->GetX(), GetTarget()->GetY(), GetTarget()->GetZ(),
+                                                    GetRunspeed(), WaypointChanged, NodeReached);
 
-			if (AI_movement_timer->Check()) {
-				if (CalculateHeadingToTarget(GetTarget()->GetX(), GetTarget()->GetY()) !=
-					m_Position.w) {
-					SetHeading(CalculateHeadingToTarget(GetTarget()->GetX(), GetTarget()->GetY()));
-					SendPosition();
-				}
-				SetCurrentSpeed(0);
-			}
-			if (GetTarget() && !IsStunned() && !IsMezzed() && !GetFeigned()) {
-				if (attack_timer.Check()) {
-					// Should charmed clients not be procing?
-					DoAttackRounds(GetTarget(), EQEmu::inventory::slotPrimary);
-				}
-			}
+                        if (WaypointChanged) {
+                            tar_ndx = 20;
+                        }
+                        CalculateNewPosition(Goal.x, Goal.y, Goal.z, newspeed);
+                    }
+                }
+            } else if (IsMoving()) {
+                SetHeading(CalculateHeadingToTarget(GetTarget()->GetX(), GetTarget()->GetY()));
+                SetCurrentSpeed(0);
+            }
+        }
+        AI_SpellCast();
+    } else {
+        if (AI_feign_remember_timer->Check()) {
+            std::set<uint32>::iterator RememberedCharID;
+            RememberedCharID = feign_memory_list.begin();
+            while (RememberedCharID != feign_memory_list.end()) {
+                Client *remember_client = entity_list.GetClientByCharID(*RememberedCharID);
+                if (remember_client == nullptr) {
+                    //they are gone now...
+                    RememberedCharID = feign_memory_list.erase(RememberedCharID);
+                } else if (!remember_client->GetFeigned()) {
+                    AddToHateList(remember_client->CastToMob(), 1);
+                    RememberedCharID = feign_memory_list.erase(RememberedCharID);
+                    break;
+                } else {
+                    //they are still feigned, carry on...
+                    ++RememberedCharID;
+                }
+            }
+        }
 
-			if (CanThisClassDualWield() && GetTarget() && !IsStunned() && !IsMezzed() && !GetFeigned()) {
-				if (attack_dw_timer.Check()) {
-					if (CheckDualWield()) {
-						// Should charmed clients not be procing?
-						DoAttackRounds(GetTarget(), EQEmu::inventory::slotSecondary);
-					}
-				}
-			}
-		} else {
-			if(!IsRooted())
-			{
-				if(AI_movement_timer->Check())
-				{
-					int newspeed = GetRunspeed();
-					animation = newspeed;
-					newspeed *= 2;
-					SetCurrentSpeed(newspeed);
-					if(!RuleB(Pathing, Aggro) || !zone->pathing)
-						CalculateNewPosition(GetTarget()->GetX(), GetTarget()->GetY(), GetTarget()->GetZ(), newspeed);
-					else
-					{
-						bool WaypointChanged, NodeReached;
-						glm::vec3 Goal = UpdatePath(GetTarget()->GetX(), GetTarget()->GetY(), GetTarget()->GetZ(),
-													GetRunspeed(), WaypointChanged, NodeReached);
+        if (IsPet()) {
+            Mob *owner = GetOwner();
+            if (owner == nullptr) {
+                return;
+            }
 
-						if(WaypointChanged)
-							tar_ndx = 20;
+            float dist = DistanceSquared(m_Position, owner->GetPosition());
+            if (dist >= 202500) { // >= 450 distance
+                Teleport(static_cast<glm::vec3>(owner->GetPosition()));
+                SendPositionUpdate(); // this shouldn't happen a lot (and hard to make it) so lets not rate limit
+            } else if (dist >= 400) { // >=20
+                if (AI_movement_timer->Check()) {
+                    int nspeed = (dist >= 1225 ? GetRunspeed() : GetWalkspeed()); // >= 35
+                    animation = nspeed;
+                    nspeed *= 2;
+                    SetCurrentSpeed(nspeed);
 
-						CalculateNewPosition(Goal.x, Goal.y, Goal.z, newspeed);
-					}
-				}
-			}
-			else if(IsMoving())
-			{
-				SetHeading(CalculateHeadingToTarget(GetTarget()->GetX(), GetTarget()->GetY()));
-				SetCurrentSpeed(0);
-			}
-		}
-		AI_SpellCast();
-	}
-	else
-	{
-		if(AI_feign_remember_timer->Check()) {
-			std::set<uint32>::iterator RememberedCharID;
-			RememberedCharID = feign_memory_list.begin();
-			while (RememberedCharID != feign_memory_list.end()) {
-				Client* remember_client = entity_list.GetClientByCharID(*RememberedCharID);
-				if (remember_client == nullptr) {
-					//they are gone now...
-					RememberedCharID = feign_memory_list.erase(RememberedCharID);
-				} else if (!remember_client->GetFeigned()) {
-					AddToHateList(remember_client->CastToMob(),1);
-					RememberedCharID = feign_memory_list.erase(RememberedCharID);
-					break;
-				} else {
-					//they are still feigned, carry on...
-					++RememberedCharID;
-				}
-			}
-		}
-
-		if (IsPet()) {
-			Mob* owner = GetOwner();
-			if(owner == nullptr)
-				return;
-
-			float dist = DistanceSquared(m_Position, owner->GetPosition());
-			if (dist >= 202500) { // >= 450 distance
-				Teleport(static_cast<glm::vec3>(owner->GetPosition()));
-				SendPositionUpdate(); // this shouldn't happen a lot (and hard to make it) so lets not rate limit
-			} else if (dist >= 400) { // >=20
-				if (AI_movement_timer->Check()) {
-					int nspeed = (dist >= 1225 ? GetRunspeed() : GetWalkspeed()); // >= 35
-					animation = nspeed;
-					nspeed *= 2;
-					SetCurrentSpeed(nspeed);
-
-					CalculateNewPosition(owner->GetX(), owner->GetY(), owner->GetZ(), nspeed);
-				}
-			} else {
-				if (moved) {
-					SetCurrentSpeed(0);
-					moved = false;
-				}
-			}
-		}
-	}
+                    CalculateNewPosition(owner->GetX(), owner->GetY(), owner->GetZ(), nspeed);
+                }
+            } else {
+                if (moved) {
+                    SetCurrentSpeed(0);
+                    moved = false;
+                }
+            }
+        }
+    }
 }
 
 void Mob::ProcessForcedMovement() {
