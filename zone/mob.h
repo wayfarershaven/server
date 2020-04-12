@@ -1476,6 +1476,13 @@ protected:
 	bool endur_upkeep;
 	bool degenerating_effects; // true if we have a buff that needs to be recalced every tick
 
+    bool spawned_in_water;
+public:
+    bool GetWasSpawnedInWater() const;
+
+    void SetSpawnedInWater(bool spawned_in_water);
+
+protected:
 	// Bind wound
 	Timer bindwound_timer;
 	Mob* bindwound_target;
