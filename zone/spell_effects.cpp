@@ -3943,6 +3943,12 @@ void Mob::BuffFadeBySlot(int slot, bool iRecalcBonuses)
 				Mob* tempmob = GetOwner();
 				SetOwnerID(0);
 				SetPetType(petNone);
+                SetHeld(false);
+                SetGHeld(false);
+                SetNoCast(false);
+                SetFocused(false);
+                SetPetStop(false);
+                SetPetRegroup(false);
 				if(tempmob)
 				{
 					tempmob->SetPet(0);
