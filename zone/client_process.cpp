@@ -1857,7 +1857,7 @@ void Client::OPGMSummon(const EQApplicationPacket *app)
 }
 
 void Client::DoHPRegen() {
-	SetHP(GetHP() + CalcHPRegen() + RestRegenHP);
+	SetHP(GetHP() + CalcHPRegen());
 	SendHPUpdate();
 }
 
@@ -1865,7 +1865,11 @@ void Client::DoManaRegen() {
 	if (GetMana() >= max_mana && spellbonuses.ManaRegen >= 0)
 		return;
 
-	SetMana(GetMana() + CalcManaRegen() + RestRegenMana);
+	if (GetMana() < max_mana && (IsSitting() || CanMedOnHorse()) && HasSkill(EQEmu::skills::SkillMeditate)) {
+        CheckIncreaseSkill(EQEmu::skills::SkillMeditate, nullptr, -5);
+    }
+
+	SetMana(GetMana() + CalcManaRegen());
 	CheckManaEndUpdate();
 }
 
@@ -1908,10 +1912,12 @@ void Client::DoStaminaHungerUpdate()
 
 void Client::DoEnduranceRegen()
 {
-	if(GetEndurance() >= GetMaxEndurance())
-		return;
+	// endurance has some negative mods that could result in a negative regen when starved
+	int regen = CalcEnduranceRegen();
 
-	SetEndurance(GetEndurance() + CalcEnduranceRegen() + RestRegenEndurance);
+	if (regen < 0 || (regen > 0 && GetEndurance() < GetMaxEndurance())) {
+        SetEndurance(GetEndurance() + regen);
+    }
 }
 
 void Client::DoEnduranceUpkeep() {
@@ -1960,13 +1966,15 @@ void Client::CalcRestState() {
 	// The client must have been out of combat for RuleI(Character, RestRegenTimeToActivate) seconds,
 	// must be sitting down, and must not have any detrimental spells affecting them.
 
-	if(!RuleI(Character, RestRegenPercent))
-		return;
+	if(!RuleB(Character, RestRegenEnabled)) {
+        return;
+    }
 
-	RestRegenHP = RestRegenMana = RestRegenEndurance = 0;
+	ooc_regen = false;
 
-	if(AggroCount || !IsSitting())
-		return;
+	if(AggroCount || !(IsSitting() || CanMedOnHorse())) {
+        return;
+    }
 
 	if(!rest_timer.Check(false))
 		return;
@@ -1982,13 +1990,7 @@ void Client::CalcRestState() {
 					return;
 		}
 	}
-
-	RestRegenHP = (GetMaxHP() * RuleI(Character, RestRegenPercent) / 100);
-
-	RestRegenMana = (GetMaxMana() * RuleI(Character, RestRegenPercent) / 100);
-
-	if(RuleB(Character, RestRegenEndurance))
-		RestRegenEndurance = (GetMaxEndurance() * RuleI(Character, RestRegenPercent) / 100);
+    ooc_regen = true;
 }
 
 void Client::DoTracking()

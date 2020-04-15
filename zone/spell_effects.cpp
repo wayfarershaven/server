@@ -66,10 +66,15 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 		}
 	}
 
-	if(!IsValidSpell(spell_id))
-		return false;
+	if(!IsValidSpell(spell_id)) {
+        return false;
+    }
 
 	const SPDat_Spell_Struct &spell = spells[spell_id];
+
+	if (spell.disallow_sit && IsBuffSpell(spell_id) && IsClient() && (CastToClient()->IsSitting() || CastToClient()->GetHorseId() != 0)) {
+        return false;
+    }
 
 	bool c_override = false;
 	if (caster && caster->IsClient() && GetCastedSpellInvSlot() > 0) {
@@ -91,45 +96,35 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 		caster_level = level_override;
 		c_override = true;
 	} else {
-		caster_level = caster ? caster->GetCasterLevel(spell_id) : GetCasterLevel(spell_id);
-	}
+        caster_level = caster ? caster->GetCasterLevel(spell_id) : GetCasterLevel(spell_id);
+    }
 
-	if(c_override)
-	{
-		int durat = CalcBuffDuration(caster, this, spell_id, caster_level);
-		if(durat) // negatives are perma buffs
-		{
-			buffslot = AddBuff(caster, spell_id, durat, caster_level);
-			if(buffslot == -1)	// stacking failure
-				return false;
-		}
-		else
-		{
-			buffslot = -2;
-		}
-	}
-	else
-	{
-		if(IsBuffSpell(spell_id)){
-			if(IsEffectInSpell(spell_id, SE_BindSight))
-			{
-				if(caster)
-				{
-					buffslot = caster->AddBuff(caster, spell_id);
-				}
-				else
-					buffslot = -1;
-			}
-			else
-			{
-				buffslot = AddBuff(caster, spell_id);
-			}
-			if(buffslot == -1)	// stacking failure
-				return false;
-		} else {
-			buffslot = -2;	//represents not a buff I guess
-		}
-	}
+	if(c_override) {
+        int durat = CalcBuffDuration(caster, this, spell_id, caster_level);
+        if (durat) { // negatives are perma buffs
+
+            buffslot = AddBuff(caster, spell_id, durat, caster_level);
+            if (buffslot == -1)    // stacking failure
+                return false;
+        } else {
+            buffslot = -2;
+        }
+    } else {
+        if (IsBuffSpell(spell_id)) {
+            if (IsEffectInSpell(spell_id, SE_BindSight)) {
+                if (caster) {
+                    buffslot = caster->AddBuff(caster, spell_id);
+                } else
+                    buffslot = -1;
+            } else {
+                buffslot = AddBuff(caster, spell_id);
+            }
+            if (buffslot == -1)    // stacking failure
+                return false;
+        } else {
+            buffslot = -2;    //represents not a buff I guess
+        }
+    }
 
 #ifdef SPELL_EFFECT_SPAM
 		Message(0, "You are affected by spell '%s' (id %d)", spell.name, spell_id);
@@ -139,89 +134,88 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 		}
 #endif
 
-	if(buffslot >= 0)
-	{
-		buffs[buffslot].melee_rune = 0;
-		buffs[buffslot].magic_rune = 0;
-		buffs[buffslot].numhits = 0;
+	if(buffslot >= 0) {
+        buffs[buffslot].melee_rune = 0;
+        buffs[buffslot].magic_rune = 0;
+        buffs[buffslot].numhits = 0;
 
-		if (spells[spell_id].EndurUpkeep > 0)
-			SetEndurUpkeep(true);
+        if (spells[spell_id].EndurUpkeep > 0)
+            SetEndurUpkeep(true);
 
-		if (IsClient() && CastToClient()->ClientVersionBit() & EQEmu::versions::bit_UFAndLater)
-		{
-			EQApplicationPacket *outapp = MakeBuffsPacket(false);
-			CastToClient()->FastQueuePacket(&outapp);
-		}
-	}
+        if (IsClient() && CastToClient()->ClientVersionBit() & EQEmu::versions::bit_UFAndLater) {
+            EQApplicationPacket *outapp = MakeBuffsPacket(false);
+            CastToClient()->FastQueuePacket(&outapp);
+        }
+    }
 
-	if(IsNPC())
-	{
-		std::vector<EQEmu::Any> args;
-		args.push_back(&buffslot);
-		int i = parse->EventSpell(EVENT_SPELL_EFFECT_NPC, CastToNPC(), nullptr, spell_id, caster ? caster->GetID() : 0, &args);
-		if(i != 0){
-			CalcBonuses();
-			return true;
-		}
-	}
-	else if(IsClient())
-	{
-		std::vector<EQEmu::Any> args;
-		args.push_back(&buffslot);
-		int i = parse->EventSpell(EVENT_SPELL_EFFECT_CLIENT, nullptr, CastToClient(), spell_id, caster ? caster->GetID() : 0, &args);
-		if(i != 0){
-			CalcBonuses();
-			return true;
-		}
-	}
+	if(IsNPC()) {
+        std::vector<EQEmu::Any> args;
+        args.push_back(&buffslot);
+        int i = parse->EventSpell(EVENT_SPELL_EFFECT_NPC, CastToNPC(), nullptr, spell_id, caster ? caster->GetID() : 0,
+                                  &args);
+        if (i != 0) {
+            CalcBonuses();
+            return true;
+        }
+    } else if(IsClient()) {
+        std::vector<EQEmu::Any> args;
+        args.push_back(&buffslot);
+        int i = parse->EventSpell(EVENT_SPELL_EFFECT_CLIENT, nullptr, CastToClient(), spell_id,
+                                  caster ? caster->GetID() : 0, &args);
+        if (i != 0) {
+            CalcBonuses();
+            return true;
+        }
+    }
 
 	if(spells[spell_id].viral_targets > 0) {
-		if(!viral_timer.Enabled())
-			viral_timer.Start(1000);
+        if (!viral_timer.Enabled()) {
+            viral_timer.Start(1000);
+        }
 
-		has_virus = true;
-		for(int i = 0; i < MAX_SPELL_TRIGGER*2; i+=2)
-		{
-			if(!viral_spells[i])
-			{
-				viral_spells[i] = spell_id;
-				viral_spells[i+1] = caster->GetID();
-				break;
-			}
-		}
-	}
+        has_virus = true;
+        for (int i = 0; i < MAX_SPELL_TRIGGER * 2; i += 2) {
+            if (!viral_spells[i]) {
+                viral_spells[i] = spell_id;
+                viral_spells[i + 1] = caster->GetID();
+                break;
+            }
+        }
+    }
 
-	if(spells[spell_id].numhits > 0 && buffslot >= 0){
+	if(spells[spell_id].numhits > 0 && buffslot >= 0) {
 
-		int numhit = spells[spell_id].numhits;
+        int numhit = spells[spell_id].numhits;
 
-		numhit += numhit*caster->GetFocusEffect(focusFcLimitUse, spell_id)/100;
-		numhit += caster->GetFocusEffect(focusIncreaseNumHits, spell_id);
-		buffs[buffslot].numhits = numhit;
-	}
+        numhit += numhit * caster->GetFocusEffect(focusFcLimitUse, spell_id) / 100;
+        numhit += caster->GetFocusEffect(focusIncreaseNumHits, spell_id);
+        buffs[buffslot].numhits = numhit;
+    }
 
-	if (!IsPowerDistModSpell(spell_id))
-		SetSpellPowerDistanceMod(0);
+	if (!IsPowerDistModSpell(spell_id)) {
+        SetSpellPowerDistanceMod(0);
+    }
 
 	bool SE_SpellTrigger_HasCast = false;
 
 	// if buff slot, use instrument mod there, otherwise calc it
 	uint32 instrument_mod = buffslot > -1 ? buffs[buffslot].instrument_mod : caster ? caster->GetInstrumentMod(spell_id) : 10;
 	// iterate through the effects in the spell
-	for (i = 0; i < EFFECT_COUNT; i++)
-	{
-		if(IsBlankSpellEffect(spell_id, i))
-			continue;
+	for (i = 0; i < EFFECT_COUNT; i++) {
+		if(IsBlankSpellEffect(spell_id, i)) {
+            continue;
+        }
 
 		effect = spell.effectid[i];
 		effect_value = CalcSpellEffectValue(spell_id, i, caster_level, instrument_mod, caster ? caster : this);
 
-		if(spell_id == SPELL_LAY_ON_HANDS && caster && caster->GetAA(aaImprovedLayOnHands))
-			effect_value = GetMaxHP();
+		if(spell_id == SPELL_LAY_ON_HANDS && caster && caster->GetAA(aaImprovedLayOnHands)) {
+            effect_value = GetMaxHP();
+        }
 
-		if (GetSpellPowerDistanceMod())
-			effect_value = effect_value*GetSpellPowerDistanceMod()/100;
+		if (GetSpellPowerDistanceMod()) {
+            effect_value = effect_value * GetSpellPowerDistanceMod() / 100;
+        }
 
 #ifdef SPELL_EFFECT_SPAM
 		effect_desc[0] = 0;
@@ -230,195 +224,201 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 		switch(effect)
 		{
 			case SE_CurrentHP:	// nukes, heals; also regen/dot if a buff
-			{
+            {
 #ifdef SPELL_EFFECT_SPAM
-				snprintf(effect_desc, _EDLEN, "Current Hitpoints: %+i", effect_value);
+                snprintf(effect_desc, _EDLEN, "Current Hitpoints: %+i", effect_value);
 #endif
-				// SE_CurrentHP is calculated at first tick if its a dot/buff
-				if (buffslot >= 0)
-					break;
+                // SE_CurrentHP is calculated at first tick if its a dot/buff
+                if (buffslot >= 0) {
+                    break;
+                }
 
-				// for offensive spells check if we have a spell rune on
-				int32 dmg = effect_value;
-				if(dmg < 0)
-				{
-					if (!PassCastRestriction(false, spells[spell_id].base2[i], true))
-						break;
+                // for offensive spells check if we have a spell rune on
+                int32 dmg = effect_value;
+                if (dmg < 0) {
+                    if (!PassCastRestriction(false, spells[spell_id].base2[i], true)) {
+                        break;
+                    }
 
-					// take partial damage into account
-					dmg = (int32) (dmg * partial / 100);
+                    // take partial damage into account
+                    dmg = (int32) (dmg * partial / 100);
 
-					//handles AAs and what not...
-					if(caster) {
-						dmg = caster->GetActSpellDamage(spell_id, dmg, this);
-						caster->ResourceTap(-dmg, spell_id);
-					}
+                    //handles AAs and what not...
+                    if (caster) {
+                        dmg = caster->GetActSpellDamage(spell_id, dmg, this);
+                        caster->ResourceTap(-dmg, spell_id);
+                    }
 
-					dmg = -dmg;
-					Damage(caster, dmg, spell_id, spell.skill, false, buffslot, false);
-				}
-				else if(dmg > 0) {
-					//healing spell...
+                    dmg = -dmg;
+                    Damage(caster, dmg, spell_id, spell.skill, false, buffslot, false);
+                } else if (dmg > 0) {
+                    //healing spell...
 
-					if (!PassCastRestriction(false, spells[spell_id].base2[i], false))
-						break;
+                    if (!PassCastRestriction(false, spells[spell_id].base2[i], false)) {
+                        break;
+                    }
 
-					if(caster)
-						dmg = caster->GetActSpellHealing(spell_id, dmg, this);
+                    if (caster) {
+                        dmg = caster->GetActSpellHealing(spell_id, dmg, this);
+                    }
 
-					HealDamage(dmg, caster);
-				}
+                    HealDamage(dmg, caster);
+                }
 
 #ifdef SPELL_EFFECT_SPAM
-				snprintf(effect_desc, _EDLEN, "Current Hitpoints: %+i  actual: %+i", effect_value, dmg);
+                snprintf(effect_desc, _EDLEN, "Current Hitpoints: %+i  actual: %+i", effect_value, dmg);
 #endif
-				break;
-			}
+                break;
+            }
 
 			case SE_CurrentHPOnce:	// used in buffs usually, see Courage
-			{
+            {
 #ifdef SPELL_EFFECT_SPAM
-				snprintf(effect_desc, _EDLEN, "Current Hitpoints Once: %+i", effect_value);
+                snprintf(effect_desc, _EDLEN, "Current Hitpoints Once: %+i", effect_value);
 #endif
 
-				int32 dmg = effect_value;
-				if (spell_id == 2751 && caster) //Manaburn
-				{
-					int MBMult = zone->random.Int(150, 200); //Manaburn deals 150-200% of mana
-					dmg = caster->GetMana()*MBMult / 100;
-					dmg *= -1;	//Damage should be negative
-					dmg = caster->GetActSpellDamage(spell_id, dmg, this); // Spell can crit, so need this.  Damage cap handled in this function.
-					Log(Logs::General, Logs::Spells, "MBMult %d, Mana %d, Damage %d", MBMult, caster->GetMana(), dmg);
-					caster->SetMana(0);
-				} else if (spell_id == 2755 && caster) //Lifeburn
-				{
-					dmg = caster->GetHP()*(-1);
-					caster->SetHP(10);
-					if(caster->IsClient()){
-						caster->CastToClient()->SetFeigned(true);
-						caster->SendAppearancePacket(AT_Anim, 115);
-					}
-				}
+                int32 dmg = effect_value;
+                if (spell_id == 2751 && caster) //Manaburn
+                {
+                    int MBMult = zone->random.Int(150, 200); //Manaburn deals 150-200% of mana
+                    dmg = caster->GetMana() * MBMult / 100;
+                    dmg *= -1;    //Damage should be negative
+                    dmg = caster->GetActSpellDamage(spell_id, dmg,
+                                                    this); // Spell can crit, so need this.  Damage cap handled in this function.
+                    Log(Logs::General, Logs::Spells, "MBMult %d, Mana %d, Damage %d", MBMult, caster->GetMana(), dmg);
+                    caster->SetMana(0);
+                } else if (spell_id == 2755 && caster) //Lifeburn
+                {
+                    dmg = caster->GetHP() * (-1);
+                    caster->SetHP(10);
+                    if (caster->IsClient()) {
+                        caster->CastToClient()->SetFeigned(true);
+                        caster->SendAppearancePacket(AT_Anim, 115);
+                    }
+                }
 
-				//do any AAs apply to these spells?
-				if(dmg < 0) {
-					if (!PassCastRestriction(false, spells[spell_id].base2[i], true))
-						break;
-					dmg = -dmg;
-					Damage(caster, dmg, spell_id, spell.skill, false, buffslot, false);
-				} else {
-					if (!PassCastRestriction(false, spells[spell_id].base2[i], false))
-						break;
-					HealDamage(dmg, caster);
-				}
-				break;
-			}
+                //do any AAs apply to these spells?
+                if (dmg < 0) {
+                    if (!PassCastRestriction(false, spells[spell_id].base2[i], true)) {
+                        break;
+                    }
+                    dmg = -dmg;
+                    Damage(caster, dmg, spell_id, spell.skill, false, buffslot, false);
+                } else {
+                    if (!PassCastRestriction(false, spells[spell_id].base2[i], false)) {
+                        break;
+                    }
+                    HealDamage(dmg, caster);
+                }
+                break;
+            }
 
-			case SE_PercentalHeal:
-			{
+			case SE_PercentalHeal: {
 #ifdef SPELL_EFFECT_SPAM
-				snprintf(effect_desc, _EDLEN, "Percental Heal: %+i (%d%% max)", spell.max[i], effect_value);
+                snprintf(effect_desc, _EDLEN, "Percental Heal: %+i (%d%% max)", spell.max[i], effect_value);
 #endif
-				int32 val = GetMaxHP() * spell.base[i] / 100;
+                int32 val = GetMaxHP() * spell.base[i] / 100;
 
-				//This effect can also do damage by percent.
-				if (val < 0) {
+                //This effect can also do damage by percent.
+                if (val < 0) {
 
-					if (spell.max[i] && -val > spell.max[i])
-						val = -spell.max[i];
+                    if (spell.max[i] && -val > spell.max[i]) {
+                        val = -spell.max[i];
+                    }
 
-					if (caster)
-						val = caster->GetActSpellDamage(spell_id, val, this);
+                    if (caster) {
+                        val = caster->GetActSpellDamage(spell_id, val, this);
+                    }
+                } else {
+                    if (spell.max[i] && val > spell.max[i]) {
+                        val = spell.max[i];
+                    }
 
-				}
+                    if (caster) {
+                        val = caster->GetActSpellHealing(spell_id, val, this);
+                    }
+                }
 
-				else
-				{
-					if (spell.max[i] && val > spell.max[i])
-						val = spell.max[i];
+                if (val < 0) {
+                    Damage(caster, -val, spell_id, spell.skill, false, buffslot, false);
+                } else {
+                    HealDamage(val, caster);
+                }
+                break;
+            }
 
-					if(caster)
-						val = caster->GetActSpellHealing(spell_id, val, this);
-				}
-
-				if (val < 0)
-					Damage(caster, -val, spell_id, spell.skill, false, buffslot, false);
-				else
-					HealDamage(val, caster);
-
-				break;
-			}
-
-			case SE_CompleteHeal:
-			{
+			case SE_CompleteHeal: {
 #ifdef SPELL_EFFECT_SPAM
-				snprintf(effect_desc, _EDLEN, "Complete Heal");
+                snprintf(effect_desc, _EDLEN, "Complete Heal");
 #endif
-				//make sure they are not allready affected by this...
-				//I think that is the point of making this a buff.
-				//this is in the wrong spot, it should be in the immune
-				//section so the buff timer does not get refreshed!
+                //make sure they are not allready affected by this...
+                //I think that is the point of making this a buff.
+                //this is in the wrong spot, it should be in the immune
+                //section so the buff timer does not get refreshed!
 
-				int i;
-				bool inuse = false;
-				int buff_count = GetMaxTotalSlots();
-				for(i = 0; i < buff_count; i++) {
-					if(buffs[i].spellid == spell_id && i != buffslot) {
-						Message(0, "You must wait before you can be affected by this spell again.");
-						inuse = true;
-						break;
-					}
-				}
-				if(inuse)
-					break;
+                int i;
+                bool inuse = false;
+                int buff_count = GetMaxTotalSlots();
+                for (i = 0; i < buff_count; i++) {
+                    if (buffs[i].spellid == spell_id && i != buffslot) {
+                        Message(0, "You must wait before you can be affected by this spell again.");
+                        inuse = true;
+                        break;
+                    }
+                }
+                if (inuse) {
+                    break;
+                }
 
-				int32 val = 0;
-				val = 7500 * effect_value;
-				if (caster)
-					val = caster->GetActSpellHealing(spell_id, val, this);
+                int32 val = 0;
+                val = 7500 * effect_value;
+                if (caster) {
+                    val = caster->GetActSpellHealing(spell_id, val, this);
+                }
+                if (val > 0) {
+                    HealDamage(val, caster);
+                }
+                break;
+            }
 
-				if (val > 0)
-					HealDamage(val, caster);
-
-				break;
-			}
-
-			case SE_CurrentMana:
-			{
-				// Bards don't get mana from effects, good or bad.
-				if(GetClass() == BARD)
-					break;
-				if(IsManaTapSpell(spell_id)) {
-					if(GetCasterClass() != 'N') {
+			case SE_CurrentMana: {
+                // Bards don't get mana from effects, good or bad.
+                if (GetClass() == BARD) {
+                    break;
+                }
+                if (IsManaTapSpell(spell_id)) {
+                    if (GetCasterClass() != 'N') {
 #ifdef SPELL_EFFECT_SPAM
-						snprintf(effect_desc, _EDLEN, "Current Mana: %+i", effect_value);
+                        snprintf(effect_desc, _EDLEN, "Current Mana: %+i", effect_value);
 #endif
-						SetMana(GetMana() + effect_value);
-						if (caster)
-							caster->SetMana(caster->GetMana() + std::abs(effect_value));
-
-						if (effect_value < 0)
-							TryTriggerOnValueAmount(false, true);
+                        SetMana(GetMana() + effect_value);
+                        if (caster) {
+                            caster->SetMana(caster->GetMana() + std::abs(effect_value));
+                        }
+                        if (effect_value < 0) {
+                            TryTriggerOnValueAmount(false, true);
+                        }
 #ifdef SPELL_EFFECT_SPAM
-						if (caster)
-							caster->Message(0, "You have gained %+i mana!", effect_value);
+                        if (caster)
+                            caster->Message(0, "You have gained %+i mana!", effect_value);
 #endif
-					}
-				}
-				else {
+                    }
+                } else {
 #ifdef SPELL_EFFECT_SPAM
-				snprintf(effect_desc, _EDLEN, "Current Mana: %+i", effect_value);
+                    snprintf(effect_desc, _EDLEN, "Current Mana: %+i", effect_value);
 #endif
-				if (buffslot >= 0)
-					break;
+                    if (buffslot >= 0) {
+                        break;
+                    }
 
-				SetMana(GetMana() + effect_value);
-				if (effect_value < 0)
-					TryTriggerOnValueAmount(false, true);
-				}
+                    SetMana(GetMana() + effect_value);
+                    if (effect_value < 0) {
+                        TryTriggerOnValueAmount(false, true);
+                    }
+                }
 
-				break;
-			}
+                break;
+            }
 
 			case SE_CurrentManaOnce:
 			{
@@ -432,102 +432,98 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 				break;
 			}
 
-			case SE_Translocate:
-			{
+			case SE_Translocate: {
 #ifdef SPELL_EFFECT_SPAM
-				snprintf(effect_desc, _EDLEN, "Translocate: %s %d %d %d heading %d",
-					spell.teleport_zone, spell.base[1], spell.base[0],
-					spell.base[2], spell.base[3]
-				);
+                snprintf(effect_desc, _EDLEN, "Translocate: %s %d %d %d heading %d",
+                    spell.teleport_zone, spell.base[1], spell.base[0],
+                    spell.base[2], spell.base[3]
+                );
 #endif
-				if(IsClient())
-				{
+                if (IsClient()) {
 
-					if(caster)
-						CastToClient()->SendOPTranslocateConfirm(caster, spell_id);
+                    if (caster) {
+                        CastToClient()->SendOPTranslocateConfirm(caster, spell_id);
+                    }
+                }
+                break;
+            }
 
-				}
-				break;
-			}
+			case SE_Succor: {
 
-			case SE_Succor:
-			{
+                float x, y, z, heading;
+                const char *target_zone = nullptr;
 
-				float x, y, z, heading;
-				const char *target_zone = nullptr;
+                x = static_cast<float>(spell.base[1]);
+                y = static_cast<float>(spell.base[0]);
+                z = static_cast<float>(spell.base[2]);
+                heading = static_cast<float>(spell.base[3]);
 
-				x = static_cast<float>(spell.base[1]);
-				y = static_cast<float>(spell.base[0]);
-				z = static_cast<float>(spell.base[2]);
-				heading = static_cast<float>(spell.base[3]);
+                if (!strcmp(spell.teleport_zone, "same")) {
+                    target_zone = 0;
+                } else {
+                    target_zone = spell.teleport_zone;
+                    if (IsNPC() && target_zone != zone->GetShortName()) {
+                        if (!GetOwner()) {
+                            CastToNPC()->Depop();
+                            break;
+                        } else {
+                            if (!GetOwner()->IsClient()) {
+                                CastToNPC()->Depop();
+                            }
+                            break;
+                        }
+                    }
+                }
 
-				if(!strcmp(spell.teleport_zone, "same"))
-				{
-					target_zone = 0;
-				}
-				else
-				{
-					target_zone = spell.teleport_zone;
-					if(IsNPC() && target_zone != zone->GetShortName()){
-						if(!GetOwner()){
-							CastToNPC()->Depop();
-							break;
-						}else{
-							if(!GetOwner()->IsClient())
-								CastToNPC()->Depop();
-								break;
-						}
-					}
-				}
+                if (IsClient()) {
+                    if (zone->random.Roll(RuleI(Spells, SuccorFailChance))) { //2% Fail chance by default
 
-				if(IsClient())
-				{
-					if(zone->random.Roll(RuleI(Spells, SuccorFailChance))) { //2% Fail chance by default
+                        if (IsClient()) {
+                            CastToClient()->Message_StringID(MT_SpellFailure, SUCCOR_FAIL);
+                        }
+                        break;
+                    }
 
-						if(IsClient()) {
-							CastToClient()->Message_StringID(MT_SpellFailure,SUCCOR_FAIL);
-						}
-						break;
-					}
+                    // Below are the spellid's for known evac/succor spells that send player
+                    // to the current zone's safe points.
 
-					// Below are the spellid's for known evac/succor spells that send player
-					// to the current zone's safe points.
+                    // Succor = 1567
+                    // Lesser Succor = 2183
+                    // Evacuate = 1628
+                    // Lesser Evacuate = 2184
+                    // Decession = 2558
+                    // Greater Decession = 3244
+                    // Egress = 1566
 
-					// Succor = 1567
-					// Lesser Succor = 2183
-					// Evacuate = 1628
-					// Lesser Evacuate = 2184
-					// Decession = 2558
-					// Greater Decession = 3244
-					// Egress = 1566
-
-					if (!target_zone) {
+                    if (!target_zone) {
 #ifdef SPELL_EFFECT_SPAM
-						Log(Logs::General, Logs::None, "Succor/Evacuation Spell In Same Zone.");
+                        Log(Logs::General, Logs::None, "Succor/Evacuation Spell In Same Zone.");
 #endif
-						if (IsClient()) {
-							// break charmed pets before moving to not poof pet (exploitable otherwise)
-							if (HasPet()) {
-								if (GetPet()->IsCharmed())
-									GetPet()->BuffFadeByEffect(SE_Charm);
-								else
-									GetPet()->Depop();
-							}
-							CastToClient()->MovePC(zone->GetZoneID(), zone->GetInstanceID(), x, y, z, heading, 0, EvacToSafeCoords);
-						} else
-							GMMove(x, y, z, heading);
-					}
-					else {
+                        if (IsClient()) {
+                            // break charmed pets before moving to not poof pet (exploitable otherwise)
+                            if (HasPet()) {
+                                if (GetPet()->IsCharmed()) {
+                                    GetPet()->BuffFadeByEffect(SE_Charm);
+                                } else {
+                                    GetPet()->Depop();
+                                }
+                            }
+                            CastToClient()->MovePC(zone->GetZoneID(), zone->GetInstanceID(), x, y, z, heading, 0,
+                                                   EvacToSafeCoords);
+                        } else {
+                            GMMove(x, y, z, heading);
+                        }
+                    } else {
 #ifdef SPELL_EFFECT_SPAM
-						Log(Logs::General, Logs::None, "Succor/Evacuation Spell To Another Zone.");
+                        Log(Logs::General, Logs::None, "Succor/Evacuation Spell To Another Zone.");
 #endif
-						if(IsClient())
-							CastToClient()->MovePC(target_zone, x, y, z, heading);
-					}
-				}
-
-				break;
-			}
+                        if (IsClient()) {
+                            CastToClient()->MovePC(target_zone, x, y, z, heading);
+                        }
+                    }
+                }
+                break;
+            }
 			case SE_GateCastersBindpoint: // Used on Teleport Bind.
 			case SE_Teleport:	// gates, rings, circles, etc
 			case SE_Teleport2:

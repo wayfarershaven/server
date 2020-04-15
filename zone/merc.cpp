@@ -1154,32 +1154,36 @@ void Merc::CalcRestState() {
 	// The bot must have been out of combat for RuleI(Character, RestRegenTimeToActivate) seconds,
 	// must be sitting down, and must not have any detrimental spells affecting them.
 	//
-	if(!RuleI(Character, RestRegenPercent))
-		return;
+	if(!RuleB(Character, RestRegenEnabled)) {
+        return;
+    }
 
 	RestRegenHP = RestRegenMana = RestRegenEndurance = 0;
 
-	if(IsEngaged() || !IsSitting())
-		return;
+	if(IsEngaged() || !IsSitting()) {
+        return;
+    }
 
-	if(!rest_timer.Check(false))
-		return;
+	if(!rest_timer.Check(false)) {
+        return;
+    }
 
 	uint32 buff_count = GetMaxTotalSlots();
 	for (unsigned int j = 0; j < buff_count; j++) {
 		if(buffs[j].spellid != SPELL_UNKNOWN) {
-			if(IsDetrimentalSpell(buffs[j].spellid) && (buffs[j].ticsremaining > 0))
-				if(!DetrimentalSpellAllowsRest(buffs[j].spellid))
-					return;
+			if(IsDetrimentalSpell(buffs[j].spellid) && (buffs[j].ticsremaining > 0)) {
+                if (!DetrimentalSpellAllowsRest(buffs[j].spellid)) {
+                    return;
+                }
+            }
 		}
 	}
 
-	RestRegenHP = (GetMaxHP() * RuleI(Character, RestRegenPercent) / 100);
+	RestRegenHP = 6 * (GetMaxHP() / zone->newzone_data.FastRegenHP);
 
-	RestRegenMana = (GetMaxMana() * RuleI(Character, RestRegenPercent) / 100);
+    RestRegenMana = 6 * (GetMaxMana() / zone->newzone_data.FastRegenMana);
 
-	if(RuleB(Character, RestRegenEndurance))
-		RestRegenEndurance = (GetMaxEndurance() * RuleI(Character, RestRegenPercent) / 100);
+    RestRegenEndurance = 6 * (GetMaxEndurance() / zone->newzone_data.FastRegenEndurance);
 }
 
 bool Merc::HasSkill(EQEmu::skills::SkillType skill_id) const {
