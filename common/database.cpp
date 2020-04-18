@@ -984,7 +984,7 @@ bool Database::StoreCharacter(uint32 account_id, PlayerProfile_Struct* pp, EQEmu
 
 	/* Insert starting inventory... */
 	std::string invquery;
-	for (int16 i = EQEmu::legacy::EQUIPMENT_BEGIN; i <= EQEmu::legacy::BANK_BAGS_END;) {
+    for (int16 i = EQEmu::invslot::EQUIPMENT_BEGIN; i <= EQEmu::invbag::BANK_BAGS_END;) {
 		const EQEmu::ItemInstance* newinv = inv->GetItem(i);
 		if (newinv) {
 			invquery = StringFormat("INSERT INTO `%s` (charid, slotid, itemid, charges, color) VALUES (%u, %i, %u, %i, %u)",
@@ -993,17 +993,17 @@ bool Database::StoreCharacter(uint32 account_id, PlayerProfile_Struct* pp, EQEmu
 			auto results = QueryDatabase(invquery); 
 		}
 
-		if (i == EQEmu::inventory::slotCursor) {
-			i = EQEmu::legacy::GENERAL_BAGS_BEGIN; 
-			continue;
+        if (i == EQEmu::invslot::slotCursor) {
+            i = EQEmu::invbag::GENERAL_BAGS_BEGIN;
+            continue;
 		}
-		else if (i == EQEmu::legacy::CURSOR_BAG_END) { 
-			i = EQEmu::legacy::BANK_BEGIN; 
-			continue; 
+        else if (i == EQEmu::invbag::CURSOR_BAG_END) {
+            i = EQEmu::invslot::BANK_BEGIN;
+            continue;
 		}
-		else if (i == EQEmu::legacy::BANK_END) { 
-			i = EQEmu::legacy::BANK_BAGS_BEGIN; 
-			continue; 
+        else if (i == EQEmu::invslot::BANK_END) {
+            i = EQEmu::invbag::BANK_BAGS_BEGIN;
+            continue;
 		} 
 		i++;
 	}
@@ -2401,10 +2401,27 @@ void Database::LoadLogSettings(EQEmuLogSys::LogSettings* log_settings)
 	}
 }
 
-void Database::ClearInvSnapshots(bool use_rule)
-{
+int Database::CountInvSnapshots() {
+    std::string query = StringFormat("SELECT COUNT(*) FROM (SELECT * FROM `inventory_snapshots` a GROUP BY `charid`, `time_index`) b");
+    auto results = QueryDatabase(query);
+
+    if (!results.Success())
+        return -1;
+
+    auto row = results.begin();
+
+    int64 count = atoll(row[0]);
+    if (count > 2147483647)
+        return -2;
+    if (count < 0)
+        return -3;
+
+    return count;
+}
+
+void Database::ClearInvSnapshots(bool from_now) {
 	uint32 del_time = time(nullptr);
-	if (use_rule) { del_time -= RuleI(Character, InvSnapshotHistoryD) * 86400; }
+    if (!from_now) { del_time -= RuleI(Character, InvSnapshotHistoryD) * 86400; }
 
 	std::string query = StringFormat("DELETE FROM inventory_snapshots WHERE time_index <= %lu", (unsigned long)del_time);
 	QueryDatabase(query);

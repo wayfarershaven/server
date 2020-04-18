@@ -1664,7 +1664,7 @@ void Client::Handle_Connect_OP_ZoneEntry(const EQApplicationPacket *app)
 			if (iter == m_inv.cursor_cbegin())
 				continue;
 			const EQEmu::ItemInstance *inst = *iter;
-			SendItemPacket(EQEmu::inventory::slotCursor, inst, ItemPacketLimbo);
+            SendItemPacket(EQEmu::invslot::slotCursor, inst, ItemPacketLimbo);
 		}
 	}
 
@@ -2015,7 +2015,7 @@ void Client::Handle_OP_AdventureMerchantPurchase(const EQApplicationPacket *app)
 	EQEmu::ItemInstance *inst = database.CreateItem(item, charges);
 	if (!AutoPutLootInInventory(*inst, true, true))
 	{
-		PutLootInInventory(EQEmu::inventory::slotCursor, *inst);
+        PutLootInInventory(EQEmu::invslot::slotCursor, *inst);
 	}
 	Save(1);
 }
@@ -2549,7 +2549,7 @@ void Client::Handle_OP_AltCurrencyPurchase(const EQApplicationPacket *app)
 		EQEmu::ItemInstance *inst = database.CreateItem(item, charges);
 		if (!AutoPutLootInInventory(*inst, true, true))
 		{
-			PutLootInInventory(EQEmu::inventory::slotCursor, *inst);
+            PutLootInInventory(EQEmu::invslot::slotCursor, *inst);
 		}
 
 		Save(1);
@@ -2599,7 +2599,7 @@ void Client::Handle_OP_AltCurrencyReclaim(const EQApplicationPacket *app)
 			SetAlternateCurrencyValue(reclaim->currency_id, 0);
 		}
 		else {
-			SummonItem(item_id, reclaim->count, 0, 0, 0, 0, 0, 0, false, EQEmu::inventory::slotCursor);
+            SummonItem(item_id, reclaim->count, 0, 0, 0, 0, 0, 0, false, EQEmu::invslot::slotCursor);
 			AddAlternateCurrencyValue(reclaim->currency_id, -((int32)reclaim->count));
 		}
 		/* QS: PlayerLogAlternateCurrencyTransactions :: Cursor to Item Storage */
@@ -2811,8 +2811,8 @@ void Client::Handle_OP_ApplyPoison(const EQApplicationPacket *app)
 	}
 	uint32 ApplyPoisonSuccessResult = 0;
 	ApplyPoison_Struct* ApplyPoisonData = (ApplyPoison_Struct*)app->pBuffer;
-	const EQEmu::ItemInstance* PrimaryWeapon = GetInv().GetItem(EQEmu::inventory::slotPrimary);
-	const EQEmu::ItemInstance* SecondaryWeapon = GetInv().GetItem(EQEmu::inventory::slotSecondary);
+    const EQEmu::ItemInstance* PrimaryWeapon = GetInv().GetItem(EQEmu::invslot::slotPrimary);
+    const EQEmu::ItemInstance* SecondaryWeapon = GetInv().GetItem(EQEmu::invslot::slotSecondary);
 	const EQEmu::ItemInstance* PoisonItemInstance = GetInv()[ApplyPoisonData->inventorySlot];
 
 	bool IsPoison = PoisonItemInstance && (PoisonItemInstance->GetItem()->ItemType == EQEmu::item::ItemTypePoison);
@@ -2935,14 +2935,13 @@ void Client::Handle_OP_AugmentItem(const EQApplicationPacket *app)
 	bool deleteItems = false;
 	if (ClientVersion() >= EQEmu::versions::ClientVersion::RoF)
 	{
-		if ((in_augment->container_slot < 0 || in_augment->container_slot >= EQEmu::legacy::SLOT_CURSOR) &&
-			in_augment->container_slot != EQEmu::legacy::SLOT_POWER_SOURCE &&
-			(in_augment->container_slot < EQEmu::legacy::SLOT_PERSONAL_BAGS_BEGIN || in_augment->container_slot > EQEmu::legacy::SLOT_PERSONAL_BAGS_END))
+if ((in_augment->container_slot < EQEmu::invslot::EQUIPMENT_BEGIN || in_augment->container_slot > EQEmu::invslot::GENERAL_END) &&
+            (in_augment->container_slot < EQEmu::invbag::GENERAL_BAGS_BEGIN || in_augment->container_slot > EQEmu::invbag::GENERAL_BAGS_END))
 		{
 			Message(13, "The server does not allow augmentation actions from this slot.");
-			auto cursor_item = m_inv[EQEmu::legacy::SLOT_CURSOR];
+            auto cursor_item = m_inv[EQEmu::invslot::slotCursor];
 			auto augmented_item = m_inv[in_augment->container_slot];
-			SendItemPacket(EQEmu::legacy::SLOT_CURSOR, cursor_item, ItemPacketCharInventory);
+            SendItemPacket(EQEmu::invslot::slotCursor, cursor_item, ItemPacketCharInventory);
 			// this may crash clients on certain slots
 			SendItemPacket(in_augment->container_slot, augmented_item, ItemPacketCharInventory);
 			return;
@@ -3017,7 +3016,7 @@ void Client::Handle_OP_AugmentItem(const EQApplicationPacket *app)
 		{
 			case 0: // Adding an augment
 			case 2: // Swapping augment
-				new_aug = user_inv.GetItem(EQEmu::inventory::slotCursor);
+                new_aug = user_inv.GetItem(EQEmu::invslot::slotCursor);
 
 				if (!new_aug) // Shouldn't get the OP code without the augment on the user's cursor, but maybe it's h4x.
 				{
@@ -3075,7 +3074,7 @@ void Client::Handle_OP_AugmentItem(const EQApplicationPacket *app)
 						if (itemOneToPush)
 						{
 							DeleteItemInInventory(item_slot, 0, true);
-							DeleteItemInInventory(EQEmu::inventory::slotCursor, new_aug->IsStackable() ? 1 : 0, true);
+                            DeleteItemInInventory(EQEmu::invslot::slotCursor, new_aug->IsStackable() ? 1 : 0, true);
 
 							if (solvent)
 							{
@@ -3086,7 +3085,7 @@ void Client::Handle_OP_AugmentItem(const EQApplicationPacket *app)
 							if (itemTwoToPush)
 							{
 								// This is a swap. Return the old aug to the player's cursor.
-								if (!PutItemInInventory(EQEmu::inventory::slotCursor, *itemTwoToPush, true))
+                                if (!PutItemInInventory(EQEmu::invslot::slotCursor, *itemTwoToPush, true))
 								{
 									Log(Logs::General, Logs::Error, "Problem returning old augment to player's cursor after augmentation swap.");
 									Message(15, "Error: Failed to retrieve old augment after augmentation swap!");
@@ -3171,7 +3170,7 @@ void Client::Handle_OP_AugmentItem(const EQApplicationPacket *app)
 					}
 
 					// Drop the removed augment on the player's cursor
-					if (!PutItemInInventory(EQEmu::inventory::slotCursor, *itemTwoToPush, true))
+                    if (!PutItemInInventory(EQEmu::invslot::slotCursor, *itemTwoToPush, true))
 					{
 						Log(Logs::General, Logs::Error, "Problem returning augment to player's cursor after safe removal.");
 						Message(15, "Error: Failed to return augment after removal from item!");
@@ -4131,7 +4130,7 @@ void Client::Handle_OP_CastSpell(const EQApplicationPacket *app)
 		}
 		else
 		{
-			Message(0, "Error: castspell->inventoryslot >= %i (0x%04x)", EQEmu::inventory::slotCursor, castspell->inventoryslot);
+            Message(0, "Error: castspell->inventoryslot >= %i (0x%04x)", EQEmu::invslot::slotCursor, castspell->inventoryslot);
 			InterruptSpell(castspell->spell_id);
 		}
 	}
@@ -4961,7 +4960,7 @@ void Client::Handle_OP_CreateObject(const EQApplicationPacket *app)
 	if (LogSys.log_settings[Logs::Inventory].is_category_enabled)
 		Log(Logs::Detail, Logs::Inventory, "Handle_OP_CreateObject() [psize: %u] %s", app->size, DumpPacketToString(app).c_str());
 
-	DropItem(EQEmu::inventory::slotCursor);
+    DropItem(EQEmu::invslot::slotCursor);
 	return;
 }
 
@@ -6995,7 +6994,7 @@ void Client::Handle_OP_GuildBank(const EQApplicationPacket *app)
 				return;
 			}
 
-			EQEmu::ItemInstance *CursorItemInst = GetInv().GetItem(EQEmu::inventory::slotCursor);
+            EQEmu::ItemInstance *CursorItemInst = GetInv().GetItem(EQEmu::invslot::slotCursor);
 
 			bool Allowed = true;
 
@@ -7043,7 +7042,7 @@ void Client::Handle_OP_GuildBank(const EQApplicationPacket *app)
 			{
 				GuildBankDepositAck(false, sentAction);
 
-				DeleteItemInInventory(EQEmu::inventory::slotCursor, 0, false);
+                DeleteItemInInventory(EQEmu::invslot::slotCursor, 0, false);
 			}
 
 			break;
@@ -7064,7 +7063,7 @@ void Client::Handle_OP_GuildBank(const EQApplicationPacket *app)
 
 		case GuildBankWithdraw:
 		{
-			if (GetInv()[EQEmu::inventory::slotCursor])
+            if (GetInv()[EQEmu::invslot::slotCursor])
 			{
 				Message_StringID(13, GUILD_BANK_EMPTY_HANDS);
 
@@ -7110,7 +7109,7 @@ void Client::Handle_OP_GuildBank(const EQApplicationPacket *app)
 			{
 				PushItemOnCursor(*inst);
 
-				SendItemPacket(EQEmu::inventory::slotCursor, inst, ItemPacketLimbo);
+                SendItemPacket(EQEmu::invslot::slotCursor, inst, ItemPacketLimbo);
 
 				GuildBanks->DeleteItem(GuildID(), gbwis->Area, gbwis->SlotID, gbwis->Quantity);
 			}
@@ -8092,7 +8091,7 @@ void Client::Handle_OP_InspectAnswer(const EQApplicationPacket *app)
 	const EQEmu::ItemData* item = nullptr;
 
 	int ornamentationAugtype = RuleI(Character, OrnamentationAugmentType);
-	for (int16 L = EQEmu::legacy::EQUIPMENT_BEGIN; L <= EQEmu::inventory::slotWaist; L++) {
+for (int16 L = EQEmu::invslot::EQUIPMENT_BEGIN; L <= EQEmu::invslot::EQUIPMENT_END; L++) {
 		const EQEmu::ItemInstance* inst = GetInv().GetItem(L);
 		item = inst ? inst->GetItem() : nullptr;
 
@@ -8111,16 +8110,6 @@ void Client::Handle_OP_InspectAnswer(const EQApplicationPacket *app)
 		}
 		else { insr->itemicons[L] = 0xFFFFFFFF; }
 	}
-
-	const EQEmu::ItemInstance* inst = GetInv().GetItem(EQEmu::inventory::slotAmmo);
-	item = inst ? inst->GetItem() : nullptr;
-
-	if (item) {
-		// another one..I did these, didn't I!!?
-		strcpy(insr->itemnames[SoF::invslot::PossessionsAmmo], item->Name);
-		insr->itemicons[SoF::invslot::PossessionsAmmo] = item->Icon;
-	}
-	else { insr->itemicons[SoF::invslot::PossessionsAmmo] = 0xFFFFFFFF; }
 
 	InspectMessage_Struct* newmessage = (InspectMessage_Struct*)insr->text;
 	InspectMessage_Struct& playermessage = this->GetInspectMessage();
@@ -8584,7 +8573,7 @@ void Client::Handle_OP_ItemVerifyRequest(const EQApplicationPacket *app)
 		EQEmu::ItemInstance* clickaug = nullptr;
 		EQEmu::ItemData* augitem = nullptr;
 
-		for (r = EQEmu::inventory::socketBegin; r < EQEmu::inventory::SocketCount; r++) {
+        for (r = EQEmu::invaug::SOCKET_BEGIN; r <= EQEmu::invaug::SOCKET_END; r++) {
 			const EQEmu::ItemInstance* aug_i = inst->GetAugment(r);
 			if (!aug_i)
 				continue;
@@ -9763,7 +9752,7 @@ void Client::Handle_OP_MoveItem(const EQApplicationPacket *app)
 	MoveItem_Struct* mi = (MoveItem_Struct*)app->pBuffer;
 	if (spellend_timer.Enabled() && casting_spell_id && !IsBardSong(casting_spell_id))
 	{
-		if (mi->from_slot != mi->to_slot && (mi->from_slot <= EQEmu::legacy::GENERAL_END || mi->from_slot > 39) && IsValidSlot(mi->from_slot) && IsValidSlot(mi->to_slot))
+        if (mi->from_slot != mi->to_slot && (mi->from_slot <= EQEmu::invslot::GENERAL_END || mi->from_slot > 39) && IsValidSlot(mi->from_slot) && IsValidSlot(mi->to_slot))
 		{
 			char *detect = nullptr;
 			const EQEmu::ItemInstance *itm_from = GetInv().GetItem(mi->from_slot);
@@ -9784,8 +9773,8 @@ void Client::Handle_OP_MoveItem(const EQApplicationPacket *app)
 	// Illegal bagslot usage checks. Currently, user only receives a message if this check is triggered.
 	bool mi_hack = false;
 
-	if (mi->from_slot >= EQEmu::legacy::GENERAL_BAGS_BEGIN && mi->from_slot <= EQEmu::legacy::CURSOR_BAG_END) {
-		if (mi->from_slot >= EQEmu::legacy::CURSOR_BAG_BEGIN) { mi_hack = true; }
+    if (mi->from_slot >= EQEmu::invbag::GENERAL_BAGS_BEGIN && mi->from_slot <= EQEmu::invbag::CURSOR_BAG_END) {
+        if (mi->from_slot >= EQEmu::invbag::CURSOR_BAG_BEGIN) { mi_hack = true; }
 		else {
 			int16 from_parent = m_inv.CalcSlotId(mi->from_slot);
 			if (!m_inv[from_parent]) { mi_hack = true; }
@@ -9794,8 +9783,8 @@ void Client::Handle_OP_MoveItem(const EQApplicationPacket *app)
 		}
 	}
 
-	if (mi->to_slot >= EQEmu::legacy::GENERAL_BAGS_BEGIN && mi->to_slot <= EQEmu::legacy::CURSOR_BAG_END) {
-		if (mi->to_slot >= EQEmu::legacy::CURSOR_BAG_BEGIN) { mi_hack = true; }
+    if (mi->to_slot >= EQEmu::invbag::GENERAL_BAGS_BEGIN && mi->to_slot <= EQEmu::invbag::CURSOR_BAG_END) {
+        if (mi->to_slot >= EQEmu::invbag::CURSOR_BAG_BEGIN) { mi_hack = true; }
 		else {
 			int16 to_parent = m_inv.CalcSlotId(mi->to_slot);
 			if (!m_inv[to_parent]) { mi_hack = true; }
@@ -12617,8 +12606,8 @@ void Client::Handle_OP_ShopPlayerBuy(const EQApplicationPacket *app)
 	// shouldn't we be reimbursing if these two fail?
 
 	//make sure we are not completely full...
-	if (freeslotid == EQEmu::inventory::slotCursor) {
-		if (m_inv.GetItem(EQEmu::inventory::slotCursor) != nullptr) {
+    if (freeslotid == EQEmu::invslot::slotCursor) {
+        if (m_inv.GetItem(EQEmu::invslot::slotCursor) != nullptr) {
 			Message(13, "You do not have room for any more items.");
 			safe_delete(outapp);
 			safe_delete(inst);
