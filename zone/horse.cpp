@@ -151,7 +151,6 @@ void Client::SummonHorse(uint16 spell_id) {
 
 	uint16 tmpID = horse->GetID();
 	SetHorseId(tmpID);
-	BuffFadeBySitModifier();
 
 }
 

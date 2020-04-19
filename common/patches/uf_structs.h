@@ -457,9 +457,9 @@ struct NewZone_Struct {
 /*0893*/	uint8	unknown893;	//seen 0 - 00
 /*0894*/	uint8	fall_damage;	// 0 = Fall Damage on, 1 = Fall Damage off
 /*0895*/	uint8	unknown895;	//seen 0 - 00
-/*0896*/	uint32	FastRegenHP;	//seen 180
-/*0900*/	uint32	FastRegenMana;	//seen 180
-/*0904*/	uint32	FastRegenEndurance;	//seen 180
+/*0896*/	uint32	unknown896;	//seen 180
+/*0900*/	uint32	unknown900;	//seen 180
+/*0904*/	uint32	unknown904;	//seen 180
 /*0908*/	uint32	unknown908;	//seen 2
 /*0912*/	uint32	unknown912;	//seen 2
 /*0916*/	float	FogDensity;	//Of about 10 or so zones tested, all but one have this set to 0.33 Blightfire had 0.16
@@ -849,7 +849,6 @@ static const uint32 MAX_PP_LANGUAGE		= 25; //
 static const uint32 MAX_PP_SPELLBOOK	= 720; // Confirmed 60 pages on Underfoot now
 static const uint32 MAX_PP_MEMSPELL		= 12; //was 9 now 10 on Underfoot
 static const uint32 MAX_PP_SKILL		= PACKET_SKILL_ARRAY_SIZE;	// 100 - actual skills buffer size
-static const uint32 MAX_PP_INNATE_SKILL	= 25;
 static const uint32 MAX_PP_AA_ARRAY		= 300; //was 299
 static const uint32 MAX_GROUP_MEMBERS	= 6;
 static const uint32 MAX_RECAST_TYPES	= 20;
@@ -956,8 +955,7 @@ struct PlayerProfile_Struct
 /*07336*/ uint32  silver_cursor;		// Silver Pieces on cursor
 /*07340*/ uint32  copper_cursor;		// Copper Pieces on cursor
 /*07344*/ uint32  skills[MAX_PP_SKILL];	// [400] List of skills	// 100 dword buffer
-/*07744*/ uint32  InnateSkills[MAX_PP_INNATE_SKILL];
-/*07844*/ uint8   unknown07644[36];
+/*07744*/ uint8   unknown07644[136];
 /*07880*/ uint32  toxicity;				// Potion Toxicity (15=too toxic, each potion adds 3)
 /*07884*/ uint32  thirst_level;			// Drink (ticks till next drink)
 /*07888*/ uint32  hunger_level;			// Food (ticks till next eat)

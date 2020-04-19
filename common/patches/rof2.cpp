@@ -1880,9 +1880,6 @@ namespace RoF2
 		OUT(zone_id);
 		OUT(zone_instance);
 		OUT(SuspendBuffs);
-        OUT(FastRegenHP);
-        OUT(FastRegenMana);
-        OUT(FastRegenEndurance);
 
 		eq->FogDensity = emu->fog_density;
 
@@ -1906,6 +1903,9 @@ namespace RoF2
 		eq->unknown893 = 0;
 		eq->fall_damage = 0;	// 0 = Fall Damage on, 1 = Fall Damage off
 		eq->unknown895 = 0;
+		eq->unknown896 = 180;
+		eq->unknown900 = 180;
+		eq->unknown904 = 180;
 		eq->unknown908 = 2;
 		eq->unknown912 = 2;
 		eq->unknown932 = -1;	// Set from PoK Example
@@ -2263,11 +2263,11 @@ namespace RoF2
 			outapp->WriteUInt32(emu->skills[r]);
 		}
 
-        outapp->WriteUInt32(structs::MAX_PP_INNATE_SKILL);			// Innate Skills count
+		outapp->WriteUInt32(25);			// Unknown count
 
-        for (uint32 r = 0; r < structs::MAX_PP_INNATE_SKILL; r++)
+		for (uint32 r = 0; r < 25; r++)
 		{
-            outapp->WriteUInt32(emu->InnateSkills[r]);			// Innate Skills (regen, slam, etc)
+			outapp->WriteUInt32(0);			// Unknown
 		}
 
 		outapp->WriteUInt32(structs::MAX_PP_DISCIPLINES);	// Discipline count
@@ -2989,12 +2989,12 @@ namespace RoF2
 		EQApplicationPacket *inapp = *p;
 		*p = nullptr;
 		AARankInfo_Struct *emu = (AARankInfo_Struct*)inapp->pBuffer;
-
+		
 		// the structs::SendAA_Struct includes enough space for 1 prereq which is the min even if it has no prereqs
 		auto prereq_size = emu->total_prereqs > 1 ? (emu->total_prereqs - 1) * 8 : 0;
 		auto outapp = new EQApplicationPacket(OP_SendAATable, sizeof(structs::SendAA_Struct) + emu->total_effects * sizeof(structs::AA_Ability) + prereq_size);
 		inapp->SetReadPosition(sizeof(AARankInfo_Struct)+emu->total_effects * sizeof(AARankEffect_Struct));
-
+		
 
 		std::vector<int32> skill;
 		std::vector<int32> points;
@@ -3057,7 +3057,7 @@ namespace RoF2
 			outapp->WriteUInt32(inapp->ReadUInt32()); // base2
 			outapp->WriteUInt32(inapp->ReadUInt32()); // slot
  		}
-
+			
 		dest->FastQueuePacket(&outapp);
 		delete inapp;
 	}
@@ -5478,7 +5478,7 @@ namespace RoF2
 	void SerializeItem(EQEmu::OutBuffer& ob, const EQEmu::ItemInstance *inst, int16 slot_id_in, uint8 depth, ItemPacketType packet_type)
 	{
 		const EQEmu::ItemData *item = inst->GetUnscaledItem();
-
+		
 		RoF2::structs::ItemSerializationHeader hdr;
 
 		//sprintf(hdr.unknown000, "06e0002Y1W00");
@@ -5574,7 +5574,7 @@ namespace RoF2
 		ob.write("\0", 1);
 
 		ob.write("\0", 1);
-
+		
 		RoF2::structs::ItemBodyStruct ibs;
 		memset(&ibs, 0, sizeof(RoF2::structs::ItemBodyStruct));
 
@@ -5890,7 +5890,7 @@ namespace RoF2
 		iqbs.unknown37a = 0;	// (guessed position) New to RoF2
 		iqbs.unknown38 = 0;
 		iqbs.unknown39 = 1;
-
+		
 		ob.write((const char*)&iqbs, sizeof(RoF2::structs::ItemQuaternaryBodyStruct));
 
 		EQEmu::OutBuffer::pos_type count_pos = ob.tellp();

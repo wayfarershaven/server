@@ -1811,9 +1811,6 @@ namespace RoF
 		OUT(zone_id);
 		OUT(zone_instance);
 		OUT(SuspendBuffs);
-        OUT(FastRegenHP);
-        OUT(FastRegenMana);
-        OUT(FastRegenEndurance);
 
 		eq->FogDensity = emu->fog_density;
 
@@ -1830,6 +1827,9 @@ namespace RoF
 		eq->unknown893 = 0;
 		eq->fall_damage = 0;	// 0 = Fall Damage on, 1 = Fall Damage off
 		eq->unknown895 = 0;
+		eq->unknown896 = 180;
+		eq->unknown900 = 180;
+		eq->unknown904 = 180;
 		eq->unknown908 = 2;
 		eq->unknown912 = 2;
 		eq->unknown932 = -1;	// Set from PoK Example
@@ -2185,11 +2185,11 @@ namespace RoF
 			outapp->WriteUInt32(emu->skills[r]);
 		}
 
-        outapp->WriteUInt32(structs::MAX_PP_INNATE_SKILL);			// Innate Skills count
+		outapp->WriteUInt32(25);			// Unknown count
 
-        for (uint32 r = 0; r < structs::MAX_PP_INNATE_SKILL; r++)
+		for (uint32 r = 0; r < 25; r++)
 		{
-            outapp->WriteUInt32(emu->InnateSkills[r]);			// Innate Skills (regen, slam, etc)
+			outapp->WriteUInt32(0);			// Unknown
 		}
 
 		outapp->WriteUInt32(structs::MAX_PP_DISCIPLINES);	// Discipline count

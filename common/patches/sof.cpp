@@ -1020,9 +1020,6 @@ namespace SoF
 		OUT(zone_id);
 		OUT(zone_instance);
 		OUT(SuspendBuffs);
-        OUT(FastRegenHP);
-        OUT(FastRegenMana);
-        OUT(FastRegenEndurance);
 
 		/*fill in some unknowns with observed values, hopefully it will help */
 		eq->unknown796 = -1;
@@ -1037,6 +1034,9 @@ namespace SoF
 		eq->unknown889 = 0;
 		eq->fall_damage = 0;	// 0 = Fall Damage on, 1 = Fall Damage off
 		eq->unknown891 = 0;
+		eq->unknown892 = 180;
+		eq->unknown896 = 180;
+		eq->unknown900 = 180;
 		eq->unknown904 = 2;
 		eq->unknown908 = 2;
 
@@ -1275,7 +1275,6 @@ namespace SoF
 		OUT(copper_cursor);
 
 		OUT_array(skills, structs::MAX_PP_SKILL);	// 1:1 direct copy (100 dword)
-        OUT_array(InnateSkills, structs::MAX_PP_INNATE_SKILL);  // 1:1 direct copy (25 dword)
 
 		//	OUT(unknown04760[236]);
 		OUT(toxicity);

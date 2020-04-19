@@ -48,17 +48,14 @@
 #define AT_Size 29			// spawn's size (present: SoF, absent: RoF2)
 //#define AT_30 30			// unknown
 #define AT_NPCName 31		// change PC's name's color to NPC color 0 = normal, 1 = npc name
-#define AT_AARank 32		// AA Rank Title ID thingy, does is this the title in /who?
-#define AT_CancelSneakHide 33	// Turns off Hide and Sneak
+//#define AT_32 32			// unknown
+//#define AT_33 33			// unknown
 //#define AT_34 34			// unknown (present: SoF, absent: RoF2)
-#define AT_AreaHPRegen 35	// guild hall regen pool sets to value * 0.001
-#define AT_AreaManaRegen 36	// guild hall regen pool sets to value * 0.001
-#define AT_AreaEndRegen 37	// guild hall regen pool sets to value * 0.001
-#define AT_FreezeBuffs 38	// Freezes beneficial buff timers
-#define AT_NpcTintIndex 39	// not 100% sure
-#define AT_GroupConsent 40	// auto consent group
-#define AT_RaidConsent 41	// auto consent raid
-#define AT_GuildConsent 42	// auto consent guild
+//#define AT_35 35			// unknown
+//#define AT_36 36			// unknown
+//#define AT_37 37			// unknown
+//#define AT_38 38			// unknown
+//#define AT_39 39			// unknown
 #define AT_ShowHelm 43		// 0 = hide graphic, 1 = show graphic
 #define AT_DamageState 44	// The damage state of a destructible object (0 through 4)
 //#define AT_46 46			// unknown

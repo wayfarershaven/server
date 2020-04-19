@@ -402,7 +402,6 @@ public:
 	void BuffFadeBySlot(int slot, bool iRecalcBonuses = true);
 	void BuffFadeDetrimentalByCaster(Mob *caster);
 	void BuffFadeBySitModifier();
-	bool IsAffectedByBuffByGlobalGroup(GlobalGroup group);
 	void BuffDetachCaster(Mob *caster);
 	void BuffModifyDurationBySpellID(uint16 spell_id, int32 newDuration);
 	int AddBuff(Mob *caster, const uint16 spell_id, int duration = 0, int32 level_override = -1);
