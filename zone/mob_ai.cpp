@@ -812,21 +812,7 @@ void Client::AI_Process() {
                         // Calculate a new point to run to
                         CalculateNewFearpoint();
                     }
-                    if (!RuleB(Pathing, Fear) || !zone->pathing) {
-                        CalculateNewPosition(m_FearWalkTarget.x, m_FearWalkTarget.y, m_FearWalkTarget.z, speed, true);
-                    } else {
-                        bool waypoint_changed, node_reached;
-
-                        glm::vec3 Goal = UpdatePath(
-                                m_FearWalkTarget.x,
-                                m_FearWalkTarget.y,
-                                m_FearWalkTarget.z,
-                                speed,
-                                waypoint_changed,
-                                node_reached
-                        );
-                        CalculateNewPosition(Goal.x, Goal.y, Goal.z, speed);
-                    }
+					CalculateNewPosition(m_FearWalkTarget.x, m_FearWalkTarget.y, m_FearWalkTarget.z, speed, true);
                 }
                 return;
             }
@@ -892,14 +878,7 @@ void Client::AI_Process() {
                     animation = newspeed;
                     newspeed *= 2;
                     SetCurrentSpeed(newspeed);
-                    if (!RuleB(Pathing, Aggro) || !zone->pathing) {
-                        CalculateNewPosition(GetTarget()->GetX(), GetTarget()->GetY(), GetTarget()->GetZ(), newspeed);
-                    } else {
-                        bool WaypointChanged, NodeReached;
-                        glm::vec3 Goal = UpdatePath(GetTarget()->GetX(), GetTarget()->GetY(), GetTarget()->GetZ(),
-                                                    GetRunspeed(), WaypointChanged, NodeReached);
-                        CalculateNewPosition(Goal.x, Goal.y, Goal.z, newspeed);
-                    }
+					CalculateNewPosition(GetTarget()->GetX(), GetTarget()->GetY(), GetTarget()->GetZ(), newspeed);
                 }
             } else if (IsMoving()) {
                 SetHeading(CalculateHeadingToTarget(GetTarget()->GetX(), GetTarget()->GetY()));
@@ -1122,22 +1101,13 @@ void Mob::AI_Process() {
                         // Calculate a new point to run to
                         CalculateNewFearpoint();
                     }
-                    if (!RuleB(Pathing, Fear) || !zone->pathing) {
-                        CalculateNewPosition(m_FearWalkTarget.x, m_FearWalkTarget.y, m_FearWalkTarget.z, GetFearSpeed(),
-                                             true);
-                    } else {
-                        bool WaypointChanged, NodeReached;
-
-                        glm::vec3 Goal = UpdatePath(
-                                m_FearWalkTarget.x,
-                                m_FearWalkTarget.y,
-                                m_FearWalkTarget.z,
-                                GetFearSpeed(),
-                                WaypointChanged,
-                                NodeReached
-                        );
-                        CalculateNewPosition(Goal.x, Goal.y, Goal.z, GetFearSpeed());
-                    }
+					CalculateNewPosition(
+						m_FearWalkTarget.x,
+						m_FearWalkTarget.y,
+						m_FearWalkTarget.z,
+						GetFearSpeed(),
+						true
+					);
                 }
                 return;
             }
@@ -1488,16 +1458,7 @@ void Mob::AI_Process() {
                 } else if (AI_movement_timer->Check() && target) {
                     if (!IsRooted()) {
                         Log(Logs::Detail, Logs::AI, "Pursuing %s while engaged.", target->GetName());
-                        if (!RuleB(Pathing, Aggro) || !zone->pathing)
-                            CalculateNewPosition(target->GetX(), target->GetY(), target->GetZ(), GetRunspeed());
-                        else {
-                            bool WaypointChanged, NodeReached;
-
-                            glm::vec3 Goal = UpdatePath(target->GetX(), target->GetY(), target->GetZ(),
-                                                        GetRunspeed(), WaypointChanged, NodeReached);
-
-                            CalculateNewPosition(Goal.x, Goal.y, Goal.z, GetRunspeed());
-                        }
+						CalculateNewPosition(target->GetX(), target->GetY(), target->GetZ(), GetRunspeed());
 
                     } else if (IsMoving()) {
                         SetHeading(CalculateHeadingToTarget(target->GetX(), target->GetY()));
@@ -1586,14 +1547,7 @@ void Mob::AI_Process() {
                                 moved = true;
                             } else {
                                 bool waypoint_changed, node_reached;
-                                glm::vec3 Goal = UpdatePath(
-                                        owner->GetX(),
-                                        owner->GetY(),
-                                        owner->GetZ(),
-                                        pet_speed,
-                                        waypoint_changed,
-                                        node_reached
-                                );
+								auto &Goal = owner->GetPosition();
 
                                 CalculateNewPosition(Goal.x, Goal.y, Goal.z, pet_speed, true);
                             }
@@ -1641,14 +1595,7 @@ void Mob::AI_Process() {
                         }
                         bool waypoint_changed, node_reached;
 
-                        glm::vec3 Goal = UpdatePath(
-                                follow->GetX(),
-                                follow->GetY(),
-                                follow->GetZ(),
-                                speed,
-                                waypoint_changed,
-                                node_reached
-                        );
+                        auto &Goal = follow->GetPosition();
 
                         CalculateNewPosition(Goal.x, Goal.y, Goal.z, speed, true);
                     } else {
@@ -1772,18 +1719,7 @@ void NPC::AI_DoMovement() {
                 roambox_destination_y);
         }
 
-        bool waypoint_changed, node_reached;
-
-        glm::vec3 Goal = UpdatePath(
-                roambox_destination_x,
-                roambox_destination_y,
-                roambox_destination_z,
-                move_speed,
-                waypoint_changed,
-                node_reached
-        );
-
-        CalculateNewPosition(Goal.x, Goal.y, Goal.z, move_speed, true);
+		CalculateNewPosition(roambox_destination_x, roambox_destination_y, roambox_destination_z, move_speed, true);
 
         if (m_Position.x == roambox_destination_x && m_Position.y == roambox_destination_y) {
             time_until_can_move = Timer::GetCurrentTime() + RandomTimer(roambox_min_delay, roambox_delay);
@@ -1847,31 +1783,13 @@ void NPC::AI_DoMovement() {
                     }
                 }
                 if (doMove) {    // not at waypoint yet or at 0 pause WP, so keep moving
-                    if (!RuleB(Pathing, AggroReturnToGrid) || !zone->pathing || (DistractedFromGrid == 0))
-                        CalculateNewPosition(
-                                m_CurrentWayPoint.x,
-                                m_CurrentWayPoint.y,
-                                m_CurrentWayPoint.z,
-                                move_speed,
-                                true
-                        );
-                    else {
-                        bool WaypointChanged;
-                        bool NodeReached;
-                        glm::vec3 Goal = UpdatePath(
-                                m_CurrentWayPoint.x,
-                                m_CurrentWayPoint.y,
-                                m_CurrentWayPoint.z,
-                                move_speed,
-                                WaypointChanged,
-                                NodeReached
-                        );
-
-                        if (NodeReached)
-                            entity_list.OpenDoorsNear(CastToNPC());
-
-                        CalculateNewPosition(Goal.x, Goal.y, Goal.z, move_speed, true);
-                    }
+                    CalculateNewPosition(
+						m_CurrentWayPoint.x,
+						m_CurrentWayPoint.y,
+						m_CurrentWayPoint.z,
+						move_speed,
+						true
+					);
                 }
             }
         }        // endif (gridno > 0)
@@ -1888,31 +1806,12 @@ void NPC::AI_DoMovement() {
         }
     } else if (IsGuarding()) {
         bool CP2Moved;
-        if (!RuleB(Pathing, Guard) || !zone->pathing) {
-            CP2Moved = CalculateNewPosition(m_GuardPoint.x, m_GuardPoint.y, m_GuardPoint.z, move_speed);
+        if (!((m_Position.x == m_GuardPoint.x) && (m_Position.y == m_GuardPoint.y) && (m_Position.z == m_GuardPoint.z))) {
+			CP2Moved = CalculateNewPosition(m_GuardPoint.x, m_GuardPoint.y,	m_GuardPoint.z, move_speed);
         } else {
-            if (!((m_Position.x == m_GuardPoint.x) && (m_Position.y == m_GuardPoint.y) &&
-                  (m_Position.z == m_GuardPoint.z))) {
-                bool WaypointChanged, NodeReached;
-                glm::vec3 Goal = UpdatePath(
-                        m_GuardPoint.x,
-                        m_GuardPoint.y,
-                        m_GuardPoint.z,
-                        move_speed,
-                        WaypointChanged,
-                        NodeReached
-                );
-
-                if (NodeReached) {
-                    entity_list.OpenDoorsNear(CastToNPC());
-                }
-
-                CP2Moved = CalculateNewPosition(Goal.x, Goal.y, Goal.z, move_speed);
-            } else {
-                CP2Moved = false;
-            }
-
+			CP2Moved = false;
         }
+
         if (!CP2Moved) {
             if (moved) {
                 Log(Logs::Detail,
@@ -1976,7 +1875,7 @@ void NPC::AI_SetupNextWaypoint() {
 
 		SetAppearance(eaStanding, false);
 
-		entity_list.OpenDoorsNear(CastToNPC());
+		entity_list.OpenDoorsNear(this);
 
 		if (!DistractedFromGrid) {
 			//kick off event_waypoint depart
