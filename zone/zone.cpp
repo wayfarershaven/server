@@ -53,6 +53,7 @@
 #include "worldserver.h"
 #include "zone.h"
 #include "zone_config.h"
+#include "mob_movement_manager.h"
 
 #include <time.h>
 #include <ctime>
@@ -927,6 +928,8 @@ Zone::Zone(uint32 in_zoneid, uint32 in_instanceid, const char* in_short_name)
 
 	m_ucss_available = false;
 	m_last_ucss_update = 0;
+
+	mMovementManager = &MobMovementManager::Get();
 }
 
 Zone::~Zone() {
@@ -1366,6 +1369,8 @@ bool Zone::Process() {
 
 	if(hotzone_timer.Check()) { UpdateHotzone(); }
 
+	mMovementManager->Process();
+
 	return true;
 }
 
@@ -1701,8 +1706,7 @@ ZonePoint* Zone::GetClosestZonePoint(const glm::vec3& location, uint32 to, Clien
 	// this shouldn't open up any exploits since those situations are detected later on
 	if ((zone->HasWaterMap() && !zone->watermap->InZoneLine(glm::vec3(client->GetPosition()))) || (!zone->HasWaterMap() && closest_dist > 400.0f && closest_dist < max_distance2))
 	{
-		if(client)
-			client->CheatDetected(MQZoneUnknownDest, location.x, location.y, location.z); // Someone is trying to use /zone
+		//TODO cheat detection
 		Log(Logs::General, Logs::Status, "WARNING: Closest zone point for zone id %d is %f, you might need to update your zone_points table if you dont arrive at the right spot.", to, closest_dist);
 		Log(Logs::General, Logs::Status, "<Real Zone Points>. %s", to_string(location).c_str());
 	}
@@ -2315,7 +2319,7 @@ void Zone::DoAdventureActions()
 			const NPCType* tmp = database.LoadNPCTypesData(ds->data_id);
 			if(tmp)
 			{
-				NPC* npc = new NPC(tmp, nullptr, glm::vec4(ds->assa_x, ds->assa_y, ds->assa_z, ds->assa_h), FlyMode3);
+				NPC* npc = new NPC(tmp, nullptr, glm::vec4(ds->assa_x, ds->assa_y, ds->assa_z, ds->assa_h), GravityBehavior::Water);
 				npc->AddLootTable();
 				entity_list.AddNPC(npc);
 				npc->Shout("Rarrrgh!");

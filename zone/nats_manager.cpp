@@ -213,7 +213,7 @@ void NatsManager::GetCommandMessage(eqproto::CommandMessage* message, const char
 
 		//tmp->fixedZ = 1;
 
-		auto npc = new NPC(tmp, 0, position, FlyMode3);
+		auto npc = new NPC(tmp, 0, position, GravityBehavior::Ground);
 		if (!npc) {
 			message->set_response_error(eqproto::ERR_Failed);
 			message->set_response_message("Failed to create npc");

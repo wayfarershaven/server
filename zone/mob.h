@@ -47,6 +47,7 @@ class NPC;
 class Raid;
 struct NewSpawn_Struct;
 struct PlayerPositionUpdateServer_Struct;
+class MobMovementManager;
 
 const int COLLISION_BOX_SIZE = 8;
 
@@ -215,8 +216,6 @@ public:
 
 	inline virtual bool IsMob() const { return true; }
 	inline virtual bool InZone() const { return true; }
-
-	bool is_distance_roamer;
 
     void DisplayInfo(Mob *mob);
 
@@ -585,6 +584,7 @@ public:
 	uint32 GetNPCTypeID() const { return npctype_id; }
 	void SetNPCTypeID(uint32 npctypeid) { npctype_id = npctypeid; }
 	inline const glm::vec4& GetPosition() const { return m_Position; }
+	inline void SetPosition(const float x, const float y, const float z) { m_Position.x = x; m_Position.y = y; m_Position.z = z; }
 	inline const float GetX() const { return m_Position.x; }
 	inline const float GetY() const { return m_Position.y; }
 	inline const float GetZ() const { return m_Position.z; }
@@ -592,15 +592,7 @@ public:
 	inline const float GetSize() const { return size; }
 	inline const float GetBaseSize() const { return base_size; }
 	inline const float GetBaseTexture() const { return base_texture; }
-	inline const float GetTarX() const { return m_TargetLocation.x; }
-	inline const float GetTarY() const { return m_TargetLocation.y; }
-	inline const float GetTarZ() const { return m_TargetLocation.z; }
-	inline const float GetTarVX() const { return m_TargetV.x; }
-	inline const float GetTarVY() const { return m_TargetV.y; }
-	inline const float GetTarVZ() const { return m_TargetV.z; }
-	inline const float GetTarVector() const { return tar_vector; }
-	inline const uint8 GetTarNDX() const { return tar_ndx; }
-	inline const int8 GetFlyMode() const { return static_cast<const int8>(flymode); }
+	inline const GravityBehavior GetFlyMode() const { return flymode; }
 	bool IsBoat() const;
 
 	//Group
@@ -613,14 +605,12 @@ public:
 	virtual inline int32 GetPrimaryFaction() const { return 0; }
 
 	//Movement
-	void Warp(const glm::vec3& location);
 	inline bool IsMoving() const { return moving; }
 	virtual void SetMoving(bool move) { moving = move; m_Delta = glm::vec4(); }
 	virtual void GoToBind() { }
 	virtual void Gate();
 	int GetWalkspeed() const { return(_GetWalkSpeed()); }
 	int GetRunspeed() const { return(_GetRunSpeed()); }
-	void SetCurrentSpeed(int in);
 	int GetBaseRunspeed() const { return base_runspeed; }
 	int GetBaseWalkspeed() const { return base_walkspeed; }
 	int GetBaseFearSpeed() const { return base_fearspeed; }
@@ -629,25 +619,25 @@ public:
 	void SetRunning(bool val) { m_is_running = val; }
 	virtual void GMMove(float x, float y, float z, float heading = 0.01, bool SendUpdate = true);
 	void SetDelta(const glm::vec4& delta);
-	void SetTargetDestSteps(uint8 target_steps) { tar_ndx = target_steps; }
-	void SendPositionUpdateToClient(Client *client);
-	void SendPositionUpdate(uint8 iSendToSelf = 0);
 	void MakeSpawnUpdateNoDelta(PlayerPositionUpdateServer_Struct* spu);
 	void MakeSpawnUpdate(PlayerPositionUpdateServer_Struct* spu);
 	void SetConLevel(uint8 in_level, Client *specific_target);
-	void SendPosition();
+	void SentPositionPacket(float dx, float dy, float dz, float dh, int anim, bool send_to_self = false);
+	void StopMoving();
+	void StopMoving(float new_heading);
 	void SetSpawned() { spawned = true; };
 	bool Spawned() { return spawned; };
 	virtual bool ShouldISpawnFor(Client *c) { return true; }
-	void SetFlyMode(uint8 flymode);
-	inline void Teleport(glm::vec3 NewPosition) { m_Position.x = NewPosition.x; m_Position.y = NewPosition.y;
-		m_Position.z = NewPosition.z; };
+	void SetFlyMode(GravityBehavior flymode);
+	void Teleport(const glm::vec3 &pos);
+	void Teleport(const glm::vec4 &pos);
 	void TryMoveAlong(float distance, float angle, bool send = true);
 	void ProcessForcedMovement();
 	inline void IncDeltaX(float in) { m_Delta.x += in; }
 	inline void IncDeltaY(float in) { m_Delta.y += in; }
 	inline void IncDeltaZ(float in) { m_Delta.z += in; }
 	inline void SetForcedMovement(int in) { ForcedMovement = in; }
+	void SetHeading(float iHeading) { m_Position.w = iHeading; }
 
 	//AI
 	static uint8 GetLevelForClientCon(uint8 mylevel, uint8 iOtherLevel);
@@ -675,8 +665,6 @@ public:
 	void SetAssistAggro(bool value) { AssistAggro = value; if (PrimaryAggro) AssistAggro = false; }
 	bool HateSummon();
 	void FaceTarget(Mob* mob_to_face = 0);
-	void SetHeading(float iHeading) { if(m_Position.w != iHeading) { pLastChange = Timer::GetCurrentTime();
-			m_Position.w = iHeading; } }
 	void WipeHateList(bool npc_only = false);
 	void AddFeignMemory(Client* attacker);
 	void RemoveFromFeignMemory(Client* attacker);
@@ -685,8 +673,6 @@ public:
 	std::list<struct_HateList*>& GetHateList() { return hate_list.GetHateList(); }
 	bool CheckLosFN(Mob* other);
 	bool CheckLosFN(float posX, float posY, float posZ, float mobSize);
-	inline void SetChanged() { pLastChange = Timer::GetCurrentTime(); }
-	inline const uint32 LastChange() const { return pLastChange; }
 	inline void SetLastLosState(bool value) { last_los_check = value; }
 	inline bool CheckLastLosState() const { return last_los_check; }
 
@@ -871,8 +857,10 @@ public:
 	void SendAppearancePacket(uint32 type, uint32 value, bool WholeZone = true, bool iIgnoreSelf = false, Client *specific_target=nullptr);
 	void SetAppearance(EmuAppearance app, bool iIgnoreSelf = true);
 	inline EmuAppearance GetAppearance() const { return _appearance; }
+	inline const int GetAnimation() const { return animation; }
+	inline void SetAnimation(int a) { animation = a; }
 	inline const uint8 GetRunAnimSpeed() const { return pRunAnimSpeed; }
-	inline void SetRunAnimSpeed(int8 in) { if (pRunAnimSpeed != in) { pRunAnimSpeed = in; pLastChange = Timer::GetCurrentTime(); } }
+	inline void SetRunAnimSpeed(int8 in) { pRunAnimSpeed = in; }
 	bool IsDestructibleObject() { return destructibleobject; }
 	void SetDestructibleObject(bool in) { destructibleobject = in; }
 
@@ -1043,7 +1031,13 @@ public:
 
 	inline bool			CheckAggro(Mob* other) {return hate_list.IsEntOnHateList(other);}
 	float				CalculateHeadingToTarget(float in_x, float in_y) {return HeadingAngleToMob(in_x, in_y); }
-    virtual bool		CalculateNewPosition(float x, float y, float z, float speed, bool check_z = true, bool calculate_heading = true);
+	void				WalkTo(float x, float y, float z);
+	void				RunTo(float x, float y, float z);
+	void				NavigateTo(float x, float y, float z);
+	void				RotateTo(float new_heading);
+	void				RotateToWalking(float new_heading);
+	void				RotateToRunning(float new_heading);
+	void				StopNavigation();
 	float				CalculateDistance(float x, float y, float z);
 	float				GetGroundZ(float new_x, float new_y, float z_offset=0.0);
 	void				SendTo(float new_x, float new_y, float new_z);
@@ -1051,7 +1045,9 @@ public:
 	float				GetZOffset() const;
 	float               GetDefaultRaceSize() const;
     void 				FixZ(int32 z_find_offset = 5, bool fix_client_z = false);
-    float				GetFixedZ(glm::vec3 destination, int32 z_find_offset = 5);
+	float				GetFixedZ(const glm::vec3 &destination, int32 z_find_offset = 5);
+	virtual int			GetStuckBehavior() const { return 0; }
+
 	void				NPCSpecialAttacks(const char* parse, int permtag, bool reset = true, bool remove = false);
 	inline uint32		DontHealMeBefore() const { return pDontHealMeBefore; }
 	inline uint32		DontBuffMeBefore() const { return pDontBuffMeBefore; }
@@ -1132,6 +1128,7 @@ public:
 	void SetCurrentWP(uint16 waypoint) { cur_wp = waypoint; }
 	virtual FACTION_VALUE GetReverseFactionCon(Mob* iOther) { return FACTION_INDIFFERENT; }
 
+	virtual const bool IsUnderwaterOnly() const { return false; }
 	inline bool IsTrackable() const { return(trackable); }
 	Timer* GetAIThinkTimer() { return AI_think_timer.get(); }
 	Timer* GetAIMovementTimer() { return AI_movement_timer.get(); }
@@ -1244,7 +1241,6 @@ protected:
 	int _GetWalkSpeed() const;
 	int _GetRunSpeed() const;
 	int _GetFearSpeed() const;
-    virtual bool MakeNewPositionAndSendUpdate(float x, float y, float z, float speed, bool check_z = true, bool calculate_heading = true);
 
 	virtual bool AI_EngagedCastCheck() { return(false); }
 	virtual bool AI_PursueCastCheck() { return(false); }
@@ -1338,9 +1334,8 @@ protected:
 	uint8 level;
 	uint8 orig_level;
 	uint32 npctype_id;
+
 	glm::vec4 m_Position;
-	/* Used to determine when an NPC has traversed so many units - to send a zone wide pos update */
-	glm::vec4 last_major_update_position;
 	uint16 animation;
 	float base_size;
 	uint8 base_texture;
@@ -1354,7 +1349,6 @@ protected:
 	int current_speed;
 	eSpecialAttacks m_specialattacks;
 
-	uint32 pLastChange;
 	bool held;
 	bool gheld;
 	bool nocast;
@@ -1385,8 +1379,6 @@ protected:
 	void CalculateNewFearpoint();
 	float FindGroundZ(float new_x, float new_y, float z_offset=0.0);
 	float FindDestGroundZ(glm::vec3 dest, float z_offset=0.0);
-	glm::vec3 UpdatePath(float ToX, float ToY, float ToZ, float Speed, bool &WaypointChange, bool &NodeReached);
-	glm::vec3 HandleStuckPath(const glm::vec3 &To, const glm::vec3 &From);
 
 	virtual float GetSympatheticProcChances(uint16 spell_id, int16 ProcRateMod, int32 ItemProcRate = 0);
 	int16 GetSympatheticSpellProcRate(uint16 spell_id);
@@ -1526,7 +1518,6 @@ protected:
 	std::unique_ptr<Timer> AI_think_timer;
 	std::unique_ptr<Timer> AI_movement_timer;
 	std::unique_ptr<Timer> AI_target_check_timer;
-	bool movetimercompleted;
 	int8 ForcedMovement; // push
 	bool resisted; // spell resisted
 	bool permarooted;
@@ -1553,8 +1544,6 @@ protected:
 
 	bool flee_mode;
 	Timer flee_timer;
-	Timer fix_z_timer;
-	Timer fix_z_timer_engaged;
 	Timer attack_anim_timer;
 	Timer position_update_melee_push_timer;
 
@@ -1580,14 +1569,8 @@ protected:
 	glm::vec3 m_FearWalkTarget;
 	bool currently_fleeing;
 
-	// Pathing
-	//
-	glm::vec3 PathingDestination;
-	IPathfinder::IPath Route;
-	std::unique_ptr<Timer> PathRecalcTimer;
+	bool pause_timer_complete;
 	bool DistractedFromGrid;
-	glm::vec3 PathingLastPosition;
-	int PathingLoopCount;
 
 	uint32 pDontHealMeBefore;
 	uint32 pDontBuffMeBefore;
@@ -1607,18 +1590,11 @@ protected:
 	bool pet_owner_client; //Flags regular and pets as belonging to a client
 	uint32 pet_targetlock_id;
 
-	EGNode *_egnode; //the EG node we are in
-	glm::vec3 m_TargetLocation;
-	uint8 tar_ndx;
-	float tar_vector;
-	glm::vec3 m_TargetV;
-	float test_vector;
-
 	glm::vec3 m_TargetRing;
 
 	// we might want to do this differently, we gotta do max NPC buffs ... which is 97
 	uint32 m_spellHitsLeft[EQEmu::constants::TotalBuffs]; // Used to track which spells will have their numhits incremented when spell finishes casting
-	int flymode;
+	GravityBehavior flymode;
 	bool m_targetable;
 	int QGVarDuration(const char *fmt);
 	void InsertQuestGlobal(int charid, int npcid, int zoneid, const char *name, const char *value, int expdate);
@@ -1635,6 +1611,8 @@ protected:
 
 	bool IsHorse;
 	bool engage_flush_on_next_engage;
+
+	MobMovementManager *mMovementManager;
 
 private:
 	void _StopSong(); //this is not what you think it is

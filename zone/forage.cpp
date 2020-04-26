@@ -283,7 +283,7 @@ void Client::GoFish()
 					if(tmp != nullptr) {
                         auto positionNPC = GetPosition();
                         positionNPC.x = positionNPC.x + 3;
-			auto npc = new NPC(tmp, nullptr, positionNPC, FlyMode3);
+			auto npc = new NPC(tmp, nullptr, positionNPC, GravityBehavior::Water);
 			npc->AddLootTable();
 
 			npc->AddToHateList(this, 1, 0, false); // no help yelling

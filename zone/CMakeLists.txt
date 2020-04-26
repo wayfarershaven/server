@@ -81,6 +81,7 @@ SET(zone_sources
 	mob.cpp
 	mob_ai.cpp
 	mob_info.cpp
+	mob_movement_manager.cpp
 	mod_functions.cpp
 	nats_manager.cpp
 	net.cpp
@@ -91,7 +92,6 @@ SET(zone_sources
 	pathfinder_interface.cpp
 	pathfinder_nav_mesh.cpp
 	pathfinder_null.cpp
-	pathfinder_waypoint.cpp
 	pathing.cpp
 	perl_client.cpp
 	perl_doors.cpp
@@ -202,6 +202,7 @@ SET(zone_headers
 	message.h
 	merc.h
 	mob.h
+	mob_movement_manager.h
 	nats_manager.h
 	net.h
 	npc.h
@@ -211,7 +212,6 @@ SET(zone_headers
 	pathfinder_interface.h
 	pathfinder_nav_mesh.h
 	pathfinder_null.h
-	pathfinder_waypoint.h
 	perlpacket.h
 	petitions.h
 	pets.h

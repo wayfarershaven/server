@@ -650,7 +650,7 @@ void EntityList::AddNPC(NPC *npc, bool SendSpawnPacket, bool dontqueue)
 
 	parse->EventNPC(EVENT_SPAWN, npc, nullptr, "", 0);
 
-	npc->FixZ(1);
+	npc->FixZ();
 
 	uint16 emoteid = npc->GetEmoteID();
 	if (emoteid != 0)
@@ -2258,24 +2258,6 @@ void EntityList::RemoveAllMobs()
 	}
 }
 
-void EntityList::GetUnderworldMobs(Client* c) {
-	float underworld = zone->newzone_data.underworld;
-
-	auto it = npc_list.begin();
-	while (it != npc_list.end()) {
-		NPC* mob = it->second->CastToNPC();
-		if (mob->IsTrackable()) {
-			if (mob->GetZ() <= underworld) {
-				c->Message(0, StringFormat("%s was under the world at %f %f %f. Resetting to spawn point at %f %f %f.",
-					mob->GetCleanName(), mob->GetX(), mob->GetY(), mob->GetZ(), mob->respawn2->GetX(), mob->respawn2->GetY(), mob->respawn2->GetZ()).c_str());
-				mob->Teleport(glm::vec3(mob->respawn2->GetX(), mob->respawn2->GetY(), mob->respawn2->GetZ()));
-				mob->SendPositionUpdate();
-			}
-		}
-		++it;
-	}
-}
-
 void EntityList::RemoveAllClients()
 {
 	// doesn't clear the data
@@ -2746,51 +2728,6 @@ void EntityList::RemoveDebuffs(Mob *caster)
 		it->second->BuffFadeDetrimentalByCaster(caster);
 		++it;
 	}
-}
-
-// Currently, a new packet is sent per entity.
-// @todo: Come back and use FLAG_COMBINED to pack
-// all updates into one packet.
-void EntityList::SendPositionUpdates(Client *client, uint32 cLastUpdate, float update_range, Entity *always_send, bool iSendEvenIfNotChanged) {
-	update_range = (update_range * update_range);
-
-	EQApplicationPacket *outapp = 0;
-	PlayerPositionUpdateServer_Struct *ppu = 0;
-	Mob *mob = 0;
-
-	auto it = mob_list.begin();
-	while (it != mob_list.end()) {
-		mob = it->second;
-		if (
-				mob && !mob->IsCorpse()
-				&& (it->second != client)
-				&& (mob->IsClient() || iSendEvenIfNotChanged || (mob->LastChange() >= cLastUpdate))
-				&& (it->second->ShouldISpawnFor(client))
-				) {
-			if (
-					update_range == 0
-					|| (it->second == always_send)
-					|| mob->IsClient()
-					|| (DistanceSquared(mob->GetPosition(), client->GetPosition()) <= update_range)
-					) {
-				if (mob && mob->IsClient() && mob->GetID() > 0) {
-					client->QueuePacket(outapp, false, Client::CLIENT_CONNECTED);
-
-					if (outapp == 0) {
-						outapp = new EQApplicationPacket(OP_ClientUpdate, sizeof(PlayerPositionUpdateServer_Struct));
-						ppu = (PlayerPositionUpdateServer_Struct *) outapp->pBuffer;
-					}
-
-					mob->MakeSpawnUpdate(ppu);
-
-					safe_delete(outapp);
-					outapp = 0;
-				}
-			}
-		}
-		++it;
-	}
-	safe_delete(outapp);
 }
 
 char *EntityList::MakeNameUnique(char *name)
@@ -3325,7 +3262,7 @@ void EntityList::AddHealAggro(Mob *target, Mob *caster, uint16 hate)
 	}
 }
 
-void EntityList::OpenDoorsNear(NPC *who)
+void EntityList::OpenDoorsNear(Mob *who)
 {
 
 	for (auto it = door_list.begin();it != door_list.end(); ++it) {
@@ -3338,7 +3275,7 @@ void EntityList::OpenDoorsNear(NPC *who)
 		float curdist = diff.x * diff.x + diff.y * diff.y;
 
 		if (diff.z * diff.z < 10 && curdist <= 100)
-			cdoor->NPCOpen(who);
+			cdoor->Open(who);
 	}
 }
 

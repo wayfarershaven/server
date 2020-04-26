@@ -316,6 +316,15 @@ public:
 
 	/* Character Inventory  */
 	bool	NoRentExpired(const char* name);
+	bool	SaveCharacterInvSnapshot(uint32 character_id);
+	int		CountCharacterInvSnapshots(uint32 character_id);
+	void	ClearCharacterInvSnapshots(uint32 character_id, bool from_now = false);
+	void	ListCharacterInvSnapshots(uint32 character_id, std::list<std::pair<uint32, int>> &is_list);
+	bool	ValidateCharacterInvSnapshotTimestamp(uint32 character_id, uint32 timestamp);
+	void	ParseCharacterInvSnapshot(uint32 character_id, uint32 timestamp, std::list<std::pair<int16, uint32>> &parse_list);
+	void	DivergeCharacterInvSnapshotFromInventory(uint32 character_id, uint32 timestamp, std::list<std::pair<int16, uint32>> &compare_list);
+	void	DivergeCharacterInventoryFromInvSnapshot(uint32 character_id, uint32 timestamp, std::list<std::pair<int16, uint32>> &compare_list);
+	bool	RestoreCharacterInvSnapshot(uint32 character_id, uint32 timestamp);
 
 	/* Corpses  */
 	void		ListCharacterCorpses(Client *target, Client *c, bool buried, bool backup);

@@ -23,6 +23,8 @@
 #include "quest_parser_collection.h"
 #include "string_ids.h"
 #include "worldserver.h"
+#include "mob_movement_manager.h"
+#include "water_map.h"
 #include "nats_manager.h"
 
 #include <limits.h>
@@ -113,34 +115,26 @@ Mob::Mob(
 		shield_reuse_timer(1000),
 		shield_duration_timer(12000),
 		m_FearWalkTarget(-999999.0f,-999999.0f,-999999.0f),
-		m_TargetLocation(glm::vec3()),
-		m_TargetV(glm::vec3()),
 		flee_timer(FLEE_CHECK_TIMER),
 		m_Position(position),
 		tmHidden(-1),
 		mitigation_ac(0),
 		m_specialattacks(eSpecialAttacks::None),
-		fix_z_timer(300),
-		fix_z_timer_engaged(100),
 		attack_anim_timer(1000),
 		position_update_melee_push_timer(500),
 		hate_list_cleanup_timer(6000)
 {
+	mMovementManager = &MobMovementManager::Get();
+	mMovementManager->AddMob(this);
 
 	targeted = 0;
-	tar_ndx=0;
-	tar_vector=0;
 	currently_fleeing = false;
-
-	last_major_update_position = m_Position;
-	is_distance_roamer = false;
 
 	AI_Init();
 	SetMoving(false);
 	moved=false;
 	m_RewindLocation = glm::vec3();
 
-	_egnode = nullptr;
 	name[0]=0;
 	orig_name[0]=0;
 	clean_name[0]=0;
@@ -169,10 +163,12 @@ Mob::Mob(
 	base_size	= in_size;
 	runspeed	= in_runspeed;
 	// neotokyo: sanity check
-	if (runspeed < 0 || runspeed > 20)
+	if (runspeed < 0 || runspeed > 20) {
 		runspeed = 1.25f;
+	}
 	base_runspeed = (int)((float)runspeed * 40.0f);
-	// clients
+	// clients -- todo movement this doesn't take into account gm speed we need to fix that.
+	base_runspeed = (int)((float)runspeed * 40.0f);
 	if (runspeed == 0.7f) {
 		base_runspeed = 28;
 		walkspeed = 0.3f;
@@ -350,7 +346,6 @@ Mob::Mob(
 	memset(&aabonuses, 0, sizeof(StatBonuses));
 	spellbonuses.AggroRange = -1;
 	spellbonuses.AssistRange = -1;
-	pLastChange = 0;
 	SetPetID(0);
 	SetOwnerID(0);
 	typeofpet = petNone; // default to not a pet
@@ -395,7 +390,7 @@ Mob::Mob(
 
 	permarooted = (runspeed > 0) ? false : true;
 
-	movetimercompleted = false;
+	pause_timer_complete = false;
 	ForcedMovement = 0;
 	resisted = 0;
 	roamer = false;
@@ -441,7 +436,7 @@ Mob::Mob(
 
 	m_TargetRing = glm::vec3();
 
-	flymode = FlyMode3;
+	flymode = GravityBehavior::Water;
 	DistractedFromGrid = false;
 	hate_list.SetHateOwner(this);
 
@@ -466,12 +461,12 @@ Mob::Mob(
 	dire_pet_damage = 0;
 	total_damage = 0;
 
-	PathRecalcTimer.reset(new Timer(500));
-	PathingLoopCount = 0;
 }
 
 Mob::~Mob()
 {
+	mMovementManager->RemoveMob(this);
+
 	AI_Stop();
 	if (GetPet()) {
 		if (GetPet()->Charmed())
@@ -1210,7 +1205,7 @@ void Mob::FillSpawnStruct(NewSpawn_Struct* ns, Mob* ForWho)
 		ns->spawn.flymode = flymode;
 
 	if(IsBoat()) {
-		ns->spawn.flymode = 1;
+		ns->spawn.flymode = GravityBehavior::Floating;
 	}
 
 	ns->spawn.lastName[0] = '\0';
@@ -1476,58 +1471,37 @@ void Mob::SetConLevel(uint8 in_level, Client *specific_target)
 	SendAppearancePacket(AT_WhoLevel, in_level, false, true, specific_target);
 }
 
-/* Used for mobs standing still - this does not send a delta */
-void Mob::SendPosition() {
-	auto app = new EQApplicationPacket(OP_ClientUpdate, sizeof(PlayerPositionUpdateServer_Struct));
-	PlayerPositionUpdateServer_Struct* spu = (PlayerPositionUpdateServer_Struct*)app->pBuffer;
-	MakeSpawnUpdateNoDelta(spu);
-
-	/* When an NPC has made a large distance change - we should update all clients to prevent "ghosts" */
-	if (DistanceSquared(last_major_update_position, m_Position) >= (100 * 100)) {
-		entity_list.QueueClients(this, app, true, true);
-		last_major_update_position = m_Position;
-		is_distance_roamer = true;
-	}
-	else {
-		entity_list.QueueCloseClients(this, app, true, RuleI(Range, MobPositionUpdates), nullptr, false);
-	}
-	nats.OnClientUpdateEvent(this->GetID(), spu);
-	safe_delete(app);
+void Mob::StopMoving() {
+	StopNavigation();
+	if (moved)
+		moved = false;
 }
 
-void Mob::SendPositionUpdateToClient(Client *client) {
-	auto app = new EQApplicationPacket(OP_ClientUpdate, sizeof(PlayerPositionUpdateServer_Struct));
-	PlayerPositionUpdateServer_Struct* spawn_update = (PlayerPositionUpdateServer_Struct*)app->pBuffer;
-
-	if(this->IsMoving())
-		MakeSpawnUpdate(spawn_update);
-	else
-		MakeSpawnUpdateNoDelta(spawn_update);
-
-	client->QueuePacket(app, false);
-	nats.OnClientUpdateEvent(this->GetID(), spawn_update);
-	safe_delete(app);
+void Mob::StopMoving(float new_heading) {
+	StopNavigation();
+	RotateTo(new_heading);
+	if (moved)
+		moved = false;
 }
 
-/* Position updates for mobs on the move */
-void Mob::SendPositionUpdate(uint8 iSendToSelf) {
-	auto app = new EQApplicationPacket(OP_ClientUpdate, sizeof(PlayerPositionUpdateServer_Struct));
-	PlayerPositionUpdateServer_Struct* spu = (PlayerPositionUpdateServer_Struct*)app->pBuffer;
-	MakeSpawnUpdate(spu);
+void Mob::SentPositionPacket(float dx, float dy, float dz, float dh, int anim, bool send_to_self)
+{
+	EQApplicationPacket outapp(OP_ClientUpdate, sizeof(PlayerPositionUpdateServer_Struct));
+	PlayerPositionUpdateServer_Struct *spu = (PlayerPositionUpdateServer_Struct*)outapp.pBuffer;
 
-	if (iSendToSelf == 2) {
-		if (IsClient()) {
-			CastToClient()->FastQueuePacket(&app, false);
-		}
-	} else if (DistanceSquared(last_major_update_position, m_Position) >= (100 * 100)) {
-		entity_list.QueueClients(this, app, true, true);
-		last_major_update_position = m_Position;
-		is_distance_roamer = true;
-	} else {
-		entity_list.QueueCloseClients(this, app, (iSendToSelf == 0), RuleI(Range, MobPositionUpdates), nullptr, false);
-	}
-	nats.OnClientUpdateEvent(this->GetID(), spu);
-	safe_delete(app);
+	memset(spu, 0x00, sizeof(PlayerPositionUpdateServer_Struct));
+	spu->spawn_id = GetID();
+	spu->x_pos = FloatToEQ19(GetX());
+	spu->y_pos = FloatToEQ19(GetY());
+	spu->z_pos = FloatToEQ19(GetZ());
+	spu->heading = FloatToEQ12(GetHeading());
+	spu->delta_x = FloatToEQ13(dx);
+	spu->delta_y = FloatToEQ13(dy);
+	spu->delta_z = FloatToEQ13(dz);
+	spu->delta_heading = FloatToEQ10(dh);
+	spu->animation = anim;
+
+entity_list.QueueClients(this, &outapp, send_to_self == false, false);
 }
 
 // this is for SendPosition()
@@ -1543,11 +1517,6 @@ void Mob::MakeSpawnUpdateNoDelta(PlayerPositionUpdateServer_Struct *spu) {
 	spu->heading = FloatToEQ12(m_Position.w);
 	spu->animation = 0;
 	spu->delta_heading = FloatToEQ10(0);
-	spu->padding0002 = 0;
-	spu->padding0006 = 7;
-	spu->padding0014 = 0x7f;
-	spu->padding0018 = 0x5df27;
-
 }
 
 // this is for SendPosUpdate()
@@ -1560,10 +1529,6 @@ void Mob::MakeSpawnUpdate(PlayerPositionUpdateServer_Struct* spu) {
 	spu->delta_y = FloatToEQ13(m_Delta.y);
 	spu->delta_z = FloatToEQ13(m_Delta.z);
 	spu->heading = FloatToEQ12(m_Position.w);
-	spu->padding0002 = 0;
-	spu->padding0006 = 7;
-	spu->padding0014 = 0x7f;
-	spu->padding0018 = 0x5df27;
 #ifdef BOTS
 	if (this->IsClient() || this->IsBot())
 #else
@@ -1711,21 +1676,19 @@ void Mob::ShowBuffList(Client* client) {
 
 void Mob::GMMove(float x, float y, float z, float heading, bool SendUpdate) {
 
-	Route.clear();
-
-	if(IsNPC()) {
-		entity_list.ProcessMove(CastToNPC(), x, y, z);
+	if (IsCorpse()) {
+		m_Position.x = x;
+		m_Position.y = y;
+		m_Position.z = z;
+		mMovementManager->SendCommandToClients(this, 0.0, 0.0, 0.0, 0.0, 0, ClientRangeAny);
+	}
+	else {
+		Teleport(glm::vec4(x, y, z, heading));
 	}
 
-	m_Position.x = x;
-	m_Position.y = y;
-	m_Position.z = z;
-	if (m_Position.w != 0.01)
-		this->m_Position.w = heading;
-	if(IsNPC())
-		CastToNPC()->SaveGuardSpot(true);
-	if(SendUpdate)
-		SendPosition();
+	if (IsNPC()) {
+		CastToNPC()->SaveGuardSpot(glm::vec4(x, y, z, heading));
+	}
 }
 
 void Mob::SendIllusionPacket(uint16 in_race, uint8 in_gender, uint8 in_texture, uint8 in_helmtexture, uint8 in_haircolor, uint8 in_beardcolor, uint8 in_eyecolor1, uint8 in_eyecolor2, uint8 in_hairstyle, uint8 in_luclinface, uint8 in_beard, uint8 in_aa_title, uint32 in_drakkin_heritage, uint32 in_drakkin_tattoo, uint32 in_drakkin_details, float in_size) {
@@ -2818,12 +2781,11 @@ void Mob::FaceTarget(Mob* mob_to_face /*= 0*/) {
 	float current_heading = GetHeading();
 	float new_heading = CalculateHeadingToTarget(faced_mob->GetX(), faced_mob->GetY());
 	if(current_heading != new_heading) {
-		SetHeading(new_heading);
-		if (moving) {
-			SendPositionUpdate();
+		if (IsEngaged() || IsRunning()) {
+			RotateToRunning(new_heading);
 		}
 		else {
-			SendPosition();
+			RotateToWalking(new_heading);
 		}
 	}
 
@@ -3284,20 +3246,6 @@ void Mob::SetNextIncHPEvent( int inchpevent )
 {
 	nextinchpevent = inchpevent;
 }
-//warp for quest function,from sandy
-void Mob::Warp(const glm::vec3& location)
-{
-	if(IsNPC())
-		entity_list.ProcessMove(CastToNPC(), location.x, location.y, location.z);
-
-	m_Position = glm::vec4(location, m_Position.w);
-
-	Mob* target = GetTarget();
-	if (target)
-		FaceTarget( target );
-
-	SendPosition();
-}
 
 int16 Mob::GetResist(uint8 type) const
 {
@@ -3684,17 +3632,19 @@ bool Mob::EntityVariableExists(const char *id)
 	return false;
 }
 
-void Mob::SetFlyMode(uint8 flymode)
+void Mob::SetFlyMode(GravityBehavior flymode)
 {
-	if(IsClient() && flymode >= 0 && flymode < 3)
-	{
-		this->SendAppearancePacket(AT_Levitate, flymode);
-	}
-	else if(IsNPC() && flymode >= 0 && flymode <= 3)
-	{
-		this->SendAppearancePacket(AT_Levitate, flymode);
-		this->CastToNPC()->SetFlyMode(flymode);
-	}
+	this->flymode = flymode;
+}
+
+void Mob::Teleport(const glm::vec3 &pos)
+{
+	mMovementManager->Teleport(this, pos.x, pos.y, pos.z, m_Position.w);
+}
+
+void Mob::Teleport(const glm::vec4 &pos)
+{
+	mMovementManager->Teleport(this, pos.x, pos.y, pos.z, pos.w);
 }
 
 bool Mob::IsNimbusEffectActive(uint32 nimbus_effect)
@@ -4711,7 +4661,6 @@ void Mob::DoKnockback(Mob *caster, uint32 pushback, uint32 pushup)
 {
 	if(IsClient())
 	{
-		CastToClient()->SetKnockBackExemption(true);
 
 		auto outapp_push = new EQApplicationPacket(OP_ClientUpdate, sizeof(PlayerPositionUpdateServer_Struct));
 		PlayerPositionUpdateServer_Struct* spu = (PlayerPositionUpdateServer_Struct*)outapp_push->pBuffer;
@@ -5715,25 +5664,7 @@ float Mob::HeadingAngleToMob(float other_x, float other_y)
 	float this_x = GetX();
 	float this_y = GetY();
 
-	float y_diff = std::abs(this_y - other_y);
-	float x_diff = std::abs(this_x - other_x);
-	if (y_diff < 0.0000009999999974752427)
-		y_diff = 0.0000009999999974752427;
-
-	float angle = atan2(x_diff, y_diff) * 180.0f * 0.3183099014828645f; // angle, nice "pi"
-
-	// return the right thing based on relative quadrant
-	// I'm sure this could be improved for readability, but whatever
-	if (this_y >= other_y) {
-		if (other_x >= this_x)
-			return (90.0f - angle + 90.0f) * 511.5f * 0.0027777778f;
-		if (other_x <= this_x)
-			return (angle + 180.0f) * 511.5f * 0.0027777778f;
-	}
-	if (this_y > other_y || other_x > this_x)
-		return angle * 511.5f * 0.0027777778f;
-	else
-		return (90.0f - angle + 270.0f) * 511.5f * 0.0027777778f;
+	return CalculateHeadingAngleBetweenPositions(this_x, this_y, other_x, other_y);
 }
 
 bool Mob::GetSeeInvisible(uint8 see_invis)
@@ -5914,19 +5845,6 @@ void Mob::SendRemovePlayerState(PlayerState old_state)
 	RemovePlayerState(ps->state);
 	entity_list.QueueClients(nullptr, app);
 	safe_delete(app);
-}
-
-void Mob::SetCurrentSpeed(int in){
-	if (current_speed != in)
-	{
-		current_speed = in;
-		tar_ndx = 20;
-		if (in == 0) {
-			SetRunAnimSpeed(0);
-			SetMoving(false);
-			SendPosition();
-		}
-	}
 }
 
 int32 Mob::GetMeleeMitigation() {

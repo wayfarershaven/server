@@ -146,7 +146,7 @@ bool Client::Process() {
 
 		/* I haven't naturally updated my position in 10 seconds, updating manually */
 		if (!is_client_moving && position_update_timer.Check()) {
-			SendPositionUpdate();
+			SentPositionPacket(0.0f, 0.0f, 0.0f, 0.0f, 0);
 		}
 
 		if (mana_timer.Check())
@@ -212,10 +212,6 @@ bool Client::Process() {
 		if (IsStunned() && stunned_timer.Check())
 			Mob::UnStun();
 
-		if (!m_CheatDetectMoved) {
-			m_TimeSinceLastPositionCheck = Timer::GetCurrentTime();
-		}
-
 		if (bardsong_timer.Check() && bardsong != 0) {
 			//NOTE: this is kinda a heavy-handed check to make sure the mob still exists before
 			//doing the next pulse on them...
@@ -266,40 +262,36 @@ bool Client::Process() {
 			}
 		}
 
+		if (RuleB(Character, ActiveInvSnapshots) && time(nullptr) >= GetNextInvSnapshotTime()) {
+			if (database.SaveCharacterInvSnapshot(CharacterID())) {
+				SetNextInvSnapshot(RuleI(Character, InvSnapshotMinIntervalM));
+				Log(Logs::Moderate, Logs::Inventory, "Successful inventory snapshot taken of %s - setting next interval for %i minute%s.",
+					GetName(), RuleI(Character, InvSnapshotMinIntervalM), (RuleI(Character, InvSnapshotMinIntervalM) == 1 ? "" : "s"));
+			}
+			else {
+				SetNextInvSnapshot(RuleI(Character, InvSnapshotMinRetryM));
+				Log(Logs::Moderate, Logs::Inventory, "Failed to take inventory snapshot of %s - retrying in %i minute%s.",
+					GetName(), RuleI(Character, InvSnapshotMinRetryM), (RuleI(Character, InvSnapshotMinRetryM) == 1 ? "" : "s"));
+			}
+		}
+
 		/* Build a close range list of NPC's  */
 		if (npc_close_scan_timer.Check()) {
 			close_mobs.clear();
-
-			/* Force spawn updates when traveled far */
+			//Force spawn updates when traveled far
 			bool force_spawn_updates = false;
 			float client_update_range = (RuleI(Range, ClientForceSpawnUpdateRange) *  RuleI(Range, ClientForceSpawnUpdateRange));
-			if (DistanceSquared(last_major_update_position, m_Position) >= client_update_range) {
-				last_major_update_position = m_Position;
-				force_spawn_updates = true;
-			}
-
 			float scan_range = (RuleI(Range, ClientNPCScan) * RuleI(Range, ClientNPCScan));
 			auto &mob_list = entity_list.GetMobList();
 			for (auto itr = mob_list.begin(); itr != mob_list.end(); ++itr) {
 				Mob* mob = itr->second;
-
 				float distance = DistanceSquared(m_Position, mob->GetPosition());
 				if (mob->IsNPC()) {
 					if (distance <= scan_range) {
 						close_mobs.insert(std::pair<Mob *, float>(mob, distance));
-					} else if (mob->GetAggroRange() > scan_range) {
+					}
+					else if ((mob->GetAggroRange() * mob->GetAggroRange()) > scan_range) {
 						close_mobs.insert(std::pair<Mob *, float>(mob, distance));
-					}
-				}
-
-				if (force_spawn_updates && mob != this) {
-					if (mob->is_distance_roamer) {
-						mob->SendPositionUpdateToClient(this);
-						continue;
-					}
-
-					if (distance <= client_update_range) {
-						mob->SendPositionUpdateToClient(this);
 					}
 				}
 			}
@@ -472,31 +464,6 @@ bool Client::Process() {
 
 					DoAttackRounds(auto_attack_target, EQEmu::inventory::slotSecondary);
 				}
-			}
-		}
-
-		if (position_timer.Check()) {
-			if (IsAIControlled())
-			{
-				if (!IsMoving())
-				{
-					animation = 0;
-					m_Delta = glm::vec4(0.0f, 0.0f, 0.0f, m_Delta.w);
-					SendPositionUpdate(2);
-				}
-			}
-
-			// Send a position packet every 8 seconds - if not done, other clients
-			// see this char disappear after 10-12 seconds of inactivity
-			if (position_timer_counter >= 36) { // Approx. 4 ticks per second
-				entity_list.SendPositionUpdates(this, pLastUpdateWZ, RuleI(Range, MobPositionUpdates), GetTarget(), true);
-				pLastUpdate = Timer::GetCurrentTime();
-				pLastUpdateWZ = pLastUpdate;
-				position_timer_counter = 0;
-			}
-			else {
-				pLastUpdate = Timer::GetCurrentTime();
-				position_timer_counter++;
 			}
 		}
 

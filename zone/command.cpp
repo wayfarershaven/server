@@ -67,6 +67,7 @@
 #include "water_map.h"
 #include "worldserver.h"
 #include "fastmath.h"
+#include "mob_movement_manager.h"
 #include "nats_manager.h"
 #include "client.h"
 
@@ -210,7 +211,7 @@ int command_init(void)
 		command_add("flag", "[status] [acctname] - Refresh your admin status, or set an account's admin status if arguments provided", 0, command_flag) ||
 		command_add("flagedit", "- Edit zone flags on your target", 100, command_flagedit) ||
 		command_add("flags", "- displays the flags of you or your target", 0, command_flags) ||
-		command_add("flymode", "[0/1/2] - Set your or your player target's flymode to off/on/levitate", 50, command_flymode) ||
+		command_add("flymode", "[0/1/2/3/4/5] - Set your or your player target's flymode to ground/flying/levitate/water/floating/levitate_running", 50, command_flymode) ||
 		command_add("fov", "- Check wether you're behind or in your target's field of view", 80, command_fov) ||
 		command_add("freeze", "- Freeze your target", 80, command_freeze) ||
 		command_add("gassign", "[id] - Assign targetted NPC to predefined wandering grid id", 100, command_gassign) ||
@@ -275,6 +276,7 @@ int command_init(void)
 		command_add("modifynpcstat", "- Modifys a NPC's stats", 150, command_modifynpcstat) ||
 		command_add("motd", "[new motd] - Set message of the day", 150, command_motd) ||
 		command_add("movechar", "[charname] [zonename] - Move charname to zonename", 50, command_movechar) ||
+		command_add("movement", "Various movement commands", 200, command_movement) ||
 		command_add("myskills", "- Show details about your current skill levels", 0, command_myskills) ||
 		command_add("mysqltest", "Akkadius MySQL Bench Test", 250, command_mysqltest) ||
 		command_add("mysql", "Mysql CLI, see 'help' for options.", 250, command_mysql) ||
@@ -422,7 +424,6 @@ int command_init(void)
 		command_add("wpadd", "[pause] [-h] - Add your current location as a waypoint to your NPC target's AI path", 170, command_wpadd) ||
 		command_add("wpinfo", "- Show waypoint info about your NPC target", 170, command_wpinfo) ||
 		command_add("roambox", "- Show waypoint info about your NPC target", 170, command_roambox) ||
-		command_add("underworld", "- Show all mobs under the world", 170, command_underworld) ||
 		command_add("xpinfo", "- Show XP info about your current target", 250, command_xpinfo) ||
 		command_add("xtargets",  "Show your targets Extended Targets and optionally set how many xtargets they can have.",  250, command_xtargets) ||
 		command_add("zclip", "[min] [max] - modifies and resends zhdr packet", 80, command_zclip) ||
@@ -1052,7 +1053,7 @@ void command_summon(Client *c, const Seperator *sep)
 	{ // npc target
 		c->Message(0, "Summoning NPC %s to %1.1f, %1.1f, %1.1f",  t->GetName(), c->GetX(), c->GetY(), c->GetZ());
 		t->CastToNPC()->GMMove(c->GetX(), c->GetY(), c->GetZ(), c->GetHeading());
-		t->CastToNPC()->SaveGuardSpot(true);
+		t->CastToNPC()->SaveGuardSpot(glm::vec4(0.0f));
 	}
 	else if (t->IsCorpse())
 	{ // corpse target
@@ -1354,6 +1355,78 @@ void command_movechar(Client *c, const Seperator *sep)
 		}
 		else
 			c->Message(0, "Character Does Not Exist");
+	}
+}
+
+void command_movement(Client *c, const Seperator *sep)
+{
+	auto &mgr = MobMovementManager::Get();
+
+	if (sep->arg[1][0] == 0) {
+		c->Message(0, "Usage: #movement stats/clearstats/walkto/runto/rotateto/stop/packet");
+		return;
+	}
+
+	if (strcasecmp(sep->arg[1], "stats") == 0)
+	{
+		mgr.DumpStats(c);
+	}
+	else if (strcasecmp(sep->arg[1], "clearstats") == 0)
+	{
+		mgr.ClearStats();
+	}
+	else if (strcasecmp(sep->arg[1], "walkto") == 0)
+	{
+		auto target = c->GetTarget();
+		if (target == nullptr) {
+			c->Message(0, "No target found.");
+			return;
+		}
+
+		target->WalkTo(c->GetX(), c->GetY(), c->GetZ());
+	}
+	else if (strcasecmp(sep->arg[1], "runto") == 0)
+	{
+		auto target = c->GetTarget();
+		if (target == nullptr) {
+			c->Message(0, "No target found.");
+			return;
+		}
+
+		target->RunTo(c->GetX(), c->GetY(), c->GetZ());
+	}
+	else if (strcasecmp(sep->arg[1], "rotateto") == 0)
+	{
+		auto target = c->GetTarget();
+		if (target == nullptr) {
+			c->Message(0, "No target found.");
+			return;
+		}
+
+		target->RotateToWalking(target->CalculateHeadingToTarget(c->GetX(), c->GetY()));
+	}
+	else if (strcasecmp(sep->arg[1], "stop") == 0)
+	{
+		auto target = c->GetTarget();
+		if (target == nullptr) {
+			c->Message(0, "No target found.");
+			return;
+		}
+
+		target->StopNavigation();
+	}
+	else if (strcasecmp(sep->arg[1], "packet") == 0)
+	{
+		auto target = c->GetTarget();
+		if (target == nullptr) {
+			c->Message(0, "No target found.");
+			return;
+		}
+
+		mgr.SendCommandToClients(target, atof(sep->arg[2]), atof(sep->arg[3]), atof(sep->arg[4]), atof(sep->arg[5]), atoi(sep->arg[6]), ClientRangeAny);
+	}
+	else {
+		c->Message(0, "Usage: #movement stats/clearstats/walkto/runto/rotateto/stop/packet");
 	}
 }
 
@@ -2247,7 +2320,7 @@ void command_ai(Client *c, const Seperator *sep)
 	}
 	else if (strcasecmp(sep->arg[1], "guard") == 0) {
 		if (target && target->IsNPC())
-			target->CastToNPC()->SaveGuardSpot();
+			target->CastToNPC()->SaveGuardSpot(target->GetPosition());
 		else
 			c->Message(0, "Usage: (targeted) #ai guard - sets npc to guard the current location (use #summon to move)");
 	}
@@ -2438,15 +2511,73 @@ void command_setlsinfo(Client *c, const Seperator *sep)
 void command_grid(Client *c, const Seperator *sep)
 {
 	if (strcasecmp("max", sep->arg[1]) == 0) {
-        c->Message(0, "Highest grid ID in this zone: %d", database.GetHighestGrid(zone->GetZoneID()));
-    } else if (strcasecmp("add", sep->arg[1]) == 0) {
-        database.ModifyGrid(c, false, atoi(sep->arg[2]), atoi(sep->arg[3]), atoi(sep->arg[4]), zone->GetZoneID());
-    } else if (strcasecmp("delete", sep->arg[1]) == 0) {
-        database.ModifyGrid(c, true, atoi(sep->arg[2]), 0, 0, zone->GetZoneID());
-    } else {
-        c->Message(0, "Usage: #grid add/delete grid_num wandertype pausetype");
-        c->Message(0, "Usage: #grid max - displays the highest grid ID used in this zone (for add)");
-    }
+		c->Message(0, "Highest grid ID in this zone: %d", database.GetHighestGrid(zone->GetZoneID()));
+	}
+	else if (strcasecmp("add", sep->arg[1]) == 0) {
+		database.ModifyGrid(c, false, atoi(sep->arg[2]), atoi(sep->arg[3]), atoi(sep->arg[4]), zone->GetZoneID());
+	}
+	else if (strcasecmp("show", sep->arg[1]) == 0) {
+
+		Mob *target = c->GetTarget();
+
+		if (!target || !target->IsNPC()) {
+			c->Message(0, "You need a NPC target!");
+			return;
+		}
+
+		std::string query = StringFormat(
+				"SELECT `x`, `y`, `z`, `heading`, `number`, `pause` "
+				"FROM `grid_entries` "
+				"WHERE `zoneid` = %u and `gridid` = %i "
+				"ORDER BY `number` ",
+				zone->GetZoneID(),
+				target->CastToNPC()->GetGrid()
+		);
+
+		auto results = database.QueryDatabase(query);
+		if (!results.Success()) {
+			c->Message(0, "Error querying database.");
+			c->Message(0, query.c_str());
+		}
+
+		if (results.RowCount() == 0) {
+			c->Message(0, "No grid found");
+			return;
+		}
+
+		/**
+		 * Depop any node npc's already spawned
+		 */
+		auto &mob_list = entity_list.GetMobList();
+		for (auto itr = mob_list.begin(); itr != mob_list.end(); ++itr) {
+			Mob *mob = itr->second;
+			if (mob->IsNPC() && mob->GetRace() == 2254)
+				mob->Depop();
+		}
+
+		/**
+		 * Spawn grid nodes
+		 */
+		for (auto row = results.begin(); row != results.end(); ++row) {
+			auto node_position = glm::vec4(atof(row[0]), atof(row[1]), atof(row[2]), atof(row[3]));
+
+			NPC *npc = NPC::SpawnGridNodeNPC(
+					target->GetCleanName(),
+					node_position,
+					static_cast<uint32>(target->CastToNPC()->GetGrid()),
+					static_cast<uint32>(atoi(row[4])),
+					static_cast<uint32>(atoi(row[5]))
+			);
+			npc->SetFlyMode(GravityBehavior::Flying);
+			npc->GMMove(node_position.x, node_position.y, node_position.z, node_position.w);
+		}
+	}
+	else if (strcasecmp("delete", sep->arg[1]) == 0)
+		database.ModifyGrid(c, true,atoi(sep->arg[2]),0,0,zone->GetZoneID());
+	else {
+		c->Message(0,"Usage: #grid add/delete grid_num wandertype pausetype");
+		c->Message(0,"Usage: #grid max - displays the highest grid ID used in this zone (for add)");
+	}
 }
 
 void command_wp(Client *c, const Seperator *sep)
@@ -2649,24 +2780,42 @@ void command_mana(Client *c, const Seperator *sep)
 }
 
 void command_flymode(Client *c, const Seperator *sep) {
-	Client *t = c;
+	Mob *t = c;
 
-	if (strlen(sep->arg[1]) == 1 && !(sep->arg[1][0] == '0' || sep->arg[1][0] == '1' || sep->arg[1][0] == '2'))
-		c->Message(0, "#flymode [0/1/2]");
+	if (strlen(sep->arg[1]) == 1 && !(sep->arg[1][0] == '0' || sep->arg[1][0] == '1' || sep->arg[1][0] == '2' || sep->arg[1][0] == '3' || sep->arg[1][0] == '4' || sep->arg[1][0] == '5'))
+		c->Message(0, "#flymode [0/1/2/3/4/5]");
 	else {
-		if (c->GetTarget() && c->GetTarget()->IsClient())
-			t = c->GetTarget()->CastToClient();
-		t->SendAppearancePacket(AT_Levitate, atoi(sep->arg[1]));
+		if (c->GetTarget()) {
+			t = c->GetTarget();
+		}
+
+		int fm = atoi(sep->arg[1]);
+
+		t->SetFlyMode(static_cast<GravityBehavior>(fm));
+		t->SendAppearancePacket(AT_Levitate, fm);
 		uint32 account = c->AccountID();
-		if (sep->arg[1][0] == '1') {
-			c->Message(0, "Turning %s's Flymode ON", t->GetName());
+		if (sep->arg[1][0] == '0') {
+			c->Message(0, "Setting %s to Grounded", t->GetName());
+		}
+		else if (sep->arg[1][0] == '1') {
+			c->Message(0, "Setting %s to Flying", t->GetName());
 			database.SetGMFlymode(account, 1);
-		} else if (sep->arg[1][0] == '2') {
-			c->Message(0, "Turning %s's Flymode LEV", t->GetName());
+		}
+		else if (sep->arg[1][0] == '2') {
+			c->Message(0, "Setting %s to Levitating", t->GetName());
 			database.SetGMFlymode(account, 2);
-		} else {
-			c->Message(0, "Turning %s's Flymode OFF", t->GetName());
-			database.SetGMFlymode(account, 0);
+		}
+		else if (sep->arg[1][0] == '3') {
+			c->Message(0, "Setting %s to In Water", t->GetName());
+			database.SetGMFlymode(account, 3);
+		}
+		else if (sep->arg[1][0] == '4') {
+			c->Message(0, "Setting %s to Floating(Boat)", t->GetName());
+			database.SetGMFlymode(account, 4);
+		}
+		else if (sep->arg[1][0] == '5') {
+			c->Message(0, "Setting %s to Levitating While Running", t->GetName());
+			database.SetGMFlymode(account, 5);
 		}
 	}
 }
@@ -3005,7 +3154,7 @@ void command_npctypespawn(Client *c, const Seperator *sep)
 		const NPCType* tmp = 0;
 		if ((tmp = database.LoadNPCTypesData(atoi(sep->arg[1])))) {
 			//tmp->fixedZ = 1;
-			auto npc = new NPC(tmp, 0, c->GetPosition(), FlyMode3);
+			auto npc = new NPC(tmp, 0, c->GetPosition(), GravityBehavior::Water);
 			if (npc && sep->IsNumber(2))
 				npc->SetNPCFactionID(atoi(sep->arg[2]));
 
@@ -6516,10 +6665,6 @@ void command_roambox(Client *c, const Seperator *sep) {
 	t->CastToNPC()->DisplayRoamBox(c);
 }
 
-void command_underworld(Client *c, const Seperator *sep) {
-	entity_list.GetUnderworldMobs(c);
-}
-
 void command_wpadd(Client *c, const Seperator *sep)
 {
 	int	type1=0,
@@ -8008,10 +8153,8 @@ void command_pf(Client *c, const Seperator *sep)
 		Mob *who = c->GetTarget();
 		c->Message(0, "POS: (%.2f, %.2f, %.2f)",  who->GetX(), who->GetY(), who->GetZ());
 		c->Message(0, "WP: %s (%d/%d)",  to_string(who->GetCurrentWayPoint()).c_str(), who->IsNPC()?who->CastToNPC()->GetMaxWp():-1);
-		c->Message(0, "TAR: (%.2f, %.2f, %.2f)",  who->GetTarX(), who->GetTarY(), who->GetTarZ());
-		c->Message(0, "TARV: (%.2f, %.2f, %.2f)",  who->GetTarVX(), who->GetTarVY(), who->GetTarVZ());
-		c->Message(0, "|TV|=%.2f index=%d",  who->GetTarVector(), who->GetTarNDX());
 		c->Message(0, "pause=%d RAspeed=%d",  who->GetCWPP(), who->GetRunAnimSpeed());
+		//who->DumpMovement(c);
 	} else {
 		c->Message(0, "ERROR: target required");
 	}
@@ -8989,9 +9132,7 @@ void command_advnpcspawn(Client *c, const Seperator *sep)
 		}
 
 		c->Message(0, "Updating coordinates successful.");
-		target->CastToNPC()->GMMove(c->GetX(), c->GetY(), c->GetZ(), c->GetHeading());
-		target->CastToNPC()->SaveGuardSpot(true);
-		target->SendPosition();
+		target->GMMove(c->GetX(), c->GetY(), c->GetZ(), c->GetHeading());
 
 		return;
 	}

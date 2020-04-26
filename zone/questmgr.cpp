@@ -208,14 +208,14 @@ Mob* QuestManager::spawn2(int npc_type, int grid, int unused, const glm::vec4& p
 	const NPCType* tmp = 0;
 	if (tmp = database.LoadNPCTypesData(npc_type))
 	{
-		auto npc = new NPC(tmp, nullptr, position, FlyMode3);
+		auto npc = new NPC(tmp, nullptr, position, GravityBehavior::Water);
 		npc->AddLootTable();
 		entity_list.AddNPC(npc,true,true);
 		if(grid > 0)
 		{
 			npc->AssignWaypoints(grid);
 		}
-		npc->SendPositionUpdate();
+
 		return npc;
 	}
 	return nullptr;
@@ -230,14 +230,14 @@ Mob* QuestManager::unique_spawn(int npc_type, int grid, int unused, const glm::v
 	const NPCType* tmp = 0;
 	if (tmp = database.LoadNPCTypesData(npc_type))
 	{
-		auto npc = new NPC(tmp, nullptr, position, FlyMode3);
+		auto npc = new NPC(tmp, nullptr, position, GravityBehavior::Water);
 		npc->AddLootTable();
 		entity_list.AddNPC(npc,true,true);
 		if(grid > 0)
 		{
 			npc->AssignWaypoints(grid);
 		}
-		npc->SendPositionUpdate();
+
 		return npc;
 	}
 	return nullptr;
@@ -304,7 +304,7 @@ Mob* QuestManager::spawn_from_spawn2(uint32 spawn2_id)
 		found_spawn->SetCurrentNPCID(npcid);
 
 		auto position = glm::vec4(found_spawn->GetX(), found_spawn->GetY(), found_spawn->GetZ(), found_spawn->GetHeading());
-		auto npc = new NPC(tmp, found_spawn, position, FlyMode3);
+		auto npc = new NPC(tmp, found_spawn, position, GravityBehavior::Water);
 
 		found_spawn->SetNPCPointer(npc);
 		npc->AddLootTable();
@@ -315,7 +315,7 @@ Mob* QuestManager::spawn_from_spawn2(uint32 spawn2_id)
 		if (sg->roamdist && sg->roambox[0] && sg->roambox[1] && sg->roambox[2] && sg->roambox[3] && sg->delay &&
 			sg->min_delay)
 			npc->AI_SetRoambox(sg->roamdist, sg->roambox[0], sg->roambox[1], sg->roambox[2], sg->roambox[3],
-							   sg->delay, sg->min_delay);
+					   sg->delay, sg->min_delay);
 		if (zone->InstantGrids()) {
 			found_spawn->LoadGrid();
 		}
@@ -1705,13 +1705,12 @@ void QuestManager::respawn(int npcTypeID, int grid) {
 	const NPCType* npcType = nullptr;
 	if ((npcType = database.LoadNPCTypesData(npcTypeID)))
 	{
-		owner = new NPC(npcType, nullptr, owner->GetPosition(), FlyMode3);
+		owner = new NPC(npcType, nullptr, owner->GetPosition(), GravityBehavior::Water);
 		owner->CastToNPC()->AddLootTable();
 		entity_list.AddNPC(owner->CastToNPC(),true,true);
 		if(grid > 0)
 			owner->CastToNPC()->AssignWaypoints(grid);
 
-		owner->SendPositionUpdate();
 	}
 }
 
@@ -2819,22 +2818,18 @@ bool QuestManager::IsRunning()
 	return owner->IsRunning();
 }
 
-void QuestManager::FlyMode(uint8 flymode)
+void QuestManager::FlyMode(GravityBehavior flymode)
 {
 	QuestManagerCurrentQuestVars();
 	if(initiator)
 	{
-		if (flymode >= 0 && flymode < 3) {
-			initiator->SendAppearancePacket(AT_Levitate, flymode);
-			return;
-		}
+		initiator->SendAppearancePacket(AT_Levitate, static_cast<int>(flymode));
+		initiator->SetFlyMode(flymode);
 	}
-	if(owner)
+	else if(owner)
 	{
-		if (flymode >= 0 && flymode < 3) {
-			owner->SendAppearancePacket(AT_Levitate, flymode);
-			return;
-		}
+		owner->SendAppearancePacket(AT_Levitate, static_cast<int>(flymode));
+		owner->SetFlyMode(flymode);
 	}
 }
 

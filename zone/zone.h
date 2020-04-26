@@ -78,6 +78,7 @@ class WaterMap;
 extern EntityList entity_list;
 struct NPCType;
 struct ServerZoneIncomingClient_Struct;
+class MobMovementManager;
 
 class Zone
 {
@@ -370,6 +371,7 @@ private:
 	bool m_ucss_available;
 	uint32 m_last_ucss_update;
 
+	MobMovementManager *mMovementManager;
 };
 
 #endif

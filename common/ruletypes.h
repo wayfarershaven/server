@@ -307,7 +307,8 @@ RULE_CATEGORY_END()
 RULE_CATEGORY(Map)
 //enable these to help prevent mob hopping when they are pathing
 RULE_BOOL(Map, FixPathingZOnSendTo, false)		//try to repair Z coords in the SendTo routine as well.
-RULE_BOOL(Map, FixZWhenMoving, true)		// Automatically fix NPC Z coordinates when moving/pathing/engaged (Far less CPU intensive than its predecessor)
+RULE_BOOL(Map, FixZWhenPathing, true)		// Automatically fix NPC Z coordinates when moving/pathing/engaged (Far less CPU intensive than its predecessor)
+RULE_REAL(Map, DistanceCanTravelBeforeAdjustment, 10.0) // distance a mob can path before FixZ is called, depends on FixZWhenPathing
 RULE_BOOL(Map, MobZVisualDebug, false)		// Displays spell effects determining whether or not NPC is hitting Best Z calcs (blue for hit, red for miss)
 RULE_REAL(Map, FixPathingZMaxDeltaSendTo, 20)	//at runtime in SendTo: max change in Z to allow the BestZ code to apply.
 RULE_INT(Map, FindBestZHeightAdjust, 1)		// Adds this to the current Z before seeking the best Z position
@@ -319,6 +320,28 @@ RULE_BOOL(Pathing, AggroReturnToGrid, true)	// Enable pathing for aggroed roamin
 RULE_BOOL(Pathing, Guard, true)		// Enable pathing for mobs moving to their guard point.
 RULE_BOOL(Pathing, Find, true)		// Enable pathing for FindPerson requests from the client.
 RULE_BOOL(Pathing, Fear, true)		// Enable pathing for fear
+RULE_REAL(Pathing, ZDiffThresholdNew, 80)	// If a mob las LOS to it's target, it will run to it if the Z difference is < this.
+RULE_INT(Pathing, LOSCheckFrequency, 1000)	// A mob will check for LOS to it's target this often (milliseconds).
+RULE_INT(Pathing, RouteUpdateFrequencyShort, 1000)	// How often a new route will be calculated if the target has moved.
+RULE_INT(Pathing, RouteUpdateFrequencyLong, 5000)	// How often a new route will be calculated if the target has moved.
+// When a path has a path node route and it's target changes position, if it has RouteUpdateFrequencyNodeCount or less nodes to go on it's
+// current path, it will recalculate it's path based on the RouteUpdateFrequencyShort timer, otherwise it will use the
+// RouteUpdateFrequencyLong timer.
+RULE_INT(Pathing, RouteUpdateFrequencyNodeCount, 5)
+RULE_REAL(Pathing, MinDistanceForLOSCheckShort, 40000) // (NoRoot). While following a path, only check for LOS to target within this distance.
+RULE_REAL(Pathing, MinDistanceForLOSCheckLong, 1000000) // (NoRoot). Min distance when initially attempting to acquire the target.
+RULE_INT(Pathing, MinNodesLeftForLOSCheck, 4)	// Only check for LOS when we are down to this many path nodes left to run.
+// This next rule was put in for situations where the mob and it's target may be on different sides of a 'hazard', e.g. a pit
+// If the mob has LOS to it's target, even though there is a hazard in it's way, it may break off from the node path and run at
+// the target, only to later detect the hazard and re-acquire a node path. Depending upon the placement of the path nodes, this
+// can lead to the mob looping. The rule is intended to allow the mob to at least get closer to it's target each time before
+// checking LOS and trying to head straight for it.
+RULE_INT(Pathing, MinNodesTraversedForLOSCheck, 3)	// Only check for LOS after we have traversed this many path nodes.
+RULE_INT(Pathing, CullNodesFromStart, 1)		// Checks LOS from Start point to second node for this many nodes and removes first node if there is LOS
+RULE_INT(Pathing, CullNodesFromEnd, 1)		// Checks LOS from End point to second to last node for this many nodes and removes last node if there is LOS
+RULE_REAL(Pathing, CandidateNodeRangeXY, 400)		// When searching for path start/end nodes, only nodes within this range will be considered.
+RULE_REAL(Pathing, CandidateNodeRangeZ, 10)		// When searching for path start/end nodes, only nodes within this range will be considered.
+RULE_REAL(Pathing, NavmeshStepSize, 30.0f)
 RULE_CATEGORY_END()
 
 RULE_CATEGORY(Watermap)
@@ -586,7 +609,7 @@ RULE_BOOL(TaskSystem, EnableTaskProximity, true)
 RULE_CATEGORY_END()
 
 RULE_CATEGORY(Range)
-RULE_INT(Range, Say, 135)
+RULE_INT(Range, Say, 15)
 RULE_INT(Range, Emote, 135)
 RULE_INT(Range, BeginCast, 200)
 RULE_INT(Range, Anims, 135)

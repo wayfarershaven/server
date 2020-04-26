@@ -17,11 +17,10 @@
 	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#ifndef COMMON_DATA_VERIFICATION_H
-#define COMMON_DATA_VERIFICATION_H
+#pragma once
 
 #include <algorithm>
-
+#include <cmath>
 
 namespace EQEmu
 {
@@ -51,5 +50,3 @@ namespace EQEmu
 	}
 
 } /*EQEmu*/
-
-#endif /*COMMON_DATA_VERIFICATION_H*/
