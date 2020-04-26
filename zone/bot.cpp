@@ -273,7 +273,6 @@ void Bot::Sit() {
 	if(IsMoving()) {
 		moved = false;
 		SetCurrentSpeed(0);
-		tar_ndx = 0;
 	}
 
 	SetAppearance(eaSitting);
@@ -2253,9 +2252,6 @@ void Bot::AI_Process() {
 				glm::vec3 Goal = UpdatePath(GetTarget()->GetX(), GetTarget()->GetY(), GetTarget()->GetZ(),
 					GetBotRunspeed(), WaypointChanged, NodeReached);
 
-				if (WaypointChanged)
-					tar_ndx = 20;
-
 				CalculateNewPosition2(Goal.x, Goal.y, Goal.z, GetBotRunspeed());
 			}
 			else {
@@ -2556,9 +2552,6 @@ void Bot::AI_Process() {
 
 					glm::vec3 Goal = UpdatePath(follow->GetX(), follow->GetY(), follow->GetZ(),
 						speed, WaypointChanged, NodeReached);
-
-					if (WaypointChanged)
-						tar_ndx = 20;
 
 					CalculateNewPosition2(Goal.x, Goal.y, Goal.z, speed);
 				}

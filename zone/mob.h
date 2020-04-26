@@ -592,14 +592,6 @@ public:
 	inline const float GetSize() const { return size; }
 	inline const float GetBaseSize() const { return base_size; }
 	inline const float GetBaseTexture() const { return base_texture; }
-	inline const float GetTarX() const { return m_TargetLocation.x; }
-	inline const float GetTarY() const { return m_TargetLocation.y; }
-	inline const float GetTarZ() const { return m_TargetLocation.z; }
-	inline const float GetTarVX() const { return m_TargetV.x; }
-	inline const float GetTarVY() const { return m_TargetV.y; }
-	inline const float GetTarVZ() const { return m_TargetV.z; }
-	inline const float GetTarVector() const { return tar_vector; }
-	inline const uint8 GetTarNDX() const { return tar_ndx; }
 	inline const int8 GetFlyMode() const { return static_cast<const int8>(flymode); }
 	bool IsBoat() const;
 
@@ -629,7 +621,6 @@ public:
 	void SetRunning(bool val) { m_is_running = val; }
 	virtual void GMMove(float x, float y, float z, float heading = 0.01, bool SendUpdate = true);
 	void SetDelta(const glm::vec4& delta);
-	void SetTargetDestSteps(uint8 target_steps) { tar_ndx = target_steps; }
 	void SendPositionUpdateToClient(Client *client);
 	void SendPositionUpdate(uint8 iSendToSelf = 0);
 	void MakeSpawnUpdateNoDelta(PlayerPositionUpdateServer_Struct* spu);
@@ -675,8 +666,7 @@ public:
 	void SetAssistAggro(bool value) { AssistAggro = value; if (PrimaryAggro) AssistAggro = false; }
 	bool HateSummon();
 	void FaceTarget(Mob* mob_to_face = 0);
-	void SetHeading(float iHeading) { if(m_Position.w != iHeading) { pLastChange = Timer::GetCurrentTime();
-			m_Position.w = iHeading; } }
+	void SetHeading(float iHeading) { if(m_Position.w != iHeading) { m_Position.w = iHeading; } }
 	void WipeHateList(bool npc_only = false);
 	void AddFeignMemory(Client* attacker);
 	void RemoveFromFeignMemory(Client* attacker);
@@ -685,8 +675,6 @@ public:
 	std::list<struct_HateList*>& GetHateList() { return hate_list.GetHateList(); }
 	bool CheckLosFN(Mob* other);
 	bool CheckLosFN(float posX, float posY, float posZ, float mobSize);
-	inline void SetChanged() { pLastChange = Timer::GetCurrentTime(); }
-	inline const uint32 LastChange() const { return pLastChange; }
 	inline void SetLastLosState(bool value) { last_los_check = value; }
 	inline bool CheckLastLosState() const { return last_los_check; }
 
@@ -872,7 +860,7 @@ public:
 	void SetAppearance(EmuAppearance app, bool iIgnoreSelf = true);
 	inline EmuAppearance GetAppearance() const { return _appearance; }
 	inline const uint8 GetRunAnimSpeed() const { return pRunAnimSpeed; }
-	inline void SetRunAnimSpeed(int8 in) { if (pRunAnimSpeed != in) { pRunAnimSpeed = in; pLastChange = Timer::GetCurrentTime(); } }
+	inline void SetRunAnimSpeed(int8 in) { if (pRunAnimSpeed != in) { pRunAnimSpeed = in; } }
 	bool IsDestructibleObject() { return destructibleobject; }
 	void SetDestructibleObject(bool in) { destructibleobject = in; }
 
@@ -1354,7 +1342,6 @@ protected:
 	int current_speed;
 	eSpecialAttacks m_specialattacks;
 
-	uint32 pLastChange;
 	bool held;
 	bool gheld;
 	bool nocast;
@@ -1606,13 +1593,6 @@ protected:
 	int16 count_TempPet;
 	bool pet_owner_client; //Flags regular and pets as belonging to a client
 	uint32 pet_targetlock_id;
-
-	EGNode *_egnode; //the EG node we are in
-	glm::vec3 m_TargetLocation;
-	uint8 tar_ndx;
-	float tar_vector;
-	glm::vec3 m_TargetV;
-	float test_vector;
 
 	glm::vec3 m_TargetRing;
 
