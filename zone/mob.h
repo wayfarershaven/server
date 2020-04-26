@@ -47,6 +47,7 @@ class NPC;
 class Raid;
 struct NewSpawn_Struct;
 struct PlayerPositionUpdateServer_Struct;
+class MobMovementManager;
 
 const int COLLISION_BOX_SIZE = 8;
 
@@ -215,8 +216,6 @@ public:
 
 	inline virtual bool IsMob() const { return true; }
 	inline virtual bool InZone() const { return true; }
-
-	bool is_distance_roamer;
 
     void DisplayInfo(Mob *mob);
 
@@ -621,8 +620,7 @@ public:
 	void SetRunning(bool val) { m_is_running = val; }
 	virtual void GMMove(float x, float y, float z, float heading = 0.01, bool SendUpdate = true);
 	void SetDelta(const glm::vec4& delta);
-	void SendPositionUpdateToClient(Client *client);
-	void SendPositionUpdate(uint8 iSendToSelf = 0);
+	void SendPositionUpdate(bool iSendToSelf = false);
 	void MakeSpawnUpdateNoDelta(PlayerPositionUpdateServer_Struct* spu);
 	void MakeSpawnUpdate(PlayerPositionUpdateServer_Struct* spu);
 	void SetConLevel(uint8 in_level, Client *specific_target);
@@ -859,6 +857,7 @@ public:
 	void SendAppearancePacket(uint32 type, uint32 value, bool WholeZone = true, bool iIgnoreSelf = false, Client *specific_target=nullptr);
 	void SetAppearance(EmuAppearance app, bool iIgnoreSelf = true);
 	inline EmuAppearance GetAppearance() const { return _appearance; }
+	inline const int GetAnimation() const { return animation; }
 	inline const uint8 GetRunAnimSpeed() const { return pRunAnimSpeed; }
 	inline void SetRunAnimSpeed(int8 in) { if (pRunAnimSpeed != in) { pRunAnimSpeed = in; } }
 	bool IsDestructibleObject() { return destructibleobject; }
@@ -1327,8 +1326,6 @@ protected:
 	uint8 orig_level;
 	uint32 npctype_id;
 	glm::vec4 m_Position;
-	/* Used to determine when an NPC has traversed so many units - to send a zone wide pos update */
-	glm::vec4 last_major_update_position;
 	uint16 animation;
 	float base_size;
 	uint8 base_texture;
@@ -1615,6 +1612,8 @@ protected:
 
 	bool IsHorse;
 	bool engage_flush_on_next_engage;
+
+	MobMovementManager *mMovementManager;
 
 private:
 	void _StopSong(); //this is not what you think it is

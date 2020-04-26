@@ -53,6 +53,7 @@
 #include "worldserver.h"
 #include "zone.h"
 #include "zone_config.h"
+#include "mob_movement_manager.h"
 
 #include <time.h>
 #include <ctime>
@@ -927,6 +928,8 @@ Zone::Zone(uint32 in_zoneid, uint32 in_instanceid, const char* in_short_name)
 
 	m_ucss_available = false;
 	m_last_ucss_update = 0;
+
+	mMovementManager = &MobMovementManager::Get();
 }
 
 Zone::~Zone() {
@@ -1365,6 +1368,8 @@ bool Zone::Process() {
 	}
 
 	if(hotzone_timer.Check()) { UpdateHotzone(); }
+
+	mMovementManager->Process();
 
 	return true;
 }
