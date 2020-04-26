@@ -574,7 +574,7 @@ void Mob::SendToFixZ(float new_x, float new_y, float new_z) {
 	}
 }
 
-float Mob::GetFixedZ(glm::vec3 destination, int32 z_find_offset) {
+float Mob::GetFixedZ(const glm::vec3 &destination, int32 z_find_offset) {
 	BenchTimer timer;
 	timer.reset();
     float new_z = destination.z;
@@ -612,6 +612,11 @@ float Mob::GetFixedZ(glm::vec3 destination, int32 z_find_offset) {
 	}
 
 	return new_z;
+}
+
+void Mob::DumpMovement(Client *to)
+{
+	mMovementManager->Dump(this, to);
 }
 
 void Mob::FixZ(int32 z_find_offset /*= 5*/, bool fix_client_z /*= false*/) {
