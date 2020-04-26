@@ -505,7 +505,6 @@ void Client::CompleteConnect()
 	client_state = CLIENT_CONNECTED;
 	SendAllPackets();
 	hpupdate_timer.Start();
-	position_timer.Start();
 	autosave_timer.Start();
 	SetDuelTarget(0);
 	SetDueling(false);
@@ -936,108 +935,6 @@ void Client::CompleteConnect()
 	FixClientXP();
 
 	worldserver.RequestTellQueue(GetName());
-}
-
-void Client::CheatDetected(CheatTypes CheatType, float x, float y, float z)
-{
-	//ToDo: Break warp down for special zones. Some zones have special teleportation pads or bad .map files which can trigger the detector without a legit zone request.
-
-	switch (CheatType)
-	{
-		case MQWarp: //Some zones may still have issues. Database updates will eliminate most if not all problems.
-			if (RuleB(Zone, EnableMQWarpDetector)
-				&& ((this->Admin() < RuleI(Zone, MQWarpExemptStatus)
-					 || (RuleI(Zone, MQWarpExemptStatus)) == -1)))
-			{
-				Message(13, "Large warp detected.");
-				char hString[250];
-				sprintf(hString, "/MQWarp with location %.2f, %.2f, %.2f", GetX(), GetY(), GetZ());
-				database.SetMQDetectionFlag(this->account_name, this->name, hString, zone->GetShortName());
-			}
-			break;
-		case MQWarpShadowStep:
-			if (RuleB(Zone, EnableMQWarpDetector)
-				&& ((this->Admin() < RuleI(Zone, MQWarpExemptStatus)
-					 || (RuleI(Zone, MQWarpExemptStatus)) == -1)))
-			{
-				char *hString = nullptr;
-				MakeAnyLenString(&hString, "/MQWarp(SS) with location %.2f, %.2f, %.2f, the target was shadow step exempt but we still found this suspicious.", GetX(), GetY(), GetZ());
-				database.SetMQDetectionFlag(this->account_name, this->name, hString, zone->GetShortName());
-				safe_delete_array(hString);
-			}
-			break;
-		case MQWarpKnockBack:
-			if (RuleB(Zone, EnableMQWarpDetector)
-				&& ((this->Admin() < RuleI(Zone, MQWarpExemptStatus)
-					 || (RuleI(Zone, MQWarpExemptStatus)) == -1)))
-			{
-				char *hString = nullptr;
-				MakeAnyLenString(&hString, "/MQWarp(KB) with location %.2f, %.2f, %.2f, the target was Knock Back exempt but we still found this suspicious.", GetX(), GetY(), GetZ());
-				database.SetMQDetectionFlag(this->account_name, this->name, hString, zone->GetShortName());
-				safe_delete_array(hString);
-			}
-			break;
-
-		case MQWarpLight:
-			if (RuleB(Zone, EnableMQWarpDetector)
-				&& ((this->Admin() < RuleI(Zone, MQWarpExemptStatus)
-					 || (RuleI(Zone, MQWarpExemptStatus)) == -1)))
-			{
-				if (RuleB(Zone, MarkMQWarpLT))
-				{
-					char *hString = nullptr;
-					MakeAnyLenString(&hString, "/MQWarp(LT) with location %.2f, %.2f, %.2f, running fast but not fast enough to get killed, possibly: small warp, speed hack, excessive lag, marked as suspicious.", GetX(), GetY(), GetZ());
-					database.SetMQDetectionFlag(this->account_name, this->name, hString, zone->GetShortName());
-					safe_delete_array(hString);
-				}
-			}
-			break;
-
-		case MQZone:
-			if (RuleB(Zone, EnableMQZoneDetector) && ((this->Admin() < RuleI(Zone, MQZoneExemptStatus) || (RuleI(Zone, MQZoneExemptStatus)) == -1)))
-			{
-				char hString[250];
-				sprintf(hString, "/MQZone used at %.2f, %.2f, %.2f to %.2f %.2f %.2f", GetX(), GetY(), GetZ(), x, y, z);
-				database.SetMQDetectionFlag(this->account_name, this->name, hString, zone->GetShortName());
-			}
-			break;
-		case MQZoneUnknownDest:
-			if (RuleB(Zone, EnableMQZoneDetector) && ((this->Admin() < RuleI(Zone, MQZoneExemptStatus) || (RuleI(Zone, MQZoneExemptStatus)) == -1)))
-			{
-				char hString[250];
-				sprintf(hString, "/MQZone used at %.2f, %.2f, %.2f", GetX(), GetY(), GetZ());
-				database.SetMQDetectionFlag(this->account_name, this->name, hString, zone->GetShortName());
-			}
-			break;
-		case MQGate:
-			if (RuleB(Zone, EnableMQGateDetector) && ((this->Admin() < RuleI(Zone, MQGateExemptStatus) || (RuleI(Zone, MQGateExemptStatus)) == -1))) {
-				Message(13, "Illegal gate request.");
-				char hString[250];
-				sprintf(hString, "/MQGate used at %.2f, %.2f, %.2f", GetX(), GetY(), GetZ());
-				database.SetMQDetectionFlag(this->account_name, this->name, hString, zone->GetShortName());
-				if (zone)
-				{
-					this->SetZone(this->GetZoneID(), zone->GetInstanceID()); //Prevent the player from zoning, place him back in the zone where he tried to originally /gate.
-				}
-				else
-				{
-					this->SetZone(this->GetZoneID(), 0); //Prevent the player from zoning, place him back in the zone where he tried to originally /gate.
-
-				}
-			}
-			break;
-		case MQGhost: //Not currently implemented, but the framework is in place - just needs detection scenarios identified
-			if (RuleB(Zone, EnableMQGhostDetector) && ((this->Admin() < RuleI(Zone, MQGhostExemptStatus) || (RuleI(Zone, MQGhostExemptStatus)) == -1))) {
-				database.SetMQDetectionFlag(this->account_name, this->name, "/MQGhost", zone->GetShortName());
-			}
-			break;
-		default:
-			char *hString = nullptr;
-			MakeAnyLenString(&hString, "Unhandled HackerDetection flag with location %.2f, %.2f, %.2f.", GetX(), GetY(), GetZ());
-			database.SetMQDetectionFlag(this->account_name, this->name, hString, zone->GetShortName());
-			safe_delete_array(hString);
-			break;
-	}
 }
 
 // connecting opcode handlers
@@ -2979,7 +2876,6 @@ void Client::Handle_OP_Assist(const EQApplicationPacket *app)
 			Mob *new_target = assistee->GetTarget();
 			if (new_target && (GetGM() ||
 							   Distance(m_Position, assistee->GetPosition()) <= TARGETING_RANGE)) {
-				SetAssistExemption(true);
 				eid->entity_id = new_target->GetID();
 			}
 			else {
@@ -3960,6 +3856,8 @@ void Client::Handle_OP_BoardBoat(const EQApplicationPacket *app)
 		return;
 	controlling_boat_id = boat->GetID();	// set the client's BoatID to show that it's on this boat
 
+	Message(0, "Board boat: %s", boatname);
+
 	return;
 }
 
@@ -4491,109 +4389,8 @@ void Client::Handle_OP_ClientUpdate(const EQApplicationPacket *app)
 		else return;
 	}
 
-	float dist = 0;
-	float tmp;
-	tmp = m_Position.x - ppu->x_pos;
-	dist += tmp*tmp;
-	tmp = m_Position.y - ppu->y_pos;
-	dist += tmp*tmp;
-	dist = sqrt(dist);
-
-	/* Hack checks */
-	if (dist == 0) {
-		if (m_DistanceSinceLastPositionCheck > 0.0) {
-			uint32 cur_time = Timer::GetCurrentTime();
-			if ((cur_time - m_TimeSinceLastPositionCheck) > 0) {
-				float speed = (m_DistanceSinceLastPositionCheck * 100) / (float)(cur_time - m_TimeSinceLastPositionCheck);
-				int runs = GetRunspeed();
-				if (speed > (runs * RuleR(Zone, MQWarpDetectionDistanceFactor))) {
-					if (!GetGMSpeed() && (runs >= GetBaseRunspeed() || (speed > (GetBaseRunspeed() * RuleR(Zone, MQWarpDetectionDistanceFactor))))) {
-						if (IsShadowStepExempted()) {
-							if (m_DistanceSinceLastPositionCheck > 800) {
-								CheatDetected(MQWarpShadowStep, ppu->x_pos, ppu->y_pos, ppu->z_pos);
-							}
-						}
-						else if (IsKnockBackExempted()) {
-							if (speed > 30.0f) {
-								CheatDetected(MQWarpKnockBack, ppu->x_pos, ppu->y_pos, ppu->z_pos);
-							}
-						}
-						else if (!IsPortExempted()) {
-							if (!IsMQExemptedArea(zone->GetZoneID(), ppu->x_pos, ppu->y_pos, ppu->z_pos)) {
-								if (speed > (runs * 2 * RuleR(Zone, MQWarpDetectionDistanceFactor))) {
-									m_TimeSinceLastPositionCheck = cur_time;
-									m_DistanceSinceLastPositionCheck = 0.0f;
-									CheatDetected(MQWarp, ppu->x_pos, ppu->y_pos, ppu->z_pos);
-									//Death(this, 10000000, SPELL_UNKNOWN, _1H_BLUNT);
-								}
-								else {
-									CheatDetected(MQWarpLight, ppu->x_pos, ppu->y_pos, ppu->z_pos);
-								}
-							}
-						}
-					}
-				}
-				SetShadowStepExemption(false);
-				SetKnockBackExemption(false);
-				SetPortExemption(false);
-				m_TimeSinceLastPositionCheck = cur_time;
-				m_DistanceSinceLastPositionCheck = 0.0f;
-				m_CheatDetectMoved = false;
-			}
-		}
-		else {
-			m_TimeSinceLastPositionCheck = Timer::GetCurrentTime();
-			m_CheatDetectMoved = false;
-		}
-	}
-	else {
-		m_DistanceSinceLastPositionCheck += dist;
-		m_CheatDetectMoved = true;
-		if (m_TimeSinceLastPositionCheck == 0) {
-			m_TimeSinceLastPositionCheck = Timer::GetCurrentTime();
-		}
-		else {
-			uint32 cur_time = Timer::GetCurrentTime();
-			if ((cur_time - m_TimeSinceLastPositionCheck) > 2500) {
-				float speed = (m_DistanceSinceLastPositionCheck * 100) / (float)(cur_time - m_TimeSinceLastPositionCheck);
-				int runs = GetRunspeed();
-				if (speed > (runs * RuleR(Zone, MQWarpDetectionDistanceFactor))) {
-					if (!GetGMSpeed() && (runs >= GetBaseRunspeed() || (speed > (GetBaseRunspeed() * RuleR(Zone, MQWarpDetectionDistanceFactor))))) {
-						if (IsShadowStepExempted()) {
-							if (m_DistanceSinceLastPositionCheck > 800) {
-								CheatDetected(MQWarpShadowStep, ppu->x_pos, ppu->y_pos, ppu->z_pos);
-							}
-						}
-						else if (IsKnockBackExempted()) {
-							if (speed > 30.0f) {
-								CheatDetected(MQWarpKnockBack, ppu->x_pos, ppu->y_pos, ppu->z_pos);
-							}
-						}
-						else if (!IsPortExempted()) {
-							if (!IsMQExemptedArea(zone->GetZoneID(), ppu->x_pos, ppu->y_pos, ppu->z_pos)) {
-								if (speed > (runs * 2 * RuleR(Zone, MQWarpDetectionDistanceFactor))) {
-									m_TimeSinceLastPositionCheck = cur_time;
-									m_DistanceSinceLastPositionCheck = 0.0f;
-									CheatDetected(MQWarp, ppu->x_pos, ppu->y_pos, ppu->z_pos);
-								}
-								else {
-									CheatDetected(MQWarpLight, ppu->x_pos, ppu->y_pos, ppu->z_pos);
-								}
-							}
-						}
-					}
-				}
-				SetShadowStepExemption(false);
-				SetKnockBackExemption(false);
-				SetPortExemption(false);
-				m_TimeSinceLastPositionCheck = cur_time;
-				m_DistanceSinceLastPositionCheck = 0.0f;
-			}
-		}
-
 		if (IsDraggingCorpse())
 			DragCorpses();
-	}
 
 	/* Check to see if PPU should trigger an update to the rewind position. */
 	float rewind_x_diff = 0;
@@ -4741,8 +4538,6 @@ void Client::Handle_OP_ClientUpdate(const EQApplicationPacket *app)
 		}
 		CheckRegionTypeChanges();
 	}
-
-	return;
 }
 
 void Client::Handle_OP_CombatAbility(const EQApplicationPacket *app)
@@ -10308,9 +10103,9 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
                     mypet->SayTo_StringID(this, MT_PetResponse, PET_GUARDINGLIFE);
                     mypet->SetPetFeigned(false);
                     mypet->SetPetOrder(SPO_Guard);
-                    mypet->CastToNPC()->SaveGuardSpot();
+                    mypet->CastToNPC()->SaveGuardSpot(mypet->GetPosition());
                     if (!mypet->GetTarget()) // want them to not twitch if they're chasing something down
-                        mypet->SetCurrentSpeed(0);
+                        mypet->StopNavigation();
                     if (mypet->IsPetStop()) {
                         mypet->SetPetStop(false);
                         SetPetCommandState(PET_BUTTON_STOP, 0);
@@ -10676,7 +10471,7 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
                     mypet->SetPetStop(false);
                 } else {
                     mypet->SetPetStop(true);
-                    mypet->SetCurrentSpeed(0);
+                    mypet->StopNavigation();
                     mypet->SetTarget(nullptr);
                     if (mypet->IsPetRegroup()) {
                         mypet->SetPetRegroup(false);
@@ -10692,7 +10487,7 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
 
             if ((mypet->GetPetType() == petAnimation && aabonuses.PetCommands[PetCommand]) || mypet->GetPetType() != petAnimation) {
                 mypet->SetPetStop(true);
-                mypet->SetCurrentSpeed(0);
+                mypet->StopNavigation();
                 mypet->SetTarget(nullptr);
                 mypet->SayTo_StringID(this, MT_PetResponse, PET_GETLOST_STRING);
                 if (mypet->IsPetRegroup()) {
@@ -13724,12 +13519,6 @@ void Client::Handle_OP_TargetCommand(const EQApplicationPacket *app)
 				GetTarget()->IsTargeted(1);
 				return;
 			}
-			else if (IsAssistExempted())
-			{
-				GetTarget()->IsTargeted(1);
-				SetAssistExemption(false);
-				return;
-			}
 			else if (GetTarget()->IsClient())
 			{
 				//make sure this client is in our raid/group
@@ -13747,23 +13536,6 @@ void Client::Handle_OP_TargetCommand(const EQApplicationPacket *app)
 				SetTarget((Mob*)nullptr);
 				return;
 			}
-			else if (IsPortExempted())
-			{
-				GetTarget()->IsTargeted(1);
-				return;
-			}
-			else if (IsSenseExempted())
-			{
-				GetTarget()->IsTargeted(1);
-				SetSenseExemption(false);
-				return;
-			}
-				/* P2002 doesn't use XTarget
-                else if (IsXTarget(GetTarget()))
-                {
-                    GetTarget()->IsTargeted(1);
-                    return;
-                }*/
 			else if (GetTarget()->IsPetOwnerClient())
 			{
 				GetTarget()->IsTargeted(1);

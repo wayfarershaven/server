@@ -584,6 +584,7 @@ public:
 	uint32 GetNPCTypeID() const { return npctype_id; }
 	void SetNPCTypeID(uint32 npctypeid) { npctype_id = npctypeid; }
 	inline const glm::vec4& GetPosition() const { return m_Position; }
+	inline void SetPosition(const float x, const float y, const float z) { m_Position.x = x; m_Position.y = y; m_Position.z = z; }
 	inline const float GetX() const { return m_Position.x; }
 	inline const float GetY() const { return m_Position.y; }
 	inline const float GetZ() const { return m_Position.z; }
@@ -604,14 +605,12 @@ public:
 	virtual inline int32 GetPrimaryFaction() const { return 0; }
 
 	//Movement
-	void Warp(const glm::vec3& location);
 	inline bool IsMoving() const { return moving; }
 	virtual void SetMoving(bool move) { moving = move; m_Delta = glm::vec4(); }
 	virtual void GoToBind() { }
 	virtual void Gate();
 	int GetWalkspeed() const { return(_GetWalkSpeed()); }
 	int GetRunspeed() const { return(_GetRunSpeed()); }
-	void SetCurrentSpeed(int in);
 	int GetBaseRunspeed() const { return base_runspeed; }
 	int GetBaseWalkspeed() const { return base_walkspeed; }
 	int GetBaseFearSpeed() const { return base_fearspeed; }
@@ -620,23 +619,25 @@ public:
 	void SetRunning(bool val) { m_is_running = val; }
 	virtual void GMMove(float x, float y, float z, float heading = 0.01, bool SendUpdate = true);
 	void SetDelta(const glm::vec4& delta);
-	void SendPositionUpdate(bool iSendToSelf = false);
 	void MakeSpawnUpdateNoDelta(PlayerPositionUpdateServer_Struct* spu);
 	void MakeSpawnUpdate(PlayerPositionUpdateServer_Struct* spu);
 	void SetConLevel(uint8 in_level, Client *specific_target);
-	void SendPosition();
+	void SentPositionPacket(float dx, float dy, float dz, float dh, int anim, bool send_to_self = false);
+	void StopMoving();
+	void StopMoving(float new_heading);
 	void SetSpawned() { spawned = true; };
 	bool Spawned() { return spawned; };
 	virtual bool ShouldISpawnFor(Client *c) { return true; }
 	void SetFlyMode(GravityBehavior flymode);
-	inline void Teleport(const glm::vec3 &NewPosition) { m_Position.x = NewPosition.x; m_Position.y = NewPosition.y;
-		m_Position.z = NewPosition.z; };
+	void Teleport(const glm::vec3 &pos);
+	void Teleport(const glm::vec4 &pos);
 	void TryMoveAlong(float distance, float angle, bool send = true);
 	void ProcessForcedMovement();
 	inline void IncDeltaX(float in) { m_Delta.x += in; }
 	inline void IncDeltaY(float in) { m_Delta.y += in; }
 	inline void IncDeltaZ(float in) { m_Delta.z += in; }
 	inline void SetForcedMovement(int in) { ForcedMovement = in; }
+	void SetHeading(float iHeading) { m_Position.w = iHeading; }
 
 	//AI
 	static uint8 GetLevelForClientCon(uint8 mylevel, uint8 iOtherLevel);
@@ -664,7 +665,6 @@ public:
 	void SetAssistAggro(bool value) { AssistAggro = value; if (PrimaryAggro) AssistAggro = false; }
 	bool HateSummon();
 	void FaceTarget(Mob* mob_to_face = 0);
-	void SetHeading(float iHeading) { m_Position.w = iHeading; }
 	void WipeHateList(bool npc_only = false);
 	void AddFeignMemory(Client* attacker);
 	void RemoveFromFeignMemory(Client* attacker);
@@ -1031,7 +1031,12 @@ public:
 
 	inline bool			CheckAggro(Mob* other) {return hate_list.IsEntOnHateList(other);}
 	float				CalculateHeadingToTarget(float in_x, float in_y) {return HeadingAngleToMob(in_x, in_y); }
-	void				NavigateTo(float x, float y, float z, float speed);
+	void				WalkTo(float x, float y, float z);
+	void				RunTo(float x, float y, float z);
+	void				NavigateTo(float x, float y, float z);
+	void				RotateTo(float new_heading);
+	void				RotateToWalking(float new_heading);
+	void				RotateToRunning(float new_heading);
 	void				StopNavigation();
 	float				CalculateDistance(float x, float y, float z);
 	float				GetGroundZ(float new_x, float new_y, float z_offset=0.0);
@@ -1039,10 +1044,9 @@ public:
 	void				SendToFixZ(float new_x, float new_y, float new_z);
 	float				GetZOffset() const;
 	float               GetDefaultRaceSize() const;
-	void				TryFixZ(int32 z_find_offset = 5, bool fix_client_z = false);
     void 				FixZ(int32 z_find_offset = 5, bool fix_client_z = false);
 	float				GetFixedZ(const glm::vec3 &destination, int32 z_find_offset = 5);
-	void				DumpMovement(Client *to);
+	virtual int			GetStuckBehavior() const { return 0; }
 
 	void				NPCSpecialAttacks(const char* parse, int permtag, bool reset = true, bool remove = false);
 	inline uint32		DontHealMeBefore() const { return pDontHealMeBefore; }
@@ -1124,6 +1128,7 @@ public:
 	void SetCurrentWP(uint16 waypoint) { cur_wp = waypoint; }
 	virtual FACTION_VALUE GetReverseFactionCon(Mob* iOther) { return FACTION_INDIFFERENT; }
 
+	virtual const bool IsUnderwaterOnly() const { return false; }
 	inline bool IsTrackable() const { return(trackable); }
 	Timer* GetAIThinkTimer() { return AI_think_timer.get(); }
 	Timer* GetAIMovementTimer() { return AI_movement_timer.get(); }
@@ -1205,9 +1210,6 @@ public:
 	int GetWeaponDamage(Mob *against, const EQEmu::ItemData *weapon_item);
 	int GetWeaponDamage(Mob *against, const EQEmu::ItemInstance *weapon_item, uint32 *hate = nullptr);
 	float last_z;
-
-	//Pathing
-	glm::vec3 UpdatePath(float ToX, float ToY, float ToZ, float Speed, bool &WaypointChange, bool &NodeReached);
 
 	int GetAggroCount();
 
@@ -1332,6 +1334,7 @@ protected:
 	uint8 level;
 	uint8 orig_level;
 	uint32 npctype_id;
+
 	glm::vec4 m_Position;
 	uint16 animation;
 	float base_size;
@@ -1376,7 +1379,6 @@ protected:
 	void CalculateNewFearpoint();
 	float FindGroundZ(float new_x, float new_y, float z_offset=0.0);
 	float FindDestGroundZ(glm::vec3 dest, float z_offset=0.0);
-	glm::vec3 HandleStuckPath(const glm::vec3 &To, const glm::vec3 &From);
 
 	virtual float GetSympatheticProcChances(uint16 spell_id, int16 ProcRateMod, int32 ItemProcRate = 0);
 	int16 GetSympatheticSpellProcRate(uint16 spell_id);
@@ -1516,7 +1518,6 @@ protected:
 	std::unique_ptr<Timer> AI_think_timer;
 	std::unique_ptr<Timer> AI_movement_timer;
 	std::unique_ptr<Timer> AI_target_check_timer;
-	bool movetimercompleted;
 	int8 ForcedMovement; // push
 	bool resisted; // spell resisted
 	bool permarooted;
@@ -1543,8 +1544,6 @@ protected:
 
 	bool flee_mode;
 	Timer flee_timer;
-	Timer fix_z_timer;
-	Timer fix_z_timer_engaged;
 	Timer attack_anim_timer;
 	Timer position_update_melee_push_timer;
 
@@ -1570,14 +1569,8 @@ protected:
 	glm::vec3 m_FearWalkTarget;
 	bool currently_fleeing;
 
-	// Pathing
-	//
-	glm::vec3 PathingDestination;
-	IPathfinder::IPath Route;
-	std::unique_ptr<Timer> PathRecalcTimer;
+	bool pause_timer_complete;
 	bool DistractedFromGrid;
-	glm::vec3 PathingLastPosition;
-	int PathingLoopCount;
 
 	uint32 pDontHealMeBefore;
 	uint32 pDontBuffMeBefore;

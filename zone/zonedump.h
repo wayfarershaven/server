@@ -137,6 +137,7 @@ struct NPCType
 	bool	ignore_despawn;
 	bool	show_name; // should default on
 	bool	untargetable;
+	int8	stuck_behavior;
 };
 
 struct PlayerCorpse_Struct {

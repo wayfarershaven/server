@@ -29,7 +29,7 @@ extern volatile bool is_zone_loaded;
 #endif
 
 Merc::Merc(const NPCType* d, float x, float y, float z, float heading)
-		: NPC(d, nullptr, glm::vec4(x, y, z, heading), GravityBehavior::Ground, false), endupkeep_timer(1000), rest_timer(1), confidence_timer(6000), check_target_timer(2000)
+		: NPC(d, nullptr, glm::vec4(x, y, z, heading), GravityBehavior::Water, false), endupkeep_timer(1000), rest_timer(1), confidence_timer(6000), check_target_timer(2000)
 {
 	base_hp = d->max_hp;
 	base_mana = d->Mana;
@@ -1277,7 +1277,7 @@ bool Merc::Process()
 		//6 seconds, or whatever the rule is set to has passed, send this position to everyone to avoid ghosting
 		if(!IsMoving() && !IsEngaged())
 		{
-			SendPosition();
+			SentPositionPacket(0.0f, 0.0f, 0.0f, 0.0f, 0);
 			if(IsSitting()) {
 				if(!rest_timer.Enabled()) {
 					rest_timer.Start(RuleI(Character, RestRegenTimeToActivate) * 1000);
@@ -1471,7 +1471,7 @@ void Merc::AI_Process() {
 
 				if(moved) {
 					moved = false;
-					SetCurrentSpeed(0);
+					StopNavigation();
 				}
 			}
 
@@ -1479,7 +1479,7 @@ void Merc::AI_Process() {
 		}
 		else if (!CheckLosFN(GetTarget())) {
 			auto Goal = GetTarget()->GetPosition();
-			NavigateTo(Goal.x, Goal.y, Goal.z, GetRunspeed());
+			RunTo(Goal.x, Goal.y, Goal.z);
 
 			return;
 		}
@@ -1513,7 +1513,7 @@ void Merc::AI_Process() {
 				SetRunAnimSpeed(0);
 
 				if(moved) {
-					SetCurrentSpeed(0);
+					StopNavigation();
 				}
 			}
 
@@ -1545,7 +1545,7 @@ void Merc::AI_Process() {
 									float newZ = 0;
 									FaceTarget(GetTarget());
 									if (PlotPositionAroundTarget(this, newX, newY, newZ)) {
-										NavigateTo(newX, newY, newZ, GetRunspeed());
+										RunTo(newX, newY, newZ);
 										return;
 									}
 								}
@@ -1557,7 +1557,7 @@ void Merc::AI_Process() {
 							float newY = 0;
 							float newZ = 0;
 							if (PlotPositionAroundTarget(GetTarget(), newX, newY, newZ)) {
-								NavigateTo(newX, newY, newZ, GetRunspeed());
+								RunTo(newX, newY, newZ);
 								return;
 							}
 						}
@@ -1568,16 +1568,16 @@ void Merc::AI_Process() {
 						float newY = 0;
 						float newZ = 0;
 						if (PlotPositionAroundTarget(GetTarget(), newX, newY, newZ, false) && GetArchetype() != ARCHETYPE_CASTER) {
-							NavigateTo(newX, newY, newZ, GetRunspeed());
+							RunTo(newX, newY, newZ);
 							return;
 						}
 					}
 				}
 
-				if(IsMoving())
-					SendPositionUpdate();
-				else
-					SendPosition();
+				//if (IsMoving())
+				//	SendPositionUpdate();
+				//else
+				//	SendPosition();
 			}
 
 			if(!IsMercCaster() && GetTarget() && !IsStunned() && !IsMezzed() && (GetAppearance() != eaDead))
@@ -1695,14 +1695,14 @@ void Merc::AI_Process() {
 			{
 				if(!IsRooted()) {
 					Log(Logs::Detail, Logs::AI, "Pursuing %s while engaged.", GetTarget()->GetCleanName());
-					NavigateTo(GetTarget()->GetX(), GetTarget()->GetY(), GetTarget()->GetZ(), GetRunspeed());
+					RunTo(GetTarget()->GetX(), GetTarget()->GetY(), GetTarget()->GetZ());
 					return;
 				}
 
-				if(IsMoving())
-					SendPositionUpdate();
-				else
-					SendPosition();
+				//if(IsMoving())
+				//	SendPositionUpdate();
+				//else
+				//	SentPositionPacket(0.0f, 0.0f, 0.0f, 0.0f, 0);
 			}
 		} // end not in combat range
 
@@ -1750,15 +1750,20 @@ void Merc::AI_Process() {
 
 				if (follow) {
 					float dist = DistanceSquared(m_Position, follow->GetPosition());
-					int speed = GetRunspeed();
+					bool running = true;
 
 					if (dist < GetFollowDistance() + 1000)
-						speed = GetWalkspeed();
+						running = false;
 
 					SetRunAnimSpeed(0);
 
 					if (dist > GetFollowDistance()) {
-						NavigateTo(follow->GetX(), follow->GetY(), follow->GetZ(), speed);
+						if (running) {
+							RunTo(follow->GetX(), follow->GetY(), follow->GetZ());
+						}
+						else {
+							WalkTo(follow->GetX(), follow->GetY(), follow->GetZ());
+						}
 
 						if (rest_timer.Enabled())
 							rest_timer.Disable();
@@ -1766,7 +1771,7 @@ void Merc::AI_Process() {
 					else {
 						if (moved) {
 							moved = false;
-							SetCurrentSpeed(0);
+							StopNavigation();
 						}
 					}
 				}
@@ -1792,7 +1797,7 @@ void Merc::AI_Start(int32 iMoveDelay) {
 	}
 
 	SendTo(GetX(), GetY(), GetZ());
-	SaveGuardSpot();
+	SaveGuardSpot(GetPosition());
 }
 
 void Merc::AI_Stop() {
@@ -1991,7 +1996,7 @@ bool Merc::AIDoSpellCast(uint16 spellid, Mob* tar, int32 mana_cost, uint32* oDon
 		 || dist2 <= GetActSpellRange(spellid, spells[spellid].range)*GetActSpellRange(spellid, spells[spellid].range)) && (mana_cost <= GetMana() || GetMana() == GetMaxMana()))
 	{
 		SetRunAnimSpeed(0);
-		SendPosition();
+		SentPositionPacket(0.0f, 0.0f, 0.0f, 0.0f, 0);
 		SetMoving(false);
 
 		result = CastSpell(spellid, tar->GetID(), EQEmu::CastingSlot::Gem2, -1, mana_cost, oDontDoAgainBefore, -1, -1, 0, 0);
@@ -4360,7 +4365,7 @@ void Merc::Sit() {
 	if(IsMoving()) {
 		moved = false;
 		// SetHeading(CalculateHeadingToTarget(GetTarget()->GetX(), GetTarget()->GetY()));
-		SendPosition();
+		SentPositionPacket(0.0f, 0.0f, 0.0f, 0.0f, 0);
 		SetMoving(false);
 	}
 
@@ -5128,7 +5133,7 @@ bool Merc::Spawn(Client *owner) {
 
 	entity_list.AddMerc(this, true, true);
 
-	SendPosition();
+	SentPositionPacket(0.0f, 0.0f, 0.0f, 0.0f, 0);
 
 	Log(Logs::General, Logs::Mercenaries, "Spawn Mercenary %s.", GetName());
 

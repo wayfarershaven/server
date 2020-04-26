@@ -92,7 +92,6 @@ SET(zone_sources
 	pathfinder_interface.cpp
 	pathfinder_nav_mesh.cpp
 	pathfinder_null.cpp
-	pathfinder_waypoint.cpp
 	pathing.cpp
 	perl_client.cpp
 	perl_doors.cpp
@@ -213,7 +212,6 @@ SET(zone_headers
 	pathfinder_interface.h
 	pathfinder_nav_mesh.h
 	pathfinder_null.h
-	pathfinder_waypoint.h
 	perlpacket.h
 	petitions.h
 	pets.h

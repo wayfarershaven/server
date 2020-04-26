@@ -39,6 +39,7 @@
 #include "spawn2.h"
 #include "zone.h"
 #include "quest_parser_collection.h"
+#include "water_map.h"
 
 #include <cctype>
 #include <stdio.h>
@@ -647,16 +648,6 @@ bool NPC::Process()
 		this->spun_timer.Disable();
 	}
 
-	// Dirty fix for mobs going under the world. Reset them to spawn point.
-	if (!IsEngaged() && IsTrackable()) {
-		if (GetZ() <= zone->newzone_data.underworld) {
-			if (respawn2) {
-				Teleport(glm::vec3(respawn2->GetX(), respawn2->GetY(), respawn2->GetZ()));
-				SendPositionUpdate();
-			}
-		}
-	}
-
 	if (p_depop)
 	{
 		Mob* owner = entity_list.GetMob(this->ownerid);
@@ -745,9 +736,8 @@ bool NPC::Process()
 			DoGravityEffect();
 	}
 
-	if(reface_timer->Check() && !IsEngaged() && (m_GuardPoint.x == GetX() && m_GuardPoint.y == GetY() && m_GuardPoint.z == GetZ())) {
-		SetHeading(m_GuardPoint.w);
-		SendPosition();
+	if(reface_timer->Check() && !IsEngaged() && IsPositionEqualWithinCertainZ(m_Position, m_GuardPoint, 5.0f)) {
+		RotateTo(m_GuardPoint.w);
 		reface_timer->Disable();
 	}
 
@@ -1159,7 +1149,7 @@ NPC* NPC::SpawnNPC(const char* spawncommand, const glm::vec4& position, Client* 
 		npc_type->prim_melee_type = 28;
 		npc_type->sec_melee_type = 28;
 
-		auto npc = new NPC(npc_type, nullptr, position, GravityBehavior::Ground);
+		auto npc = new NPC(npc_type, nullptr, position, GravityBehavior::Water);
 		npc->GiveNPCTypeData(npc_type);
 
 		entity_list.AddNPC(npc);

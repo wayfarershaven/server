@@ -93,7 +93,7 @@ void NPC::StopWandering()
 {	// stops a mob from wandering, takes him off grid and sends him back to spawn point
 	roamer = false;
 	CastToNPC()->SetGrid(0);
-	SendPosition();
+	StopNavigation();
 	Log(Logs::Detail, Logs::Pathing, "Stop Wandering requested.");
 	return;
 }
@@ -150,7 +150,7 @@ void NPC::PauseWandering(int pausetime)
 		moving = false;
 		DistractedFromGrid = true;
 		Log(Logs::Detail, Logs::Pathing, "Paused Wandering requested. Grid %d. Resuming in %d ms (0=not until told)", GetGrid(), pausetime);
-		SendPosition();
+		StopNavigation();
 		if (pausetime < 1) {	// negative grid number stops him dead in his tracks until ResumeWandering()
 			SetGrid(0 - GetGrid());
 		}
@@ -388,13 +388,8 @@ void NPC::SetWaypointPause()
 {
 	//Declare time to wait on current WP
 
-	if (cur_wp_pause == 0) {
-		AI_walking_timer->Start(100);
-		AI_walking_timer->Trigger();
-	}
-	else
+	if(cur_wp_pause > 0)
 	{
-
 		switch (pausetype)
 		{
 		case 0: //Random Half
@@ -410,28 +405,22 @@ void NPC::SetWaypointPause()
 	}
 }
 
-void NPC::SaveGuardSpot(bool iClearGuardSpot) {
-	if (iClearGuardSpot) {
-		Log(Logs::Detail, Logs::AI, "Clearing guard order.");
-		m_GuardPoint = glm::vec4();
-	}
-	else {
-		m_GuardPoint = m_Position;
+void NPC::SaveGuardSpot(const glm::vec4 &pos)
+{
+	m_GuardPoint = pos;
 
-		if (m_GuardPoint.w == 0)
-			m_GuardPoint.w = 0.0001;		//hack to make IsGuarding simpler
-		Log(Logs::Detail, Logs::AI, "Setting guard position to %s", to_string(static_cast<glm::vec3>(m_GuardPoint)).c_str());
-	}
+	if (m_GuardPoint.w == 0)
+		m_GuardPoint.w = 0.0001;		//hack to make IsGuarding simpler
+	LogF(Logs::Detail, Logs::AI, "Setting guard position to {0}", to_string(static_cast<glm::vec3>(m_GuardPoint)));
 }
 
 void NPC::NextGuardPosition() {
-	NavigateTo(m_GuardPoint.x, m_GuardPoint.y, m_GuardPoint.z, GetMovespeed());
-	if ((m_Position.x == m_GuardPoint.x) && (m_Position.y == m_GuardPoint.y) && (m_Position.z == m_GuardPoint.z))
+	NavigateTo(m_GuardPoint.x, m_GuardPoint.y, m_GuardPoint.z);
+	if (IsPositionEqualWithinCertainZ(m_Position, m_GuardPoint, 5.0f))
 	{
 		if (moved)
 		{
 			moved = false;
-			SetCurrentSpeed(0);
 		}
 	}
 }
@@ -440,8 +429,44 @@ float Mob::CalculateDistance(float x, float y, float z) {
 	return (float)sqrtf(((m_Position.x - x)*(m_Position.x - x)) + ((m_Position.y - y)*(m_Position.y - y)) + ((m_Position.z - z)*(m_Position.z - z)));
 }
 
-void Mob::NavigateTo(float x, float y, float z, float speed) {
-	mMovementManager->NavigateTo(this, x, y, z, speed);
+void Mob::WalkTo(float x, float y, float z)
+{
+	mMovementManager->NavigateTo(this, x, y, z, MovementWalking);
+}
+
+void Mob::RunTo(float x, float y, float z)
+{
+	mMovementManager->NavigateTo(this, x, y, z, MovementRunning);
+}
+
+void Mob::NavigateTo(float x, float y, float z)
+{
+	if (IsRunning()) {
+		RunTo(x, y, z);
+	}
+	else {
+		WalkTo(x, y, z);
+	}
+}
+
+void Mob::RotateTo(float new_heading)
+{
+	if (IsRunning()) {
+		RotateToRunning(new_heading);
+	}
+	else {
+		RotateToWalking(new_heading);
+	}
+}
+
+void Mob::RotateToWalking(float new_heading)
+{
+	mMovementManager->RotateTo(this, new_heading, MovementWalking);
+}
+
+void Mob::RotateToRunning(float new_heading)
+{
+	mMovementManager->RotateTo(this, new_heading, MovementRunning);
 }
 
 void Mob::StopNavigation() {
@@ -583,9 +608,8 @@ float Mob::GetFixedZ(const glm::vec3 &destination, int32 z_find_offset) {
 	timer.reset();
     float new_z = destination.z;
 
-	if (zone->HasMap() && RuleB(Map, FixZWhenMoving)) {
-
-		if (flymode != GravityBehavior::Ground)
+	if (zone->HasMap()) {
+		if (flymode == GravityBehavior::Flying)
 			return new_z;
 
 		if (zone->HasWaterMap() && zone->watermap->InLiquid(glm::vec3(m_Position)))
@@ -618,18 +642,20 @@ float Mob::GetFixedZ(const glm::vec3 &destination, int32 z_find_offset) {
 	return new_z;
 }
 
-void Mob::DumpMovement(Client *to)
-{
-	mMovementManager->Dump(this, to);
-}
-
 void Mob::FixZ(int32 z_find_offset /*= 5*/, bool fix_client_z /*= false*/) {
-    glm::vec3 current_loc(m_Position);
-
     if (IsClient() && !fix_client_z) {
+		return;
+	}
+
+	if (flymode == GravityBehavior::Flying) {
+		return;
+	}
+
+	if (zone->watermap && zone->watermap->InLiquid(m_Position)) {
         return;
     }
 
+	glm::vec3 current_loc(m_Position);
     float new_z = GetFixedZ(current_loc, z_find_offset);
 
     if (new_z == m_Position.z) {
@@ -785,8 +811,6 @@ void Mob::TryMoveAlong(float distance, float angle, bool send)
 
 	new_pos.z = GetFixedZ(new_pos);
 	Teleport(new_pos);
-	if (send)
-		SendPositionUpdate();
 }
 
 int	ZoneDatabase::GetHighestGrid(uint32 zoneid) {

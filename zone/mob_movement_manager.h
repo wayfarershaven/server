@@ -4,6 +4,38 @@
 class Mob;
 class Client;
 
+struct RotateCommand;
+struct MovementCommand;
+struct MobMovementEntry;
+struct PlayerPositionUpdateServer_Struct;
+
+enum ClientRange : int
+{
+	ClientRangeNone = 0,
+	ClientRangeClose = 1,
+	ClientRangeMedium = 2,
+	ClientRangeCloseMedium = 3,
+	ClientRangeLong = 4,
+	ClientRangeCloseLong = 5,
+	ClientRangeMediumLong = 6,
+	ClientRangeAny = 7
+};
+
+enum MobMovementMode : int
+{
+	MovementWalking = 0,
+	MovementRunning = 1
+};
+
+enum MobStuckBehavior : int
+{
+	RunToTarget,
+	WarpToTarget,
+	TakeNoAction,
+	EvadeCombat,
+	MaxStuckBehavior
+};
+
 class MobMovementManager
 {
 public:
@@ -14,11 +46,14 @@ public:
 	void AddClient(Client *c);
 	void RemoveClient(Client *c);
 
-	void SendPosition(Mob *who);
-	void SendPositionUpdate(Mob *who, bool send_to_self);
-	void NavigateTo(Mob *who, float x, float y, float z, float speed);
+	void RotateTo(Mob *who, float to, MobMovementMode mode = MovementRunning);
+	void Teleport(Mob *who, float x, float y, float z, float heading);
+	void NavigateTo(Mob *who, float x, float y, float z, MobMovementMode mode = MovementRunning);
 	void StopNavigation(Mob *who);
-	void Dump(Mob *m, Client *to);
+	void SendCommandToClients(Mob *m, float dx, float dy, float dz, float dh, int anim, ClientRange range);
+	float FixHeading(float in);
+	void DumpStats(Client *to);
+	void ClearStats();
 
 	static MobMovementManager &Get() {
 		static MobMovementManager inst;
@@ -30,12 +65,18 @@ private:
 	MobMovementManager(const MobMovementManager&);
 	MobMovementManager& operator=(const MobMovementManager&);
 
-	bool HeadingEqual(float a, float b);
-	void SendUpdateTo(Mob *who, Client *c, int anim, float heading);
-	void SendUpdate(Mob *who, int anim, float heading);
-	void SendUpdateShortDistance(Mob *who, int anim, float heading);
-	void SendUpdateLongDistance(Mob *who, int anim, float heading);
-	void ProcessMovement(Mob *who, float x, float y, float z, float speed);
+	void FillCommandStruct(PlayerPositionUpdateServer_Struct *spu, Mob *m, float dx, float dy, float dz, float dh, int anim);
+	void UpdatePath(Mob *who, float x, float y, float z, MobMovementMode mode);
+	void UpdatePathGround(Mob *who, float x, float y, float z, MobMovementMode mode);
+	void UpdatePathUnderwater(Mob *who, float x, float y, float z, MobMovementMode mode);
+	void UpdatePathBoat(Mob *who, float x, float y, float z, MobMovementMode mode);
+	void PushTeleportTo(MobMovementEntry &ent, float x, float y, float z, float heading);
+	void PushMoveTo(MobMovementEntry &ent, float x, float y, float z, MobMovementMode mode);
+	void PushSwimTo(MobMovementEntry &ent, float x, float y, float z, MobMovementMode mode);
+	void PushRotateTo(MobMovementEntry &ent, Mob *who, float to, MobMovementMode mode);
+	void PushStopMoving(MobMovementEntry &ent);
+	void PushEvadeCombat(MobMovementEntry &ent);
+	void HandleStuckBehavior(Mob *who, float x, float y, float z, MobMovementMode mode);
 
 	struct Implementation;
 	std::unique_ptr<Implementation> _impl;
