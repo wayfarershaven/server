@@ -5930,15 +5930,13 @@ XS(XS_Mob_CalculateNewPosition)
 {
 	dXSARGS;
 	if (items < 5 || items > 6)
-		Perl_croak(aTHX_ "Usage: Mob::CalculateNewPosition(THIS, x, y, z, speed, checkZ= false)");
+		Perl_croak(aTHX_ "Usage: Mob::CalculateNewPosition(THIS, float x, float y, float z, float speed)");
 	{
 		Mob *		THIS;
-		bool		RETVAL;
 		float		x = (float)SvNV(ST(1));
 		float		y = (float)SvNV(ST(2));
 		float		z = (float)SvNV(ST(3));
 		float		speed = (float)SvNV(ST(4));
-		bool		checkZ;
 
 		if (sv_derived_from(ST(0), "Mob")) {
 			IV tmp = SvIV((SV*)SvRV(ST(0)));
@@ -5949,54 +5947,9 @@ XS(XS_Mob_CalculateNewPosition)
 		if(THIS == nullptr)
 			Perl_croak(aTHX_ "THIS is nullptr, avoiding crash.");
 
-		if (items < 6)
-			checkZ = false;
-		else {
-			checkZ = (bool)SvTRUE(ST(5));
-		}
-
-		RETVAL = THIS->CalculateNewPosition(x, y, z, speed, checkZ);
-		ST(0) = boolSV(RETVAL);
-		sv_2mortal(ST(0));
+		THIS->CalculateNewPosition(x, y, z, speed);
 	}
-	XSRETURN(1);
-}
-
-XS(XS_Mob_CalculateNewPosition2); /* prototype to pass -Wmissing-prototypes */
-XS(XS_Mob_CalculateNewPosition2)
-{
-	dXSARGS;
-	if (items < 5 || items > 6)
-		Perl_croak(aTHX_ "Usage: Mob::CalculateNewPosition(THIS, x, y, z, speed, checkZ= false)");
-	{
-		Mob *		THIS;
-		bool		RETVAL;
-		float		x = (float)SvNV(ST(1));
-		float		y = (float)SvNV(ST(2));
-		float		z = (float)SvNV(ST(3));
-		float		speed = (float)SvNV(ST(4));
-		bool		checkZ;
-
-		if (sv_derived_from(ST(0), "Mob")) {
-			IV tmp = SvIV((SV*)SvRV(ST(0)));
-			THIS = INT2PTR(Mob *,tmp);
-		}
-		else
-			Perl_croak(aTHX_ "THIS is not of type Mob");
-		if(THIS == nullptr)
-			Perl_croak(aTHX_ "THIS is nullptr, avoiding crash.");
-
-		if (items < 6)
-			checkZ = false;
-		else {
-			checkZ = (bool)SvTRUE(ST(5));
-		}
-
-		RETVAL = THIS->CalculateNewPosition(x, y, z, speed, checkZ);
-		ST(0) = boolSV(RETVAL);
-		sv_2mortal(ST(0));
-	}
-	XSRETURN(1);
+	XSRETURN_EMPTY;
 }
 
 XS(XS_Mob_CalculateDistance); /* prototype to pass -Wmissing-prototypes */
@@ -7195,10 +7148,10 @@ XS(XS_Mob_SetFlyMode)
 {
 	dXSARGS;
 	if (items != 2)
-		Perl_croak(aTHX_ "Usage: Mob::SetFlyMode(THIS, 0|1|2|3)");
+		Perl_croak(aTHX_ "Usage: Mob::SetFlyMode(THIS, uint8 flymode[0|1|2|3|4|5])");
 	{
 		Mob *		THIS;
-		uint8		flymode = (uint8)SvIV(ST(1));
+		GravityBehavior flymode = (GravityBehavior) SvIV(ST(1));
 
 		if (sv_derived_from(ST(0), "Mob")) {
 			IV tmp = SvIV((SV*)SvRV(ST(0)));
@@ -9316,7 +9269,7 @@ XS(boot_Mob)
 		newXSproto(strcpy(buf, "WipeHateList"), XS_Mob_WipeHateList, file, "$");
 		newXSproto(strcpy(buf, "CheckAggro"), XS_Mob_CheckAggro, file, "$$");
 		newXSproto(strcpy(buf, "CalculateHeadingToTarget"), XS_Mob_CalculateHeadingToTarget, file, "$$$");
-		newXSproto(strcpy(buf, "CalculateNewPosition"), XS_Mob_CalculateNewPosition, file, "$$$$$;$");
+		newXSproto(strcpy(buf, "CalculateNewPosition"), XS_Mob_CalculateNewPosition, file, "$$$$$");
 		newXSproto(strcpy(buf, "CalculateDistance"), XS_Mob_CalculateDistance, file, "$$$$");
 		newXSproto(strcpy(buf, "SendTo"), XS_Mob_SendTo, file, "$$$$");
 		newXSproto(strcpy(buf, "SendToFixZ"), XS_Mob_SendToFixZ, file, "$$$$");

@@ -435,7 +435,7 @@ Mob::Mob(
 
 	m_TargetRing = glm::vec3();
 
-	flymode = FlyMode3;
+	flymode = GravityBehavior::Ground;
 	DistractedFromGrid = false;
 	hate_list.SetHateOwner(this);
 
@@ -1206,7 +1206,7 @@ void Mob::FillSpawnStruct(NewSpawn_Struct* ns, Mob* ForWho)
 		ns->spawn.flymode = flymode;
 
 	if(IsBoat()) {
-		ns->spawn.flymode = 1;
+		ns->spawn.flymode = GravityBehavior::Floating;
 	}
 
 	ns->spawn.lastName[0] = '\0';
@@ -3627,17 +3627,9 @@ bool Mob::EntityVariableExists(const char *id)
 	return false;
 }
 
-void Mob::SetFlyMode(uint8 flymode)
+void Mob::SetFlyMode(GravityBehavior flymode)
 {
-	if(IsClient() && flymode >= 0 && flymode < 3)
-	{
-		this->SendAppearancePacket(AT_Levitate, flymode);
-	}
-	else if(IsNPC() && flymode >= 0 && flymode <= 3)
-	{
-		this->SendAppearancePacket(AT_Levitate, flymode);
-		this->CastToNPC()->SetFlyMode(flymode);
-	}
+	this->flymode = flymode;
 }
 
 bool Mob::IsNimbusEffectActive(uint32 nimbus_effect)
@@ -6178,4 +6170,11 @@ void Mob::Shield(Mob* target, float range_multiplier) {
 
 float Mob::GetDefaultRaceSize() const {
 	return GetRaceGenderDefaultHeight(race, gender);
+}
+
+void Mob::TryFixZ(int32 z_find_offset, bool fix_client_z)
+{
+	if (fix_z_timer.Check() && flymode == GravityBehavior::Ground) {
+		FixZ();
+	}
 }

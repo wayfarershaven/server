@@ -1546,7 +1546,6 @@ void Mob::AI_Process() {
                                 SendPositionUpdate();
                                 moved = true;
                             } else {
-                                bool waypoint_changed, node_reached;
 								auto &Goal = owner->GetPosition();
 
                                 CalculateNewPosition(Goal.x, Goal.y, Goal.z, pet_speed, true);
@@ -1805,14 +1804,12 @@ void NPC::AI_DoMovement() {
             }
         }
     } else if (IsGuarding()) {
-        bool CP2Moved;
-        if (!((m_Position.x == m_GuardPoint.x) && (m_Position.y == m_GuardPoint.y) && (m_Position.z == m_GuardPoint.z))) {
-			CP2Moved = CalculateNewPosition(m_GuardPoint.x, m_GuardPoint.y,	m_GuardPoint.z, move_speed);
-        } else {
-			CP2Moved = false;
-        }
+        CalculateNewPosition(m_GuardPoint.x, m_GuardPoint.y, m_GuardPoint.z, move_speed);
 
-        if (!CP2Moved) {
+		//if(Distance(m_GuardPoint, m_Position))
+        bool at_gp = CalculateDistance(m_GuardPoint.x, m_GuardPoint.y, m_GuardPoint.z) < 0.1f;
+
+        if (at_gp) {
             if (moved) {
                 Log(Logs::Detail,
                     Logs::AI,

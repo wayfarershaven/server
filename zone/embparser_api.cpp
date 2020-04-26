@@ -3263,9 +3263,9 @@ XS(XS__FlyMode);
 XS(XS__FlyMode) {
 	dXSARGS;
 	if (items != 1)
-		Perl_croak(aTHX_ "Usage: FlyMode([0/1/2])");
+		Perl_croak(aTHX_ "Usage: quest::FlyMode(uint8 mode [0-5])");
 
-	uint8 flymode = (int)SvUV(ST(0));
+	GravityBehavior flymode = (GravityBehavior) SvUV(ST(0));
 	quest_manager.FlyMode(flymode);
 
 	XSRETURN_EMPTY;
