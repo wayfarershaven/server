@@ -807,12 +807,10 @@ void Client::AI_Process() {
                     speed *= 2;
                     SetCurrentSpeed(speed);
                     // Check if we have reached the last fear point
-                    if ((std::abs(GetX() - m_FearWalkTarget.x) < 0.1) &&
-                        (std::abs(GetY() - m_FearWalkTarget.y) < 0.1)) {
-                        // Calculate a new point to run to
+					if(IsPositionEqual(GetX(), GetY(), GetZ(), m_FearWalkTarget.x, m_FearWalkTarget.y, m_FearWalkTarget.z)) {
                         CalculateNewFearpoint();
                     }
-					CalculateNewPosition(m_FearWalkTarget.x, m_FearWalkTarget.y, m_FearWalkTarget.z, speed, true);
+					NavigateTo(m_FearWalkTarget.x, m_FearWalkTarget.y, m_FearWalkTarget.z, speed);
                 }
                 return;
             }
@@ -844,6 +842,8 @@ void Client::AI_Process() {
         bool is_combat_range = CombatRange(GetTarget());
 
         if (is_combat_range) {
+        	StopNavigation();
+
             if (charm_class_attacks_timer.Check()) {
                 DoClassAttacks(GetTarget());
             }
@@ -878,7 +878,7 @@ void Client::AI_Process() {
                     animation = newspeed;
                     newspeed *= 2;
                     SetCurrentSpeed(newspeed);
-					CalculateNewPosition(GetTarget()->GetX(), GetTarget()->GetY(), GetTarget()->GetZ(), newspeed);
+					NavigateTo(GetTarget()->GetX(), GetTarget()->GetY(), GetTarget()->GetZ(), newspeed);
                 }
             } else if (IsMoving()) {
                 SetHeading(CalculateHeadingToTarget(GetTarget()->GetX(), GetTarget()->GetY()));
@@ -923,13 +923,10 @@ void Client::AI_Process() {
                     nspeed *= 2;
                     SetCurrentSpeed(nspeed);
 
-                    CalculateNewPosition(owner->GetX(), owner->GetY(), owner->GetZ(), nspeed);
+                    NavigateTo(owner->GetX(), owner->GetY(), owner->GetZ(), nspeed);
                 }
             } else {
-                if (moved) {
-                    SetCurrentSpeed(0);
-                    moved = false;
-                }
+                StopNavigation();
             }
         }
     }
@@ -1096,17 +1093,15 @@ void Mob::AI_Process() {
             } else {
                 if (AI_movement_timer->Check()) {
                     // Check if we have reached the last fear point
-                    if ((std::abs(GetX() - m_FearWalkTarget.x) < 0.1) &&
-                        (std::abs(GetY() - m_FearWalkTarget.y) < 0.1)) {
+                    if (IsPositionEqual(GetX(), GetY(), GetZ(), m_FearWalkTarget.x, m_FearWalkTarget.y, m_FearWalkTarget.z)) {
                         // Calculate a new point to run to
                         CalculateNewFearpoint();
                     }
-					CalculateNewPosition(
+					NavigateTo(
 						m_FearWalkTarget.x,
 						m_FearWalkTarget.y,
 						m_FearWalkTarget.z,
-						GetFearSpeed(),
-						true
+						GetFearSpeed()
 					);
                 }
                 return;
@@ -1256,6 +1251,8 @@ void Mob::AI_Process() {
         bool is_combat_range = CombatRange(target);
 
         if (is_combat_range) {
+        	StopNavigation();
+
             if (AI_movement_timer->Check()) {
                 if (CalculateHeadingToTarget(GetTarget()->GetX(), GetTarget()->GetY()) != m_Position.w) {
                     SetHeading(CalculateHeadingToTarget(GetTarget()->GetX(), GetTarget()->GetY()));
@@ -1458,7 +1455,7 @@ void Mob::AI_Process() {
                 } else if (AI_movement_timer->Check() && target) {
                     if (!IsRooted()) {
                         Log(Logs::Detail, Logs::AI, "Pursuing %s while engaged.", target->GetName());
-						CalculateNewPosition(target->GetX(), target->GetY(), target->GetZ(), GetRunspeed());
+						NavigateTo(target->GetX(), target->GetY(), target->GetZ(), GetRunspeed());
 
                     } else if (IsMoving()) {
                         SetHeading(CalculateHeadingToTarget(target->GetX(), target->GetY()));
@@ -1548,14 +1545,10 @@ void Mob::AI_Process() {
                             } else {
 								auto &Goal = owner->GetPosition();
 
-                                CalculateNewPosition(Goal.x, Goal.y, Goal.z, pet_speed, true);
+                                NavigateTo(Goal.x, Goal.y, Goal.z, pet_speed);
                             }
                         } else {
-                            if (moved) {
-                                this->FixZ();
-                                SetCurrentSpeed(0);
-                                moved = false;
-                            }
+                            StopNavigation();
                         }
                         break;
                     }
@@ -1596,7 +1589,7 @@ void Mob::AI_Process() {
 
                         auto &Goal = follow->GetPosition();
 
-                        CalculateNewPosition(Goal.x, Goal.y, Goal.z, speed, true);
+						NavigateTo(Goal.x, Goal.y, Goal.z, speed);
                     } else {
                         moved = false;
                         SetCurrentSpeed(0);
@@ -1718,7 +1711,7 @@ void NPC::AI_DoMovement() {
                 roambox_destination_y);
         }
 
-		CalculateNewPosition(roambox_destination_x, roambox_destination_y, roambox_destination_z, move_speed, true);
+		NavigateTo(roambox_destination_x, roambox_destination_y, roambox_destination_z, move_speed);
 
         if (m_Position.x == roambox_destination_x && m_Position.y == roambox_destination_y) {
             time_until_can_move = Timer::GetCurrentTime() + RandomTimer(roambox_min_delay, roambox_delay);
@@ -1782,12 +1775,11 @@ void NPC::AI_DoMovement() {
                     }
                 }
                 if (doMove) {    // not at waypoint yet or at 0 pause WP, so keep moving
-                    CalculateNewPosition(
+                    NavigateTo(
 						m_CurrentWayPoint.x,
 						m_CurrentWayPoint.y,
 						m_CurrentWayPoint.z,
-						move_speed,
-						true
+						move_speed
 					);
                 }
             }
@@ -1804,12 +1796,11 @@ void NPC::AI_DoMovement() {
             }
         }
     } else if (IsGuarding()) {
-        CalculateNewPosition(m_GuardPoint.x, m_GuardPoint.y, m_GuardPoint.z, move_speed);
-
-		//if(Distance(m_GuardPoint, m_Position))
-        bool at_gp = CalculateDistance(m_GuardPoint.x, m_GuardPoint.y, m_GuardPoint.z) < 0.1f;
+		bool at_gp = IsPositionEqual(GetX(), GetY(), GetZ(), m_GuardPoint.x, m_GuardPoint.y, m_GuardPoint.z);
 
         if (at_gp) {
+        	StopNavigation();
+
             if (moved) {
                 Log(Logs::Detail,
                     Logs::AI,
@@ -1828,6 +1819,9 @@ void NPC::AI_DoMovement() {
                 SetAppearance(GetGuardPointAnim());
             }
         }
+        else {
+			NavigateTo(m_GuardPoint.x, m_GuardPoint.y, m_GuardPoint.z, move_speed);
+		}
     }
 }
 
