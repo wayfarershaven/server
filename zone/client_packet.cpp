@@ -659,8 +659,6 @@ void Client::CompleteConnect()
 					}
 					switch (spell.base[x1]) {
 						case OGRE:
-							SendAppearancePacket(AT_Size, 9);
-							break;
 						case TROLL:
 							SendAppearancePacket(AT_Size, 8);
 							break;
@@ -1400,9 +1398,7 @@ void Client::Handle_Connect_OP_ZoneEntry(const EQApplicationPacket *app)
 
 	switch (race)
 	{
-		case OGRE:
-			size = 9; break;
-		case TROLL:
+		case OGRE: case TROLL:
 			size = 8; break;
 		case VAHSHIR: case BARBARIAN:
 			size = 7; break;
