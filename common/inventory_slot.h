@@ -25,108 +25,108 @@
 
 namespace EQEmu
 {
-	class InventorySlot;
+    class InventorySlot;
 
-	namespace inventory {
-		int8 ConvertEquipmentIndexToTextureIndex(int16 slot_index);
-		int8 ConvertEquipmentSlotToTextureIndex(const InventorySlot& inventory_slot);
-		int16 ConvertTextureIndexToEquipmentIndex(int8 texture_index);
-	}
-	
-	class InventorySlot {
-	public:
-		InventorySlot() : _type_index(inventory::typeInvalid), _slot_index(inventory::slotInvalid), _container_index(inventory::containerInvalid), _socket_index(inventory::socketInvalid), _typeless(false) { }
-		InventorySlot(int16 type_index) : _type_index(type_index), _slot_index(inventory::slotInvalid), _container_index(inventory::containerInvalid), _socket_index(inventory::socketInvalid), _typeless(false) { }
-		InventorySlot(int16 type_index, int16 parent_index) : _type_index(type_index), _slot_index(parent_index), _container_index(inventory::containerInvalid), _socket_index(inventory::socketInvalid), _typeless(false) { }
-		InventorySlot(int16 type_index, int16 parent_index, int16 bag_index) : _type_index(type_index), _slot_index(parent_index), _container_index(bag_index), _socket_index(inventory::socketInvalid), _typeless(false) { }
-		InventorySlot(int16 type_index, int16 parent_index, int16 bag_index, int16 aug_index) : _type_index(type_index), _slot_index(parent_index), _container_index(bag_index), _socket_index(aug_index), _typeless(false) { }
-		InventorySlot(const InventorySlot& r) : _type_index(r._type_index), _slot_index(r._slot_index), _container_index(r._container_index), _socket_index(r._socket_index), _typeless(r._typeless) { }
-		InventorySlot(int16 type_index, const InventorySlot& r) : _type_index(type_index), _slot_index(r._slot_index), _container_index(r._container_index), _socket_index(r._socket_index), _typeless(false) { }
+    namespace inventory {
+        int8 ConvertEquipmentIndexToTextureIndex(int16 slot_index);
+        int8 ConvertEquipmentSlotToTextureIndex(const InventorySlot& inventory_slot);
+        int16 ConvertTextureIndexToEquipmentIndex(int8 texture_index);
+    }
 
-		inline int16 TypeIndex() const { return _type_index; }
-		inline int16 SlotIndex() const { return _slot_index; }
-		inline int16 ContainerIndex() const { return _container_index; }
-		inline int16 SocketIndex() const { return _socket_index; }
+    class InventorySlot {
+    public:
+        InventorySlot() : _type_index(invtype::TYPE_INVALID), _slot_index(invslot::SLOT_INVALID), _container_index(invbag::SLOT_INVALID), _socket_index(invaug::SOCKET_INVALID), _typeless(false) { }
+        InventorySlot(int16 type_index) : _type_index(type_index), _slot_index(invslot::SLOT_INVALID), _container_index(invbag::SLOT_INVALID), _socket_index(invaug::SOCKET_INVALID), _typeless(false) { }
+        InventorySlot(int16 type_index, int16 parent_index) : _type_index(type_index), _slot_index(parent_index), _container_index(invbag::SLOT_INVALID), _socket_index(invaug::SOCKET_INVALID), _typeless(false) { }
+        InventorySlot(int16 type_index, int16 parent_index, int16 bag_index) : _type_index(type_index), _slot_index(parent_index), _container_index(bag_index), _socket_index(invaug::SOCKET_INVALID), _typeless(false) { }
+        InventorySlot(int16 type_index, int16 parent_index, int16 bag_index, int16 aug_index) : _type_index(type_index), _slot_index(parent_index), _container_index(bag_index), _socket_index(aug_index), _typeless(false) { }
+        InventorySlot(const InventorySlot& r) : _type_index(r._type_index), _slot_index(r._slot_index), _container_index(r._container_index), _socket_index(r._socket_index), _typeless(r._typeless) { }
+        InventorySlot(int16 type_index, const InventorySlot& r) : _type_index(type_index), _slot_index(r._slot_index), _container_index(r._container_index), _socket_index(r._socket_index), _typeless(false) { }
 
-		bool Typeless() const { return _typeless; }
+        inline int16 TypeIndex() const { return _type_index; }
+        inline int16 SlotIndex() const { return _slot_index; }
+        inline int16 ContainerIndex() const { return _container_index; }
+        inline int16 SocketIndex() const { return _socket_index; }
 
-		bool IsValidSlot() const;
-		bool IsDeleteSlot() const;
+        bool Typeless() const { return _typeless; }
 
-		static bool IsEquipmentIndex(int16 slot_index);
-		static bool IsGeneralIndex(int16 slot_index);
-		static bool IsCursorIndex(int16 slot_index);
-		static bool IsWeaponIndex(int16 slot_index);
-		static bool IsTextureIndex(int16 slot_index);
-		static bool IsTintableIndex(int16 slot_index);
+        bool IsValidSlot() const;
+        bool IsDeleteSlot() const;
 
-		bool IsEquipmentSlot() const;
-		bool IsGeneralSlot() const;
-		bool IsCursorSlot() const;
-		bool IsWeaponSlot() const;
-		bool IsTextureSlot() const;
-		bool IsTintableSlot() const;
+        static bool IsEquipmentIndex(int16 slot_index);
+        static bool IsGeneralIndex(int16 slot_index);
+        static bool IsCursorIndex(int16 slot_index);
+        static bool IsWeaponIndex(int16 slot_index);
+        static bool IsTextureIndex(int16 slot_index);
+        static bool IsTintableIndex(int16 slot_index);
 
-		bool IsSlot() const;
-		bool IsSlotSocket() const;
-		bool IsContainer() const;
-		bool IsContainerSocket() const;
+        bool IsEquipmentSlot() const;
+        bool IsGeneralSlot() const;
+        bool IsCursorSlot() const;
+        bool IsWeaponSlot() const;
+        bool IsTextureSlot() const;
+        bool IsTintableSlot() const;
 
-		InventorySlot ToTopOwner() const;
-		InventorySlot ToOwner() const;
+        bool IsSlot() const;
+        bool IsSlotSocket() const;
+        bool IsContainer() const;
+        bool IsContainerSocket() const;
 
-		const std::string ToString() const;
-		const std::string ToName() const;
+        InventorySlot ToTopOwner() const;
+        InventorySlot ToOwner() const;
 
-		bool IsTypeIndex(int16 type_index) const { return (_type_index == type_index); }
-		bool IsSlotIndex(int16 slot_index) const { return (_slot_index == slot_index); }
-		bool IsContainerIndex(int16 container_index) const { return (_container_index == container_index); }
-		bool IsSocketIndex(int16 socket_index) const { return (_socket_index == socket_index); }
+        const std::string ToString() const;
+        const std::string ToName() const;
 
-		void SetType(int16 type_index) { _type_index = type_index; }
-		void SetSlot(int16 slot_index) { _slot_index = slot_index; }
-		void SetContainer(int16 container_index) { _container_index = container_index; }
-		void SetSocket(int16 socket_index) { _socket_index = socket_index; }
+        bool IsTypeIndex(int16 type_index) const { return (_type_index == type_index); }
+        bool IsSlotIndex(int16 slot_index) const { return (_slot_index == slot_index); }
+        bool IsContainerIndex(int16 container_index) const { return (_container_index == container_index); }
+        bool IsSocketIndex(int16 socket_index) const { return (_socket_index == socket_index); }
 
-		void SetInvalidSlot();
+        void SetType(int16 type_index) { _type_index = type_index; }
+        void SetSlot(int16 slot_index) { _slot_index = slot_index; }
+        void SetContainer(int16 container_index) { _container_index = container_index; }
+        void SetSocket(int16 socket_index) { _socket_index = socket_index; }
 
-		void SetTypeInvalid() { _type_index = inventory::typeInvalid; }
-		void SetSlotInvalid() { _slot_index = inventory::slotInvalid; }
-		void SetContainerInvalid() { _container_index = inventory::containerInvalid; }
-		void SetSocketInvalid() { _socket_index = inventory::socketInvalid; }
+        void SetInvalidSlot();
 
-		void SetTypeBegin() { _type_index = inventory::typeBegin; }
-		void SetSlotBegin() { _slot_index = inventory::slotBegin; }
-		void SetContainerBegin() { _container_index = inventory::containerBegin; }
-		void SetSocketBegin() { _socket_index = inventory::socketBegin; }
+        void SetTypeInvalid() { _type_index = invtype::TYPE_INVALID; }
+        void SetSlotInvalid() { _slot_index = invslot::SLOT_INVALID; }
+        void SetContainerInvalid() { _container_index = invbag::SLOT_INVALID; }
+        void SetSocketInvalid() { _socket_index = invaug::SOCKET_INVALID; }
 
-		void IncrementType() { ++_type_index; }
-		void IncrementSlot() { ++_slot_index; }
-		void IncrementContainer() { ++_container_index; }
-		void IncrementSocket() { ++_socket_index; }
+        void SetTypeBegin() { _type_index = invtype::TYPE_BEGIN; }
+        void SetSlotBegin() { _slot_index = invslot::SLOT_BEGIN; }
+        void SetContainerBegin() { _container_index = invbag::SLOT_BEGIN; }
+        void SetSocketBegin() { _socket_index = invaug::SOCKET_BEGIN; }
 
-		void SetTypeless() { _typeless = true; }
-		void ClearTypeless() { _typeless = false; }
+        void IncrementType() { ++_type_index; }
+        void IncrementSlot() { ++_slot_index; }
+        void IncrementContainer() { ++_container_index; }
+        void IncrementSocket() { ++_socket_index; }
 
-		// these two methods should really check for all bonus-valid slots..currently checks for equipment only (rework needed)
-		//static bool IsBonusIndex(int16 slot_index);
-		//bool IsBonusSlot() const;
+        void SetTypeless() { _typeless = true; }
+        void ClearTypeless() { _typeless = false; }
 
-		bool operator<(const InventorySlot& rhs) const;
+        // these two methods should really check for all bonus-valid slots..currently checks for equipment only (rework needed)
+        //static bool IsBonusIndex(int16 slot_index);
+        //bool IsBonusSlot() const;
 
-	private:
-		int16 _type_index;
-		//int16 _unknown2; // not implemented
-		int16 _slot_index;
-		int16 _container_index;
-		int16 _socket_index;
-		//int16 _unknown1; // not implemented
+        bool operator<(const InventorySlot& rhs) const;
 
-		bool _typeless;
-	};
+    private:
+        int16 _type_index;
+        //int16 _unknown2; // not implemented
+        int16 _slot_index;
+        int16 _container_index;
+        int16 _socket_index;
+        //int16 _unknown1; // not implemented
 
-	bool operator==(const InventorySlot& lhs, const InventorySlot& rhs);
-	bool operator!=(const InventorySlot& lhs, const InventorySlot& rhs) { return (!(lhs == rhs)); }
+        bool _typeless;
+    };
+
+    bool operator==(const InventorySlot& lhs, const InventorySlot& rhs);
+    bool operator!=(const InventorySlot& lhs, const InventorySlot& rhs) { return (!(lhs == rhs)); }
 
 } /*EQEmu*/
 

@@ -141,8 +141,8 @@ namespace EQEmu
 		bool IsAmmo() const;
 
 		// Accessors
-		uint32 GetID() const;
-		uint32 GetItemScriptID() const;
+        const uint32 GetID() const { return ((m_item) ? m_item->ID : 0); }
+        const uint32 GetItemScriptID() const { return ((m_item) ? m_item->ScriptFileID : 0); }
 		const ItemData* GetItem() const;
 		const ItemData* GetUnscaledItem() const;
 

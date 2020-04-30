@@ -2489,8 +2489,8 @@ bool Mob::CanThisClassDualWield(void) const {
 		return(GetSkill(EQEmu::skills::SkillDualWield) > 0);
 	}
 	else if (CastToClient()->HasSkill(EQEmu::skills::SkillDualWield)) {
-		const EQEmu::ItemInstance* pinst = CastToClient()->GetInv().GetItem(EQEmu::inventory::slotPrimary);
-		const EQEmu::ItemInstance* sinst = CastToClient()->GetInv().GetItem(EQEmu::inventory::slotSecondary);
+		const EQEmu::ItemInstance* pinst = CastToClient()->GetInv().GetItem(EQEmu::invslot::slotPrimary);
+		const EQEmu::ItemInstance* sinst = CastToClient()->GetInv().GetItem(EQEmu::invslot::slotSecondary);
 
 		// 2HS, 2HB, or 2HP
 		if(pinst && pinst->IsWeapon()) {
@@ -6095,7 +6095,7 @@ void Mob::Shield(Mob* target, float range_multiplier) {
 	uint16 shieldbonus = 0;
 	uint32 shield_duration_bonus = 0;
 	if (IsClient()) {
-		EQEmu::ItemInstance* inst = CastToClient()->GetInv().GetItem(EQEmu::inventory::slotSecondary);
+		EQEmu::ItemInstance* inst = CastToClient()->GetInv().GetItem(EQEmu::invslot::slotSecondary);
 		if (inst) {
 			const EQEmu::ItemData* shield = inst->GetItem();
 			if (shield && shield->IsTypeShield()) {

@@ -34,7 +34,6 @@ extern volatile bool RunLoops;
 
 #include "../common/eqemu_logsys.h"
 #include "../common/features.h"
-#include "../common/emu_legacy.h"
 #include "../common/spdat.h"
 #include "../common/guilds.h"
 #include "../common/rulesys.h"
@@ -669,7 +668,7 @@ bool Client::Save(uint8 iCommitNow) {
 
 	// perform snapshot before SaveCharacterData() so that m_epp will contain the updated time
 	if (RuleB(Character, ActiveInvSnapshots) && time(nullptr) >= GetNextInvSnapshotTime()) {
-		if (database.SaveCharacterInventorySnapshot(CharacterID())) {
+		if (database.SaveCharacterInvSnapshot(CharacterID())) {
 			SetNextInvSnapshot(RuleI(Character, InvSnapshotMinIntervalM));
 		}
 		else {
@@ -2095,7 +2094,7 @@ void Client::ReadBook(BookRequest_Struct *book) {
 
 			const EQEmu::ItemInstance *inst = nullptr;
 
-			if (read_from_slot <= EQEmu::legacy::SLOT_PERSONAL_BAGS_END)
+            if (read_from_slot <= EQEmu::invbag::GENERAL_BAGS_END)
 				{
 				inst = m_inv[read_from_slot];
 				}
@@ -2669,23 +2668,23 @@ void Client::LogMerchant(Client* player, Mob* merchant, uint32 quantity, uint32 
 }
 
 void Client::Disarm(Client* disarmer, int chance) {
-    int16 slot = EQEmu::inventory::slotInvalid;
-	const EQEmu::ItemInstance *inst = this->GetInv().GetItem(EQEmu::inventory::slotPrimary);
+    int16 slot = EQEmu::invslot::SLOT_INVALID;
+	const EQEmu::ItemInstance *inst = this->GetInv().GetItem(EQEmu::invslot::slotPrimary);
 	if (inst && inst->IsWeapon()) {
-		slot = EQEmu::inventory::slotPrimary;
+		slot = EQEmu::invslot::slotPrimary;
 	}
 	else {
-		inst = this->GetInv().GetItem(EQEmu::inventory::slotSecondary);
+		inst = this->GetInv().GetItem(EQEmu::invslot::slotSecondary);
 		if (inst && inst->IsWeapon())
-			slot = EQEmu::inventory::slotSecondary;
+			slot = EQEmu::invslot::slotSecondary;
 	}
 	if (slot != -1 && inst->IsClassCommon()) {
 		// We have an item that can be disarmed.
 		if (zone->random.Int(0, 1000) <= chance) {
 			// Find a free inventory slot
-            int16 slot_id = EQEmu::inventory::slotInvalid;
+            int16 slot_id = EQEmu::invslot::SLOT_INVALID;
             slot_id = m_inv.FindFreeSlot(false, true, inst->GetItem()->Size, (inst->GetItem()->ItemType == EQEmu::item::ItemTypeArrow));
-            if (slot_id != EQEmu::inventory::slotInvalid)
+            if (slot_id != EQEmu::invslot::SLOT_INVALID)
 			{
 				EQEmu::ItemInstance *InvItem = m_inv.PopItem(slot);
 				if (InvItem) { // there should be no way it is not there, but check anyway
@@ -2700,7 +2699,7 @@ void Client::Disarm(Client* disarmer, int chance) {
 					FastQueuePacket(&outapp); // this deletes item from the weapon slot on the client
 					if (PutItemInInventory(slot_id, *InvItem, true))
 						database.SaveInventory(this->CharacterID(), NULL, slot);
-                    auto matslot = (slot == EQEmu::inventory::slotPrimary ? EQEmu::textures::weaponPrimary : EQEmu::textures::weaponSecondary);
+                    auto matslot = (slot == EQEmu::invslot::slotPrimary ? EQEmu::textures::weaponPrimary : EQEmu::textures::weaponSecondary);
                     if (matslot != EQEmu::textures::materialInvalid)
 						SendWearChange(matslot);
 				}
@@ -3369,28 +3368,28 @@ void Client::LinkDead()
 uint8 Client::SlotConvert(uint8 slot,bool bracer){
 	uint8 slot2 = 0; // why are we returning MainCharm instead of INVALID_INDEX? (must be a pre-charm segment...)
 	if(bracer)
-		return EQEmu::inventory::slotWrist2;
+        return EQEmu::invslot::slotWrist2;
 	switch(slot) {
 	case EQEmu::textures::armorHead:
-		slot2 = EQEmu::inventory::slotHead;
+		slot2 = EQEmu::invslot::slotHead;
 		break;
 	case EQEmu::textures::armorChest:
-		slot2 = EQEmu::inventory::slotChest;
+		slot2 = EQEmu::invslot::slotChest;
 		break;
 	case EQEmu::textures::armorArms:
-		slot2 = EQEmu::inventory::slotArms;
+		slot2 = EQEmu::invslot::slotArms;
 		break;
 	case EQEmu::textures::armorWrist:
-		slot2 = EQEmu::inventory::slotWrist1;
+		slot2 = EQEmu::invslot::slotWrist1;
 		break;
 	case EQEmu::textures::armorHands:
-		slot2 = EQEmu::inventory::slotHands;
+		slot2 = EQEmu::invslot::slotHands;
 		break;
 	case EQEmu::textures::armorLegs:
-		slot2 = EQEmu::inventory::slotLegs;
+		slot2 = EQEmu::invslot::slotLegs;
 		break;
 	case EQEmu::textures::armorFeet:
-		slot2 = EQEmu::inventory::slotFeet;
+		slot2 = EQEmu::invslot::slotFeet;
 		break;
 	}
 	return slot2;
@@ -3399,25 +3398,25 @@ uint8 Client::SlotConvert(uint8 slot,bool bracer){
 uint8 Client::SlotConvert2(uint8 slot){
 	uint8 slot2 = 0; // same as above...
 	switch(slot){
-	case EQEmu::inventory::slotHead:
+	case EQEmu::invslot::slotHead:
 		slot2 = EQEmu::textures::armorHead;
 		break;
-	case EQEmu::inventory::slotChest:
+	case EQEmu::invslot::slotChest:
 		slot2 = EQEmu::textures::armorChest;
 		break;
-	case EQEmu::inventory::slotArms:
+	case EQEmu::invslot::slotArms:
 		slot2 = EQEmu::textures::armorArms;
 		break;
-	case EQEmu::inventory::slotWrist1:
+	case EQEmu::invslot::slotWrist1:
 		slot2 = EQEmu::textures::armorWrist;
 		break;
-	case EQEmu::inventory::slotHands:
+	case EQEmu::invslot::slotHands:
 		slot2 = EQEmu::textures::armorHands;
 		break;
-	case EQEmu::inventory::slotLegs:
+	case EQEmu::invslot::slotLegs:
 		slot2 = EQEmu::textures::armorLegs;
 		break;
-	case EQEmu::inventory::slotFeet:
+	case EQEmu::invslot::slotFeet:
 		slot2 = EQEmu::textures::armorFeet;
 		break;
 	}
@@ -4548,14 +4547,14 @@ bool Client::GroupFollow(Client* inviter) {
 uint16 Client::GetPrimarySkillValue()
 {
 	EQEmu::skills::SkillType skill = EQEmu::skills::HIGHEST_SKILL; //because nullptr == 0, which is 1H Slashing, & we want it to return 0 from GetSkill
-	bool equiped = m_inv.GetItem(EQEmu::inventory::slotPrimary);
+    bool equiped = m_inv.GetItem(EQEmu::invslot::slotPrimary);
 
 	if (!equiped)
 		skill = EQEmu::skills::SkillHandtoHand;
 
 	else {
 
-		uint8 type = m_inv.GetItem(EQEmu::inventory::slotPrimary)->GetItem()->ItemType; //is this the best way to do this?
+		uint8 type = m_inv.GetItem(EQEmu::invslot::slotPrimary)->GetItem()->ItemType; //is this the best way to do this?
 
 		switch (type) {
 		case EQEmu::item::ItemType1HSlash: // 1H Slashing
@@ -5389,7 +5388,7 @@ bool Client::TryReward(uint32 claim_id)
 	// save
 	uint32 free_slot = 0xFFFFFFFF;
 
-	for (int i = EQEmu::legacy::GENERAL_BEGIN; i <= EQEmu::legacy::GENERAL_END; ++i) {
+    for (int i = EQEmu::invslot::GENERAL_BEGIN; i <= EQEmu::invslot::GENERAL_END; ++i) {
 		EQEmu::ItemInstance *item = GetInv().GetItem(i);
 		if (!item) {
 			free_slot = i;
@@ -5724,56 +5723,33 @@ void Client::ProcessInspectRequest(Client* requestee, Client* requester) {
 		const EQEmu::ItemData* item = nullptr;
 		const EQEmu::ItemInstance* inst = nullptr;
 		int ornamentationAugtype = RuleI(Character, OrnamentationAugmentType);
-		for(int16 L = 0; L <= 20; L++) {
+		for(int16 L = EQEmu::invslot::EQUIPMENT_BEGIN; L <= EQEmu::invslot::EQUIPMENT_END; L++) {
 			inst = requestee->GetInv().GetItem(L);
 
 			if(inst) {
 				item = inst->GetItem();
 				if(item) {
 					strcpy(insr->itemnames[L], item->Name);
-					if (inst && inst->GetOrnamentationAug(ornamentationAugtype))
-					{
-						const EQEmu::ItemData *aug_item = inst->GetOrnamentationAug(ornamentationAugtype)->GetItem();
+					const EQEmu::ItemData *aug_item = nullptr;
+					if (inst->GetOrnamentationAug(ornamentationAugtype))
+						inst->GetOrnamentationAug(ornamentationAugtype)->GetItem();
+
+					if (aug_item)
 						insr->itemicons[L] = aug_item->Icon;
-					}
-					else if (inst && inst->GetOrnamentationIcon())
-					{
+					else if (inst->GetOrnamentationIcon())
 						insr->itemicons[L] = inst->GetOrnamentationIcon();
-					}
 					else
-					{
 						insr->itemicons[L] = item->Icon;
-					}
 				}
-				else
+				else {
+					insr->itemnames[L][0] = '\0';
 					insr->itemicons[L] = 0xFFFFFFFF;
+				}
 			}
-		}
-
-		inst = requestee->GetInv().GetItem(EQEmu::inventory::slotPowerSource);
-
-		if(inst) {
-			item = inst->GetItem();
-			if(item) {
-				// we shouldn't do this..but, that's the way it's coded atm...
-				// (this type of action should be handled exclusively in the client translator)
-				strcpy(insr->itemnames[SoF::invslot::PossessionsPowerSource], item->Name);
-				insr->itemicons[SoF::invslot::PossessionsPowerSource] = item->Icon;
+			else {
+				insr->itemnames[L][0] = '\0';
+				insr->itemicons[L] = 0xFFFFFFFF;
 			}
-			else
-				insr->itemicons[SoF::invslot::PossessionsPowerSource] = 0xFFFFFFFF;
-		}
-
-		inst = requestee->GetInv().GetItem(EQEmu::inventory::slotAmmo);
-
-		if(inst) {
-			item = inst->GetItem();
-			if(item) {
-				strcpy(insr->itemnames[SoF::invslot::PossessionsAmmo], item->Name);
-				insr->itemicons[SoF::invslot::PossessionsAmmo] = item->Icon;
-			}
-			else
-				insr->itemicons[SoF::invslot::PossessionsAmmo] = 0xFFFFFFFF;
 		}
 
 		strcpy(insr->text, requestee->GetInspectMessage().text);
@@ -6811,7 +6787,7 @@ void Client::SendStatsWindow(Client* client, bool use_window)
 	}
 
 	EQEmu::skills::SkillType skill = EQEmu::skills::SkillHandtoHand;
-	auto *inst = GetInv().GetItem(EQEmu::inventory::slotPrimary);
+	auto *inst = GetInv().GetItem(EQEmu::invslot::slotPrimary);
 	if (inst && inst->IsClassCommon()) {
 		switch (inst->GetItem()->ItemType) {
 		case EQEmu::item::ItemType1HSlash:
@@ -7717,7 +7693,7 @@ void Client::GarbleMessage(char *message, uint8 variance)
 	for (size_t i = 0; i < strlen(message); i++) {
 		// Client expects hex values inside of a text link body
 		if (message[i] == delimiter) {
-			if (!(delimiter_count & 1)) { i += EQEmu::constants::SayLinkBodySize; }
+			if (!(delimiter_count & 1)) { i += EQEmu::constants::SAY_LINK_BODY_SIZE; }
 			++delimiter_count;
 			continue;
 		}
@@ -8150,18 +8126,13 @@ void Client::TickItemCheck()
 
 	if(zone->tick_items.empty()) { return; }
 
-	//Scan equip slots for items
-	for (i = EQEmu::legacy::EQUIPMENT_BEGIN; i <= EQEmu::legacy::EQUIPMENT_END; i++)
-	{
-		TryItemTick(i);
-	}
-	//Scan main inventory + cursor
-	for (i = EQEmu::legacy::GENERAL_BEGIN; i <= EQEmu::inventory::slotCursor; i++)
+	//Scan equip, general, cursor slots for items
+	for (i = EQEmu::invslot::POSSESSIONS_BEGIN; i <= EQEmu::invslot::POSSESSIONS_END; i++)
 	{
 		TryItemTick(i);
 	}
 	//Scan bags
-	for (i = EQEmu::legacy::GENERAL_BAGS_BEGIN; i <= EQEmu::legacy::CURSOR_BAG_END; i++)
+    for (i = EQEmu::invbag::GENERAL_BAGS_BEGIN; i <= EQEmu::invbag::CURSOR_BAG_END; i++)
 	{
 		TryItemTick(i);
 	}
@@ -8177,7 +8148,7 @@ void Client::TryItemTick(int slot)
 
 	if(zone->tick_items.count(iid) > 0)
 	{
-		if (GetLevel() >= zone->tick_items[iid].level && zone->random.Int(0, 100) >= (100 - zone->tick_items[iid].chance) && (zone->tick_items[iid].bagslot || slot <= EQEmu::legacy::EQUIPMENT_END))
+        if (GetLevel() >= zone->tick_items[iid].level && zone->random.Int(0, 100) >= (100 - zone->tick_items[iid].chance) && (zone->tick_items[iid].bagslot || slot <= EQEmu::invslot::EQUIPMENT_END))
 		{
 			EQEmu::ItemInstance* e_inst = (EQEmu::ItemInstance*)inst;
 			parse->EventItem(EVENT_ITEM_TICK, this, e_inst, nullptr, "", slot);
@@ -8185,9 +8156,9 @@ void Client::TryItemTick(int slot)
 	}
 
 	//Only look at augs in main inventory
-	if (slot > EQEmu::legacy::EQUIPMENT_END) { return; }
+	if (slot > EQEmu::invslot::EQUIPMENT_END) { return; }
 
-	for (int x = EQEmu::inventory::socketBegin; x < EQEmu::inventory::SocketCount; ++x)
+    for (int x = EQEmu::invaug::SOCKET_BEGIN; x <= EQEmu::invaug::SOCKET_END; ++x)
 	{
 		EQEmu::ItemInstance * a_inst = inst->GetAugment(x);
 		if(!a_inst) { continue; }
@@ -8208,17 +8179,12 @@ void Client::TryItemTick(int slot)
 void Client::ItemTimerCheck()
 {
 	int i;
-	for (i = EQEmu::legacy::EQUIPMENT_BEGIN; i <= EQEmu::legacy::EQUIPMENT_END; i++)
+	for (i = EQEmu::invslot::POSSESSIONS_BEGIN; i <= EQEmu::invslot::POSSESSIONS_END; i++)
 	{
 		TryItemTimer(i);
 	}
 
-	for (i = EQEmu::legacy::GENERAL_BEGIN; i <= EQEmu::inventory::slotCursor; i++)
-	{
-		TryItemTimer(i);
-	}
-
-	for (i = EQEmu::legacy::GENERAL_BAGS_BEGIN; i <= EQEmu::legacy::CURSOR_BAG_END; i++)
+	for (i = EQEmu::invbag::GENERAL_BAGS_BEGIN; i <= EQEmu::invbag::CURSOR_BAG_END; i++)
 	{
 		TryItemTimer(i);
 	}
@@ -8240,11 +8206,11 @@ void Client::TryItemTimer(int slot)
 		++it_iter;
 	}
 
-	if (slot > EQEmu::legacy::EQUIPMENT_END) {
+	if (slot > EQEmu::invslot::EQUIPMENT_END) {
 		return;
 	}
 
-	for (int x = EQEmu::inventory::socketBegin; x < EQEmu::inventory::SocketCount; ++x)
+    for (int x = EQEmu::invaug::SOCKET_BEGIN; x <= EQEmu::invaug::SOCKET_END; ++x)
 	{
 		EQEmu::ItemInstance * a_inst = inst->GetAugment(x);
 		if(!a_inst) {
@@ -8532,12 +8498,12 @@ void Client::ShowNumHits()
 int Client::GetQuiverHaste(int delay)
 {
 	const EQEmu::ItemInstance *pi = nullptr;
-	for (int r = EQEmu::legacy::GENERAL_BEGIN; r <= EQEmu::legacy::GENERAL_END; r++) {
+    for (int r = EQEmu::invslot::GENERAL_BEGIN; r <= EQEmu::invslot::GENERAL_END; r++) {
 		pi = GetInv().GetItem(r);
 		if (pi && pi->IsClassBag() && pi->GetItem()->BagType == EQEmu::item::BagTypeQuiver &&
 		    pi->GetItem()->BagWR > 0)
 			break;
-		if (r == EQEmu::legacy::GENERAL_END)
+        if (r == EQEmu::invslot::GENERAL_END)
 			// we will get here if we don't find a valid quiver
 			return 0;
 	}
@@ -8577,7 +8543,7 @@ void Client::QuestReward(Mob* target, uint32 copper, uint32 silver, uint32 gold,
 		AddMoneyToPP(copper, silver, gold, platinum, false);
 
 	if (itemid > 0)
-		SummonItem(itemid, 0, 0, 0, 0, 0, 0, false, EQEmu::inventory::slotPowerSource);
+        SummonItem(itemid, 0, 0, 0, 0, 0, 0, false, EQEmu::invslot::slotCursor);
 
 	if (faction)
 	{
@@ -8907,24 +8873,6 @@ void Client::SetPetCommandState(int button, int state)
 	pcs->button_id = button;
 	pcs->state = state;
 	FastQueuePacket(&app);
-}
-
-//Obtain an item score for a character based on worn inventory.
-int Client::GetCharacterItemScore() {
-	int x;
-	const EQEmu::ItemInstance* inst;
-	int itemScore = 0;
-
-	if (GetGM()) {
-		return itemScore;
-	}
-
-	for (x = EQEmu::legacy::EQUIPMENT_BEGIN; x < EQEmu::legacy::EQUIPMENT_END; x++) { // include cursor or not?
-		inst = GetInv().GetItem(x);
-		if (!inst) continue;
-		itemScore += inst->GetItemScore();
-	}
-	return itemScore;
 }
 
 /**

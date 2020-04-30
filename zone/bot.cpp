@@ -2106,6 +2106,7 @@ void Bot::AI_Process() {
 	Client* leash_owner = (bot_group->GetLeader() && bot_group->GetLeader()->IsClient() ? bot_group->GetLeader()->CastToClient() : bot_owner);
 	if (!leash_owner)
 		return;
+	}
 
 	// Berserk updates should occur if primary AI criteria are met
 	if (GetClass() == WARRIOR || GetClass() == BERSERKER) {
@@ -2131,7 +2132,6 @@ void Bot::AI_Process() {
 
 		return;
 	}
-
 	bool guard_mode = (follow_mob == this);
 
 	auto fm_dist = DistanceSquared(m_Position, follow_mob->GetPosition());
@@ -2265,7 +2265,6 @@ void Bot::AI_Process() {
 				SetTarget(nullptr);
 				if (HasPet())
 					GetPet()->SetTarget(nullptr);
-
 				find_target = false;
 			}
 		}
@@ -2283,7 +2282,6 @@ void Bot::AI_Process() {
 		}
 
 		TEST_TARGET();
-
 		Mob* tar = GetTarget();
 		if (!tar)
 			return;
@@ -2400,7 +2398,6 @@ void Bot::AI_Process() {
 					melee_distance = melee_distance_max * 0.30f;
 				else
 					melee_distance = melee_distance_max * 0.25f;
-
 				break;
 			}
 			// Fall-through
@@ -2412,7 +2409,6 @@ void Bot::AI_Process() {
 
 			break;
 		}
-
 		float melee_distance_min = melee_distance / 2.0f;
 
 		// Calculate casting distance
@@ -2487,7 +2483,6 @@ void Bot::AI_Process() {
 		}
 
 		// all of this needs review...
-
 		if (IsBotArcher() && atArcheryRange)
 			atCombatRange = true;
 		else if (caster_distance_max && tar_distance <= caster_distance_max)
@@ -2597,7 +2592,7 @@ void Bot::AI_Process() {
 				if (GetTarget()->GetHPRatio() <= 99.0f)
 					BotRangedAttack(tar);
 			}
-			else if (!IsBotArcher() && (IsBotNonSpellFighter() || GetLevel() < GetStopMeleeLevel())) {
+			else if (!IsBotArcher() && (!(IsBotCaster() && GetLevel() >= RuleI(Bots, CasterStopMeleeLevel)))) {
 				// we can't fight if we don't have a target, are stun/mezzed or dead..
 				// Stop attacking if the target is enraged
 				TEST_TARGET();
@@ -2716,7 +2711,6 @@ void Bot::AI_Process() {
 				else {
 					if (IsMoving())
 						StopMoving();
-
 					return;
 				}
 			}
@@ -2774,7 +2768,6 @@ void Bot::AI_Process() {
 
 				if (HasPet())
 					GetPet()->Teleport(my_guard);
-
 				return;
 			}
 		}
@@ -7026,9 +7019,9 @@ void Bot::CalcRestState() {
 		}
 	}
 
-	RestRegenHP = 6 * (GetMaxHP() / zone->newzone_data.FastRegenHP);
-	RestRegenMana = 6 * (GetMaxMana() / zone->newzone_data.FastRegenMana);
-	RestRegenEndurance = 6 * (GetMaxEndurance() / zone->newzone_data.FastRegenEndurance);
+	RestRegenHP = 6 * (GetMaxHP() / RuleI(Character, RestRegenHP));
+	RestRegenMana = 6 * (GetMaxMana() / RuleI(Character, RestRegenMana));
+	RestRegenEndurance = 6 * (GetMaxEndurance() / RuleI(Character, RestRegenEnd));
 }
 
 int32 Bot::LevelRegen() {

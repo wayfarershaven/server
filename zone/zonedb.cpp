@@ -478,7 +478,7 @@ void ZoneDatabase::LoadWorldContainer(uint32 parentid, EQEmu::ItemInstance* cont
         uint8 index = (uint8)atoi(row[0]);
         uint32 item_id = (uint32)atoi(row[1]);
         int8 charges = (int8)atoi(row[2]);
-		uint32 aug[EQEmu::inventory::SocketCount];
+        uint32 aug[EQEmu::invaug::SOCKET_COUNT];
         aug[0] = (uint32)atoi(row[3]);
         aug[1] = (uint32)atoi(row[4]);
         aug[2] = (uint32)atoi(row[5]);
@@ -488,7 +488,7 @@ void ZoneDatabase::LoadWorldContainer(uint32 parentid, EQEmu::ItemInstance* cont
 
         EQEmu::ItemInstance* inst = database.CreateItem(item_id, charges);
 		if (inst && inst->GetItem()->IsClassCommon()) {
-			for (int i = EQEmu::inventory::socketBegin; i < EQEmu::inventory::SocketCount; i++)
+            for (int i = EQEmu::invaug::SOCKET_BEGIN; i <= EQEmu::invaug::SOCKET_END; i++)
                 if (aug[i])
                     inst->PutAugment(&database, i, aug[i]);
             // Put item inside world container
@@ -511,17 +511,17 @@ void ZoneDatabase::SaveWorldContainer(uint32 zone_id, uint32 parent_id, const EQ
 	DeleteWorldContainer(parent_id,zone_id);
 
 	// Save all 10 items, if they exist
-	for (uint8 index = EQEmu::inventory::containerBegin; index < EQEmu::inventory::ContainerCount; index++) {
+    for (uint8 index = EQEmu::invbag::SLOT_BEGIN; index <= EQEmu::invbag::SLOT_END; index++) {
 
 		EQEmu::ItemInstance* inst = container->GetItem(index);
 		if (!inst)
             continue;
 
         uint32 item_id = inst->GetItem()->ID;
-		uint32 augslot[EQEmu::inventory::SocketCount] = { 0, 0, 0, 0, 0, 0 };
+        uint32 augslot[EQEmu::invaug::SOCKET_COUNT] = { 0, 0, 0, 0, 0, 0 };
 
 		if (inst->IsType(EQEmu::item::ItemClassCommon)) {
-			for (int i = EQEmu::inventory::socketBegin; i < EQEmu::inventory::SocketCount; i++) {
+            for (int i = EQEmu::invaug::SOCKET_BEGIN; i <= EQEmu::invaug::SOCKET_END; i++) {
                 EQEmu::ItemInstance *auginst=inst->GetAugment(i);
                 augslot[i]=(auginst && auginst->GetItem()) ? auginst->GetItem()->ID : 0;
             }
@@ -976,7 +976,7 @@ bool ZoneDatabase::LoadCharacterData(uint32 character_id, PlayerProfile_Struct* 
 		m_epp->aa_effects = atoi(row[r]); r++;									 // "`e_aa_effects`,			"
 		m_epp->perAA = atoi(row[r]); r++;										 // "`e_percent_to_aa`,			"
 		m_epp->expended_aa = atoi(row[r]); r++;									 // "`e_expended_aa_spent`,		"
-		m_epp->last_invsnapshot_time = atoi(row[r]); r++;						 // "`e_last_invsnapshot`		"
+		m_epp->last_invsnapshot_time = atoul(row[r]); r++;						 // "`e_last_invsnapshot`		"
 		m_epp->next_invsnapshot_time = m_epp->last_invsnapshot_time + (RuleI(Character, InvSnapshotMinIntervalM) * 60);
 	}
 	return true;
@@ -1174,11 +1174,11 @@ bool ZoneDatabase::LoadCharacterMaterialColor(uint32 character_id, PlayerProfile
 bool ZoneDatabase::LoadCharacterBandolier(uint32 character_id, PlayerProfile_Struct* pp)
 {
 	std::string query = StringFormat("SELECT `bandolier_id`, `bandolier_slot`, `item_id`, `icon`, `bandolier_name` FROM `character_bandolier` WHERE `id` = %u LIMIT %u",
-		character_id, EQEmu::legacy::BANDOLIERS_SIZE);
+                                     character_id, EQEmu::profile::BANDOLIERS_SIZE);
 	auto results = database.QueryDatabase(query); int i = 0; int r = 0; int si = 0;
-	for (i = 0; i < EQEmu::legacy::BANDOLIERS_SIZE; i++) {
+    for (i = 0; i < EQEmu::profile::BANDOLIERS_SIZE; i++) {
 		pp->bandoliers[i].Name[0] = '\0';
-		for (int si = 0; si < EQEmu::legacy::BANDOLIER_ITEM_COUNT; si++) {
+        for (int si = 0; si < EQEmu::profile::BANDOLIER_ITEM_COUNT; si++) {
 			pp->bandoliers[i].Items[si].ID = 0;
 			pp->bandoliers[i].Items[si].Icon = 0;
 			pp->bandoliers[i].Items[si].Name[0] = '\0';
@@ -1212,7 +1212,7 @@ bool ZoneDatabase::LoadCharacterTribute(uint32 character_id, PlayerProfile_Struc
 	std::string query = StringFormat("SELECT `tier`, `tribute` FROM `character_tribute` WHERE `id` = %u", character_id);
 	auto results = database.QueryDatabase(query);
 	int i = 0;
-	for (i = 0; i < EQEmu::legacy::TRIBUTE_SIZE; i++){
+    for (i = 0; i < EQEmu::invtype::TRIBUTE_SIZE; i++){
 		pp->tributes[i].tribute = 0xFFFFFFFF;
 		pp->tributes[i].tier = 0;
 	}
@@ -1231,10 +1231,10 @@ bool ZoneDatabase::LoadCharacterPotions(uint32 character_id, PlayerProfile_Struc
 {
 	std::string query =
 	    StringFormat("SELECT `potion_id`, `item_id`, `icon` FROM `character_potionbelt` WHERE `id` = %u LIMIT %u",
-		character_id, EQEmu::legacy::POTION_BELT_ITEM_COUNT);
+                     character_id, EQEmu::profile::POTION_BELT_SIZE);
 	auto results = database.QueryDatabase(query);
 	int i = 0;
-	for (i = 0; i < EQEmu::legacy::POTION_BELT_ITEM_COUNT; i++) {
+    for (i = 0; i < EQEmu::profile::POTION_BELT_SIZE; i++) {
 		pp->potionbelt.Items[i].Icon = 0;
 		pp->potionbelt.Items[i].ID = 0;
 		pp->potionbelt.Items[i].Name[0] = '\0';
@@ -1312,7 +1312,7 @@ bool ZoneDatabase::SaveCharacterTribute(uint32 character_id, PlayerProfile_Struc
 	std::string query = StringFormat("DELETE FROM `character_tribute` WHERE `id` = %u", character_id);
 	QueryDatabase(query);
 	/* Save Tributes only if we have values... */
-	for (int i = 0; i < EQEmu::legacy::TRIBUTE_SIZE; i++){
+    for (int i = 0; i < EQEmu::invtype::TRIBUTE_SIZE; i++){
 		if (pp->tributes[i].tribute > 0 && pp->tributes[i].tribute != TRIBUTE_NONE){
 			std::string query = StringFormat("REPLACE INTO `character_tribute` (id, tier, tribute) VALUES (%u, %u, %u)", character_id, pp->tributes[i].tier, pp->tributes[i].tribute);
 			QueryDatabase(query);
@@ -1352,56 +1352,6 @@ bool ZoneDatabase::SaveCharacterLeadershipAA(uint32 character_id, PlayerProfile_
 	}
 	auto results = QueryDatabase(query);
 	return true;
-}
-
-bool ZoneDatabase::SaveCharacterInventorySnapshot(uint32 character_id){
-	uint32 time_index = time(nullptr);
-	std::string query = StringFormat(
-		"INSERT INTO inventory_snapshots ("
-		" time_index,"
-		" charid,"
-		" slotid,"
-		" itemid,"
-		" charges,"
-		" color,"
-		" augslot1,"
-		" augslot2,"
-		" augslot3,"
-		" augslot4,"
-		" augslot5,"
-		" augslot6,"
-		" instnodrop,"
-		" custom_data,"
-		" ornamenticon,"
-		" ornamentidfile,"
-		" ornament_hero_model"
-		")"
-		" SELECT"
-		" %u,"
-		" charid,"
-		" slotid,"
-		" itemid,"
-		" charges,"
-		" color,"
-		" augslot1,"
-		" augslot2,"
-		" augslot3,"
-		" augslot4,"
-		" augslot5,"
-		" augslot6,"
-		" instnodrop,"
-		" custom_data,"
-		" ornamenticon,"
-		" ornamentidfile,"
-		" ornament_hero_model"
-		" FROM inventory"
-		" WHERE charid = %u",
-		time_index,
-		character_id
-	);
-	auto results = database.QueryDatabase(query);
-	Log(Logs::General, Logs::None, "ZoneDatabase::SaveCharacterInventorySnapshot %i (%s)", character_id, (results.Success() ? "pass" : "fail"));
-	return results.Success();
 }
 
 bool ZoneDatabase::SaveCharacterData(uint32 character_id, uint32 account_id, PlayerProfile_Struct* pp, ExtendedProfile_Struct* m_epp){
@@ -1835,51 +1785,51 @@ bool ZoneDatabase::NoRentExpired(const char* name){
 bool ZoneDatabase::SaveCharacterInvSnapshot(uint32 character_id) {
 	uint32 time_index = time(nullptr);
 	std::string query = StringFormat(
-			"INSERT "
-			"INTO"
-			" `inventory_snapshots` "
-			"(`time_index`,"
-			" `charid`,"
-			" `slotid`,"
-			" `itemid`,"
-			" `charges`,"
-			" `color`,"
-			" `augslot1`,"
-			" `augslot2`,"
-			" `augslot3`,"
-			" `augslot4`,"
-			" `augslot5`,"
-			" `augslot6`,"
-			" `instnodrop`,"
-			" `custom_data`,"
-			" `ornamenticon`,"
-			" `ornamentidfile`,"
-			" `ornament_hero_model`"
-			") "
-			"SELECT"
-			" %u,"
-			" `charid`,"
-			" `slotid`,"
-			" `itemid`,"
-			" `charges`,"
-			" `color`,"
-			" `augslot1`,"
-			" `augslot2`,"
-			" `augslot3`,"
-			" `augslot4`,"
-			" `augslot5`,"
-			" `augslot6`,"
-			" `instnodrop`,"
-			" `custom_data`,"
-			" `ornamenticon`,"
-			" `ornamentidfile`,"
-			" `ornament_hero_model` "
-			"FROM"
-			" `inventory` "
-			"WHERE"
-			" `charid` = %u",
-			time_index,
-			character_id
+		"INSERT "
+		"INTO"
+		" `inventory_snapshots` "
+		"(`time_index`,"
+		" `charid`,"
+		" `slotid`,"
+		" `itemid`,"
+		" `charges`,"
+		" `color`,"
+		" `augslot1`,"
+		" `augslot2`,"
+		" `augslot3`,"
+		" `augslot4`,"
+		" `augslot5`,"
+		" `augslot6`,"
+		" `instnodrop`,"
+		" `custom_data`,"
+		" `ornamenticon`,"
+		" `ornamentidfile`,"
+		" `ornament_hero_model`"
+		") "
+		"SELECT"
+		" %u,"
+		" `charid`,"
+		" `slotid`,"
+		" `itemid`,"
+		" `charges`,"
+		" `color`,"
+		" `augslot1`,"
+		" `augslot2`,"
+		" `augslot3`,"
+		" `augslot4`,"
+		" `augslot5`,"
+		" `augslot6`,"
+		" `instnodrop`,"
+		" `custom_data`,"
+		" `ornamenticon`,"
+		" `ornamentidfile`,"
+		" `ornament_hero_model` "
+		"FROM"
+		" `inventory` "
+		"WHERE"
+		" `charid` = %u",
+		time_index,
+		character_id
 	);
 	auto results = database.QueryDatabase(query);
 	Log(Logs::Moderate, Logs::Inventory, "ZoneDatabase::SaveCharacterInventorySnapshot %i (%s)", character_id, (results.Success() ? "pass" : "fail"));
@@ -1888,18 +1838,18 @@ bool ZoneDatabase::SaveCharacterInvSnapshot(uint32 character_id) {
 
 int ZoneDatabase::CountCharacterInvSnapshots(uint32 character_id) {
 	std::string query = StringFormat(
-			"SELECT"
-			" COUNT(*) "
-			"FROM "
-			"("
-			"SELECT * FROM"
-			" `inventory_snapshots` a "
-			"WHERE"
-			" `charid` = %u "
-			"GROUP BY"
-			" `time_index`"
-			") b",
-			character_id
+		"SELECT"
+		" COUNT(*) "
+		"FROM "
+		"("
+		"SELECT * FROM"
+		" `inventory_snapshots` a "
+		"WHERE"
+		" `charid` = %u "
+		"GROUP BY"
+		" `time_index`"
+		") b",
+		character_id
 	);
 	auto results = QueryDatabase(query);
 
@@ -1922,34 +1872,34 @@ void ZoneDatabase::ClearCharacterInvSnapshots(uint32 character_id, bool from_now
 	if (!from_now) { del_time -= RuleI(Character, InvSnapshotHistoryD) * 86400; }
 
 	std::string query = StringFormat(
-			"DELETE "
-			"FROM"
-			" `inventory_snapshots` "
-			"WHERE"
-			" `charid` = %u "
-			"AND"
-			" `time_index` <= %lu",
-			character_id,
-			(unsigned long)del_time
+		"DELETE "
+		"FROM"
+		" `inventory_snapshots` "
+		"WHERE"
+		" `charid` = %u "
+		"AND"
+		" `time_index` <= %lu",
+		character_id,
+		(unsigned long)del_time
 	);
 	QueryDatabase(query);
 }
 
 void ZoneDatabase::ListCharacterInvSnapshots(uint32 character_id, std::list<std::pair<uint32, int>> &is_list) {
 	std::string query = StringFormat(
-			"SELECT"
-			" `time_index`,"
-			" COUNT(*) "
-			"FROM"
-			" `inventory_snapshots` "
-			"WHERE"
-			" `charid` = %u "
-			"GROUP BY"
-			" `time_index` "
-			"ORDER BY"
-			" `time_index` "
-			"DESC",
-			character_id
+		"SELECT"
+		" `time_index`,"
+		" COUNT(*) "
+		"FROM"
+		" `inventory_snapshots` "
+		"WHERE"
+		" `charid` = %u "
+		"GROUP BY"
+		" `time_index` "
+		"ORDER BY"
+		" `time_index` "
+		"DESC",
+		character_id
 	);
 	auto results = QueryDatabase(query);
 
@@ -1965,17 +1915,17 @@ bool ZoneDatabase::ValidateCharacterInvSnapshotTimestamp(uint32 character_id, ui
 		return false;
 
 	std::string query = StringFormat(
-			"SELECT"
-			" * "
-			"FROM"
-			" `inventory_snapshots` "
-			"WHERE"
-			" `charid` = %u "
-			"AND"
-			" `time_index` = %u "
-			"LIMIT 1",
-			character_id,
-			timestamp
+		"SELECT"
+		" * "
+		"FROM"
+		" `inventory_snapshots` "
+		"WHERE"
+		" `charid` = %u "
+		"AND"
+		" `time_index` = %u "
+		"LIMIT 1",
+		character_id,
+		timestamp
 	);
 	auto results = QueryDatabase(query);
 
@@ -1987,19 +1937,19 @@ bool ZoneDatabase::ValidateCharacterInvSnapshotTimestamp(uint32 character_id, ui
 
 void ZoneDatabase::ParseCharacterInvSnapshot(uint32 character_id, uint32 timestamp, std::list<std::pair<int16, uint32>> &parse_list) {
 	std::string query = StringFormat(
-			"SELECT"
-			" `slotid`,"
-			" `itemid` "
-			"FROM"
-			" `inventory_snapshots` "
-			"WHERE"
-			" `charid` = %u "
-			"AND"
-			" `time_index` = %u "
-			"ORDER BY"
-			" `slotid`",
-			character_id,
-			timestamp
+		"SELECT"
+		" `slotid`,"
+		" `itemid` "
+		"FROM"
+		" `inventory_snapshots` "
+		"WHERE"
+		" `charid` = %u "
+		"AND"
+		" `time_index` = %u "
+		"ORDER BY"
+		" `slotid`",
+		character_id,
+		timestamp
 	);
 	auto results = QueryDatabase(query);
 
@@ -2012,38 +1962,38 @@ void ZoneDatabase::ParseCharacterInvSnapshot(uint32 character_id, uint32 timesta
 
 void ZoneDatabase::DivergeCharacterInvSnapshotFromInventory(uint32 character_id, uint32 timestamp, std::list<std::pair<int16, uint32>> &compare_list) {
 	std::string query = StringFormat(
-			"SELECT"
-			" slotid,"
-			" itemid "
-			"FROM"
-			" `inventory_snapshots` "
-			"WHERE"
-			" `time_index` = %u "
-			"AND"
-			" `charid` = %u "
-			"AND"
-			" `slotid` NOT IN "
-			"("
-			"SELECT"
-			" a.`slotid` "
-			"FROM"
-			" `inventory_snapshots` a "
-			"JOIN"
-			" `inventory` b "
-			"USING"
-			" (`slotid`, `itemid`) "
-			"WHERE"
-			" a.`time_index` = %u "
-			"AND"
-			" a.`charid` = %u "
-			"AND"
-			" b.`charid` = %u"
-			")",
-			timestamp,
-			character_id,
-			timestamp,
-			character_id,
-			character_id
+		"SELECT"
+		" slotid,"
+		" itemid "
+		"FROM"
+		" `inventory_snapshots` "
+		"WHERE"
+		" `time_index` = %u "
+		"AND"
+		" `charid` = %u "
+		"AND"
+		" `slotid` NOT IN "
+		"("
+		"SELECT"
+		" a.`slotid` "
+		"FROM"
+		" `inventory_snapshots` a "
+		"JOIN"
+		" `inventory` b "
+		"USING"
+		" (`slotid`, `itemid`) "
+		"WHERE"
+		" a.`time_index` = %u "
+		"AND"
+		" a.`charid` = %u "
+		"AND"
+		" b.`charid` = %u"
+		")",
+		timestamp,
+		character_id,
+		timestamp,
+		character_id,
+		character_id
 	);
 	auto results = QueryDatabase(query);
 
@@ -2056,35 +2006,35 @@ void ZoneDatabase::DivergeCharacterInvSnapshotFromInventory(uint32 character_id,
 
 void ZoneDatabase::DivergeCharacterInventoryFromInvSnapshot(uint32 character_id, uint32 timestamp, std::list<std::pair<int16, uint32>> &compare_list) {
 	std::string query = StringFormat(
-			"SELECT"
-			" `slotid`,"
-			" `itemid` "
-			"FROM"
-			" `inventory` "
-			"WHERE"
-			" `charid` = %u "
-			"AND"
-			" `slotid` NOT IN "
-			"("
-			"SELECT"
-			" a.`slotid` "
-			"FROM"
-			" `inventory` a "
-			"JOIN"
-			" `inventory_snapshots` b "
-			"USING"
-			" (`slotid`, `itemid`) "
-			"WHERE"
-			" b.`time_index` = %u "
-			"AND"
-			" b.`charid` = %u "
-			"AND"
-			" a.`charid` = %u"
-			")",
-			character_id,
-			timestamp,
-			character_id,
-			character_id
+		"SELECT"
+		" `slotid`,"
+		" `itemid` "
+		"FROM"
+		" `inventory` "
+		"WHERE"
+		" `charid` = %u "
+		"AND"
+		" `slotid` NOT IN "
+		"("
+		"SELECT"
+		" a.`slotid` "
+		"FROM"
+		" `inventory` a "
+		"JOIN"
+		" `inventory_snapshots` b "
+		"USING"
+		" (`slotid`, `itemid`) "
+		"WHERE"
+		" b.`time_index` = %u "
+		"AND"
+		" b.`charid` = %u "
+		"AND"
+		" a.`charid` = %u"
+		")",
+		character_id,
+		timestamp,
+		character_id,
+		character_id
 	);
 	auto results = QueryDatabase(query);
 
@@ -2104,63 +2054,63 @@ bool ZoneDatabase::RestoreCharacterInvSnapshot(uint32 character_id, uint32 times
 	}
 
 	std::string query = StringFormat(
-			"DELETE "
-			"FROM"
-			" `inventory` "
-			"WHERE"
-			" `charid` = %u",
-			character_id
+		"DELETE "
+		"FROM"
+		" `inventory` "
+		"WHERE"
+		" `charid` = %u",
+		character_id
 	);
 	auto results = database.QueryDatabase(query);
 	if (!results.Success())
 		return false;
 
 	query = StringFormat(
-			"INSERT "
-			"INTO"
-			" `inventory` "
-			"(`charid`,"
-			" `slotid`,"
-			" `itemid`,"
-			" `charges`,"
-			" `color`,"
-			" `augslot1`,"
-			" `augslot2`,"
-			" `augslot3`,"
-			" `augslot4`,"
-			" `augslot5`,"
-			" `augslot6`,"
-			" `instnodrop`,"
-			" `custom_data`,"
-			" `ornamenticon`,"
-			" `ornamentidfile`,"
-			" `ornament_hero_model`"
-			") "
-			"SELECT"
-			" `charid`,"
-			" `slotid`,"
-			" `itemid`,"
-			" `charges`,"
-			" `color`,"
-			" `augslot1`,"
-			" `augslot2`,"
-			" `augslot3`,"
-			" `augslot4`,"
-			" `augslot5`,"
-			" `augslot6`,"
-			" `instnodrop`,"
-			" `custom_data`,"
-			" `ornamenticon`,"
-			" `ornamentidfile`,"
-			" `ornament_hero_model` "
-			"FROM"
-			" `inventory_snapshots` "
-			"WHERE"
-			" `charid` = %u "
-			"AND"
-			" `time_index` = %u",
-			character_id,
-			timestamp
+		"INSERT "
+		"INTO"
+		" `inventory` "
+		"(`charid`,"
+		" `slotid`,"
+		" `itemid`,"
+		" `charges`,"
+		" `color`,"
+		" `augslot1`,"
+		" `augslot2`,"
+		" `augslot3`,"
+		" `augslot4`,"
+		" `augslot5`,"
+		" `augslot6`,"
+		" `instnodrop`,"
+		" `custom_data`,"
+		" `ornamenticon`,"
+		" `ornamentidfile`,"
+		" `ornament_hero_model`"
+		") "
+		"SELECT"
+		" `charid`,"
+		" `slotid`,"
+		" `itemid`,"
+		" `charges`,"
+		" `color`,"
+		" `augslot1`,"
+		" `augslot2`,"
+		" `augslot3`,"
+		" `augslot4`,"
+		" `augslot5`,"
+		" `augslot6`,"
+		" `instnodrop`,"
+		" `custom_data`,"
+		" `ornamenticon`,"
+		" `ornamentidfile`,"
+		" `ornament_hero_model` "
+		"FROM"
+		" `inventory_snapshots` "
+		"WHERE"
+		" `charid` = %u "
+		"AND"
+		" `time_index` = %u",
+		character_id,
+		timestamp
 	);
 	results = database.QueryDatabase(query);
 
@@ -3020,7 +2970,7 @@ void ZoneDatabase::LoadMercEquipment(Merc *merc) {
 
     int itemCount = 0;
     for(auto row = results.begin(); row != results.end(); ++row) {
-		if (itemCount == EQEmu::legacy::EQUIPMENT_SIZE)
+        if (itemCount == EQEmu::invslot::EQUIPMENT_COUNT)
             break;
 
         if(atoi(row[0]) == 0)
@@ -3606,7 +3556,7 @@ void ZoneDatabase::SavePetInfo(Client *client)
 		query.clear();
 
 		// pet inventory!
-		for (int index = EQEmu::legacy::EQUIPMENT_BEGIN; index <= EQEmu::legacy::EQUIPMENT_END; index++) {
+        for (int index = EQEmu::invslot::EQUIPMENT_BEGIN; index <= EQEmu::invslot::EQUIPMENT_END; index++) {
 			if (!petinfo->Items[index])
 				continue;
 
@@ -3738,7 +3688,7 @@ void ZoneDatabase::LoadPetInfo(Client *client)
 			continue;
 
 		int slot = atoi(row[1]);
-		if (slot < EQEmu::legacy::EQUIPMENT_BEGIN || slot > EQEmu::legacy::EQUIPMENT_END)
+        if (slot < EQEmu::invslot::EQUIPMENT_BEGIN || slot > EQEmu::invslot::EQUIPMENT_END)
 			continue;
 
 		pi->Items[slot] = atoul(row[2]);
