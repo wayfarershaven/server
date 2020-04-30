@@ -591,6 +591,7 @@ public:
 	inline const float GetHeading() const { return m_Position.w; }
 	inline const float GetSize() const { return size; }
 	inline const float GetBaseSize() const { return base_size; }
+	inline const float GetBaseTexture() const { return base_texture; }
 	inline const GravityBehavior GetFlyMode() const { return flymode; }
 	bool IsBoat() const;
 
@@ -1212,6 +1213,8 @@ public:
 
 	int GetAggroCount();
 
+	float GetPlayerHeight(uint16 race);
+
 	int engage_duration;
 
     int32 GetHPRegen() const;
@@ -1335,6 +1338,7 @@ protected:
 	glm::vec4 m_Position;
 	uint16 animation;
 	float base_size;
+	uint8 base_texture;
 	float size;
 	float runspeed;
 	float walkspeed;

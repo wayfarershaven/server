@@ -1365,6 +1365,9 @@ void Client::Handle_Connect_OP_ZoneEntry(const EQApplicationPacket *app)
     if (class_ == MONK)
         consume_food_timer.SetTimer(CONSUMPTION_MNK_TIMER);
 
+	size = GetPlayerHeight(race);
+	base_size = size;
+
 	/* If GM not set in DB, and does not meet min status to be GM, reset */
 	if (m_pp.gm && admin < minStatusToBeGM)
 		m_pp.gm = 0;

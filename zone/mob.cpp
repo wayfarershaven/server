@@ -1814,32 +1814,7 @@ void Mob::SendIllusionPacket(uint16 in_race, uint8 in_gender, uint8 in_texture, 
 		drakkin_heritage = CastToClient()->GetBaseHeritage();
 		drakkin_tattoo = CastToClient()->GetBaseTattoo();
 		drakkin_details = CastToClient()->GetBaseDetails();
-		switch(race){
-			case OGRE:
-			case TROLL:
-				size = 8;
-				break;
-			case VAHSHIR:
-			case BARBARIAN:
-				size = 7;
-				break;
-			case HALF_ELF:
-			case WOOD_ELF:
-			case DARK_ELF:
-			case FROGLOK:
-				size = 5;
-				break;
-			case DWARF:
-				size = 4;
-				break;
-			case HALFLING:
-			case GNOME:
-				size = 3;
-				break;
-			default:
-				size = 6;
-				break;
-		}
+		size = GetBaseSize();
 	}
 
 	auto outapp = new EQApplicationPacket(OP_Illusion, sizeof(Illusion_Struct));
@@ -2068,6 +2043,31 @@ bool Mob::RandomizeFeatures(bool send_illusion, bool set_variables)
 		return true;
 	}
 	return false;
+}
+
+float Mob::GetPlayerHeight(uint16 race) {
+	switch (race)
+	{
+		case OGRE:
+		case TROLL:
+			return 8.0;
+		case VAHSHIR: case BARBARIAN:
+			return 7.0;
+		case HUMAN: case HIGH_ELF: case ERUDITE: case IKSAR:
+			return 6.0;
+		case HALF_ELF:
+			return 5.5;
+		case WOOD_ELF: case DARK_ELF: case WOLF: case ELEMENTAL:
+			return 5.0;
+		case DWARF:
+			return 4.0;
+		case HALFLING:
+			return 3.5;
+		case GNOME:
+			return 3.0;
+		default:
+			return 6.0;
+	}
 }
 
 bool Mob::IsPlayerRace(uint16 in_race) {
