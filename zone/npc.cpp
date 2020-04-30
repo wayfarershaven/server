@@ -381,12 +381,6 @@ NPC::NPC(const NPCType* d, Spawn2* in_respawn, const glm::vec4& position, Gravit
 	raid_target = d->raid_target;
 	ignore_despawn = d->ignore_despawn;
 	m_targetable = !d->untargetable;
-	base_texture = d->texture;
-	if (IsClient()) {
-		base_size = GetPlayerHeight(GetRace());
-	} else {
-		base_size = d->size;	
-	}
 }
 
 float NPC::GetRoamboxMaxX() const
