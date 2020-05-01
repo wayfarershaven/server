@@ -78,7 +78,7 @@ namespace EQEmu
     } // namespace invtype
 
     namespace DevTools {
-        const int32 GM_ACCOUNT_STATUS_LEVEL = 150;
+        const int32 GM_ACCOUNT_STATUS_LEVEL = 90;
     }
 
     namespace popupresponse {
