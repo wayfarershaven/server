@@ -260,6 +260,13 @@ bool Zone::LoadZoneObjects()
 		data.tilt_y = atof(row[18]);
 		data.unknown084 = 0;
 
+		glm::vec3 position;
+		position.x = data.x;
+		position.y = data.y;
+		position.z = data.z;
+
+		data.z = zone->zonemap->FindBestZ(position, nullptr);
+
 		EQEmu::ItemInstance *inst = nullptr;
 		// FatherNitwit: this dosent seem to work...
 		// tradeskill containers do not have an itemid of 0... at least what I am seeing
