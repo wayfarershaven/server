@@ -247,13 +247,27 @@ bool Spawn2::Process() {
 		}
 
 		currentnpcid = npcid;
+
+		glm::vec4 loc(x, y, z, heading);
+		int starting_wp = 0;
+		if (spawn_group->wp_spawns && grid_ > 0)
+		{
+			glm::vec4 wploc;
+			starting_wp = database.GetRandomWaypointLocFromGrid(wploc, zone->GetZoneID(), grid_);
+			if (wploc.x != 0.0f || wploc.y != 0.0f || wploc.z != 0.0f)
+			{
+				loc = wploc;
+				Log(Logs::General, Logs::Spawns, "spawning at random waypoint #%i loc: (%.3f, %.3f, %.3f).", starting_wp , loc.x, loc.y, loc.z);
+			}
+		}
+
 		NPC *npc = new NPC(tmp, this, glm::vec4(x, y, z, heading), GravityBehavior::Water);
 
 		npc->mod_prespawn(this);
 
 		npcthis = npc;
 		npc->AddLootTable();
-		npc->SetSp2(spawngroup_id_);
+		npc->SetSpawnGroupId(spawngroup_id_);
 		npc->SaveGuardPointAnim(anim);
 		npc->SetAppearance((EmuAppearance)anim);
 		entity_list.AddNPC(npc);
@@ -262,9 +276,7 @@ bool Spawn2::Process() {
         /**
          * Roambox init
          */
-        if (spawn_group->roamdist && spawn_group->roambox[0] && spawn_group->roambox[1] && spawn_group->roambox[2] &&
-            spawn_group->roambox[3] && spawn_group->delay && spawn_group->min_delay) {
-
+        if (spawn_group->roamdist > 0) {
             npc->AI_SetRoambox(
                     spawn_group->roamdist,
                     spawn_group->roambox[0],
@@ -285,9 +297,12 @@ bool Spawn2::Process() {
                 npcid,
                 x,
                 y,
-                z);
-			LoadGrid();
-        } else {
+				z
+			);
+
+			LoadGrid(starting_wp);
+		}
+		else {
             Log(Logs::Detail,
                 Logs::Spawns,
                 "Spawn2 %d: Group %d spawned %s (%d) at (%.3f, %.3f, %.3f). Grid loading delayed.",
@@ -297,9 +312,11 @@ bool Spawn2::Process() {
                 npcid,
                 x,
                 y,
-                z);
+				z
+			);
 		}
 	}
+
 	return true;
 }
 
@@ -312,7 +329,7 @@ void Spawn2::Disable()
 	enabled = false;
 }
 
-void Spawn2::LoadGrid() {
+void Spawn2::LoadGrid(int start_wp) {
 	if(!npcthis)
 		return;
 	if(grid_ < 1)
@@ -321,7 +338,7 @@ void Spawn2::LoadGrid() {
 		return;
 	//dont set an NPC's grid until its loaded for them.
 	npcthis->SetGrid(grid_);
-	npcthis->AssignWaypoints(grid_);
+	npcthis->AssignWaypoints(grid_, start_wp);
 	Log(Logs::Detail, Logs::Spawns, "Spawn2 %d: Loading grid %d for %s", spawn2_id, grid_, npcthis->GetName());
 }
 
@@ -501,7 +518,7 @@ bool ZoneDatabase::PopulateZoneSpawnListClose(uint32 zoneid, LinkedList<Spawn2*>
 		if (mob_distance > repop_distance)
 			continue;
 
-		new_spawn = new Spawn2(							   // 
+		new_spawn = new Spawn2(							   //
 			atoi(row[0]), 								   // uint32 in_spawn2_id
 			atoi(row[1]), 								   // uint32 spawngroup_id
 			atof(row[2]), 								   // float in_x
@@ -589,14 +606,14 @@ bool ZoneDatabase::PopulateZoneSpawnList(uint32 zoneid, LinkedList<Spawn2*> &spa
 
 	for (auto row = results.begin(); row != results.end(); ++row) {
 
-		uint32 spawn_time_left = 0; 
-		Spawn2* new_spawn = 0; 
+		uint32 spawn_time_left = 0;
+		Spawn2* new_spawn = 0;
 		bool perl_enabled = atoi(row[11]) == 1 ? true : false;
 
 		if (spawn_times.count(atoi(row[0])) != 0)
 			spawn_time_left = spawn_times[atoi(row[0])];
 
-		new_spawn = new Spawn2(							   // 
+		new_spawn = new Spawn2(							   //
 			atoi(row[0]), 								   // uint32 in_spawn2_id
 			atoi(row[1]), 								   // uint32 spawngroup_id
 			atof(row[2]), 								   // float in_x
@@ -1082,8 +1099,9 @@ bool SpawnConditionManager::LoadSpawnConditions(const char* zone_name, uint32 in
             Log(Logs::Detail, Logs::Spawns, "Catch up triggering on event %d", cevent.id);
             //this event has been triggered.
             //execute the event
-            if(!cevent.strict || StrictCheck)
+			if (!cevent.strict || StrictCheck) {
                 ExecEvent(cevent, false);
+			}
 
             //add the period of the event to the trigger time
             EQTime::AddMinutes(cevent.period, &cevent.next);

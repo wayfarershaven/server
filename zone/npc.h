@@ -230,13 +230,13 @@ public:
 
 	virtual int32 CalcMaxMana();
 	void SetGrid(int32 grid_){ grid=grid_; }
-	void SetSp2(uint32 sg2){ spawn_group=sg2; }
+	void SetSpawnGroupId(uint32 sg2){ spawn_group_id =sg2; }
 	void SetWaypointMax(uint16 wp_){ wp_m=wp_; }
 	void SetSaveWaypoint(uint16 wp_){ save_wp=wp_; }
 
 	uint16 GetWaypointMax() const { return wp_m; }
 	int32 GetGrid() const { return grid; }
-	uint32 GetSp2() const { return spawn_group; }
+	uint32 GetSpawnGroupId() const { return spawn_group_id; }
 	uint32 GetSpawnPointID() const;
 
 	glm::vec4 const GetSpawnPoint() const { return m_SpawnPoint; }
@@ -302,7 +302,7 @@ public:
 	int					GetMaxWp() const { return max_wp; }
 	void				DisplayWaypointInfo(Client *to);
 	void				CalculateNewWaypoint();
-	void				AssignWaypoints(int32 grid);
+	void				AssignWaypoints(int32 grid, int start_wp = 0);
 	void				SetWaypointPause();
 	void				UpdateWaypoint(int wp_index);
 
@@ -311,7 +311,8 @@ public:
 	void				ResumeWandering();
 	void				PauseWandering(int pausetime);
 	void				MoveTo(const glm::vec4& position, bool saveguardspot);
-	void				GetClosestWaypoint(std::list<wplist> &wp_list, int count, const glm::vec3& location);
+	void				GetClosestWaypoints(std::list<wplist> &wp_list, int count, const glm::vec3& location);
+	int					GetClosestWaypoint(const glm::vec3& location);
 
 	uint32				GetEquipment(uint8 material_slot) const;	// returns item id
 	int32				GetEquipmentMaterial(uint8 material_slot) const;
@@ -463,6 +464,8 @@ public:
 
 	bool IgnoreDespawn() { return ignore_despawn; }
 
+	void SetSimpleRoamBox(float box_size, float move_distance = 0, int move_delay = 0);
+
 	float GetRoamboxMaxX() const;
     float GetRoamboxMaxY() const;
     float GetRoamboxMinX() const;
@@ -490,7 +493,7 @@ protected:
 	uint32	gold;
 	uint32	platinum;
 	int32	grid;
-	uint32	spawn_group;
+	uint32	spawn_group_id;
 	uint16	wp_m;
 
 	int32	npc_faction_id;

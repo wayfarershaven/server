@@ -1537,6 +1537,8 @@ bool Zone::Depop(bool StartSpawnTimer) {
 	// clear spell cache
 	database.ClearNPCSpells();
 
+	zone->spawn_group_list.ReloadSpawnGroups();
+
 	return true;
 }
 

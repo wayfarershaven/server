@@ -110,7 +110,8 @@ NPC::NPC(const NPCType* d, Spawn2* in_respawn, const glm::vec4& position, Gravit
 		d->bracertexture,
 		d->handtexture,
 		d->legtexture,
-		d->feettexture),
+		d->feettexture,
+		d->use_model),
 	attacked_timer(CombatEventTimer_expire),
 	swarm_timer(100),
 	classattack_timer(1000),
@@ -153,7 +154,7 @@ NPC::NPC(const NPCType* d, Spawn2* in_respawn, const glm::vec4& position, Gravit
 	wp_m = 0;
 	max_wp=0;
 	save_wp = 0;
-	spawn_group = 0;
+	spawn_group_id  = 0;
 	swarmInfoPtr = nullptr;
 	spellscale = d->spellscale;
 	healscale = d->healscale;
@@ -990,6 +991,43 @@ NPC * NPC::SpawnGridNodeNPC(std::string name, const glm::vec4 &position, uint32 
 	return npc;
 }
 
+NPC * NPC::SpawnNodeNPC(std::string name, std::string last_name, const glm::vec4 &position) {
+	auto npc_type = new NPCType;
+	memset(npc_type, 0, sizeof(NPCType));
+
+	sprintf(npc_type->name, "%s", name.c_str());
+	sprintf(npc_type->lastname, "%s", last_name.c_str());
+
+	npc_type->cur_hp           = 4000000;
+	npc_type->max_hp           = 4000000;
+	npc_type->race             = 2254;
+	npc_type->gender           = 2;
+	npc_type->class_           = 9;
+	npc_type->deity            = 1;
+	npc_type->level            = 200;
+	npc_type->npc_id           = 0;
+	npc_type->loottable_id     = 0;
+	npc_type->texture          = 1;
+	npc_type->light            = 1;
+	npc_type->size             = 3;
+	npc_type->d_melee_texture1 = 1;
+	npc_type->d_melee_texture2 = 1;
+	npc_type->merchanttype     = 1;
+	npc_type->bodytype         = 1;
+	npc_type->show_name        = true;
+	npc_type->findable         = true;
+	npc_type->runspeed         = 1.25;
+
+	auto node_position = glm::vec4(position.x, position.y, position.z, position.w);
+	auto npc           = new NPC(npc_type, nullptr, node_position, GravityBehavior::Flying);
+
+	npc->GiveNPCTypeData(npc_type);
+
+	entity_list.AddNPC(npc, true, true);
+
+	return npc;
+}
+
 NPC* NPC::SpawnNPC(const char* spawncommand, const glm::vec4& position, Client* client) {
 	if(spawncommand == 0 || spawncommand[0] == 0) {
 		return 0;
@@ -1236,7 +1274,7 @@ uint32 ZoneDatabase::CreateNewNPCCommand(const char *zone, uint32 zone_version, 
 	}
 	uint32 spawngroupid = results.LastInsertedID();
 
-	spawn->SetSp2(spawngroupid);
+	spawn->SetSpawnGroupId(spawngroupid);
 	spawn->SetNPCTypeID(npc_type_id);
 
 	query = StringFormat("INSERT INTO spawn2 (zone, version, x, y, z, respawntime, heading, spawngroupID) "
@@ -1321,7 +1359,7 @@ uint32 ZoneDatabase::DeleteSpawnLeaveInNPCTypeTable(const char *zone, Client *cl
 
 	std::string query = StringFormat("SELECT id, spawngroupID FROM spawn2 WHERE "
 					 "zone='%s' AND spawngroupID=%i",
-					 zone, spawn->GetSp2());
+					 zone, spawn->GetSpawnGroupId());
 	auto results = QueryDatabase(query);
 	if (!results.Success())
 		return 0;
@@ -1362,7 +1400,7 @@ uint32 ZoneDatabase::DeleteSpawnRemoveFromNPCTypeTable(const char *zone, uint32 
 
 	std::string query = StringFormat("SELECT id, spawngroupID FROM spawn2 WHERE zone = '%s' "
 					 "AND version = %u AND spawngroupID = %i",
-					 zone, zone_version, spawn->GetSp2());
+					 zone, zone_version, spawn->GetSpawnGroupId());
 	auto results = QueryDatabase(query);
 	if (!results.Success())
 		return 0;
@@ -2897,11 +2935,23 @@ float NPC::GetProximityMaxZ()
 
 bool NPC::IsProximitySet()
 {
-    if (proximity && proximity->proximity_set) {
-        return proximity->proximity_set;
-    }
+	if (proximity && proximity->proximity_set) {
+		return proximity->proximity_set;
+	}
 
-    return false;
+	return false;
+}
+
+void NPC::SetSimpleRoamBox(float box_size, float move_distance, int move_delay)
+{
+	AI_SetRoambox(
+		(move_distance != 0 ? move_distance : box_size / 2),
+		GetX() + box_size,
+		GetX() - box_size,
+		GetY() + box_size,
+		GetY() - box_size,
+		move_delay
+	);
 }
 
 int8 NPC::GetNPCScalingType(NPC *&npc)

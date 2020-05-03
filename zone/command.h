@@ -221,6 +221,7 @@ void command_profiledump(Client *c, const Seperator *sep);
 void command_profilereset(Client *c, const Seperator *sep);
 #endif
 
+void command_proximity(Client *c, const Seperator *sep);
 void command_push(Client *c, const Seperator *sep);
 void command_pvp(Client *c, const Seperator *sep);
 void command_qglobal(Client *c, const Seperator *sep);
@@ -249,6 +250,7 @@ void command_repopclose(Client *c, const Seperator *sep);
 void command_resetaa(Client* c,const Seperator *sep);
 void command_resetaa_timer(Client *c, const Seperator *sep);
 void command_revoke(Client *c, const Seperator *sep);
+void command_roambox(Client *c, const Seperator *sep);
 void command_rules(Client *c, const Seperator *sep);
 void command_save(Client *c, const Seperator *sep);
 void command_scribespell(Client *c, const Seperator *sep);

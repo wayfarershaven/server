@@ -38,11 +38,26 @@ public:
 class SpawnGroup
 {
 public:
-	SpawnGroup(uint32 in_id, char* name, int in_group_spawn_limit, float dist, float maxx, float minx, float maxy, float miny, int delay_in, int despawn_in, uint32 despawn_timer_in, int min_delay_in );
+SpawnGroup(
+		uint32 in_id,
+		char *name,
+		int in_group_spawn_limit,
+		float dist,
+		float maxx,
+		float minx,
+		float maxy,
+		float miny,
+		int delay_in,
+		int despawn_in,
+		uint32 despawn_timer_in,
+		int min_delay_in,
+		bool wp_spawns_in
+	);
 	~SpawnGroup();
 	uint32 GetNPCType();
 	void AddSpawnEntry( SpawnEntry* newEntry );
 	uint32 id;
+	bool wp_spawns;			// if true, spawn NPCs at a random waypoint location (if spawnpoint has a grid) instead of the spawnpoint's loc
 	float roamdist;
 	float roambox[4];
 	int min_delay;
@@ -61,12 +76,14 @@ public:
 	SpawnGroupList() { }
 	~SpawnGroupList();
 
-	void AddSpawnGroup(SpawnGroup* newGroup);
+	void AddSpawnGroup(SpawnGroup *new_group);
 	SpawnGroup* GetSpawnGroup(uint32 id);
 	bool RemoveSpawnGroup(uint32 in_id);
+	void ClearSpawnGroups();
+	void ReloadSpawnGroups();
 private:
 	//LinkedList<SpawnGroup*> list_;
-	std::map<uint32, SpawnGroup*> groups;
+	std::map<uint32, SpawnGroup *> m_spawn_groups;
 };
 
 #endif

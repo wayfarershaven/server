@@ -210,7 +210,8 @@ public:
 		uint8		in_bracertexture,
 		uint8		in_handtexture,
 		uint8		in_legtexture,
-		uint8		in_feettexture
+		uint8		in_feettexture,
+		uint16 in_usemodel
 	);
 	virtual ~Mob();
 
@@ -489,6 +490,7 @@ public:
 	virtual inline uint16 GetDeity() const { return deity; }
 	virtual EQEmu::deity::DeityTypeBit GetDeityBit() { return EQEmu::deity::ConvertDeityTypeToDeityTypeBit((EQEmu::deity::DeityType)deity); }
 	inline uint16 GetRace() const { return race; }
+	inline uint16 GetModel() const { return (use_model == 0) ? race : use_model; }
 	inline uint8 GetGender() const { return gender; }
 	inline uint8 GetTexture() const { return texture; }
 	inline uint8 GetHelmTexture() const { return helmtexture; }
@@ -740,8 +742,10 @@ public:
 	inline void IsTargeted(int in_tar) { targeted += in_tar; if(targeted < 0) targeted = 0;}
 	void SetFollowID(uint32 id) { follow = id; }
 	void SetFollowDistance(uint32 dist) { follow_dist = dist; }
+	void SetFollowCanRun(bool v) { follow_run = v; }
 	uint32 GetFollowID() const { return follow; }
 	uint32 GetFollowDistance() const { return follow_dist; }
+	bool GetFollowCanRun() const { return follow_run; }
     inline bool IsRareSpawn() const { return rare_spawn; }
 
 	virtual void Message(uint32 type, const char* message, ...) { }
@@ -1312,6 +1316,7 @@ protected:
 	int16 petpower;
 	uint32 follow;
 	uint32 follow_dist;
+	bool follow_run;
 	bool dire_charmed;
 	bool no_target_hotkey;
     bool rare_spawn;
@@ -1325,6 +1330,7 @@ protected:
 
 	uint8 gender;
 	uint16 race;
+	uint16 use_model;
 	uint8 base_gender;
 	uint16 base_race;
 	uint8 class_;

@@ -256,6 +256,12 @@ namespace EQEmu
 
     } // namespace bug
 
+	enum WaypointStatus : int {
+		RoamBoxPauseInProgress = -3,
+		QuestControlNoGrid = -2,
+		QuestControlGrid = -1
+	};
+
     enum class CastingSlot : uint32 {
         Gem1       = 0,
         Gem2       = 1,
