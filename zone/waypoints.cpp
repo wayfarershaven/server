@@ -55,7 +55,16 @@ void NPC::AI_SetRoambox(float max_distance, float roam_distance_variance, uint32
     );
 }
 
-void NPC::AI_SetRoambox(float distance, float max_x, float min_x, float max_y, float min_y, uint32 delay, uint32 min_delay) {
+void NPC::AI_SetRoambox(
+	float distance,
+	float max_x,
+	float min_x,
+	float max_y,
+	float min_y,
+	uint32 delay,
+	uint32 min_delay
+)
+{
     roambox_distance      = distance;
     roambox_max_x         = max_x;
     roambox_min_x         = min_x;
@@ -70,7 +79,7 @@ void NPC::DisplayWaypointInfo(Client *c) {
 
 	c->Message(0, "Mob is on grid %d, in spawn group %d, on waypoint %d/%d",
 		GetGrid(),
-		GetSp2(),
+		GetSpawnGroupId(),
 		GetCurWp(),
 		GetMaxWp());
 
@@ -108,7 +117,7 @@ void NPC::ResumeWandering()
 		{	// we were paused by a quest
 			AI_walking_timer->Disable();
 			SetGrid(0 - GetGrid());
-			if (cur_wp == -1)
+			if (cur_wp == EQEmu::WaypointStatus::QuestControlGrid)
 			{	// got here by a MoveTo()
 				cur_wp = save_wp;
 				UpdateWaypoint(cur_wp);	// have him head to last destination from here
@@ -175,14 +184,14 @@ void NPC::MoveTo(const glm::vec4& position, bool saveguardspot) {    // makes mo
 		AI_walking_timer->Disable();    // disable timer in case he is paused at a wp
 		if (cur_wp >= 0) {    // we've not already done a MoveTo()
 			save_wp = cur_wp;    // save the current waypoint
-			cur_wp = -1;        // flag this move as quest controlled
+			cur_wp  = EQEmu::WaypointStatus::QuestControlGrid;
 		}
 		Log(Logs::Detail, Logs::AI, "MoveTo %s, pausing regular grid wandering. Grid %d, save_wp %d",
 			to_string(static_cast<glm::vec3>(position)).c_str(), -GetGrid(), save_wp);
 	} else {    // not on a grid
 		roamer = true;
 		save_wp = 0;
-		cur_wp = -2;        // flag as quest controlled w/no grid
+		cur_wp  = EQEmu::WaypointStatus::QuestControlNoGrid;
 		Log(Logs::Detail, Logs::AI, "MoveTo %s without a grid.", to_string(static_cast<glm::vec3>(position)).c_str());
 	}
 
@@ -208,7 +217,7 @@ void NPC::MoveTo(const glm::vec4& position, bool saveguardspot) {    // makes mo
 	cur_wp_pause = 0;
     time_until_can_move = 0;
 	if (AI_walking_timer->Enabled()) {
-		AI_walking_timer->Disable();
+		AI_walking_timer->Start(100);
 	}
 }
 
@@ -537,9 +546,6 @@ void NPC::AssignWaypoints(int32 grid)
 
 	if (wandertype == 1 || wandertype == 2 || wandertype == 5)
 		CalculateNewWaypoint();
-
-	if (wandertype == 1 || wandertype == 2 || wandertype == 5)
-		CalculateNewWaypoint();
 }
 
 void Mob::SendTo(float new_x, float new_y, float new_z) {
@@ -555,6 +561,8 @@ void Mob::SendTo(float new_x, float new_y, float new_z) {
 	if (flymode == GravityBehavior::Flying)
 		return;
 
+	//fix up pathing Z, this shouldent be needed IF our waypoints
+	//are corrected instead
 	if (zone->HasMap() && RuleB(Map, FixPathingZOnSendTo))
 	{
 		if (!RuleB(Watermap, CheckForWaterOnSendTo) || !zone->HasWaterMap() ||
@@ -582,9 +590,6 @@ void Mob::SendToFixZ(float new_x, float new_y, float new_z) {
 	m_Position.x = new_x;
 	m_Position.y = new_y;
 	m_Position.z = new_z + 0.1;
-
-	//fix up pathing Z, this shouldent be needed IF our waypoints
-	//are corrected instead
 
 	if (zone->HasMap() && RuleB(Map, FixPathingZOnSendTo))
 	{

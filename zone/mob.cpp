@@ -383,6 +383,7 @@ Mob::Mob(
 	patrol=0;
 	follow=0;
 	follow_dist = 100;	// Default Distance for Follow
+	follow_run         = true;    // We can run if distance great enough
 	no_target_hotkey = false;
 	flee_mode = false;
 	currently_fleeing = false;
@@ -2834,10 +2835,9 @@ void Mob::WipeHateList(bool npc_only)
 	}
 }
 
-uint32 Mob::RandomTimer(int min,int max) {
+uint32 Mob::RandomTimer(int min, int max) {
 	int r = 14000;
-	if(min != 0 && max != 0 && min < max)
-	{
+	if (min != 0 && max != 0 && min < max) {
 		r = zone->random.Int(min, max);
 	}
 	return r;

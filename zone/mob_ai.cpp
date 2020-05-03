@@ -1071,11 +1071,12 @@ void Mob::AI_Process() {
 			} else {
 				if (AI_movement_timer->Check()) {
 					// Check if we have reached the last fear point
-					if (IsPositionEqualWithinCertainZ(glm::vec3(GetX(), GetY(), GetZ()), m_FearWalkTarget, 5.0f)) {
+					if (DistanceNoZ(glm::vec3(GetX(), GetY(), GetZ()), m_FearWalkTarget) <= 5.0f) {
 						// Calculate a new point to run to
+						StopNavigation();
 						CalculateNewFearpoint();
 					}
-					NavigateTo(
+					RunTo(
 							m_FearWalkTarget.x,
 							m_FearWalkTarget.y,
 							m_FearWalkTarget.z
@@ -1513,6 +1514,8 @@ void Mob::AI_Process() {
 				Mob *follow = entity_list.GetMob(static_cast<uint16>(GetFollowID()));
 				if (!follow) {
 					SetFollowID(0);
+					SetFollowDistance(100);
+					SetFollowCanRun(true);
 				} else {
 					float distance = DistanceSquared(m_Position, follow->GetPosition());
 					int follow_distance = GetFollowDistance();
@@ -1522,7 +1525,8 @@ void Mob::AI_Process() {
 					 */
 					if (distance >= follow_distance) {
 						bool running = false;
-						if (distance >= follow_distance + 150) {
+						// maybe we want the NPC to only walk doing follow logic
+						if (GetFollowCanRun() && distance >= follow_distance + 150) {
 							running = true;
 						}
 
@@ -1586,7 +1590,37 @@ void NPC::AI_DoMovement() {
     */
 
     if (roambox_distance > 0) {
-        if (!IsMoving()) {
+
+		// Check if we're already moving to a WP
+		// If so, if we're not moving we have arrived and need to set delay
+
+		if (GetCWP() == EQEmu::WaypointStatus::RoamBoxPauseInProgress && !IsMoving()) {
+			// We have arrived
+
+			int roambox_move_delay = EQEmu::ClampLower(GetRoamboxDelay(), GetRoamboxMinDelay());
+			int move_delay_max     = (roambox_move_delay > 0 ? roambox_move_delay : (int) GetRoamboxMinDelay() * 4);
+			int random_timer       = RandomTimer(
+				GetRoamboxMinDelay(),
+				move_delay_max
+			);
+
+			Log(
+				Logs::Detail,
+				Logs::NPCRoamBox, "(%s) Timer calc | random_timer [%i] roambox_move_delay [%i] move_min [%i] move_max [%i]",
+				this->GetCleanName(),
+				random_timer,
+				roambox_move_delay,
+				(int) GetRoamboxMinDelay(),
+				move_delay_max
+			);
+
+			time_until_can_move = Timer::GetCurrentTime() + random_timer;
+			SetCurrentWP(0);
+			return;
+		}
+
+		// Set a new destination
+		if (!IsMoving() && time_until_can_move < Timer::GetCurrentTime()) {
             auto move_x = static_cast<float>(zone->random.Real(-roambox_distance, roambox_distance));
             auto move_y = static_cast<float>(zone->random.Real(-roambox_distance, roambox_distance));
 
@@ -1636,30 +1670,56 @@ void NPC::AI_DoMovement() {
                 }
             }
 
-            glm::vec3 destination;
-            destination.x = roambox_destination_x;
-            destination.y = roambox_destination_y;
-            destination.z = m_Position.z;
-            roambox_destination_z = zone->zonemap ? zone->zonemap->FindClosestZ(destination, nullptr) + this->GetZOffset() : 0;
+			PathfinderOptions opts;
+			opts.smooth_path = true;
+			opts.step_size   = RuleR(Pathing, NavmeshStepSize);
+			opts.offset      = GetZOffset();
+			opts.flags       = PathingNotDisabled ^ PathingZoneLine;
 
-            Log(Logs::Detail,
+			auto partial = false;
+			auto stuck   = false;
+			auto route   = zone->pathing->FindPath(
+				glm::vec3(GetX(), GetY(), GetZ()),
+				glm::vec3(
+					roambox_destination_x,
+					roambox_destination_y,
+					GetGroundZ(roambox_destination_x, roambox_destination_y)
+				),
+				partial,
+				stuck,
+				opts
+			);
+
+			if (route.empty()) {
+				Log(
+					Logs::Detail,
+					Logs::NPCRoamBox, "(%s) We don't have a path route... exiting...",
+					this->GetCleanName()
+				);
+				return;
+			}
+
+			roambox_destination_z = 0;
+
+			Log(
+				Logs::General,
                 Logs::NPCRoamBox,
-                "Calculate | NPC: %s distance %.3f | min_x %.3f | max_x %.3f | final_x %.3f | min_y %.3f | max_y %.3f | final_y %.3f",
+				"NPC (%s) distance [%.0f] X (min/max) [%.0f / %.0f] Y (min/max) [%.0f / %.0f] | Dest x/y/z [%.0f / %.0f / %.0f]",
                 this->GetCleanName(),
                 roambox_distance,
                 roambox_min_x,
                 roambox_max_x,
-                roambox_destination_x,
                 roambox_min_y,
                 roambox_max_y,
-                roambox_destination_y);
-        }
+				roambox_destination_x,
+				roambox_destination_y,
+				roambox_destination_z
+			);
 
+			SetCurrentWP(EQEmu::WaypointStatus::RoamBoxPauseInProgress);
 		NavigateTo(roambox_destination_x, roambox_destination_y, roambox_destination_z);
-
-        if (m_Position.x == roambox_destination_x && m_Position.y == roambox_destination_y) {
-            time_until_can_move = Timer::GetCurrentTime() + RandomTimer(roambox_min_delay, roambox_delay);
         }
+
         return;
     } else if (roamer) {
         if (AI_walking_timer->Check()) {
@@ -1669,7 +1729,7 @@ void NPC::AI_DoMovement() {
 
         int32 gridno = CastToNPC()->GetGrid();
 
-        if (gridno > 0 || cur_wp == -2) {
+		if (gridno > 0 || cur_wp == EQEmu::WaypointStatus::QuestControlNoGrid) {
             if (pause_timer_complete == true) { // time to pause at wp is over
                 AI_SetupNextWaypoint();
             }    // endif (pause_timer_complete==true)
@@ -1701,7 +1761,7 @@ void NPC::AI_DoMovement() {
                     // as that is where roamer is unset and we don't want
                     // the next trip through to move again based on grid stuff.
                     doMove = false;
-                    if (cur_wp == -2) {
+					if (cur_wp == EQEmu::WaypointStatus::QuestControlNoGrid) {
                         AI_SetupNextWaypoint();
                     }
 
@@ -1796,7 +1856,7 @@ void NPC::AI_SetupNextWaypoint() {
 		Log(Logs::Detail, Logs::Pathing, "We are departing waypoint %d.", cur_wp);
 
 		//if we were under quest control (with no grid), we are done now..
-		if (cur_wp == -2) {
+		if (cur_wp == EQEmu::WaypointStatus::QuestControlNoGrid) {
 			Log(Logs::Detail, Logs::Pathing, "Non-grid quest mob has reached its quest ordered waypoint. Leaving pathing mode.");
 			roamer = false;
 			cur_wp = 0;

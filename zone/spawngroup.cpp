@@ -34,7 +34,21 @@ SpawnEntry::SpawnEntry( uint32 in_NPCType, int in_chance, uint8 in_npc_spawn_lim
 	npc_spawn_limit = in_npc_spawn_limit;
 }
 
-SpawnGroup::SpawnGroup( uint32 in_id, char* name, int in_group_spawn_limit, float dist, float maxx, float minx, float maxy, float miny, int delay_in, int despawn_in, uint32 despawn_timer_in, int min_delay_in ) {
+SpawnGroup::SpawnGroup(
+	uint32 in_id,
+	char *name,
+	int in_group_spawn_limit,
+	float dist,
+	float maxx,
+	float minx,
+	float maxy,
+	float miny,
+	int delay_in,
+	int despawn_in,
+	uint32 despawn_timer_in,
+	int min_delay_in
+)
+{
 	id = in_id;
 	strn0cpy( name_, name, 120);
 	group_spawn_limit = in_group_spawn_limit;
@@ -56,8 +70,9 @@ uint32 SpawnGroup::GetNPCType() {
 	int npcType = 0;
 	int totalchance = 0;
 
-	if(!entity_list.LimitCheckGroup(id, group_spawn_limit))
-		return(0);
+	if(!entity_list.LimitCheckGroup(id, group_spawn_limit)) {
+		return (0);
+	}
 
 	std::list<SpawnEntry*>::iterator cur,end;
 	std::list<SpawnEntry*> possible;
@@ -66,14 +81,16 @@ uint32 SpawnGroup::GetNPCType() {
 	for(; cur != end; ++cur) {
 		SpawnEntry *se = *cur;
 
-		if(!entity_list.LimitCheckType(se->NPCType, se->npc_spawn_limit))
+		if(!entity_list.LimitCheckType(se->NPCType, se->npc_spawn_limit)) {
 			continue;
+		}
 
 		totalchance += se->chance;
 		possible.push_back(se);
 	}
-	if(totalchance == 0)
+	if(totalchance == 0) {
 		return 0;
+	}
 
 
 	int32 roll = 0;
@@ -110,33 +127,48 @@ SpawnGroup::~SpawnGroup() {
 
 SpawnGroupList::~SpawnGroupList() {
 	std::map<uint32, SpawnGroup*>::iterator cur,end;
-	cur = groups.begin();
-	end = groups.end();
+	cur = m_spawn_groups.begin();
+	end = m_spawn_groups.end();
 	for(; cur != end; ++cur) {
 		SpawnGroup* tmp = cur->second;
 		safe_delete(tmp);
 	}
-	groups.clear();
+	m_spawn_groups.clear();
 }
 
-void SpawnGroupList::AddSpawnGroup(SpawnGroup* newGroup) {
-	if(newGroup == nullptr)
+void SpawnGroupList::AddSpawnGroup(SpawnGroup* new_group) {
+	if (new_group == nullptr) {
 		return;
-	groups[newGroup->id] = newGroup;
+	}
+	m_spawn_groups[new_group->id] = new_group;
 }
 
-SpawnGroup* SpawnGroupList::GetSpawnGroup(uint32 in_id) {
-	if(groups.count(in_id) != 1)
+SpawnGroup *SpawnGroupList::GetSpawnGroup(uint32 in_id)
+{
+	if (m_spawn_groups.count(in_id) != 1) {
 		return nullptr;
-	return(groups[in_id]);
+	}
+return (m_spawn_groups[in_id]);
 }
 
-bool SpawnGroupList::RemoveSpawnGroup(uint32 in_id) {
-	if(groups.count(in_id) != 1)
-		return(false);
-
-	groups.erase(in_id);
+bool SpawnGroupList::RemoveSpawnGroup(uint32 in_id)
+{
+	if (m_spawn_groups.count(in_id) != 1) {
+		return (false);
+	}
+	m_spawn_groups.erase(in_id);
 	return(true);
+}
+
+void SpawnGroupList::ReloadSpawnGroups()
+{
+	ClearSpawnGroups();
+	database.LoadSpawnGroups(zone->GetShortName(), zone->GetInstanceVersion(), &zone->spawn_group_list);
+}
+
+void SpawnGroupList::ClearSpawnGroups()
+{
+	m_spawn_groups.clear();
 }
 
 bool ZoneDatabase::LoadSpawnGroups(const char *zone_name, uint16 version, SpawnGroupList *spawn_group_list)
@@ -169,36 +201,44 @@ bool ZoneDatabase::LoadSpawnGroups(const char *zone_name, uint16 version, SpawnG
 			     zone_name);
 	results = QueryDatabase(query);
 	if (!results.Success()) {
-		Log(Logs::General, Logs::Error, "Error2 in PopulateZoneLists query '%'", query.c_str());
 		return false;
 	}
 
 	for (auto row = results.begin(); row != results.end(); ++row) {
-		auto newSpawnEntry = new SpawnEntry(atoi(row[1]), atoi(row[2]), row[3] ? atoi(row[3]) : 0);
-		SpawnGroup *sg = spawn_group_list->GetSpawnGroup(atoi(row[0]));
+		auto new_spawn_entry = new SpawnEntry(
+			atoi(row[1]),
+			atoi(row[2]),
+			(row[3] ? atoi(row[3]) : 0)
+		);
 
-		if (!sg) {
-			safe_delete(newSpawnEntry);
+		SpawnGroup *spawn_group = spawn_group_list->GetSpawnGroup(atoi(row[0]));
+
+		if (!spawn_group) {
+			safe_delete(new_spawn_entry);
 			continue;
 		}
 
-		sg->AddSpawnEntry(newSpawnEntry);
+		spawn_group->AddSpawnEntry(new_spawn_entry);
 	}
 
 	return true;
 }
 
-bool ZoneDatabase::LoadSpawnGroupsByID(int spawngroupid, SpawnGroupList *spawn_group_list)
+/**
+ * @param spawn_group_id
+ * @param spawn_group_list
+ * @return
+ */
+bool ZoneDatabase::LoadSpawnGroupsByID(int spawn_group_id, SpawnGroupList *spawn_group_list)
 {
 	std::string query = StringFormat("SELECT DISTINCT(spawngroup.id), spawngroup.name, spawngroup.spawn_limit, "
 					 "spawngroup.dist, spawngroup.max_x, spawngroup.min_x, "
 					 "spawngroup.max_y, spawngroup.min_y, spawngroup.delay, "
 					 "spawngroup.despawn, spawngroup.despawn_timer, spawngroup.mindelay "
 					 "FROM spawngroup WHERE spawngroup.ID = '%i'",
-					 spawngroupid);
+									 spawn_group_id);
 	auto results = QueryDatabase(query);
 	if (!results.Success()) {
-		Log(Logs::General, Logs::Error, "Error2 in PopulateZoneLists query %s", query.c_str());
 		return false;
 	}
 
@@ -213,7 +253,7 @@ bool ZoneDatabase::LoadSpawnGroupsByID(int spawngroupid, SpawnGroupList *spawn_g
 			     "spawnentry.chance, spawngroup.spawn_limit FROM spawnentry, spawngroup "
 			     "WHERE spawnentry.spawngroupID = '%i' AND spawngroup.spawn_limit = '0' "
 			     "ORDER BY chance",
-			     spawngroupid);
+			     spawn_group_id);
 	results = QueryDatabase(query);
 	if (!results.Success()) {
 		Log(Logs::General, Logs::Error, "Error3 in PopulateZoneLists query '%s'", query.c_str());
@@ -221,14 +261,19 @@ bool ZoneDatabase::LoadSpawnGroupsByID(int spawngroupid, SpawnGroupList *spawn_g
 	}
 
 	for (auto row = results.begin(); row != results.end(); ++row) {
-		auto newSpawnEntry = new SpawnEntry(atoi(row[1]), atoi(row[2]), row[3] ? atoi(row[3]) : 0);
-		SpawnGroup *sg = spawn_group_list->GetSpawnGroup(atoi(row[0]));
-		if (!sg) {
-			safe_delete(newSpawnEntry);
+		auto new_spawn_entry = new SpawnEntry(
+			atoi(row[1]),
+			atoi(row[2]),
+			(row[3] ? atoi(row[3]) : 0)
+		);
+
+		SpawnGroup *spawn_group = spawn_group_list->GetSpawnGroup(atoi(row[0]));
+		if (!spawn_group) {
+			safe_delete(new_spawn_entry);
 			continue;
 		}
 
-		sg->AddSpawnEntry(newSpawnEntry);
+		spawn_group->AddSpawnEntry(new_spawn_entry);
 	}
 
 	return true;

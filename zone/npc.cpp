@@ -153,7 +153,7 @@ NPC::NPC(const NPCType* d, Spawn2* in_respawn, const glm::vec4& position, Gravit
 	wp_m = 0;
 	max_wp=0;
 	save_wp = 0;
-	spawn_group = 0;
+	spawn_group_id  = 0;
 	swarmInfoPtr = nullptr;
 	spellscale = d->spellscale;
 	healscale = d->healscale;
@@ -1273,7 +1273,7 @@ uint32 ZoneDatabase::CreateNewNPCCommand(const char *zone, uint32 zone_version, 
 	}
 	uint32 spawngroupid = results.LastInsertedID();
 
-	spawn->SetSp2(spawngroupid);
+	spawn->SetSpawnGroupId(spawngroupid);
 	spawn->SetNPCTypeID(npc_type_id);
 
 	query = StringFormat("INSERT INTO spawn2 (zone, version, x, y, z, respawntime, heading, spawngroupID) "
@@ -1358,7 +1358,7 @@ uint32 ZoneDatabase::DeleteSpawnLeaveInNPCTypeTable(const char *zone, Client *cl
 
 	std::string query = StringFormat("SELECT id, spawngroupID FROM spawn2 WHERE "
 					 "zone='%s' AND spawngroupID=%i",
-					 zone, spawn->GetSp2());
+					 zone, spawn->GetSpawnGroupId());
 	auto results = QueryDatabase(query);
 	if (!results.Success())
 		return 0;
@@ -1399,7 +1399,7 @@ uint32 ZoneDatabase::DeleteSpawnRemoveFromNPCTypeTable(const char *zone, uint32 
 
 	std::string query = StringFormat("SELECT id, spawngroupID FROM spawn2 WHERE zone = '%s' "
 					 "AND version = %u AND spawngroupID = %i",
-					 zone, zone_version, spawn->GetSp2());
+					 zone, zone_version, spawn->GetSpawnGroupId());
 	auto results = QueryDatabase(query);
 	if (!results.Success())
 		return 0;
@@ -2939,6 +2939,18 @@ bool NPC::IsProximitySet()
 	}
 
 	return false;
+}
+
+void NPC::SetSimpleRoamBox(float box_size, float move_distance, int move_delay)
+{
+	AI_SetRoambox(
+		(move_distance != 0 ? move_distance : box_size / 2),
+		GetX() + box_size,
+		GetX() - box_size,
+		GetY() + box_size,
+		GetY() - box_size,
+		move_delay
+	);
 }
 
 int8 NPC::GetNPCScalingType(NPC *&npc)

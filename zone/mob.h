@@ -740,8 +740,10 @@ public:
 	inline void IsTargeted(int in_tar) { targeted += in_tar; if(targeted < 0) targeted = 0;}
 	void SetFollowID(uint32 id) { follow = id; }
 	void SetFollowDistance(uint32 dist) { follow_dist = dist; }
+	void SetFollowCanRun(bool v) { follow_run = v; }
 	uint32 GetFollowID() const { return follow; }
 	uint32 GetFollowDistance() const { return follow_dist; }
+	bool GetFollowCanRun() const { return follow_run; }
     inline bool IsRareSpawn() const { return rare_spawn; }
 
 	virtual void Message(uint32 type, const char* message, ...) { }
@@ -1312,6 +1314,7 @@ protected:
 	int16 petpower;
 	uint32 follow;
 	uint32 follow_dist;
+	bool follow_run;
 	bool dire_charmed;
 	bool no_target_hotkey;
     bool rare_spawn;

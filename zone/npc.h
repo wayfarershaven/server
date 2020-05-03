@@ -230,13 +230,13 @@ public:
 
 	virtual int32 CalcMaxMana();
 	void SetGrid(int32 grid_){ grid=grid_; }
-	void SetSp2(uint32 sg2){ spawn_group=sg2; }
+	void SetSpawnGroupId(uint32 sg2){ spawn_group_id =sg2; }
 	void SetWaypointMax(uint16 wp_){ wp_m=wp_; }
 	void SetSaveWaypoint(uint16 wp_){ save_wp=wp_; }
 
 	uint16 GetWaypointMax() const { return wp_m; }
 	int32 GetGrid() const { return grid; }
-	uint32 GetSp2() const { return spawn_group; }
+	uint32 GetSpawnGroupId() const { return spawn_group_id; }
 	uint32 GetSpawnPointID() const;
 
 	glm::vec4 const GetSpawnPoint() const { return m_SpawnPoint; }
@@ -463,6 +463,8 @@ public:
 
 	bool IgnoreDespawn() { return ignore_despawn; }
 
+	void SetSimpleRoamBox(float box_size, float move_distance = 0, int move_delay = 0);
+
 	float GetRoamboxMaxX() const;
     float GetRoamboxMaxY() const;
     float GetRoamboxMinX() const;
@@ -490,7 +492,7 @@ protected:
 	uint32	gold;
 	uint32	platinum;
 	int32	grid;
-	uint32	spawn_group;
+	uint32	spawn_group_id;
 	uint16	wp_m;
 
 	int32	npc_faction_id;

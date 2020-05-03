@@ -344,6 +344,7 @@ int command_init(void)
 		command_add("resetaa", "- Resets a Player's AA in their profile and refunds spent AA's to unspent, may disconnect player.", 200, command_resetaa) ||
 		command_add("resetaa_timer", "Command to reset AA cooldown timers.", 200, command_resetaa_timer) ||
 		command_add("revoke", "[charname] [1/0] - Makes charname unable to talk on OOC", 200, command_revoke) ||
+		command_add("roambox", "Manages roambox settings for an NPC", 200, command_roambox) ||
 		command_add("rules", "(subcommand) - Manage server rules", 250, command_rules) ||
 		command_add("save", "- Force your player or player corpse target to be saved to the database", 50, command_save) ||
 		command_add("scribespell", "[spellid] - Scribe specified spell in your target's spell book.", 180, command_scribespell) ||
@@ -422,7 +423,6 @@ int command_init(void)
 		command_add("wp", "[add/delete] [grid_num] [pause] [wp_num] [-h] - Add/delete a waypoint to/from a wandering grid", 170, command_wp) ||
 		command_add("wpadd", "[pause] [-h] - Add your current location as a waypoint to your NPC target's AI path", 170, command_wpadd) ||
 		command_add("wpinfo", "- Show waypoint info about your NPC target", 170, command_wpinfo) ||
-		command_add("roambox", "- Show waypoint info about your NPC target", 170, command_roambox) ||
 		command_add("xpinfo", "- Show XP info about your current target", 250, command_xpinfo) ||
 		command_add("xtargets",  "Show your targets Extended Targets and optionally set how many xtargets they can have.",  250, command_xtargets) ||
 		command_add("zclip", "[min] [max] - modifies and resends zhdr packet", 80, command_zclip) ||
@@ -1918,7 +1918,7 @@ void command_npcstats(Client *c, const Seperator *sep)
 		//c->Message(0, "Weapon Item Number: %s", target_npc->GetWeapNo());
         c->Message(0, "- Gender: %i  Size: %f  Bodytype: %d", target_npc->GetGender(), target_npc->GetSize(), target_npc->GetBodyType());
         c->Message(0, "- Runspeed: %.3f  Walkspeed: %.3f", static_cast<float>(0.025f * target_npc->GetRunspeed()), static_cast<float>(0.025f * target_npc->GetWalkspeed()));
-        c->Message(0, "- Spawn Group: %i  Grid: %i", target_npc->GetSp2(), target_npc->GetGrid());
+        c->Message(0, "- Spawn Group: %i  Grid: %i", target_npc->GetSpawnGroupId(), target_npc->GetGrid());
 		if (target_npc->proximity) {
             c->Message(0, "- Proximity: Enabled");
             c->Message(0, "-- Cur_X: %1.3f, Cur_Y: %1.3f, Cur_Z: %1.3f", target_npc->GetX(), target_npc->GetY(), target_npc->GetZ());
@@ -2240,7 +2240,7 @@ void command_stats(Client *c, const Seperator *sep)
 	c->Message(0, "Min: %i, Max: %i, Delay: %i", target->CastToNPC()->GetMinDamage(), target->CastToNPC()->GetMaxDamage(), target->CastToNPC()->GetAttackDelay());
 	c->Message(0, "DPS: %f", dps);
 	c->Message(0, "Specials: %s", specials.c_str());
-	c->Message(0, "Spawn Group: %i  Grid: %i", c->GetTarget()->CastToNPC()->GetSp2(), c->GetTarget()->CastToNPC()->GetGrid());
+	c->Message(0, "Spawn Group: %i  Grid: %i", c->GetTarget()->CastToNPC()->GetSpawnGroupId(), c->GetTarget()->CastToNPC()->GetGrid());
 	if (c->GetTarget()->IsNPC()) c->GetTarget()->CastToNPC()->QueryLoot(c);
 
 }
@@ -2713,7 +2713,7 @@ void command_issue(Client *c, const Seperator *sep) {
 									 ((c->GetTarget() == nullptr || !c->GetTarget()->IsClient()) ? 0 : c->GetTarget()->CastToClient()->AccountID()),
 									 ((c->GetTarget() == nullptr || !c->GetTarget()->IsClient()) ? 0 : c->GetTarget()->CastToClient()->CharacterID()),
 									 ((c->GetTarget() == nullptr || !c->GetTarget()->IsNPC()) ? 0 : c->GetTarget()->CastToNPC()->GetNPCTypeID()),
-									 ((c->GetTarget() == nullptr || !c->GetTarget()->IsNPC()) ? 0 : c->GetTarget()->CastToNPC()->GetSp2()),
+									 ((c->GetTarget() == nullptr || !c->GetTarget()->IsNPC()) ? 0 : c->GetTarget()->CastToNPC()->GetSpawnGroupId()),
 									 itemid,
 									 EscapeString(itemname.c_str()).c_str(),
 									 EQEmu::versions::ClientVersionName(c->ClientVersion())
@@ -7568,6 +7568,99 @@ void command_revoke(Client *c, const Seperator *sep)
 	safe_delete(outapp);
 }
 
+//TODO Fix with FMT later
+/*
+void command_roambox(Client *c, const Seperator *sep)
+{
+	std::string arg1  = sep->arg[1];
+
+	Mob *target = c->GetTarget();
+	if (!target || !target->IsNPC()) {
+		c->Message(Chat::Red, "You need a valid NPC target for this command");
+		return;
+	}
+
+	NPC *npc           = dynamic_cast<NPC *>(target);
+	int spawn_group_id = npc->GetSpawnGroupId();
+	if (spawn_group_id <= 0) {
+		c->Message(Chat::Red, "NPC needs a valid SpawnGroup!");
+		return;
+	}
+
+	if (arg1 == "set") {
+		int box_size = (sep->arg[2] ? atoi(sep->arg[2]) : 0);
+		int delay = (sep->arg[3] ? atoi(sep->arg[3]) : 15000);
+		if (box_size > 0) {
+			std::string query = fmt::format(
+				SQL(
+					UPDATE spawngroup SET
+					dist = {},
+					min_x = {},
+					max_x = {},
+					min_y = {},
+					max_y = {},
+					delay = {}
+					WHERE id = {}
+				),
+				box_size,
+				npc->GetX() - 100,
+				npc->GetX() + 100,
+				npc->GetY() - 100,
+				npc->GetY() + 100,
+				delay,
+				spawn_group_id
+			);
+
+			database.QueryDatabase(query);
+
+			c->Message(
+				Chat::Yellow,
+				"NPC (%s) Roam Box set to box size of [%i] SpawnGroupId [%i] delay [%i]",
+				npc->GetCleanName(),
+				box_size,
+				spawn_group_id,
+				delay
+			);
+
+			return;
+		}
+
+		c->Message(Chat::Red, "Box size must be set!");
+	}
+
+	if (arg1 == "remove") {
+		std::string query = fmt::format(
+			SQL(
+				UPDATE spawngroup SET
+				dist = 0,
+				min_x = 0,
+				max_x = 0,
+				min_y = 0,
+				max_y = 0,
+				delay = 0
+					WHERE id = {}
+			),
+			spawn_group_id
+		);
+
+		database.QueryDatabase(query);
+
+		c->Message(
+			Chat::Yellow,
+			"NPC (%s) Roam Box has been removed from SpawnGroupID [%i]",
+			npc->GetCleanName(),
+			spawn_group_id
+		);
+
+		return;
+	}
+
+	c->Message(Chat::Yellow, "> Command Usage");
+	c->Message(Chat::Yellow, "#roambox set box_size [delay = 0]");
+	c->Message(Chat::Yellow, "#roambox remove");
+}
+ */
+
 void command_oocmute(Client *c, const Seperator *sep)
 {
 	if(sep->arg[1][0] == 0 || !(sep->arg[1][0] == '1' || sep->arg[1][0] == '0'))
@@ -7580,18 +7673,14 @@ void command_oocmute(Client *c, const Seperator *sep)
 	}
 }
 
-void command_checklos(Client *c, const Seperator *sep)
-{
-	if(c->GetTarget())
-	{
-//		if(c->CheckLos(c->GetTarget()))
-		if(c->CheckLosFN(c->GetTarget()))
-			c->Message(0, "You have LOS to %s",  c->GetTarget()->GetName());
-		else
-			c->Message(0, "You do not have LOS to %s",  c->GetTarget()->GetName());
-	}
-	else
-	{
+void command_checklos(Client *c, const Seperator *sep) {
+	if (c->GetTarget()) {
+		if (c->CheckLosFN(c->GetTarget())) {
+			c->Message(0, "You have LOS to %s", c->GetTarget()->GetName());
+		} else {
+			c->Message(0, "You do not have LOS to %s", c->GetTarget()->GetName());
+		}
+	} else {
 		c->Message(0, "ERROR: Target required");
 	}
 }
@@ -8313,8 +8402,8 @@ void command_npcedit(Client *c, const Seperator *sep)
 			return;
 		}
 
-		c->Message(15,"NPCID %u now has the animation set to %i on spawn with spawngroup %i",  npcTypeID, animation, c->GetTarget()->CastToNPC()->GetSp2() );
-		std::string query = StringFormat("UPDATE spawn2 SET animation = %i " "WHERE spawngroupID = %i",  animation, c->GetTarget()->CastToNPC()->GetSp2());
+		c->Message(15,"NPCID %u now has the animation set to %i on spawn with spawngroup %i",  npcTypeID, animation, c->GetTarget()->CastToNPC()->GetSpawnGroupId() );
+		std::string query = StringFormat("UPDATE spawn2 SET animation = %i " "WHERE spawngroupID = %i",  animation, c->GetTarget()->CastToNPC()->GetSpawnGroupId());
 		database.QueryDatabase(query);
 
 		c->GetTarget()->SetAppearance(EmuAppearance(animation));
@@ -9600,7 +9689,7 @@ void command_advnpcspawn(Client *c, const Seperator *sep)
 		int16 version = atoi(sep->arg[2]);
 		std::string query = StringFormat("UPDATE spawn2 SET version = %i "
 										 "WHERE spawngroupID = '%i'",
-										 version, c->GetTarget()->CastToNPC()->GetSp2());
+										 version, c->GetTarget()->CastToNPC()->GetSpawnGroupId());
 		auto results = database.QueryDatabase(query);
 		if (!results.Success()) {
 			c->Message(13, "Update failed! MySQL gave the following error:");
@@ -9608,7 +9697,7 @@ void command_advnpcspawn(Client *c, const Seperator *sep)
 			return;
 		}
 
-		c->Message(0, "Version change to %i was successful from SpawnGroupID %i",  version, c->GetTarget()->CastToNPC()->GetSp2());
+		c->Message(0, "Version change to %i was successful from SpawnGroupID %i",  version, c->GetTarget()->CastToNPC()->GetSpawnGroupId());
 		c->GetTarget()->Depop(false);
 
 		return;

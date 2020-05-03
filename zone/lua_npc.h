@@ -133,6 +133,9 @@ public:
 	bool QuestLootCount(int itemid1, int itemid2, int itemid3, int itemid4);
 	int GetRawAC();
 	int GetAvoidanceRating();
+	void SetSimpleRoamBox(float box_size);
+	void SetSimpleRoamBox(float box_size, float move_distance);
+	void SetSimpleRoamBox(float box_size, float move_distance, int move_delay);
 };
 
 #endif
