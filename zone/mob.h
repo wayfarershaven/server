@@ -210,7 +210,8 @@ public:
 		uint8		in_bracertexture,
 		uint8		in_handtexture,
 		uint8		in_legtexture,
-		uint8		in_feettexture
+		uint8		in_feettexture,
+		uint16 in_usemodel
 	);
 	virtual ~Mob();
 
@@ -489,6 +490,7 @@ public:
 	virtual inline uint16 GetDeity() const { return deity; }
 	virtual EQEmu::deity::DeityTypeBit GetDeityBit() { return EQEmu::deity::ConvertDeityTypeToDeityTypeBit((EQEmu::deity::DeityType)deity); }
 	inline uint16 GetRace() const { return race; }
+	inline uint16 GetModel() const { return (use_model == 0) ? race : use_model; }
 	inline uint8 GetGender() const { return gender; }
 	inline uint8 GetTexture() const { return texture; }
 	inline uint8 GetHelmTexture() const { return helmtexture; }
@@ -1328,6 +1330,7 @@ protected:
 
 	uint8 gender;
 	uint16 race;
+	uint16 use_model;
 	uint8 base_gender;
 	uint16 base_race;
 	uint8 class_;

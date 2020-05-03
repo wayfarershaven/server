@@ -138,6 +138,8 @@ struct NPCType
 	bool	show_name; // should default on
 	bool	untargetable;
 	int8	stuck_behavior;
+	uint16	use_model;
+	int8	flymode;
 };
 
 struct PlayerCorpse_Struct {

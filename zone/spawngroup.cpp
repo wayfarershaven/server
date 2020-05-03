@@ -46,7 +46,8 @@ SpawnGroup::SpawnGroup(
 	int delay_in,
 	int despawn_in,
 	uint32 despawn_timer_in,
-	int min_delay_in
+	int min_delay_in,
+	bool wp_spawns_in
 )
 {
 	id = in_id;
@@ -61,6 +62,7 @@ SpawnGroup::SpawnGroup(
 	delay=delay_in;
 	despawn=despawn_in;
 	despawn_timer=despawn_timer_in;
+	wp_spawns = wp_spawns_in;
 }
 
 uint32 SpawnGroup::GetNPCType() {
@@ -176,7 +178,7 @@ bool ZoneDatabase::LoadSpawnGroups(const char *zone_name, uint16 version, SpawnG
 	std::string query = StringFormat("SELECT DISTINCT(spawngroupID), spawngroup.name, spawngroup.spawn_limit, "
 					 "spawngroup.dist, spawngroup.max_x, spawngroup.min_x, "
 					 "spawngroup.max_y, spawngroup.min_y, spawngroup.delay, "
-					 "spawngroup.despawn, spawngroup.despawn_timer, spawngroup.mindelay "
+					 "spawngroup.despawn, spawngroup.despawn_timer, spawngroup.mindelay, spawngroup.wp_spawns "
 					 "FROM spawn2, spawngroup WHERE spawn2.spawngroupID = spawngroup.ID "
 					 "AND spawn2.version = %u and zone = '%s'",
 					 version, zone_name);
@@ -188,7 +190,7 @@ bool ZoneDatabase::LoadSpawnGroups(const char *zone_name, uint16 version, SpawnG
 	for (auto row = results.begin(); row != results.end(); ++row) {
 		auto newSpawnGroup = new SpawnGroup(atoi(row[0]), row[1], atoi(row[2]), atof(row[3]), atof(row[4]),
 						    atof(row[5]), atof(row[6]), atof(row[7]), atoi(row[8]),
-						    atoi(row[9]), atoi(row[10]), atoi(row[11]));
+						    atoi(row[9]), atoi(row[10]), atoi(row[11]), atoi(row[12]));
 		spawn_group_list->AddSpawnGroup(newSpawnGroup);
 	}
 
@@ -234,7 +236,7 @@ bool ZoneDatabase::LoadSpawnGroupsByID(int spawn_group_id, SpawnGroupList *spawn
 	std::string query = StringFormat("SELECT DISTINCT(spawngroup.id), spawngroup.name, spawngroup.spawn_limit, "
 					 "spawngroup.dist, spawngroup.max_x, spawngroup.min_x, "
 					 "spawngroup.max_y, spawngroup.min_y, spawngroup.delay, "
-					 "spawngroup.despawn, spawngroup.despawn_timer, spawngroup.mindelay "
+					 "spawngroup.despawn, spawngroup.despawn_timer, spawngroup.mindelay, spawngroup.wp_spawns "
 					 "FROM spawngroup WHERE spawngroup.ID = '%i'",
 									 spawn_group_id);
 	auto results = QueryDatabase(query);
@@ -245,7 +247,7 @@ bool ZoneDatabase::LoadSpawnGroupsByID(int spawn_group_id, SpawnGroupList *spawn
 	for (auto row = results.begin(); row != results.end(); ++row) {
 		auto newSpawnGroup = new SpawnGroup(atoi(row[0]), row[1], atoi(row[2]), atof(row[3]), atof(row[4]),
 						    atof(row[5]), atof(row[6]), atof(row[7]), atoi(row[8]),
-						    atoi(row[9]), atoi(row[10]), atoi(row[11]));
+						    atoi(row[9]), atoi(row[10]), atoi(row[11]), atoi(row[12]));
 		spawn_group_list->AddSpawnGroup(newSpawnGroup);
 	}
 

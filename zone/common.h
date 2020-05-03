@@ -611,6 +611,18 @@ enum {	//type arguments to DoAnim
 
 };
 
+enum {
+	GridCircular,
+	GridRandom10,
+	GridRandom,
+	GridPatrol,
+	GridOneWayRepop,
+	GridRand5LoS,
+	GridOneWayDepop,
+	GridCenterPoint,
+	GridRandomCenterPoint,
+	GridRandomPath
+};
 
 typedef enum {
 	petFamiliar,		//only listens to /pet get lost

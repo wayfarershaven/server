@@ -455,7 +455,7 @@ void Mob::AI_Init()
 	maxLastFightingDelayMoving = RuleI(NPC, LastFightingDelayMovingMax);
 
 	pDontHealMeBefore = 0;
-	pDontBuffMeBefore = 0;
+	pDontBuffMeBefore = Timer::GetCurrentTime() + 400;
 	pDontDotMeBefore = 0;
 	pDontRootMeBefore = 0;
 	pDontSnareMeBefore = 0;
@@ -1745,9 +1745,29 @@ void NPC::AI_DoMovement() {
                         GetZ(),
                         GetGrid());
 
+					if (wandertype == GridRandomPath)
+					{
+						if (cur_wp == patrol)
+						{
+							// reached our randomly selected destination; force a pause
+							if (cur_wp_pause == 0)
+							{
+								if (Waypoints.size() > 0 && Waypoints[0].pause)
+									cur_wp_pause = Waypoints[0].pause;
+								else
+									cur_wp_pause = 38;
+							}
+							Log(Logs::Detail, Logs::AI, "NPC using wander type GridRandomPath on grid %d at waypoint %d has reached its random destination; pause time is %d", GetGrid(), cur_wp, cur_wp_pause);
+						}
+						else
+							cur_wp_pause = 0; // skipping pauses until destination
+					}
+
                     SetWaypointPause();
+					if (GetAppearance() != eaStanding) {
                     SetAppearance(eaStanding, false);
-					if (cur_wp_pause > 0) {
+					}
+					if (cur_wp_pause > 0 && m_CurrentWayPoint.w >= 0.0) {
                         RotateTo(m_CurrentWayPoint.w);
                     }
 
@@ -1766,7 +1786,7 @@ void NPC::AI_DoMovement() {
                     }
 
                     // wipe feign memory since we reached our first waypoint
-                    if (cur_wp == 1) {
+					if (cur_wp == 1)
                         ClearFeignMemory();
 
                         if (cur_wp_pause == 0) {
@@ -1775,13 +1795,14 @@ void NPC::AI_DoMovement() {
 							doMove = true;
 						}
                     }
-                }
+
                 if (doMove) {    // not at waypoint yet or at 0 pause WP, so keep moving
                     NavigateTo(
 						m_CurrentWayPoint.x,
 						m_CurrentWayPoint.y,
 						m_CurrentWayPoint.z
 					);
+
                 }
             }
         }        // endif (gridno > 0)
@@ -1840,12 +1861,12 @@ void NPC::AI_SetupNextWaypoint() {
 		}
 	}
 
-	if (wandertype == 4 && cur_wp == CastToNPC()->GetMaxWp()) {
+	if (wandertype == GridOneWayRepop && cur_wp == CastToNPC()->GetMaxWp()) {
 		CastToNPC()->Depop(true); //depop and restart spawn timer
 		if (found_spawn)
 			found_spawn->SetNPCPointerNull();
 	}
-	else if (wandertype == 6 && cur_wp == CastToNPC()->GetMaxWp()) {
+	else if (wandertype == GridOneWayDepop && cur_wp == CastToNPC()->GetMaxWp()) {
 		CastToNPC()->Depop(false);//depop without spawn timer
 		if (found_spawn)
 			found_spawn->SetNPCPointerNull();
