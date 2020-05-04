@@ -730,7 +730,7 @@ struct BandolierItem_Struct
 struct Bandolier_Struct
 {
 	char Name[32];
-	BandolierItem_Struct Items[EQEmu::legacy::BANDOLIER_ITEM_COUNT];
+	BandolierItem_Struct Items[EQEmu::profile::BANDOLIER_ITEM_COUNT];
 };
 
 //len = 72
@@ -744,7 +744,7 @@ struct PotionBeltItem_Struct
 //len = 288
 struct PotionBelt_Struct
 {
-	PotionBeltItem_Struct Items[EQEmu::legacy::POTION_BELT_ITEM_COUNT];
+	PotionBeltItem_Struct Items[EQEmu::profile::POTION_BELT_SIZE];
 };
 
 struct MovePotionToBelt_Struct
@@ -1048,7 +1048,7 @@ struct PlayerProfile_Struct
 /*7212*/	uint32				tribute_points;
 /*7216*/	uint32				unknown7252;
 /*7220*/	uint32				tribute_active;		//1=active
-/*7224*/	Tribute_Struct		tributes[EQEmu::legacy::TRIBUTE_SIZE];
+/*7224*/	Tribute_Struct		tributes[EQEmu::invtype::TRIBUTE_SIZE];
 /*7264*/	Disciplines_Struct	disciplines;
 /*7664*/	uint32				recastTimers[MAX_RECAST_TYPES];	// Timers (GMT of last use)
 /*7744*/	char				unknown7780[160];
@@ -1075,7 +1075,7 @@ struct PlayerProfile_Struct
 /*12800*/	uint32				expAA;
 /*12804*/	uint32				aapoints;			//avaliable, unspent
 /*12808*/	uint8				unknown12844[36];
-/*12844*/	Bandolier_Struct	bandoliers[EQEmu::legacy::BANDOLIERS_SIZE];
+/*12844*/	Bandolier_Struct	bandoliers[EQEmu::profile::BANDOLIERS_SIZE];
 /*14124*/	uint8				unknown14160[4506];
 /*18630*/	SuspendedMinion_Struct	SuspendedMinion; // No longer in use
 /*19240*/	uint32				timeentitledonaccount;
@@ -3481,8 +3481,8 @@ struct SelectTributeReply_Struct {
 
 struct TributeInfo_Struct {
 	uint32	active;		//0 == inactive, 1 == active
-	uint32	tributes[EQEmu::legacy::TRIBUTE_SIZE];	//-1 == NONE
-	uint32	tiers[EQEmu::legacy::TRIBUTE_SIZE];		//all 00's
+	uint32	tributes[EQEmu::invtype::TRIBUTE_SIZE];	//-1 == NONE
+    uint32	tiers[EQEmu::invtype::TRIBUTE_SIZE];		//all 00's
 	uint32	tribute_master_id;
 };
 
@@ -4811,6 +4811,7 @@ struct BuffIconEntry_Struct
 	uint32 spell_id;
 	int32 tics_remaining;
 	uint32 num_hits;
+	char caster[64];
 };
 
 struct BuffIcon_Struct
@@ -4820,6 +4821,7 @@ struct BuffIcon_Struct
 	uint16 count;
 	uint8 type; // 0 = self buff window, 1 = self target window, 4 = group, 5 = PC, 7 = NPC
 	int32 tic_timer;
+	int32 name_lengths; // so ahh we kind of do these packets hacky, this is the total length of all the names to make creating the real packets in the translators easier
 	BuffIconEntry_Struct entries[0];
 };
 

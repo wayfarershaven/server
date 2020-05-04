@@ -645,7 +645,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 				snprintf(effect_desc, _EDLEN, "Flesh To Bone");
 #endif
 				if(IsClient()){
-					EQEmu::ItemInstance* transI = CastToClient()->GetInv().GetItem(EQEmu::inventory::slotCursor);
+					EQEmu::ItemInstance* transI = CastToClient()->GetInv().GetItem(EQEmu::invslot::slotCursor);
 					if (transI && transI->IsClassCommon() && transI->IsStackable()){
 						uint32 fcharges = transI->GetCharges();
 							//Does it sound like meat... maybe should check if it looks like meat too...
@@ -655,7 +655,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 								strstr(transI->GetItem()->Name, "Flesh") ||
 								strstr(transI->GetItem()->Name, "parts") ||
 								strstr(transI->GetItem()->Name, "Parts")){
-								CastToClient()->DeleteItemInInventory(EQEmu::inventory::slotCursor, fcharges, true);
+								CastToClient()->DeleteItemInInventory(EQEmu::invslot::slotCursor, fcharges, true);
 								CastToClient()->SummonItem(13073, fcharges);
 							}
 							else{
@@ -1193,7 +1193,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 
 						if (SummonedItem) {
 							c->PushItemOnCursor(*SummonedItem);
-							c->SendItemPacket(EQEmu::inventory::slotCursor, SummonedItem, ItemPacketLimbo);
+                            c->SendItemPacket(EQEmu::invslot::slotCursor, SummonedItem, ItemPacketLimbo);
 							safe_delete(SummonedItem);
 						}
 						SummonedItem = database.CreateItem(spell.base[i], charges);
@@ -1326,7 +1326,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 #endif
 				if (caster)
 					effect_value = caster->ApplySpellEffectiveness(spell_id, effect_value);
-				
+
 				buffs[buffslot].melee_rune = effect_value;
 				break;
 			}
@@ -1703,7 +1703,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 						basesize = GetPlayerHeight(GetRace());
 					} else {
 						basesize = GetBaseSize();
-					
+
 					}
 				}
 
@@ -1717,13 +1717,13 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 					if (newSize >= 1.98) {
 						Log(Logs::General, Logs::Spells, "Shrink successful from %0.2f to %0.2f.", GetSize(), newSize);
 						ChangeSize(newSize, true);
-					}	
+					}
 				} else {
 					if(newSize <= 11.98)
 					{
 						Log(Logs::General, Logs::Spells, "Growth successful from %0.2f to %0.2f.", GetSize(), newSize);
 						ChangeSize(newSize, true);
-					}	
+					}
 				}
 				break;
 			}
@@ -2223,7 +2223,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 				snprintf(effect_desc, _EDLEN, "Rampage");
 #endif
 				if(caster)
-					entity_list.AEAttack(caster, 30, EQEmu::inventory::slotPrimary, 0, true); // on live wars dont get a duration ramp, its a one shot deal
+					entity_list.AEAttack(caster, 30, EQEmu::invslot::slotPrimary, 0, true); // on live wars dont get a duration ramp, its a one shot deal
 
 				break;
 			}
@@ -2240,7 +2240,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 			}
 
 			case SE_AETaunt:
-			{			
+			{
 #ifdef SPELL_EFFECT_SPAM
 				snprintf(effect_desc, _EDLEN, "AE Taunt");
 #endif
@@ -3015,7 +3015,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 	if (SummonedItem) {
 		Client *c=CastToClient();
 		c->PushItemOnCursor(*SummonedItem);
-		c->SendItemPacket(EQEmu::inventory::slotCursor, SummonedItem, ItemPacketLimbo);
+		c->SendItemPacket(EQEmu::invslot::slotCursor, SummonedItem, ItemPacketLimbo);
 		safe_delete(SummonedItem);
 	}
 
@@ -4002,7 +4002,7 @@ void Mob::BuffFadeBySlot(int slot, bool iRecalcBonuses)
 				if (IsRaidTarget()) {
 					break;
 				}
-				
+
 				if(RuleB(Combat, EnableFearPathing)){
 					if(IsClient())
 					{
@@ -5191,7 +5191,7 @@ uint16 Client::GetSympatheticFocusEffect(focusType type, uint16 spell_id) {
 
 		const EQEmu::ItemData* TempItem = nullptr;
 
-		for (int x = EQEmu::legacy::EQUIPMENT_BEGIN; x <= EQEmu::legacy::EQUIPMENT_END; x++)
+        for (int x = EQEmu::invslot::EQUIPMENT_BEGIN; x <= EQEmu::invslot::EQUIPMENT_END; x++)
 		{
 			if (SympatheticProcList.size() > MAX_SYMPATHETIC_PROCS)
 				continue;
@@ -5211,7 +5211,7 @@ uint16 Client::GetSympatheticFocusEffect(focusType type, uint16 spell_id) {
 				}
 			}
 
-			for (int y = EQEmu::inventory::socketBegin; y < EQEmu::inventory::SocketCount; ++y)
+            for (int y = EQEmu::invaug::SOCKET_BEGIN; y <= EQEmu::invaug::SOCKET_END; ++y)
 			{
 				if (SympatheticProcList.size() > MAX_SYMPATHETIC_PROCS)
 					continue;
@@ -5302,10 +5302,10 @@ int16 Client::GetFocusEffect(focusType type, uint16 spell_id)
 	Log(Logs::Detail, Logs::Spells, "Looking for focus effect: %d for spell: %d", static_cast<int>(type), spell_id);
 	if (IsBardSong(spell_id) && type != focusFcBaseEffects && type != focusSpellDuration)
 		return 0;
-	
+
 	if (spells[spell_id].not_focusable)
 		return 0;
-	
+
 	int16 realTotal = 0;
 	int16 realTotal2 = 0;
 	int16 realTotal3 = 0;
@@ -5329,7 +5329,7 @@ int16 Client::GetFocusEffect(focusType type, uint16 spell_id)
 		int16 focus_max_real = 0;
 
 		//item focus
-		for (int x = EQEmu::legacy::EQUIPMENT_BEGIN; x <= EQEmu::legacy::EQUIPMENT_END; x++)
+		for (int x = EQEmu::invslot::EQUIPMENT_BEGIN; x <= EQEmu::invslot::EQUIPMENT_END; x++)
 		{
 			TempItem = nullptr;
 			EQEmu::ItemInstance* ins = GetInv().GetItem(x);
@@ -5367,7 +5367,7 @@ int16 Client::GetFocusEffect(focusType type, uint16 spell_id)
 				}
 			}
 
-			for (int y = EQEmu::inventory::socketBegin; y < EQEmu::inventory::SocketCount; ++y)
+			for (int y = EQEmu::invaug::SOCKET_BEGIN; y <= EQEmu::invaug::SOCKET_END; ++y)
 			{
 				EQEmu::ItemInstance *aug = nullptr;
 				aug = ins->GetAugment(y);
@@ -5405,7 +5405,7 @@ int16 Client::GetFocusEffect(focusType type, uint16 spell_id)
 		}
 
 		//Tribute Focus
-		for (int x = EQEmu::legacy::TRIBUTE_BEGIN; x <= EQEmu::legacy::TRIBUTE_END; ++x)
+		for (int x = EQEmu::invslot::TRIBUTE_BEGIN; x <= EQEmu::invslot::TRIBUTE_END; ++x)
 		{
 			TempItem = nullptr;
 			EQEmu::ItemInstance* ins = GetInv().GetItem(x);
@@ -5605,7 +5605,7 @@ int16 NPC::GetFocusEffect(focusType type, uint16 spell_id) {
 		int16 focus_max_real = 0;
 
 		//item focus
-		for (int i = 0; i < EQEmu::legacy::EQUIPMENT_SIZE; i++){
+		for (int i = EQEmu::invslot::EQUIPMENT_BEGIN; i <= EQEmu::invslot::EQUIPMENT_END; i++){
 			const EQEmu::ItemData *cur = database.GetItem(equipment[i]);
 
 			if(!cur)

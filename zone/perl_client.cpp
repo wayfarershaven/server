@@ -3299,7 +3299,7 @@ XS(XS_Client_SummonItem)
 {
 	dXSARGS;
 	if (items < 2 || items > 10)
-		Perl_croak(aTHX_ "Usage: Client::SummonItem(THIS, item_id, charges=0, attune=0, aug1=0, aug2=0, aug3=0, aug4=0, aug5=0, slot_id=30)");
+		Perl_croak(aTHX_ "Usage: Client::SummonItem(THIS, item_id, charges=0, attune=0, aug1=0, aug2=0, aug3=0, aug4=0, aug5=0, slot_id=cursor)");
 	{
 		Client *		THIS;
 		uint32		item_id = (uint32)SvUV(ST(1));
@@ -3310,7 +3310,7 @@ XS(XS_Client_SummonItem)
 		uint32		aug3 = 0;
 		uint32		aug4 = 0;
 		uint32		aug5 = 0;
-		uint16		slot_id = 30;
+		uint16 slot_id = EQEmu::invslot::slotCursor;
 
 		if (sv_derived_from(ST(0), "Client")) {
 			IV tmp = SvIV((SV*)SvRV(ST(0)));
