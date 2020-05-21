@@ -2424,7 +2424,7 @@ void Bot::AI_Process() {
 					int32 flurrychance = (aabonuses.FlurryChance + spellbonuses.FlurryChance + itembonuses.FlurryChance);
 					if (GetTarget() && flurrychance) {
 						if(zone->random.Int(0, 100) < flurrychance) {
-							Message_StringID(MT_NPCFlurry, YOU_FLURRY);
+							MessageString(Chat::NPCFlurry, YOU_FLURRY);
 							Attack(GetTarget(), EQEmu::inventory::slotPrimary, false);
 							Attack(GetTarget(), EQEmu::inventory::slotPrimary, false);
 						}
@@ -2444,12 +2444,12 @@ void Bot::AI_Process() {
 
 				if (GetClass() == WARRIOR || GetClass() == BERSERKER) {
 					if(GetHP() > 0 && !berserk && this->GetHPRatio() < 30) {
-						entity_list.MessageClose_StringID(this, false, 200, 0, BERSERK_START, GetName());
+						entity_list.MessageCloseString(this, false, 200, 0, BERSERK_START, GetName());
 						this->berserk = true;
 					}
 
 					if (berserk && this->GetHPRatio() > 30) {
-						entity_list.MessageClose_StringID(this, false, 200, 0, BERSERK_END, GetName());
+						entity_list.MessageCloseString(this, false, 200, 0, BERSERK_END, GetName());
 						this->berserk = false;
 					}
 				}
@@ -3396,32 +3396,32 @@ void Bot::PerformTradeWithClient(int16 beginSlotID, int16 endSlotID, Client* cli
 	}
 
 	if (client != GetOwner()) {
-		client->Message(CC_Red, "You are not the owner of this bot - Trade Canceled.");
+		client->Message(Chat::Red, "You are not the owner of this bot - Trade Canceled.");
 		client->ResetTrade();
 		return;
 	}
 	if ((beginSlotID != legacy::TRADE_BEGIN) && (beginSlotID != inventory::slotCursor)) {
-		client->Message(CC_Red, "Trade request processing from illegal 'begin' slot - Trade Canceled.");
+		client->Message(Chat::Red, "Trade request processing from illegal 'begin' slot - Trade Canceled.");
 		client->ResetTrade();
 		return;
 	}
 	if ((endSlotID != legacy::TRADE_END) && (endSlotID != inventory::slotCursor)) {
-		client->Message(CC_Red, "Trade request processing from illegal 'end' slot - Trade Canceled.");
+		client->Message(Chat::Red, "Trade request processing from illegal 'end' slot - Trade Canceled.");
 		client->ResetTrade();
 		return;
 	}
 	if (((beginSlotID == inventory::slotCursor) && (endSlotID != inventory::slotCursor)) || ((beginSlotID != inventory::slotCursor) && (endSlotID == inventory::slotCursor))) {
-		client->Message(CC_Red, "Trade request processing illegal slot range - Trade Canceled.");
+		client->Message(Chat::Red, "Trade request processing illegal slot range - Trade Canceled.");
 		client->ResetTrade();
 		return;
 	}
 	if (endSlotID < beginSlotID) {
-		client->Message(CC_Red, "Trade request processing in reverse slot order - Trade Canceled.");
+		client->Message(Chat::Red, "Trade request processing in reverse slot order - Trade Canceled.");
 		client->ResetTrade();
 		return;
 	}
 	if (client->IsEngaged() || IsEngaged()) {
-		client->Message(CC_Yellow, "You may not perform a trade while engaged - Trade Canceled!");
+		client->Message(Chat::Yellow, "You may not perform a trade while engaged - Trade Canceled!");
 		client->ResetTrade();
 		return;
 	}
@@ -3437,23 +3437,23 @@ void Bot::PerformTradeWithClient(int16 beginSlotID, int16 endSlotID, Client* cli
 
 		if (!trade_instance->GetItem()) {
 			// TODO: add logging
-			client->Message(CC_Red, "A server error was encountered while processing client slot %i - Trade Canceled.", trade_index);
+			client->Message(Chat::Red, "A server error was encountered while processing client slot %i - Trade Canceled.", trade_index);
 			client->ResetTrade();
 			return;
 		}
 		if ((trade_index != inventory::slotCursor) && !trade_instance->IsDroppable()) {
 			// TODO: add logging
-			client->Message(CC_Red, "Trade hack detected - Trade Canceled.");
+			client->Message(Chat::Red, "Trade hack detected - Trade Canceled.");
 			client->ResetTrade();
 			return;
 		}
 		if (trade_instance->IsStackable() && (trade_instance->GetCharges() < trade_instance->GetItem()->StackSize)) { // temp until partial stacks are implemented
-			client->Message(CC_Yellow, "'%s' is only a partially stacked item - Trade Canceled!", trade_instance->GetItem()->Name);
+			client->Message(Chat::Yellow, "'%s' is only a partially stacked item - Trade Canceled!", trade_instance->GetItem()->Name);
 			client->ResetTrade();
 			return;
 		}
 		if (CheckLoreConflict(trade_instance->GetItem())) {
-			client->Message(CC_Yellow, "This bot already has lore equipment matching the item '%s' - Trade Canceled!", trade_instance->GetItem()->Name);
+			client->Message(Chat::Yellow, "This bot already has lore equipment matching the item '%s' - Trade Canceled!", trade_instance->GetItem()->Name);
 			client->ResetTrade();
 			return;
 		}
@@ -3483,13 +3483,13 @@ void Bot::PerformTradeWithClient(int16 beginSlotID, int16 endSlotID, Client* cli
 			
 			if ((trade_iterator.tradeItemInstance->GetItem()->LoreGroup == -1) && (check_iterator.tradeItemInstance->GetItem()->ID == trade_iterator.tradeItemInstance->GetItem()->ID)) {
 				// TODO: add logging
-				client->Message(CC_Red, "Trade hack detected - Trade Canceled.");
+				client->Message(Chat::Red, "Trade hack detected - Trade Canceled.");
 				client->ResetTrade();
 				return;
 			}
 			if ((trade_iterator.tradeItemInstance->GetItem()->LoreGroup > 0) && (check_iterator.tradeItemInstance->GetItem()->LoreGroup == trade_iterator.tradeItemInstance->GetItem()->LoreGroup)) {
 				// TODO: add logging
-				client->Message(CC_Red, "Trade hack detected - Trade Canceled.");
+				client->Message(Chat::Red, "Trade hack detected - Trade Canceled.");
 				client->ResetTrade();
 				return;
 			}
@@ -3608,12 +3608,12 @@ void Bot::PerformTradeWithClient(int16 beginSlotID, int16 endSlotID, Client* cli
 
 		if (!return_instance->GetItem()) {
 			// TODO: add logging
-			client->Message(CC_Red, "A server error was encountered while processing bot slot %i - Trade Canceled.", return_iterator.fromBotSlot);
+			client->Message(Chat::Red, "A server error was encountered while processing bot slot %i - Trade Canceled.", return_iterator.fromBotSlot);
 			client->ResetTrade();
 			return;
 		}
 		if (client->CheckLoreConflict(return_instance->GetItem())) {
-			client->Message(CC_Yellow, "You already have lore equipment matching the item '%s' - Trade Canceled!", return_instance->GetItem()->Name);
+			client->Message(Chat::Yellow, "You already have lore equipment matching the item '%s' - Trade Canceled!", return_instance->GetItem()->Name);
 			client->ResetTrade();
 			return;
 		}
@@ -3670,7 +3670,7 @@ void Bot::PerformTradeWithClient(int16 beginSlotID, int16 endSlotID, Client* cli
 		}
 
 		if (return_iterator.toClientSlot == legacy::SLOT_INVALID) {
-			client->Message(CC_Yellow, "You do not have room to complete this trade - Trade Canceled!");
+			client->Message(Chat::Yellow, "You do not have room to complete this trade - Trade Canceled!");
 			client->ResetTrade();
 			return;
 		}
@@ -3696,7 +3696,7 @@ void Bot::PerformTradeWithClient(int16 beginSlotID, int16 endSlotID, Client* cli
 			//}
 
 			if (!botdb.DeleteItemBySlot(GetBotID(), return_iterator.fromBotSlot))
-				client->Message(CC_Red, "%s (slot: %i, name: '%s')", BotDatabase::fail::DeleteItemBySlot(), return_iterator.fromBotSlot, (return_instance ? return_instance->GetItem()->Name : "nullptr"));
+				client->Message(Chat::Red, "%s (slot: %i, name: '%s')", BotDatabase::fail::DeleteItemBySlot(), return_iterator.fromBotSlot, (return_instance ? return_instance->GetItem()->Name : "nullptr"));
 
 			BotRemoveEquipItem(return_iterator.fromBotSlot);
 			if (return_instance)
@@ -3711,7 +3711,7 @@ void Bot::PerformTradeWithClient(int16 beginSlotID, int16 endSlotID, Client* cli
 		// TODO: code for stackables
 
 		if (!botdb.SaveItemBySlot(this, trade_iterator.toBotSlot, trade_iterator.tradeItemInstance))
-			client->Message(CC_Red, "%s (slot: %i, name: '%s')", BotDatabase::fail::SaveItemBySlot(), trade_iterator.toBotSlot, (trade_iterator.tradeItemInstance ? trade_iterator.tradeItemInstance->GetItem()->Name : "nullptr"));
+			client->Message(Chat::Red, "%s (slot: %i, name: '%s')", BotDatabase::fail::SaveItemBySlot(), trade_iterator.toBotSlot, (trade_iterator.tradeItemInstance ? trade_iterator.tradeItemInstance->GetItem()->Name : "nullptr"));
 
 		m_inv.PutItem(trade_iterator.toBotSlot, *trade_iterator.tradeItemInstance);
 		this->BotAddEquipItem(trade_iterator.toBotSlot, (trade_iterator.tradeItemInstance ? trade_iterator.tradeItemInstance->GetID() : 0));
@@ -3826,7 +3826,7 @@ void Bot::Damage(Mob *from, int32 damage, uint16 spell_id, EQEmu::skills::SkillT
 		int healed = GetActSpellHealing(spell_id, damage);
 		Log(Logs::Detail, Logs::Combat, "Applying lifetap heal of %d to %s", healed, GetCleanName());
 		HealDamage(healed);
-		entity_list.MessageClose(this, true, 300, MT_Spells, "%s beams a smile at %s", GetCleanName(), from->GetCleanName() );
+		entity_list.MessageClose(this, true, 300, Chat::Spells, "%s beams a smile at %s", GetCleanName(), from->GetCleanName() );
 	}
 
 	CommonDamage(from, damage, spell_id, attack_skill, avoidable, buffslot, iBuffTic, special);
@@ -4908,7 +4908,7 @@ bool Bot::TryFinishingBlow(Mob *defender, int &damage)
 		if (defender->GetLevel() <= levelreq && (chance >= zone->random.Int(1, 1000))) {
 			Log(Logs::Detail, Logs::Combat, "Landed a finishing blow: levelreq at %d, other level %d",
 				levelreq, defender->GetLevel());
-			entity_list.MessageClose_StringID(this, false, 200, MT_CritMelee, FINISHING_BLOW, GetName());
+			entity_list.MessageCloseString(this, false, 200, Chat::MeleeCrit, FINISHING_BLOW, GetName());
 			damage = fb_damage;
 			return true;
 		} else {
@@ -5116,7 +5116,7 @@ void Bot::TryBackstab(Mob *other, int ReuseTime) {
 	if (bIsBehind || bCanFrontalBS) {
 		int chance = (10 + (GetDEX() / 10) + (itembonuses.HeroicDEX / 10));
 		if(level >= 60 && other->GetLevel() <= 45 && !other->CastToNPC()->IsEngaged() && other->GetHP()<= 32000 && other->IsNPC() && zone->random.Real(0, 99) < chance) {
-			entity_list.MessageClose_StringID(this, false, 200, MT_CritMelee, ASSASSINATES, GetName());
+			entity_list.MessageCloseString(this, false, 200, Chat::MeleeCrit, ASSASSINATES, GetName());
 			RogueAssassinate(other);
 		} else {
 			RogueBackstab(other);
@@ -5669,7 +5669,7 @@ int32 Bot::GetActSpellDamage(uint16 spell_id, int32 value, Mob* target) {
 			if(itembonuses.SpellDmg && spells[spell_id].classes[(GetClass() % 17) - 1] >= GetLevel() - 5)
 				value += (GetExtraSpellAmt(spell_id, itembonuses.SpellDmg, value) * ratio / 100);
 
-			entity_list.MessageClose(this, false, 100, MT_SpellCrits, "%s delivers a critical blast! (%d)", GetName(), -value);
+			entity_list.MessageClose(this, false, 100, Chat::SpellCrit, "%s delivers a critical blast! (%d)", GetName(), -value);
 
 			return value;
 		}
@@ -5723,7 +5723,7 @@ int32 Bot::GetActSpellHealing(uint16 spell_id, int32 value, Mob* target) {
 
 		value += (value * target->GetHealRate(spell_id, this) / 100);
 		if (Critical)
-			entity_list.MessageClose(this, false, 100, MT_SpellCrits, "%s performs an exceptional heal! (%d)", GetName(), value);
+			entity_list.MessageClose(this, false, 100, Chat::SpellCrit, "%s performs an exceptional heal! (%d)", GetName(), value);
 
 		return value;
 	} else {
@@ -5988,11 +5988,11 @@ bool Bot::CastSpell(uint16 spell_id, uint16 target_id, EQEmu::CastingSlot slot, 
 			if(!IsValidSpell(spell_id) || casting_spell_id || delaytimer || spellend_timer.Enabled() || IsStunned() || IsFeared() || IsMezzed() || (IsSilenced() && !IsDiscipline(spell_id)) || (IsAmnesiad() && IsDiscipline(spell_id))) {
 				Log(Logs::Detail, Logs::Spells, "Spell casting canceled: not able to cast now. Valid? %d, casting %d, waiting? %d, spellend? %d, stunned? %d, feared? %d, mezed? %d, silenced? %d", IsValidSpell(spell_id), casting_spell_id, delaytimer, spellend_timer.Enabled(), IsStunned(), IsFeared(), IsMezzed(), IsSilenced() );
 				if(IsSilenced() && !IsDiscipline(spell_id))
-					Message_StringID(13, SILENCED_STRING);
+					MessageString(13, SILENCED_STRING);
 
 				if(IsAmnesiad() && IsDiscipline(spell_id))
 
-					Message_StringID(13, MELEE_SILENCE);
+					MessageString(13, MELEE_SILENCE);
 
 				if(casting_spell_id)
 					AI_Event_SpellCastFinished(false, static_cast<uint16>(casting_spell_slot));
@@ -6002,7 +6002,7 @@ bool Bot::CastSpell(uint16 spell_id, uint16 target_id, EQEmu::CastingSlot slot, 
 		}
 
 		if(IsDetrimentalSpell(spell_id) && !zone->CanDoCombat()){
-			Message_StringID(13, SPELL_WOULDNT_HOLD);
+			MessageString(13, SPELL_WOULDNT_HOLD);
 			if(casting_spell_id)
 				AI_Event_SpellCastFinished(false, static_cast<uint16>(casting_spell_slot));
 

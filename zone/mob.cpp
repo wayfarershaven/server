@@ -1349,7 +1349,7 @@ void Mob::SendHPUpdate(bool skip_self /*= false*/, bool force_update_all /*= fal
 		if (cur_hp != last_hp || force_update_all) {
 			/* This is to prevent excessive packet sending under trains/fast combat */
 			if (this->CastToClient()->hp_self_update_throttle_timer.Check() || force_update_all) {
-				Log(Logs::General, Logs::HP_Update,
+				Log(Logs::General, Logs::HPUpdate,
 					"Mob::SendHPUpdate :: Update HP of self (%s) HP: %i last: %i skip_self: %s",
 					this->GetCleanName(),
 					cur_hp,
@@ -1380,17 +1380,17 @@ void Mob::SendHPUpdate(bool skip_self /*= false*/, bool force_update_all /*= fal
 
 	int8 current_hp_percent = (max_hp == 0 ? 0 : static_cast<int>(cur_hp * 100 / max_hp));
 
-	Log(Logs::General, Logs::HP_Update, "Mob::SendHPUpdate :: SendHPUpdate %s HP is %i last %i", this->GetCleanName(), current_hp_percent, last_hp_percent);
+	Log(Logs::General, Logs::HPUpdate, "Mob::SendHPUpdate :: SendHPUpdate %s HP is %i last %i", this->GetCleanName(), current_hp_percent, last_hp_percent);
 
 	if (current_hp_percent == last_hp_percent && !force_update_all) {
-		Log(Logs::General, Logs::HP_Update, "Mob::SendHPUpdate :: Same HP - skipping update");
+		Log(Logs::General, Logs::HPUpdate, "Mob::SendHPUpdate :: Same HP - skipping update");
 		ResetHPUpdateTimer();
 		return;
 	}
 	else {
 		if (IsClient() && RuleB(Character, MarqueeHPUpdates))
 			this->CastToClient()->SendHPUpdateMarquee();
-		Log(Logs::General, Logs::HP_Update, "Mob::SendHPUpdate :: HP Changed - Send update");
+		Log(Logs::General, Logs::HPUpdate, "Mob::SendHPUpdate :: HP Changed - Send update");
 		last_hp_percent = current_hp_percent;
 	}
 
@@ -2780,7 +2780,7 @@ bool Mob::HateSummon() {
 	if(target)
 	{
 		if(summon_level == 1) {
-			entity_list.MessageClose(this, true, 500, MT_Say, "%s says,'You will not evade me, %s!' ", GetCleanName(), target->GetCleanName() );
+			entity_list.MessageClose(this, true, 500, Chat::Say, "%s says,'You will not evade me, %s!' ", GetCleanName(), target->GetCleanName() );
 
 			if (target->IsClient()) {
 				target->CastToClient()->MovePC(zone->GetZoneID(), zone->GetInstanceID(), m_Position.x, m_Position.y, m_Position.z, target->GetHeading(), 0, SummonPC);
@@ -2799,7 +2799,7 @@ bool Mob::HateSummon() {
 
 			return true;
 		} else if(summon_level == 2) {
-			entity_list.MessageClose(this, true, 500, MT_Say, "%s says,'You will not evade me, %s!'", GetCleanName(), target->GetCleanName());
+			entity_list.MessageClose(this, true, 500, Chat::Say, "%s says,'You will not evade me, %s!'", GetCleanName(), target->GetCleanName());
 			GMMove(target->GetX(), target->GetY(), target->GetZ());
 		}
 	}
@@ -3184,7 +3184,7 @@ void Mob::Say(const char *format, ...)
 	if(!talker)
 		talker = this;
 
-	entity_list.MessageClose_StringID(talker, false, 200, 10,
+	entity_list.MessageCloseString(talker, false, 200, 10,
 									  GENERIC_SAY, GetCleanName(), buf);
 }
 
@@ -3197,7 +3197,7 @@ void Mob::Say_StringID(uint32 string_id, const char *message3, const char *messa
 
 	snprintf(string_id_str, 10, "%d", string_id);
 
-	entity_list.MessageClose_StringID(this, false, 200, 10,
+	entity_list.MessageCloseString(this, false, 200, 10,
 									  GENERIC_STRINGID_SAY, GetCleanName(), string_id_str, message3, message4, message5,
 									  message6, message7, message8, message9
 	);
@@ -3209,7 +3209,7 @@ void Mob::Say_StringID(uint32 type, uint32 string_id, const char *message3, cons
 
 	snprintf(string_id_str, 10, "%d", string_id);
 
-	entity_list.MessageClose_StringID(this, false, 200, type,
+	entity_list.MessageCloseString(this, false, 200, type,
 									  GENERIC_STRINGID_SAY, GetCleanName(), string_id_str, message3, message4, message5,
 									  message6, message7, message8, message9
 	);
@@ -3222,7 +3222,7 @@ void Mob::SayTo_StringID(Client *to, uint32 string_id, const char *message3, con
 
 	auto string_id_str = std::to_string(string_id);
 
-	to->Message_StringID(10, GENERIC_STRINGID_SAY, GetCleanName(), string_id_str.c_str(), message3, message4, message5, message6, message7, message8, message9);
+	to->MessageString(10, GENERIC_STRINGID_SAY, GetCleanName(), string_id_str.c_str(), message3, message4, message5, message6, message7, message8, message9);
 }
 
 void Mob::SayTo_StringID(Client *to, uint32 type, uint32 string_id, const char *message3, const char *message4, const char *message5, const char *message6, const char *message7, const char *message8, const char *message9)
@@ -3232,7 +3232,7 @@ void Mob::SayTo_StringID(Client *to, uint32 type, uint32 string_id, const char *
 
 	auto string_id_str = std::to_string(string_id);
 
-	to->Message_StringID(type, GENERIC_STRINGID_SAY, GetCleanName(), string_id_str.c_str(), message3, message4, message5, message6, message7, message8, message9);
+	to->MessageString(type, GENERIC_STRINGID_SAY, GetCleanName(), string_id_str.c_str(), message3, message4, message5, message6, message7, message8, message9);
 }
 
 void Mob::Shout(const char *format, ...)
@@ -3244,7 +3244,7 @@ void Mob::Shout(const char *format, ...)
 	vsnprintf(buf, 1000, format, ap);
 	va_end(ap);
 
-	entity_list.Message_StringID(this, false, MT_Shout,
+	entity_list.MessageString(this, false, Chat::Shout,
 								 GENERIC_SHOUT, GetCleanName(), buf);
 }
 
@@ -3257,7 +3257,7 @@ void Mob::Emote(const char *format, ...)
 	vsnprintf(buf, 1000, format, ap);
 	va_end(ap);
 
-	entity_list.MessageClose_StringID(this, false, 200, 10,
+	entity_list.MessageCloseString(this, false, 200, 10,
 									  GENERIC_EMOTE, GetCleanName(), buf);
 }
 
@@ -3921,7 +3921,7 @@ void Mob::TryTwincast(Mob *caster, Mob *target, uint32 spell_id)
 		{
 			if(zone->random.Roll(focus))
 			{
-				Message(MT_Spells,"You twincast %s!",spells[spell_id].name);
+				Message(Chat::Spells,"You twincast %s!",spells[spell_id].name);
 				SpellFinished(spell_id, target, EQEmu::CastingSlot::Item, 0, -1, spells[spell_id].ResistDiff);
 			}
 		}
@@ -5223,16 +5223,16 @@ void Mob::SlowMitigation(Mob* caster)
 	if (GetSlowMitigation() && caster && caster->IsClient())
 	{
 		if ((GetSlowMitigation() > 0) && (GetSlowMitigation() < 26))
-			caster->Message_StringID(MT_SpellFailure, SLOW_MOSTLY_SUCCESSFUL);
+			caster->MessageString(Chat::SpellFailure, SLOW_MOSTLY_SUCCESSFUL);
 
 		else if ((GetSlowMitigation() >= 26) && (GetSlowMitigation() < 74))
-			caster->Message_StringID(MT_SpellFailure, SLOW_PARTIALLY_SUCCESSFUL);
+			caster->MessageString(Chat::SpellFailure, SLOW_PARTIALLY_SUCCESSFUL);
 
 		else if ((GetSlowMitigation() >= 74) && (GetSlowMitigation() < 101))
-			caster->Message_StringID(MT_SpellFailure, SLOW_SLIGHTLY_SUCCESSFUL);
+			caster->MessageString(Chat::SpellFailure, SLOW_SLIGHTLY_SUCCESSFUL);
 
 		else if (GetSlowMitigation() > 100)
-			caster->Message_StringID(MT_SpellFailure, SPELL_OPPOSITE_EFFECT);
+			caster->MessageString(Chat::SpellFailure, SPELL_OPPOSITE_EFFECT);
 	}
 }
 
@@ -6126,7 +6126,7 @@ void Mob::CommonBreakInvisible()
 
 void Mob::ShieldClear() {
 	if (shield_target) {
-		entity_list.MessageClose_StringID(this, false, 100, 0,
+		entity_list.MessageCloseString(this, false, 100, 0,
 										  END_SHIELDING, GetCleanName(), shield_target->GetCleanName());
 		for (int y = 0; y < 2; y++) {
 			if (shield_target->shielder[y].shielder_id == GetID()) {
@@ -6205,7 +6205,7 @@ void Mob::Shield(Mob* target, float range_multiplier) {
 	{
 		if (shield_target->shielder[x].shielder_id == 0)
 		{
-			entity_list.MessageClose_StringID(this, false, 100, 0,
+			entity_list.MessageCloseString(this, false, 100, 0,
 											  START_SHIELDING, shield_target->GetName(), GetName());
 
 			shield_target->shielder[x].shielder_id = GetID();
@@ -6227,7 +6227,7 @@ void Mob::Shield(Mob* target, float range_multiplier) {
 	}
 
 	if (!ack) {
-		Message_StringID(0, ALREADY_SHIELDED);
+		MessageString(0, ALREADY_SHIELDED);
 		shield_target = 0;
 		return;
 	}

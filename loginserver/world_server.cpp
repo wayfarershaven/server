@@ -379,7 +379,7 @@ void WorldServer::Handle_NewLSInfo(ServerNewLSInfo_Struct* i)
 			{
 				if (s_acct_name.size() == 0 || s_acct_pass.size() == 0)
 				{
-					Log(Logs::General, Logs::World_Server, "Server %s(%s) successfully logged into account that had no user/password requirement.",
+					Log(Logs::General, Logs::WorldServer, "Server %s(%s) successfully logged into account that had no user/password requirement.",
 						long_name.c_str(), short_name.c_str());
 					is_server_authorized = true;
 					SetRuntimeID(s_id);
@@ -388,7 +388,7 @@ void WorldServer::Handle_NewLSInfo(ServerNewLSInfo_Struct* i)
 				}
 				else if (s_acct_name.compare(account_name) == 0 && s_acct_pass.compare(account_password) == 0)
 				{
-					Log(Logs::General, Logs::World_Server, "Server %s(%s) successfully logged in.",
+					Log(Logs::General, Logs::WorldServer, "Server %s(%s) successfully logged in.",
 						long_name.c_str(), short_name.c_str());
 					is_server_authorized = true;
 					SetRuntimeID(s_id);
@@ -403,19 +403,19 @@ void WorldServer::Handle_NewLSInfo(ServerNewLSInfo_Struct* i)
 					}
 				}
 				else {
-					Log(Logs::General, Logs::World_Server, "Server %s(%s) attempted to log in but account and password did not match the entry in the database, and only"
+					Log(Logs::General, Logs::WorldServer, "Server %s(%s) attempted to log in but account and password did not match the entry in the database, and only"
 						" registered servers are allowed.", long_name.c_str(), short_name.c_str());
 					return;
 				}
 			}
 			else {
-				Log(Logs::General, Logs::World_Server, "Server %s(%s) attempted to log in but database couldn't find an entry and only registered servers are allowed.",
+				Log(Logs::General, Logs::WorldServer, "Server %s(%s) attempted to log in but database couldn't find an entry and only registered servers are allowed.",
 					long_name.c_str(), short_name.c_str());
 				return;
 			}
 		}
 		else {
-			Log(Logs::General, Logs::World_Server, "Server %s(%s) did not attempt to log in but only registered servers are allowed.",
+			Log(Logs::General, Logs::WorldServer, "Server %s(%s) did not attempt to log in but only registered servers are allowed.",
 				long_name.c_str(), short_name.c_str());
 			return;
 		}
@@ -444,7 +444,7 @@ void WorldServer::Handle_NewLSInfo(ServerNewLSInfo_Struct* i)
 
 			if (account_name.size() > 0 && account_password.size() > 0) {
 				if (server_account_name.compare(account_name) == 0 && server_account_password.compare(account_password) == 0) {
-					Log(Logs::General, Logs::World_Server, "Server %s(%s) successfully logged in.",
+					Log(Logs::General, Logs::WorldServer, "Server %s(%s) successfully logged in.",
 						long_name.c_str(), short_name.c_str());
 					is_server_authorized = true;
 					SetRuntimeID(server_id);
@@ -460,18 +460,18 @@ void WorldServer::Handle_NewLSInfo(ServerNewLSInfo_Struct* i)
 				}
 				else {
 					// this is the first of two cases where we should deny access even if unregistered is allowed
-					Log(Logs::General, Logs::World_Server, "Server %s(%s) attempted to log in but account and password did not match the entry in the database.",
+					Log(Logs::General, Logs::WorldServer, "Server %s(%s) attempted to log in but account and password did not match the entry in the database.",
 						long_name.c_str(), short_name.c_str());
 				}
 			}
 			else {
 				if (server_account_name.size() > 0 || server_account_password.size() > 0) {
 					// this is the second of two cases where we should deny access even if unregistered is allowed
-					Log(Logs::General, Logs::World_Server, "Server %s(%s) did not attempt to log in but this server requires a password.",
+					Log(Logs::General, Logs::WorldServer, "Server %s(%s) did not attempt to log in but this server requires a password.",
 						long_name.c_str(), short_name.c_str());
 				}
 				else {
-					Log(Logs::General, Logs::World_Server, "Server %s(%s) did not attempt to log in but unregistered servers are allowed.",
+					Log(Logs::General, Logs::WorldServer, "Server %s(%s) did not attempt to log in but unregistered servers are allowed.",
 						long_name.c_str(), short_name.c_str());
 					is_server_authorized = true;
 					SetRuntimeID(server_id);
@@ -481,7 +481,7 @@ void WorldServer::Handle_NewLSInfo(ServerNewLSInfo_Struct* i)
 		}
 		else
 		{
-			Log(Logs::General, Logs::World_Server, "Server %s(%s) attempted to log in but database couldn't find an entry but unregistered servers are allowed.",
+			Log(Logs::General, Logs::WorldServer, "Server %s(%s) attempted to log in but database couldn't find an entry but unregistered servers are allowed.",
 				long_name.c_str(), short_name.c_str());
 			if (server.db->CreateWorldRegistration(long_name, short_name, server_id)) {
 				is_server_authorized = true;

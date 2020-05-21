@@ -166,7 +166,7 @@ public:
 	void SetCurrentWP(int wp);
 	double GetSize();
 	void Message(int type, const char *message);
-	void Message_StringID(int type, int string_id, uint32 distance);
+	void MessageString(int type, int string_id, uint32 distance);
 	void Say(const char *message);
 	void QuestSay(Lua_Client client, const char *message);
 	void SetTimer(const char *timer, int time_ms);

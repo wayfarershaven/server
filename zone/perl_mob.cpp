@@ -3919,12 +3919,12 @@ XS(XS_Mob_Message)
 	XSRETURN_EMPTY;
 }
 
-XS(XS_Mob_Message_StringID); /* prototype to pass -Wmissing-prototypes */
-XS(XS_Mob_Message_StringID)
+XS(XS_Mob_MessageString); /* prototype to pass -Wmissing-prototypes */
+XS(XS_Mob_MessageString)
 {
 	dXSARGS;
 	if (items < 3 || items > 4)
-		Perl_croak(aTHX_ "Usage: Mob::Message_StringID(THIS, type, string_id, distance= 0)");
+		Perl_croak(aTHX_ "Usage: Mob::MessageString(THIS, type, string_id, distance= 0)");
 	{
 		Mob *		THIS;
 		uint32		type = (uint32)SvUV(ST(1));
@@ -3946,7 +3946,7 @@ XS(XS_Mob_Message_StringID)
 			distance = (uint32)SvUV(ST(3));
 		}
 
-		THIS->Message_StringID(type, string_id, distance);
+		THIS->MessageString(type, string_id, distance);
 	}
 	XSRETURN_EMPTY;
 }
@@ -9271,7 +9271,7 @@ XS(boot_Mob)
 		newXSproto(strcpy(buf, "SetFollowID"), XS_Mob_SetFollowID, file, "$$");
 		newXSproto(strcpy(buf, "GetFollowID"), XS_Mob_GetFollowID, file, "$");
 		newXSproto(strcpy(buf, "Message"), XS_Mob_Message, file, "$$$;@");
-		newXSproto(strcpy(buf, "Message_StringID"), XS_Mob_Message_StringID, file, "$$$;$");
+		newXSproto(strcpy(buf, "MessageString"), XS_Mob_MessageString, file, "$$$;$");
 		newXSproto(strcpy(buf, "Say"), XS_Mob_Say, file, "$$;@");
 		newXSproto(strcpy(buf, "Shout"), XS_Mob_Shout, file, "$$;@");
 		newXSproto(strcpy(buf, "Emote"), XS_Mob_Emote, file, "$$;@");

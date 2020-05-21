@@ -88,7 +88,7 @@ bool LoginServerList::SendPacket(ServerPacket* pack) {
 }
 
 bool LoginServerList::SendAccountUpdate(ServerPacket* pack) {
-	Log(Logs::Detail, Logs::World_Server, "Requested to send ServerOP_LSAccountUpdate packet to all loginservers");
+	Log(Logs::Detail, Logs::WorldServer, "Requested to send ServerOP_LSAccountUpdate packet to all loginservers");
 	for (auto &iter : m_list) {
 		if ((*iter).CanUpdate()) {
 			(*iter).SendAccountUpdate(pack);

@@ -1106,7 +1106,7 @@ void Client::FinishAlternateAdvancementPurchase(AA::Rank *rank, bool ignore_cost
 	SendAlternateAdvancementStats();
 
 	if(rank->prev) {
-		Message_StringID(15, AA_IMPROVE,
+		MessageString(15, AA_IMPROVE,
 						 std::to_string(rank->title_sid).c_str(),
 						 std::to_string(rank->prev->current_value).c_str(),
 						 std::to_string(cost).c_str(),
@@ -1119,7 +1119,7 @@ void Client::FinishAlternateAdvancementPurchase(AA::Rank *rank, bool ignore_cost
 		}
 	}
 	else {
-		Message_StringID(15, AA_GAIN_ABILITY,
+		MessageString(15, AA_GAIN_ABILITY,
 						 std::to_string(rank->title_sid).c_str(),
 						 std::to_string(cost).c_str(),
 						 cost == 1 ? std::to_string(AA_POINT).c_str() : std::to_string(AA_POINTS).c_str());
@@ -1216,7 +1216,7 @@ void Client::ActivateAlternateAdvancementAbility(int rank_id, int target_id) {
 	}
 
 	if (spells[rank->spell].sneak && (!hidden || (hidden && (Timer::GetCurrentTime() - tmHidden) < 4000))) {
-		Message_StringID(MT_SpellFailure, SNEAK_RESTRICT);
+		MessageString(Chat::SpellFailure, SNEAK_RESTRICT);
 		return;
 	}
 

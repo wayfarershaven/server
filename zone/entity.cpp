@@ -522,7 +522,7 @@ void EntityList::MobProcess()
 #ifdef _WINDOWS
 				struct in_addr in;
 				in.s_addr = mob->CastToClient()->GetIP();
-				Log(Logs::General, Logs::Zone_Server, "Dropping client: Process=false, ip=%s port=%u", inet_ntoa(in), mob->CastToClient()->GetPort());
+				Log(Logs::General, Logs::ZoneServer, "Dropping client: Process=false, ip=%s port=%u", inet_ntoa(in), mob->CastToClient()->GetPort());
 #endif
 				zone->StartShutdownTimer();
 				Group *g = GetGroupByMob(mob);
@@ -1720,9 +1720,9 @@ void EntityList::DuelMessage(Mob *winner, Mob *loser, bool flee)
 		//might want some sort of distance check in here?
 		if (cur != winner && cur != loser) {
 			if (flee)
-				cur->Message_StringID(15, DUEL_FLED, winner->GetName(),loser->GetName(),loser->GetName());
+				cur->MessageString(15, DUEL_FLED, winner->GetName(),loser->GetName(),loser->GetName());
 			else
-				cur->Message_StringID(15, DUEL_FINISHED, winner->GetName(),loser->GetName());
+				cur->MessageString(15, DUEL_FINISHED, winner->GetName(),loser->GetName());
 		}
 		++it;
 	}
@@ -2142,65 +2142,214 @@ void EntityList::MessageStatus(uint32 to_guild_id, int to_minstatus, uint32 type
 	}
 }
 
-// works much like MessageClose, but with formatted strings
-void EntityList::MessageClose_StringID(Mob *sender, bool skipsender, float dist, uint32 type, uint32 string_id, const char* message1,const char* message2,const char* message3,const char* message4,const char* message5,const char* message6,const char* message7,const char* message8,const char* message9)
+/**
+ * @param sender
+ * @param skipsender
+ * @param dist
+ * @param type
+ * @param string_id
+ * @param message1
+ * @param message2
+ * @param message3
+ * @param message4
+ * @param message5
+ * @param message6
+ * @param message7
+ * @param message8
+ * @param message9
+ */
+void EntityList::MessageCloseString(
+		Mob *sender,
+		bool skipsender,
+		float dist,
+		uint32 type,
+		uint32 string_id,
+		const char *message1,
+		const char *message2,
+		const char *message3,
+		const char *message4,
+		const char *message5,
+		const char *message6,
+		const char *message7,
+		const char *message8,
+		const char *message9
+)
 {
 	Client *c;
 	float dist2 = dist * dist;
 
-	for (auto it = client_list.begin(); it != client_list.end(); ++it) {
-		c = it->second;
-		if(c && DistanceSquared(c->GetPosition(), sender->GetPosition()) <= dist2 && (!skipsender || c != sender))
-			c->Message_StringID(type, string_id, message1, message2, message3, message4, message5, message6, message7, message8, message9);
+	for (auto & it : client_list) {
+		c = it.second;
+		if (c && DistanceSquared(c->GetPosition(), sender->GetPosition()) <= dist2 && (!skipsender || c != sender)) {
+			c->MessageString(
+					type,
+					string_id,
+					message1,
+					message2,
+					message3,
+					message4,
+					message5,
+					message6,
+					message7,
+					message8,
+					message9
+			);
+		}
 	}
 }
 
-void EntityList::FilteredMessageClose_StringID(Mob *sender, bool skipsender,
-		float dist, uint32 type, eqFilterType filter, uint32 string_id,
-		const char *message1, const char *message2, const char *message3,
-		const char *message4, const char *message5, const char *message6,
-		const char *message7, const char *message8, const char *message9)
+void EntityList::FilteredMessageCloseString(
+		Mob *sender, bool skipsender,
+		float dist,
+		uint32 type,
+		eqFilterType filter,
+		uint32 string_id,
+		const char *message1,
+		const char *message2,
+		const char *message3,
+		const char *message4,
+		const char *message5,
+		const char *message6,
+		const char *message7,
+		const char *message8,
+		const char *message9
+)
 {
 	Client *c;
 	float dist2 = dist * dist;
 
-	for (auto it = client_list.begin(); it != client_list.end(); ++it) {
-		c = it->second;
-		if (c && DistanceSquared(c->GetPosition(), sender->GetPosition()) <= dist2 && (!skipsender || c != sender))
-			c->FilteredMessage_StringID(sender, type, filter, string_id,
+	for (auto & it : client_list) {
+		c = it.second;
+		if (c && DistanceSquared(c->GetPosition(), sender->GetPosition()) <= dist2 && (!skipsender || c != sender)) {
+			c->FilteredMessageString(
+					sender, type, filter, string_id,
 					message1, message2, message3, message4, message5,
-					message6, message7, message8, message9);
+					message6, message7, message8, message9
+			);
+		}
 	}
 }
 
-void EntityList::Message_StringID(Mob *sender, bool skipsender, uint32 type, uint32 string_id, const char* message1,const char* message2,const char* message3,const char* message4,const char* message5,const char* message6,const char* message7,const char* message8,const char* message9)
+/**
+ *
+ * @param sender
+ * @param skipsender
+ * @param type
+ * @param string_id
+ * @param message1
+ * @param message2
+ * @param message3
+ * @param message4
+ * @param message5
+ * @param message6
+ * @param message7
+ * @param message8
+ * @param message9
+ */
+void EntityList::MessageString(
+		Mob *sender,
+		bool skipsender,
+		uint32 type,
+		uint32 string_id,
+		const char *message1,
+		const char *message2,
+		const char *message3,
+		const char *message4,
+		const char *message5,
+		const char *message6,
+		const char *message7,
+		const char *message8,
+		const char *message9
+)
 {
 	Client *c;
 
-	for (auto it = client_list.begin(); it != client_list.end(); ++it) {
-		c = it->second;
-		if(c && (!skipsender || c != sender))
-			c->Message_StringID(type, string_id, message1, message2, message3, message4, message5, message6, message7, message8, message9);
+	for (auto & it : client_list) {
+		c = it.second;
+		if (c && (!skipsender || c != sender)) {
+			c->MessageString(
+					type,
+					string_id,
+					message1,
+					message2,
+					message3,
+					message4,
+					message5,
+					message6,
+					message7,
+					message8,
+					message9
+			);
+		}
 	}
 }
 
-void EntityList::FilteredMessage_StringID(Mob *sender, bool skipsender,
-		uint32 type, eqFilterType filter, uint32 string_id,
-		const char *message1, const char *message2, const char *message3,
-		const char *message4, const char *message5, const char *message6,
-		const char *message7, const char *message8, const char *message9)
+/**
+ *
+ * @param sender
+ * @param skipsender
+ * @param type
+ * @param filter
+ * @param string_id
+ * @param message1
+ * @param message2
+ * @param message3
+ * @param message4
+ * @param message5
+ * @param message6
+ * @param message7
+ * @param message8
+ * @param message9
+ */
+void EntityList::FilteredMessageString(
+		Mob *sender,
+		bool skipsender,
+		uint32 type,
+		eqFilterType filter,
+		uint32 string_id,
+		const char *message1,
+		const char *message2,
+		const char *message3,
+		const char *message4,
+		const char *message5,
+		const char *message6,
+		const char *message7,
+		const char *message8,
+		const char *message9
+)
 {
 	Client *c;
 
-	for (auto it = client_list.begin(); it != client_list.end(); ++it) {
-		c = it->second;
-		if (c && (!skipsender || c != sender))
-			c->FilteredMessage_StringID(sender, type, filter, string_id,
-					message1, message2, message3, message4, message5, message6,
-					message7, message8, message9);
+	for (auto & it : client_list) {
+		c = it.second;
+		if (c && (!skipsender || c != sender)) {
+			c->FilteredMessageString(
+					sender,
+					type,
+					filter,
+					string_id,
+					message1,
+					message2,
+					message3,
+					message4,
+					message5,
+					message6,
+					message7,
+					message8,
+					message9
+			);
+		}
 	}
 }
 
+/**
+ * @param sender
+ * @param skipsender
+ * @param dist
+ * @param type
+ * @param message
+ * @param ...
+ */
 void EntityList::MessageClose(Mob* sender, bool skipsender, float dist, uint32 type, const char* message, ...)
 {
 	va_list argptr;
@@ -2220,7 +2369,15 @@ void EntityList::MessageClose(Mob* sender, bool skipsender, float dist, uint32 t
 	}
 }
 
-void EntityList::FilteredMessageClose(Mob *sender, bool skipsender, float dist, uint32 type, eqFilterType filter, const char *message, ...)
+void EntityList::FilteredMessageClose(
+		Mob *sender,
+		bool skipsender,
+		float dist,
+		uint32 type,
+		eqFilterType filter,
+		const char *message,
+		...
+)
 {
 	va_list argptr;
 	char buffer[4096];
@@ -3899,7 +4056,7 @@ void EntityList::QuestJournalledSayClose(Mob *sender, Client *QuestInitiator,
 	for (auto it = client_list.begin(); it != client_list.end(); ++it) {
 		c = it->second;
 		if(c && (c != QuestInitiator) && DistanceSquared(c->GetPosition(), sender->GetPosition()) <= dist2)
-			c->Message_StringID(10, GENERIC_SAY, mobname, message);
+			c->MessageString(10, GENERIC_SAY, mobname, message);
 	}
 }
 
@@ -4788,7 +4945,7 @@ void EntityList::ExpeditionWarning(uint32 minutes_left)
 
 	auto it = client_list.begin();
 	while (it != client_list.end()) {
-		it->second->Message_StringID(15, EXPEDITION_MIN_REMAIN, itoa((int)minutes_left));
+		it->second->MessageString(15, EXPEDITION_MIN_REMAIN, itoa((int)minutes_left));
 		it->second->QueuePacket(outapp);
 		++it;
 	}

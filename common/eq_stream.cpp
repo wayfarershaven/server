@@ -555,15 +555,15 @@ void EQStream::SendPacket(uint16 opcode, EQApplicationPacket *p)
 	uint32 chunksize, used;
 	uint32 length;
 
-	if (LogSys.log_settings[Logs::Server_Client_Packet].is_category_enabled == 1){
+	if (LogSys.log_settings[Logs::PacketServerClient].is_category_enabled == 1){
 		if (p->GetOpcode() != OP_SpecialMesg){
-			Log(Logs::General, Logs::Server_Client_Packet, "[%s - 0x%04x] [Size: %u]", OpcodeManager::EmuToName(p->GetOpcode()), p->GetOpcode(), p->Size());
+			Log(Logs::General, Logs::PacketServerClient, "[%s - 0x%04x] [Size: %u]", OpcodeManager::EmuToName(p->GetOpcode()), p->GetOpcode(), p->Size());
 		}
 	}
 
-	if (LogSys.log_settings[Logs::Server_Client_Packet_With_Dump].is_category_enabled == 1){
+	if (LogSys.log_settings[Logs::PacketServerClientWithDump].is_category_enabled == 1){
 		if (p->GetOpcode() != OP_SpecialMesg){
-			Log(Logs::General, Logs::Server_Client_Packet_With_Dump, "[%s - 0x%04x] [Size: %u] %s", OpcodeManager::EmuToName(p->GetOpcode()), p->GetOpcode(), p->Size(), DumpPacketToString(p).c_str());
+			Log(Logs::General, Logs::PacketServerClientWithDump, "[%s - 0x%04x] [Size: %u] %s", OpcodeManager::EmuToName(p->GetOpcode()), p->GetOpcode(), p->Size(), DumpPacketToString(p).c_str());
 		}
 	}
 
@@ -960,7 +960,7 @@ EQRawApplicationPacket *p=nullptr;
 		if (OpMgr != nullptr && *OpMgr != nullptr) {
 			EmuOpcode emu_op = (*OpMgr)->EQToEmu(p->opcode);
 			if (emu_op == OP_Unknown) {
-				// Log(Logs::General, Logs::Client_Server_Packet_Unhandled, "Unknown :: [%s - 0x%04x] [Size: %u] %s", OpcodeManager::EmuToName(p->GetOpcode()), p->opcode, p->Size(), DumpPacketToString(p).c_str());
+				// Log(Logs::General, Logs::PacketClientServerUnhandled, "Unknown :: [%s - 0x%04x] [Size: %u] %s", OpcodeManager::EmuToName(p->GetOpcode()), p->opcode, p->Size(), DumpPacketToString(p).c_str());
 			} 
 			p->SetOpcode(emu_op);
 		}

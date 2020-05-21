@@ -85,12 +85,12 @@ MySQLRequestResult DBcore::QueryDatabase(const char* query, uint32 querylen, boo
 
 			if (retryOnFailureOnce)
 			{
-				std::cout << "Database Error: Lost connection, attempting to recover...." << std::endl;
+                Log(Logs::General, Logs::Status, "Database Error: Lost connection, attempting to recover...");
 				MySQLRequestResult requestResult = QueryDatabase(query, querylen, false);
 
 				if (requestResult.Success())
 				{
-					std::cout << "Reconnection to database successful." << std::endl;
+                    Log(Logs::General, Logs::Status, "Reconnection to database successful");
 					return requestResult;
 				}
 

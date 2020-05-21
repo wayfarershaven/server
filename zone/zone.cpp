@@ -1498,7 +1498,7 @@ void Zone::StartShutdownTimer(uint32 set_time) {
 			set_time = database.getZoneShutDownDelay(GetZoneID(), GetInstanceVersion());
 		}
 		autoshutdown_timer.SetTimer(set_time);
-		Log(Logs::General, Logs::Zone_Server, "Zone::StartShutdownTimer set to %u", set_time);
+		Log(Logs::General, Logs::ZoneServer, "Zone::StartShutdownTimer set to %u", set_time);
 
 	}
 }
@@ -1633,7 +1633,7 @@ void Zone::SetTime(uint8 hour, uint8 minute, bool update_world /*= true*/)
 
 		/* By Default we update worlds time, but we can optionally no update world which updates the rest of the zone servers */
 		if (update_world){
-			Log(Logs::General, Logs::Zone_Server, "Setting master time on world server to: %d:%d (%d)\n", hour, minute, (int)eq_time_of_day->start_realtime);
+			Log(Logs::General, Logs::ZoneServer, "Setting master time on world server to: %d:%d (%d)\n", hour, minute, (int)eq_time_of_day->start_realtime);
 			worldserver.SendPacket(pack);
 
 			/* Set Time Localization Flag */
@@ -1642,7 +1642,7 @@ void Zone::SetTime(uint8 hour, uint8 minute, bool update_world /*= true*/)
 			/* When we don't update world, we are localizing ourselves, we become disjointed from normal syncs and set time locally */
 		else{
 
-			Log(Logs::General, Logs::Zone_Server, "Setting zone localized time...");
+			Log(Logs::General, Logs::ZoneServer, "Setting zone localized time...");
 
 			zone->zone_time.SetCurrentEQTimeOfDay(eq_time_of_day->start_eqtime, eq_time_of_day->start_realtime);
 			auto outapp = new EQApplicationPacket(OP_TimeOfDay, sizeof(TimeOfDay_Struct));

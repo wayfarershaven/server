@@ -52,7 +52,7 @@
 #include "../common/rulesys.h"
 #include "../common/serverinfo.h"
 #include "../common/string_util.h"
-#include "../say_link.h"
+#include "../common/say_link.h"
 #include "../common/eqemu_logsys.h"
 
 #include "data_bucket.h"
@@ -586,11 +586,11 @@ int command_realdispatch(Client *c, const char *message)
 			else if (c->GetTarget()->IsPet()) targetType = "pet";
 			else if (c->GetTarget()->IsNPC()) targetType = "NPC";
 			else if (c->GetTarget()->IsCorpse()) targetType = "Corpse";
-			database.LogCommands(c->GetName(), c->AccountName(), c->GetY(), c->GetX(), c->GetZ(), message, targetType,
+			database.LogGMCommands(c->GetName(), c->AccountName(), c->GetY(), c->GetX(), c->GetZ(), message, targetType,
 								 c->GetTarget()->GetName(), c->GetTarget()->GetY(), c->GetTarget()->GetX(),
 								 c->GetTarget()->GetZ(), c->GetZoneID(), zone->GetShortName());
 		} else {
-			database.LogCommands(c->GetName(), c->AccountName(), c->GetY(), c->GetX(), c->GetZ(), message, targetType,
+			database.LogGMCommands(c->GetName(), c->AccountName(), c->GetY(), c->GetX(), c->GetZ(), message, targetType,
 								 targetType, 0, 0, 0, c->GetZoneID(), zone->GetShortName());
 		}
 	}
@@ -1764,7 +1764,7 @@ void command_hideme(Client *c, const Seperator *sep)
 	else
 	{
 		c->SetHideMe(state);
-		c->Message_StringID(MT_Broadcasts, c->GetHideMe() ? NOW_INVISIBLE : NOW_VISIBLE, c->GetName());
+		c->MessageString(Chat::Broadcasts, c->GetHideMe() ? NOW_INVISIBLE : NOW_VISIBLE, c->GetName());
 	}
 }
 
@@ -4277,10 +4277,10 @@ void command_corpse(Client *c, const Seperator *sep)
 	}
 	else if (strcasecmp(sep->arg[1], "buried") == 0) {
 		if (target == 0 || !target->IsClient())
-			c->Message(CC_Default, "Error: Target must be a player to list or summon their buried corpses.");
+			c->Message(Chat::White, "Error: Target must be a player to list or summon their buried corpses.");
 		else if (strlen(sep->arg[2]) > 0) {
 			if (strcasecmp(sep->arg[2], "list") == 0) {
-				c->Message(CC_Red, "Listing buried corpses");
+				c->Message(Chat::Red, "Listing buried corpses");
 				database.ListCharacterCorpses(target->CastToClient(), c, true, false);
 			}
 			else if (strcasecmp(sep->arg[2], "summon") == 0) {
@@ -4291,48 +4291,48 @@ void command_corpse(Client *c, const Seperator *sep)
 					if (c->GetTarget() && c->GetTarget()->IsClient() && c->GetGM())
 						t = c->GetTarget()->CastToClient();
 					else {
-						c->Message(CC_Default, "You must first turn your GM flag on and select a target!");
+						c->Message(Chat::White, "You must first turn your GM flag on and select a target!");
 						return;
 					}
 
 					if (!sep->IsNumber(3)) {
-						c->Message(CC_Default, "Usage: #corpse buried summon [corpse_id].");
+						c->Message(Chat::White, "Usage: #corpse buried summon [corpse_id].");
 						return;
 					}
 					else
 						corpseid = atoi(sep->arg[3]);
 
 					if (!database.IsValidCorpse(corpseid)) {
-						c->Message(CC_Red, "Corpse %i has been found! Please summon or delete it before attempting to restore trying to unbury it.", atoi(sep->arg[2]));
+						c->Message(Chat::Red, "Corpse %i has been found! Please summon or delete it before attempting to restore trying to unbury it.", atoi(sep->arg[2]));
 						return;
 					}
 					else if (!database.IsCorpseOwner(corpseid, t->CharacterID(), false)) {
-						c->Message(CC_Red, "Targetted player is not the owner of the specified corpse!");
+						c->Message(Chat::Red, "Targetted player is not the owner of the specified corpse!");
 						return;
 					}
 					else {
 						Corpse* PlayerCorpse = database.SummonCharacterCorpse(corpseid, t->CharacterID(), t->GetZoneID(), zone->GetInstanceID(), t->GetPosition());
 						database.BuryCharacterCorpse(corpseid, 0); // unbury corpse
 						if (!PlayerCorpse)
-							c->Message(CC_Default, "Summoning of backup corpse failed. Please escalate this issue.");
+							c->Message(Chat::White, "Summoning of backup corpse failed. Please escalate this issue.");
 						return;
 					}
 				}
 				else {
-					c->Message(CC_Default, "Insufficient status to summon backup corpses.");
+					c->Message(Chat::White, "Insufficient status to summon backup corpses.");
 				}
 			}
 		}
 		else {
-			c->Message(CC_Default, "Must provide argument 'list' or 'summon', ex: #corpse backup list");
+			c->Message(Chat::White, "Must provide argument 'list' or 'summon', ex: #corpse backup list");
 		}
 	}
 	else if (strcasecmp(sep->arg[1], "backup") == 0) {
 		if (target == 0 || !target->IsClient())
-			c->Message(CC_Default, "Error: Target must be a player to list their backups.");
+			c->Message(Chat::White, "Error: Target must be a player to list their backups.");
 		else if (strlen(sep->arg[2]) > 0) {
 			if (strcasecmp(sep->arg[2], "list") == 0) {
-				c->Message(CC_Red, "Listing backup corpses");
+				c->Message(Chat::Red, "Listing backup corpses");
 				database.ListCharacterCorpses(target->CastToClient(), c, false, true);
 			}
 			else if (strcasecmp(sep->arg[2], "summon") == 0) {
@@ -4343,12 +4343,12 @@ void command_corpse(Client *c, const Seperator *sep)
 					if (c->GetTarget() && c->GetTarget()->IsClient() && c->GetGM())
 						t = c->GetTarget()->CastToClient();
 					else {
-						c->Message(CC_Default, "You must first turn your GM flag on and select a target!");
+						c->Message(Chat::White, "You must first turn your GM flag on and select a target!");
 						return;
 					}
 
 					if (!sep->IsNumber(3)) {
-						c->Message(CC_Default, "Usage: #corpse backup summon [corpse_id].");
+						c->Message(Chat::White, "Usage: #corpse backup summon [corpse_id].");
 						return;
 					}
 					else
@@ -4356,17 +4356,17 @@ void command_corpse(Client *c, const Seperator *sep)
 
 					// Check if backup corpse exists
 					if (!database.IsValidCorpseBackup(corpseid)) {
-						c->Message(CC_Red, "Backup corpse %i not found.", corpseid);
+						c->Message(Chat::Red, "Backup corpse %i not found.", corpseid);
 						return;
 					}
 						// Check if corpse exists and is in buried list
 					else if (database.IsValidCorpse(corpseid)) {
-						c->Message(CC_Red, "Corpse %i has been found and is buried! Please summon or delete it before attempting to restore from a backup.", corpseid);
+						c->Message(Chat::Red, "Corpse %i has been found and is buried! Please summon or delete it before attempting to restore from a backup.", corpseid);
 						return;
 					}
 						// Check if corpse is owner of target
 					else if (!database.IsCorpseOwner(corpseid, t->CharacterID(), true)) {
-						c->Message(CC_Red, "Targetted player is not the owner of the specified corpse!");
+						c->Message(Chat::Red, "Targetted player is not the owner of the specified corpse!");
 						return;
 					}
 					else {
@@ -4374,25 +4374,25 @@ void command_corpse(Client *c, const Seperator *sep)
 							Corpse* PlayerCorpse = database.SummonCharacterCorpse(corpseid, t->CharacterID(), t->GetZoneID(), zone->GetInstanceID(), t->GetPosition());
 							database.BuryCharacterCorpse(corpseid, 0); // unbury corpse
 							if (!PlayerCorpse)
-								c->Message(CC_Default, "Summoning of backup corpse failed. Please escalate this issue.");
+								c->Message(Chat::White, "Summoning of backup corpse failed. Please escalate this issue.");
 							return;
 						}
 						else {
-							c->Message(CC_Red, "There was an error copying corpse %i. Please contact a DB admin.", corpseid);
+							c->Message(Chat::Red, "There was an error copying corpse %i. Please contact a DB admin.", corpseid);
 							return;
 						}
 					}
 				}
 				else {
-					c->Message(CC_Default, "Insufficient status to summon backup corpses.");
+					c->Message(Chat::White, "Insufficient status to summon backup corpses.");
 				}
 			}
 			else {
-				c->Message(CC_Default, "Must provide argument 'list' or 'summon', ex: #corpse backup list");
+				c->Message(Chat::White, "Must provide argument 'list' or 'summon', ex: #corpse backup list");
 			}
 		}
 		else {
-			c->Message(CC_Default, "Must provide argument 'list' or 'summon', ex: #corpse backup list");
+			c->Message(Chat::White, "Must provide argument 'list' or 'summon', ex: #corpse backup list");
 		}
 	}
 	else if (strcasecmp(sep->arg[1], "delete") == 0) {
@@ -4512,16 +4512,16 @@ void command_corpse(Client *c, const Seperator *sep)
         else if (strcasecmp(sep->arg[1], "backups") == 0)
         {
             if (target == 0 || !target->IsClient())
-                c->Message(CC_Default, "Error: Target must be a player to list their backups.");
+                c->Message(Chat::White, "Error: Target must be a player to list their backups.");
             else
             {
-                c->Message(CC_Red, "CorpseID : Zone , x , y , z , Items");
+                c->Message(Chat::Red, "CorpseID : Zone , x , y , z , Items");
                 std::string query = StringFormat("SELECT id, zone_id, x, y, z FROM character_corpses_backup WHERE charid = %d", target->CastToClient()->CharacterID());
                 auto results = database.QueryDatabase(query);
 
                 if (!results.Success() || results.RowCount() == 0)
                 {
-                    c->Message(CC_Red, "No corpse backups exist for %s with ID: %i.", target->GetName(), target->CastToClient()->CharacterID());
+                    c->Message(Chat::Red, "No corpse backups exist for %s with ID: %i.", target->GetName(), target->CastToClient()->CharacterID());
                     return;
                 }
 
@@ -4531,7 +4531,7 @@ void command_corpse(Client *c, const Seperator *sep)
                     auto ic_results = database.QueryDatabase(ic_query);
                     auto ic_row = ic_results.begin();
 
-                    c->Message(CC_Yellow, " %s:	%s, %s, %s, %s, (%s)", row[0], database.GetZoneName(atoi(row[1])), row[2], row[3], row[4], ic_row[0]);
+                    c->Message(Chat::Yellow, " %s:	%s, %s, %s, %s, (%s)", row[0], database.GetZoneName(atoi(row[1])), row[2], row[3], row[4], ic_row[0]);
                 }
             }
         }
@@ -4546,13 +4546,13 @@ void command_corpse(Client *c, const Seperator *sep)
                     t = c->GetTarget()->CastToClient();
                 else
                 {
-                    c->Message(CC_Default, "You must first turn your GM flag on and select a target!");
+                    c->Message(Chat::White, "You must first turn your GM flag on and select a target!");
                     return;
                 }
 
                 if (!sep->IsNumber(2))
                 {
-                    c->Message(CC_Default, "Usage: #corpse restore [corpse_id].");
+                    c->Message(Chat::White, "Usage: #corpse restore [corpse_id].");
                     return;
                 }
                 else
@@ -4560,17 +4560,17 @@ void command_corpse(Client *c, const Seperator *sep)
 
                 if (!database.IsValidCorpseBackup(corpseid))
                 {
-                    c->Message(CC_Red, "Backup corpse %i not found.", corpseid);
+                    c->Message(Chat::Red, "Backup corpse %i not found.", corpseid);
                     return;
                 }
                 else if (!database.IsValidCorpse(corpseid))
                 {
-                    c->Message(CC_Red, "Corpse %i has been found! Please summon or delete it before attempting to restore from a backup.", atoi(sep->arg[2]));
+                    c->Message(Chat::Red, "Corpse %i has been found! Please summon or delete it before attempting to restore from a backup.", atoi(sep->arg[2]));
                     return;
                 }
                 else if (!database.IsCorpseBackupOwner(corpseid, t->CharacterID()))
                 {
-                    c->Message(CC_Red, "Targetted player is not the owner of the specified corpse!");
+                    c->Message(Chat::Red, "Targetted player is not the owner of the specified corpse!");
                     return;
                 }
                 else
@@ -4580,20 +4580,20 @@ void command_corpse(Client *c, const Seperator *sep)
                         Corpse* PlayerCorpse = database.SummonCharacterCorpse(corpseid, t->CharacterID(), t->GetZoneID(), zone->GetInstanceID(), t->GetPosition());
 
                         if (!PlayerCorpse)
-                            c->Message(CC_Default, "Summoning of backup corpse failed. Please escalate this issue.");
+                            c->Message(Chat::White, "Summoning of backup corpse failed. Please escalate this issue.");
 
                         return;
                     }
                     else
                     {
-                        c->Message(CC_Red, "There was an error copying corpse %i. Please contact a DB admin.", corpseid);
+                        c->Message(Chat::Red, "There was an error copying corpse %i. Please contact a DB admin.", corpseid);
                         return;
                     }
                 }
             }
             else
             {
-                c->Message(CC_Default, "Insufficient status to summon backup corpses.");
+                c->Message(Chat::White, "Insufficient status to summon backup corpses.");
             }
         }
         */
@@ -5824,7 +5824,7 @@ void command_time(Client *c, const Seperator *sep)
 		}
 		c->Message(13, "Setting world time to %s:%i (Timezone: 0)...",  sep->arg[1], minutes);
 		zone->SetTime(atoi(sep->arg[1])+1, minutes);
-		Log(Logs::General, Logs::Zone_Server, "%s :: Setting world time to %s:%i (Timezone: 0)...", c->GetCleanName(), sep->arg[1], minutes);
+		Log(Logs::General, Logs::ZoneServer, "%s :: Setting world time to %s:%i (Timezone: 0)...", c->GetCleanName(), sep->arg[1], minutes);
 	}
 	else {
 		c->Message(13, "To set the Time: #time HH [MM]");
@@ -5839,7 +5839,7 @@ void command_time(Client *c, const Seperator *sep)
 				zone->zone_time.getEQTimeZoneMin()
 		);
 		c->Message(13, "It is now %s.", timeMessage);
-		Log(Logs::General, Logs::Zone_Server, "Current Time is: %s", timeMessage);
+		Log(Logs::General, Logs::ZoneServer, "Current Time is: %s", timeMessage);
 	}
 }
 
@@ -6321,16 +6321,16 @@ void command_dps(Client *c, const Seperator *sep)
 
 	//float my_dps_loss = (float)((float)my_hp_self_loss_net / cur_engage_duration);
 	//float my_dps_target_loss = (float)((float)my_hp_target_loss_net / cur_engage_duration);
-	//c->Message(MT_CritMelee, "------ %s DPS over %i seconds ----------", target->GetCleanName(), cur_engage_duration);
-	//c->Message(MT_CritMelee, "- dealt %i damage (%.1f DPS)", my_hp_self_loss_net, my_dps_loss);
-	//c->Message(MT_CritMelee, "- took %i damage (%.1f DPS)", my_hp_target_loss_net, my_dps_target_loss);
-	//c->Message(MT_CritMelee, "------ Participants ----------");
+	//c->Message(Chat::MeleeCrit, "------ %s DPS over %i seconds ----------", target->GetCleanName(), cur_engage_duration);
+	//c->Message(Chat::MeleeCrit, "- dealt %i damage (%.1f DPS)", my_hp_self_loss_net, my_dps_loss);
+	//c->Message(Chat::MeleeCrit, "- took %i damage (%.1f DPS)", my_hp_target_loss_net, my_dps_target_loss);
+	//c->Message(Chat::MeleeCrit, "------ Participants ----------");
 	//for (auto&& d : target->DPS()) {
 
 		//float cur_dps = (float)((float)d.hp_target_loss_net / cur_engage_duration);
 		//float cur_hps_taken = (float)((float)d.hp_self_gain_net / engage_duration);
 		//float cur_hps_dealt = (float)((float)d.hp_target_gain_net / engage_duration);
-		//c->Message(MT_CritMelee, "- %s: %i damage (%.1f DPS)", d.character_name.c_str(), d.hp_target_loss_net, cur_dps);
+		//c->Message(Chat::MeleeCrit, "- %s: %i damage (%.1f DPS)", d.character_name.c_str(), d.hp_target_loss_net, cur_dps);
 	//}
 
 }
@@ -7132,15 +7132,15 @@ void command_setaapts(Client *c, const Seperator *sep)
 	else if(!strcasecmp(sep->arg[1], "group")) {
 		t->GetPP().group_leadership_points = atoi(sep->arg[2]);
 		t->GetPP().group_leadership_exp = 0;
-		t->Message(MT_Experience, "Setting Group AA points to %u", t->GetPP().group_leadership_points);
+		t->Message(Chat::Experience, "Setting Group AA points to %u", t->GetPP().group_leadership_points);
 	} else if(!strcasecmp(sep->arg[1], "raid")) {
 		t->GetPP().raid_leadership_points = atoi(sep->arg[2]);
 		t->GetPP().raid_leadership_exp = 0;
-		t->Message(MT_Experience, "Setting Raid AA points to %u", t->GetPP().raid_leadership_points);
+		t->Message(Chat::Experience, "Setting Raid AA points to %u", t->GetPP().raid_leadership_points);
 	} else {
 		t->GetPP().aapoints = atoi(sep->arg[2]);
 		t->GetPP().expAA = 0;
-		t->Message(MT_Experience, "Setting personal AA points to %u", t->GetPP().aapoints);
+		t->Message(Chat::Experience, "Setting personal AA points to %u", t->GetPP().aapoints);
 		t->SendAlternateAdvancementStats();
 	}
 }
@@ -9096,12 +9096,12 @@ void command_setgraveyard(Client *c, const Seperator *sep)
 void command_deletechar(Client *c, const Seperator *sep) {
 	if (sep->arg[1][0] != 0) {
 		if (!database.DeleteCharacter(sep->arg[1])) {
-			c->Message(CC_Red, "%s could not be deleted. Check the spelling of their name.", sep->arg[1]);
+			c->Message(Chat::Red, "%s could not be deleted. Check the spelling of their name.", sep->arg[1]);
 		} else {
-			c->Message(CC_Green, "%s successfully deleted!", sep->arg[1]);
+			c->Message(Chat::Green, "%s successfully deleted!", sep->arg[1]);
 		}
 	} else {
-		c->Message(CC_Default, "Usage: undeletechar [charname] - WARNING THIS BYPASSES THE UNDELETE FUNCTION");
+		c->Message(Chat::White, "Usage: undeletechar [charname] - WARNING THIS BYPASSES THE UNDELETE FUNCTION");
 	}
 }
 
@@ -11933,7 +11933,7 @@ void command_ucs(Client *c, const Seperator *sep)
 	if (!c)
 		return;
 
-	Log(Logs::Detail, Logs::UCS_Server, "Character %s attempting ucs reconnect while ucs server is %savailable",
+	Log(Logs::Detail, Logs::UCSServer, "Character %s attempting ucs reconnect while ucs server is %savailable",
 		c->GetName(), (zone->IsUCSServerAvailable() ? "" : "un"));
 
 	if (zone->IsUCSServerAvailable()) {
@@ -12015,12 +12015,12 @@ void command_ucs(Client *c, const Seperator *sep)
 void command_undeletechar(Client *c, const Seperator *sep) {
 	if (sep->arg[1][0] != 0) {
 		if (!database.UnDeleteCharacter(sep->arg[1])) {
-			c->Message(CC_Red, "%s could not be undeleted. Check the spelling of their name.", sep->arg[1]);
+			c->Message(Chat::Red, "%s could not be undeleted. Check the spelling of their name.", sep->arg[1]);
 		} else {
-			c->Message(CC_Green, "%s successfully undeleted!", sep->arg[1]);
+			c->Message(Chat::Green, "%s successfully undeleted!", sep->arg[1]);
 		}
 	} else {
-		c->Message(CC_Default, "Usage: undeletechar [charname]");
+		c->Message(Chat::White, "Usage: undeletechar [charname]");
 	}
 }
 
@@ -12181,10 +12181,10 @@ void command_xpinfo(Client *c, const Seperator *sep){
 	uint32 currentaaxp = t->GetAAXP();
 	float aa_percent = (currentaaxp/maxaa) * 100.0;
 
-	c->Message(CC_Yellow, "%s has %d of %d required XP.", t->GetName(), currentxp, totalrequiredxp);
-	c->Message(CC_Yellow, "They need %0.1f more to get to %d. They are %0.2f percent towards this level.", xpforlevel, level+1, xp_percent);
-	c->Message(CC_Yellow, "Their XP loss at this level is %d which is %0.2f percent of their current level.", exploss, loss_percent);
-	c->Message(CC_Yellow, "They have %d of %0.1f towards an AA point. They are %0.2f percent towards this point.", currentaaxp, maxaa, aa_percent);
+	c->Message(Chat::Yellow, "%s has %d of %d required XP.", t->GetName(), currentxp, totalrequiredxp);
+	c->Message(Chat::Yellow, "They need %0.1f more to get to %d. They are %0.2f percent towards this level.", xpforlevel, level+1, xp_percent);
+	c->Message(Chat::Yellow, "Their XP loss at this level is %d which is %0.2f percent of their current level.", exploss, loss_percent);
+	c->Message(Chat::Yellow, "They have %d of %0.1f towards an AA point. They are %0.2f percent towards this point.", currentaaxp, maxaa, aa_percent);
 }
 
 void command_godmode(Client *c, const Seperator *sep){
@@ -12199,10 +12199,10 @@ void command_godmode(Client *c, const Seperator *sep){
 		c->SendAppearancePacket(AT_Levitate, state);
 		database.SetGMFlymode(account, state);
 		c->SetHideMe(state);
-		c->Message(CC_Default, "Turning GodMode %s for %s (zone for gmspeed to take effect)", state ? "On" : "Off", c->GetName());
+		c->Message(Chat::White, "Turning GodMode %s for %s (zone for gmspeed to take effect)", state ? "On" : "Off", c->GetName());
 	}
 	else
-		c->Message(CC_Default, "Usage: #godmode [on/off]");
+		c->Message(Chat::White, "Usage: #godmode [on/off]");
 }
 
 void command_trapinfo(Client *c, const Seperator *sep)
@@ -12213,7 +12213,7 @@ void command_trapinfo(Client *c, const Seperator *sep)
 void command_reloadtraps(Client *c, const Seperator *sep)
 {
 	entity_list.UpdateAllTraps(true, true);
-	c->Message(CC_Default, "Traps reloaded for %s.", zone->GetShortName());
+	c->Message(Chat::White, "Traps reloaded for %s.", zone->GetShortName());
 }
 
 void command_who(Client *c, const Seperator *sep)

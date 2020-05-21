@@ -63,7 +63,7 @@ void ClientList::Process() {
 		if (!iterator.GetData()->Process()) {
 			struct in_addr in;
 			in.s_addr = iterator.GetData()->GetIP();
-			Log(Logs::Detail, Logs::World_Server,"Removing client from %s:%d", inet_ntoa(in), iterator.GetData()->GetPort());
+			Log(Logs::Detail, Logs::WorldServer,"Removing client from %s:%d", inet_ntoa(in), iterator.GetData()->GetPort());
 //the client destructor should take care of this.
 //			iterator.GetData()->Free();
 			iterator.RemoveCurrent();
@@ -158,16 +158,16 @@ void ClientList::GetCLEIP(uint32 iIP) {
 		countCLEIPs = iterator.GetData();		
 		if ((countCLEIPs->GetIP() == iIP) && ((countCLEIPs->Admin() < (RuleI(World, ExemptMaxClientsStatus))) || (RuleI(World, ExemptMaxClientsStatus) < 0))) { // If the IP matches, and the connection admin status is below the exempt status, or exempt status is less than 0 (no-one is exempt)
 			IPInstances++; // Increment the occurences of this IP address
-			Log(Logs::General, Logs::Client_Login, "Account ID: %i Account Name: %s IP: %s.", countCLEIPs->LSID(), countCLEIPs->LSName(), long2ip(countCLEIPs->GetIP()).c_str());
+			Log(Logs::General, Logs::ClientLogin, "Account ID: %i Account Name: %s IP: %s.", countCLEIPs->LSID(), countCLEIPs->LSName(), long2ip(countCLEIPs->GetIP()).c_str());
 			if (RuleB(World, EnableIPExemptions)) {
-				Log(Logs::General, Logs::Client_Login, "Account ID: %i Account Name: %s IP: %s IP Instances: %i Max IP Instances: %i", countCLEIPs->LSID(), countCLEIPs->LSName(), long2ip(countCLEIPs->GetIP()).c_str(), IPInstances, database.GetIPExemption(long2ip(countCLEIPs->GetIP()).c_str()));
+				Log(Logs::General, Logs::ClientLogin, "Account ID: %i Account Name: %s IP: %s IP Instances: %i Max IP Instances: %i", countCLEIPs->LSID(), countCLEIPs->LSName(), long2ip(countCLEIPs->GetIP()).c_str(), IPInstances, database.GetIPExemption(long2ip(countCLEIPs->GetIP()).c_str()));
 				if (IPInstances > database.GetIPExemption(long2ip(countCLEIPs->GetIP()).c_str())) {
 					if(RuleB(World, IPLimitDisconnectAll)) {
-						Log(Logs::General, Logs::Client_Login, "Disconnect: All accounts on IP %s", long2ip(countCLEIPs->GetIP()).c_str());
+						Log(Logs::General, Logs::ClientLogin, "Disconnect: All accounts on IP %s", long2ip(countCLEIPs->GetIP()).c_str());
 						DisconnectByIP(iIP);
 						return;
 					} else {
-						Log(Logs::General, Logs::Client_Login, "Disconnect: Account %s on IP %s.", countCLEIPs->LSName(), long2ip(countCLEIPs->GetIP()).c_str());
+						Log(Logs::General, Logs::ClientLogin, "Disconnect: Account %s on IP %s.", countCLEIPs->LSName(), long2ip(countCLEIPs->GetIP()).c_str());
 						countCLEIPs->SetOnline(CLE_Status_Offline);
 						iterator.RemoveCurrent();
 						continue;
@@ -176,14 +176,14 @@ void ClientList::GetCLEIP(uint32 iIP) {
 			} else {
 				if (IPInstances > (RuleI(World, MaxClientsPerIP))) { // If the number of connections exceeds the lower limit
 					if (RuleB(World, MaxClientsSetByStatus)) { // If MaxClientsSetByStatus is set to True, override other IP Limit Rules
-						Log(Logs::General, Logs::Client_Login, "Account ID: %i Account Name: %s IP: %s IP Instances: %i Max IP Instances: %i", countCLEIPs->LSID(), countCLEIPs->LSName(), long2ip(countCLEIPs->GetIP()).c_str(), IPInstances, countCLEIPs->Admin());
+						Log(Logs::General, Logs::ClientLogin, "Account ID: %i Account Name: %s IP: %s IP Instances: %i Max IP Instances: %i", countCLEIPs->LSID(), countCLEIPs->LSName(), long2ip(countCLEIPs->GetIP()).c_str(), IPInstances, countCLEIPs->Admin());
 						if (IPInstances > countCLEIPs->Admin()) { // The IP Limit is set by the status of the account if status > MaxClientsPerIP	
 							if(RuleB(World, IPLimitDisconnectAll)) {
-								Log(Logs::General, Logs::Client_Login, "Disconnect: All accounts on IP %s", long2ip(countCLEIPs->GetIP()).c_str());
+								Log(Logs::General, Logs::ClientLogin, "Disconnect: All accounts on IP %s", long2ip(countCLEIPs->GetIP()).c_str());
 								DisconnectByIP(iIP);
 								return;
 							} else {
-								Log(Logs::General, Logs::Client_Login, "Disconnect: Account %s on IP %s.", countCLEIPs->LSName(), long2ip(countCLEIPs->GetIP()).c_str());
+								Log(Logs::General, Logs::ClientLogin, "Disconnect: Account %s on IP %s.", countCLEIPs->LSName(), long2ip(countCLEIPs->GetIP()).c_str());
 								countCLEIPs->SetOnline(CLE_Status_Offline); // Remove the connection
 								iterator.RemoveCurrent();
 								continue;
@@ -191,22 +191,22 @@ void ClientList::GetCLEIP(uint32 iIP) {
 						}
 					} else if ((countCLEIPs->Admin() < RuleI(World, AddMaxClientsStatus)) || (RuleI(World, AddMaxClientsStatus) < 0)) { // Else if the Admin status of the connection is not eligible for the higher limit, or there is no higher limit (AddMaxClientStatus < 0)
 						if(RuleB(World, IPLimitDisconnectAll)) {								
-							Log(Logs::General, Logs::Client_Login, "Disconnect: All accounts on IP %s", long2ip(countCLEIPs->GetIP()).c_str());
+							Log(Logs::General, Logs::ClientLogin, "Disconnect: All accounts on IP %s", long2ip(countCLEIPs->GetIP()).c_str());
 							DisconnectByIP(iIP);
 							return;
 						} else {
-							Log(Logs::General, Logs::Client_Login, "Disconnect: Account %s on IP %s.", countCLEIPs->LSName(), long2ip(countCLEIPs->GetIP()).c_str());
+							Log(Logs::General, Logs::ClientLogin, "Disconnect: Account %s on IP %s.", countCLEIPs->LSName(), long2ip(countCLEIPs->GetIP()).c_str());
 							countCLEIPs->SetOnline(CLE_Status_Offline); // Remove the connection
 							iterator.RemoveCurrent();
 							continue;
 						}
 					} else if (IPInstances > RuleI(World, AddMaxClientsPerIP)) { // else they are eligible for the higher limit, but if they exceed that	
 						if(RuleB(World, IPLimitDisconnectAll)) {
-							Log(Logs::General, Logs::Client_Login, "Disconnect: All accounts on IP %s", long2ip(countCLEIPs->GetIP()).c_str());
+							Log(Logs::General, Logs::ClientLogin, "Disconnect: All accounts on IP %s", long2ip(countCLEIPs->GetIP()).c_str());
 							DisconnectByIP(iIP);
 							return;
 						} else {
-							Log(Logs::General, Logs::Client_Login, "Disconnect: Account %s on IP %s.", countCLEIPs->LSName(), long2ip(countCLEIPs->GetIP()).c_str());
+							Log(Logs::General, Logs::ClientLogin, "Disconnect: Account %s on IP %s.", countCLEIPs->LSName(), long2ip(countCLEIPs->GetIP()).c_str());
 							countCLEIPs->SetOnline(CLE_Status_Offline); // Remove the connection
 							iterator.RemoveCurrent();
 							continue;
@@ -461,7 +461,7 @@ ClientListEntry* ClientList::CheckAuth(const char* iName, const char* iPassword)
 	}
 	int16 tmpadmin;
 
-	//Log.LogDebugType(Logs::Detail, Logs::World_Server,"Login with '%s' and '%s'", iName, iPassword);
+	//Log.LogDebugType(Logs::Detail, Logs::WorldServer,"Login with '%s' and '%s'", iName, iPassword);
 
 	uint32 accid = database.CheckLogin(iName, iPassword, &tmpadmin);
 	if (accid) {
@@ -483,7 +483,7 @@ void ClientList::SendOnlineGuildMembers(uint32 FromID, uint32 GuildID)
 
 	if(!from)
 	{
-		Log(Logs::Detail, Logs::World_Server,"Invalid client. FromID=%i GuildID=%i", FromID, GuildID);
+		Log(Logs::Detail, Logs::WorldServer,"Invalid client. FromID=%i GuildID=%i", FromID, GuildID);
 		return;
 	}
 
@@ -828,7 +828,7 @@ void ClientList::SendWhoAll(uint32 fromid,const char* to, int16 admin, Who_All_S
 	safe_delete_array(output);
 	}
 	catch(...){
-		Log(Logs::Detail, Logs::World_Server,"Unknown error in world's SendWhoAll (probably mem error), ignoring...");
+		Log(Logs::Detail, Logs::WorldServer,"Unknown error in world's SendWhoAll (probably mem error), ignoring...");
 		return;
 	}
 }
@@ -971,7 +971,7 @@ void ClientList::SendFriendsWho(ServerFriendsWho_Struct *FriendsWho, WorldTCPCon
 		safe_delete(pack2);
 	}
 	catch(...){
-		Log(Logs::Detail, Logs::World_Server,"Unknown error in world's SendFriendsWho (probably mem error), ignoring...");
+		Log(Logs::Detail, Logs::WorldServer,"Unknown error in world's SendFriendsWho (probably mem error), ignoring...");
 		return;
 	}
 }
@@ -1207,7 +1207,7 @@ Client* ClientList::FindByAccountID(uint32 account_id) {
 
 	iterator.Reset();
 	while(iterator.MoreElements()) {
-		Log(Logs::Detail, Logs::World_Server, "ClientList[0x%08x]::FindByAccountID(%p) iterator.GetData()[%p]", this, account_id, iterator.GetData());
+		Log(Logs::Detail, Logs::WorldServer, "ClientList[0x%08x]::FindByAccountID(%p) iterator.GetData()[%p]", this, account_id, iterator.GetData());
 		if (iterator.GetData()->GetAccountID() == account_id) {
 			Client* tmp = iterator.GetData();
 			return tmp;
@@ -1222,7 +1222,7 @@ Client* ClientList::FindByName(char* charname) {
 
 	iterator.Reset();
 	while(iterator.MoreElements()) {
-		Log(Logs::Detail, Logs::World_Server, "ClientList[0x%08x]::FindByName(\"%s\") iterator.GetData()[%p]", this, charname, iterator.GetData());
+		Log(Logs::Detail, Logs::WorldServer, "ClientList[0x%08x]::FindByName(\"%s\") iterator.GetData()[%p]", this, charname, iterator.GetData());
 		if (iterator.GetData()->GetCharName() == charname) {
 			Client* tmp = iterator.GetData();
 			return tmp;
