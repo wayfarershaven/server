@@ -5,6 +5,7 @@
 #include "lua_mob.h"
 
 class Client;
+class Lua_Expedition;
 class Lua_Group;
 class Lua_Raid;
 class Lua_Inventory;
@@ -306,6 +307,15 @@ public:
 	int CalcCurrentWeight();
 	int CalcATK();
 	void FilteredMessage(Mob *sender, uint32 type, int filter, const char* message);
+
+    Lua_Expedition  CreateExpedition(std::string name, uint32 min_players, uint32 max_players);
+    Lua_Expedition  CreateExpedition(std::string name, uint32 min_players, uint32 max_players, bool has_replay_timer);
+    Lua_Expedition  GetExpedition();
+    luabind::object GetExpeditionLockouts(lua_State* L);
+    luabind::object GetExpeditionLockouts(lua_State* L, std::string expedition_name);
+    void            AddExpeditionLockout(std::string expedition_name, std::string event_name, uint32 seconds);
+    void            RemoveExpeditionLockout(std::string expedition_name, std::string event_name);
+    bool            HasExpeditionLockout(std::string expedition_name, std::string event_name);
 };
 
 #endif

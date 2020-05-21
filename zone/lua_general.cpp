@@ -17,6 +17,7 @@
 #include "lua_client.h"
 #include "lua_npc.h"
 #include "lua_entity_list.h"
+#include "lua_expedition.h"
 #include "quest_parser_collection.h"
 #include "questmgr.h"
 #include "qglobals.h"
@@ -1364,6 +1365,18 @@ void lua_update_zone_header(std::string type, std::string value) {
 	quest_manager.UpdateZoneHeader(type, value);
 }
 
+Lua_Expedition lua_get_expedition() {
+    return quest_manager.GetExpeditionForCurrentInstance();
+}
+
+Lua_Expedition lua_get_expedition_by_char_id(uint32 char_id) {
+    return quest_manager.GetExpeditionByCharID(char_id);
+}
+
+Lua_Expedition lua_get_expedition_by_instance_id(uint32 instance_id) {
+    return quest_manager.GetExpeditionByInstanceID(instance_id);
+}
+
 #define LuaCreateNPCParse(name, c_type, default_value) do { \
 	cur = table[#name]; \
 	if(luabind::type(cur) != LUA_TNIL) { \
@@ -1751,7 +1764,10 @@ luabind::scope lua_register_general() {
 					luabind::def("create_npc", &lua_create_npc),
 					luabind::def("debug", (void(*)(std::string))&lua_debug),
 					luabind::def("debug", (void(*)(std::string, int))&lua_debug),
-					luabind::def("adminmessage", &lua_adminmessage)
+					luabind::def("adminmessage", &lua_adminmessage),
+                    luabind::def("get_expedition", (Lua_Expedition(*)())&lua_get_expedition),
+                    luabind::def("get_expedition_by_char_id", (Lua_Expedition(*)(uint32 char_id))&lua_get_expedition_by_char_id),
+                    luabind::def("get_expedition_by_instance_id", (Lua_Expedition(*)(uint32 instance_id))&lua_get_expedition_by_instance_id)
 	];
 }
 

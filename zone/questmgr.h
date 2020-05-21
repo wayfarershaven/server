@@ -277,6 +277,10 @@ public:
 	void QSQGlobalUpdate(int charid, const char* varname, const char* newvalue, uint32 zoneid, int32 instanceid);
 	void SendDebug(std::string message, int level);
 
+    Expedition* GetExpeditionByCharID(uint32 char_id);
+    Expedition* GetExpeditionByInstanceID(uint32 instance_id);
+    Expedition* GetExpeditionForCurrentInstance();
+
 	Client *GetInitiator() const;
 	NPC *GetNPC() const;
 	Mob *GetOwner() const;
