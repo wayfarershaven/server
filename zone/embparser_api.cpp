@@ -3804,20 +3804,35 @@ XS(XS__get_data) {
     XSRETURN(1);
 }
 
+XS(XS__get_data_expires);
+XS(XS__get_data_expires) {
+    dXSARGS;
+    if (items != 1)
+        Perl_croak(aTHX_ "Usage: quest::get_data_expires(string bucket_key)");
+
+    dXSTARG;
+    std::string key = (std::string) SvPV_nolen(ST(0));
+
+    sv_setpv(TARG, DataBucket::GetDataExpires(key).c_str());
+    XSprePUSH;
+    PUSHTARG;
+    XSRETURN(1);
+}
+
 XS(XS__set_data);
 XS(XS__set_data) {
     dXSARGS;
     if (items != 2 && items != 3) {
-        Perl_croak(aTHX_ "Usage: quest::set_data(string key, string value, [uint32 expire_time_unix = 0])");
+        Perl_croak(aTHX_ "Usage: quest::set_data(string key, string value, [string expires_at = 0])");
     } else {
         std::string key   = (std::string) SvPV_nolen(ST(0));
         std::string value = (std::string) SvPV_nolen(ST(1));
 
-        uint32 expires_at_unix = 0;
+        std::string expires_at;
         if (items == 3)
-            expires_at_unix = (uint32) SvIV(ST(2));
+            expires_at = (std::string) SvPV_nolen(ST(2));
 
-        DataBucket::SetData(key, value, expires_at_unix);
+        DataBucket::SetData(key, value, expires_at);
     }
     XSRETURN_EMPTY;
 }
@@ -3887,6 +3902,7 @@ EXTERN_C XS(boot_quest)
 	newXS(strcpy(buf, "GetZoneID"), XS__GetZoneID, file);
 	newXS(strcpy(buf, "GetZoneLongName"), XS__GetZoneLongName, file);
     newXS(strcpy(buf, "get_data"), XS__get_data, file);
+    newXS(strcpy(buf, "get_data_expires"), XS__get_data_expires, file);
     newXS(strcpy(buf, "set_data"), XS__set_data, file);
     newXS(strcpy(buf, "delete_data"), XS__delete_data, file);
 	newXS(strcpy(buf, "IsBeneficialSpell"), XS__IsBeneficialSpell, file);

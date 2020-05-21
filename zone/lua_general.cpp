@@ -813,12 +813,16 @@ std::string lua_get_data(std::string bucket_key) {
     return DataBucket::GetData(bucket_key);
 }
 
+std::string lua_get_data_expires(std::string bucket_key) {
+    return DataBucket::GetDataExpires(bucket_key);
+}
+
 void lua_set_data(std::string bucket_key, std::string bucket_value) {
     DataBucket::SetData(bucket_key, bucket_value);
 }
 
-void lua_set_data(std::string bucket_key, std::string bucket_value, uint32 expires_at_unix) {
-    DataBucket::SetData(bucket_key, bucket_value, expires_at_unix);
+void lua_set_data(std::string bucket_key, std::string bucket_value, std::string expires_at) {
+    DataBucket::SetData(bucket_key, bucket_value, expires_at);
 }
 
 bool lua_delete_data(std::string bucket_key) {
@@ -1695,8 +1699,9 @@ luabind::scope lua_register_general() {
 					luabind::def("say_link", (std::string(*)(const char*,bool))&lua_say_link),
 					luabind::def("say_link", (std::string(*)(const char*))&lua_say_link),
                     luabind::def("get_data", (std::string(*)(std::string))&lua_get_data),
+                    luabind::def("get_data_expires", (std::string(*)(std::string))&lua_get_data_expires),
                     luabind::def("set_data", (void(*)(std::string, std::string))&lua_set_data),
-                    luabind::def("set_data", (void(*)(std::string, std::string, uint32))&lua_set_data),
+                    luabind::def("set_data", (void(*)(std::string, std::string, std::string))&lua_set_data),
                     luabind::def("delete_data", (bool(*)(std::string))&lua_delete_data),
 					luabind::def("get_guild_name_by_id", &lua_get_guild_name_by_id),
 					luabind::def("create_instance", &lua_create_instance),
