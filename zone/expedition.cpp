@@ -106,7 +106,7 @@ Expedition* Expedition::TryCreate(
     {
         dynamiczone.SaveToDatabase();
 
-        auto expedition = std::make_unique<Expedition>(
+        auto expedition = std::unique_ptr<Expedition>(new Expedition(
                 expedition_id,
                 dynamiczone,
                 request.GetExpeditionName(),
@@ -114,7 +114,7 @@ Expedition* Expedition::TryCreate(
                 request.GetMinPlayers(),
                 request.GetMaxPlayers(),
                 request.HasReplayTimer()
-        );
+        ));
 
         LogExpeditions(
                 "Created [{}] ({}) instance id: [{}] leader: [{}] minplayers: [{}] maxplayers: [{}]",
@@ -163,7 +163,7 @@ void Expedition::CacheExpeditions(MySQLRequestResult& results)
 
             DynamicZone dynamic_zone = DynamicZone::LoadDzFromDatabase(instance_id);
 
-            std::unique_ptr<Expedition> expedition = std::make_unique<Expedition>(
+            std::unique_ptr<Expedition> expedition = std::unique_ptr<Expedition>(new Expedition(
                     expedition_id,
                     dynamic_zone,
                     row[2],                             // expedition name
@@ -171,7 +171,7 @@ void Expedition::CacheExpeditions(MySQLRequestResult& results)
                     strtoul(row[4], nullptr, 10),       // min_players
                     strtoul(row[5], nullptr, 10),       // max_players
                     (strtoul(row[6], nullptr, 10) != 0) // has_replay_timer
-            );
+            ));
 
             expedition->LoadMembers();
             expedition->SendUpdatesToZoneMembers();
