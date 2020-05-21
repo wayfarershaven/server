@@ -1368,6 +1368,7 @@ void ZoneServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p) {
             break;
         }
         case ServerOP_DzCharacterChange:
+        case ServerOP_DzRemoveAllCharacters:
         {
             auto buf = reinterpret_cast<ServerDzCharacter_Struct*>(pack->pBuffer);
             ZoneServer* instance_zs = zoneserver_list.FindByInstanceID(buf->instance_id);
