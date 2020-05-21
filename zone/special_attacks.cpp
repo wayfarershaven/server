@@ -203,7 +203,7 @@ void Mob::DoSpecialAttackDamage(Mob *who, EQEmu::skills::SkillType skill, int32 
 				auto fbash = GetFuriousBash(itm->Focus.Effect);
 				hate = hate * (100 + fbash) / 100;
 				if (fbash)
-					MessageString(Chat::Spells, GLOWS_RED, itm->Name);
+					Message_StringID(MT_Spells, GLOWS_RED, itm->Name);
 			}
 		}
 	}
@@ -597,7 +597,7 @@ void Mob::TryBackstab(Mob *other, int ReuseTime) {
 	if(IsClient()) {
 		const EQEmu::ItemInstance *wpn = CastToClient()->GetInv().GetItem(EQEmu::invslot::slotPrimary);
 		if (!wpn || (wpn->GetItem()->ItemType != EQEmu::item::ItemType1HPiercing)){
-			MessageString(13, BACKSTAB_WEAPON);
+			Message_StringID(13, BACKSTAB_WEAPON);
 			return;
 		}
 	}
@@ -787,11 +787,11 @@ void Client::RangedAttack(Mob* other, bool CanDoubleAttack) {
 	float dist = DistanceSquared(m_Position, other->GetPosition());
 	if(dist > range) {
 		Log(Logs::Detail, Logs::Combat, "Ranged attack out of range... client should catch this. (%f > %f).\n", dist, range);
-		MessageString(13,TARGET_OUT_OF_RANGE);//Client enforces range and sends the message, this is a backup just incase.
+		Message_StringID(13,TARGET_OUT_OF_RANGE);//Client enforces range and sends the message, this is a backup just incase.
 		return;
 	}
 	else if(dist < (RuleI(Combat, MinRangedAttackDist)*RuleI(Combat, MinRangedAttackDist))){
-		MessageString(15,RANGED_TOO_CLOSE);//Client enforces range and sends the message, this is a backup just incase.
+		Message_StringID(15,RANGED_TOO_CLOSE);//Client enforces range and sends the message, this is a backup just incase.
 		return;
 	}
 
@@ -1340,11 +1340,11 @@ void Client::ThrowingAttack(Mob* other, bool CanDoubleAttack) { //old was 51
 	float dist = DistanceSquared(m_Position, other->GetPosition());
 	if(dist > range) {
 		Log(Logs::Detail, Logs::Combat, "Throwing attack out of range... client should catch this. (%f > %f).\n", dist, range);
-		MessageString(13,TARGET_OUT_OF_RANGE);//Client enforces range and sends the message, this is a backup just incase.
+		Message_StringID(13,TARGET_OUT_OF_RANGE);//Client enforces range and sends the message, this is a backup just incase.
 		return;
 	}
 	else if(dist < (RuleI(Combat, MinRangedAttackDist)*RuleI(Combat, MinRangedAttackDist))){
-		MessageString(15,RANGED_TOO_CLOSE);//Client enforces range and sends the message, this is a backup just incase.
+		Message_StringID(15,RANGED_TOO_CLOSE);//Client enforces range and sends the message, this is a backup just incase.
 	}
 
 	if(!IsAttackAllowed(other) ||
@@ -1631,7 +1631,7 @@ void NPC::DoClassAttacks(Mob *target) {
 	//general stuff, for all classes....
 	//only gets used when their primary ability get used too
 	if (taunting && HasOwner() && target->IsNPC() && target->GetBodyType() != BT_Undead && taunt_time && typeofpet && typeofpet != petTargetLock) {
-		this->GetOwner()->MessageString(Chat::PetResponse, PET_TAUNTING);
+		this->GetOwner()->Message_StringID(MT_PetResponse, PET_TAUNTING);
 		Taunt(target->CastToNPC(), false);
 	}
 
@@ -1963,7 +1963,7 @@ void Mob::Taunt(NPC *who, bool always_succeed, int chance_bonus, bool FromSpell,
 	// Support for how taunt worked pre 2000 on LIVE - Can not taunt NPC over your level.
 	if ((RuleB(Combat, TauntOverLevel) == false) && (level_difference < 0) ||
 	    who->GetSpecialAbility(IMMUNE_TAUNT)) {
-		MessageString(Chat::SpellFailure, FAILED_TAUNT);
+		Message_StringID(MT_SpellFailure, FAILED_TAUNT);
 		return;
 	}
 
@@ -2021,10 +2021,10 @@ void Mob::Taunt(NPC *who, bool always_succeed, int chance_bonus, bool FromSpell,
 				who->Say_StringID(SUCCESSFUL_TAUNT, GetCleanName());
 			}
 		} else {
-			MessageString(Chat::SpellFailure, FAILED_TAUNT);
+			Message_StringID(MT_SpellFailure, FAILED_TAUNT);
 		}
 	} else {
-		MessageString(Chat::SpellFailure, FAILED_TAUNT);
+		Message_StringID(MT_SpellFailure, FAILED_TAUNT);
 	}
 
 	if (HasSkillProcs())
@@ -2069,10 +2069,10 @@ void Mob::InstillDoubt(Mob *who) {
 		SpellOnTarget(229, who, false, true, -2000);
 		//is there a success message?
 	} else {
-		MessageString(4,NOT_SCARING);
+		Message_StringID(4,NOT_SCARING);
 		//Idea from WR:
 		/* if (target->IsNPC() && zone->random.Int(0,99) < 10 ) {
-			entity_list.MessageClose(target, false, 50, Chat::NPCRampage, "%s lashes out in anger!",target->GetName());
+			entity_list.MessageClose(target, false, 50, MT_NPCRampage, "%s lashes out in anger!",target->GetName());
 			//should we actually do this? and the range is completely made up, unconfirmed
 			entity_list.AEAttack(target, 50);
 		}*/
@@ -2100,7 +2100,7 @@ int Mob::TryHeadShot(Mob *defender, EQEmu::skills::SkillType skillInUse)
 			chance += aabonuses.HeadShot[0] + spellbonuses.HeadShot[0] + itembonuses.HeadShot[0];
 			Log(Logs::Detail, Logs::Attack, "Headshot Chance: %d", chance);
 			if (zone->random.Int(1, 1000) <= chance) {
-				entity_list.MessageCloseString(this, false, 200, Chat::MeleeCrit, FATAL_BOW_SHOT,
+				entity_list.MessageClose_StringID(this, false, 200, MT_CritMelee, FATAL_BOW_SHOT,
 								  GetName());
 				return HeadShot_Dmg;
 			}
@@ -2156,7 +2156,7 @@ int Mob::TryAssassinate(Mob *defender, EQEmu::skills::SkillType skillInUse)
 
 		if (Assassinate_Dmg && Assassinate_Level && (defender->GetLevel() <= Assassinate_Level)) {
 			if (zone->random.Int(1, 1000) <= chance) {
-				entity_list.MessageCloseString(this, false, 200, Chat::MeleeCrit, ASSASSINATES,
+				entity_list.MessageClose_StringID(this, false, 200, MT_CritMelee, ASSASSINATES,
 								  GetName());
 				return Assassinate_Dmg;
 			}

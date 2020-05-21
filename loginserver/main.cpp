@@ -46,11 +46,11 @@ int main()
 	LogSys.log_settings[Logs::Error].log_to_console = Logs::General;
 	LogSys.log_settings[Logs::Error].is_category_enabled = 1;
 
-	Log(Logs::General, Logs::LoginServer, "Logging System Init.");
+	Log(Logs::General, Logs::Login_Server, "Logging System Init.");
 
 	/* Parse out login.ini */
 	server.config = new Config();
-	Log(Logs::General, Logs::LoginServer, "Config System Init.");
+	Log(Logs::General, Logs::Login_Server, "Config System Init.");
 	server.config->Parse("login.ini");
 
 	if (server.config->GetVariable("options", "unregistered_allowed").compare("FALSE") == 0)
@@ -107,7 +107,7 @@ int main()
 	/* Create database connection */
 	if (server.config->GetVariable("database", "subsystem").compare("MySQL") == 0) {
 #ifdef EQEMU_MYSQL_ENABLED
-		Log(Logs::General, Logs::LoginServer, "MySQL Database Init.");
+		Log(Logs::General, Logs::Login_Server, "MySQL Database Init.");
 		server.db = (Database*)new DatabaseMySQL(
 			server.config->GetVariable("database", "user"),
 			server.config->GetVariable("database", "password"),
@@ -118,7 +118,7 @@ int main()
 	}
 	else if (server.config->GetVariable("database", "subsystem").compare("PostgreSQL") == 0) {
 #ifdef EQEMU_POSTGRESQL_ENABLED
-		Log(Logs::General, Logs::LoginServer, "PostgreSQL Database Init.");
+		Log(Logs::General, Logs::Login_Server, "PostgreSQL Database Init.");
 		server.db = (Database*)new DatabasePostgreSQL(
 			server.config->GetVariable("database", "user"),
 			server.config->GetVariable("database", "password"),
@@ -131,38 +131,38 @@ int main()
 	/* Make sure our database got created okay, otherwise cleanup and exit. */
 	if (!server.db) {
 		Log(Logs::General, Logs::Error, "Database Initialization Failure.");
-		Log(Logs::General, Logs::LoginServer, "Config System Shutdown.");
+		Log(Logs::General, Logs::Login_Server, "Config System Shutdown.");
 		delete server.config;
-		Log(Logs::General, Logs::LoginServer, "Log System Shutdown.");
+		Log(Logs::General, Logs::Login_Server, "Log System Shutdown.");
 		return 1;
 	}
 
 	//create our server manager.
-	Log(Logs::General, Logs::LoginServer, "Server Manager Initialize.");
+	Log(Logs::General, Logs::Login_Server, "Server Manager Initialize.");
 	server.server_manager = new ServerManager();
 	if (!server.server_manager) {
 		//We can't run without a server manager, cleanup and exit.
 		Log(Logs::General, Logs::Error, "Server Manager Failed to Start.");
 
-		Log(Logs::General, Logs::LoginServer, "Database System Shutdown.");
+		Log(Logs::General, Logs::Login_Server, "Database System Shutdown.");
 		delete server.db;
-		Log(Logs::General, Logs::LoginServer, "Config System Shutdown.");
+		Log(Logs::General, Logs::Login_Server, "Config System Shutdown.");
 		delete server.config;
 		return 1;
 	}
 
 	//create our client manager.
-	Log(Logs::General, Logs::LoginServer, "Client Manager Initialize.");
+	Log(Logs::General, Logs::Login_Server, "Client Manager Initialize.");
 	server.client_manager = new ClientManager();
 	if (!server.client_manager) {
 		//We can't run without a client manager, cleanup and exit.
 		Log(Logs::General, Logs::Error, "Client Manager Failed to Start.");
-		Log(Logs::General, Logs::LoginServer, "Server Manager Shutdown.");
+		Log(Logs::General, Logs::Login_Server, "Server Manager Shutdown.");
 		delete server.server_manager;
 
-		Log(Logs::General, Logs::LoginServer, "Database System Shutdown.");
+		Log(Logs::General, Logs::Login_Server, "Database System Shutdown.");
 		delete server.db;
-		Log(Logs::General, Logs::LoginServer, "Config System Shutdown.");
+		Log(Logs::General, Logs::Login_Server, "Config System Shutdown.");
 		delete server.config;
 		return 1;
 	}
@@ -175,7 +175,7 @@ int main()
 #endif
 #endif
 
-	Log(Logs::General, Logs::LoginServer, "Server Started.");
+	Log(Logs::General, Logs::Login_Server, "Server Started.");
 	while (run_server) {
 		Timer::SetCurrentTime();
 		server.client_manager->Process();
@@ -183,15 +183,15 @@ int main()
 		Sleep(5);
 	}
 
-	Log(Logs::General, Logs::LoginServer, "Server Shutdown.");
-	Log(Logs::General, Logs::LoginServer, "Client Manager Shutdown.");
+	Log(Logs::General, Logs::Login_Server, "Server Shutdown.");
+	Log(Logs::General, Logs::Login_Server, "Client Manager Shutdown.");
 	delete server.client_manager;
-	Log(Logs::General, Logs::LoginServer, "Server Manager Shutdown.");
+	Log(Logs::General, Logs::Login_Server, "Server Manager Shutdown.");
 	delete server.server_manager;
 
-	Log(Logs::General, Logs::LoginServer, "Database System Shutdown.");
+	Log(Logs::General, Logs::Login_Server, "Database System Shutdown.");
 	delete server.db;
-	Log(Logs::General, Logs::LoginServer, "Config System Shutdown.");
+	Log(Logs::General, Logs::Login_Server, "Config System Shutdown.");
 	delete server.config;
 	return 0;
 }

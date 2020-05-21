@@ -249,7 +249,7 @@ void Client::SendPathPacket(const std::vector<FindPerson_Point> &points) {
 
 		if (points.size() < 2) {
 			if (Admin() > 10) {
-				Message(Chat::System, "Too few points");
+				Message(MT_System, "Too few points");
 			}
 
 			EQApplicationPacket outapp(OP_FindPersonReply, 0);
@@ -259,7 +259,7 @@ void Client::SendPathPacket(const std::vector<FindPerson_Point> &points) {
 
 		if (points.size() > 36) {
 			if (Admin() > 10) {
-				Message(Chat::System, "Too many points %u", points.size());
+				Message(MT_System, "Too many points %u", points.size());
 			}
 
 			EQApplicationPacket outapp(OP_FindPersonReply, 0);
@@ -268,7 +268,7 @@ void Client::SendPathPacket(const std::vector<FindPerson_Point> &points) {
 		}
 
 		if (Admin() > 10) {
-			Message(Chat::System, "Total points %u", points.size());
+			Message(MT_System, "Total points %u", points.size());
 		}
 
 		int len = sizeof(FindPersonResult_Struct) + (points.size() + 1) * sizeof(FindPerson_Point);

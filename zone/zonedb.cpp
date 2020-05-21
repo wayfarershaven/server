@@ -3280,7 +3280,7 @@ void ZoneDatabase::InsertDoor(uint32 ddoordbid, uint16 ddoorid, const char* ddoo
     QueryDatabase(query);
 }
 
-void ZoneDatabase::LogGMCommands(const char* char_name, const char* acct_name, float y, float x, float z, const char* command, const char* targetType, const char* target, float tar_y, float tar_x, float tar_z, uint32 zone_id, const char* zone_name)
+void ZoneDatabase::LogCommands(const char* char_name, const char* acct_name, float y, float x, float z, const char* command, const char* targetType, const char* target, float tar_y, float tar_x, float tar_z, uint32 zone_id, const char* zone_name)
 {
 
 	std::string new_char_name = std::string(char_name);
@@ -4416,7 +4416,7 @@ bool ZoneDatabase::UnburyCharacterCorpse(uint32 db_id, uint32 new_zone_id, uint1
 
 void ZoneDatabase::ListCharacterCorpses(Client *target, Client *c, bool buried, bool backup) {
 	if (buried && backup) {
-		c->Message(Chat::Red, "Error: Buried and backup specified as both true. Fix in code.");
+		c->Message(CC_Red, "Error: Buried and backup specified as both true. Fix in code.");
 		return;
 	}
 
@@ -4430,10 +4430,10 @@ void ZoneDatabase::ListCharacterCorpses(Client *target, Client *c, bool buried, 
 	else
 		query = StringFormat("SELECT id, zone_id, x, y, z, is_buried FROM character_corpses WHERE `charid` = %d", target->CharacterID());
 
-	c->Message(Chat::Red, "CorpseID : Zone , x , y , z , Items");
+	c->Message(CC_Red, "CorpseID : Zone , x , y , z , Items");
 	auto results = database.QueryDatabase(query);
 	if (!results.Success() || results.RowCount() == 0) {
-		c->Message(Chat::Red, "No corpse exist for %s with ID: %i.", target->GetName(), target->CharacterID());
+		c->Message(CC_Red, "No corpse exist for %s with ID: %i.", target->GetName(), target->CharacterID());
 		return;
 	}
 
@@ -4448,21 +4448,21 @@ void ZoneDatabase::ListCharacterCorpses(Client *target, Client *c, bool buried, 
 		auto ic_row = ic_results.begin();
 
 		if (backup)
-			c->Message(Chat::Yellow, " %s:	%s, %s, %s, %s, Item Count: %s, Backup Summon Count: %s", row[0], database.GetZoneName(atoi(row[1])), row[2], row[3], row[4], ic_row[0], row[6]);
+			c->Message(CC_Yellow, " %s:	%s, %s, %s, %s, Item Count: %s, Backup Summon Count: %s", row[0], database.GetZoneName(atoi(row[1])), row[2], row[3], row[4], ic_row[0], row[6]);
 		else
-			c->Message(Chat::Yellow, " %s:	%s, %s, %s, %s, Item Count: %s, Buried: %s", row[0], database.GetZoneName(atoi(row[1])), row[2], row[3], row[4], ic_row[0], strcmp(row[5], "1") == 0 ? "yes": "no");
+			c->Message(CC_Yellow, " %s:	%s, %s, %s, %s, Item Count: %s, Buried: %s", row[0], database.GetZoneName(atoi(row[1])), row[2], row[3], row[4], ic_row[0], strcmp(row[5], "1") == 0 ? "yes": "no");
 	}
 }
 
 void ZoneDatabase::ListCharacterCorpseBackups(Client *target, Client *c) {
 
-	c->Message(Chat::Red, "CorpseID : Zone , x , y , z , Items");
+	c->Message(CC_Red, "CorpseID : Zone , x , y , z , Items");
 	std::string query = StringFormat("SELECT id, zone_id, x, y, z FROM character_corpses_backup WHERE charid = %d", target->CharacterID());
 	auto results = database.QueryDatabase(query);
 
 	if (!results.Success() || results.RowCount() == 0)
 	{
-		c->Message(Chat::Red, "No corpse backups exist for %s with ID: %i.", target->GetName(), target->CharacterID());
+		c->Message(CC_Red, "No corpse backups exist for %s with ID: %i.", target->GetName(), target->CharacterID());
 		return;
 	}
 
@@ -4472,7 +4472,7 @@ void ZoneDatabase::ListCharacterCorpseBackups(Client *target, Client *c) {
 		auto ic_results = database.QueryDatabase(ic_query);
 		auto ic_row = ic_results.begin();
 
-		c->Message(Chat::Yellow, " %s:	%s, %s, %s, %s, (%s)", row[0], database.GetZoneName(atoi(row[1])), row[2], row[3], row[4], ic_row[0]);
+		c->Message(CC_Yellow, " %s:	%s, %s, %s, %s, (%s)", row[0], database.GetZoneName(atoi(row[1])), row[2], row[3], row[4], ic_row[0]);
 	}
 }
 

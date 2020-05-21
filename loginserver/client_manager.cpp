@@ -37,7 +37,7 @@ ClientManager::ClientManager()
 	}
 
 	titanium_stream->OnNewConnection([this](std::shared_ptr<EQ::Net::EQStream> stream) {
-		LogF(Logs::General, Logs::LoginServer, "New Titanium client connection from {0}:{1}", stream->RemoteEndpoint(), stream->GetRemotePort());
+		LogF(Logs::General, Logs::Login_Server, "New Titanium client connection from {0}:{1}", stream->RemoteEndpoint(), stream->GetRemotePort());
 		stream->SetOpcodeManager(&titanium_ops);
 		Client *c = new Client(stream, cv_titanium);
 		clients.push_back(c);
@@ -55,7 +55,7 @@ ClientManager::ClientManager()
 	}
 
 	sod_stream->OnNewConnection([this](std::shared_ptr<EQ::Net::EQStream> stream) {
-		LogF(Logs::General, Logs::LoginServer, "New SoD client connection from {0}:{1}", stream->RemoteEndpoint(), stream->GetRemotePort());
+		LogF(Logs::General, Logs::Login_Server, "New SoD client connection from {0}:{1}", stream->RemoteEndpoint(), stream->GetRemotePort());
 		stream->SetOpcodeManager(&sod_ops);
 		Client *c = new Client(stream, cv_sod);
 		clients.push_back(c);
@@ -113,7 +113,7 @@ void ClientManager::ProcessDisconnect()
 		std::shared_ptr<EQStreamInterface> c = (*iter)->GetConnection();
 		if (c->CheckState(CLOSED))
 		{
-			Log(Logs::General, Logs::LoginServer, "Client disconnected from the server, removing client.");
+			Log(Logs::General, Logs::Login_Server, "Client disconnected from the server, removing client.");
 			delete (*iter);
 			iter = clients.erase(iter);
 		}
@@ -131,7 +131,7 @@ void ClientManager::RemoveExistingClient(unsigned int account_id)
 	{
 		if ((*iter)->GetAccountID() == account_id)
 		{
-			Log(Logs::General, Logs::LoginServer, "Client attempting to log in and existing client already logged in, removing existing client.");
+			Log(Logs::General, Logs::Login_Server, "Client attempting to log in and existing client already logged in, removing existing client.");
 			delete (*iter);
 			iter = clients.erase(iter);
 		}

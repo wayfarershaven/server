@@ -75,11 +75,11 @@ EQW::EQW() {
 
 void EQW::AppendOutput(const char *str) {
 	m_outputBuffer += str;
-//	Log.LogDebugType(Logs::Detail, Logs::WorldServer, "Append %d chars, yeilding result of length %d", strlen(str), m_outputBuffer.length());
+//	Log.LogDebugType(Logs::Detail, Logs::World_Server, "Append %d chars, yeilding result of length %d", strlen(str), m_outputBuffer.length());
 }
 
 const std::string &EQW::GetOutput() const {
-//	Log.LogDebugType(Logs::Detail, Logs::WorldServer, "Getting, length %d", m_outputBuffer.length());
+//	Log.LogDebugType(Logs::Detail, Logs::World_Server, "Getting, length %d", m_outputBuffer.length());
 	return(m_outputBuffer);
 }
 

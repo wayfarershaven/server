@@ -40,7 +40,7 @@ bool Client::Process()
 	{
 		if (server.options.IsTraceOn())
 		{
-			Log(Logs::General, Logs::LoginServer, "Application packet received from client (size %u)", app->Size());
+			Log(Logs::General, Logs::Login_Server, "Application packet received from client (size %u)", app->Size());
 		}
 
 		if (server.options.IsDumpInPacketsOn())
@@ -60,7 +60,7 @@ bool Client::Process()
 		{
 			if (server.options.IsTraceOn())
 			{
-				Log(Logs::General, Logs::LoginServer, "Session ready received from client.");
+				Log(Logs::General, Logs::Login_Server, "Session ready received from client.");
 			}
 			Handle_SessionReady((const char*)app->pBuffer, app->Size());
 			break;
@@ -75,7 +75,7 @@ bool Client::Process()
 
 			if (server.options.IsTraceOn())
 			{
-				Log(Logs::General, Logs::LoginServer, "Login received from client.");
+				Log(Logs::General, Logs::Login_Server, "Login received from client.");
 			}
 
 			Handle_Login((const char*)app->pBuffer, app->Size());
@@ -90,7 +90,7 @@ bool Client::Process()
 
 			if (server.options.IsTraceOn())
 			{
-				Log(Logs::General, Logs::LoginServer, "Server list request received from client.");
+				Log(Logs::General, Logs::Login_Server, "Server list request received from client.");
 			}
 
 			SendServerListPacket(*(uint32_t*)app->pBuffer);
@@ -109,7 +109,7 @@ bool Client::Process()
 		}
 		default:
 		{
-			if (LogSys.log_settings[Logs::PacketClientServerUnhandled].is_category_enabled == 1) {
+			if (LogSys.log_settings[Logs::Client_Server_Packet_Unhandled].is_category_enabled == 1) {
 				char dump[64];
 				app->build_header_dump(dump);
 				Log(Logs::General, Logs::Error, "Recieved unhandled application packet from the client: %s.", dump);
@@ -351,7 +351,7 @@ void Client::Handle_Play(const char* data)
 
 	if (server.options.IsTraceOn())
 	{
-		Log(Logs::General, Logs::LoginServer, "Play received from client, server number %u sequence %u.", server_id_in, sequence_in);
+		Log(Logs::General, Logs::Login_Server, "Play received from client, server number %u sequence %u.", server_id_in, sequence_in);
 	}
 
 	this->play_server_id = (unsigned int)play->ServerNumber;

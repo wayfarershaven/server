@@ -2476,7 +2476,7 @@ void Client::ShowBuyLines(const EQApplicationPacket *app) {
 	QueuePacket(app);
 
 	if(bir->Approval == 0) {
-		MessageString(clientMessageYellow, TRADER_BUSY);
+		Message_StringID(clientMessageYellow, TRADER_BUSY);
 		return;
 	}
 

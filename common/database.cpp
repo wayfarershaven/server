@@ -442,7 +442,7 @@ uint32 Database::CreateAccount(const char* name, const char* password, int16 sta
 	else
 		query = StringFormat("INSERT INTO %s SET name='%s', status=%i, lsaccount_id=%i, time_creation=UNIX_TIMESTAMP();", ACCOUNT_TABLE.c_str(),name, status, lsaccount_id);
 
-	Log(Logs::General, Logs::WorldServer, "Account Attempting to be created: '%s' status: %i", name, status);
+	Log(Logs::General, Logs::World_Server, "Account Attempting to be created: '%s' status: %i", name, status);
 	auto results = QueryDatabase(query);
 
 	if (!results.Success()) {
@@ -459,7 +459,7 @@ uint32 Database::CreateAccount(const char* name, const char* password, int16 sta
 
 bool Database::DeleteAccount(const char* name) {
 	std::string query = StringFormat("DELETE FROM %s WHERE name='%s';", ACCOUNT_TABLE.c_str(), name);
-	Log(Logs::General, Logs::WorldServer, "Account Attempting to be deleted:'%s'", name);
+	Log(Logs::General, Logs::World_Server, "Account Attempting to be deleted:'%s'", name);
 
 	auto results = QueryDatabase(query); 
 	if (!results.Success()) {
@@ -506,7 +506,7 @@ bool Database::ReserveName(uint32 account_id, char* name) {
 	auto results = QueryDatabase(query);
 	for (auto row = results.begin(); row != results.end(); ++row) {
 		if (row[0] && atoi(row[0]) > 0){
-			Log(Logs::General, Logs::WorldServer, "Account: %i tried to request name: %s, but it is already taken...", account_id, name);
+			Log(Logs::General, Logs::World_Server, "Account: %i tried to request name: %s, but it is already taken...", account_id, name);
 			return false;
 		}
 	}
@@ -556,10 +556,10 @@ bool Database::UnDeleteCharacter(const char *name) {
 bool Database::DeleteCharacter(char *name) {
 	uint32 charid = 0;
 	if(!name ||	!strlen(name)) {
-		Log(Logs::General, Logs::WorldServer, "DeleteCharacter: request to delete without a name (empty char slot)");
+		Log(Logs::General, Logs::World_Server, "DeleteCharacter: request to delete without a name (empty char slot)");
 		return false;
 	}
-	Log(Logs::General, Logs::WorldServer, "Database::DeleteCharacter name : '%s'", name);
+	Log(Logs::General, Logs::World_Server, "Database::DeleteCharacter name : '%s'", name);
 
 	/* Get id from character_data before deleting record so we can clean up the rest of the tables */
 	std::string query = StringFormat("SELECT `id` from `%s` WHERE `name` = '%s'", CHARACTER_DATA_TABLE.c_str(), name);
@@ -2435,7 +2435,7 @@ struct TimeOfDay_Struct Database::LoadTime(time_t &realtime)
 	auto results = QueryDatabase(query);
 
 	if (!results.Success() || results.RowCount() == 0){
-		Log(Logs::Detail, Logs::WorldServer, "Loading EQ time of day failed. Using defaults.");
+		Log(Logs::Detail, Logs::World_Server, "Loading EQ time of day failed. Using defaults.");
 		eqTime.minute = 0;
 		eqTime.hour = 9;
 		eqTime.day = 1;

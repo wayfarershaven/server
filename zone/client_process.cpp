@@ -436,11 +436,11 @@ bool Client::Process() {
 
 			if (!CombatRange(auto_attack_target))
 			{
-				MessageString(Chat::TooFarAway, TARGET_TOO_FAR);
+				Message_StringID(MT_TooFarAway, TARGET_TOO_FAR);
 			}
 			else if (auto_attack_target == this)
 			{
-				MessageString(Chat::TooFarAway, TRY_ATTACKING_SOMEONE);
+				Message_StringID(MT_TooFarAway, TRY_ATTACKING_SOMEONE);
 			}
 			else if (!los_status || !los_status_facing)
 			{
@@ -460,11 +460,11 @@ bool Client::Process() {
 
 		if (GetClass() == WARRIOR || GetClass() == BERSERKER) {
 			if (!dead && !IsBerserk() && GetHPRatio() < RuleI(Combat, BerserkerFrenzyStart)) {
-				entity_list.MessageCloseString(this, false, 200, 0, BERSERK_START, GetName());
+				entity_list.MessageClose_StringID(this, false, 200, 0, BERSERK_START, GetName());
 				berserk = true;
 			}
 			if (IsBerserk() && GetHPRatio() > RuleI(Combat, BerserkerFrenzyEnd)) {
-				entity_list.MessageCloseString(this, false, 200, 0, BERSERK_END, GetName());
+				entity_list.MessageClose_StringID(this, false, 200, 0, BERSERK_END, GetName());
 				berserk = false;
 			}
 		}
@@ -475,11 +475,11 @@ bool Client::Process() {
 			// Range check
 			if (!CombatRange(auto_attack_target)) {
 				// this is a duplicate message don't use it.
-				//MessageString(Chat::TooFarAway,TARGET_TOO_FAR);
+				//Message_StringID(MT_TooFarAway,TARGET_TOO_FAR);
 			}
 			// Don't attack yourself
 			else if (auto_attack_target == this) {
-				//MessageString(Chat::TooFarAway,TRY_ATTACKING_SOMEONE);
+				//Message_StringID(MT_TooFarAway,TRY_ATTACKING_SOMEONE);
 			}
 			else if (!los_status || !los_status_facing)
 			{
@@ -635,7 +635,7 @@ bool Client::Process() {
 
 	if (client_state != CLIENT_LINKDEAD && !eqs->CheckState(ESTABLISHED)) {
 		OnDisconnect(true);
-		Log(Logs::General, Logs::ZoneServer, "Client linkdead: %s", name);
+		Log(Logs::General, Logs::Zone_Server, "Client linkdead: %s", name);
 
 		if (GetGM()) {
 			if (GetMerc())
@@ -1046,9 +1046,9 @@ void Client::BulkSendMerchantInventory(int merchant_id, int npcid) {
 		sprintf(handy_id, "%i", greet_id);
 
 		if (greet_id != MERCHANT_GREETING)
-			MessageString(10, GENERIC_STRINGID_SAY, merch->GetCleanName(), handy_id, this->GetName(), handyitem->Name);
+			Message_StringID(10, GENERIC_STRINGID_SAY, merch->GetCleanName(), handy_id, this->GetName(), handyitem->Name);
 		else
-			MessageString(10, GENERIC_STRINGID_SAY, merch->GetCleanName(), handy_id, this->GetName());
+			Message_StringID(10, GENERIC_STRINGID_SAY, merch->GetCleanName(), handy_id, this->GetName());
 	}
 
 //		safe_delete_array(cpi);
@@ -1139,7 +1139,7 @@ void Client::OPTGB(const EQApplicationPacket *app)
 
 	uint32 tgb_flag = *(uint32 *)app->pBuffer;
 	if(tgb_flag == 2)
-		MessageString(0, TGB() ? TGB_ON : TGB_OFF);
+		Message_StringID(0, TGB() ? TGB_ON : TGB_OFF);
 	else
 		tgb = tgb_flag;
 }
@@ -1168,7 +1168,7 @@ void Client::OPMemorizeSpell(const EQApplicationPacket* app)
 	)
 	{
 		char val1[20]={0};
-		MessageString(13,SPELL_LEVEL_TO_LOW,ConvertArray(spells[memspell->spell_id].classes[GetClass()-1],val1),spells[memspell->spell_id].name);
+		Message_StringID(13,SPELL_LEVEL_TO_LOW,ConvertArray(spells[memspell->spell_id].classes[GetClass()-1],val1),spells[memspell->spell_id].name);
 		//Message(13, "Unexpected error: Class cant use this spell at your level!");
 		return;
 	}
@@ -1183,7 +1183,7 @@ void Client::OPMemorizeSpell(const EQApplicationPacket* app)
 				const EQEmu::ItemData* item = inst->GetItem();
 
 				if (RuleB(Character, RestrictSpellScribing) && !item->IsEquipable(GetRace(), GetClass())) {
-					MessageString(13, CANNOT_USE_ITEM);
+					Message_StringID(13, CANNOT_USE_ITEM);
 					break;
 				}
 
@@ -1743,7 +1743,7 @@ void Client::OPGMTrainSkill(const EQApplicationPacket *app)
 			case EQEmu::skills::SkillJewelryMaking:
 			case EQEmu::skills::SkillPottery:
 				if(skilllevel >= RuleI(Skills, MaxTrainTradeskills)) {
-					MessageString(13, MORE_SKILLED_THAN_I, pTrainer->GetCleanName());
+					Message_StringID(13, MORE_SKILLED_THAN_I, pTrainer->GetCleanName());
 					SetSkill(skill, skilllevel);
 					return;
 				}
@@ -1754,7 +1754,7 @@ void Client::OPGMTrainSkill(const EQApplicationPacket *app)
 			case EQEmu::skills::SkillSpecializeDivination:
 			case EQEmu::skills::SkillSpecializeEvocation:
 				if(skilllevel >= RuleI(Skills, MaxTrainSpecializations)) {
-					MessageString(13, MORE_SKILLED_THAN_I, pTrainer->GetCleanName());
+					Message_StringID(13, MORE_SKILLED_THAN_I, pTrainer->GetCleanName());
 					SetSkill(skill, skilllevel);
 					return;
 				}
@@ -1766,7 +1766,7 @@ void Client::OPGMTrainSkill(const EQApplicationPacket *app)
 			if (skilllevel >= MaxSkillValue)
 			{
 				// Don't allow training over max skill level
-				MessageString(13, MORE_SKILLED_THAN_I, pTrainer->GetCleanName());
+				Message_StringID(13, MORE_SKILLED_THAN_I, pTrainer->GetCleanName());
 				SetSkill(skill, skilllevel);
 				return;
 			}
@@ -1777,7 +1777,7 @@ void Client::OPGMTrainSkill(const EQApplicationPacket *app)
 				if (skilllevel >= MaxSpecSkill)
 				{
 					// Restrict specialization training to follow the rules
-					MessageString(13, MORE_SKILLED_THAN_I, pTrainer->GetCleanName());
+					Message_StringID(13, MORE_SKILLED_THAN_I, pTrainer->GetCleanName());
 					SetSkill(skill, skilllevel);
 					return;
 				}
@@ -2022,7 +2022,7 @@ void Client::DoTracking()
 	Mob *m = entity_list.GetMob(TrackingID);
 
 	if (!m || m->IsCorpse()) {
-		MessageString(Chat::Skills, TRACK_LOST_TARGET);
+		Message_StringID(MT_Skills, TRACK_LOST_TARGET);
 		TrackingID = 0;
 		return;
 	}
@@ -2033,23 +2033,23 @@ void Client::DoTracking()
 		RelativeHeading += 512;
 
 	if (RelativeHeading > 480)
-		MessageString(Chat::Skills, TRACK_STRAIGHT_AHEAD, m->GetCleanName());
+		Message_StringID(MT_Skills, TRACK_STRAIGHT_AHEAD, m->GetCleanName());
 	else if (RelativeHeading > 416)
-		MessageString(Chat::Skills, TRACK_AHEAD_AND_TO, m->GetCleanName(), "left");
+		Message_StringID(MT_Skills, TRACK_AHEAD_AND_TO, m->GetCleanName(), "left");
 	else if (RelativeHeading > 352)
-		MessageString(Chat::Skills, TRACK_TO_THE, m->GetCleanName(), "left");
+		Message_StringID(MT_Skills, TRACK_TO_THE, m->GetCleanName(), "left");
 	else if (RelativeHeading > 288)
-		MessageString(Chat::Skills, TRACK_BEHIND_AND_TO, m->GetCleanName(), "left");
+		Message_StringID(MT_Skills, TRACK_BEHIND_AND_TO, m->GetCleanName(), "left");
 	else if (RelativeHeading > 224)
-		MessageString(Chat::Skills, TRACK_BEHIND_YOU, m->GetCleanName());
+		Message_StringID(MT_Skills, TRACK_BEHIND_YOU, m->GetCleanName());
 	else if (RelativeHeading > 160)
-		MessageString(Chat::Skills, TRACK_BEHIND_AND_TO, m->GetCleanName(), "right");
+		Message_StringID(MT_Skills, TRACK_BEHIND_AND_TO, m->GetCleanName(), "right");
 	else if (RelativeHeading > 96)
-		MessageString(Chat::Skills, TRACK_TO_THE, m->GetCleanName(), "right");
+		Message_StringID(MT_Skills, TRACK_TO_THE, m->GetCleanName(), "right");
 	else if (RelativeHeading > 32)
-		MessageString(Chat::Skills, TRACK_AHEAD_AND_TO, m->GetCleanName(), "right");
+		Message_StringID(MT_Skills, TRACK_AHEAD_AND_TO, m->GetCleanName(), "right");
 	else if (RelativeHeading >= 0)
-		MessageString(Chat::Skills, TRACK_STRAIGHT_AHEAD, m->GetCleanName());
+		Message_StringID(MT_Skills, TRACK_STRAIGHT_AHEAD, m->GetCleanName());
 }
 
 void Client::HandleRespawnFromHover(uint32 Option)

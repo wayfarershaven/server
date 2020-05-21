@@ -24,12 +24,11 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include "../common/version.h"
 #include "../common/servertalk.h"
 #include "../common/misc_functions.h"
+#include "login_server.h"
+#include "login_server_list.h"
 #include "../common/eq_packet_structs.h"
 #include "../common/packet_dump.h"
 #include "../common/string_util.h"
-#include "../common/eqemu_logsys.h"
-#include "login_server.h"
-#include "login_server_list.h"
 #include "zoneserver.h"
 #include "worlddb.h"
 #include "zonelist.h"
@@ -58,7 +57,7 @@ LoginServer::~LoginServer() {
 
 void LoginServer::ProcessUsertoWorldReq(uint16_t opcode, EQ::Net::Packet &p) {
 	const WorldConfig *Config = WorldConfig::get();
-	Log(Logs::Detail, Logs::WorldServer, "Recevied ServerPacket from LS OpCode 0x04x", opcode);
+	Log(Logs::Detail, Logs::World_Server, "Recevied ServerPacket from LS OpCode 0x04x", opcode);
 
 	UsertoWorldRequest_Struct* utwr = (UsertoWorldRequest_Struct*)p.Data();
 	uint32 id = database.GetAccountIDFromLSID(utwr->lsaccountid);
@@ -102,7 +101,7 @@ void LoginServer::ProcessUsertoWorldReq(uint16_t opcode, EQ::Net::Packet &p) {
 
 void LoginServer::ProcessLSClientAuth(uint16_t opcode, EQ::Net::Packet &p) {
 	const WorldConfig *Config = WorldConfig::get();
-	Log(Logs::Detail, Logs::WorldServer, "Recevied ServerPacket from LS OpCode 0x04x", opcode);
+	Log(Logs::Detail, Logs::World_Server, "Recevied ServerPacket from LS OpCode 0x04x", opcode);
 
 	try {
 		auto slsca = p.GetSerialize<ClientAuth_Struct>(0);
@@ -122,17 +121,17 @@ void LoginServer::ProcessLSClientAuth(uint16_t opcode, EQ::Net::Packet &p) {
 
 void LoginServer::ProcessLSFatalError(uint16_t opcode, EQ::Net::Packet &p) {
 	const WorldConfig *Config = WorldConfig::get();
-	Log(Logs::Detail, Logs::WorldServer, "Recevied ServerPacket from LS OpCode 0x04x", opcode);
+	Log(Logs::Detail, Logs::World_Server, "Recevied ServerPacket from LS OpCode 0x04x", opcode);
 
-	Log(Logs::Detail, Logs::WorldServer, "Login server responded with FatalError.");
+	Log(Logs::Detail, Logs::World_Server, "Login server responded with FatalError.");
 	if (p.Length() > 1) {
-		Log(Logs::Detail, Logs::WorldServer, "     %s", (const char*)p.Data());
+		Log(Logs::Detail, Logs::World_Server, "     %s", (const char*)p.Data());
 	}
 }
 
 void LoginServer::ProcessSystemwideMessage(uint16_t opcode, EQ::Net::Packet &p) {
 	const WorldConfig *Config = WorldConfig::get();
-	Log(Logs::Detail, Logs::WorldServer, "Recevied ServerPacket from LS OpCode 0x04x", opcode);
+	Log(Logs::Detail, Logs::World_Server, "Recevied ServerPacket from LS OpCode 0x04x", opcode);
 
 	ServerSystemwideMessage* swm = (ServerSystemwideMessage*)p.Data();
 	zoneserver_list.SendEmoteMessageRaw(0, 0, 0, swm->type, swm->message);
@@ -140,19 +139,19 @@ void LoginServer::ProcessSystemwideMessage(uint16_t opcode, EQ::Net::Packet &p) 
 
 void LoginServer::ProcessLSRemoteAddr(uint16_t opcode, EQ::Net::Packet &p) {
 	const WorldConfig *Config = WorldConfig::get();
-	Log(Logs::Detail, Logs::WorldServer, "Recevied ServerPacket from LS OpCode 0x04x", opcode);
+	Log(Logs::Detail, Logs::World_Server, "Recevied ServerPacket from LS OpCode 0x04x", opcode);
 
 	if (!Config->WorldAddress.length()) {
 		WorldConfig::SetWorldAddress((char *)p.Data());
-		Log(Logs::Detail, Logs::WorldServer, "Loginserver provided %s as world address", (const char*)p.Data());
+		Log(Logs::Detail, Logs::World_Server, "Loginserver provided %s as world address", (const char*)p.Data());
 	}
 }
 
 void LoginServer::ProcessLSAccountUpdate(uint16_t opcode, EQ::Net::Packet &p) {
 	const WorldConfig *Config = WorldConfig::get();
-	Log(Logs::Detail, Logs::WorldServer, "Recevied ServerPacket from LS OpCode 0x04x", opcode);
+	Log(Logs::Detail, Logs::World_Server, "Recevied ServerPacket from LS OpCode 0x04x", opcode);
 
-	Log(Logs::Detail, Logs::WorldServer, "Received ServerOP_LSAccountUpdate packet from loginserver");
+	Log(Logs::Detail, Logs::World_Server, "Received ServerOP_LSAccountUpdate packet from loginserver");
 	CanAccountUpdate = true;
 }
 
@@ -160,24 +159,24 @@ bool LoginServer::Connect() {
 	std::string tmp;
 	if (database.GetVariable("loginType", tmp) && strcasecmp(tmp.c_str(), "MinILogin") == 0) {
 		minilogin = true;
-		Log(Logs::Detail, Logs::WorldServer, "Setting World to MiniLogin Server type");
+		Log(Logs::Detail, Logs::World_Server, "Setting World to MiniLogin Server type");
 	}
 	else
 		minilogin = false;
 
 	if (minilogin && WorldConfig::get()->WorldAddress.length() == 0) {
-		Log(Logs::Detail, Logs::WorldServer, "**** For minilogin to work, you need to set the <address> element in the <world> section.");
+		Log(Logs::Detail, Logs::World_Server, "**** For minilogin to work, you need to set the <address> element in the <world> section.");
 		return false;
 	}
 
 	char errbuf[1024];
 	if ((LoginServerIP = ResolveIP(LoginServerAddress, errbuf)) == 0) {
-		Log(Logs::Detail, Logs::WorldServer, "Unable to resolve '%s' to an IP.", LoginServerAddress);
+		Log(Logs::Detail, Logs::World_Server, "Unable to resolve '%s' to an IP.", LoginServerAddress);
 		return false;
 	}
 
 	if (LoginServerIP == 0 || LoginServerPort == 0) {
-		Log(Logs::Detail, Logs::WorldServer, "Connect info incomplete, cannot connect: %s:%d", LoginServerAddress, LoginServerPort);
+		Log(Logs::Detail, Logs::World_Server, "Connect info incomplete, cannot connect: %s:%d", LoginServerAddress, LoginServerPort);
 		return false;
 	}
 
@@ -185,7 +184,7 @@ bool LoginServer::Connect() {
 		legacy_client.reset(new EQ::Net::ServertalkLegacyClient(LoginServerAddress, LoginServerPort, false));
 		legacy_client->OnConnect([this](EQ::Net::ServertalkLegacyClient *client) {
 			if (client) {
-				Log(Logs::Detail, Logs::WorldServer, "Connected to Legacy Loginserver: %s:%d", LoginServerAddress, LoginServerPort);
+				Log(Logs::Detail, Logs::World_Server, "Connected to Legacy Loginserver: %s:%d", LoginServerAddress, LoginServerPort);
 				if (minilogin)
 					SendInfo();
 				else
@@ -198,7 +197,7 @@ bool LoginServer::Connect() {
 				}));
 			}
 			else {
-				Log(Logs::Detail, Logs::WorldServer, "Could not connect to Legacy Loginserver: %s:%d", LoginServerAddress, LoginServerPort);
+				Log(Logs::Detail, Logs::World_Server, "Could not connect to Legacy Loginserver: %s:%d", LoginServerAddress, LoginServerPort);
 			}
 		});
 
@@ -214,7 +213,7 @@ bool LoginServer::Connect() {
 		client.reset(new EQ::Net::ServertalkClient(LoginServerAddress, LoginServerPort, false, "World", ""));
 		client->OnConnect([this](EQ::Net::ServertalkClient *client) {
 			if (client) {
-				Log(Logs::Detail, Logs::WorldServer, "Connected to Loginserver: %s:%d", LoginServerAddress, LoginServerPort);
+				Log(Logs::Detail, Logs::World_Server, "Connected to Loginserver: %s:%d", LoginServerAddress, LoginServerPort);
 				if (minilogin)
 					SendInfo();
 				else
@@ -227,7 +226,7 @@ bool LoginServer::Connect() {
 				}));
 			}
 			else {
-				Log(Logs::Detail, Logs::WorldServer, "Could not connect to Loginserver: %s:%d", LoginServerAddress, LoginServerPort);
+				Log(Logs::Detail, Logs::World_Server, "Could not connect to Loginserver: %s:%d", LoginServerAddress, LoginServerPort);
 			}
 		});
 
@@ -312,7 +311,7 @@ void LoginServer::SendStatus() {
 void LoginServer::SendAccountUpdate(ServerPacket* pack) {
 	ServerLSAccountUpdate_Struct* s = (ServerLSAccountUpdate_Struct *)pack->pBuffer;
 	if (CanUpdate()) {
-		Log(Logs::Detail, Logs::WorldServer, "Sending ServerOP_LSAccountUpdate packet to loginserver: %s:%d", LoginServerAddress, LoginServerPort);
+		Log(Logs::Detail, Logs::World_Server, "Sending ServerOP_LSAccountUpdate packet to loginserver: %s:%d", LoginServerAddress, LoginServerPort);
 		strn0cpy(s->worldaccount, LoginAccount, 30);
 		strn0cpy(s->worldpassword, LoginPassword, 30);
 		SendPacket(pack);

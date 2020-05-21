@@ -189,7 +189,7 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p) {
             if (pack->size != sizeof(ServerConnectInfo))
                 break;
             ServerConnectInfo *sci = (ServerConnectInfo *) pack->pBuffer;
-            Log(Logs::Detail, Logs::ZoneServer, "World assigned Port: %d for this zone.", sci->port);
+            Log(Logs::Detail, Logs::Zone_Server, "World assigned Port: %d for this zone.", sci->port);
             ZoneConfig::SetZonePort(sci->port);
             break;
         }
@@ -209,7 +209,7 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p) {
                         else if (scm->queued == 2) // tell queue was full
                             client->Tell_StringID(QUEUE_TELL_FULL, scm->to, scm->message);
                         else if (scm->queued == 3) // person was offline
-                            client->MessageString(Chat::EchoTell, TOLD_NOT_ONLINE, scm->to);
+                            client->Message_StringID(MT_TellEcho, TOLD_NOT_ONLINE, scm->to);
                         else // normal stuff
                             client->ChannelMessageSend(scm->from, scm->to, scm->chan_num, scm->language, scm->message);
                         if (!scm->noreply && scm->chan_num != 2) { //dont echo on group chat
@@ -404,7 +404,7 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p) {
                 Client *client = entity_list.GetClientByID(wars->id);
                 if (client) {
                     if (pack->size == 64)//no results
-                        client->MessageString(0, WHOALL_NO_RESULTS);
+                        client->Message_StringID(0, WHOALL_NO_RESULTS);
                     else {
                         auto outapp = new EQApplicationPacket(OP_WhoAllResponse, pack->size);
                         memcpy(outapp->pBuffer, pack->pBuffer, pack->size);
@@ -756,7 +756,7 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p) {
             Client *c = entity_list.GetClientByName(Rezzer);
 
             if (c)
-                c->MessageString(Chat::SpellWornOff, REZZ_ALREADY_PENDING);
+                c->Message_StringID(MT_WornOff, REZZ_ALREADY_PENDING);
 
             break;
         }
@@ -767,7 +767,7 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p) {
         }
         case ServerOP_SyncWorldTime: {
             if (zone != 0 && !zone->is_zone_time_localized) {
-                Log(Logs::Moderate, Logs::ZoneServer, "%s Received Message SyncWorldTime", __FUNCTION__);
+                Log(Logs::Moderate, Logs::Zone_Server, "%s Received Message SyncWorldTime", __FUNCTION__);
 
                 eqTimeOfDay *newtime = (eqTimeOfDay *) pack->pBuffer;
                 zone->zone_time.SetCurrentEQTimeOfDay(newtime->start_eqtime, newtime->start_realtime);
@@ -789,12 +789,12 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p) {
                         (eq_time.hour >= 13) ? "pm" : "am"
                 );
 
-                Log(Logs::General, Logs::ZoneServer, "Time Broadcast Packet: %s", time_message);
+                Log(Logs::General, Logs::Zone_Server, "Time Broadcast Packet: %s", time_message);
                 zone->SetZoneHasCurrentTime(true);
 
             }
             if (zone && zone->is_zone_time_localized) {
-                Log(Logs::General, Logs::ZoneServer,
+                Log(Logs::General, Logs::Zone_Server,
                     "Received request to sync time from world, but our time is localized currently");
             }
             break;
@@ -1444,7 +1444,7 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p) {
             ServerOP_Consent_Struct *s = (ServerOP_Consent_Struct *) pack->pBuffer;
             Client *client = entity_list.GetClientByName(s->ownername);
             if (client) {
-                client->MessageString(0, s->message_string_id);
+                client->Message_StringID(0, s->message_string_id);
             }
             break;
         }
@@ -1648,7 +1648,7 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p) {
             Client *c = entity_list.GetClientByName((const char *) pack->pBuffer);
             if (c) {
                 c->ClearPendingAdventureDoorClick();
-                c->MessageString(13, 5141);
+                c->Message_StringID(13, 5141);
             }
             break;
         }
@@ -1830,32 +1830,32 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p) {
 
         case ServerOP_ChangeSharedMem: {
             std::string hotfix_name = std::string((char *) pack->pBuffer);
-            Log(Logs::General, Logs::ZoneServer, "Loading items");
+            Log(Logs::General, Logs::Zone_Server, "Loading items");
             if (!database.LoadItems(hotfix_name)) {
                 Log(Logs::General, Logs::Error, "Loading items FAILED!");
             }
 
-            Log(Logs::General, Logs::ZoneServer, "Loading npc faction lists");
+            Log(Logs::General, Logs::Zone_Server, "Loading npc faction lists");
             if (!database.LoadNPCFactionLists(hotfix_name)) {
                 Log(Logs::General, Logs::Error, "Loading npcs faction lists FAILED!");
             }
 
-            Log(Logs::General, Logs::ZoneServer, "Loading loot tables");
+            Log(Logs::General, Logs::Zone_Server, "Loading loot tables");
             if (!database.LoadLoot(hotfix_name)) {
                 Log(Logs::General, Logs::Error, "Loading loot FAILED!");
             }
 
-            Log(Logs::General, Logs::ZoneServer, "Loading skill caps");
+            Log(Logs::General, Logs::Zone_Server, "Loading skill caps");
             if (!database.LoadSkillCaps(std::string(hotfix_name))) {
                 Log(Logs::General, Logs::Error, "Loading skill caps FAILED!");
             }
 
-            Log(Logs::General, Logs::ZoneServer, "Loading spells");
+            Log(Logs::General, Logs::Zone_Server, "Loading spells");
             if (!database.LoadSpells(hotfix_name, &SPDAT_RECORDS, &spells)) {
                 Log(Logs::General, Logs::Error, "Loading spells FAILED!");
             }
 
-            Log(Logs::General, Logs::ZoneServer, "Loading base data");
+            Log(Logs::General, Logs::Zone_Server, "Loading base data");
             if (!database.LoadBaseData(hotfix_name)) {
                 Log(Logs::General, Logs::Error, "Loading base data FAILED!");
             }

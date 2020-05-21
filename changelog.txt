@@ -1018,9 +1018,9 @@ mackal: Add quest debugging to lua
 	eq.debug("Test debug level explicit 2", 2)
 	eq.debug("Test debug level explicit 3", 3)
 Akkadius: Add Packet Logging Categories
-	- 5 - Packet: Client -> Server - Logs::PacketClientServer
-	- 39 - Packet: Server -> Client - Logs::PacketServerClient
-	- 40 - Packet: Client -> Server Unhandled - Logs::PacketClientServerUnhandled
+	- 5 - Packet: Client -> Server - Logs::Client_Server_Packet
+	- 39 - Packet: Server -> Client - Logs::Server_Client_Packet
+	- 40 - Packet: Client -> Server Unhandled - Logs::Client_Server_Packet_Unhandled
 	See: http://wiki.eqemulator.org/p?Logging_System_Overhaul#packet-logging
 
 == 01/31/2015 ==
@@ -2674,7 +2674,7 @@ required SQL: 2013_04_04_NaturesBounty.sql
 
 == 04/03/2013 ==
 mackal: Overloaded Mob::Say_StringID with the option to provide a message type
-mackal: Switched rest of the Pet Messages to Chat::PetResponse (Leader commands intentionally left the old way)
+mackal: Switched rest of the Pet Messages to MT_PetResponse (Leader commands intentionally left the old way)
 
 == 04/2/2013 ==
 Bad_Captain: Fixed Merc lack of use of heal over time spells (causing excessive healing).

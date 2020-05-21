@@ -1040,7 +1040,7 @@ void Corpse::MakeLootRequestPackets(Client* client, const EQApplicationPacket* a
 		}
 		else {
 			Log(Logs::General, Logs::Inventory, "MakeLootRequestPackets() PlayerKillItem %i not found", pkitemid);
-			client->Message(Chat::Red, "PlayerKillItem (id: %i) could not be found!", pkitemid);
+			client->Message(CC_Red, "PlayerKillItem (id: %i) could not be found!", pkitemid);
 		}
 
 		client->QueuePacket(app);
@@ -1204,7 +1204,7 @@ void Corpse::LootItem(Client *client, const EQApplicationPacket *app)
 
 	if (client && inst) {
 		if (client->CheckLoreConflict(item)) {
-			client->MessageString(0, LOOT_LORE_ERROR);
+			client->Message_StringID(0, LOOT_LORE_ERROR);
 			client->QueuePacket(app);
 			SendEndLootErrorPacket(client);
 			ResetLooter();
@@ -1217,7 +1217,7 @@ void Corpse::LootItem(Client *client, const EQApplicationPacket *app)
 				EQEmu::ItemInstance *itm = inst->GetAugment(i);
 				if (itm) {
 					if (client->CheckLoreConflict(itm->GetItem())) {
-						client->MessageString(0, LOOT_LORE_ERROR);
+						client->Message_StringID(0, LOOT_LORE_ERROR);
 						client->QueuePacket(app);
 						SendEndLootErrorPacket(client);
 						ResetLooter();
@@ -1239,7 +1239,7 @@ void Corpse::LootItem(Client *client, const EQApplicationPacket *app)
 		args.push_back(this);
 		if (parse->EventPlayer(EVENT_LOOT, client, buf, 0, &args) != 0) {
 			lootitem->auto_loot = -1;
-			client->MessageString(Chat::Red, LOOT_NOT_ALLOWED, inst->GetItem()->Name);
+			client->Message_StringID(CC_Red, LOOT_NOT_ALLOWED, inst->GetItem()->Name);
 			client->QueuePacket(app);
 			delete inst;
 			return;
@@ -1312,17 +1312,17 @@ void Corpse::LootItem(Client *client, const EQApplicationPacket *app)
 
         linker.GenerateLink();
 
-        client->MessageString(Chat::Loot, LOOTED_MESSAGE, linker.Link().c_str());
+        client->Message_StringID(MT_LootMessages, LOOTED_MESSAGE, linker.Link().c_str());
 
 		if (!IsPlayerCorpse()) {
 			Group *g = client->GetGroup();
 			if (g != nullptr) {
-				g->GroupMessageString(client, Chat::Loot, OTHER_LOOTED_MESSAGE,
+				g->GroupMessage_StringID(client, MT_LootMessages, OTHER_LOOTED_MESSAGE,
                                          client->GetName(), linker.Link().c_str());
 			} else {
 				Raid *r = client->GetRaid();
 				if (r != nullptr) {
-					r->RaidMessageString(client, Chat::Loot, OTHER_LOOTED_MESSAGE,
+					r->RaidMessage_StringID(client, MT_LootMessages, OTHER_LOOTED_MESSAGE,
                                             client->GetName(), linker.Link().c_str());
 				}
 			}

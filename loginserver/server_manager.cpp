@@ -36,13 +36,13 @@ ServerManager::ServerManager()
 	server_connection->Listen(opts);
 
 	server_connection->OnConnectionIdentified("World", [this](std::shared_ptr<EQ::Net::ServertalkServerConnection> c) {
-		LogF(Logs::General, Logs::LoginServer, "New world server connection from {0}:{1}", c->Handle()->RemoteIP(), c->Handle()->RemotePort());
+		LogF(Logs::General, Logs::Login_Server, "New world server connection from {0}:{1}", c->Handle()->RemoteIP(), c->Handle()->RemotePort());
 
 		auto iter = world_servers.begin();
 		while (iter != world_servers.end()) {
 			if ((*iter)->GetConnection()->Handle()->RemoteIP().compare(c->Handle()->RemoteIP()) == 0 &&
 				(*iter)->GetConnection()->Handle()->RemotePort() == c->Handle()->RemotePort()) {
-				LogF(Logs::General, Logs::LoginServer, "World server already existed for {0}:{1}, removing existing connection.",
+				LogF(Logs::General, Logs::Login_Server, "World server already existed for {0}:{1}, removing existing connection.",
 					c->Handle()->RemoteIP(), c->Handle()->RemotePort());
 
 				world_servers.erase(iter);
@@ -59,7 +59,7 @@ ServerManager::ServerManager()
 		auto iter = world_servers.begin();
 		while (iter != world_servers.end()) {
 			if ((*iter)->GetConnection()->GetUUID() == c->GetUUID()) {
-				LogF(Logs::General, Logs::WorldServer, "World server {0} has been disconnected, removing.", (*iter)->GetLongName().c_str());
+				LogF(Logs::General, Logs::World_Server, "World server {0} has been disconnected, removing.", (*iter)->GetLongName().c_str());
 				world_servers.erase(iter);
 				return;
 			}
@@ -221,7 +221,7 @@ void ServerManager::SendUserToWorldRequest(unsigned int server_id, unsigned int 
 			found = true;
 
 			if (server.options.IsDumpInPacketsOn()) {
-				LogF(Logs::General, Logs::LoginServer, "{0}", outapp.ToString());
+				LogF(Logs::General, Logs::Login_Server, "{0}", outapp.ToString());
 			}
 		}
 		++iter;

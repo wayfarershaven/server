@@ -174,7 +174,7 @@ void Doors::HandleClick(Client* sender, uint8 trigger) {
 			if (RuleI(Adventure, ItemIDToEnablePorts) != 0) {
 				if (!sender->KeyRingCheck(RuleI(Adventure, ItemIDToEnablePorts))) {
 					if (sender->GetInv().HasItem(RuleI(Adventure, ItemIDToEnablePorts)) == INVALID_INDEX) {
-						sender->MessageString(13, DUNGEON_SEALED);
+						sender->Message_StringID(13, DUNGEON_SEALED);
 						safe_delete(outapp);
 						return;
 					} else {
@@ -288,7 +288,7 @@ void Doors::HandleClick(Client* sender, uint8 trigger) {
 		 * GM can always open locks
 		 */
 		if (sender->GetGM()) {
-			sender->MessageString(4,DOORS_GM);
+			sender->Message_StringID(4,DOORS_GM);
 
 			if (!IsDoorOpen() || (open_type == 58)) {
 				move_door_packet->action = static_cast<uint8>(invert_state == 0 ? OPEN_DOOR : OPEN_INVDOOR);
@@ -339,19 +339,19 @@ void Doors::HandleClick(Client* sender, uint8 trigger) {
 						} else {
 							move_door_packet->action = static_cast<uint8>(invert_state == 0 ? CLOSE_DOOR : CLOSE_INVDOOR);
 						}
-						sender->MessageString(4, DOORS_SUCCESSFUL_PICK);
+						sender->Message_StringID(4, DOORS_SUCCESSFUL_PICK);
 					} else {
-						sender->MessageString(4, DOORS_INSUFFICIENT_SKILL);
+						sender->Message_StringID(4, DOORS_INSUFFICIENT_SKILL);
 						safe_delete(outapp);
 						return;
 					}
 				} else {
-					sender->MessageString(4, DOORS_NO_PICK);
+					sender->Message_StringID(4, DOORS_NO_PICK);
 					safe_delete(outapp);
 					return;
 				}
 			} else {
-				sender->MessageString(4, DOORS_CANT_PICK);
+				sender->Message_StringID(4, DOORS_CANT_PICK);
 				safe_delete(outapp);
 				return;
 			}
@@ -374,7 +374,7 @@ void Doors::HandleClick(Client* sender, uint8 trigger) {
 					move_door_packet->action = static_cast<uint8>(invert_state == 0 ? CLOSE_DOOR : CLOSE_INVDOOR);
 				}
 			} else {
-				sender->MessageString(4, DOORS_LOCKED);
+				sender->Message_StringID(4, DOORS_LOCKED);
 				safe_delete(outapp);
 				return;
 			}
