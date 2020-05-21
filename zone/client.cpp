@@ -9672,24 +9672,31 @@ void Client::MovePCDynamicZone(uint32 zone_id)
     }
 
     // check client systems for any associated dynamic zones to the requested zone id
-    // count first to avoid building an unused entry
-    int dz_count = 0;
+    std::vector<DynamicZoneChooseZoneEntry_Struct> client_dzs;
 
     DynamicZone single_dz;
     Expedition* expedition = GetExpedition();
     if (expedition && expedition->GetDynamicZone().GetZoneID() == zone_id)
     {
         single_dz = expedition->GetDynamicZone();
-        ++dz_count;
+        DynamicZoneChooseZoneEntry_Struct dz;
+        dz.dz_zone_id = expedition->GetDynamicZone().GetZoneID();
+        dz.dz_instance_id = expedition->GetDynamicZone().GetInstanceID();
+        dz.dz_type = static_cast<uint8_t>(expedition->GetDynamicZone().GetType());
+        //dz.unknown_id2 = expedition->GetDynamicZone().GetRealID();
+        strn0cpy(dz.description, expedition->GetName().c_str(), sizeof(dz.description));
+        strn0cpy(dz.leader_name, expedition->GetLeaderName().c_str(), sizeof(dz.leader_name));
+
+        client_dzs.emplace_back(dz);
     }
 
     // todo: check for Missions (Shared Tasks), Quests, or Tasks that have associated dzs to zone_id
 
-    if (dz_count == 0)
+    if (client_dzs.empty())
     {
-        MessageString(Chat::Red, DYNAMICZONE_WAY_IS_BLOCKED);
+        MessageString(Chat::Red, DYNAMICZONE_WAY_IS_BLOCKED); // unconfirmed message
     }
-    else if (dz_count == 1)
+    else if (client_dzs.size() == 1)
     {
         if (single_dz.GetInstanceID() == 0)
         {
@@ -9706,30 +9713,14 @@ void Client::MovePCDynamicZone(uint32 zone_id)
             MovePC(zone_id, single_dz.GetInstanceID(), zonein.x, zonein.y, zonein.z, zonein.heading, 0, zone_mode);
         }
     }
-    else if (dz_count > 1)
+    else if (client_dzs.size() > 1)
     {
         LogDynamicZonesDetail(
                 "Sending DzSwitchListWnd to character [{}] associated with [{}] dynamic zone(s)",
-                CharacterID(), dz_count
+                CharacterID(), client_dzs.size()
         );
 
         // more than one dynamic zone to this zone, send out the switchlist window
-        std::vector<DynamicZoneChooseZoneEntry_Struct> client_dzs;
-
-        if (expedition && expedition->GetDynamicZone().GetZoneID() == zone_id)
-        {
-            DynamicZoneChooseZoneEntry_Struct dz;
-            dz.dz_zone_id = expedition->GetDynamicZone().GetZoneID();
-            dz.dz_instance_id = expedition->GetDynamicZone().GetInstanceID();
-            dz.dz_type = static_cast<uint8_t>(expedition->GetDynamicZone().GetType());
-            //dz.unknown_id2 = expedition->GetDynamicZone().GetRealID();
-            strn0cpy(dz.description, expedition->GetName().c_str(), sizeof(dz.description));
-            strn0cpy(dz.leader_name, expedition->GetLeaderName().c_str(), sizeof(dz.leader_name));
-
-            client_dzs.emplace_back(dz);
-        }
-
-        // todo: Missions (Shared Tasks), Quests, or Tasks
 
         // note that this will most likely crash clients if they've reloaded the ui
         // this occurs on live as well so it may just be a long lasting client bug
