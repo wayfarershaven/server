@@ -747,6 +747,11 @@ RULE_BOOL(Client, UseLiveFactionMessage, false) // Allows players to see faction
 RULE_BOOL(Client, UseLiveBlockedMessage, false) // Allows players to see faction adjustments like Live
 RULE_CATEGORY_END()
 
+RULE_CATEGORY(Expedition)
+RULE_INT(Expedition, MinStatusToBypassPlayerCountRequirements, 80) //Minimum GM status to bypass minimum player requirements for Expedition creation
+RULE_BOOL(Expedition, UseDatabaseToVerifyLeaderCommands, false) //Use database instead of zone cache to verify Expedition leader for commands
+RULE_CATEGORY_END()
+
 #undef RULE_CATEGORY
 #undef RULE_INT
 #undef RULE_REAL

@@ -123,6 +123,17 @@ std::vector<std::string> SplitString(const std::string &str, char delim) {
 	return ret;
 }
 
+static std::string implode(char *sep, std::vector<std::string> src)
+{
+    std::ostringstream output;
+    std::vector<std::string>::iterator src_iter;
+
+    for (src_iter = src.begin(); src_iter != src.end(); src_iter++)
+        output << *src_iter << sep;
+
+    return output.str();
+}
+
 std::string EscapeString(const std::string &s) {
 	std::string ret;
 
@@ -497,4 +508,15 @@ void replace_all(std::string& in, std::string old, std::string repl)
 	{
 		in.replace(pos, old.size(), repl);
 	}
+}
+
+std::string FormatName(const std::string& char_name)
+{
+    std::string formatted(char_name);
+    if (!formatted.empty())
+    {
+        std::transform(formatted.begin(), formatted.end(), formatted.begin(), ::tolower);
+        formatted[0] = ::toupper(formatted[0]);
+    }
+    return formatted;
 }

@@ -371,6 +371,10 @@ int main(int argc, char** argv) {
 	adventure_manager.LoadLeaderboardInfo();
 	nats.Load();
 
+    Log(Logs::General, Logs::Expeditions, "Purging expired expeditions");
+    Expedition::PurgeEmptyExpeditions(); //database.PurgeExpiredExpeditions();
+    Expedition::PurgeExpiredCharacterLockouts();
+
 	Log(Logs::General, Logs::World_Server, "Purging expired instances");
 	database.PurgeExpiredInstances();
 	Timer PurgeInstanceTimer(450000);
@@ -530,6 +534,8 @@ int main(int argc, char** argv) {
 		if (PurgeInstanceTimer.Check()) {
 			database.PurgeExpiredInstances();
             database.PurgeAllDeletedDataBuckets();
+            Expedition::PurgeEmptyExpeditions();
+            Expedition::PurgeExpiredCharacterLockouts();
 		}
 
 		if (EQTimeTimer.Check())
