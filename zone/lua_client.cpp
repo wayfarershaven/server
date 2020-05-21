@@ -1910,6 +1910,7 @@ luabind::scope lua_register_client() {
 		.def("CalcCurrentWeight", &Lua_Client::CalcCurrentWeight)
 		.def("CalcATK", &Lua_Client::CalcATK)
 		.def("FilteredMessage", &Lua_Client::FilteredMessage)
+        .def("CreateExpedition", (Lua_Expedition(Lua_Client::*)(luabind::object, luabind::object))&Lua_Client::CreateExpedition)
         .def("CreateExpedition", (Lua_Expedition(Lua_Client::*)(std::string, uint32, uint32, std::string, uint32, uint32))&Lua_Client::CreateExpedition)
         .def("CreateExpedition", (Lua_Expedition(Lua_Client::*)(std::string, uint32, uint32, std::string, uint32, uint32, bool))&Lua_Client::CreateExpedition)
         .def("CreateExpedition", (Lua_Expedition(Lua_Client::*)(std::string, uint32, uint32, std::string, uint32, uint32, bool, bool))&Lua_Client::CreateExpedition)
