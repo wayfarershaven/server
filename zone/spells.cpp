@@ -415,14 +415,14 @@ bool Mob::DoCastSpell(uint16 spell_id, uint16 target_id, CastingSlot slot,
 		Mob::SetMana(GetMana() - use_mana); // We send StopCasting which will update mana
 		StopCasting();
 
-		Message_StringID(MT_SpellFailure, fizzle_msg);
+		Message_StringID(Chat::SpellFailure, fizzle_msg);
 
 		/* Song Failure Messages */
 		entity_list.FilteredMessageClose_StringID(
 			this, /* Sender */
 			true, /* Skip Sender */
 			RuleI(Range, SpellMessages),
-			MT_SpellFailure, /* Type: 289 */
+			Chat::SpellFailure, /* Type: 289 */
 			(IsClient() ? FilterPCSpells : FilterNPCSpells), /* FilterType: 8 or 9 depending on client/npc */
 			(fizzle_msg == MISS_NOTE ? MISSED_NOTE_OTHER : SPELL_FIZZLE_OTHER),
 			/*
@@ -561,7 +561,7 @@ bool Mob::DoCastSpell(uint16 spell_id, uint16 target_id, CastingSlot slot,
 	if (IsClient() && slot == CastingSlot::Item && item_slot != 0xFFFFFFFF) {
 		auto item = CastToClient()->GetInv().GetItem(item_slot);
 		if (item && item->GetItem())
-			Message_StringID(MT_Spells, BEGINS_TO_GLOW, item->GetItem()->Name);
+			Message_StringID(Chat::Spells, BEGINS_TO_GLOW, item->GetItem()->Name);
 	}
 
 	if (!DoCastingChecks()) {
@@ -618,7 +618,7 @@ bool Mob::DoCastingChecks()
 		if (spell_target && spells[spell_id].targettype != ST_Self && !spell_target->CheckSpellLevelRestriction(spell_id)) {
 			Log(Logs::Detail, Logs::Spells, "Spell %d failed: recipient did not meet the level restrictions", spell_id);
 			if (!IsBardSong(spell_id))
-				Message_StringID(MT_SpellFailure, SPELL_TOO_POWERFUL);
+				Message_StringID(Chat::SpellFailure, SPELL_TOO_POWERFUL);
 			return false;
 		}
 	}
@@ -910,7 +910,7 @@ void Mob::InterruptSpell(uint16 message, uint16 color, uint16 spellid)
 	}
 
 	if(casting_spell_aa_id && IsClient()) { //Rest AA Timer on failed cast
-		CastToClient()->Message_StringID(MT_SpellFailure, ABILITY_FAILED);
+		CastToClient()->Message_StringID(Chat::SpellFailure, ABILITY_FAILED);
 		CastToClient()->ResetAlternateAdvancementTimer(casting_spell_aa_id);
 	}
 
@@ -989,7 +989,7 @@ void Mob::StopCasting()
 	if (IsClient()) {
 		auto c = CastToClient();
 		if (casting_spell_aa_id) { //Rest AA Timer on failed cast
-			c->Message_StringID(MT_SpellFailure, ABILITY_FAILED);
+			c->Message_StringID(Chat::SpellFailure, ABILITY_FAILED);
 			c->ResetAlternateAdvancementTimer(casting_spell_aa_id);
 		}
 
@@ -1182,8 +1182,8 @@ void Mob::CastedSpellFinished(uint16 spell_id, uint32 target_id, CastingSlot slo
 			}
 			// if we got here, we regained concentration
 			regain_conc = true;
-			Message_StringID(MT_Spells,REGAIN_AND_CONTINUE);
-			entity_list.MessageClose_StringID(this, true, RuleI(Range, SpellMessages), MT_Spells, OTHER_REGAIN_CAST, this->GetCleanName());
+			Message_StringID(Chat::Spells,REGAIN_AND_CONTINUE);
+			entity_list.MessageClose_StringID(this, true, RuleI(Range, SpellMessages), Chat::Spells, OTHER_REGAIN_CAST, this->GetCleanName());
 		}
 	}
 
@@ -2979,7 +2979,7 @@ int Mob::CheckStackConflict(uint16 spellid1, int caster_level1, uint16 spellid2,
 
 			if (spellbonuses.Screech == 1) {
 				if (effect2 == SE_Screech && sp2.base[i] == -1) {
-					Message_StringID(MT_SpellFailure, SCREECH_BUFF_BLOCK, sp2.name);
+					Message_StringID(Chat::SpellFailure, SCREECH_BUFF_BLOCK, sp2.name);
 					return -1;
 				}
 			}
@@ -3518,7 +3518,7 @@ bool Mob::SpellOnTarget(uint16 spell_id, Mob *spelltar, bool reflect, bool use_r
 	if(IsDetrimentalSpell(spell_id) && !IsAttackAllowed(spelltar) && !IsResurrectionEffects(spell_id)) {
 		if(spell_id != 727) { // Bard Group Dispell
 			if (!IsClient() || !CastToClient()->GetGM()) {
-				Message_StringID(MT_SpellFailure, SPELL_NO_HOLD);
+				Message_StringID(Chat::SpellFailure, SPELL_NO_HOLD);
 				return false;
 			}
 		}
@@ -3699,7 +3699,7 @@ bool Mob::SpellOnTarget(uint16 spell_id, Mob *spelltar, bool reflect, bool use_r
 
 		if (spelltar->invisible)
 		{
-			spelltar->Message_StringID(MT_SpellFailure, ALREADY_INVIS, GetCleanName());
+			spelltar->Message_StringID(Chat::SpellFailure, ALREADY_INVIS, GetCleanName());
 			safe_delete(action_packet);
 			return false;
 		}
@@ -3718,7 +3718,7 @@ bool Mob::SpellOnTarget(uint16 spell_id, Mob *spelltar, bool reflect, bool use_r
 
 		if (spelltar->invisible_undead)
 		{
-			spelltar->Message_StringID(MT_SpellFailure, ALREADY_INVIS, GetCleanName());
+			spelltar->Message_StringID(Chat::SpellFailure, ALREADY_INVIS, GetCleanName());
 			safe_delete(action_packet);
 			return false;
 		}
@@ -3737,7 +3737,7 @@ bool Mob::SpellOnTarget(uint16 spell_id, Mob *spelltar, bool reflect, bool use_r
 
 		if (spelltar->invisible_animals)
 		{
-			spelltar->Message_StringID(MT_SpellFailure, ALREADY_INVIS, GetCleanName());
+			spelltar->Message_StringID(Chat::SpellFailure, ALREADY_INVIS, GetCleanName());
 			safe_delete(action_packet);
 			return false;
 		}
@@ -3817,7 +3817,7 @@ bool Mob::SpellOnTarget(uint16 spell_id, Mob *spelltar, bool reflect, bool use_r
 						Log(Logs::Detail, Logs::Spells, "Beneficial ae bard song %d can't take hold %s -> %s, IBA? %d", spell_id, GetName(), spelltar->GetName(), IsBeneficialAllowed(spelltar));
 					} else {
 						Log(Logs::Detail, Logs::Spells, "Beneficial spell %d can't take hold %s -> %s, IBA? %d", spell_id, GetName(), spelltar->GetName(), IsBeneficialAllowed(spelltar));
-						Message_StringID(MT_SpellFailure, SPELL_NO_HOLD);
+						Message_StringID(Chat::SpellFailure, SPELL_NO_HOLD);
 					}
 					safe_delete(action_packet);
 					return false;
@@ -3827,7 +3827,7 @@ bool Mob::SpellOnTarget(uint16 spell_id, Mob *spelltar, bool reflect, bool use_r
 		else if	( !IsAttackAllowed(spelltar, true) && !IsResurrectionEffects(spell_id) && spell_id != 727) // Detrimental spells - PVP check (excluding bard group dispell)
 		{
 			Log(Logs::Detail, Logs::Spells, "Detrimental spell %d can't take hold %s -> %s", spell_id, GetName(), spelltar->GetName());
-			spelltar->Message_StringID(MT_SpellFailure, YOU_ARE_PROTECTED, GetCleanName());
+			spelltar->Message_StringID(Chat::SpellFailure, YOU_ARE_PROTECTED, GetCleanName());
 			safe_delete(action_packet);
 			return false;
 		}
@@ -3869,7 +3869,7 @@ bool Mob::SpellOnTarget(uint16 spell_id, Mob *spelltar, bool reflect, bool use_r
 				focus = CalcFocusEffect(focusBlockNextSpell, buffs[b].spellid, spell_id);
 				if(focus) {
 					CheckNumHitsRemaining(NumHit::MatchingSpells, b);
-					Message_StringID(MT_SpellFailure, SPELL_WOULDNT_HOLD);
+					Message_StringID(Chat::SpellFailure, SPELL_WOULDNT_HOLD);
 					safe_delete(action_packet);
 					return false;
 				}
@@ -3921,14 +3921,14 @@ bool Mob::SpellOnTarget(uint16 spell_id, Mob *spelltar, bool reflect, bool use_r
 						this, /* Sender */
 						false, /* Skip Sender */
 						RuleI(Range, SpellMessages), /* Range */
-						MT_Spells, /* Type */
+						Chat::Spells, /* Type */
 						SPELL_REFLECT, /* String ID */
 						GetCleanName(), /* Message 1 */
 						spelltar->GetCleanName() /* Message 2 */
 				);
 			}
 			else {
-				Message_StringID(MT_Spells, SPELL_REFLECT, GetCleanName(), spelltar->GetCleanName());
+				Message_StringID(Chat::Spells, SPELL_REFLECT, GetCleanName(), spelltar->GetCleanName());
 			}
 
 			CheckNumHitsRemaining(NumHit::ReflectSpell);
@@ -3960,13 +3960,13 @@ bool Mob::SpellOnTarget(uint16 spell_id, Mob *spelltar, bool reflect, bool use_r
 				Log(Logs::Detail, Logs::Spells, "Spell %d was completely resisted by %s", spell_id, spelltar->GetName());
 
 				if (spells[spell_id].resisttype == RESIST_PHYSICAL){
-					Message_StringID(MT_SpellFailure, PHYSICAL_RESIST_FAIL,spells[spell_id].name);
-					spelltar->Message_StringID(MT_SpellFailure, YOU_RESIST, spells[spell_id].name);
+					Message_StringID(Chat::SpellFailure, PHYSICAL_RESIST_FAIL,spells[spell_id].name);
+					spelltar->Message_StringID(Chat::SpellFailure, YOU_RESIST, spells[spell_id].name);
 					resisted = 1;
 				}
 				else {
-					Message_StringID(MT_SpellFailure, TARGET_RESISTED, spells[spell_id].name);
-					spelltar->Message_StringID(MT_SpellFailure, YOU_RESIST, spells[spell_id].name);
+					Message_StringID(Chat::SpellFailure, TARGET_RESISTED, spells[spell_id].name);
+					spelltar->Message_StringID(Chat::SpellFailure, YOU_RESIST, spells[spell_id].name);
 					resisted = 1;
 				}
 
@@ -4077,7 +4077,7 @@ bool Mob::SpellOnTarget(uint16 spell_id, Mob *spelltar, bool reflect, bool use_r
 	{
 		Log(Logs::Detail, Logs::Spells, "Spell %d failed: recipient did not meet the level restrictions", spell_id);
 		if(!IsBardSong(spell_id))
-			Message_StringID(MT_SpellFailure, SPELL_TOO_POWERFUL);
+			Message_StringID(Chat::SpellFailure, SPELL_TOO_POWERFUL);
 		safe_delete(action_packet);
 		return false;
 	}
@@ -4089,7 +4089,7 @@ bool Mob::SpellOnTarget(uint16 spell_id, Mob *spelltar, bool reflect, bool use_r
 		// spell. It's most likely a buff that can't stack.
 		Log(Logs::Detail, Logs::Spells, "Spell %d could not apply its effects %s -> %s\n", spell_id, GetName(), spelltar->GetName());
 		if(casting_spell_aa_id) {
-			Message_StringID(MT_SpellFailure, SPELL_NO_HOLD);
+			Message_StringID(Chat::SpellFailure, SPELL_NO_HOLD);
 			// I could just call StopCasting(), but I am not sure whether or not we could
 			// have some problem with other AA's? So I am making a specific Manaburn thing.
 			if (IsClient() && casting_spell_aa_id == aaManaBurn) {
@@ -4419,7 +4419,7 @@ bool Mob::IsImmuneToSpell(uint16 spell_id, Mob *caster)
 	{
 		if(GetSpecialAbility(UNMEZABLE)) {
 			Log(Logs::Detail, Logs::Spells, "We are immune to Mez spells.");
-			caster->Message_StringID(MT_Shout, CANNOT_MEZ);
+			caster->Message_StringID(Chat::Shout, CANNOT_MEZ);
 			int32 aggro = caster->CheckAggroAmount(spell_id, this);
 			if(aggro > 0) {
 				AddToHateList(caster, aggro);
@@ -4437,7 +4437,7 @@ bool Mob::IsImmuneToSpell(uint16 spell_id, Mob *caster)
 			(!caster->IsNPC() || (caster->IsNPC() && !RuleB(Spells, NPCIgnoreBaseImmunity))))
 		{
 			Log(Logs::Detail, Logs::Spells, "Our level (%d) is higher than the limit of this Mez spell (%d)", GetLevel(), spells[spell_id].max[effect_index]);
-			caster->Message_StringID(MT_Shout, CANNOT_MEZ_WITH_SPELL);
+			caster->Message_StringID(Chat::Shout, CANNOT_MEZ_WITH_SPELL);
 			AddToHateList(caster, 1,0,true,false,false,spell_id);
 			return true;
 		}
@@ -4447,7 +4447,7 @@ bool Mob::IsImmuneToSpell(uint16 spell_id, Mob *caster)
 	if(GetSpecialAbility(UNSLOWABLE) && IsEffectInSpell(spell_id, SE_AttackSpeed))
 	{
 		Log(Logs::Detail, Logs::Spells, "We are immune to Slow spells.");
-		caster->Message_StringID(MT_Shout, IMMUNE_ATKSPEED);
+		caster->Message_StringID(Chat::Shout, IMMUNE_ATKSPEED);
 		int32 aggro = caster->CheckAggroAmount(spell_id, this);
 		if(aggro > 0) {
 			AddToHateList(caster, aggro);
@@ -4463,7 +4463,7 @@ bool Mob::IsImmuneToSpell(uint16 spell_id, Mob *caster)
 		effect_index = GetSpellEffectIndex(spell_id, SE_Fear);
 		if(GetSpecialAbility(UNFEARABLE)) {
 			Log(Logs::Detail, Logs::Spells, "We are immune to Fear spells.");
-			caster->Message_StringID(MT_Shout, IMMUNE_FEAR);
+			caster->Message_StringID(Chat::Shout, IMMUNE_FEAR);
 			int32 aggro = caster->CheckAggroAmount(spell_id, this);
 			if(aggro > 0) {
 				AddToHateList(caster, aggro);
@@ -4474,13 +4474,13 @@ bool Mob::IsImmuneToSpell(uint16 spell_id, Mob *caster)
 		} else if(IsClient() && caster->IsClient() && (caster->CastToClient()->GetGM() == false))
 		{
 			Log(Logs::Detail, Logs::Spells, "Clients cannot fear eachother!");
-			caster->Message_StringID(MT_Shout, IMMUNE_FEAR);
+			caster->Message_StringID(Chat::Shout, IMMUNE_FEAR);
 			return true;
 		}
 		else if(GetLevel() > spells[spell_id].max[effect_index] && spells[spell_id].max[effect_index] != 0)
 		{
 			Log(Logs::Detail, Logs::Spells, "Level is %d, cannot be feared by this spell.", GetLevel());
-			caster->Message_StringID(MT_Shout, FEAR_TOO_HIGH);
+			caster->Message_StringID(Chat::Shout, FEAR_TOO_HIGH);
 			int32 aggro = caster->CheckAggroAmount(spell_id, this);
 			if (aggro > 0) {
 				AddToHateList(caster, aggro);
@@ -4493,7 +4493,7 @@ bool Mob::IsImmuneToSpell(uint16 spell_id, Mob *caster)
 		{
 			Message(13, "Your are immune to fear.");
 			Log(Logs::Detail, Logs::Spells, "Clients has WarCry effect, immune to fear!");
-			caster->Message_StringID(MT_Shout, IMMUNE_FEAR);
+			caster->Message_StringID(Chat::Shout, IMMUNE_FEAR);
 			return true;
 		}
 	}
@@ -4503,7 +4503,7 @@ bool Mob::IsImmuneToSpell(uint16 spell_id, Mob *caster)
 		if (GetSpecialAbility(UNCHARMABLE) || IsPet())
 		{
 			Log(Logs::Detail, Logs::Spells, "We are immune to Charm spells.");
-			caster->Message_StringID(MT_Shout, CANNOT_CHARM);
+			caster->Message_StringID(Chat::Shout, CANNOT_CHARM);
 			int32 aggro = caster->CheckAggroAmount(spell_id, this);
 			if(aggro > 0) {
 				AddToHateList(caster, aggro);
@@ -4516,7 +4516,7 @@ bool Mob::IsImmuneToSpell(uint16 spell_id, Mob *caster)
 		if(this == caster)
 		{
 			Log(Logs::Detail, Logs::Spells, "You are immune to your own charms.");
-			caster->Message(MT_Shout, "You cannot charm yourself.");
+			caster->Message(Chat::Shout, "You cannot charm yourself.");
 			return true;
 		}
 
@@ -4530,9 +4530,9 @@ bool Mob::IsImmuneToSpell(uint16 spell_id, Mob *caster)
 			{
 				int32 aggro = caster->CheckAggroAmount(spell_id, this);
 				aggro > 0 ? AddToHateList(caster, aggro) : AddToHateList(caster, 1, 0, true, false, false, spell_id);
-				caster->Message_StringID(MT_SpellFailure, TARGET_RESISTED, spells[spell_id].name);
+				caster->Message_StringID(Chat::SpellFailure, TARGET_RESISTED, spells[spell_id].name);
 				Log(Logs::Detail, Logs::Spells, "Our level (%d) is higher than the limit of this Charm spell (%d)", GetLevel(), spells[spell_id].max[effect_index]);
-				// caster->Message_StringID(MT_Shout, CANNOT_CHARM_YET);
+				// caster->Message_StringID(Chat::Shout, CANNOT_CHARM_YET);
 				return true;
 			}
 		}
@@ -4546,7 +4546,7 @@ bool Mob::IsImmuneToSpell(uint16 spell_id, Mob *caster)
 	{
 		if(GetSpecialAbility(UNSNAREABLE)) {
 			Log(Logs::Detail, Logs::Spells, "We are immune to Snare spells.");
-			caster->Message_StringID(MT_Shout, IMMUNE_MOVEMENT);
+			caster->Message_StringID(Chat::Shout, IMMUNE_MOVEMENT);
 			int32 aggro = caster->CheckAggroAmount(spell_id, this);
 			if(aggro > 0) {
 				AddToHateList(caster, aggro);
@@ -4562,7 +4562,7 @@ bool Mob::IsImmuneToSpell(uint16 spell_id, Mob *caster)
 		if(this == caster)
 		{
 			Log(Logs::Detail, Logs::Spells, "You cannot lifetap yourself.");
-			caster->Message_StringID(MT_Shout, CANT_DRAIN_SELF);
+			caster->Message_StringID(Chat::Shout, CANT_DRAIN_SELF);
 			return true;
 		}
 	}
@@ -4572,7 +4572,7 @@ bool Mob::IsImmuneToSpell(uint16 spell_id, Mob *caster)
 		if(this == caster)
 		{
 			Log(Logs::Detail, Logs::Spells, "You cannot sacrifice yourself.");
-			caster->Message_StringID(MT_Shout, CANNOT_SAC_SELF);
+			caster->Message_StringID(Chat::Shout, CANNOT_SAC_SELF);
 			return true;
 		}
 	}
@@ -5263,7 +5263,7 @@ void Client::MakeBuffFadePacket(uint16 spell_id, int slot_id, bool send_message)
 		const char *fadetext = spells[spell_id].spell_fades;
 		outapp = new EQApplicationPacket(OP_ColoredText, sizeof(ColoredText_Struct) + strlen(fadetext));
 		ColoredText_Struct *bfm = (ColoredText_Struct *) outapp->pBuffer;
-		bfm->color = MT_Spells;
+		bfm->color = Chat::Spells;
 		memcpy(bfm->msg, fadetext, strlen(fadetext));
 		QueuePacket(outapp);
 		safe_delete(outapp);

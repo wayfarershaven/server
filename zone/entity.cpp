@@ -4945,8 +4945,8 @@ void EntityList::GateAllClientsToSafeReturn()
     {
         dz = DynamicZone::LoadDzFromDatabase(zone->GetInstanceID());
 
-        LogDynamicZones(
-                "Sending all clients in zone: [{}] instance: [{}] to dz safereturn or bind",
+        Log(Logs::General, Logs::DynamicZones,
+            "Sending all clients in zone: [%i] instance: [%i] to dz safereturn or bind",
                 zone->GetZoneID(), zone->GetInstanceID()
         );
     }

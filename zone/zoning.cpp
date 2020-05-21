@@ -749,7 +749,7 @@ void NPC::Gate() {
 			return;
 		}
 	}
-	entity_list.MessageClose_StringID(this, true, RuleI(Range, SpellMessages), MT_Spells, GATES, GetCleanName());
+	entity_list.MessageClose_StringID(this, true, RuleI(Range, SpellMessages), Chat::Spells, GATES, GetCleanName());
 	Mob::Gate();
 }
 

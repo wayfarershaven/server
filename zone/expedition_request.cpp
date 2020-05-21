@@ -83,7 +83,7 @@ bool ExpeditionRequest::Validate(Client* requester)
 
     auto end = std::chrono::steady_clock::now();
     auto elapsed = std::chrono::duration_cast<std::chrono::duration<float>>(end - start);
-    LogExpeditions("Create validation for [{}] members took {}s", m_members.size(), elapsed.count());
+    Log(Logs::General, Logs::Expeditions, "Create validation for [%i] members took [%i]s", m_members.size(), elapsed.count());
 
     return requirements_met;
 }
@@ -162,7 +162,7 @@ bool ExpeditionRequest::ValidateMembers(const std::string& query_member_names, u
     auto results = ExpeditionDatabase::LoadValidationData(query_member_names, m_expedition_name);
     if (!results.Success())
     {
-        LogExpeditions("Failed to load data to verify members for expedition request");
+        Log(Logs::General, Logs::Expeditions, "Failed to load data to verify members for expedition request");
         return false;
     }
 
@@ -191,7 +191,7 @@ bool ExpeditionRequest::LoadLeaderLockouts()
     auto results = ExpeditionDatabase::LoadCharacterLockouts(m_leader_id, m_expedition_name);
     if (!results.Success())
     {
-        LogExpeditions("Failed to load leader id [{}] lockouts ([{}])", m_leader_id, m_leader_name);
+        //Log(Logs::General, Logs::Expeditions, "Failed to load leader id [{}] lockouts ([{}])", m_leader_id, m_leader_name);
         return false;
     }
 
@@ -204,10 +204,10 @@ bool ExpeditionRequest::LoadLeaderLockouts()
         // client window hides timers with less than 60s remaining, optionally count them as expired
         if (lockout.GetSecondsRemaining() <= RuleI(Expedition, RequestExpiredLockoutLeewaySeconds))
         {
-            LogExpeditionsModerate(
-                    "Ignoring leader [{}] lockout [{}] with [{}] seconds remaining due to expired leeway rule",
-                    m_leader_id, lockout.GetEventName(), lockout.GetSecondsRemaining()
-            );
+            //LogExpeditionsModerate(
+            //        "Ignoring leader [{}] lockout [{}] with [{}] seconds remaining due to expired leeway rule",
+            //        m_leader_id, lockout.GetEventName(), lockout.GetSecondsRemaining()
+            //);
         }
         else
         {
@@ -278,10 +278,10 @@ bool ExpeditionRequest::CheckMembersForConflicts(MySQLRequestResult& results, bo
             // client window hides timers with less than 60s remaining, optionally count them as expired
             if (lockout.GetSecondsRemaining() <= RuleI(Expedition, RequestExpiredLockoutLeewaySeconds))
             {
-                LogExpeditionsModerate(
-                        "Ignoring character [{}] lockout [{}] with [{}] seconds remaining due to expired leeway rule",
-                        character_id, lockout.GetEventName(), lockout.GetSecondsRemaining()
-                );
+                //LogExpeditionsModerate(
+                //        "Ignoring character [{}] lockout [{}] with [{}] seconds remaining due to expired leeway rule",
+                //        character_id, lockout.GetEventName(), lockout.GetSecondsRemaining()
+                //);
             }
             else
             {

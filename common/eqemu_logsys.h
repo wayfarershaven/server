@@ -98,6 +98,7 @@ enum LogCategory {
 	NATS,
 	Food,
     Expeditions,
+    DynamicZones,
 	MaxCategoryID	/* Don't Remove this*/
 };
 
@@ -160,7 +161,8 @@ static const char* LogCategoryName[LogCategory::MaxCategoryID] = {
 	"Traps",
 	"NATS",
 	"Food",
-    "Expeditions"
+    "Expeditions",
+    "Dynamic Zones"
 	};
 }
 

@@ -864,7 +864,7 @@ void Client::SendCursorBuffer()
 	if (!lore_pass) {
 		Log(Logs::General, Logs::Inventory, "(%s) Duplicate lore items are not allowed - destroying item %s(id:%u) on cursor",
 			GetName(), test_item->Name, test_item->ID);
-		Message_StringID(MT_LootMessages, 290);
+		Message_StringID(Chat::Loot, 290);
 		parse->EventItem(EVENT_DESTROY_ITEM, this, test_inst, nullptr, "", 0);
 		DeleteItemInInventory(EQEmu::invslot::slotCursor);
 		SendCursorBuffer();
@@ -1591,7 +1591,7 @@ bool Client::SwapItem(MoveItem_Struct* move_in) {
 			if (!lore_pass) {
 				Log(Logs::General, Logs::Inventory, "(%s) Duplicate lore items are not allowed - destroying item %s(id:%u) on cursor",
 					GetName(), test_item->Name, test_item->ID);
-				Message_StringID(MT_LootMessages, 290);
+				Message_StringID(Chat::Loot, 290);
 				parse->EventItem(EVENT_DESTROY_ITEM, this, test_inst, nullptr, "", 0);
                 DeleteItemInInventory(EQEmu::invslot::slotCursor, 0, true);
 			}
@@ -1975,7 +1975,7 @@ bool Client::SwapItem(MoveItem_Struct* move_in) {
 				fail_message = "You are not sufficient level to use this item.";
 
 			if (fail_message)
-				Message(CC_Red, "%s", fail_message);
+				Message(Chat::Red, "%s", fail_message);
 
 			return false;
 		}

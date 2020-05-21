@@ -121,11 +121,11 @@ int32 Mob::GetActSpellDamage(uint16 spell_id, int32 value, Mob* target) {
 					value = -MBCap;
 			}
 			
-			entity_list.MessageClose_StringID(this, true, 100, MT_SpellCrits,
+			entity_list.MessageClose_StringID(this, true, 100, Chat::SpellCrit,
 					OTHER_CRIT_BLAST, GetName(), itoa(-value));
 
 			if (IsClient())
-				Message_StringID(MT_SpellCrits, YOU_CRIT_BLAST, itoa(-value));
+				Message_StringID(Chat::SpellCrit, YOU_CRIT_BLAST, itoa(-value));
 
 			return value;
 		}
@@ -321,11 +321,11 @@ int32 Mob::GetActSpellHealing(uint16 spell_id, int32 value, Mob* target) {
 			value = int(static_cast<float>(value) * CastToNPC()->GetHealScale() / 100.0f);
 
 		if (Critical) {
-			entity_list.MessageClose_StringID(this, true, 100, MT_SpellCrits,
+			entity_list.MessageClose_StringID(this, true, 100, Chat::SpellCrit,
 					OTHER_CRIT_HEAL, GetName(), itoa(value));
 
 			if (IsClient())
-				Message_StringID(MT_SpellCrits, YOU_CRIT_HEAL, itoa(value));
+				Message_StringID(Chat::SpellCrit, YOU_CRIT_HEAL, itoa(value));
 		}
 
 		return value;
@@ -629,7 +629,7 @@ bool Client::UseDiscipline(uint32 spell_id, uint32 target) {
 
 	// sneak attack discs require you to be hidden for 4 seconds before use
 	if (spell.sneak && (!hidden || (hidden && (Timer::GetCurrentTime() - tmHidden) < 4000))) {
-		Message_StringID(MT_SpellFailure, SNEAK_RESTRICT);
+		Message_StringID(Chat::SpellFailure, SNEAK_RESTRICT);
 		return false;
 	}
 

@@ -887,7 +887,7 @@ void Client::ChannelMessageReceived(uint8 chan_num, uint8 language, uint8 lang_s
 	{
 	case 0: { /* Guild Chat */
 		if (!IsInAGuild())
-			Message_StringID(MT_DefaultText, GUILD_NOT_MEMBER2);	//You are not a member of any guild.
+			Message_StringID(Chat::DefaultText, GUILD_NOT_MEMBER2);	//You are not a member of any guild.
 		else if (!guild_mgr.CheckPermission(GuildID(), GuildRank(), GUILD_SPEAK))
 			Message(0, "Error: You dont have permission to speak to the guild.");
 		else if (!worldserver.SendChannelMessage(this, targetname, chan_num, GuildID(), language, message))
@@ -1240,11 +1240,11 @@ void Client::ChannelMessageSend(const char* from, const char* to, uint8 chan_num
 }
 
 void Client::Message(uint32 type, const char* message, ...) {
-	if (GetFilter(FilterSpellDamage) == FilterHide && type == MT_NonMelee)
+	if (GetFilter(FilterSpellDamage) == FilterHide && type == Chat::NonMelee)
 		return;
-	if (GetFilter(FilterMeleeCrits) == FilterHide && type == MT_CritMelee) //98 is self...
+	if (GetFilter(FilterMeleeCrits) == FilterHide && type == Chat::MeleeCrit) //98 is self...
 		return;
-	if (GetFilter(FilterSpellCrits) == FilterHide && type == MT_SpellCrits)
+	if (GetFilter(FilterSpellCrits) == FilterHide && type == Chat::SpellCrit)
 		return;
 
 	va_list argptr;
@@ -1528,7 +1528,7 @@ void Client::IncreaseLanguageSkill(int skill_id, int value) {
 	QueuePacket(outapp);
 	safe_delete(outapp);
 
-	Message_StringID( MT_Skills, LANG_SKILL_IMPROVED ); //Notify client
+	Message_StringID( Chat::Skills, LANG_SKILL_IMPROVED ); //Notify client
 }
 
 void Client::AddSkill(EQEmu::skills::SkillType skillid, uint16 value) {
@@ -2588,7 +2588,7 @@ void Client::SetPVP(bool toggle, bool message) {
 
 	if (message) {
 		if(GetPVP())
-			this->Message_StringID(MT_Shout,PVP_ON);
+			this->Message_StringID(Chat::Shout,PVP_ON);
 		else
 			Message(13, "You no longer follow the ways of discord.");
 	}
@@ -2713,24 +2713,24 @@ void Client::Disarm(Client* disarmer, int chance) {
                     if (matslot != EQEmu::textures::materialInvalid)
 						SendWearChange(matslot);
 				}
-				Message(MT_Skills, "You have been disarmed!");
+				Message(Chat::Skills, "You have been disarmed!");
 				if (disarmer != this)
-					disarmer->Message(MT_Skills, StringFormat("You have successfully disarmed %s", this->GetCleanName()).c_str());
-					// Message_StringID(MT_Skills, DISARM_SUCCESS, this->GetCleanName());
+					disarmer->Message(Chat::Skills, StringFormat("You have successfully disarmed %s", this->GetCleanName()).c_str());
+					// Message_StringID(Chat::Skills, DISARM_SUCCESS, this->GetCleanName());
 				if (chance != 1000)
 					disarmer->CheckIncreaseSkill(EQEmu::skills::SkillDisarm, nullptr, 4);
 				CalcBonuses();
 				// CalcEnduranceWeightFactor();
 				return;
 			}
-			disarmer->Message(MT_Skills, StringFormat("You have failed to disarm your target").c_str());
-			//disarmer->Message_StringID(MT_Skills, DISARM_FAILED);
+			disarmer->Message(Chat::Skills, StringFormat("You have failed to disarm your target").c_str());
+			//disarmer->Message_StringID(Chat::Skills, DISARM_FAILED);
 			if (chance != 1000)
 				disarmer->CheckIncreaseSkill(EQEmu::skills::SkillDisarm, nullptr, 2);
 			return;
 		}
 	}
-	disarmer->Message(MT_Skills, StringFormat("You have failed to disarm your target").c_str());
+	disarmer->Message(Chat::Skills, StringFormat("You have failed to disarm your target").c_str());
 }
 
 bool Client::BindWound(Mob *bindmob, bool start, bool fail)
@@ -3080,11 +3080,11 @@ void Client::ServerFilter(SetServerFilter_Struct* filter){
 // this version is for messages with no parameters
 void Client::Message_StringID(uint32 type, uint32 string_id, uint32 distance)
 {
-	if (GetFilter(FilterSpellDamage) == FilterHide && type == MT_NonMelee)
+	if (GetFilter(FilterSpellDamage) == FilterHide && type == Chat::NonMelee)
 		return;
-	if (GetFilter(FilterMeleeCrits) == FilterHide && type == MT_CritMelee) //98 is self...
+	if (GetFilter(FilterMeleeCrits) == FilterHide && type == Chat::MeleeCrit) //98 is self...
 		return;
-	if (GetFilter(FilterSpellCrits) == FilterHide && type == MT_SpellCrits)
+	if (GetFilter(FilterSpellCrits) == FilterHide && type == Chat::SpellCrit)
 		return;
 	auto outapp = new EQApplicationPacket(OP_SimpleMessage, 12);
 	SimpleMessage_Struct* sms = (SimpleMessage_Struct*)outapp->pBuffer;
@@ -3111,20 +3111,20 @@ void Client::Message_StringID(uint32 type, uint32 string_id, const char* message
 	const char* message5,const char* message6,const char* message7,
 	const char* message8,const char* message9, uint32 distance)
 {
-	if (GetFilter(FilterSpellDamage) == FilterHide && type == MT_NonMelee)
+	if (GetFilter(FilterSpellDamage) == FilterHide && type == Chat::NonMelee)
 		return;
-	if (GetFilter(FilterMeleeCrits) == FilterHide && type == MT_CritMelee) //98 is self...
+	if (GetFilter(FilterMeleeCrits) == FilterHide && type == Chat::MeleeCrit) //98 is self...
 		return;
-	if (GetFilter(FilterSpellCrits) == FilterHide && type == MT_SpellCrits)
+	if (GetFilter(FilterSpellCrits) == FilterHide && type == Chat::SpellCrit)
 		return;
-	if (GetFilter(FilterDamageShields) == FilterHide && type == MT_DS)
+	if (GetFilter(FilterDamageShields) == FilterHide && type == Chat::DamageShield)
 		return;
 
 	int i = 0, argcount = 0, length = 0;
 	char *bufptr = nullptr;
 	const char *message_arg[9] = {0};
 
-	if(type==MT_Emote)
+	if(type==Chat::Emote)
 		type=4;
 
 	if(!message1)
@@ -3175,7 +3175,7 @@ void Client::MessageString(const ServerCZClientMessageString_Struct* msg)
     {
         if (msg->string_params_size == 0)
         {
-            MessageString(msg->chat_type, msg->string_id);
+            Message_StringID(msg->chat_type, msg->string_id);
         }
         else
         {
@@ -3260,7 +3260,7 @@ void Client::FilteredMessage_StringID(Mob *sender, uint32 type, eqFilterType fil
 	char *bufptr = nullptr;
 	const char *message_arg[9] = {0};
 
-	if (type == MT_Emote)
+	if (type == Chat::Emote)
 		type = 4;
 
 	if (!message1) {
@@ -3305,7 +3305,7 @@ void Client::Tell_StringID(uint32 string_id, const char *who, const char *messag
 	char string_id_str[10];
 	snprintf(string_id_str, 10, "%d", string_id);
 
-	Message_StringID(MT_TellEcho, TELL_QUEUED_MESSAGE, who, string_id_str, message);
+	Message_StringID(Chat::EchoTell, TELL_QUEUED_MESSAGE, who, string_id_str, message);
 }
 
 void Client::SetTint(int16 in_slot, uint32 color) {
@@ -3371,7 +3371,7 @@ void Client::SetLanguageSkill(int langid, int value)
 	QueuePacket(outapp);
 	safe_delete(outapp);
 
-	Message_StringID( MT_Skills, LANG_SKILL_IMPROVED ); //Notify the client
+	Message_StringID( Chat::Skills, LANG_SKILL_IMPROVED ); //Notify the client
 }
 
 void Client::LinkDead()
@@ -3466,7 +3466,7 @@ void Client::Escape()
 	entity_list.RemoveFromTargets(this, true);
 	SetInvisible(1);
 
-	Message_StringID(MT_Skills, ESCAPE);
+	Message_StringID(Chat::Skills, ESCAPE);
 }
 
 float Client::CalcPriceMod(Mob* other, bool reverse)
@@ -4236,13 +4236,13 @@ void Client::FixClientXP()
 	{
 		if(Admin() == 0 && level > 1)
 		{
-			Message(CC_Red, "Error: Your current XP (%0.2f) is lower than your current level (%i)! It needs to be at least %i", currentxp, level, totalrequiredxp);
+			Message(Chat::Red, "Error: Your current XP (%0.2f) is lower than your current level (%i)! It needs to be at least %i", currentxp, level, totalrequiredxp);
 			SetEXP(totalrequiredxp, currentaa);
 			Save();
 			Kick();
 		}
 		else if(Admin() > 0 && level > 1)
-			Message(CC_Red, "Error: Your current XP (%0.2f) is lower than your current level (%i)! It needs to be at least %i. Use #level or #addxp to correct it and logout!", currentxp, level, totalrequiredxp);
+			Message(Chat::Red, "Error: Your current XP (%0.2f) is lower than your current level (%i)! It needs to be at least %i. Use #level or #addxp to correct it and logout!", currentxp, level, totalrequiredxp);
 	}
 }
 
@@ -5005,7 +5005,7 @@ void Client::HandleLDoNOpen(NPC *target)
 
 		if(target->IsLDoNLocked())
 		{
-			Message_StringID(MT_Skills, LDON_STILL_LOCKED, target->GetCleanName());
+			Message_StringID(Chat::Skills, LDON_STILL_LOCKED, target->GetCleanName());
 			return;
 		}
 		else
@@ -5039,13 +5039,13 @@ void Client::HandleLDoNSenseTraps(NPC *target, uint16 skill, uint8 type)
 		{
 			if((target->GetLDoNTrapType() == LDoNTypeCursed || target->GetLDoNTrapType() == LDoNTypeMagical) && type != target->GetLDoNTrapType())
 			{
-				Message_StringID(MT_Skills, LDON_CANT_DETERMINE_TRAP, target->GetCleanName());
+				Message_StringID(Chat::Skills, LDON_CANT_DETERMINE_TRAP, target->GetCleanName());
 				return;
 			}
 
 			if(target->IsLDoNTrapDetected())
 			{
-				Message_StringID(MT_Skills, LDON_CERTAIN_TRAP, target->GetCleanName());
+				Message_StringID(Chat::Skills, LDON_CERTAIN_TRAP, target->GetCleanName());
 			}
 			else
 			{
@@ -5054,10 +5054,10 @@ void Client::HandleLDoNSenseTraps(NPC *target, uint16 skill, uint8 type)
 				{
 				case -1:
 				case 0:
-					Message_StringID(MT_Skills, LDON_DONT_KNOW_TRAPPED, target->GetCleanName());
+					Message_StringID(Chat::Skills, LDON_DONT_KNOW_TRAPPED, target->GetCleanName());
 					break;
 				case 1:
-					Message_StringID(MT_Skills, LDON_CERTAIN_TRAP, target->GetCleanName());
+					Message_StringID(Chat::Skills, LDON_CERTAIN_TRAP, target->GetCleanName());
 					target->SetLDoNTrapDetected(true);
 					break;
 				default:
@@ -5067,7 +5067,7 @@ void Client::HandleLDoNSenseTraps(NPC *target, uint16 skill, uint8 type)
 		}
 		else
 		{
-			Message_StringID(MT_Skills, LDON_CERTAIN_NOT_TRAP, target->GetCleanName());
+			Message_StringID(Chat::Skills, LDON_CERTAIN_NOT_TRAP, target->GetCleanName());
 		}
 	}
 }
@@ -5080,13 +5080,13 @@ void Client::HandleLDoNDisarm(NPC *target, uint16 skill, uint8 type)
 		{
 			if(!target->IsLDoNTrapped())
 			{
-				Message_StringID(MT_Skills, LDON_WAS_NOT_TRAPPED, target->GetCleanName());
+				Message_StringID(Chat::Skills, LDON_WAS_NOT_TRAPPED, target->GetCleanName());
 				return;
 			}
 
 			if((target->GetLDoNTrapType() == LDoNTypeCursed || target->GetLDoNTrapType() == LDoNTypeMagical) && type != target->GetLDoNTrapType())
 			{
-				Message_StringID(MT_Skills, LDON_HAVE_NOT_DISARMED, target->GetCleanName());
+				Message_StringID(Chat::Skills, LDON_HAVE_NOT_DISARMED, target->GetCleanName());
 				return;
 			}
 
@@ -5105,10 +5105,10 @@ void Client::HandleLDoNDisarm(NPC *target, uint16 skill, uint8 type)
 				target->SetLDoNTrapDetected(false);
 				target->SetLDoNTrapped(false);
 				target->SetLDoNTrapSpellID(0);
-				Message_StringID(MT_Skills, LDON_HAVE_DISARMED, target->GetCleanName());
+				Message_StringID(Chat::Skills, LDON_HAVE_DISARMED, target->GetCleanName());
 				break;
 			case 0:
-				Message_StringID(MT_Skills, LDON_HAVE_NOT_DISARMED, target->GetCleanName());
+				Message_StringID(Chat::Skills, LDON_HAVE_NOT_DISARMED, target->GetCleanName());
 				break;
 			case -1:
 				Message_StringID(13, LDON_ACCIDENT_SETOFF2);
@@ -5139,13 +5139,13 @@ void Client::HandleLDoNPickLock(NPC *target, uint16 skill, uint8 type)
 
 			if(!target->IsLDoNLocked())
 			{
-				Message_StringID(MT_Skills, LDON_WAS_NOT_LOCKED, target->GetCleanName());
+				Message_StringID(Chat::Skills, LDON_WAS_NOT_LOCKED, target->GetCleanName());
 				return;
 			}
 
 			if((target->GetLDoNTrapType() == LDoNTypeCursed || target->GetLDoNTrapType() == LDoNTypeMagical) && type != target->GetLDoNTrapType())
 			{
-				Message(MT_Skills, "You cannot unlock %s with this skill.", target->GetCleanName());
+				Message(Chat::Skills, "You cannot unlock %s with this skill.", target->GetCleanName());
 				return;
 			}
 
@@ -5155,11 +5155,11 @@ void Client::HandleLDoNPickLock(NPC *target, uint16 skill, uint8 type)
 			{
 			case 0:
 			case -1:
-				Message_StringID(MT_Skills, LDON_PICKLOCK_FAILURE, target->GetCleanName());
+				Message_StringID(Chat::Skills, LDON_PICKLOCK_FAILURE, target->GetCleanName());
 				break;
 			case 1:
 				target->SetLDoNLocked(false);
-				Message_StringID(MT_Skills, LDON_PICKLOCK_SUCCESS, target->GetCleanName());
+				Message_StringID(Chat::Skills, LDON_PICKLOCK_SUCCESS, target->GetCleanName());
 				break;
 			}
 		}
@@ -6521,7 +6521,7 @@ void Client::LocateCorpse()
 
 	if(ClosestCorpse)
 	{
-		Message_StringID(MT_Spells, SENSE_CORPSE_DIRECTION);
+		Message_StringID(Chat::Spells, SENSE_CORPSE_DIRECTION);
 		SetHeading(CalculateHeadingToTarget(ClosestCorpse->GetX(), ClosestCorpse->GetY()));
 		SetTarget(ClosestCorpse);
 		SendTargetCommand(ClosestCorpse->GetID());
@@ -6590,7 +6590,7 @@ void Client::DragCorpses()
 		if (!corpse || !corpse->IsPlayerCorpse() ||
 				corpse->CastToCorpse()->IsBeingLooted() ||
 				!corpse->CastToCorpse()->Summon(this, false, false)) {
-			Message_StringID(MT_DefaultText, CORPSEDRAG_STOP);
+			Message_StringID(Chat::DefaultText, CORPSEDRAG_STOP);
 			It = DraggedCorpses.erase(It);
 			if (It == DraggedCorpses.end())
 				break;
@@ -9617,7 +9617,7 @@ void Client::DzListTimers()
         {
             found = true;
             auto time_remaining = lockout.GetDaysHoursMinutesRemaining();
-            MessageString(
+            Message_StringID(
                     Chat::Yellow, DZLIST_REPLAY_TIMER,
                     time_remaining.days.c_str(), time_remaining.hours.c_str(), time_remaining.mins.c_str(),
                     lockout.GetExpeditionName().c_str()
@@ -9627,7 +9627,7 @@ void Client::DzListTimers()
 
     if (!found)
     {
-        MessageString(Chat::Yellow, EXPEDITION_NO_TIMERS);
+        Message_StringID(Chat::Yellow, EXPEDITION_NO_TIMERS);
     }
 }
 
@@ -9635,10 +9635,10 @@ void Client::SetDzRemovalTimer(bool enable_timer)
 {
     uint32_t timer_ms = RuleI(DynamicZone, ClientRemovalDelayMS);
 
-    LogDynamicZones(
-            "Character [{}] instance [{}] removal timer enabled: [{}] delay (ms): [{}]",
-            CharacterID(), zone ? zone->GetInstanceID() : 0, enable_timer, timer_ms
-    );
+    //LogDynamicZones(
+    //        "Character [{}] instance [{}] removal timer enabled: [{}] delay (ms): [{}]",
+    //        CharacterID(), zone ? zone->GetInstanceID() : 0, enable_timer, timer_ms
+    //);
 
     if (enable_timer)
     {
@@ -9704,8 +9704,8 @@ void Client::SendDzCompassUpdate()
 
 void Client::GoToDzSafeReturnOrBind(const DynamicZoneLocation& safereturn)
 {
-    LogDynamicZonesDetail(
-            "Sending character [{}] in zone [{}]:[{}] to safereturn [{}] at ([{}], [{}], [{}], [{}]) or bind",
+    Log(Logs::Detail, Logs::DynamicZones,
+        "Sending character [%i] in zone [%i]:[%i] to safereturn [%i] at ([%i], [%i], [%i], [%i]) or bind",
             CharacterID(),
             zone ? zone->GetZoneID() : 0,
             zone ? zone->GetInstanceID() : 0,
@@ -9756,13 +9756,13 @@ void Client::MovePCDynamicZone(uint32 zone_id)
 
     if (client_dzs.empty())
     {
-        MessageString(Chat::Red, DYNAMICZONE_WAY_IS_BLOCKED); // unconfirmed message
+        Message_StringID(Chat::Red, DYNAMICZONE_WAY_IS_BLOCKED); // unconfirmed message
     }
     else if (client_dzs.size() == 1)
     {
         if (single_dz.GetInstanceID() == 0)
         {
-            LogDynamicZones("Character [{}] has dz for zone [{}] with no instance id", CharacterID(), zone_id);
+            Log(Logs::General, Logs::DynamicZones, "Character [%i] has dz for zone [%i] with no instance id", CharacterID(), zone_id);
         }
         else
         {
@@ -9777,10 +9777,10 @@ void Client::MovePCDynamicZone(uint32 zone_id)
     }
     else if (client_dzs.size() > 1)
     {
-        LogDynamicZonesDetail(
-                "Sending DzSwitchListWnd to character [{}] associated with [{}] dynamic zone(s)",
-                CharacterID(), client_dzs.size()
-        );
+        //LogDynamicZonesDetail(
+        //        "Sending DzSwitchListWnd to character [{}] associated with [{}] dynamic zone(s)",
+        //        CharacterID(), client_dzs.size()
+        //);
 
         // more than one dynamic zone to this zone, send out the switchlist window
 

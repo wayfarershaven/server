@@ -70,9 +70,9 @@ Expedition* Expedition::TryCreate(
     // request parses leader, members list, and lockouts while validating
     if (!request.Validate(requester))
     {
-        LogExpeditionsModerate(
-                "Creation of [{}] by [{}] denied", request.GetExpeditionName(), requester->GetName()
-        );
+        //LogExpeditionsModerate(
+        //        "Creation of [{}] by [{}] denied", request.GetExpeditionName(), requester->GetName()
+        //);
         return nullptr;
     }
 
@@ -85,8 +85,8 @@ Expedition* Expedition::TryCreate(
     {
         // live uses this message when trying to enter an instance that isn't ready
         // we can use it as the client error message if instance creation fails
-        requester->MessageString(Chat::Red, DZ_PREVENT_ENTERING);
-        LogExpeditions("Failed to create a dynamic zone instance for expedition");
+        requester->Message_StringID(Chat::Red, DZ_PREVENT_ENTERING);
+        Log(Logs::General, Logs::Expeditions, "Failed to create a dynamic zone instance for expedition");
         return nullptr;
     }
 
@@ -116,7 +116,7 @@ Expedition* Expedition::TryCreate(
                 request.HasReplayTimer()
         ));
 
-        LogExpeditions(
+        /*LogExpeditions(
                 "Created [{}] ({}) instance id: [{}] leader: [{}] minplayers: [{}] maxplayers: [{}]",
                 expedition->GetID(),
                 expedition->GetName(),
@@ -124,7 +124,7 @@ Expedition* Expedition::TryCreate(
                 expedition->GetLeaderName(),
                 expedition->GetMinPlayers(),
                 expedition->GetMaxPlayers()
-        );
+        );*/
 
         expedition->SaveMembers(request);
         expedition->SaveLockouts(request);
@@ -214,7 +214,7 @@ void Expedition::CacheFromDatabase(uint32_t expedition_id)
         auto results = ExpeditionDatabase::LoadExpedition(expedition_id);
         if (!results.Success())
         {
-            LogExpeditions("Failed to load Expedition [{}] for zone cache", expedition_id);
+            Log(Logs::General, Logs::Expeditions, "Failed to load Expedition [%i] for zone cache", expedition_id);
             return;
         }
 
@@ -222,7 +222,7 @@ void Expedition::CacheFromDatabase(uint32_t expedition_id)
 
         auto end = std::chrono::steady_clock::now();
         auto elapsed = std::chrono::duration_cast<std::chrono::duration<float>>(end - start);
-        LogExpeditions("Caching new expedition [{}] took {}s", expedition_id, elapsed.count());
+        Log(Logs::General, Logs::Expeditions, "Caching new expedition [%i] took [%i]s", expedition_id, elapsed.count());
     }
 }
 
@@ -241,7 +241,7 @@ bool Expedition::CacheAllFromDatabase()
     auto results = ExpeditionDatabase::LoadAllExpeditions();
     if (!results.Success())
     {
-        LogExpeditions("Failed to load Expeditions for zone cache");
+        Log(Logs::General, Logs::Expeditions, "Failed to load Expeditions for zone cache");
         return false;
     }
 
@@ -249,7 +249,7 @@ bool Expedition::CacheAllFromDatabase()
 
     auto end = std::chrono::steady_clock::now();
     auto elapsed = std::chrono::duration_cast<std::chrono::duration<float>>(end - start);
-    LogExpeditions("Caching [{}] expedition(s) took {}s", zone->expedition_cache.size(), elapsed.count());
+    Log(Logs::General, Logs::Expeditions, "Caching [%i] expedition(s) took [%i]s", zone->expedition_cache.size(), elapsed.count());
 
     return true;
 }
@@ -595,7 +595,7 @@ bool Expedition::ChooseNewLeader()
     {
         if (member.char_id != m_leader.char_id)
         {
-            LogExpeditionsModerate("Replacing leader [{}] with [{}]", m_leader.name, member.name);
+            //LogExpeditionsModerate("Replacing leader [{}] with [{}]", m_leader.name, member.name);
             SetNewLeader(member.char_id, member.name);
             return true;
         }
@@ -611,14 +611,14 @@ void Expedition::SendClientExpeditionInvite(
         return;
     }
 
-    LogExpeditionsModerate(
-            "Sending expedition [{}] invite to player [{}] inviter [{}] swap name [{}]",
-            m_id, client->GetName(), inviter_name, swap_remove_name
-    );
+    //LogExpeditionsModerate(
+    //        "Sending expedition [{}] invite to player [{}] inviter [{}] swap name [{}]",
+    //        m_id, client->GetName(), inviter_name, swap_remove_name
+    //);
 
     client->SetPendingExpeditionInvite(ExpeditionInvite{m_id, inviter_name, swap_remove_name});
 
-    client->MessageString(
+    client->Message_StringID(
             Chat::System, EXPEDITION_ASKED_TO_JOIN, m_leader.name.c_str(), m_expedition_name.c_str()
     );
 
@@ -742,10 +742,10 @@ void Expedition::DzInviteResponse(Client* add_client, bool accepted, const std::
         return;
     }
 
-    LogExpeditionsModerate(
-            "Invite response by [{}] accepted [{}] swap_name [{}]",
-            add_client->GetName(), accepted, swap_remove_name
-    );
+    //LogExpeditionsModerate(
+    //        "Invite response by [{}] accepted [{}] swap_name [{}]",
+    //        add_client->GetName(), accepted, swap_remove_name
+    //);
 
     // a null leader_client is handled by SendLeaderMessage fallbacks
     // note current leader receives invite reply messages (if leader changed)
@@ -840,13 +840,13 @@ bool Expedition::ConfirmLeaderCommand(Client* requester)
 
     if (leader.char_id == 0)
     {
-        requester->MessageString(Chat::Red, UNABLE_RETRIEVE_LEADER); // unconfirmed message
+        requester->Message_StringID(Chat::Red, UNABLE_RETRIEVE_LEADER); // unconfirmed message
         return false;
     }
 
     if (leader.char_id != requester->CharacterID())
     {
-        requester->MessageString(Chat::Red, EXPEDITION_NOT_LEADER, leader.name.c_str());
+        requester->Message_StringID(Chat::Red, EXPEDITION_NOT_LEADER, leader.name.c_str());
         return false;
     }
 
@@ -862,10 +862,10 @@ void Expedition::TryAddClient(
         return;
     }
 
-    LogExpeditionsModerate(
-            "Add player request for expedition [{}] by inviter [{}] add name [{}] swap name [{}]",
-            m_id, inviter_name, orig_add_name, swap_remove_name
-    );
+    //LogExpeditionsModerate(
+    //        "Add player request for expedition [{}] by inviter [{}] add name [{}] swap name [{}]",
+    //        m_id, inviter_name, orig_add_name, swap_remove_name
+    //);
 
     // null leader client handled by ProcessAddConflicts/SendLeaderMessage fallbacks
     if (!leader_client)
@@ -897,7 +897,7 @@ void Expedition::DzAddPlayer(
 
     if (add_char_name.empty())
     {
-        requester->MessageString(Chat::Red, DZADD_NOT_ONLINE, add_char_name.c_str());
+        requester->Message_StringID(Chat::Red, DZADD_NOT_ONLINE, add_char_name.c_str());
         return;
     }
 
@@ -907,7 +907,7 @@ void Expedition::DzAddPlayer(
     auto member_data = GetMemberData(add_char_name);
     if (member_data.char_id != 0 && member_data.status != ExpeditionMemberStatus::Offline)
     {
-        requester->MessageString(Chat::Red, DZADD_ALREADY_PART, add_char_name.c_str());
+        requester->Message_StringID(Chat::Red, DZADD_ALREADY_PART, add_char_name.c_str());
         return;
     }
 
@@ -947,14 +947,14 @@ void Expedition::DzMakeLeader(Client* requester, std::string new_leader_name)
 
     if (new_leader_name.empty())
     {
-        requester->MessageString(Chat::Red, DZMAKELEADER_NOT_ONLINE, new_leader_name.c_str());
+        requester->Message_StringID(Chat::Red, DZMAKELEADER_NOT_ONLINE, new_leader_name.c_str());
         return;
     }
 
     auto new_leader_data = GetMemberData(new_leader_name);
     if (new_leader_data.char_id == 0)
     {
-        requester->MessageString(Chat::Red, EXPEDITION_NOT_MEMBER, new_leader_name.c_str());
+        requester->Message_StringID(Chat::Red, EXPEDITION_NOT_MEMBER, new_leader_name.c_str());
         return;
     }
 
@@ -978,19 +978,19 @@ void Expedition::DzRemovePlayer(Client* requester, std::string char_name)
         return;
     }
 
-    LogExpeditionsModerate(
-            "Remove player request for expedition [{}] by [{}] leader [{}] remove name [{}]",
-            m_id, requester->GetName(), m_leader.name, char_name
-    );
+    //LogExpeditionsModerate(
+    //        "Remove player request for expedition [{}] by [{}] leader [{}] remove name [{}]",
+    //        m_id, requester->GetName(), m_leader.name, char_name
+    //);
 
     char_name = FormatName(char_name);
 
     // live only seems to enforce min_players for requesting expeditions, no need to check here
     bool removed = RemoveMember(char_name);
     if (!removed) {
-        requester->MessageString(Chat::Red, EXPEDITION_NOT_MEMBER, char_name.c_str());
+        requester->Message_StringID(Chat::Red, EXPEDITION_NOT_MEMBER, char_name.c_str());
     } else {
-        requester->MessageString(Chat::Yellow, EXPEDITION_REMOVED, char_name.c_str(), m_expedition_name.c_str());
+        requester->Message_StringID(Chat::Yellow, EXPEDITION_REMOVED, char_name.c_str(), m_expedition_name.c_str());
     }
 }
 
@@ -1013,7 +1013,7 @@ void Expedition::DzSwapPlayer(
     if (remove_char_name.empty() || !HasMember(remove_char_name))
     {
         remove_char_name = FormatName(remove_char_name);
-        requester->MessageString(Chat::Red, DZSWAP_CANNOT_REMOVE, remove_char_name.c_str());
+        requester->Message_StringID(Chat::Red, DZSWAP_CANNOT_REMOVE, remove_char_name.c_str());
         return;
     }
 
@@ -1024,7 +1024,7 @@ void Expedition::DzPlayerList(Client* requester)
 {
     if (requester)
     {
-        requester->MessageString(Chat::Yellow, EXPEDITION_LEADER, m_leader.name.c_str());
+        requester->Message_StringID(Chat::Yellow, EXPEDITION_LEADER, m_leader.name.c_str());
 
         std::string member_names;
         for (const auto& member : m_members)
@@ -1037,7 +1037,7 @@ void Expedition::DzPlayerList(Client* requester)
             member_names.erase(member_names.length() - 2); // trailing comma and space
         }
 
-        requester->MessageString(Chat::Yellow, EXPEDITION_MEMBERS, member_names.c_str());
+        requester->Message_StringID(Chat::Yellow, EXPEDITION_MEMBERS, member_names.c_str());
     }
 }
 
@@ -1049,7 +1049,7 @@ void Expedition::DzKickPlayers(Client* requester)
     }
 
     RemoveAllMembers();
-    requester->MessageString(Chat::Red, EXPEDITION_REMOVED, KICKPLAYERS_EVERYONE, m_expedition_name.c_str());
+    requester->Message_StringID(Chat::Red, EXPEDITION_REMOVED, KICKPLAYERS_EVERYONE, m_expedition_name.c_str());
 }
 
 void Expedition::SetNewLeader(uint32_t new_leader_id, const std::string& new_leader_name)
@@ -1083,9 +1083,9 @@ void Expedition::ProcessMakeLeader(
     {
         // online flag is set by world to verify new leader is online or not
         if (is_online) {
-            old_leader_client->MessageString(Chat::Yellow, DZMAKELEADER_NAME, new_leader_name.c_str());
+            old_leader_client->Message_StringID(Chat::Yellow, DZMAKELEADER_NAME, new_leader_name.c_str());
         } else {
-            old_leader_client->MessageString(Chat::Red, DZMAKELEADER_NOT_ONLINE, new_leader_name.c_str());
+            old_leader_client->Message_StringID(Chat::Red, DZMAKELEADER_NOT_ONLINE, new_leader_name.c_str());
         }
     }
 
@@ -1096,7 +1096,7 @@ void Expedition::ProcessMakeLeader(
 
     if (new_leader_client)
     {
-        new_leader_client->MessageString(Chat::Yellow, DZMAKELEADER_YOU);
+        new_leader_client->Message_StringID(Chat::Yellow, DZMAKELEADER_YOU);
         SetNewLeader(new_leader_client->CharacterID(), new_leader_client->GetName());
     }
 }
@@ -1107,7 +1107,7 @@ void Expedition::ProcessMemberAdded(std::string char_name, uint32_t added_char_i
     Client* leader_client = entity_list.GetClientByCharID(m_leader.char_id);
     if (leader_client)
     {
-        leader_client->MessageString(Chat::Yellow, EXPEDITION_MEMBER_ADDED, char_name.c_str(), m_expedition_name.c_str());
+        leader_client->Message_StringID(Chat::Yellow, EXPEDITION_MEMBER_ADDED, char_name.c_str(), m_expedition_name.c_str());
     }
 
     Client* member_client = entity_list.GetClientByCharID(added_char_id);
@@ -1116,7 +1116,7 @@ void Expedition::ProcessMemberAdded(std::string char_name, uint32_t added_char_i
         member_client->SetExpeditionID(GetID());
         member_client->SendDzCompassUpdate();
         SendClientExpeditionInfo(member_client);
-        member_client->MessageString(Chat::Yellow, EXPEDITION_MEMBER_ADDED, char_name.c_str(), m_expedition_name.c_str());
+        member_client->Message_StringID(Chat::Yellow, EXPEDITION_MEMBER_ADDED, char_name.c_str(), m_expedition_name.c_str());
     }
 
     AddInternalMember(char_name, added_char_id, ExpeditionMemberStatus::Online);
@@ -1153,7 +1153,7 @@ void Expedition::ProcessMemberRemoved(std::string removed_char_name, uint32_t re
                 member_client->SetExpeditionID(0);
                 member_client->SendDzCompassUpdate();
                 member_client->QueuePacket(CreateInfoPacket(true).get());
-                member_client->MessageString(
+                member_client->Message_StringID(
                         Chat::Yellow, EXPEDITION_REMOVED, it->name.c_str(), m_expedition_name.c_str()
                 );
             }
@@ -1162,10 +1162,10 @@ void Expedition::ProcessMemberRemoved(std::string removed_char_name, uint32_t re
         it = is_removed ? m_members.erase(it) : it + 1;
     }
 
-    LogExpeditionsDetail(
-            "Processed member [{}] ({}) removal, current zone cache member count: [{}]",
-            removed_char_name, removed_char_id, m_members.size()
-    );
+    //LogExpeditionsDetail(
+    //        "Processed member [{}] ({}) removal, current zone cache member count: [{}]",
+    //        removed_char_name, removed_char_id, m_members.size()
+    //);
 }
 
 void Expedition::ProcessLockoutUpdate(
@@ -1242,7 +1242,7 @@ void Expedition::SendUpdatesToZoneMembers(bool clear)
                 member_client->SendExpeditionLockoutTimers();
                 if (clear)
                 {
-                    member_client->MessageString(
+                    member_client->Message_StringID(
                             Chat::Yellow, EXPEDITION_REMOVED, member_client->GetName(), m_expedition_name.c_str()
                     );
                 }
@@ -1262,10 +1262,10 @@ void Expedition::SendClientExpeditionInfo(Client* client)
 
 void Expedition::SendWorldPendingInvite(const ExpeditionInvite& invite, const std::string& add_name)
 {
-    LogExpeditions(
-            "Character [{}] saving pending invite from [{}] to expedition [{}] in world",
-            add_name, invite.inviter_name, invite.expedition_id
-    );
+    //LogExpeditions(
+    //        "Character [{}] saving pending invite from [{}] to expedition [{}] in world",
+    //        add_name, invite.inviter_name, invite.expedition_id
+    //);
 
     SendWorldAddPlayerInvite(invite.inviter_name, invite.swap_remove_name, add_name, true);
 }
@@ -1592,10 +1592,10 @@ void Expedition::HandleWorldMessage(ServerPacket* pack)
             auto expedition = Expedition::FindCachedExpeditionByID(buf->expedition_id);
             if (expedition && zone)
             {
-                LogExpeditionsDetail(
-                        "World member change message -- remove: [{}] name: [{}] zone: [{}]:[{}] sender: [{}]:[{}]",
-                        buf->removed, buf->char_name, zone->GetZoneID(), zone->GetInstanceID(), buf->sender_zone_id, buf->sender_instance_id
-                );
+                //LogExpeditionsDetail(
+                //        "World member change message -- remove: [{}] name: [{}] zone: [{}]:[{}] sender: [{}]:[{}]",
+                //        buf->removed, buf->char_name, zone->GetZoneID(), zone->GetInstanceID(), buf->sender_zone_id, buf->sender_instance_id
+                //);
 
                 if (!zone->IsZone(buf->sender_zone_id, buf->sender_instance_id))
                 {
@@ -1678,7 +1678,7 @@ void Expedition::HandleWorldMessage(ServerPacket* pack)
                 Client* leader = entity_list.GetClientByName(buf->requester_name);
                 if (leader)
                 {
-                    leader->MessageString(Chat::Red, DZADD_NOT_ONLINE, FormatName(buf->target_name).c_str());
+                    leader->Message_StringID(Chat::Red, DZADD_NOT_ONLINE, FormatName(buf->target_name).c_str());
                 }
             }
             break;

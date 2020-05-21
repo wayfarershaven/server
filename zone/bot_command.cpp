@@ -86,10 +86,10 @@ namespace
 //#define BCSTSPELLDUMP // only needed if you're adding/tailoring bot command spells and need a file dump
 
 #define m_message CC_WhiteSmoke
-#define m_action CC_Yellow
+#define m_action Chat::Yellow
 #define m_note CC_Gray
 #define m_usage CC_Cyan
-#define m_fail CC_Red
+#define m_fail Chat::Red
 #define m_unknown CC_Magenta
 
 #define HP_RATIO_DELTA 5.0f

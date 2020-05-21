@@ -203,7 +203,7 @@ void Mob::DoSpecialAttackDamage(Mob *who, EQEmu::skills::SkillType skill, int32 
 				auto fbash = GetFuriousBash(itm->Focus.Effect);
 				hate = hate * (100 + fbash) / 100;
 				if (fbash)
-					Message_StringID(MT_Spells, GLOWS_RED, itm->Name);
+					Message_StringID(Chat::Spells, GLOWS_RED, itm->Name);
 			}
 		}
 	}
@@ -1631,7 +1631,7 @@ void NPC::DoClassAttacks(Mob *target) {
 	//general stuff, for all classes....
 	//only gets used when their primary ability get used too
 	if (taunting && HasOwner() && target->IsNPC() && target->GetBodyType() != BT_Undead && taunt_time && typeofpet && typeofpet != petTargetLock) {
-		this->GetOwner()->Message_StringID(MT_PetResponse, PET_TAUNTING);
+		this->GetOwner()->Message_StringID(Chat::PetResponse, PET_TAUNTING);
 		Taunt(target->CastToNPC(), false);
 	}
 
@@ -1963,7 +1963,7 @@ void Mob::Taunt(NPC *who, bool always_succeed, int chance_bonus, bool FromSpell,
 	// Support for how taunt worked pre 2000 on LIVE - Can not taunt NPC over your level.
 	if ((RuleB(Combat, TauntOverLevel) == false) && (level_difference < 0) ||
 	    who->GetSpecialAbility(IMMUNE_TAUNT)) {
-		Message_StringID(MT_SpellFailure, FAILED_TAUNT);
+		Message_StringID(Chat::SpellFailure, FAILED_TAUNT);
 		return;
 	}
 
@@ -2021,10 +2021,10 @@ void Mob::Taunt(NPC *who, bool always_succeed, int chance_bonus, bool FromSpell,
 				who->Say_StringID(SUCCESSFUL_TAUNT, GetCleanName());
 			}
 		} else {
-			Message_StringID(MT_SpellFailure, FAILED_TAUNT);
+			Message_StringID(Chat::SpellFailure, FAILED_TAUNT);
 		}
 	} else {
-		Message_StringID(MT_SpellFailure, FAILED_TAUNT);
+		Message_StringID(Chat::SpellFailure, FAILED_TAUNT);
 	}
 
 	if (HasSkillProcs())
@@ -2072,7 +2072,7 @@ void Mob::InstillDoubt(Mob *who) {
 		Message_StringID(4,NOT_SCARING);
 		//Idea from WR:
 		/* if (target->IsNPC() && zone->random.Int(0,99) < 10 ) {
-			entity_list.MessageClose(target, false, 50, MT_NPCRampage, "%s lashes out in anger!",target->GetName());
+			entity_list.MessageClose(target, false, 50, Chat::NPCRampage, "%s lashes out in anger!",target->GetName());
 			//should we actually do this? and the range is completely made up, unconfirmed
 			entity_list.AEAttack(target, 50);
 		}*/
@@ -2100,7 +2100,7 @@ int Mob::TryHeadShot(Mob *defender, EQEmu::skills::SkillType skillInUse)
 			chance += aabonuses.HeadShot[0] + spellbonuses.HeadShot[0] + itembonuses.HeadShot[0];
 			Log(Logs::Detail, Logs::Attack, "Headshot Chance: %d", chance);
 			if (zone->random.Int(1, 1000) <= chance) {
-				entity_list.MessageClose_StringID(this, false, 200, MT_CritMelee, FATAL_BOW_SHOT,
+				entity_list.MessageClose_StringID(this, false, 200, Chat::MeleeCrit, FATAL_BOW_SHOT,
 								  GetName());
 				return HeadShot_Dmg;
 			}
@@ -2156,7 +2156,7 @@ int Mob::TryAssassinate(Mob *defender, EQEmu::skills::SkillType skillInUse)
 
 		if (Assassinate_Dmg && Assassinate_Level && (defender->GetLevel() <= Assassinate_Level)) {
 			if (zone->random.Int(1, 1000) <= chance) {
-				entity_list.MessageClose_StringID(this, false, 200, MT_CritMelee, ASSASSINATES,
+				entity_list.MessageClose_StringID(this, false, 200, Chat::MeleeCrit, ASSASSINATES,
 								  GetName());
 				return Assassinate_Dmg;
 			}

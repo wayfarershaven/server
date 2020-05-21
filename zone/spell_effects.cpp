@@ -485,7 +485,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 					if(zone->random.Roll(RuleI(Spells, SuccorFailChance))) { //2% Fail chance by default
 
 						if(IsClient()) {
-							CastToClient()->Message_StringID(MT_SpellFailure,SUCCOR_FAIL);
+							CastToClient()->Message_StringID(Chat::SpellFailure,SUCCOR_FAIL);
 						}
 						break;
 					}
@@ -724,7 +724,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 						(caster->IsNPC() && !RuleB(Spells, NPCIgnoreBaseImmunity))))))
 				{
 					if (caster)
-						caster->Message_StringID(MT_SpellFailure, IMMUNE_STUN);
+						caster->Message_StringID(Chat::SpellFailure, IMMUNE_STUN);
 				} else {
 					int stun_resist = itembonuses.StunResist+spellbonuses.StunResist;
 					if (IsClient())
@@ -739,7 +739,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 						Stun(effect_value);
 					} else {
 						if (IsClient())
-							Message_StringID(MT_Stun, SHAKE_OFF_STUN);
+							Message_StringID(Chat::Stun, SHAKE_OFF_STUN);
 
 						Log(Logs::Detail, Logs::Combat, "Stun Resisted. We had %d percent resist chance.", stun_resist);
 					}
@@ -874,7 +874,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 
 						if(ClosestMob)
 						{
-							Message_StringID(MT_Spells, MessageID);
+							Message_StringID(Chat::Spells, MessageID);
 							SetHeading(CalculateHeadingToTarget(ClosestMob->GetX(), ClosestMob->GetY()));
 							SetTarget(ClosestMob);
 							CastToClient()->SendTargetCommand(ClosestMob->GetID());
@@ -967,14 +967,14 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 					{
 						if(!zone->CanBind())
 						{
-							Message_StringID(MT_SpellFailure, CANNOT_BIND);
+							Message_StringID(Chat::SpellFailure, CANNOT_BIND);
 							break;
 						}
 						if(!zone->IsCity())
 						{
 							if(caster != this && !zone->IsSpecialBindLocation(GetPosition()))
 							{
-								Message_StringID(MT_SpellFailure, CANNOT_BIND);
+								Message_StringID(Chat::SpellFailure, CANNOT_BIND);
 								break;
 							}
 							else
@@ -1068,7 +1068,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 					if (zone->random.Roll(effect_value)) {
 						Gate();
 					} else if (caster) {
-						caster->Message_StringID(MT_SpellFailure, GATE_FAIL);
+						caster->Message_StringID(Chat::SpellFailure, GATE_FAIL);
 					}
 				}
 				break;
@@ -1081,7 +1081,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 #endif
 				if (GetSpecialAbility(UNDISPELLABLE)) {
 					if (caster)
-						caster->Message_StringID(MT_SpellFailure, SPELL_NO_EFFECT, spells[spell_id].name);
+						caster->Message_StringID(Chat::SpellFailure, SPELL_NO_EFFECT, spells[spell_id].name);
 					break;
 				}
 
@@ -1096,7 +1096,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 #endif
 				if(GetSpecialAbility(UNDISPELLABLE)){
 					if (caster)
-						caster->Message_StringID(MT_SpellFailure, SPELL_NO_EFFECT, spells[spell_id].name);
+						caster->Message_StringID(Chat::SpellFailure, SPELL_NO_EFFECT, spells[spell_id].name);
 					break;
 				}
 
@@ -1122,7 +1122,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 #endif
 				if(GetSpecialAbility(UNDISPELLABLE)){
 					if (caster)
-						caster->Message_StringID(MT_SpellFailure, SPELL_NO_EFFECT, spells[spell_id].name);
+						caster->Message_StringID(Chat::SpellFailure, SPELL_NO_EFFECT, spells[spell_id].name);
 					break;
 				}
 
@@ -1254,7 +1254,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 #endif
 				if(GetPet())
 				{
-					Message_StringID(MT_Shout, ONLY_ONE_PET);
+					Message_StringID(Chat::Shout, ONLY_ONE_PET);
 				}
 				else
 				{
@@ -1532,7 +1532,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 					&& caster && (!caster->IsNPC() || (caster->IsNPC() && !RuleB(Spells, NPCIgnoreBaseImmunity)))))
 				{
 					if (caster)
-						caster->Message_StringID(MT_Shout, IMMUNE_STUN);
+						caster->Message_StringID(Chat::Shout, IMMUNE_STUN);
 				}
 				else
 				{
@@ -1639,12 +1639,12 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 				{
 					if(caster == this)
 					{
-						Message_StringID(MT_Spells,
+						Message_StringID(Chat::Spells,
 							SENTINEL_TRIG_YOU);
 					}
 					else
 					{
-						caster->Message_StringID(MT_Spells,
+						caster->Message_StringID(Chat::Spells,
 							SENTINEL_TRIG_OTHER, GetCleanName());
 					}
 				}
@@ -1799,7 +1799,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 							}
 						}
 						else if (caster)
-							caster->Message_StringID(MT_SpellFailure, SPELL_LEVEL_REQ);
+							caster->Message_StringID(Chat::SpellFailure, SPELL_LEVEL_REQ);
 					}
 					else {
 						Message_StringID(4, TARGET_NOT_FOUND);
@@ -1936,7 +1936,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 							continue;
 						if (effect_value >= static_cast<int>(buffs[j].counters)) {
 							if (caster) {
-								caster->Message(MT_Spells,"You have cured your target of %s!",spells[buffs[j].spellid].name);
+								caster->Message(Chat::Spells,"You have cured your target of %s!",spells[buffs[j].spellid].name);
 								caster->CastOnCurer(buffs[j].spellid);
 								CastOnCure(buffs[j].spellid);
 							}
@@ -1970,7 +1970,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 						if (effect_value >= static_cast<int>(buffs[j].counters))
 						{
 							if (caster) {
-								caster->Message(MT_Spells,"You have cured your target of %s!",spells[buffs[j].spellid].name);
+								caster->Message(Chat::Spells,"You have cured your target of %s!",spells[buffs[j].spellid].name);
 								caster->CastOnCurer(buffs[j].spellid);
 								CastOnCure(buffs[j].spellid);
 							}
@@ -2006,7 +2006,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 						if (effect_value >= static_cast<int>(buffs[j].counters))
 						{
 							if (caster) {
-								caster->Message(MT_Spells,"You have cured your target of %s!",spells[buffs[j].spellid].name);
+								caster->Message(Chat::Spells,"You have cured your target of %s!",spells[buffs[j].spellid].name);
 								caster->CastOnCurer(buffs[j].spellid);
 								CastOnCure(buffs[j].spellid);
 							}
@@ -2041,7 +2041,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 							continue;
 						if (effect_value >= static_cast<int>(buffs[j].counters)) {
 							if (caster) {
-								caster->Message(MT_Spells,"You have cured your target of %s!",spells[buffs[j].spellid].name);
+								caster->Message(Chat::Spells,"You have cured your target of %s!",spells[buffs[j].spellid].name);
 								caster->CastOnCurer(buffs[j].spellid);
 								CastOnCure(buffs[j].spellid);
 							}
@@ -2725,7 +2725,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 			case SE_MassGroupBuff:{
 
 				SetMGB(true);
-				Message_StringID(MT_Disciplines, MGB_STRING);
+				Message_StringID(Chat::Disciplines, MGB_STRING);
 				break;
 			}
 
@@ -3648,7 +3648,7 @@ void Mob::DoBuffTic(const Buffs_Struct &buff, int slot, Mob *caster)
 		case SE_Invisibility2:
 		case SE_InvisVsUndead2: {
 			if (buff.ticsremaining <= 3 && buff.ticsremaining > 1) {
-				Message_StringID(MT_Spells, INVIS_BEGIN_BREAK);
+				Message_StringID(Chat::Spells, INVIS_BEGIN_BREAK);
 			}
 			break;
 		}
@@ -4123,7 +4123,7 @@ void Mob::BuffFadeBySlot(int slot, bool iRecalcBonuses)
 		if(p->IsPet())
 			notify = p->GetOwner();
 		if(p) {
-			notify->Message_StringID(MT_WornOff, SPELL_WORN_OFF_OF,
+			notify->Message_StringID(Chat::SpellWornOff, SPELL_WORN_OFF_OF,
 				spells[buffs[slot].spellid].name, GetCleanName());
 		}
 	}
@@ -5483,7 +5483,7 @@ int16 Client::GetFocusEffect(focusType type, uint16 spell_id)
 			default:
 				break;
 			}
-			Message_StringID(MT_Spells, string_id, UsedItem->Name);
+			Message_StringID(Chat::Spells, string_id, UsedItem->Name);
 		}
 	}
 
@@ -5891,9 +5891,9 @@ bool Mob::TryDeathSave() {
 				Message(263, "The gods have healed you for %i points of damage.", HealAmt);
 
 				if(spellbonuses.DeathSave[0] == 2)
-					entity_list.MessageClose_StringID(this, false, 200, MT_CritMelee, DIVINE_INTERVENTION, GetCleanName());
+					entity_list.MessageClose_StringID(this, false, 200, Chat::MeleeCrit, DIVINE_INTERVENTION, GetCleanName());
 				else
-					entity_list.MessageClose_StringID(this, false, 200, MT_CritMelee, DEATH_PACT, GetCleanName());
+					entity_list.MessageClose_StringID(this, false, 200, Chat::MeleeCrit, DEATH_PACT, GetCleanName());
 
 				SendHPUpdate();
 				BuffFadeBySlot(buffSlot);
@@ -5924,9 +5924,9 @@ bool Mob::TryDeathSave() {
 					Message(263, "The gods have healed you for %i points of damage.", HealAmt);
 
 					if(spellbonuses.DeathSave[0] == 2)
-						entity_list.MessageClose_StringID(this, false, 200, MT_CritMelee, DIVINE_INTERVENTION, GetCleanName());
+						entity_list.MessageClose_StringID(this, false, 200, Chat::MeleeCrit, DIVINE_INTERVENTION, GetCleanName());
 					else
-						entity_list.MessageClose_StringID(this, false, 200, MT_CritMelee, DEATH_PACT, GetCleanName());
+						entity_list.MessageClose_StringID(this, false, 200, Chat::MeleeCrit, DEATH_PACT, GetCleanName());
 
 					SendHPUpdate();
 					BuffFadeBySlot(buffSlot);
@@ -6913,11 +6913,11 @@ void Client::BreakFeignDeathWhenCastOn(bool IsResisted)
 		}
 
 		if(chance && (zone->random.Roll(chance))){
-			// Message_StringID(MT_SpellFailure, FD_CAST_ON_NO_BREAK);
+			// Message_StringID(Chat::SpellFailure, FD_CAST_ON_NO_BREAK);
 			return;
 		}
 	
 		SetFeigned(false);
-		Message_StringID(MT_SpellFailure,FD_CAST_ON);
+		Message_StringID(Chat::SpellFailure,FD_CAST_ON);
 	}
 }

@@ -50,7 +50,7 @@ void Expedition::PurgeExpiredExpeditions()
     auto results = database.QueryDatabase(query);
     if (!results.Success())
     {
-        LogExpeditions("Failed to purge expired and empty expeditions");
+        Log(Logs::General, Logs::Expeditions, "Failed to purge expired and empty expeditions");
     }
 }
 
@@ -64,7 +64,7 @@ void Expedition::PurgeExpiredCharacterLockouts()
     auto results = database.QueryDatabase(query);
     if (!results.Success())
     {
-        LogExpeditions("Failed to purge expired lockouts");
+        Log(Logs::General, Logs::Expeditions, "Failed to purge expired lockouts");
     }
 }
 

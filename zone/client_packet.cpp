@@ -563,7 +563,7 @@ void Client::CompleteConnect()
 		{
 			//Remove last two characters from the string
 			state.resize (state.size () - 2);
-			Message(CC_Red, "[GM] You are %s.", state.c_str());
+			Message(Chat::Red, "[GM] You are %s.", state.c_str());
 		}
 	}
 
@@ -5142,9 +5142,9 @@ void Client::Handle_OP_CorpseDrag(const EQApplicationPacket *app)
 	if (c)
 	{
 		if (c == this)
-			Message_StringID(MT_DefaultText, CORPSEDRAG_ALREADY, corpse->GetCleanName());
+			Message_StringID(Chat::DefaultText, CORPSEDRAG_ALREADY, corpse->GetCleanName());
 		else
-			Message_StringID(MT_DefaultText, CORPSEDRAG_SOMEONE_ELSE, corpse->GetCleanName());
+			Message_StringID(Chat::DefaultText, CORPSEDRAG_SOMEONE_ELSE, corpse->GetCleanName());
 
 		return;
 	}
@@ -5154,14 +5154,14 @@ void Client::Handle_OP_CorpseDrag(const EQApplicationPacket *app)
 
 	DraggedCorpses.push_back(std::pair<std::string, uint16>(cds->CorpseName, corpse->GetID()));
 
-	Message_StringID(MT_DefaultText, CORPSEDRAG_BEGIN, cds->CorpseName);
+	Message_StringID(Chat::DefaultText, CORPSEDRAG_BEGIN, cds->CorpseName);
 }
 
 void Client::Handle_OP_CorpseDrop(const EQApplicationPacket *app)
 {
 	if (app->size == 1)
 	{
-		Message_StringID(MT_DefaultText, CORPSEDRAG_STOPALL);
+		Message_StringID(Chat::DefaultText, CORPSEDRAG_STOPALL);
 		ClearDraggedCorpses();
 		return;
 	}
@@ -5170,7 +5170,7 @@ void Client::Handle_OP_CorpseDrop(const EQApplicationPacket *app)
 	{
 		if (!strcasecmp(Iterator->first.c_str(), (const char *)app->pBuffer))
 		{
-			Message_StringID(MT_DefaultText, CORPSEDRAG_STOP);
+			Message_StringID(Chat::DefaultText, CORPSEDRAG_STOP);
 			Iterator = DraggedCorpses.erase(Iterator);
 			return;
 		}
@@ -5478,7 +5478,7 @@ void Client::Handle_OP_Disarm(const EQApplicationPacket *app) {
 	}
 	// Trying to disarm something we can't disarm
 	Message(13, "Your attempt to disarm your target has failed.");
-	// Message_StringID(MT_Skills, DISARM_FAILED);
+	// Message_StringID(Chat::Skills, DISARM_FAILED);
 
 	return;
 }
@@ -5529,7 +5529,7 @@ void Client::Handle_OP_DisarmTraps(const EQApplicationPacket *app)
 		int uskill = GetSkill(EQEmu::skills::SkillDisarmTraps);
 		if ((zone->random.Int(0, 49) + uskill) >= (zone->random.Int(0, 49) + trap->skill))
 		{
-			Message(MT_Skills, "You disarm a trap.");
+			Message(Chat::Skills, "You disarm a trap.");
 			trap->disarmed = true;
 			Log(Logs::General, Logs::Traps, "Trap %d is disarmed.", trap->trap_id);
 			trap->UpdateTrap();
@@ -5537,17 +5537,17 @@ void Client::Handle_OP_DisarmTraps(const EQApplicationPacket *app)
 		else
 		{
 			if (zone->random.Int(0, 99) < 25) {
-				Message(MT_Skills, "You set off the trap while trying to disarm it!");
+				Message(Chat::Skills, "You set off the trap while trying to disarm it!");
 				trap->Trigger(this);
 			}
 			else {
-				Message(MT_Skills, "You failed to disarm a trap.");
+				Message(Chat::Skills, "You failed to disarm a trap.");
 			}
 		}
 		CheckIncreaseSkill(EQEmu::skills::SkillDisarmTraps, nullptr);
 		return;
 	}
-	Message(MT_Skills, "You did not find any traps close enough to disarm.");
+	Message(Chat::Skills, "You did not find any traps close enough to disarm.");
 	return;
 }
 
@@ -5705,18 +5705,18 @@ void Client::Handle_OP_DzAddPlayer(const EQApplicationPacket *app)
 void Client::Handle_OP_DzChooseZoneReply(const EQApplicationPacket *app)
 {
     auto dzmsg = reinterpret_cast<DynamicZoneChooseZoneReply_Struct*>(app->pBuffer);
-    LogDynamicZones(
-            "Character [{}] chose DynamicZone [{}]:[{}] type: [{}] with system id: [{}]",
-            CharacterID(), dzmsg->dz_zone_id, dzmsg->dz_instance_id, dzmsg->dz_type, dzmsg->unknown_id2
-    );
+    //LogDynamicZones(
+    //        "Character [{}] chose DynamicZone [{}]:[{}] type: [{}] with system id: [{}]",
+    //        CharacterID(), dzmsg->dz_zone_id, dzmsg->dz_instance_id, dzmsg->dz_type, dzmsg->unknown_id2
+    //);
 
     if (!dzmsg->dz_instance_id || !database.VerifyInstanceAlive(dzmsg->dz_instance_id, CharacterID()))
     {
         // live just no-ops this without a message
-        LogDynamicZones(
-                "Character [{}] chose invalid DynamicZone [{}]:[{}] or is no longer a member",
-                CharacterID(), dzmsg->dz_zone_id, dzmsg->dz_instance_id
-        );
+        //LogDynamicZones(
+        //        "Character [{}] chose invalid DynamicZone [{}]:[{}] or is no longer a member",
+        //        CharacterID(), dzmsg->dz_zone_id, dzmsg->dz_instance_id
+        //);
         return;
     }
 
@@ -10344,7 +10344,7 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
                             hate += mypet->GetHateAmount(top) - mypet->GetHateAmount(target) + 100; // should be enough to cause target change
                     }
                     mypet->AddToHateList(target, hate, 0, true, false, false, SPELL_UNKNOWN, true);
-                    Message_StringID(MT_PetResponse, PET_ATTACKING, mypet->GetCleanName(), target->GetCleanName());
+                    Message_StringID(Chat::PetResponse, PET_ATTACKING, mypet->GetCleanName(), target->GetCleanName());
                     SetTarget(target);
                 }
             }
@@ -10381,7 +10381,7 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
 
                     zone->AddAggroMob();
                     mypet->AddToHateList(GetTarget(), 1, 0, true, false, false, SPELL_UNKNOWN, true);
-                    Message_StringID(MT_PetResponse, PET_ATTACKING, mypet->GetCleanName(), GetTarget()->GetCleanName());
+                    Message_StringID(Chat::PetResponse, PET_ATTACKING, mypet->GetCleanName(), GetTarget()->GetCleanName());
                 }
             }
             break;
@@ -10390,7 +10390,7 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
             if (mypet->IsFeared()) break; //keeps pet running while feared
 
             if ((mypet->GetPetType() == petAnimation && aabonuses.PetCommands[PetCommand]) || mypet->GetPetType() != petAnimation) {
-                mypet->SayTo_StringID(this, MT_PetResponse, PET_CALMING);
+                mypet->SayTo_StringID(this, Chat::PetResponse, PET_CALMING);
                 mypet->SetPetTargetLockID(0);
                 mypet->WipeHateList();
                 mypet->SetTarget(nullptr);
@@ -10403,7 +10403,7 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
         }
         case PET_HEALTHREPORT: {
             if ((mypet->GetPetType() == petAnimation && aabonuses.PetCommands[PetCommand]) || mypet->GetPetType() != petAnimation) {
-                Message_StringID(MT_PetResponse, PET_REPORT_HP, ConvertArrayF(mypet->GetHPRatio(), val1));
+                Message_StringID(Chat::PetResponse, PET_REPORT_HP, ConvertArrayF(mypet->GetHPRatio(), val1));
                 mypet->ShowBuffList(this);
             }
             break;
@@ -10422,7 +10422,7 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
                 SetPet(nullptr);
             }
 
-            mypet->SayTo_StringID(this, MT_PetResponse, PET_GETLOST_STRING);
+            mypet->SayTo_StringID(this, Chat::PetResponse, PET_GETLOST_STRING);
             mypet->CastToNPC()->Depop();
 
             //Oddly, the client (Titanium) will still allow "/pet get lost" command despite me adding the code below. If someone can figure that out, you can uncomment this code and use it.
@@ -10440,7 +10440,7 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
 
             if ((mypet->GetPetType() == petAnimation && aabonuses.PetCommands[PetCommand]) || mypet->GetPetType() != petAnimation) {
                 if (mypet->IsNPC()) {
-                    mypet->SayTo_StringID(this, MT_PetResponse, PET_GUARDINGLIFE);
+                    mypet->SayTo_StringID(this, Chat::PetResponse, PET_GUARDINGLIFE);
                     mypet->SetPetFeigned(false);
                     mypet->SetPetOrder(SPO_Guard);
                     mypet->CastToNPC()->SaveGuardSpot();
@@ -10458,7 +10458,7 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
             if (mypet->IsFeared()) break; //could be exploited like PET_BACKOFF
 
             if ((mypet->GetPetType() == petAnimation && aabonuses.PetCommands[PetCommand]) || mypet->GetPetType() != petAnimation) {
-                mypet->SayTo_StringID(this, MT_PetResponse, PET_FOLLOWING);
+                mypet->SayTo_StringID(this, Chat::PetResponse, PET_FOLLOWING);
                 mypet->SetPetFeigned(false);
                 mypet->SetPetOrder(SPO_Follow);
                 mypet->SendAppearancePacket(AT_Anim, ANIM_STAND);
@@ -10473,12 +10473,12 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
             if ((mypet->GetPetType() == petAnimation && aabonuses.PetCommands[PetCommand]) || mypet->GetPetType() != petAnimation) {
                 if (mypet->CastToNPC()->IsTaunting())
                 {
-                    Message_StringID(MT_PetResponse, PET_NO_TAUNT);
+                    Message_StringID(Chat::PetResponse, PET_NO_TAUNT);
                     mypet->CastToNPC()->SetTaunting(false);
                 }
                 else
                 {
-                    Message_StringID(MT_PetResponse, PET_DO_TAUNT);
+                    Message_StringID(Chat::PetResponse, PET_DO_TAUNT);
                     mypet->CastToNPC()->SetTaunting(true);
                 }
             }
@@ -10486,14 +10486,14 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
         }
         case PET_TAUNT_ON: {
             if ((mypet->GetPetType() == petAnimation && aabonuses.PetCommands[PetCommand]) || mypet->GetPetType() != petAnimation) {
-                Message_StringID(MT_PetResponse, PET_DO_TAUNT);
+                Message_StringID(Chat::PetResponse, PET_DO_TAUNT);
                 mypet->CastToNPC()->SetTaunting(true);
             }
             break;
         }
         case PET_TAUNT_OFF: {
             if ((mypet->GetPetType() == petAnimation && aabonuses.PetCommands[PetCommand]) || mypet->GetPetType() != petAnimation) {
-                Message_StringID(MT_PetResponse, PET_NO_TAUNT);
+                Message_StringID(Chat::PetResponse, PET_NO_TAUNT);
                 mypet->CastToNPC()->SetTaunting(false);
             }
             break;
@@ -10502,7 +10502,7 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
             if (mypet->IsFeared()) break; //could be exploited like PET_BACKOFF
 
             if ((mypet->GetPetType() == petAnimation && aabonuses.PetCommands[PetCommand]) || mypet->GetPetType() != petAnimation) {
-                mypet->SayTo_StringID(this, MT_PetResponse, PET_GUARDME_STRING);
+                mypet->SayTo_StringID(this, Chat::PetResponse, PET_GUARDME_STRING);
                 mypet->SetPetFeigned(false);
                 mypet->SetPetOrder(SPO_Follow);
                 mypet->SendAppearancePacket(AT_Anim, ANIM_STAND);
@@ -10519,14 +10519,14 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
             if ((mypet->GetPetType() == petAnimation && aabonuses.PetCommands[PetCommand]) || mypet->GetPetType() != petAnimation) {
                 if (mypet->GetPetOrder() == SPO_Sit)
                 {
-                    mypet->SayTo_StringID(this, MT_PetResponse, PET_SIT_STRING);
+                    mypet->SayTo_StringID(this, Chat::PetResponse, PET_SIT_STRING);
                     mypet->SetPetFeigned(false);
                     mypet->SetPetOrder(SPO_Follow);
                     mypet->SendAppearancePacket(AT_Anim, ANIM_STAND);
                 }
                 else
                 {
-                    mypet->SayTo_StringID(this, MT_PetResponse, PET_SIT_STRING);
+                    mypet->SayTo_StringID(this, Chat::PetResponse, PET_SIT_STRING);
                     mypet->SetPetFeigned(false);
                     mypet->SetPetOrder(SPO_Sit);
                     mypet->SetRunAnimSpeed(0);
@@ -10541,7 +10541,7 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
             if (mypet->IsFeared()) break; //could be exploited like PET_BACKOFF
 
             if ((mypet->GetPetType() == petAnimation && aabonuses.PetCommands[PetCommand]) || mypet->GetPetType() != petAnimation) {
-                mypet->SayTo_StringID(this, MT_PetResponse, PET_SIT_STRING);
+                mypet->SayTo_StringID(this, Chat::PetResponse, PET_SIT_STRING);
                 mypet->SetPetFeigned(false);
                 mypet->SetPetOrder(SPO_Follow);
                 mypet->SendAppearancePacket(AT_Anim, ANIM_STAND);
@@ -10552,7 +10552,7 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
             if (mypet->IsFeared()) break; //could be exploited like PET_BACKOFF
 
             if ((mypet->GetPetType() == petAnimation && aabonuses.PetCommands[PetCommand]) || mypet->GetPetType() != petAnimation) {
-                mypet->SayTo_StringID(this, MT_PetResponse, PET_SIT_STRING);
+                mypet->SayTo_StringID(this, Chat::PetResponse, PET_SIT_STRING);
                 mypet->SetPetFeigned(false);
                 mypet->SetPetOrder(SPO_Sit);
                 mypet->SetRunAnimSpeed(0);
@@ -10567,18 +10567,18 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
                 if (mypet->IsHeld())
                 {
                     if (m_ClientVersionBit & EQEmu::versions::bit_SoDAndLater)
-                        Message_StringID(MT_PetResponse, PET_HOLD_SET_OFF);
+                        Message_StringID(Chat::PetResponse, PET_HOLD_SET_OFF);
                     mypet->SetHeld(false);
                 }
                 else
                 {
                     if (m_ClientVersionBit & EQEmu::versions::bit_SoDAndLater)
-                        Message_StringID(MT_PetResponse, PET_HOLD_SET_ON);
+                        Message_StringID(Chat::PetResponse, PET_HOLD_SET_ON);
 
                     if (m_ClientVersionBit & EQEmu::versions::bit_UFAndLater)
-                        mypet->SayTo_StringID(this, MT_PetResponse, PET_NOW_HOLDING);
+                        mypet->SayTo_StringID(this, Chat::PetResponse, PET_NOW_HOLDING);
                     else
-                        mypet->SayTo_StringID(this, MT_PetResponse, PET_ON_HOLD);
+                        mypet->SayTo_StringID(this, Chat::PetResponse, PET_ON_HOLD);
 
                     mypet->SetHeld(true);
                 }
@@ -10590,12 +10590,12 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
         case PET_HOLD_ON: {
             if (aabonuses.PetCommands[PetCommand] && mypet->IsNPC() && !mypet->IsHeld()) {
                 if (m_ClientVersionBit & EQEmu::versions::bit_SoDAndLater)
-                    Message_StringID(MT_PetResponse, PET_HOLD_SET_ON);
+                    Message_StringID(Chat::PetResponse, PET_HOLD_SET_ON);
 
                 if (m_ClientVersionBit & EQEmu::versions::bit_UFAndLater)
-                    mypet->SayTo_StringID(this, MT_PetResponse, PET_NOW_HOLDING);
+                    mypet->SayTo_StringID(this, Chat::PetResponse, PET_NOW_HOLDING);
                 else
-                    mypet->SayTo_StringID(this, MT_PetResponse, PET_ON_HOLD);
+                    mypet->SayTo_StringID(this, Chat::PetResponse, PET_ON_HOLD);
                 mypet->SetHeld(true);
                 mypet->SetGHeld(false);
                 SetPetCommandState(PET_BUTTON_GHOLD, 0);
@@ -10605,7 +10605,7 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
         case PET_HOLD_OFF: {
             if (aabonuses.PetCommands[PetCommand] && mypet->IsNPC() && mypet->IsHeld()) {
                 if (m_ClientVersionBit & EQEmu::versions::bit_SoDAndLater)
-                    Message_StringID(MT_PetResponse, PET_HOLD_SET_OFF);
+                    Message_StringID(Chat::PetResponse, PET_HOLD_SET_OFF);
                 mypet->SetHeld(false);
             }
             break;
@@ -10615,16 +10615,16 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
                 if (mypet->IsGHeld())
                 {
                     if (m_ClientVersionBit & EQEmu::versions::bit_UFAndLater)
-                        Message_StringID(MT_PetResponse, PET_OFF_GHOLD);
+                        Message_StringID(Chat::PetResponse, PET_OFF_GHOLD);
                     mypet->SetGHeld(false);
                 }
                 else
                 {
                     if (m_ClientVersionBit & EQEmu::versions::bit_UFAndLater) {
-                        Message_StringID(MT_PetResponse, PET_ON_GHOLD);
-                        mypet->SayTo_StringID(this, MT_PetResponse, PET_GHOLD_ON_MSG);
+                        Message_StringID(Chat::PetResponse, PET_ON_GHOLD);
+                        mypet->SayTo_StringID(this, Chat::PetResponse, PET_GHOLD_ON_MSG);
                     } else {
-                        mypet->SayTo_StringID(this, MT_PetResponse, PET_ON_HOLD);
+                        mypet->SayTo_StringID(this, Chat::PetResponse, PET_ON_HOLD);
                     }
                     mypet->SetGHeld(true);
                 }
@@ -10636,10 +10636,10 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
         case PET_GHOLD_ON: {
             if (aabonuses.PetCommands[PetCommand] && mypet->IsNPC()) {
                 if (m_ClientVersionBit & EQEmu::versions::bit_UFAndLater) {
-                    Message_StringID(MT_PetResponse, PET_ON_GHOLD);
-                    mypet->SayTo_StringID(this, MT_PetResponse, PET_GHOLD_ON_MSG);
+                    Message_StringID(Chat::PetResponse, PET_ON_GHOLD);
+                    mypet->SayTo_StringID(this, Chat::PetResponse, PET_GHOLD_ON_MSG);
                 } else {
-                    mypet->SayTo_StringID(this, MT_PetResponse, PET_ON_HOLD);
+                    mypet->SayTo_StringID(this, Chat::PetResponse, PET_ON_HOLD);
                 }
                 mypet->SetGHeld(true);
                 mypet->SetHeld(false);
@@ -10650,7 +10650,7 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
         case PET_GHOLD_OFF: {
             if (aabonuses.PetCommands[PetCommand] && mypet->IsNPC() && mypet->IsGHeld()) {
                 if (m_ClientVersionBit & EQEmu::versions::bit_UFAndLater)
-                    Message_StringID(MT_PetResponse, PET_OFF_GHOLD);
+                    Message_StringID(Chat::PetResponse, PET_OFF_GHOLD);
                 mypet->SetGHeld(false);
             }
             break;
@@ -10660,15 +10660,15 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
                 if (mypet->IsFeared())
                     break;
                 if (mypet->IsNoCast()) {
-                    Message_StringID(MT_PetResponse, PET_CASTING);
+                    Message_StringID(Chat::PetResponse, PET_CASTING);
                     if (m_ClientVersionBit & EQEmu::versions::bit_SoDAndLater)
-                        Message_StringID(MT_PetResponse, PET_SPELLHOLD_SET_OFF);
+                        Message_StringID(Chat::PetResponse, PET_SPELLHOLD_SET_OFF);
                     mypet->SetNoCast(false);
                 }
                 else {
-                    Message_StringID(MT_PetResponse, PET_NOT_CASTING);
+                    Message_StringID(Chat::PetResponse, PET_NOT_CASTING);
                     if (m_ClientVersionBit & EQEmu::versions::bit_SoDAndLater)
-                        Message_StringID(MT_PetResponse, PET_SPELLHOLD_SET_ON);
+                        Message_StringID(Chat::PetResponse, PET_SPELLHOLD_SET_ON);
                     mypet->SetNoCast(true);
                 }
             }
@@ -10679,9 +10679,9 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
                 if (mypet->IsFeared())
                     break;
                 if (!mypet->IsNoCast()) {
-                    Message_StringID(MT_PetResponse, PET_NOT_CASTING);
+                    Message_StringID(Chat::PetResponse, PET_NOT_CASTING);
                     if (m_ClientVersionBit & EQEmu::versions::bit_SoDAndLater)
-                        Message_StringID(MT_PetResponse, PET_SPELLHOLD_SET_ON);
+                        Message_StringID(Chat::PetResponse, PET_SPELLHOLD_SET_ON);
                     mypet->SetNoCast(true);
                 }
             }
@@ -10692,9 +10692,9 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
                 if (mypet->IsFeared())
                     break;
                 if (mypet->IsNoCast()) {
-                    Message_StringID(MT_PetResponse, PET_CASTING);
+                    Message_StringID(Chat::PetResponse, PET_CASTING);
                     if (m_ClientVersionBit & EQEmu::versions::bit_SoDAndLater)
-                        Message_StringID(MT_PetResponse, PET_SPELLHOLD_SET_OFF);
+                        Message_StringID(Chat::PetResponse, PET_SPELLHOLD_SET_OFF);
                     mypet->SetNoCast(false);
                 }
             }
@@ -10705,15 +10705,15 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
                 if (mypet->IsFeared())
                     break;
                 if (mypet->IsFocused()) {
-                    Message_StringID(MT_PetResponse, PET_NOT_FOCUSING);
+                    Message_StringID(Chat::PetResponse, PET_NOT_FOCUSING);
                     if (m_ClientVersionBit & EQEmu::versions::bit_SoDAndLater)
-                        Message_StringID(MT_PetResponse, PET_FOCUS_SET_OFF);
+                        Message_StringID(Chat::PetResponse, PET_FOCUS_SET_OFF);
                     mypet->SetFocused(false);
                 }
                 else {
-                    Message_StringID(MT_PetResponse, PET_NOW_FOCUSING);
+                    Message_StringID(Chat::PetResponse, PET_NOW_FOCUSING);
                     if (m_ClientVersionBit & EQEmu::versions::bit_SoDAndLater)
-                        Message_StringID(MT_PetResponse, PET_FOCUS_SET_ON);
+                        Message_StringID(Chat::PetResponse, PET_FOCUS_SET_ON);
                     mypet->SetFocused(true);
                 }
             }
@@ -10724,9 +10724,9 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
                 if (mypet->IsFeared())
                     break;
                 if (!mypet->IsFocused()) {
-                    Message_StringID(MT_PetResponse, PET_NOW_FOCUSING);
+                    Message_StringID(Chat::PetResponse, PET_NOW_FOCUSING);
                     if (m_ClientVersionBit & EQEmu::versions::bit_SoDAndLater)
-                        Message_StringID(MT_PetResponse, PET_FOCUS_SET_ON);
+                        Message_StringID(Chat::PetResponse, PET_FOCUS_SET_ON);
                     mypet->SetFocused(true);
                 }
             }
@@ -10737,9 +10737,9 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
                 if (mypet->IsFeared())
                     break;
                 if (mypet->IsFocused()) {
-                    Message_StringID(MT_PetResponse, PET_NOT_FOCUSING);
+                    Message_StringID(Chat::PetResponse, PET_NOT_FOCUSING);
                     if (m_ClientVersionBit & EQEmu::versions::bit_SoDAndLater)
-                        Message_StringID(MT_PetResponse, PET_FOCUS_SET_OFF);
+                        Message_StringID(Chat::PetResponse, PET_FOCUS_SET_OFF);
                     mypet->SetFocused(false);
                 }
             }
@@ -10785,7 +10785,7 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
                     mypet->SetPetOrder(SPO_Sit);
                     mypet->SetHeld(true);
                     mypet->SetRunAnimSpeed(0);
-                    mypet->SayTo_StringID(this, MT_PetResponse, PET_CALMING);
+                    mypet->SayTo_StringID(this, Chat::PetResponse, PET_CALMING);
                     mypet->SendAppearancePacket(AT_Anim, ANIM_DEATH);
                     p_timers.Start(pTimerPetFeignDeath, 15);
                     mypet->SendAppearancePacket(AT_Anim, ANIM_DEATH);
@@ -10818,7 +10818,7 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
                         SetPetCommandState(PET_BUTTON_REGROUP, 0);
                     }
                 }
-                mypet->SayTo_StringID(this, MT_PetResponse, PET_GETLOST_STRING);
+                mypet->SayTo_StringID(this, Chat::PetResponse, PET_GETLOST_STRING);
             }
             break;
         }
@@ -10829,7 +10829,7 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
                 mypet->SetPetStop(true);
                 mypet->SetCurrentSpeed(0);
                 mypet->SetTarget(nullptr);
-                mypet->SayTo_StringID(this, MT_PetResponse, PET_GETLOST_STRING);
+                mypet->SayTo_StringID(this, Chat::PetResponse, PET_GETLOST_STRING);
                 if (mypet->IsPetRegroup()) {
                     mypet->SetPetRegroup(false);
                     SetPetCommandState(PET_BUTTON_REGROUP, 0);
@@ -10842,7 +10842,7 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
 
             if ((mypet->GetPetType() == petAnimation && aabonuses.PetCommands[PetCommand]) || mypet->GetPetType() != petAnimation) {
                 mypet->SetPetStop(false);
-                mypet->SayTo_StringID(this, MT_PetResponse, PET_GETLOST_STRING);
+                mypet->SayTo_StringID(this, Chat::PetResponse, PET_GETLOST_STRING);
             }
             break;
         }
@@ -10852,11 +10852,11 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
             if (aabonuses.PetCommands[PetCommand]) {
                 if (mypet->IsPetRegroup()) {
                     mypet->SetPetRegroup(false);
-                    mypet->SayTo_StringID(this, MT_PetResponse, PET_OFF_REGROUPING);
+                    mypet->SayTo_StringID(this, Chat::PetResponse, PET_OFF_REGROUPING);
                 } else {
                     mypet->SetPetRegroup(true);
                     mypet->SetTarget(nullptr);
-                    mypet->SayTo_StringID(this, MT_PetResponse, PET_ON_REGROUPING);
+                    mypet->SayTo_StringID(this, Chat::PetResponse, PET_ON_REGROUPING);
                     if (mypet->IsPetStop()) {
                         mypet->SetPetStop(false);
                         SetPetCommandState(PET_BUTTON_STOP, 0);
@@ -10871,7 +10871,7 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
             if (aabonuses.PetCommands[PetCommand]) {
                 mypet->SetPetRegroup(true);
                 mypet->SetTarget(nullptr);
-                mypet->SayTo_StringID(this, MT_PetResponse, PET_ON_REGROUPING);
+                mypet->SayTo_StringID(this, Chat::PetResponse, PET_ON_REGROUPING);
                 if (mypet->IsPetStop()) {
                     mypet->SetPetStop(false);
                     SetPetCommandState(PET_BUTTON_STOP, 0);
@@ -10884,7 +10884,7 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
 
             if (aabonuses.PetCommands[PetCommand]) {
                 mypet->SetPetRegroup(false);
-                mypet->SayTo_StringID(this, MT_PetResponse, PET_OFF_REGROUPING);
+                mypet->SayTo_StringID(this, Chat::PetResponse, PET_OFF_REGROUPING);
             }
             break;
         }
@@ -12338,7 +12338,7 @@ void Client::Handle_OP_Report(const EQApplicationPacket *app)
 {
 	if (!CanUseReport)
 	{
-		Message_StringID(MT_System, REPORT_ONCE);
+		Message_StringID(Chat::System, REPORT_ONCE);
 		return;
 	}
 
@@ -12456,7 +12456,7 @@ void Client::Handle_OP_RespawnWindow(const EQApplicationPacket *app)
 void Client::Handle_OP_Rewind(const EQApplicationPacket *app)
 {
 	if ((rewind_timer.GetRemainingTime() > 1 && rewind_timer.Enabled())) {
-		Message_StringID(MT_System, REWIND_WAIT);
+		Message_StringID(Chat::System, REWIND_WAIT);
 	}
 	else {
 		CastToClient()->MovePC(zone->GetZoneID(), zone->GetInstanceID(), m_RewindLocation.x, m_RewindLocation.y, m_RewindLocation.z, 0, 2, Rewind);
@@ -12599,23 +12599,23 @@ void Client::Handle_OP_SenseTraps(const EQApplicationPacket *app)
 			auto diff = trap->m_Position - glm::vec3(GetPosition());
 
 			if (diff.x == 0 && diff.y == 0)
-				Message(MT_Skills, "You sense a trap right under your feet!");
+				Message(Chat::Skills, "You sense a trap right under your feet!");
 			else if (diff.x > 10 && diff.y > 10)
-				Message(MT_Skills, "You sense a trap to the NorthWest.");
+				Message(Chat::Skills, "You sense a trap to the NorthWest.");
 			else if (diff.x < -10 && diff.y > 10)
-				Message(MT_Skills, "You sense a trap to the NorthEast.");
+				Message(Chat::Skills, "You sense a trap to the NorthEast.");
 			else if (diff.y > 10)
-				Message(MT_Skills, "You sense a trap to the North.");
+				Message(Chat::Skills, "You sense a trap to the North.");
 			else if (diff.x > 10 && diff.y < -10)
-				Message(MT_Skills, "You sense a trap to the SouthWest.");
+				Message(Chat::Skills, "You sense a trap to the SouthWest.");
 			else if (diff.x < -10 && diff.y < -10)
-				Message(MT_Skills, "You sense a trap to the SouthEast.");
+				Message(Chat::Skills, "You sense a trap to the SouthEast.");
 			else if (diff.y < -10)
-				Message(MT_Skills, "You sense a trap to the South.");
+				Message(Chat::Skills, "You sense a trap to the South.");
 			else if (diff.x > 10)
-				Message(MT_Skills, "You sense a trap to the West.");
+				Message(Chat::Skills, "You sense a trap to the West.");
 			else
-				Message(MT_Skills, "You sense a trap to the East.");
+				Message(Chat::Skills, "You sense a trap to the East.");
 			trap->detected = true;
 
 			float angle = CalculateHeadingToTarget(trap->m_Position.x, trap->m_Position.y);
@@ -12628,7 +12628,7 @@ void Client::Handle_OP_SenseTraps(const EQApplicationPacket *app)
 			return;
 		}
 	}
-	Message(MT_Skills, "You did not find any traps nearby.");
+	Message(Chat::Skills, "You did not find any traps nearby.");
 	return;
 }
 

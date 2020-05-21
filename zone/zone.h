@@ -249,6 +249,8 @@ public:
 	bool	IsHotzone() const { return(is_hotzone); }
 	inline	bool BuffTimersSuspended() const { return newzone_data.SuspendBuffs != 0; };
 
+	std::unordered_map<uint32, std::unique_ptr<Expedition>> expedition_cache;
+
 	time_t	weather_timer;
 	uint8	weather_intensity;
 	uint8	zone_weather;
@@ -356,8 +358,6 @@ private:
 
 	uint32 pQueuedMerchantsWorkID;
 	uint32 pQueuedTempMerchantsWorkID;
-
-    std::unordered_map<uint32, std::unique_ptr<Expedition>> expedition_cache;
 
 	Timer	autoshutdown_timer;
 	Timer	clientauth_timer;

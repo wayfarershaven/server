@@ -48,7 +48,7 @@ DynamicZone::DynamicZone(
 
     if (!m_zone_id)
     {
-        LogDynamicZones("Failed to get zone id for zone [{}]", zone_shortname);
+        //LogDynamicZones("Failed to get zone id for zone [{}]", zone_shortname);
     }
 }
 
@@ -66,20 +66,20 @@ uint32_t DynamicZone::CreateInstance()
 {
     if (m_instance_id)
     {
-        LogDynamicZones("CreateInstance failed, instance id [{}] already created", m_instance_id);
+        Log(Logs::General, Logs::DynamicZones, "CreateInstance failed, instance id [%i] already created", m_instance_id);
         return 0;
     }
 
     if (!m_zone_id)
     {
-        LogDynamicZones("CreateInstance failed, invalid zone id [{}]", m_zone_id);
+        Log(Logs::General, Logs::DynamicZones, "CreateInstance failed, invalid zone id [%i]", m_zone_id);
         return 0;
     }
 
     uint16_t instance_id = 0;
     if (!database.GetUnusedInstanceID(instance_id)) // todo: doesn't this race with insert?
     {
-        LogDynamicZones("Failed to find unused instance id");
+        Log(Logs::General, Logs::DynamicZones, "Failed to find unused instance id");
         return 0;
     }
 
@@ -95,7 +95,7 @@ uint32_t DynamicZone::CreateInstance()
     auto results = database.QueryDatabase(query);
     if (!results.Success())
     {
-        LogDynamicZones("Failed to create instance [{}] for Dynamic Zone [{}]", instance_id, m_zone_id);
+        Log(Logs::General, Logs::DynamicZones, "Failed to create instance [%i] for Dynamic Zone [%i]", instance_id, m_zone_id);
         return 0;
     }
 
@@ -116,14 +116,14 @@ void DynamicZone::LoadFromDatabase(uint32_t instance_id)
 
     if (m_instance_id)
     {
-        LogDynamicZones(
-                "Loading instance data for [{}] failed, instance id [{}] data already loaded",
+        Log(Logs::General, Logs::DynamicZones,
+            "Loading instance data for [%i] failed, instance id [%i] data already loaded",
                 instance_id, m_instance_id
         );
         return;
     }
 
-    LogDynamicZonesDetail("Loading dz instance [{}] from database", instance_id);
+    Log(Logs::Detail, Logs::DynamicZones, "Loading dz instance [%i] from database", instance_id);
 
     std::string query = fmt::format(SQL(
                                             SELECT
@@ -184,7 +184,7 @@ void DynamicZone::LoadFromDatabase(uint32_t instance_id)
 
 uint32_t DynamicZone::SaveToDatabase()
 {
-    LogDynamicZonesDetail("Saving dz instance [{}] to database", m_instance_id);
+    Log(Logs::Detail, Logs::DynamicZones, "Saving dz instance [%i] to database", m_instance_id);
 
     if (m_instance_id != 0)
     {
@@ -240,8 +240,8 @@ uint32_t DynamicZone::SaveToDatabase()
 
 void DynamicZone::SaveCompassToDatabase()
 {
-    LogDynamicZonesDetail(
-            "Instance [{}] saving compass zone: [{}] xyz: ([{}], [{}], [{}])",
+    Log(Logs::Detail, Logs::DynamicZones,
+        "Instance [%i] saving compass zone: [%i] xyz: ([%i], [%i], [%i])",
             m_instance_id, m_compass.zone_id, m_compass.x, m_compass.y, m_compass.z
     );
 
@@ -268,8 +268,8 @@ void DynamicZone::SaveCompassToDatabase()
 
 void DynamicZone::SaveSafeReturnToDatabase()
 {
-    LogDynamicZonesDetail(
-            "Instance [{}] saving safereturn zone: [{}] xyzh: ([{}], [{}], [{}], [{}])",
+    Log(Logs::Detail, Logs::DynamicZones,
+        "Instance [%i] saving safereturn zone: [%i] xyzh: ([%i], [%i], [%i], [%i])",
             m_instance_id, m_safereturn.zone_id, m_safereturn.x, m_safereturn.y, m_safereturn.z, m_safereturn.heading
     );
 
@@ -298,8 +298,8 @@ void DynamicZone::SaveSafeReturnToDatabase()
 
 void DynamicZone::SaveZoneInLocationToDatabase()
 {
-    LogDynamicZonesDetail(
-            "Instance [{}] saving zonein zone: [{}] xyzh: ([{}], [{}], [{}], [{}]) has: [{}]",
+    Log(Logs::Detail, Logs::DynamicZones,
+        "Instance [%i] saving zonein zone: [%i] xyzh: ([%i], [%i], [%i], [%i]) has: [%b]",
             m_instance_id, m_zone_id, m_zonein.x, m_zonein.y, m_zonein.z, m_zonein.heading, m_has_zonein
     );
 
@@ -329,7 +329,7 @@ void DynamicZone::SaveZoneInLocationToDatabase()
 
 void DynamicZone::DeleteFromDatabase()
 {
-    LogDynamicZonesDetail("Deleting dz instance [{}] from database", m_instance_id);
+    Log(Logs::Detail, Logs::DynamicZones, "Deleting dz instance [%i] from database", m_instance_id);
 
     if (m_instance_id != 0)
     {
@@ -408,7 +408,7 @@ void DynamicZone::SaveInstanceMembersToDatabase(const std::unordered_set<uint32_
         auto results = database.QueryDatabase(query);
         if (!results.Success())
         {
-            LogDynamicZones("Failed to save instance members to database");
+            Log(Logs::General, Logs::DynamicZones, "Failed to save instance members to database");
         }
     }
 }
