@@ -374,7 +374,7 @@ int main(int argc, char** argv) {
 	nats.Load();
 
     Log(Logs::General, Logs::Expeditions, "Purging expired expeditions");
-    Expedition::PurgeEmptyExpeditions(); //database.PurgeExpiredExpeditions();
+    Expedition::PurgeExpiredExpeditions();
     Expedition::PurgeExpiredCharacterLockouts();
 
 	Log(Logs::General, Logs::WorldServer, "Purging expired instances");
@@ -536,7 +536,7 @@ int main(int argc, char** argv) {
 		if (PurgeInstanceTimer.Check()) {
 			database.PurgeExpiredInstances();
             database.PurgeAllDeletedDataBuckets();
-            Expedition::PurgeEmptyExpeditions();
+            Expedition::PurgeExpiredExpeditions();
             Expedition::PurgeExpiredCharacterLockouts();
 		}
 

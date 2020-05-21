@@ -1347,7 +1347,11 @@ void ZoneServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p) {
         case ServerOP_ExpeditionLockout:
         case ServerOP_ExpeditionMemberChange:
         case ServerOP_ExpeditionMemberSwap:
-        case ServerOP_ExpeditionMemberStatus: {
+        case ServerOP_ExpeditionMemberStatus:
+        case ServerOP_ExpeditionDzCompass:
+        case ServerOP_ExpeditionDzSafeReturn:
+        case ServerOP_ExpeditionDzZoneIn:
+        {
             zoneserver_list.SendPacket(pack);
             break;
         }
@@ -1361,6 +1365,16 @@ void ZoneServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p) {
         }
         case ServerOP_ExpeditionDzMakeLeader: {
             Expedition::MakeLeader(pack);
+            break;
+        }
+        case ServerOP_DzCharacterChange:
+        {
+            auto buf = reinterpret_cast<ServerDzCharacter_Struct*>(pack->pBuffer);
+            ZoneServer* instance_zs = zoneserver_list.FindByInstanceID(buf->instance_id);
+            if (instance_zs)
+            {
+                instance_zs->SendPacket(pack);
+            }
             break;
         }
         default: {
