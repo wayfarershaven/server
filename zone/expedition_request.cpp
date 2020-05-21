@@ -273,7 +273,7 @@ bool ExpeditionRequest::CheckMembersForConflicts(MySQLRequestResult& results, bo
                 // replay timers no longer also show up as event conflicts
                 //SendLeaderMemberEventLockout(character_name, lockout);
             }
-            else if (m_check_event_lockouts && character_name != m_leader_name)
+            else if (m_check_event_lockouts && character_id != m_leader_id)
             {
                 if (m_lockouts.find(event_name) == m_lockouts.end())
                 {
