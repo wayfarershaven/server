@@ -27,6 +27,7 @@
 #else
 	#include <stdlib.h>
 	#include <stdio.h>
+	#include <iostream>
 #endif
 
 #ifndef va_copy
@@ -123,15 +124,23 @@ std::vector<std::string> SplitString(const std::string &str, char delim) {
 	return ret;
 }
 
-static std::string implode(char *sep, std::vector<std::string> src)
+std::string implode(std::string glue, std::vector<std::string> src)
 {
-    std::ostringstream output;
-    std::vector<std::string>::iterator src_iter;
+	if (src.empty()) {
+		return {};
+	}
 
-    for (src_iter = src.begin(); src_iter != src.end(); src_iter++)
-        output << *src_iter << sep;
+	std::ostringstream                 output;
+	std::vector<std::string>::iterator src_iter;
 
-    return output.str();
+	for (src_iter = src.begin(); src_iter != src.end(); src_iter++) {
+		output << *src_iter << glue;
+	}
+
+	std::string final_output = output.str();
+	final_output.resize (output.str().size () - glue.size());
+
+	return final_output;
 }
 
 std::string EscapeString(const std::string &s) {

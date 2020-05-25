@@ -148,6 +148,9 @@ public:
 	ZonePoint* GetClosestZonePointWithoutZone(float x, float y, float z, Client *client, float max_distance = 40000.0f);
 	SpawnGroupList spawn_group_list;
 
+    uint32 GetInstanceTimeRemaining() const;
+    void SetInstanceTimeRemaining(uint32 instance_time_remaining);
+
 	bool RemoveSpawnEntry(uint32 spawnid);
 	bool RemoveSpawnGroup(uint32 in_id);
 
@@ -322,6 +325,7 @@ public:
 private:
 	uint32	zoneid;
 	uint32	instanceid;
+    uint32    instance_time_remaining;
 	uint16	instanceversion;
 	bool pers_instance;
 	char*	short_name;

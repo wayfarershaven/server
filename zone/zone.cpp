@@ -1060,6 +1060,9 @@ bool Zone::Init(bool iStaticZone) {
 	petition_list.ClearPetitions();
 	petition_list.ReadDatabase();
 
+    if (zone->GetInstanceID() > 0) {
+        zone->SetInstanceTimeRemaining(database.GetTimeRemainingInstance(zone->GetInstanceID()));
+    }
 
     Log(Logs::General, Logs::Status, "Loading active Expeditions");
     Expedition::CacheAllFromDatabase();
@@ -2455,4 +2458,14 @@ void Zone::SetUCSServerAvailable(bool ucss_available, uint32 update_timestamp) {
 bool Zone::IsZone(uint32 zone_id, uint16 instance_id) const
 {
     return (zoneid == zone_id && instanceid == instance_id);
+}
+
+uint32 Zone::GetInstanceTimeRemaining() const
+{
+    return instance_time_remaining;
+}
+
+void Zone::SetInstanceTimeRemaining(uint32 instance_time_remaining)
+{
+    Zone::instance_time_remaining = instance_time_remaining;
 }
