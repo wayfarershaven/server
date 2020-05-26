@@ -352,52 +352,36 @@ bool Expedition::HasReplayLockout()
 
 bool Expedition::HasMember(uint32_t character_id)
 {
-    for (const auto& member : m_members)
-    {
-        if (member.char_id == character_id)
-        {
-            return true;
-        }
-    }
-    return false;
+    return std::any_of(m_members.begin(), m_members.end(), [&](const ExpeditionMember& member) {
+        return member.char_id == character_id;
+    });
 }
 
-bool Expedition::HasMember(const std::string& name)
-{
-    for (const auto& member : m_members)
-    {
-        if (strcasecmp(member.name.c_str(), name.c_str()) == 0)
-        {
-            return true;
-        }
-    }
-    return false;
+bool Expedition::HasMember(const std::string& character_name) {
+    return std::any_of(m_members.begin(), m_members.end(), [&](const ExpeditionMember &member) {
+        return (strcasecmp(member.name.c_str(), character_name.c_str()) == 0);
+    });
 }
 
-ExpeditionMember Expedition::GetMemberData(uint32_t character_id)
-{
+ExpeditionMember Expedition::GetMemberData(uint32_t character_id) {
+    auto it = std::find_if(m_members.begin(), m_members.end(), [&](const ExpeditionMember &member) {
+        return member.char_id == character_id;
+    });
+
     ExpeditionMember member_data;
-    for (const auto& member : m_members)
-    {
-        if (member.char_id == character_id)
-        {
-            member_data = member;
-            break;
-        }
+    if (it != m_members.end()) {
+        member_data = *it;
     }
     return member_data;
 }
 
-ExpeditionMember Expedition::GetMemberData(const std::string& character_name)
-{
+ExpeditionMember Expedition::GetMemberData(const std::string& character_name) {
+    auto it = std::find_if(m_members.begin(), m_members.end(), [&](const ExpeditionMember &member) {
+        return (strcasecmp(member.name.c_str(), character_name.c_str()) == 0);
+    });
     ExpeditionMember member_data;
-    for (const auto& member : m_members)
-    {
-        if (strcasecmp(member.name.c_str(), character_name.c_str()) == 0)
-        {
-            member_data = member;
-            break;
-        }
+    if (it != m_members.end()) {
+        member_data = *it;
     }
     return member_data;
 }
