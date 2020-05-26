@@ -1918,8 +1918,8 @@ void Client::SendBazaarResults(uint32 TraderID, uint32 Class_, uint32 Race, uint
 			break;
 
 		case STAT_HASTE:
-			searchCriteria.append(" AND items.worneffect = 998");
-			searchValues.append(", items.wornlevel");
+            searchCriteria.append(" AND items.haste > 0");
+            searchValues.append(", items.haste");
 			break;
 
 		case STAT_DAMAGE_SHIELD:
