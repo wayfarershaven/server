@@ -877,19 +877,24 @@ void Expedition::DzAddPlayer(
         return;
     }
 
+    bool invite_failed = false;
+
     if (add_char_name.empty())
     {
         requester->Message_StringID(Chat::Red, DZADD_NOT_ONLINE, add_char_name.c_str());
-        return;
+        invite_failed = true;
+    }
+    else {
+        // we can avoid checking online status in world if we trust member status accuracy
+        auto member_data = GetMemberData(add_char_name);
+        if (member_data.char_id != 0 && member_data.status != ExpeditionMemberStatus::Offline) {
+            requester->Message_StringID(Chat::Red, DZADD_ALREADY_PART, add_char_name.c_str());
+            invite_failed = true;
+        }
     }
 
-    // live prioritizes the "not online" message before the "already a member"
-    // message but we can avoid checking world if we trust member status accuracy
-    // live sanitizes input except for "sending invite" and "not online" msgs
-    auto member_data = GetMemberData(add_char_name);
-    if (member_data.char_id != 0 && member_data.status != ExpeditionMemberStatus::Offline)
-    {
-        requester->Message_StringID(Chat::Red, DZADD_ALREADY_PART, add_char_name.c_str());
+    if (invite_failed) {
+        requester->Message_StringID(Chat::Red, DZADD_INVITE_FAIL, FormatName(add_char_name).c_str());
         return;
     }
 
@@ -1661,6 +1666,7 @@ void Expedition::HandleWorldMessage(ServerPacket* pack)
                 if (leader)
                 {
                     leader->Message_StringID(Chat::Red, DZADD_NOT_ONLINE, FormatName(buf->target_name).c_str());
+                    leader->Message_StringID(Chat::Red, DZADD_INVITE_FAIL, FormatName(buf->target_name).c_str());
                 }
             }
             break;
