@@ -129,17 +129,14 @@ void Timer::SetTimer(uint32 set_timer_time) {
 	}
 }
 
-uint32 Timer::GetRemainingTime() const
-{
+uint32 Timer::GetRemainingTime() {
 	if (enabled) {
-        if (current_time - start_time > timer_time) {
+		if (current_time-start_time > timer_time)
 			return 0;
-        }
-        else {
+		else
 			return (start_time + timer_time) - current_time;
-        }
-    }
-    else {
+	}
+	else {
 		return 0xFFFFFFFF;
 	}
 }

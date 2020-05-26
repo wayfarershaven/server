@@ -94,19 +94,14 @@ bool Database::CheckInstanceExpired(uint16 instance_id)
 	int32 duration = 0;
 	uint32 never_expires = 0;
 
-    std::string query = StringFormat(
-            "SELECT start_time, duration, never_expires FROM instance_list WHERE id=%u",
-            instance_id
-    );
+	std::string query = StringFormat("SELECT start_time, duration, never_expires FROM instance_list WHERE id=%u", instance_id);
 	auto results = QueryDatabase(query);
 
-	if (!results.Success()) {
-        return true;
-    }
+	if (!results.Success())
+		return true;
 
-	if (results.RowCount() == 0) {
-        return true;
-    }
+	if (results.RowCount() == 0)
+		return true;
 
 	auto row = results.begin();
 
@@ -114,27 +109,23 @@ bool Database::CheckInstanceExpired(uint16 instance_id)
 	duration = atoi(row[1]);
 	never_expires = atoi(row[2]);
 
-	if (never_expires == 1) {
-        return false;
-    }
+	if (never_expires == 1)
+		return false;
 
-    timeval tv{};
+	timeval tv;
 	gettimeofday(&tv, nullptr);
 
-    return (start_time + duration) <= tv.tv_sec;
+	if ((start_time + duration) <= tv.tv_sec)
+		return true;
 
+	return false;
 }
 
 bool Database::CreateInstance(uint16 instance_id, uint32 zone_id, uint32 version, uint32 duration)
 {
-    std::string query = StringFormat(
-            "INSERT INTO instance_list (id, zone, version, start_time, duration)"
-            " values (%u, %u, %u, UNIX_TIMESTAMP(), %u)",
-            instance_id,
-            zone_id,
-            version,
-            duration
-    );
+	std::string query = StringFormat("INSERT INTO instance_list (id, zone, version, start_time, duration)"
+		" values(%lu, %lu, %lu, UNIX_TIMESTAMP(), %lu)",
+		(unsigned long)instance_id, (unsigned long)zone_id, (unsigned long)version, (unsigned long)duration);
 	auto results = QueryDatabase(query);
 
 	return results.Success();
@@ -142,82 +133,66 @@ bool Database::CreateInstance(uint16 instance_id, uint32 zone_id, uint32 version
 
 bool Database::GetUnusedInstanceID(uint16 &instance_id)
 {
-    uint32 max_reserved_instance_id = RuleI(Instances, ReservedInstances);
-    uint32 max                      = 32000;
+	uint32 count = RuleI(Zone, ReservedInstances);
+	uint32 max = 65535;
 
-    std::string query = StringFormat(
-            "SELECT IFNULL(MAX(id),%u)+1 FROM instance_list WHERE id > %u",
-            max_reserved_instance_id,
-            max_reserved_instance_id
-    );
-
-    if (RuleB(Instances, RecycleInstanceIds)) {
-        query = (
-                SQL(
-                        SELECT i.id + 1 AS next_available
-                        FROM instance_list i
-                        LEFT JOIN instance_list i2 ON i2.id = i.id + 1
-                        WHERE i2.id IS NULL
-                        ORDER BY i.id
-                        LIMIT 0, 1;
-
-                )
-        );
-    }
-
+	std::string query = StringFormat("SELECT IFNULL(MAX(id),%u)+1 FROM instance_list  WHERE id > %u", count, count);
 	auto results = QueryDatabase(query);
 
-    if (!results.Success()) {
+	if (!results.Success())
+	{
 		instance_id = 0;
 		return false;
 	}
 
-    if (results.RowCount() == 0) {
-        instance_id = max_reserved_instance_id;
-        return true;
+	if (results.RowCount() == 0)
+	{
+		instance_id = 0;
+		return false;
 	}
 
 	auto row = results.begin();
 
-    if (atoi(row[0]) <= max) {
+	if (atoi(row[0]) <= max)
+	{
 		instance_id = atoi(row[0]);
 		return true;
 	}
 
-    if (instance_id < max_reserved_instance_id) {
-        instance_id = max_reserved_instance_id;
-        return true;
-    }
-
-    query   = StringFormat("SELECT id FROM instance_list where id > %u ORDER BY id", max_reserved_instance_id);
+	query = StringFormat("SELECT id FROM instance_list where id > %u ORDER BY id", count);
 	results = QueryDatabase(query);
 
-    if (!results.Success()) {
+	if (!results.Success())
+	{
 		instance_id = 0;
 		return false;
 	}
 
-    if (results.RowCount() == 0) {
+	if (results.RowCount() == 0)
+	{
 		instance_id = 0;
 		return false;
 	}
 
-    max_reserved_instance_id++;
-    for (auto row = results.begin(); row != results.end(); ++row) {
-        if (max_reserved_instance_id < atoi(row[0])) {
-            instance_id = max_reserved_instance_id;
+	count++;
+	for (auto row = results.begin(); row != results.end(); ++row)
+	{
+		if (count < atoi(row[0]))
+		{
+			instance_id = count;
 			return true;
 		}
 
-        if (max_reserved_instance_id > max) {
+		if (count > max)
+		{
 			instance_id = 0;
 			return false;
 		}
 
-        max_reserved_instance_id++;
+		count++;
 	}
 
-    instance_id = max_reserved_instance_id;
+	instance_id = count;
 	return true;
 }
 
@@ -375,7 +350,7 @@ uint16 Database::GetInstanceVersion(uint16 instance_id) {
 	return atoi(row[0]);
 }
 
-uint32 Database::GetTimeRemainingInstance(uint16 instance_id, bool is_perma)
+uint32 Database::GetTimeRemainingInstance(uint16 instance_id, bool &is_perma)
 {
 	uint32 start_time = 0;
 	uint32 duration = 0;
@@ -579,43 +554,17 @@ void Database::GetCharactersInInstance(uint16 instance_id, std::list<uint32> &ch
 void Database::PurgeExpiredInstances()
 {
     Log(Logs::General, Logs::World_Server, "PurgeExpiredInstances Routine Entered");
-    /**
-     * Delay purging by a day so that we can continue using adjacent free instance id's
-     * from the table without risking the chance we immediately re-allocate a zone that freshly expired but
-     * has not been fully de-allocated
-     */
-    std::string query =
-            SQL(
-                    SELECT
-                            id
-                    FROM
-                            instance_list
-                    where
-                    (start_time + duration) <= (UNIX_TIMESTAMP() + 86400)
-                    and never_expires = 0
-            );
+    std::string query("SELECT id FROM instance_list where (start_time+duration) <= UNIX_TIMESTAMP() and never_expires = 0");
 	auto results = QueryDatabase(query);
 
-    if (!results.Success()) {
-        return;
-    }
+	if (!results.Success())
+		return;
 
-	if (results.RowCount() == 0) {
-        return;
-    }
+	if (results.RowCount() == 0)
+		return;
 
-    std::vector<std::string> instance_ids;
-	for (auto row = results.begin(); row != results.end(); ++row) {
-        instance_ids.emplace_back(row[0]);
-    }
-
-    std::string imploded_instance_ids = implode(",", instance_ids);
-
-    QueryDatabase(fmt::format("DELETE FROM instance_list WHERE id IN ({})", imploded_instance_ids));
-    QueryDatabase(fmt::format("DELETE FROM instance_list_player WHERE id IN ({})", imploded_instance_ids));
-    QueryDatabase(fmt::format("DELETE FROM respawn_times WHERE instance_id IN ({})", imploded_instance_ids));
-    QueryDatabase(fmt::format("DELETE FROM spawn_condition_values WHERE instance_id IN ({})", imploded_instance_ids));
-    QueryDatabase(fmt::format("UPDATE character_corpses SET is_buried = 1, instance_id = 0 WHERE instance_id IN ({})", imploded_instance_ids));
+	for (auto row = results.begin(); row != results.end(); ++row)
+		DeleteInstance(atoi(row[0]));
 }
 
 void Database::SetInstanceDuration(uint16 instance_id, uint32 new_duration)
