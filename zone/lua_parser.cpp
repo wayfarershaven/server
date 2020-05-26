@@ -1104,8 +1104,7 @@ void LuaParser::MapFunctions(lua_State *L) {
 						lua_register_rulei(),
 						lua_register_ruler(),
 						lua_register_ruleb(),
-                        lua_register_expedition(),
-                        lua_register_expedition_member_status()
+                        lua_register_expedition()
 		];
 
 	} catch(std::exception &ex) {
