@@ -52,7 +52,6 @@ MySQLRequestResult ExpeditionDatabase::LoadExpedition(uint32_t expedition_id)
 {
     Log(Logs::Detail, Logs::Expeditions, "Loading expedition [%i]", expedition_id);
 
-    // no point caching expedition if no members, inner join instead of left
     std::string query = fmt::format(SQL(
                                             SELECT
                                             expedition_details.id,
@@ -63,6 +62,7 @@ MySQLRequestResult ExpeditionDatabase::LoadExpedition(uint32_t expedition_id)
                                             expedition_details.max_players,
                                             expedition_details.has_replay_timer,
                                             expedition_details.add_replay_on_join,
+											expedition_details.is_locked,
                                             character_data.name leader_name,
                                             expedition_lockouts.event_name,
                                             UNIX_TIMESTAMP(expedition_lockouts.expire_time),
@@ -95,6 +95,7 @@ MySQLRequestResult ExpeditionDatabase::LoadAllExpeditions()
             expedition_details.max_players,
             expedition_details.has_replay_timer,
             expedition_details.add_replay_on_join,
+			expedition_details.is_locked,
             character_data.name leader_name,
             expedition_lockouts.event_name,
             UNIX_TIMESTAMP(expedition_lockouts.expire_time),
@@ -633,7 +634,7 @@ void ExpeditionDatabase::UpdateLeaderID(uint32_t expedition_id, uint32_t leader_
     Log(Logs::Detail, Logs::Expeditions, "Updating leader [%i] for expedition [%i]", leader_id, expedition_id);
 
     auto query = fmt::format(SQL(
-                                     UPDATE expedition_details SET leader_id = {} WHERE id = {}
+									 UPDATE expedition_details SET leader_id = {} WHERE id = {};
                              ), leader_id, expedition_id);
 
     auto results = database.QueryDatabase(query);
@@ -641,6 +642,21 @@ void ExpeditionDatabase::UpdateLeaderID(uint32_t expedition_id, uint32_t leader_
     {
         Log(Logs::General, Logs::Expeditions, "Failed to update expedition [%i] leader", expedition_id);
     }
+}
+
+void ExpeditionDatabase::UpdateLockState(uint32_t expedition_id, bool is_locked)
+{
+	Log(Logs::Detail, Logs::Expeditions, "Updating lock state [%b] for expedition [%i]", is_locked, expedition_id);
+
+	auto query = fmt::format(SQL(
+									 UPDATE expedition_details SET is_locked = {} WHERE id = {};
+							 ), is_locked, expedition_id);
+
+	auto results = database.QueryDatabase(query);
+	if (!results.Success())
+	{
+		Log(Logs::General, Logs::Expeditions, "Failed to update expedition [%i] lock state", expedition_id);
+	}
 }
 
 void ExpeditionDatabase::UpdateMemberRemoved(uint32_t expedition_id, uint32_t character_id)
