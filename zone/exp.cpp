@@ -645,7 +645,7 @@ uint32 Client::GetEXPForLevel(uint16 check_level, bool aa)
 		playermod *= 95.0;
 	else if(race == DARK_ELF || race == DWARF || race == ERUDITE || race == GNOME ||
 			race == HALF_ELF || race == HIGH_ELF || race == HUMAN || race == WOOD_ELF ||
-			race == VAHSHIR || race == FROGLOK)
+			race == VAHSHIR || race == FROGLOK || race == FROGLOK2 || race == DRAKKIN)
 		playermod *= 100.0;
 	else if(race == BARBARIAN)
 		playermod *= 105.0;
