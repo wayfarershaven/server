@@ -1859,6 +1859,11 @@ void Client::Handle_OP_AAAction(const EQApplicationPacket *app)
 
 	nats.OnAlternateAdvancementActionRequest(GetID(), action);
 
+	//break feign if casting
+	if (feigned) {
+		SetFeigned(false);
+	}
+	
 	if (action->action == aaActionActivate) {//AA Hotkey
 		Log(Logs::Detail, Logs::AA, "Activating AA %d", action->ability);
 		ActivateAlternateAdvancementAbility(action->ability, action->target_id);
