@@ -2,6 +2,11 @@ language: cpp
 compiler: gcc
 dist: bionic
 
+branches:
+  only:
+  - master
+  - dev
+
 addons:
   apt:
     packages:
