@@ -1,28 +1,31 @@
-language: c
+language: cpp
 compiler: gcc
-sudo: false
-addons:
-  apt:
-    sources:
-    - ubuntu-toolchain-r-test
-    packages:
-    - gcc-4.8
-    - g++-4.8
-    - libmysqlclient-dev
-    - libperl-dev
-    - libboost-dev
-    - liblua5.1-0-dev
-    - zlib1g-dev
-    - uuid-dev
-    - libssl-dev
-install:
-  - if [ "$CXX" = "g++" ]; then export CXX="g++-4.8" CC="gcc-4.8"; fi
-script:
-  - cmake -G "Unix Makefiles" -DEQEMU_BUILD_TESTS=ON -DEQEMU_ENABLE_BOTS=ON -DEQEMU_BUILD_LOGIN=ON
-  - make -j2
-  - ./bin/tests
+dist: bionic
+
 branches:
   only:
-    - master
-    - dev
-os: linux
+  - master
+  - dev
+
+addons:
+  apt:
+    packages:
+      - libmysqlclient-dev
+      - libperl-dev
+      - libboost-dev
+      - liblua5.1-0-dev
+      - zlib1g-dev
+      - uuid-dev
+      - libssl-dev
+
+script:
+  - wget https://launchpad.net/~maarten-fonville/+archive/ubuntu/protobuf/+files/libprotobuf-dev_3.1.0-0ubuntu1~maarten0_amd64.deb
+  - wget https://launchpad.net/~maarten-fonville/+archive/ubuntu/protobuf/+files/protobuf-compiler_3.1.0-0ubuntu1~maarten0_amd64.deb 
+  - wget https://launchpad.net/~maarten-fonville/+archive/ubuntu/protobuf/+files/libprotobuf-lite10_3.1.0-0ubuntu1~maarten0_amd64.deb 
+  - wget https://launchpad.net/~maarten-fonville/+archive/ubuntu/protobuf/+files/libprotoc10_3.1.0-0ubuntu1~maarten0_amd64.deb 
+  - wget https://launchpad.net/~maarten-fonville/+archive/ubuntu/protobuf/+files/libprotoc-dev_3.1.0-0ubuntu1~maarten0_amd64.deb 
+  - wget https://launchpad.net/~maarten-fonville/+archive/ubuntu/protobuf/+files/libprotobuf10_3.1.0-0ubuntu1~maarten0_amd64.deb
+  - sudo dpkg -i *.deb
+  - cmake -G "Unix Makefiles" -DEQEMU_BUILD_TESTS=ON -DEQEMU_BUILD_LOGIN=ON
+  - make -j2
+  - ./bin/tests
