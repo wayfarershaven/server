@@ -880,7 +880,7 @@ void Client::AI_Process()
 			if (GetTarget() && !IsStunned() && !IsMezzed() && !GetFeigned()) {
 				if (attack_timer.Check()) {
 					// Should charmed clients not be procing?
-					DoAttackRounds(GetTarget(), EQEmu::inventory::slotPrimary);
+					DoAttackRounds(GetTarget(), EQEmu::invslot::slotPrimary);
 				}
 			}
 
@@ -888,7 +888,7 @@ void Client::AI_Process()
 				if (attack_dw_timer.Check()) {
 					if (CheckDualWield()) {
 						// Should charmed clients not be procing?
-						DoAttackRounds(GetTarget(), EQEmu::inventory::slotSecondary);
+						DoAttackRounds(GetTarget(), EQEmu::invslot::slotSecondary);
 					}
 				}
 			}
@@ -1339,7 +1339,7 @@ void Mob::AI_Process() {
 				//try main hand first
 				if (attack_timer.Check()) {
 					DoMainHandAttackRounds(target);
-					TriggerDefensiveProcs(target, EQEmu::inventory::slotPrimary, false);
+					TriggerDefensiveProcs(target, EQEmu::invslot::slotPrimary, false);
 
 					bool specialed = false; // NPCs can only do one of these a round
 					if (GetSpecialAbility(SPECATK_FLURRY)) {
@@ -2174,14 +2174,14 @@ void Mob::StartEnrage()
 
 	// start the timer. need to call IsEnraged frequently since we dont have callback timers :-/
 	bEnraged = true;
-	entity_list.MessageClose_StringID(this, true, 200, MT_NPCEnrage, NPC_ENRAGE_START, GetCleanName());
+	entity_list.MessageClose_StringID(this, true, 200, Chat::NPCEnrage, NPC_ENRAGE_START, GetCleanName());
 }
 
 void Mob::ProcessEnrage(){
 	if(IsEnraged()){
 		Timer *timer = GetSpecialAbilityTimer(SPECATK_ENRAGE);
 		if(timer && timer->Check()){
-			entity_list.MessageClose_StringID(this, true, 200, MT_NPCEnrage, NPC_ENRAGE_END, GetCleanName());
+			entity_list.MessageClose_StringID(this, true, 200, Chat::NPCEnrage, NPC_ENRAGE_END, GetCleanName());
 
 			int enraged_cooldown = GetSpecialAbilityParam(SPECATK_ENRAGE, 2);
 			enraged_cooldown = enraged_cooldown > 0 ? enraged_cooldown : EnragedTimer;
@@ -2202,15 +2202,15 @@ bool Mob::Flurry(ExtraAttackOptions *opts)
 	Mob *target = GetTarget();
 	if (target) {
 		if (!IsPet()) {
-			entity_list.MessageClose_StringID(this, true, 200, MT_NPCFlurry, NPC_FLURRY, GetCleanName(), target->GetCleanName());
+			entity_list.MessageClose_StringID(this, true, 200, Chat::NPCFlurry, NPC_FLURRY, GetCleanName(), target->GetCleanName());
 		} else {
-			entity_list.MessageClose_StringID(this, true, 200, MT_PetFlurry, NPC_FLURRY, GetCleanName(), target->GetCleanName());
+			entity_list.MessageClose_StringID(this, true, 200, Chat::PetFlurry, NPC_FLURRY, GetCleanName(), target->GetCleanName());
 		}
 
 		int num_attacks = GetSpecialAbilityParam(SPECATK_FLURRY, 1);
 		num_attacks = num_attacks > 0 ? num_attacks : RuleI(Combat, MaxFlurryHits);
 		for (int i = 0; i < num_attacks; i++)
-			Attack(target, EQEmu::inventory::slotPrimary, false, false, false, opts);
+			Attack(target, EQEmu::invslot::slotPrimary, false, false, false, opts);
 	}
 	return true;
 }
@@ -2241,9 +2241,9 @@ bool Mob::Rampage(ExtraAttackOptions *opts)
 {
 	int index_hit = 0;
 	if (!IsPet())
-		entity_list.MessageClose_StringID(this, true, 200, MT_NPCRampage, NPC_RAMPAGE, GetCleanName());
+		entity_list.MessageClose_StringID(this, true, 200, Chat::NPCRampage, NPC_RAMPAGE, GetCleanName());
 	else
-		entity_list.MessageClose_StringID(this, true, 200, MT_PetFlurry, NPC_RAMPAGE, GetCleanName());
+		entity_list.MessageClose_StringID(this, true, 200, Chat::PetFlurry, NPC_RAMPAGE, GetCleanName());
 
 	int rampage_targets = GetSpecialAbilityParam(SPECATK_RAMPAGE, 1);
 	if (rampage_targets == 0) // if set to 0 or not set in the DB
@@ -2279,9 +2279,9 @@ void Mob::AreaRampage(ExtraAttackOptions *opts)
 {
 	int index_hit = 0;
 	if (!IsPet()) { // do not know every pet AA so thought it safer to add this
-		entity_list.MessageClose_StringID(this, true, 200, MT_NPCRampage, NPC_RAMPAGE, GetCleanName());
+		entity_list.MessageClose_StringID(this, true, 200, Chat::NPCRampage, NPC_RAMPAGE, GetCleanName());
 	} else {
-		entity_list.MessageClose_StringID(this, true, 200, MT_PetFlurry, NPC_RAMPAGE, GetCleanName());
+		entity_list.MessageClose_StringID(this, true, 200, Chat::PetFlurry, NPC_RAMPAGE, GetCleanName());
 	}
 
 	int rampage_targets = GetSpecialAbilityParam(SPECATK_AREA_RAMPAGE, 1);

@@ -19,6 +19,21 @@
 
 
 // out-going packets that require an ENCODE translation:
+// Begin RoF2 Encodes
+
+E(OP_SendMembershipDetails)
+E(OP_TraderShop)
+E(OP_TraderDelItem)
+
+// incoming packets that require a DECODE translation:
+// Begin RoF2 Decodes
+
+D(OP_TraderShop)
+
+// End RoF2 Encodes/Decodes
+
+// These require Encodes/Decodes for RoF, so they do for RoF2 as well
+// Begin RoF Encodes
 E(OP_Action)
 E(OP_AdventureMerchantSell)
 E(OP_AltCurrency)
@@ -44,13 +59,16 @@ E(OP_DeleteCharge)
 E(OP_DeleteItem)
 E(OP_DeleteSpawn)
 E(OP_DisciplineUpdate)
+E(OP_DzChooseZone)
 E(OP_DzCompass)
 E(OP_DzExpeditionEndsWarning)
 E(OP_DzExpeditionInfo)
-E(OP_DzExpeditionList)
-E(OP_DzJoinExpeditionConfirm)
-E(OP_DzLeaderStatus)
+E(OP_DzExpeditionInvite)
+E(OP_DzExpeditionLockoutTimers)
 E(OP_DzMemberList)
+E(OP_DzMemberListName)
+E(OP_DzMemberListStatus)
+E(OP_DzSetLeaderName)
 E(OP_Emote)
 E(OP_ExpansionInfo)
 E(OP_FormattedMessage)
@@ -83,7 +101,6 @@ E(OP_MoveItem)
 E(OP_NewSpawn)
 E(OP_NewZone)
 E(OP_OnLevelMessage)
-//E(OP_OpenNewTasksWindow)
 E(OP_PetBuffWindow)
 E(OP_PlayerProfile)
 E(OP_RaidJoin)
@@ -125,7 +142,8 @@ E(OP_ZoneEntry)
 E(OP_ZonePlayerToBind)
 E(OP_ZoneServerInfo)
 E(OP_ZoneSpawns)
-// incoming packets that require a DECODE translation:
+E(OP_CrystalCountUpdate)
+// Begin RoF Decodes
 D(OP_AdventureMerchantSell)
 D(OP_AltCurrencySell)
 D(OP_AltCurrencySellSelection)
@@ -146,6 +164,12 @@ D(OP_ConsiderCorpse)
 D(OP_Consume)
 D(OP_Damage)
 D(OP_DeleteItem)
+D(OP_DzAddPlayer)
+D(OP_DzChooseZoneReply)
+D(OP_DzExpeditionInviteResponse)
+D(OP_DzMakeLeader)
+D(OP_DzRemovePlayer)
+D(OP_DzSwapPlayer)
 D(OP_Emote)
 D(OP_EnvDamage)
 D(OP_FaceChange)
@@ -186,6 +210,7 @@ D(OP_VetClaimRequest)
 D(OP_WhoAllRequest)
 D(OP_ZoneChange)
 D(OP_ZoneEntry)
+// End RoF Encodes/Decodes
 
 #undef E
 #undef D

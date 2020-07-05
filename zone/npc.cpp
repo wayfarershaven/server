@@ -810,8 +810,8 @@ void NPC::UpdateEquipmentLight()
 	m_Light.Type[EQEmu::lightsource::LightEquipment] = 0;
 	m_Light.Level[EQEmu::lightsource::LightEquipment] = 0;
 
-	for (int index = EQEmu::inventory::slotBegin; index < EQEmu::legacy::EQUIPMENT_SIZE; ++index) {
-		if (index == EQEmu::inventory::slotAmmo) { continue; }
+	for (int index = EQEmu::invslot::EQUIPMENT_BEGIN; index <= EQEmu::invslot::EQUIPMENT_END; ++index) {
+        if (index == EQEmu::invslot::slotAmmo) { continue; }
 
 		auto item = database.GetItem(equipment[index]);
 		if (item == nullptr) { continue; }
@@ -1623,10 +1623,10 @@ void NPC::Disarm(Client* client, int chance) {
 	// disarm primary if available, otherwise disarm secondary
 	const EQEmu::ItemData* weapon = NULL;
 	uint8 eslot = 0xFF;
-	if (equipment[EQEmu::inventory::slotPrimary] != 0)
-		eslot = EQEmu::inventory::slotPrimary;
-	else if (equipment[EQEmu::inventory::slotSecondary] != 0)
-		eslot = EQEmu::inventory::slotSecondary;
+	if (equipment[EQEmu::invslot::slotPrimary] != 0)
+		eslot = EQEmu::invslot::slotPrimary;
+	else if (equipment[EQEmu::invslot::slotSecondary] != 0)
+		eslot = EQEmu::invslot::slotSecondary;
 	if (eslot != 0xFF) {
 		if (zone->random.Int(0, 1000) <= chance) {
 			weapon = database.GetItem(equipment[eslot]);
@@ -1660,23 +1660,23 @@ void NPC::Disarm(Client* client, int chance) {
 			}
 			// Update Appearance
 			equipment[eslot] = 0;
-			int matslot = eslot == EQEmu::inventory::slotPrimary ? EQEmu::textures::weaponPrimary : EQEmu::textures::weaponSecondary;
+			int matslot = eslot == EQEmu::invslot::slotPrimary ? EQEmu::textures::weaponPrimary : EQEmu::textures::weaponSecondary;
 			if (matslot != -1)
 				SendWearChange(matslot);
-			if ((CastToMob()->GetBodyType() == BT_Humanoid || CastToMob()->GetBodyType() == BT_Summoned) && eslot == EQEmu::inventory::slotPrimary)
+			if ((CastToMob()->GetBodyType() == BT_Humanoid || CastToMob()->GetBodyType() == BT_Summoned) && eslot == EQEmu::invslot::slotPrimary)
 				Say("Ahh! My weapon!");
-			client->Message(MT_Skills, "You have successfully disarmed your target.");
-			//client->Message_StringID(MT_Skills, DISARM_SUCCESS, this->GetCleanName());
+			client->Message(Chat::Skills, "You have successfully disarmed your target.");
+			//client->Message_StringID(Chat::Skills, DISARM_SUCCESS, this->GetCleanName());
 			if (chance != 1000)
 				client->CheckIncreaseSkill(EQEmu::skills::SkillDisarm, nullptr, 4);
 			return;
 		}
-		client->Message(MT_Skills, StringFormat("You have failed to disarm your target").c_str());
+		client->Message(Chat::Skills, StringFormat("You have failed to disarm your target").c_str());
 		if (chance != 1000)
 			client->CheckIncreaseSkill(EQEmu::skills::SkillDisarm, nullptr, 2);
 		return;
 	}
-	client->Message(MT_Skills, StringFormat("You have failed to disarm your target").c_str());
+	client->Message(Chat::Skills, StringFormat("You have failed to disarm your target").c_str());
 }
 
 void Mob::NPCSpecialAttacks(const char* parse, int permtag, bool reset, bool remove) {

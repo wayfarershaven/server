@@ -69,7 +69,7 @@ void Object::HandleAugmentation(Client* user, const AugmentItem_Struct* in_augme
 
 				// Verify that no more than two items are in container to guarantee no inadvertant wipes.
 				uint8 itemsFound = 0;
-				for (uint8 i = EQEmu::inventory::slotBegin; i < EQEmu::legacy::TYPE_WORLD_SIZE; i++)
+                for (uint8 i = EQEmu::invbag::SLOT_BEGIN; i < EQEmu::invtype::WORLD_SIZE; i++)
 				{
 					const EQEmu::ItemInstance* inst = container->GetItem(i);
 					if (inst)
@@ -222,7 +222,7 @@ void Object::HandleAugmentation(Client* user, const AugmentItem_Struct* in_augme
 		else
 		{
 			// Delete items in our inventory container...
-			for (uint8 i = EQEmu::inventory::slotBegin; i < EQEmu::legacy::TYPE_WORLD_SIZE; i++)
+            for (uint8 i = EQEmu::invbag::SLOT_BEGIN; i < EQEmu::invtype::WORLD_SIZE; i++)
 			{
 				const EQEmu::ItemInstance* inst = container->GetItem(i);
 				if (inst)
@@ -264,7 +264,7 @@ void Object::HandleCombine(Client* user, const NewCombine_Struct* in_combine, Ob
 	uint32 some_id = 0;
 	bool worldcontainer=false;
 
-	if (in_combine->container_slot == EQEmu::legacy::SLOT_TRADESKILL) {
+	if (in_combine->container_slot == EQEmu::invslot::SLOT_TRADESKILL_EXPERIMENT_COMBINE) {
 		if(!worldo) {
 			user->Message(13, "Error: Server is not aware of the tradeskill container you are attempting to use");
 			return;
@@ -303,7 +303,7 @@ void Object::HandleCombine(Client* user, const NewCombine_Struct* in_combine, Ob
 			const EQEmu::ItemData* new_weapon = inst->GetItem();
 			user->DeleteItemInInventory(EQEmu::InventoryProfile::CalcSlotId(in_combine->container_slot, 0), 0, true);
 			container->Clear();
-			user->SummonItem(new_weapon->ID, inst->GetCharges(), inst->GetAugmentItemID(0), inst->GetAugmentItemID(1), inst->GetAugmentItemID(2), inst->GetAugmentItemID(3), inst->GetAugmentItemID(4), inst->GetAugmentItemID(5), inst->IsAttuned(), EQEmu::inventory::slotCursor, container->GetItem()->Icon, atoi(container->GetItem()->IDFile + 2));
+            user->SummonItem(new_weapon->ID, inst->GetCharges(), inst->GetAugmentItemID(0), inst->GetAugmentItemID(1), inst->GetAugmentItemID(2), inst->GetAugmentItemID(3), inst->GetAugmentItemID(4), inst->GetAugmentItemID(5), inst->IsAttuned(), EQEmu::invslot::slotCursor, container->GetItem()->Icon, atoi(container->GetItem()->IDFile + 2));
 			user->Message_StringID(4, TRANSFORM_COMPLETE, inst->GetItem()->Name);
 			if (RuleB(Inventory, DeleteTransformationMold))
 				user->DeleteItemInInventory(in_combine->container_slot, 0, true);
@@ -323,7 +323,7 @@ void Object::HandleCombine(Client* user, const NewCombine_Struct* in_combine, Ob
 			const EQEmu::ItemData* new_weapon = inst->GetItem();
 			user->DeleteItemInInventory(EQEmu::InventoryProfile::CalcSlotId(in_combine->container_slot, 0), 0, true);
 			container->Clear();
-			user->SummonItem(new_weapon->ID, inst->GetCharges(), inst->GetAugmentItemID(0), inst->GetAugmentItemID(1), inst->GetAugmentItemID(2), inst->GetAugmentItemID(3), inst->GetAugmentItemID(4), inst->GetAugmentItemID(5), inst->IsAttuned(), EQEmu::inventory::slotCursor, 0, 0);
+            user->SummonItem(new_weapon->ID, inst->GetCharges(), inst->GetAugmentItemID(0), inst->GetAugmentItemID(1), inst->GetAugmentItemID(2), inst->GetAugmentItemID(3), inst->GetAugmentItemID(4), inst->GetAugmentItemID(5), inst->IsAttuned(), EQEmu::invslot::slotCursor, 0, 0);
 			user->Message_StringID(4, TRANSFORM_COMPLETE, inst->GetItem()->Name);
 		}
 		else if (inst) {
@@ -337,7 +337,7 @@ void Object::HandleCombine(Client* user, const NewCombine_Struct* in_combine, Ob
 
 	DBTradeskillRecipe_Struct spec;
 	if (!database.GetTradeRecipe(container, c_type, some_id, user->CharacterID(), &spec)) {
-		user->Message_StringID(MT_Emote,TRADESKILL_NOCOMBINE);
+		user->Message_StringID(Chat::Emote,TRADESKILL_NOCOMBINE);
 		auto outapp = new EQApplicationPacket(OP_TradeSkillCombine, 0);
 		user->QueuePacket(outapp);
 		safe_delete(outapp);
@@ -407,7 +407,7 @@ void Object::HandleCombine(Client* user, const NewCombine_Struct* in_combine, Ob
 		safe_delete(outapp);
 		database.DeleteWorldContainer(worldo->m_id, zone->GetZoneID());
 	} else{
-		for (uint8 i = EQEmu::inventory::slotBegin; i < EQEmu::legacy::TYPE_WORLD_SIZE; i++) {
+        for (uint8 i = EQEmu::invbag::SLOT_BEGIN; i < EQEmu::invtype::WORLD_SIZE; i++) {
 			const EQEmu::ItemInstance* inst = container->GetItem(i);
 			if (inst) {
 				user->DeleteItemInInventory(EQEmu::InventoryProfile::CalcSlotId(in_combine->container_slot, i), 0, true);
@@ -550,13 +550,13 @@ void Object::HandleAutoCombine(Client* user, const RecipeAutoCombine_Struct* rac
 
 		safe_delete(outapp);
 
-		user->Message_StringID(MT_Skills, TRADESKILL_MISSING_COMPONENTS);
+		user->Message_StringID(Chat::Skills, TRADESKILL_MISSING_COMPONENTS);
 
 		for (auto it = MissingItems.begin(); it != MissingItems.end(); ++it) {
 			const EQEmu::ItemData* item = database.GetItem(*it);
 
 			if(item)
-				user->Message_StringID(MT_Skills, TRADESKILL_MISSING_ITEM, item->Name);
+				user->Message_StringID(Chat::Skills, TRADESKILL_MISSING_ITEM, item->Name);
 		}
 
 		return;
@@ -860,10 +860,15 @@ void Client::SendTradeskillDetails(uint32 recipe_id) {
 
 //returns true on success
 bool Client::TradeskillExecute(DBTradeskillRecipe_Struct *spec) {
-	if(spec == nullptr)
-		return(false);
+	if(spec == nullptr) {
+        return (false);
+    }
 
 	uint16 user_skill = GetSkill(spec->tradeskill);
+
+	if (user_skill > 252) {
+	    user_skill = 252;
+	}
 	float chance = 0.0;
 	float skillup_modifier = 0.0;
 	int16 thirdstat = 0;
@@ -961,7 +966,7 @@ bool Client::TradeskillExecute(DBTradeskillRecipe_Struct *spec) {
 		// above critical still stands.
 		// Mastery modifier is: 10%/25%/50% for rank one/two/three
 		chance = 95.0f + (float(user_skill - spec->trivial) / 40.0f);
-		Message_StringID(MT_Emote, TRADESKILL_TRIVIAL);
+		Message_StringID(Chat::Emote, TRADESKILL_TRIVIAL);
 	} else if(chance < 5) {
 		// Minimum chance is always 5
 		chance = 5;
@@ -979,7 +984,7 @@ bool Client::TradeskillExecute(DBTradeskillRecipe_Struct *spec) {
 	aa_chance = spellbonuses.ReduceTradeskillFail[spec->tradeskill] + itembonuses.ReduceTradeskillFail[spec->tradeskill] + aabonuses.ReduceTradeskillFail[spec->tradeskill];
 
 	const EQEmu::ItemData* item = nullptr;
-	
+
 	chance = mod_tradeskill_chance(chance, spec);
 
 	if (((spec->tradeskill==75) || GetGM() || (chance > res)) || zone->random.Roll(aa_chance)) {
@@ -1004,7 +1009,7 @@ bool Client::TradeskillExecute(DBTradeskillRecipe_Struct *spec) {
 			SummonItem(itr->first, itr->second);
 			item = database.GetItem(itr->first);
 			if (this->GetGroup()) {
-				entity_list.MessageGroup(this, true, MT_Skills, "%s has successfully fashioned %s!", GetName(), item->Name);
+				entity_list.MessageGroup(this, true, Chat::Skills, "%s has successfully fashioned %s!", GetName(), item->Name);
 			}
 
 			if(RuleB(TaskSystem, EnableTaskSystem))
@@ -1020,12 +1025,12 @@ bool Client::TradeskillExecute(DBTradeskillRecipe_Struct *spec) {
 		if(over_trivial < 0)
 			CheckIncreaseTradeskill(bonusstat, stat_modifier, skillup_modifier, success_modifier, spec->tradeskill);
 
-		Message_StringID(MT_Emote,TRADESKILL_FAILED);
+		Message_StringID(Chat::Emote,TRADESKILL_FAILED);
 
 		Log(Logs::Detail, Logs::Tradeskills, "Tradeskill failed");
 			if (this->GetGroup())
 		{
-			entity_list.MessageGroup(this,true,MT_Skills,"%s was unsuccessful in %s tradeskill attempt.",GetName(),this->GetGender() == 0 ? "his" : this->GetGender() == 1 ? "her" : "its");
+			entity_list.MessageGroup(this,true,Chat::Skills,"%s was unsuccessful in %s tradeskill attempt.",GetName(),this->GetGender() == 0 ? "his" : this->GetGender() == 1 ? "her" : "its");
 
 		}
 
@@ -1253,7 +1258,7 @@ bool ZoneDatabase::GetTradeRecipe(const EQEmu::ItemInstance* container, uint8 c_
 	for (auto row = results.begin(); row != results.end(); ++row) {
         int ccnt = 0;
 
-		for (int x = EQEmu::inventory::slotBegin; x < EQEmu::legacy::TYPE_WORLD_SIZE; x++) {
+        for (int x = EQEmu::invbag::SLOT_BEGIN; x < EQEmu::invtype::WORLD_SIZE; x++) {
             const EQEmu::ItemInstance* inst = container->GetItem(x);
             if(!inst)
                 continue;

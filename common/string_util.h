@@ -30,6 +30,7 @@ const std::string ucfirst(std::string s);
 std::vector<std::string> split(std::string str_to_split, char delimiter);
 const std::string StringFormat(const char* format, ...);
 const std::string vStringFormat(const char* format, va_list args);
+static std::string implode(char *sep, std::vector<std::string> src);
 std::vector<std::string> SplitString(const std::string &s, char delim);
 std::string EscapeString(const char *src, size_t sz);
 std::string EscapeString(const std::string &s);
@@ -57,5 +58,6 @@ uint64 hextoi64(const char* num);
 void MakeLowerString(const char *source, char *target);
 void RemoveApostrophes(std::string &s);
 void replace_all(std::string& in, std::string old, std::string repl);
+std::string FormatName(const std::string& char_name);
 
 #endif

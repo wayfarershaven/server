@@ -26,6 +26,7 @@
 
 #include "entity.h"
 #include "event_codes.h"
+#include "expedition.h"
 #include "guild_mgr.h"
 #include "qglobals.h"
 #include "queryserv.h"
@@ -906,6 +907,31 @@ bool QuestManager::isdisctome(int item_id) {
 	return(true);
 }
 
+std::string QuestManager::getracename(uint16 race_id) {
+    return GetRaceIDName(race_id);
+}
+
+std::string QuestManager::getspellname(uint32 spell_id) {
+    if (!IsValidSpell(spell_id)) {
+        return "INVALID SPELL ID IN GETSPELLNAME";
+    }
+
+    std::string spell_name = GetSpellName(spell_id);
+    return spell_name;
+}
+
+std::string QuestManager::getskillname(int skill_id) {
+    if (skill_id >= 0 && skill_id < EQEmu::skills::SkillCount) {
+        std::map<EQEmu::skills::SkillType, std::string> Skills = EQEmu::skills::GetSkillTypeMap();
+        for (auto skills_iter : Skills) {
+            if (skill_id == skills_iter.first) {
+                return skills_iter.second;
+            }
+        }
+    }
+    return std::string();
+}
+
 void QuestManager::safemove() {
 	QuestManagerCurrentQuestVars();
 	if (initiator && initiator->IsClient())
@@ -1145,7 +1171,7 @@ void QuestManager::givecash(int copper, int silver, int gold, int platinum) {
 		}
 		tmp += " pieces.";
 		if (initiator)
-			initiator->Message(MT_OOC, tmp.c_str());
+			initiator->Message(Chat::OOC, tmp.c_str());
 	}
 }
 
@@ -1851,6 +1877,21 @@ bool QuestManager::summonallplayercorpses(uint32 char_id, const glm::vec4& posit
 	return true;
 }
 
+int QuestManager::getplayercorpsecount(uint32 char_id) {
+    if (char_id > 0)
+        return database.CountCharacterCorpses(char_id);
+
+    return 0;
+
+}
+
+int QuestManager::getplayercorpsecountbyzoneid(uint32 char_id, uint32 zone_id) {
+    if (char_id > 0 && zone_id > 0)
+        return database.CountCharacterCorpsesByZoneID(char_id, zone_id);
+
+    return 0;
+}
+
 uint32 QuestManager::getplayerburiedcorpsecount(uint32 char_id) {
 	uint32 Result = 0;
 
@@ -2494,17 +2535,43 @@ int QuestManager::collectitems(uint32 item_id, bool remove)
 	int quantity = 0;
 	int slot_id;
 
-	for (slot_id = EQEmu::legacy::GENERAL_BEGIN; slot_id <= EQEmu::legacy::GENERAL_END; ++slot_id)
+	for (slot_id = EQEmu::invslot::GENERAL_BEGIN; slot_id <= EQEmu::invslot::GENERAL_END; ++slot_id)
 	{
 		quantity += collectitems_processSlot(slot_id, item_id, remove);
 	}
 
-	for (slot_id = EQEmu::legacy::GENERAL_BAGS_BEGIN; slot_id <= EQEmu::legacy::GENERAL_BAGS_END; ++slot_id)
+	for (slot_id = EQEmu::invbag::GENERAL_BAGS_BEGIN; slot_id <= EQEmu::invbag::GENERAL_BAGS_END; ++slot_id)
 	{
 		quantity += collectitems_processSlot(slot_id, item_id, remove);
 	}
 
 	return quantity;
+}
+
+int QuestManager::countitem(uint32 item_id) {
+    QuestManagerCurrentQuestVars();
+    int quantity = 0;
+    EQEmu::ItemInstance *item = nullptr;
+    static const int16 slots[][2] = {
+            { EQEmu::invslot::POSSESSIONS_BEGIN, EQEmu::invslot::POSSESSIONS_END },
+            { EQEmu::invbag::GENERAL_BAGS_BEGIN, EQEmu::invbag::GENERAL_BAGS_END },
+            { EQEmu::invbag::CURSOR_BAG_BEGIN, EQEmu::invbag::CURSOR_BAG_END},
+            { EQEmu::invslot::BANK_BEGIN, EQEmu::invslot::BANK_END },
+            { EQEmu::invbag::BANK_BAGS_BEGIN, EQEmu::invbag::BANK_BAGS_END },
+            { EQEmu::invslot::SHARED_BANK_BEGIN, EQEmu::invslot::SHARED_BANK_END },
+            { EQEmu::invbag::SHARED_BANK_BAGS_BEGIN, EQEmu::invbag::SHARED_BANK_BAGS_END },
+    };
+    const size_t size = sizeof(slots) / sizeof(slots[0]);
+    for (int slot_index = 0; slot_index < size; ++slot_index) {
+        for (int slot_id = slots[slot_index][0]; slot_id <= slots[slot_index][1]; ++slot_id) {
+            item = initiator->GetInv().GetItem(slot_id);
+            if (item && item->GetID() == item_id) {
+                quantity += item->IsStackable() ? item->GetCharges() : 1;
+            }
+        }
+    }
+
+    return quantity;
 }
 
 void QuestManager::UpdateSpawnTimer(uint32 id, uint32 newTime)
@@ -2595,6 +2662,23 @@ const char* QuestManager::varlink(char* perltext, int item_id) {
     strcpy(perltext, linker.GenerateLink().c_str());
 
 	return perltext;
+}
+
+std::string QuestManager::getitemname(uint32 item_id) {
+    const EQEmu::ItemData* item_data = database.GetItem(item_id);
+    if (!item_data) {
+        return "INVALID ITEM ID IN GETITEMNAME";
+    }
+
+    std::string item_name = item_data->Name;
+    return item_name;
+}
+
+const char *QuestManager::getnpcnamebyid(uint32 npc_id) {
+    if (npc_id > 0) {
+        return database.GetNPCNameByID(npc_id);
+    }
+    return "";
 }
 
 uint16 QuestManager::CreateInstance(const char *zone, int16 version, uint32 duration)
@@ -2728,14 +2812,18 @@ void QuestManager::RemoveFromInstance(uint16 instance_id)
 	if (initiator)
 	{
 		if (database.RemoveClientFromInstance(instance_id, initiator->CharacterID()))
-			initiator->Message(MT_Say, "Removed client from instance.");
+			initiator->Message(Chat::Say, "Removed client from instance.");
 		else
-			initiator->Message(MT_Say, "Failed to remove client from instance.");
+			initiator->Message(Chat::Say, "Failed to remove client from instance.");
 	}
 }
 
 void QuestManager::RemoveFromInstanceByCharID(uint16 instance_id, uint32 char_id) {
     database.RemoveClientFromInstance(instance_id, char_id);
+}
+
+bool QuestManager::CheckInstanceByCharID(uint16 instance_id, uint32 char_id) {
+    return database.CharacterInInstanceGroup(instance_id, char_id);
 }
 
 void QuestManager::RemoveAllFromInstance(uint16 instance_id)
@@ -2746,11 +2834,11 @@ void QuestManager::RemoveAllFromInstance(uint16 instance_id)
 		std::list<uint32> charid_list;
 
 		if (database.RemoveClientsFromInstance(instance_id))
-			initiator->Message(MT_Say, "Removed all players from instance.");
+			initiator->Message(Chat::Say, "Removed all players from instance.");
 		else
 		{
 			database.GetCharactersInInstance(instance_id, charid_list);
-			initiator->Message(MT_Say, "Failed to remove %i player(s) from instance.", charid_list.size()); // once the expedition system is in, this message it not relevant
+			initiator->Message(Chat::Say, "Failed to remove %i player(s) from instance.", charid_list.size()); // once the expedition system is in, this message it not relevant
 		}
 	}
 }
@@ -2796,11 +2884,71 @@ std::string QuestManager::saylink(char *saylink_text, bool silent, const char *l
     return EQEmu::SayLinkEngine::GenerateQuestSaylink(saylink_text, silent, link_name);
 }
 
+const char* QuestManager::getcharnamebyid(uint32 char_id) {
+    if (char_id > 0) {
+        return database.GetCharNameByID(char_id);
+    }
+    return "";
+}
+
+uint32 QuestManager::getcharidbyname(const char* name) {
+    return database.GetCharacterID(name);
+}
+
+int QuestManager::getcurrencyid(uint32 item_id) {
+    auto iter = zone->AlternateCurrencies.begin();
+    while (iter != zone->AlternateCurrencies.end()) {
+        if (item_id == (*iter).item_id) {
+            return (*iter).id;
+        }
+        ++iter;
+    }
+    return 0;
+}
+
+std::string QuestManager::getclassname(uint8 class_id, uint8 level) {
+    return GetClassIDName(class_id, level);
+}
+
+int QuestManager::getcurrencyitemid(int currency_id) {
+    if (currency_id > 0) {
+        auto iter = zone->AlternateCurrencies.begin();
+        while (iter != zone->AlternateCurrencies.end()) {
+            if (currency_id == (*iter).id) {
+                return (*iter).item_id;
+            }
+            ++iter;
+        }
+    }
+    return 0;
+}
+
 const char* QuestManager::getguildnamebyid(int guild_id) {
 	if (guild_id > 0)
 		return guild_mgr.GetGuildName(guild_id);
 	else
 		return("");
+}
+
+int QuestManager::getguildidbycharid(uint32 char_id) {
+    if (char_id > 0) {
+        return database.GetGuildIDByCharID(char_id);
+    }
+    return 0;
+}
+
+int QuestManager::getgroupidbycharid(uint32 char_id) {
+    if (char_id > 0) {
+        return database.GetGroupIDByCharID(char_id);
+    }
+    return 0;
+}
+
+int QuestManager::getraididbycharid(uint32 char_id) {
+    if (char_id > 0) {
+        return database.GetRaidIDByCharID(char_id);
+    }
+    return 0;
 }
 
 void QuestManager::SetRunning(bool val)
@@ -3000,6 +3148,33 @@ void QuestManager::CrossZoneSignalPlayerByCharID(int charid, uint32 data){
 	safe_delete(pack);
 }
 
+void QuestManager::CrossZoneSignalPlayerByGroupID(int group_id, uint32 data){
+    auto pack = new ServerPacket(ServerOP_CZSignalGroup, sizeof(CZGroupSignal_Struct));
+    CZGroupSignal_Struct* CZGS = (CZGroupSignal_Struct*) pack->pBuffer;
+    CZGS->group_id = group_id;
+    CZGS->data = data;
+    worldserver.SendPacket(pack);
+    safe_delete(pack);
+}
+
+void QuestManager::CrossZoneSignalPlayerByRaidID(int raid_id, uint32 data){
+    auto pack = new ServerPacket(ServerOP_CZSignalRaid, sizeof(CZRaidSignal_Struct));
+    CZRaidSignal_Struct* CZRS = (CZRaidSignal_Struct*) pack->pBuffer;
+    CZRS->raid_id = raid_id;
+    CZRS->data = data;
+    worldserver.SendPacket(pack);
+    safe_delete(pack);
+}
+
+void QuestManager::CrossZoneSignalPlayerByGuildID(int guild_id, uint32 data){
+    auto pack = new ServerPacket(ServerOP_CZSignalGuild, sizeof(CZGuildSignal_Struct));
+    CZGuildSignal_Struct* CZGS = (CZGuildSignal_Struct*) pack->pBuffer;
+    CZGS->guild_id = guild_id;
+    CZGS->data = data;
+    worldserver.SendPacket(pack);
+    safe_delete(pack);
+}
+
 void QuestManager::CrossZoneSignalPlayerByName(const char *CharName, uint32 data){
 	uint32 message_len = strlen(CharName) + 1;
 	auto pack = new ServerPacket(ServerOP_CZSignalClientByName, sizeof(CZClientSignalByName_Struct) + message_len);
@@ -3023,6 +3198,39 @@ void QuestManager::CrossZoneMessagePlayerByName(uint32 Type, const char *CharNam
 	safe_delete(pack);
 }
 
+void QuestManager::CrossZoneMessagePlayerByGroupID(uint32 Type, int GroupID, const char *Message){
+    uint32 message_len = strlen(Message) + 1;
+    auto pack = new ServerPacket(ServerOP_CZMessageGroup, sizeof(CZMessageGroup_Struct) + message_len);
+    CZMessageGroup_Struct* CZGM = (CZMessageGroup_Struct*) pack->pBuffer;
+    CZGM->Type = Type;
+    CZGM->GroupID = GroupID;
+    strn0cpy(CZGM->Message, Message, 512);
+    worldserver.SendPacket(pack);
+    safe_delete(pack);
+}
+
+void QuestManager::CrossZoneMessagePlayerByRaidID(uint32 Type, int RaidID, const char *Message){
+    uint32 message_len = strlen(Message) + 1;
+    auto pack = new ServerPacket(ServerOP_CZMessageRaid, sizeof(CZMessageRaid_Struct) + message_len);
+    CZMessageRaid_Struct* CZRM = (CZMessageRaid_Struct*) pack->pBuffer;
+    CZRM->Type = Type;
+    CZRM->RaidID = RaidID;
+    strn0cpy(CZRM->Message, Message, 512);
+    worldserver.SendPacket(pack);
+    safe_delete(pack);
+}
+
+void QuestManager::CrossZoneMessagePlayerByGuildID(uint32 Type, int GuildID, const char *Message){
+    uint32 message_len = strlen(Message) + 1;
+    auto pack = new ServerPacket(ServerOP_CZMessageGuild, sizeof(CZMessageGuild_Struct) + message_len);
+    CZMessageGuild_Struct* CZGM = (CZMessageGuild_Struct*) pack->pBuffer;
+    CZGM->Type = Type;
+    CZGM->GuildID = GuildID;
+    strn0cpy(CZGM->Message, Message, 512);
+    worldserver.SendPacket(pack);
+    safe_delete(pack);
+}
+
 void QuestManager::CrossZoneSetEntityVariableByClientName(const char *CharName, const char *id, const char *m_var){
 	uint32 message_len = strlen(id) + 1;
 	uint32 message_len2 = strlen(m_var) + 1;
@@ -3035,6 +3243,42 @@ void QuestManager::CrossZoneSetEntityVariableByClientName(const char *CharName, 
 	strn0cpy(CZ->m_var, m_var, 256);
 	worldserver.SendPacket(pack);
 	safe_delete(pack);
+}
+
+void QuestManager::CrossZoneSetEntityVariableByGroupID(int group_id, const char *id, const char *m_var){
+    uint32 message_len = strlen(id) + 1;
+    uint32 message_len2 = strlen(m_var) + 1;
+    auto pack = new ServerPacket(ServerOP_CZSetEntityVariableByGroupID, sizeof(CZSetEntVarByGroupID_Struct) + message_len + message_len2);
+    CZSetEntVarByGroupID_Struct* CZ = (CZSetEntVarByGroupID_Struct*)pack->pBuffer;
+    CZ->group_id = group_id;
+    strn0cpy(CZ->id, id, 256);
+    strn0cpy(CZ->m_var, m_var, 256);
+    worldserver.SendPacket(pack);
+    safe_delete(pack);
+}
+
+void QuestManager::CrossZoneSetEntityVariableByRaidID(int raid_id, const char *id, const char *m_var){
+    uint32 message_len = strlen(id) + 1;
+    uint32 message_len2 = strlen(m_var) + 1;
+    auto pack = new ServerPacket(ServerOP_CZSetEntityVariableByRaidID, sizeof(CZSetEntVarByRaidID_Struct) + message_len + message_len2);
+    CZSetEntVarByRaidID_Struct* CZ = (CZSetEntVarByRaidID_Struct*)pack->pBuffer;
+    CZ->raid_id = raid_id;
+    strn0cpy(CZ->id, id, 256);
+    strn0cpy(CZ->m_var, m_var, 256);
+    worldserver.SendPacket(pack);
+    safe_delete(pack);
+}
+
+void QuestManager::CrossZoneSetEntityVariableByGuildID(int guild_id, const char *id, const char *m_var){
+    uint32 message_len = strlen(id) + 1;
+    uint32 message_len2 = strlen(m_var) + 1;
+    auto pack = new ServerPacket(ServerOP_CZSetEntityVariableByGuildID, sizeof(CZSetEntVarByGuildID_Struct) + message_len + message_len2);
+    CZSetEntVarByGuildID_Struct* CZ = (CZSetEntVarByGuildID_Struct*)pack->pBuffer;
+    CZ->guild_id = guild_id;
+    strn0cpy(CZ->id, id, 256);
+    strn0cpy(CZ->m_var, m_var, 256);
+    worldserver.SendPacket(pack);
+    safe_delete(pack);
 }
 
 void QuestManager::CrossZoneSetEntityVariableByNPCTypeID(uint32 npctype_id, const char *id, const char *m_var){
@@ -3227,4 +3471,23 @@ void QuestManager::UpdateZoneHeader(std::string type, std::string value) {
 	memcpy(outapp->pBuffer, &zone->newzone_data, outapp->size);
 	entity_list.QueueClients(0, outapp);
 	safe_delete(outapp);
+}
+
+Expedition* QuestManager::GetExpeditionByCharID(uint32 char_id)
+{
+    return Expedition::FindCachedExpeditionByCharacterID(char_id);
+}
+
+Expedition* QuestManager::GetExpeditionByInstanceID(uint32 instance_id)
+{
+    return Expedition::FindExpeditionByInstanceID(instance_id);
+}
+
+Expedition* QuestManager::GetExpeditionForCurrentInstance()
+{
+    if (zone && zone->GetInstanceID() != 0)
+    {
+        return Expedition::FindExpeditionByInstanceID(zone->GetInstanceID());
+    }
+    return nullptr;
 }

@@ -49,6 +49,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include "../common/zone_numbers.h"
 #include "data_bucket.h"
 #include "event_codes.h"
+#include "expedition.h"
+#include "expedition_database.h"
 #include "guild_mgr.h"
 #include "merc.h"
 #include "petitions.h"
@@ -191,6 +193,15 @@ void MapOpcodes()
 	ConnectedOpcodes[OP_DuelResponse2] = &Client::Handle_OP_DuelResponse2;
 	ConnectedOpcodes[OP_DumpName] = &Client::Handle_OP_DumpName;
 	ConnectedOpcodes[OP_Dye] = &Client::Handle_OP_Dye;
+    ConnectedOpcodes[OP_DzAddPlayer] = &Client::Handle_OP_DzAddPlayer;
+    ConnectedOpcodes[OP_DzChooseZoneReply] = &Client::Handle_OP_DzChooseZoneReply;
+    ConnectedOpcodes[OP_DzExpeditionInviteResponse] = &Client::Handle_OP_DzExpeditionInviteResponse;
+    ConnectedOpcodes[OP_DzListTimers] = &Client::Handle_OP_DzListTimers;
+    ConnectedOpcodes[OP_DzMakeLeader] = &Client::Handle_OP_DzMakeLeader;
+    ConnectedOpcodes[OP_DzPlayerList] = &Client::Handle_OP_DzPlayerList;
+    ConnectedOpcodes[OP_DzRemovePlayer] = &Client::Handle_OP_DzRemovePlayer;
+    ConnectedOpcodes[OP_DzSwapPlayer] = &Client::Handle_OP_DzSwapPlayer;
+    ConnectedOpcodes[OP_DzQuit] = &Client::Handle_OP_DzQuit;
 	ConnectedOpcodes[OP_Emote] = &Client::Handle_OP_Emote;
 	ConnectedOpcodes[OP_EndLootRequest] = &Client::Handle_OP_EndLootRequest;
 	ConnectedOpcodes[OP_EnvDamage] = &Client::Handle_OP_EnvDamage;
@@ -266,6 +277,7 @@ void MapOpcodes()
 	ConnectedOpcodes[OP_ItemViewUnknown] = &Client::Handle_OP_Ignore;
 	ConnectedOpcodes[OP_Jump] = &Client::Handle_OP_Jump;
 	ConnectedOpcodes[OP_KeyRing] = &Client::Handle_OP_KeyRing;
+    ConnectedOpcodes[OP_KickPlayers] = &Client::Handle_OP_KickPlayers;
 	ConnectedOpcodes[OP_LDoNButton] = &Client::Handle_OP_LDoNButton;
 	ConnectedOpcodes[OP_LDoNDisarmTraps] = &Client::Handle_OP_LDoNDisarmTraps;
 	ConnectedOpcodes[OP_LDoNInspect] = &Client::Handle_OP_LDoNInspect;
@@ -551,7 +563,7 @@ void Client::CompleteConnect()
 		{
 			//Remove last two characters from the string
 			state.resize (state.size () - 2);
-			Message(CC_Red, "[GM] You are %s.", state.c_str());
+			Message(Chat::Red, "[GM] You are %s.", state.c_str());
 		}
 	}
 
@@ -903,6 +915,8 @@ void Client::CompleteConnect()
 		guild_mgr.SendGuildMemberUpdateToWorld(GetName(), GuildID(), zone->GetZoneID(), time(nullptr));
 		guild_mgr.RequestOnlineGuildMembers(this->CharacterID(), this->GuildID());
 	}
+
+    UpdateExpeditionInfoAndLockouts();
 
 	/** Request adventure info **/
 	auto pack = new ServerPacket(ServerOP_AdventureDataRequest, 64);
@@ -1767,12 +1781,14 @@ void Client::Handle_Connect_OP_ZoneEntry(const EQApplicationPacket *app)
 			if (iter == m_inv.cursor_cbegin())
 				continue;
 			const EQEmu::ItemInstance *inst = *iter;
-			SendItemPacket(EQEmu::inventory::slotCursor, inst, ItemPacketLimbo);
+            SendItemPacket(EQEmu::invslot::slotCursor, inst, ItemPacketLimbo);
 		}
 	}
 
 	/* Task Packets */
 	LoadClientTaskState();
+
+    m_expedition_id = ExpeditionDatabase::GetExpeditionIDFromCharacterID(CharacterID());
 
     /**
     * DevTools Load Settings
@@ -1843,6 +1859,11 @@ void Client::Handle_OP_AAAction(const EQApplicationPacket *app)
 
 	nats.OnAlternateAdvancementActionRequest(GetID(), action);
 
+	//break feign if casting
+	if (feigned) {
+		SetFeigned(false);
+	}
+	
 	if (action->action == aaActionActivate) {//AA Hotkey
 		Log(Logs::Detail, Logs::AA, "Activating AA %d", action->ability);
 		ActivateAlternateAdvancementAbility(action->ability, action->target_id);
@@ -2118,7 +2139,7 @@ void Client::Handle_OP_AdventureMerchantPurchase(const EQApplicationPacket *app)
 	EQEmu::ItemInstance *inst = database.CreateItem(item, charges);
 	if (!AutoPutLootInInventory(*inst, true, true))
 	{
-		PutLootInInventory(EQEmu::inventory::slotCursor, *inst);
+        PutLootInInventory(EQEmu::invslot::slotCursor, *inst);
 	}
 	Save(1);
 }
@@ -2652,7 +2673,7 @@ void Client::Handle_OP_AltCurrencyPurchase(const EQApplicationPacket *app)
 		EQEmu::ItemInstance *inst = database.CreateItem(item, charges);
 		if (!AutoPutLootInInventory(*inst, true, true))
 		{
-			PutLootInInventory(EQEmu::inventory::slotCursor, *inst);
+            PutLootInInventory(EQEmu::invslot::slotCursor, *inst);
 		}
 
 		Save(1);
@@ -2702,7 +2723,7 @@ void Client::Handle_OP_AltCurrencyReclaim(const EQApplicationPacket *app)
 			SetAlternateCurrencyValue(reclaim->currency_id, 0);
 		}
 		else {
-			SummonItem(item_id, reclaim->count, 0, 0, 0, 0, 0, 0, false, EQEmu::inventory::slotCursor);
+            SummonItem(item_id, reclaim->count, 0, 0, 0, 0, 0, 0, false, EQEmu::invslot::slotCursor);
 			AddAlternateCurrencyValue(reclaim->currency_id, -((int32)reclaim->count));
 		}
 		/* QS: PlayerLogAlternateCurrencyTransactions :: Cursor to Item Storage */
@@ -2914,8 +2935,8 @@ void Client::Handle_OP_ApplyPoison(const EQApplicationPacket *app)
 	}
 	uint32 ApplyPoisonSuccessResult = 0;
 	ApplyPoison_Struct* ApplyPoisonData = (ApplyPoison_Struct*)app->pBuffer;
-	const EQEmu::ItemInstance* PrimaryWeapon = GetInv().GetItem(EQEmu::inventory::slotPrimary);
-	const EQEmu::ItemInstance* SecondaryWeapon = GetInv().GetItem(EQEmu::inventory::slotSecondary);
+    const EQEmu::ItemInstance* PrimaryWeapon = GetInv().GetItem(EQEmu::invslot::slotPrimary);
+    const EQEmu::ItemInstance* SecondaryWeapon = GetInv().GetItem(EQEmu::invslot::slotSecondary);
 	const EQEmu::ItemInstance* PoisonItemInstance = GetInv()[ApplyPoisonData->inventorySlot];
 
 	bool IsPoison = PoisonItemInstance && (PoisonItemInstance->GetItem()->ItemType == EQEmu::item::ItemTypePoison);
@@ -3039,14 +3060,13 @@ void Client::Handle_OP_AugmentItem(const EQApplicationPacket *app)
 	bool deleteItems = false;
 	if (ClientVersion() >= EQEmu::versions::ClientVersion::RoF)
 	{
-		if ((in_augment->container_slot < 0 || in_augment->container_slot >= EQEmu::legacy::SLOT_CURSOR) &&
-			in_augment->container_slot != EQEmu::legacy::SLOT_POWER_SOURCE &&
-			(in_augment->container_slot < EQEmu::legacy::SLOT_PERSONAL_BAGS_BEGIN || in_augment->container_slot > EQEmu::legacy::SLOT_PERSONAL_BAGS_END))
+if ((in_augment->container_slot < EQEmu::invslot::EQUIPMENT_BEGIN || in_augment->container_slot > EQEmu::invslot::GENERAL_END) &&
+            (in_augment->container_slot < EQEmu::invbag::GENERAL_BAGS_BEGIN || in_augment->container_slot > EQEmu::invbag::GENERAL_BAGS_END))
 		{
 			Message(13, "The server does not allow augmentation actions from this slot.");
-			auto cursor_item = m_inv[EQEmu::legacy::SLOT_CURSOR];
+            auto cursor_item = m_inv[EQEmu::invslot::slotCursor];
 			auto augmented_item = m_inv[in_augment->container_slot];
-			SendItemPacket(EQEmu::legacy::SLOT_CURSOR, cursor_item, ItemPacketCharInventory);
+            SendItemPacket(EQEmu::invslot::slotCursor, cursor_item, ItemPacketCharInventory);
 			// this may crash clients on certain slots
 			SendItemPacket(in_augment->container_slot, augmented_item, ItemPacketCharInventory);
 			return;
@@ -3121,7 +3141,7 @@ void Client::Handle_OP_AugmentItem(const EQApplicationPacket *app)
 		{
 			case 0: // Adding an augment
 			case 2: // Swapping augment
-				new_aug = user_inv.GetItem(EQEmu::inventory::slotCursor);
+                new_aug = user_inv.GetItem(EQEmu::invslot::slotCursor);
 
 				if (!new_aug) // Shouldn't get the OP code without the augment on the user's cursor, but maybe it's h4x.
 				{
@@ -3179,7 +3199,7 @@ void Client::Handle_OP_AugmentItem(const EQApplicationPacket *app)
 						if (itemOneToPush)
 						{
 							DeleteItemInInventory(item_slot, 0, true);
-							DeleteItemInInventory(EQEmu::inventory::slotCursor, new_aug->IsStackable() ? 1 : 0, true);
+                            DeleteItemInInventory(EQEmu::invslot::slotCursor, new_aug->IsStackable() ? 1 : 0, true);
 
 							if (solvent)
 							{
@@ -3190,7 +3210,7 @@ void Client::Handle_OP_AugmentItem(const EQApplicationPacket *app)
 							if (itemTwoToPush)
 							{
 								// This is a swap. Return the old aug to the player's cursor.
-								if (!PutItemInInventory(EQEmu::inventory::slotCursor, *itemTwoToPush, true))
+                                if (!PutItemInInventory(EQEmu::invslot::slotCursor, *itemTwoToPush, true))
 								{
 									Log(Logs::General, Logs::Error, "Problem returning old augment to player's cursor after augmentation swap.");
 									Message(15, "Error: Failed to retrieve old augment after augmentation swap!");
@@ -3275,7 +3295,7 @@ void Client::Handle_OP_AugmentItem(const EQApplicationPacket *app)
 					}
 
 					// Drop the removed augment on the player's cursor
-					if (!PutItemInInventory(EQEmu::inventory::slotCursor, *itemTwoToPush, true))
+                    if (!PutItemInInventory(EQEmu::invslot::slotCursor, *itemTwoToPush, true))
 					{
 						Log(Logs::General, Logs::Error, "Problem returning augment to player's cursor after safe removal.");
 						Message(15, "Error: Failed to return augment after removal from item!");
@@ -4233,7 +4253,7 @@ void Client::Handle_OP_CastSpell(const EQApplicationPacket *app)
 		}
 		else
 		{
-			Message(0, "Error: castspell->inventoryslot >= %i (0x%04x)", EQEmu::inventory::slotCursor, castspell->inventoryslot);
+            Message(0, "Error: castspell->inventoryslot >= %i (0x%04x)", EQEmu::invslot::slotCursor, castspell->inventoryslot);
 			InterruptSpell(castspell->spell_id);
 		}
 	}
@@ -5127,9 +5147,9 @@ void Client::Handle_OP_CorpseDrag(const EQApplicationPacket *app)
 	if (c)
 	{
 		if (c == this)
-			Message_StringID(MT_DefaultText, CORPSEDRAG_ALREADY, corpse->GetCleanName());
+			Message_StringID(Chat::DefaultText, CORPSEDRAG_ALREADY, corpse->GetCleanName());
 		else
-			Message_StringID(MT_DefaultText, CORPSEDRAG_SOMEONE_ELSE, corpse->GetCleanName());
+			Message_StringID(Chat::DefaultText, CORPSEDRAG_SOMEONE_ELSE, corpse->GetCleanName());
 
 		return;
 	}
@@ -5139,14 +5159,14 @@ void Client::Handle_OP_CorpseDrag(const EQApplicationPacket *app)
 
 	DraggedCorpses.push_back(std::pair<std::string, uint16>(cds->CorpseName, corpse->GetID()));
 
-	Message_StringID(MT_DefaultText, CORPSEDRAG_BEGIN, cds->CorpseName);
+	Message_StringID(Chat::DefaultText, CORPSEDRAG_BEGIN, cds->CorpseName);
 }
 
 void Client::Handle_OP_CorpseDrop(const EQApplicationPacket *app)
 {
 	if (app->size == 1)
 	{
-		Message_StringID(MT_DefaultText, CORPSEDRAG_STOPALL);
+		Message_StringID(Chat::DefaultText, CORPSEDRAG_STOPALL);
 		ClearDraggedCorpses();
 		return;
 	}
@@ -5155,7 +5175,7 @@ void Client::Handle_OP_CorpseDrop(const EQApplicationPacket *app)
 	{
 		if (!strcasecmp(Iterator->first.c_str(), (const char *)app->pBuffer))
 		{
-			Message_StringID(MT_DefaultText, CORPSEDRAG_STOP);
+			Message_StringID(Chat::DefaultText, CORPSEDRAG_STOP);
 			Iterator = DraggedCorpses.erase(Iterator);
 			return;
 		}
@@ -5172,7 +5192,7 @@ void Client::Handle_OP_CreateObject(const EQApplicationPacket *app)
 	if (LogSys.log_settings[Logs::Inventory].is_category_enabled)
 		Log(Logs::Detail, Logs::Inventory, "Handle_OP_CreateObject() [psize: %u] %s", app->size, DumpPacketToString(app).c_str());
 
-	DropItem(EQEmu::inventory::slotCursor);
+    DropItem(EQEmu::invslot::slotCursor);
 	return;
 }
 
@@ -5463,7 +5483,7 @@ void Client::Handle_OP_Disarm(const EQApplicationPacket *app) {
 	}
 	// Trying to disarm something we can't disarm
 	Message(13, "Your attempt to disarm your target has failed.");
-	// Message_StringID(MT_Skills, DISARM_FAILED);
+	// Message_StringID(Chat::Skills, DISARM_FAILED);
 
 	return;
 }
@@ -5514,7 +5534,7 @@ void Client::Handle_OP_DisarmTraps(const EQApplicationPacket *app)
 		int uskill = GetSkill(EQEmu::skills::SkillDisarmTraps);
 		if ((zone->random.Int(0, 49) + uskill) >= (zone->random.Int(0, 49) + trap->skill))
 		{
-			Message(MT_Skills, "You disarm a trap.");
+			Message(Chat::Skills, "You disarm a trap.");
 			trap->disarmed = true;
 			Log(Logs::General, Logs::Traps, "Trap %d is disarmed.", trap->trap_id);
 			trap->UpdateTrap();
@@ -5522,17 +5542,17 @@ void Client::Handle_OP_DisarmTraps(const EQApplicationPacket *app)
 		else
 		{
 			if (zone->random.Int(0, 99) < 25) {
-				Message(MT_Skills, "You set off the trap while trying to disarm it!");
+				Message(Chat::Skills, "You set off the trap while trying to disarm it!");
 				trap->Trigger(this);
 			}
 			else {
-				Message(MT_Skills, "You failed to disarm a trap.");
+				Message(Chat::Skills, "You failed to disarm a trap.");
 			}
 		}
 		CheckIncreaseSkill(EQEmu::skills::SkillDisarmTraps, nullptr);
 		return;
 	}
-	Message(MT_Skills, "You did not find any traps close enough to disarm.");
+	Message(Chat::Skills, "You did not find any traps close enough to disarm.");
 	return;
 }
 
@@ -5670,6 +5690,113 @@ void Client::Handle_OP_Dye(const EQApplicationPacket *app)
 		DyeArmor(dye);
 	}
 	return;
+}
+
+void Client::Handle_OP_DzAddPlayer(const EQApplicationPacket *app)
+{
+    auto expedition = GetExpedition();
+    if (expedition)
+    {
+        auto dzcmd = reinterpret_cast<ExpeditionCommand_Struct*>(app->pBuffer);
+        expedition->DzAddPlayer(this, dzcmd->name);
+    }
+    else
+    {
+        // the only /dz command that sends an error message if no active expedition
+        Message(Chat::System, DZ_YOU_NOT_ASSIGNED);
+    }
+}
+
+void Client::Handle_OP_DzChooseZoneReply(const EQApplicationPacket *app)
+{
+    auto dzmsg = reinterpret_cast<DynamicZoneChooseZoneReply_Struct*>(app->pBuffer);
+    //LogDynamicZones(
+    //        "Character [{}] chose DynamicZone [{}]:[{}] type: [{}] with system id: [{}]",
+    //        CharacterID(), dzmsg->dz_zone_id, dzmsg->dz_instance_id, dzmsg->dz_type, dzmsg->unknown_id2
+    //);
+
+    if (!dzmsg->dz_instance_id || !database.VerifyInstanceAlive(dzmsg->dz_instance_id, CharacterID()))
+    {
+        // live just no-ops this without a message
+        //LogDynamicZones(
+        //        "Character [{}] chose invalid DynamicZone [{}]:[{}] or is no longer a member",
+        //        CharacterID(), dzmsg->dz_zone_id, dzmsg->dz_instance_id
+        //);
+        return;
+    }
+
+    DynamicZone dz = DynamicZone::LoadDzFromDatabase(dzmsg->dz_instance_id);
+    DynamicZoneLocation loc = dz.GetZoneInLocation();
+    ZoneMode zone_mode = ZoneMode::ZoneToSafeCoords;
+    if (dz.HasZoneInLocation())
+    {
+        zone_mode = ZoneMode::ZoneSolicited;
+    }
+    MovePC(dzmsg->dz_zone_id, dzmsg->dz_instance_id, loc.x, loc.y, loc.z, loc.heading, 0, zone_mode);
+}
+
+void Client::Handle_OP_DzExpeditionInviteResponse(const EQApplicationPacket *app)
+{
+    auto expedition = Expedition::FindCachedExpeditionByID(m_pending_expedition_invite.expedition_id);
+    std::string swap_remove_name = m_pending_expedition_invite.swap_remove_name;
+    m_pending_expedition_invite = { 0 }; // clear before re-validating
+
+    if (expedition)
+    {
+        auto dzmsg = reinterpret_cast<ExpeditionInviteResponse_Struct*>(app->pBuffer);
+        expedition->DzInviteResponse(this, dzmsg->accepted, swap_remove_name);
+    }
+}
+
+void Client::Handle_OP_DzListTimers(const EQApplicationPacket *app)
+{
+    DzListTimers();
+}
+
+void Client::Handle_OP_DzMakeLeader(const EQApplicationPacket *app)
+{
+    auto expedition = GetExpedition();
+    if (expedition)
+    {
+        auto dzcmd = reinterpret_cast<ExpeditionCommand_Struct*>(app->pBuffer);
+        expedition->DzMakeLeader(this, dzcmd->name);
+    }
+}
+
+void Client::Handle_OP_DzPlayerList(const EQApplicationPacket *app)
+{
+    auto expedition = GetExpedition();
+    if (expedition) {
+        expedition->DzPlayerList(this);
+    }
+}
+
+void Client::Handle_OP_DzRemovePlayer(const EQApplicationPacket *app)
+{
+    auto expedition = GetExpedition();
+    if (expedition)
+    {
+        auto dzcmd = reinterpret_cast<ExpeditionCommand_Struct*>(app->pBuffer);
+        expedition->DzRemovePlayer(this, dzcmd->name);
+    }
+}
+
+void Client::Handle_OP_DzSwapPlayer(const EQApplicationPacket *app)
+{
+    auto expedition = GetExpedition();
+    if (expedition)
+    {
+        auto dzcmd = reinterpret_cast<ExpeditionCommandSwap_Struct*>(app->pBuffer);
+        expedition->DzSwapPlayer(this, dzcmd->rem_player_name, dzcmd->add_player_name);
+    }
+}
+
+void Client::Handle_OP_DzQuit(const EQApplicationPacket *app)
+{
+    auto expedition = GetExpedition();
+    if (expedition) {
+        expedition->DzQuit(this);
+    }
 }
 
 void Client::Handle_OP_Emote(const EQApplicationPacket *app)
@@ -7206,7 +7333,7 @@ void Client::Handle_OP_GuildBank(const EQApplicationPacket *app)
 				return;
 			}
 
-			EQEmu::ItemInstance *CursorItemInst = GetInv().GetItem(EQEmu::inventory::slotCursor);
+            EQEmu::ItemInstance *CursorItemInst = GetInv().GetItem(EQEmu::invslot::slotCursor);
 
 			bool Allowed = true;
 
@@ -7254,7 +7381,7 @@ void Client::Handle_OP_GuildBank(const EQApplicationPacket *app)
 			{
 				GuildBankDepositAck(false, sentAction);
 
-				DeleteItemInInventory(EQEmu::inventory::slotCursor, 0, false);
+                DeleteItemInInventory(EQEmu::invslot::slotCursor, 0, false);
 			}
 
 			break;
@@ -7275,7 +7402,7 @@ void Client::Handle_OP_GuildBank(const EQApplicationPacket *app)
 
 		case GuildBankWithdraw:
 		{
-			if (GetInv()[EQEmu::inventory::slotCursor])
+            if (GetInv()[EQEmu::invslot::slotCursor])
 			{
 				Message_StringID(13, GUILD_BANK_EMPTY_HANDS);
 
@@ -7321,7 +7448,7 @@ void Client::Handle_OP_GuildBank(const EQApplicationPacket *app)
 			{
 				PushItemOnCursor(*inst);
 
-				SendItemPacket(EQEmu::inventory::slotCursor, inst, ItemPacketLimbo);
+                SendItemPacket(EQEmu::invslot::slotCursor, inst, ItemPacketLimbo);
 
 				GuildBanks->DeleteItem(GuildID(), gbwis->Area, gbwis->SlotID, gbwis->Quantity);
 			}
@@ -8303,7 +8430,7 @@ void Client::Handle_OP_InspectAnswer(const EQApplicationPacket *app)
 	const EQEmu::ItemData* item = nullptr;
 
 	int ornamentationAugtype = RuleI(Character, OrnamentationAugmentType);
-	for (int16 L = EQEmu::legacy::EQUIPMENT_BEGIN; L <= EQEmu::inventory::slotWaist; L++) {
+for (int16 L = EQEmu::invslot::EQUIPMENT_BEGIN; L <= EQEmu::invslot::EQUIPMENT_END; L++) {
 		const EQEmu::ItemInstance* inst = GetInv().GetItem(L);
 		item = inst ? inst->GetItem() : nullptr;
 
@@ -8322,16 +8449,6 @@ void Client::Handle_OP_InspectAnswer(const EQApplicationPacket *app)
 		}
 		else { insr->itemicons[L] = 0xFFFFFFFF; }
 	}
-
-	const EQEmu::ItemInstance* inst = GetInv().GetItem(EQEmu::inventory::slotAmmo);
-	item = inst ? inst->GetItem() : nullptr;
-
-	if (item) {
-		// another one..I did these, didn't I!!?
-		strcpy(insr->itemnames[SoF::invslot::PossessionsAmmo], item->Name);
-		insr->itemicons[SoF::invslot::PossessionsAmmo] = item->Icon;
-	}
-	else { insr->itemicons[SoF::invslot::PossessionsAmmo] = 0xFFFFFFFF; }
 
 	InspectMessage_Struct* newmessage = (InspectMessage_Struct*)insr->text;
 	InspectMessage_Struct& playermessage = this->GetInspectMessage();
@@ -8772,6 +8889,11 @@ void Client::Handle_OP_ItemVerifyRequest(const EQApplicationPacket *app)
 		return;
 	}
 
+	// Modern clients don't require pet targeted for item clicks that are ST_Pet
+	if (spell_id > 0 && (spells[spell_id].targettype == ST_Pet || spells[spell_id].targettype == ST_SummonedPet)) {
+		target_id = GetPetID();
+	}
+
 	Log(Logs::General, Logs::None, "OP ItemVerifyRequest: spell=%i, target=%i, inv=%i", spell_id, target_id, slot_id);
 
 	if (m_inv.SupportsClickCasting(slot_id) || ((item->ItemType == EQEmu::item::ItemTypePotion || item->PotionBelt) && m_inv.SupportsPotionBeltCasting(slot_id))) // sanity check
@@ -8790,7 +8912,7 @@ void Client::Handle_OP_ItemVerifyRequest(const EQApplicationPacket *app)
 		EQEmu::ItemInstance* clickaug = nullptr;
 		EQEmu::ItemData* augitem = nullptr;
 
-		for (r = EQEmu::inventory::socketBegin; r < EQEmu::inventory::SocketCount; r++) {
+        for (r = EQEmu::invaug::SOCKET_BEGIN; r <= EQEmu::invaug::SOCKET_END; r++) {
 			const EQEmu::ItemInstance* aug_i = inst->GetAugment(r);
 			if (!aug_i)
 				continue;
@@ -8959,6 +9081,23 @@ void Client::Handle_OP_Jump(const EQApplicationPacket *app)
 void Client::Handle_OP_KeyRing(const EQApplicationPacket *app)
 {
 	KeyRingList();
+}
+
+void Client::Handle_OP_KickPlayers(const EQApplicationPacket *app)
+{
+    auto buf = reinterpret_cast<KickPlayers_Struct*>(app->pBuffer);
+    if (buf->kick_expedition)
+    {
+        auto expedition = GetExpedition();
+        if (expedition)
+        {
+            expedition->DzKickPlayers(this);
+        }
+    }
+    else if (buf->kick_task)
+    {
+        // todo: shared tasks
+    }
 }
 
 void Client::Handle_OP_LDoNButton(const EQApplicationPacket *app)
@@ -9969,7 +10108,7 @@ void Client::Handle_OP_MoveItem(const EQApplicationPacket *app)
 	MoveItem_Struct* mi = (MoveItem_Struct*)app->pBuffer;
 	if (spellend_timer.Enabled() && casting_spell_id && !IsBardSong(casting_spell_id))
 	{
-		if (mi->from_slot != mi->to_slot && (mi->from_slot <= EQEmu::legacy::GENERAL_END || mi->from_slot > 39) && IsValidSlot(mi->from_slot) && IsValidSlot(mi->to_slot))
+        if (mi->from_slot != mi->to_slot && (mi->from_slot <= EQEmu::invslot::GENERAL_END || mi->from_slot > 39) && IsValidSlot(mi->from_slot) && IsValidSlot(mi->to_slot))
 		{
 			char *detect = nullptr;
 			const EQEmu::ItemInstance *itm_from = GetInv().GetItem(mi->from_slot);
@@ -9990,8 +10129,8 @@ void Client::Handle_OP_MoveItem(const EQApplicationPacket *app)
 	// Illegal bagslot usage checks. Currently, user only receives a message if this check is triggered.
 	bool mi_hack = false;
 
-	if (mi->from_slot >= EQEmu::legacy::GENERAL_BAGS_BEGIN && mi->from_slot <= EQEmu::legacy::CURSOR_BAG_END) {
-		if (mi->from_slot >= EQEmu::legacy::CURSOR_BAG_BEGIN) { mi_hack = true; }
+    if (mi->from_slot >= EQEmu::invbag::GENERAL_BAGS_BEGIN && mi->from_slot <= EQEmu::invbag::CURSOR_BAG_END) {
+        if (mi->from_slot >= EQEmu::invbag::CURSOR_BAG_BEGIN) { mi_hack = true; }
 		else {
 			int16 from_parent = m_inv.CalcSlotId(mi->from_slot);
 			if (!m_inv[from_parent]) { mi_hack = true; }
@@ -10000,8 +10139,8 @@ void Client::Handle_OP_MoveItem(const EQApplicationPacket *app)
 		}
 	}
 
-	if (mi->to_slot >= EQEmu::legacy::GENERAL_BAGS_BEGIN && mi->to_slot <= EQEmu::legacy::CURSOR_BAG_END) {
-		if (mi->to_slot >= EQEmu::legacy::CURSOR_BAG_BEGIN) { mi_hack = true; }
+    if (mi->to_slot >= EQEmu::invbag::GENERAL_BAGS_BEGIN && mi->to_slot <= EQEmu::invbag::CURSOR_BAG_END) {
+        if (mi->to_slot >= EQEmu::invbag::CURSOR_BAG_BEGIN) { mi_hack = true; }
 		else {
 			int16 to_parent = m_inv.CalcSlotId(mi->to_slot);
 			if (!m_inv[to_parent]) { mi_hack = true; }
@@ -10210,7 +10349,7 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
                             hate += mypet->GetHateAmount(top) - mypet->GetHateAmount(target) + 100; // should be enough to cause target change
                     }
                     mypet->AddToHateList(target, hate, 0, true, false, false, SPELL_UNKNOWN, true);
-                    Message_StringID(MT_PetResponse, PET_ATTACKING, mypet->GetCleanName(), target->GetCleanName());
+                    Message_StringID(Chat::PetResponse, PET_ATTACKING, mypet->GetCleanName(), target->GetCleanName());
                     SetTarget(target);
                 }
             }
@@ -10247,7 +10386,7 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
 
                     zone->AddAggroMob();
                     mypet->AddToHateList(GetTarget(), 1, 0, true, false, false, SPELL_UNKNOWN, true);
-                    Message_StringID(MT_PetResponse, PET_ATTACKING, mypet->GetCleanName(), GetTarget()->GetCleanName());
+                    Message_StringID(Chat::PetResponse, PET_ATTACKING, mypet->GetCleanName(), GetTarget()->GetCleanName());
                 }
             }
             break;
@@ -10256,7 +10395,7 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
             if (mypet->IsFeared()) break; //keeps pet running while feared
 
             if ((mypet->GetPetType() == petAnimation && aabonuses.PetCommands[PetCommand]) || mypet->GetPetType() != petAnimation) {
-                mypet->SayTo_StringID(this, MT_PetResponse, PET_CALMING);
+                mypet->SayTo_StringID(this, Chat::PetResponse, PET_CALMING);
                 mypet->SetPetTargetLockID(0);
                 mypet->WipeHateList();
                 mypet->SetTarget(nullptr);
@@ -10269,7 +10408,7 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
         }
         case PET_HEALTHREPORT: {
             if ((mypet->GetPetType() == petAnimation && aabonuses.PetCommands[PetCommand]) || mypet->GetPetType() != petAnimation) {
-                Message_StringID(MT_PetResponse, PET_REPORT_HP, ConvertArrayF(mypet->GetHPRatio(), val1));
+                Message_StringID(Chat::PetResponse, PET_REPORT_HP, ConvertArrayF(mypet->GetHPRatio(), val1));
                 mypet->ShowBuffList(this);
             }
             break;
@@ -10288,7 +10427,7 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
                 SetPet(nullptr);
             }
 
-            mypet->SayTo_StringID(this, MT_PetResponse, PET_GETLOST_STRING);
+            mypet->SayTo_StringID(this, Chat::PetResponse, PET_GETLOST_STRING);
             mypet->CastToNPC()->Depop();
 
             //Oddly, the client (Titanium) will still allow "/pet get lost" command despite me adding the code below. If someone can figure that out, you can uncomment this code and use it.
@@ -10306,7 +10445,7 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
 
             if ((mypet->GetPetType() == petAnimation && aabonuses.PetCommands[PetCommand]) || mypet->GetPetType() != petAnimation) {
                 if (mypet->IsNPC()) {
-                    mypet->SayTo_StringID(this, MT_PetResponse, PET_GUARDINGLIFE);
+                    mypet->SayTo_StringID(this, Chat::PetResponse, PET_GUARDINGLIFE);
                     mypet->SetPetFeigned(false);
                     mypet->SetPetOrder(SPO_Guard);
                     mypet->CastToNPC()->SaveGuardSpot();
@@ -10324,7 +10463,7 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
             if (mypet->IsFeared()) break; //could be exploited like PET_BACKOFF
 
             if ((mypet->GetPetType() == petAnimation && aabonuses.PetCommands[PetCommand]) || mypet->GetPetType() != petAnimation) {
-                mypet->SayTo_StringID(this, MT_PetResponse, PET_FOLLOWING);
+                mypet->SayTo_StringID(this, Chat::PetResponse, PET_FOLLOWING);
                 mypet->SetPetFeigned(false);
                 mypet->SetPetOrder(SPO_Follow);
                 mypet->SendAppearancePacket(AT_Anim, ANIM_STAND);
@@ -10339,12 +10478,12 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
             if ((mypet->GetPetType() == petAnimation && aabonuses.PetCommands[PetCommand]) || mypet->GetPetType() != petAnimation) {
                 if (mypet->CastToNPC()->IsTaunting())
                 {
-                    Message_StringID(MT_PetResponse, PET_NO_TAUNT);
+                    Message_StringID(Chat::PetResponse, PET_NO_TAUNT);
                     mypet->CastToNPC()->SetTaunting(false);
                 }
                 else
                 {
-                    Message_StringID(MT_PetResponse, PET_DO_TAUNT);
+                    Message_StringID(Chat::PetResponse, PET_DO_TAUNT);
                     mypet->CastToNPC()->SetTaunting(true);
                 }
             }
@@ -10352,14 +10491,14 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
         }
         case PET_TAUNT_ON: {
             if ((mypet->GetPetType() == petAnimation && aabonuses.PetCommands[PetCommand]) || mypet->GetPetType() != petAnimation) {
-                Message_StringID(MT_PetResponse, PET_DO_TAUNT);
+                Message_StringID(Chat::PetResponse, PET_DO_TAUNT);
                 mypet->CastToNPC()->SetTaunting(true);
             }
             break;
         }
         case PET_TAUNT_OFF: {
             if ((mypet->GetPetType() == petAnimation && aabonuses.PetCommands[PetCommand]) || mypet->GetPetType() != petAnimation) {
-                Message_StringID(MT_PetResponse, PET_NO_TAUNT);
+                Message_StringID(Chat::PetResponse, PET_NO_TAUNT);
                 mypet->CastToNPC()->SetTaunting(false);
             }
             break;
@@ -10368,7 +10507,7 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
             if (mypet->IsFeared()) break; //could be exploited like PET_BACKOFF
 
             if ((mypet->GetPetType() == petAnimation && aabonuses.PetCommands[PetCommand]) || mypet->GetPetType() != petAnimation) {
-                mypet->SayTo_StringID(this, MT_PetResponse, PET_GUARDME_STRING);
+                mypet->SayTo_StringID(this, Chat::PetResponse, PET_GUARDME_STRING);
                 mypet->SetPetFeigned(false);
                 mypet->SetPetOrder(SPO_Follow);
                 mypet->SendAppearancePacket(AT_Anim, ANIM_STAND);
@@ -10385,14 +10524,14 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
             if ((mypet->GetPetType() == petAnimation && aabonuses.PetCommands[PetCommand]) || mypet->GetPetType() != petAnimation) {
                 if (mypet->GetPetOrder() == SPO_Sit)
                 {
-                    mypet->SayTo_StringID(this, MT_PetResponse, PET_SIT_STRING);
+                    mypet->SayTo_StringID(this, Chat::PetResponse, PET_SIT_STRING);
                     mypet->SetPetFeigned(false);
                     mypet->SetPetOrder(SPO_Follow);
                     mypet->SendAppearancePacket(AT_Anim, ANIM_STAND);
                 }
                 else
                 {
-                    mypet->SayTo_StringID(this, MT_PetResponse, PET_SIT_STRING);
+                    mypet->SayTo_StringID(this, Chat::PetResponse, PET_SIT_STRING);
                     mypet->SetPetFeigned(false);
                     mypet->SetPetOrder(SPO_Sit);
                     mypet->SetRunAnimSpeed(0);
@@ -10407,7 +10546,7 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
             if (mypet->IsFeared()) break; //could be exploited like PET_BACKOFF
 
             if ((mypet->GetPetType() == petAnimation && aabonuses.PetCommands[PetCommand]) || mypet->GetPetType() != petAnimation) {
-                mypet->SayTo_StringID(this, MT_PetResponse, PET_SIT_STRING);
+                mypet->SayTo_StringID(this, Chat::PetResponse, PET_SIT_STRING);
                 mypet->SetPetFeigned(false);
                 mypet->SetPetOrder(SPO_Follow);
                 mypet->SendAppearancePacket(AT_Anim, ANIM_STAND);
@@ -10418,7 +10557,7 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
             if (mypet->IsFeared()) break; //could be exploited like PET_BACKOFF
 
             if ((mypet->GetPetType() == petAnimation && aabonuses.PetCommands[PetCommand]) || mypet->GetPetType() != petAnimation) {
-                mypet->SayTo_StringID(this, MT_PetResponse, PET_SIT_STRING);
+                mypet->SayTo_StringID(this, Chat::PetResponse, PET_SIT_STRING);
                 mypet->SetPetFeigned(false);
                 mypet->SetPetOrder(SPO_Sit);
                 mypet->SetRunAnimSpeed(0);
@@ -10433,18 +10572,18 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
                 if (mypet->IsHeld())
                 {
                     if (m_ClientVersionBit & EQEmu::versions::bit_SoDAndLater)
-                        Message_StringID(MT_PetResponse, PET_HOLD_SET_OFF);
+                        Message_StringID(Chat::PetResponse, PET_HOLD_SET_OFF);
                     mypet->SetHeld(false);
                 }
                 else
                 {
                     if (m_ClientVersionBit & EQEmu::versions::bit_SoDAndLater)
-                        Message_StringID(MT_PetResponse, PET_HOLD_SET_ON);
+                        Message_StringID(Chat::PetResponse, PET_HOLD_SET_ON);
 
                     if (m_ClientVersionBit & EQEmu::versions::bit_UFAndLater)
-                        mypet->SayTo_StringID(this, MT_PetResponse, PET_NOW_HOLDING);
+                        mypet->SayTo_StringID(this, Chat::PetResponse, PET_NOW_HOLDING);
                     else
-                        mypet->SayTo_StringID(this, MT_PetResponse, PET_ON_HOLD);
+                        mypet->SayTo_StringID(this, Chat::PetResponse, PET_ON_HOLD);
 
                     mypet->SetHeld(true);
                 }
@@ -10456,12 +10595,12 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
         case PET_HOLD_ON: {
             if (aabonuses.PetCommands[PetCommand] && mypet->IsNPC() && !mypet->IsHeld()) {
                 if (m_ClientVersionBit & EQEmu::versions::bit_SoDAndLater)
-                    Message_StringID(MT_PetResponse, PET_HOLD_SET_ON);
+                    Message_StringID(Chat::PetResponse, PET_HOLD_SET_ON);
 
                 if (m_ClientVersionBit & EQEmu::versions::bit_UFAndLater)
-                    mypet->SayTo_StringID(this, MT_PetResponse, PET_NOW_HOLDING);
+                    mypet->SayTo_StringID(this, Chat::PetResponse, PET_NOW_HOLDING);
                 else
-                    mypet->SayTo_StringID(this, MT_PetResponse, PET_ON_HOLD);
+                    mypet->SayTo_StringID(this, Chat::PetResponse, PET_ON_HOLD);
                 mypet->SetHeld(true);
                 mypet->SetGHeld(false);
                 SetPetCommandState(PET_BUTTON_GHOLD, 0);
@@ -10471,7 +10610,7 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
         case PET_HOLD_OFF: {
             if (aabonuses.PetCommands[PetCommand] && mypet->IsNPC() && mypet->IsHeld()) {
                 if (m_ClientVersionBit & EQEmu::versions::bit_SoDAndLater)
-                    Message_StringID(MT_PetResponse, PET_HOLD_SET_OFF);
+                    Message_StringID(Chat::PetResponse, PET_HOLD_SET_OFF);
                 mypet->SetHeld(false);
             }
             break;
@@ -10481,16 +10620,16 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
                 if (mypet->IsGHeld())
                 {
                     if (m_ClientVersionBit & EQEmu::versions::bit_UFAndLater)
-                        Message_StringID(MT_PetResponse, PET_OFF_GHOLD);
+                        Message_StringID(Chat::PetResponse, PET_OFF_GHOLD);
                     mypet->SetGHeld(false);
                 }
                 else
                 {
                     if (m_ClientVersionBit & EQEmu::versions::bit_UFAndLater) {
-                        Message_StringID(MT_PetResponse, PET_ON_GHOLD);
-                        mypet->SayTo_StringID(this, MT_PetResponse, PET_GHOLD_ON_MSG);
+                        Message_StringID(Chat::PetResponse, PET_ON_GHOLD);
+                        mypet->SayTo_StringID(this, Chat::PetResponse, PET_GHOLD_ON_MSG);
                     } else {
-                        mypet->SayTo_StringID(this, MT_PetResponse, PET_ON_HOLD);
+                        mypet->SayTo_StringID(this, Chat::PetResponse, PET_ON_HOLD);
                     }
                     mypet->SetGHeld(true);
                 }
@@ -10502,10 +10641,10 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
         case PET_GHOLD_ON: {
             if (aabonuses.PetCommands[PetCommand] && mypet->IsNPC()) {
                 if (m_ClientVersionBit & EQEmu::versions::bit_UFAndLater) {
-                    Message_StringID(MT_PetResponse, PET_ON_GHOLD);
-                    mypet->SayTo_StringID(this, MT_PetResponse, PET_GHOLD_ON_MSG);
+                    Message_StringID(Chat::PetResponse, PET_ON_GHOLD);
+                    mypet->SayTo_StringID(this, Chat::PetResponse, PET_GHOLD_ON_MSG);
                 } else {
-                    mypet->SayTo_StringID(this, MT_PetResponse, PET_ON_HOLD);
+                    mypet->SayTo_StringID(this, Chat::PetResponse, PET_ON_HOLD);
                 }
                 mypet->SetGHeld(true);
                 mypet->SetHeld(false);
@@ -10516,7 +10655,7 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
         case PET_GHOLD_OFF: {
             if (aabonuses.PetCommands[PetCommand] && mypet->IsNPC() && mypet->IsGHeld()) {
                 if (m_ClientVersionBit & EQEmu::versions::bit_UFAndLater)
-                    Message_StringID(MT_PetResponse, PET_OFF_GHOLD);
+                    Message_StringID(Chat::PetResponse, PET_OFF_GHOLD);
                 mypet->SetGHeld(false);
             }
             break;
@@ -10526,15 +10665,15 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
                 if (mypet->IsFeared())
                     break;
                 if (mypet->IsNoCast()) {
-                    Message_StringID(MT_PetResponse, PET_CASTING);
+                    Message_StringID(Chat::PetResponse, PET_CASTING);
                     if (m_ClientVersionBit & EQEmu::versions::bit_SoDAndLater)
-                        Message_StringID(MT_PetResponse, PET_SPELLHOLD_SET_OFF);
+                        Message_StringID(Chat::PetResponse, PET_SPELLHOLD_SET_OFF);
                     mypet->SetNoCast(false);
                 }
                 else {
-                    Message_StringID(MT_PetResponse, PET_NOT_CASTING);
+                    Message_StringID(Chat::PetResponse, PET_NOT_CASTING);
                     if (m_ClientVersionBit & EQEmu::versions::bit_SoDAndLater)
-                        Message_StringID(MT_PetResponse, PET_SPELLHOLD_SET_ON);
+                        Message_StringID(Chat::PetResponse, PET_SPELLHOLD_SET_ON);
                     mypet->SetNoCast(true);
                 }
             }
@@ -10545,9 +10684,9 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
                 if (mypet->IsFeared())
                     break;
                 if (!mypet->IsNoCast()) {
-                    Message_StringID(MT_PetResponse, PET_NOT_CASTING);
+                    Message_StringID(Chat::PetResponse, PET_NOT_CASTING);
                     if (m_ClientVersionBit & EQEmu::versions::bit_SoDAndLater)
-                        Message_StringID(MT_PetResponse, PET_SPELLHOLD_SET_ON);
+                        Message_StringID(Chat::PetResponse, PET_SPELLHOLD_SET_ON);
                     mypet->SetNoCast(true);
                 }
             }
@@ -10558,9 +10697,9 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
                 if (mypet->IsFeared())
                     break;
                 if (mypet->IsNoCast()) {
-                    Message_StringID(MT_PetResponse, PET_CASTING);
+                    Message_StringID(Chat::PetResponse, PET_CASTING);
                     if (m_ClientVersionBit & EQEmu::versions::bit_SoDAndLater)
-                        Message_StringID(MT_PetResponse, PET_SPELLHOLD_SET_OFF);
+                        Message_StringID(Chat::PetResponse, PET_SPELLHOLD_SET_OFF);
                     mypet->SetNoCast(false);
                 }
             }
@@ -10571,15 +10710,15 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
                 if (mypet->IsFeared())
                     break;
                 if (mypet->IsFocused()) {
-                    Message_StringID(MT_PetResponse, PET_NOT_FOCUSING);
+                    Message_StringID(Chat::PetResponse, PET_NOT_FOCUSING);
                     if (m_ClientVersionBit & EQEmu::versions::bit_SoDAndLater)
-                        Message_StringID(MT_PetResponse, PET_FOCUS_SET_OFF);
+                        Message_StringID(Chat::PetResponse, PET_FOCUS_SET_OFF);
                     mypet->SetFocused(false);
                 }
                 else {
-                    Message_StringID(MT_PetResponse, PET_NOW_FOCUSING);
+                    Message_StringID(Chat::PetResponse, PET_NOW_FOCUSING);
                     if (m_ClientVersionBit & EQEmu::versions::bit_SoDAndLater)
-                        Message_StringID(MT_PetResponse, PET_FOCUS_SET_ON);
+                        Message_StringID(Chat::PetResponse, PET_FOCUS_SET_ON);
                     mypet->SetFocused(true);
                 }
             }
@@ -10590,9 +10729,9 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
                 if (mypet->IsFeared())
                     break;
                 if (!mypet->IsFocused()) {
-                    Message_StringID(MT_PetResponse, PET_NOW_FOCUSING);
+                    Message_StringID(Chat::PetResponse, PET_NOW_FOCUSING);
                     if (m_ClientVersionBit & EQEmu::versions::bit_SoDAndLater)
-                        Message_StringID(MT_PetResponse, PET_FOCUS_SET_ON);
+                        Message_StringID(Chat::PetResponse, PET_FOCUS_SET_ON);
                     mypet->SetFocused(true);
                 }
             }
@@ -10603,9 +10742,9 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
                 if (mypet->IsFeared())
                     break;
                 if (mypet->IsFocused()) {
-                    Message_StringID(MT_PetResponse, PET_NOT_FOCUSING);
+                    Message_StringID(Chat::PetResponse, PET_NOT_FOCUSING);
                     if (m_ClientVersionBit & EQEmu::versions::bit_SoDAndLater)
-                        Message_StringID(MT_PetResponse, PET_FOCUS_SET_OFF);
+                        Message_StringID(Chat::PetResponse, PET_FOCUS_SET_OFF);
                     mypet->SetFocused(false);
                 }
             }
@@ -10651,7 +10790,7 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
                     mypet->SetPetOrder(SPO_Sit);
                     mypet->SetHeld(true);
                     mypet->SetRunAnimSpeed(0);
-                    mypet->SayTo_StringID(this, MT_PetResponse, PET_CALMING);
+                    mypet->SayTo_StringID(this, Chat::PetResponse, PET_CALMING);
                     mypet->SendAppearancePacket(AT_Anim, ANIM_DEATH);
                     p_timers.Start(pTimerPetFeignDeath, 15);
                     mypet->SendAppearancePacket(AT_Anim, ANIM_DEATH);
@@ -10684,7 +10823,7 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
                         SetPetCommandState(PET_BUTTON_REGROUP, 0);
                     }
                 }
-                mypet->SayTo_StringID(this, MT_PetResponse, PET_GETLOST_STRING);
+                mypet->SayTo_StringID(this, Chat::PetResponse, PET_GETLOST_STRING);
             }
             break;
         }
@@ -10695,7 +10834,7 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
                 mypet->SetPetStop(true);
                 mypet->SetCurrentSpeed(0);
                 mypet->SetTarget(nullptr);
-                mypet->SayTo_StringID(this, MT_PetResponse, PET_GETLOST_STRING);
+                mypet->SayTo_StringID(this, Chat::PetResponse, PET_GETLOST_STRING);
                 if (mypet->IsPetRegroup()) {
                     mypet->SetPetRegroup(false);
                     SetPetCommandState(PET_BUTTON_REGROUP, 0);
@@ -10708,7 +10847,7 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
 
             if ((mypet->GetPetType() == petAnimation && aabonuses.PetCommands[PetCommand]) || mypet->GetPetType() != petAnimation) {
                 mypet->SetPetStop(false);
-                mypet->SayTo_StringID(this, MT_PetResponse, PET_GETLOST_STRING);
+                mypet->SayTo_StringID(this, Chat::PetResponse, PET_GETLOST_STRING);
             }
             break;
         }
@@ -10718,11 +10857,11 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
             if (aabonuses.PetCommands[PetCommand]) {
                 if (mypet->IsPetRegroup()) {
                     mypet->SetPetRegroup(false);
-                    mypet->SayTo_StringID(this, MT_PetResponse, PET_OFF_REGROUPING);
+                    mypet->SayTo_StringID(this, Chat::PetResponse, PET_OFF_REGROUPING);
                 } else {
                     mypet->SetPetRegroup(true);
                     mypet->SetTarget(nullptr);
-                    mypet->SayTo_StringID(this, MT_PetResponse, PET_ON_REGROUPING);
+                    mypet->SayTo_StringID(this, Chat::PetResponse, PET_ON_REGROUPING);
                     if (mypet->IsPetStop()) {
                         mypet->SetPetStop(false);
                         SetPetCommandState(PET_BUTTON_STOP, 0);
@@ -10737,7 +10876,7 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
             if (aabonuses.PetCommands[PetCommand]) {
                 mypet->SetPetRegroup(true);
                 mypet->SetTarget(nullptr);
-                mypet->SayTo_StringID(this, MT_PetResponse, PET_ON_REGROUPING);
+                mypet->SayTo_StringID(this, Chat::PetResponse, PET_ON_REGROUPING);
                 if (mypet->IsPetStop()) {
                     mypet->SetPetStop(false);
                     SetPetCommandState(PET_BUTTON_STOP, 0);
@@ -10750,7 +10889,7 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
 
             if (aabonuses.PetCommands[PetCommand]) {
                 mypet->SetPetRegroup(false);
-                mypet->SayTo_StringID(this, MT_PetResponse, PET_OFF_REGROUPING);
+                mypet->SayTo_StringID(this, Chat::PetResponse, PET_OFF_REGROUPING);
             }
             break;
         }
@@ -12204,7 +12343,7 @@ void Client::Handle_OP_Report(const EQApplicationPacket *app)
 {
 	if (!CanUseReport)
 	{
-		Message_StringID(MT_System, REPORT_ONCE);
+		Message_StringID(Chat::System, REPORT_ONCE);
 		return;
 	}
 
@@ -12322,7 +12461,7 @@ void Client::Handle_OP_RespawnWindow(const EQApplicationPacket *app)
 void Client::Handle_OP_Rewind(const EQApplicationPacket *app)
 {
 	if ((rewind_timer.GetRemainingTime() > 1 && rewind_timer.Enabled())) {
-		Message_StringID(MT_System, REWIND_WAIT);
+		Message_StringID(Chat::System, REWIND_WAIT);
 	}
 	else {
 		CastToClient()->MovePC(zone->GetZoneID(), zone->GetInstanceID(), m_RewindLocation.x, m_RewindLocation.y, m_RewindLocation.z, 0, 2, Rewind);
@@ -12465,23 +12604,23 @@ void Client::Handle_OP_SenseTraps(const EQApplicationPacket *app)
 			auto diff = trap->m_Position - glm::vec3(GetPosition());
 
 			if (diff.x == 0 && diff.y == 0)
-				Message(MT_Skills, "You sense a trap right under your feet!");
+				Message(Chat::Skills, "You sense a trap right under your feet!");
 			else if (diff.x > 10 && diff.y > 10)
-				Message(MT_Skills, "You sense a trap to the NorthWest.");
+				Message(Chat::Skills, "You sense a trap to the NorthWest.");
 			else if (diff.x < -10 && diff.y > 10)
-				Message(MT_Skills, "You sense a trap to the NorthEast.");
+				Message(Chat::Skills, "You sense a trap to the NorthEast.");
 			else if (diff.y > 10)
-				Message(MT_Skills, "You sense a trap to the North.");
+				Message(Chat::Skills, "You sense a trap to the North.");
 			else if (diff.x > 10 && diff.y < -10)
-				Message(MT_Skills, "You sense a trap to the SouthWest.");
+				Message(Chat::Skills, "You sense a trap to the SouthWest.");
 			else if (diff.x < -10 && diff.y < -10)
-				Message(MT_Skills, "You sense a trap to the SouthEast.");
+				Message(Chat::Skills, "You sense a trap to the SouthEast.");
 			else if (diff.y < -10)
-				Message(MT_Skills, "You sense a trap to the South.");
+				Message(Chat::Skills, "You sense a trap to the South.");
 			else if (diff.x > 10)
-				Message(MT_Skills, "You sense a trap to the West.");
+				Message(Chat::Skills, "You sense a trap to the West.");
 			else
-				Message(MT_Skills, "You sense a trap to the East.");
+				Message(Chat::Skills, "You sense a trap to the East.");
 			trap->detected = true;
 
 			float angle = CalculateHeadingToTarget(trap->m_Position.x, trap->m_Position.y);
@@ -12494,7 +12633,7 @@ void Client::Handle_OP_SenseTraps(const EQApplicationPacket *app)
 			return;
 		}
 	}
-	Message(MT_Skills, "You did not find any traps nearby.");
+	Message(Chat::Skills, "You did not find any traps nearby.");
 	return;
 }
 
@@ -12823,8 +12962,8 @@ void Client::Handle_OP_ShopPlayerBuy(const EQApplicationPacket *app)
 	// shouldn't we be reimbursing if these two fail?
 
 	//make sure we are not completely full...
-	if (freeslotid == EQEmu::inventory::slotCursor) {
-		if (m_inv.GetItem(EQEmu::inventory::slotCursor) != nullptr) {
+    if (freeslotid == EQEmu::invslot::slotCursor) {
+        if (m_inv.GetItem(EQEmu::invslot::slotCursor) != nullptr) {
 			Message(13, "You do not have room for any more items.");
 			safe_delete(outapp);
 			safe_delete(inst);

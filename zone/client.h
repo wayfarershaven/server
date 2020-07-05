@@ -52,6 +52,8 @@ namespace EQEmu
 #include "aggromanager.h"
 
 #include "common.h"
+#include "expedition.h"
+#include "dynamiczone.h"
 #include "merc.h"
 #include "mob.h"
 #include "qglobals.h"
@@ -237,7 +239,7 @@ public:
 	//abstract virtual function implementations required by base abstract class
 	virtual bool Death(Mob* killerMob, int32 damage, uint16 spell_id, EQEmu::skills::SkillType attack_skill);
 	virtual void Damage(Mob* from, int32 damage, uint16 spell_id, EQEmu::skills::SkillType attack_skill, bool avoidable = true, int8 buffslot = -1, bool iBuffTic = false, eSpecialAttacks special = eSpecialAttacks::None);
-	virtual bool Attack(Mob* other, int Hand = EQEmu::inventory::slotPrimary, bool FromRiposte = false, bool IsStrikethrough = false, bool IsFromSpell = false,
+    virtual bool Attack(Mob* other, int Hand = EQEmu::invslot::slotPrimary, bool FromRiposte = false, bool IsStrikethrough = false, bool IsFromSpell = false,
 			ExtraAttackOptions *opts = nullptr);
 	virtual bool HasRaid() { return (GetRaid() ? true : false); }
 	virtual bool HasGroup() { return (GetGroup() ? true : false); }
@@ -274,6 +276,7 @@ public:
 	uint8 SlotConvert(uint8 slot,bool bracer=false);
 	void Message_StringID(uint32 type, uint32 string_id, uint32 distance = 0);
 	void Message_StringID(uint32 type, uint32 string_id, const char* message,const char* message2=0,const char* message3=0,const char* message4=0,const char* message5=0,const char* message6=0,const char* message7=0,const char* message8=0,const char* message9=0, uint32 distance = 0);
+	void MessageString(const ServerCZClientMessageString_Struct* msg);
 	bool FilteredMessageCheck(Mob *sender, eqFilterType filter);
 	void FilteredMessage_StringID(Mob *sender, uint32 type, eqFilterType filter, uint32 string_id);
 	void FilteredMessage_StringID(Mob *sender, uint32 type, eqFilterType filter,
@@ -843,7 +846,7 @@ public:
 	void QSSwapItemAuditor(MoveItem_Struct* move_in, bool postaction_call = false);
 	void PutLootInInventory(int16 slot_id, const EQEmu::ItemInstance &inst, ServerLootItem_Struct** bag_item_data = 0);
 	bool AutoPutLootInInventory(EQEmu::ItemInstance& inst, bool try_worn = false, bool try_cursor = true, ServerLootItem_Struct** bag_item_data = 0);
-	bool SummonItem(uint32 item_id, int16 charges = -1, uint32 aug1 = 0, uint32 aug2 = 0, uint32 aug3 = 0, uint32 aug4 = 0, uint32 aug5 = 0, uint32 aug6 = 0, bool attuned = false, uint16 to_slot = EQEmu::inventory::slotCursor, uint32 ornament_icon = 0, uint32 ornament_idfile = 0, uint32 ornament_hero_model = 0);
+    bool SummonItem(uint32 item_id, int16 charges = -1, uint32 aug1 = 0, uint32 aug2 = 0, uint32 aug3 = 0, uint32 aug4 = 0, uint32 aug5 = 0, uint32 aug6 = 0, bool attuned = false, uint16 to_slot = EQEmu::invslot::slotCursor, uint32 ornament_icon = 0, uint32 ornament_idfile = 0, uint32 ornament_hero_model = 0);
 	void SetStats(uint8 type,int16 set_val);
 	void IncStats(uint8 type,int16 increase_val);
 	void DropItem(int16 slot_id, bool recurse = true);
@@ -1072,6 +1075,43 @@ public:
 
 	void MarkSingleCompassLoc(float in_x, float in_y, float in_z, uint8 count=1);
 
+    // cross zone client messaging helpers (null client argument will fallback to messaging by name)
+    static void SendCrossZoneMessage(
+            Client* client, const std::string& client_name, uint16_t chat_type, const std::string& message);
+    static void SendCrossZoneMessageString(
+            Client* client, const std::string& client_name, uint16_t chat_type,
+            uint32_t string_id, const std::initializer_list<std::string>& parameters = {});
+
+    void AddExpeditionLockout(const ExpeditionLockoutTimer& lockout, bool update_db = false, bool update_client = true);
+    void AddNewExpeditionLockout(const std::string& expedition_name, const std::string& event_name, uint32_t duration);
+    Expedition* CreateExpedition(DynamicZone& dz_instance, ExpeditionRequest& request);
+    Expedition* CreateExpedition(
+            std::string zone_name, uint32 version, uint32 duration, std::string expedition_name,
+            uint32 min_players, uint32 max_players, bool has_replay_timer = false, bool disable_messages = false);
+    Expedition* GetExpedition() const;
+    uint32 GetExpeditionID() const { return m_expedition_id; }
+    const ExpeditionLockoutTimer* GetExpeditionLockout(
+            const std::string& expedition_name, const std::string& event_name, bool include_expired = false) const;
+    const std::vector<ExpeditionLockoutTimer>& GetExpeditionLockouts() const { return m_expedition_lockouts; };
+    std::vector<ExpeditionLockoutTimer> GetExpeditionLockouts(const std::string& expedition_name);
+    uint32 GetPendingExpeditionInviteID() const { return m_pending_expedition_invite.expedition_id; }
+    bool HasExpeditionLockout(const std::string& expedition_name, const std::string& event_name, bool include_expired = false);
+    bool IsInExpedition() const { return m_expedition_id != 0; }
+    void RemoveAllExpeditionLockouts(std::string expedition_name = {});
+    void RemoveExpeditionLockout(const std::string& expedition_name, const std::string& event_name, bool update_db = false, bool update_client = true);
+    void RequestPendingExpeditionInvite();
+    void SendExpeditionLockoutTimers();
+    void SetExpeditionID(uint32 expedition_id) { m_expedition_id = expedition_id; };
+    void SetPendingExpeditionInvite(ExpeditionInvite&& invite) { m_pending_expedition_invite = invite; }
+    void LoadAllExpeditionLockouts();
+    void UpdateExpeditionInfoAndLockouts();
+    void DzListTimers();
+    void SetDzRemovalTimer(bool enable_timer);
+    void SendDzCompassUpdate();
+    void GoToDzSafeReturnOrBind(const DynamicZoneLocation& safereturn);
+    void MovePCDynamicZone(uint32 zone_id);
+    void MovePCDynamicZone(const std::string& zone_name);
+
 	void CalcItemScale();
 	bool CalcItemScale(uint32 slot_x, uint32 slot_y); // behavior change: 'slot_y' is now [RANGE]_END and not [RANGE]_END + 1
 	void DoItemEnterZone();
@@ -1274,13 +1314,13 @@ public:
 	int32 GetMeleeDamage(Mob* other, bool GetMinDamage = false);
 
 	void QuestReward(Mob* target, uint32 copper = 0, uint32 silver = 0, uint32 gold = 0, uint32 platinum = 0, uint32 itemid = 0, uint32 exp = 0, bool faction = false);
+    void QuestReward(Mob* target, const QuestReward_Struct &reward, bool faction); // TODO: Fix faction processing
 
 	void ResetHPUpdateTimer() { hpupdate_timer.Start(); }
 
 	void FixClientXP();
 	void SendHPUpdateMarquee();
 	std::string CreateSayLink(const char* message, const char* name);
-	int GetCharacterItemScore();
 	uint32 trapid; //ID of trap player has triggered. This is cleared when the player leaves the trap's radius, or it despawns.
 
 	// exp.cpp
@@ -1523,6 +1563,7 @@ private:
 	Timer hp_self_update_throttle_timer; /* This is to prevent excessive packet sending under trains/fast combat */
 	Timer hp_other_update_throttle_timer; /* This is to keep clients from DOSing the server with macros that change client targets constantly */
 	Timer position_update_timer; /* Timer used when client hasn't updated within a 10 second window */
+    Timer dynamiczone_removal_timer;
 
 	glm::vec3 m_Proximity;
 	glm::vec4 last_major_update_position;
@@ -1629,6 +1670,12 @@ private:
 
 	void InterrogateInventory_(bool errorcheck, Client* requester, int16 head, int16 index, const EQEmu::ItemInstance* inst, const EQEmu::ItemInstance* parent, bool log, bool silent, bool &error, int depth);
 	bool InterrogateInventory_error(int16 head, int16 index, const EQEmu::ItemInstance* inst, const EQEmu::ItemInstance* parent, int depth);
+
+    uint32 m_expedition_id = 0;
+    ExpeditionInvite m_pending_expedition_invite { 0 };
+    std::vector<ExpeditionLockoutTimer> m_expedition_lockouts;
+    DynamicZoneLocation m_quest_compass;
+
 };
 
 #endif

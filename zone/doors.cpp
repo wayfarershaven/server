@@ -208,13 +208,15 @@ void Doors::HandleClick(Client* sender, uint8 trigger) {
 		}
 	}
 
+    // todo: if IsDzDoor() call Client::MovePCDynamicZone(target_zone_id) (for systems that use dzs)
+
 	uint32 required_key_item       = GetKeyItem();
 	uint32 altkey 		       = GetAltKeyItem();
 	uint8  disable_add_to_key_ring = GetNoKeyring();
 	uint32 player_has_key          = 0;
 	uint32 hasaltkey 	       = 0;
 	uint32 player_key              = 0;
-	const EQEmu::ItemInstance *lock_pick_item = sender->GetInv().GetItem(EQEmu::inventory::slotCursor);
+    const EQEmu::ItemInstance *lock_pick_item = sender->GetInv().GetItem(EQEmu::invslot::slotCursor);
 
 	player_has_key = static_cast<uint32>(sender->GetInv().HasItem(required_key_item, 1));
 	hasaltkey = static_cast<uint32>(sender->GetInv().HasItem(altkey, 1));

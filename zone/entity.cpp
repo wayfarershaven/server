@@ -1074,6 +1074,22 @@ NPC *EntityList::GetNPCByNPCTypeID(uint32 npc_id)
 	return nullptr;
 }
 
+NPC *EntityList::GetNPCBySpawnID(uint32 spawn_id)
+{
+	if (spawn_id == 0 || npc_list.empty()) {
+		return nullptr;
+	}
+
+	auto it = npc_list.begin();
+	while (it != npc_list.end()) {
+		if (it->second->GetSp2() == spawn_id) {
+			return it->second;
+		}
+		++it;
+	}
+	return nullptr;
+}
+
 Mob *EntityList::GetMob(uint16 get_id)
 {
 	Entity *ent = nullptr;
@@ -4936,4 +4952,28 @@ void EntityList::SendAlternateAdvancementStats() {
 		c.second->SendAlternateAdvancementStats();
 		c.second->SendAlternateAdvancementPoints();
 	}
+}
+
+void EntityList::GateAllClientsToSafeReturn()
+{
+    DynamicZone dz;
+    if (zone)
+    {
+        dz = DynamicZone::LoadDzFromDatabase(zone->GetInstanceID());
+
+        Log(Logs::General, Logs::DynamicZones,
+            "Sending all clients in zone: [%i] instance: [%i] to dz safereturn or bind",
+                zone->GetZoneID(), zone->GetInstanceID()
+        );
+    }
+
+    for (const auto& client_list_iter : client_list)
+    {
+        Client* client = client_list_iter.second;
+        if (client)
+        {
+            // falls back to gating clients to bind if dz invalid
+            client->GoToDzSafeReturnOrBind(dz.GetSafeReturnLocation());
+        }
+    }
 }

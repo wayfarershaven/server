@@ -5,6 +5,7 @@
 #include "lua_mob.h"
 
 class Client;
+class Lua_Expedition;
 class Lua_Group;
 class Lua_Raid;
 class Lua_Inventory;
@@ -268,6 +269,7 @@ public:
 	uint64 GetAllMoney();
 	uint32 GetMoney(uint8 type, uint8 subtype);
 	void OpenLFGuildWindow();
+    void NotifyNewTitlesAvailable();
 	void Signal(uint32 id);
 	void AddAlternateCurrencyValue(uint32 currency, int amount);
 	void SendWebLink(const char *site);
@@ -306,6 +308,21 @@ public:
 	int CalcCurrentWeight();
 	int CalcATK();
 	void FilteredMessage(Mob *sender, uint32 type, int filter, const char* message);
+
+    Lua_Expedition  CreateExpedition(luabind::object dz_info, luabind::object expedition_info);
+    Lua_Expedition  CreateExpedition(std::string zone_name, uint32 version, uint32 duration, std::string expedition_name, uint32 min_players, uint32 max_players);
+    Lua_Expedition  CreateExpedition(std::string zone_name, uint32 version, uint32 duration, std::string expedition_name, uint32 min_players, uint32 max_players, bool has_replay_timer);
+    Lua_Expedition  CreateExpedition(std::string zone_name, uint32 version, uint32 duration, std::string expedition_name, uint32 min_players, uint32 max_players, bool has_replay_timer, bool disable_messages);
+    Lua_Expedition  GetExpedition();
+    luabind::object GetExpeditionLockouts(lua_State* L);
+    luabind::object GetExpeditionLockouts(lua_State* L, std::string expedition_name);
+    void            AddExpeditionLockout(std::string expedition_name, std::string event_name, uint32 seconds);
+    void            RemoveAllExpeditionLockouts();
+    void            RemoveAllExpeditionLockouts(std::string expedition_name);
+    void            RemoveExpeditionLockout(std::string expedition_name, std::string event_name);
+    bool            HasExpeditionLockout(std::string expedition_name, std::string event_name);
+    void            MovePCDynamicZone(uint32 zone_id);
+    void            MovePCDynamicZone(std::string zone_name);
 };
 
 #endif

@@ -228,22 +228,22 @@ uint16 EQEmuLogSys::GetGMSayColorFromCategory(uint16 log_category) {
 	switch (log_category) {
 		case Logs::Status:
 		case Logs::Normal:
-			return 15; /* Yellow */
+			return Chat::Yellow; /* Yellow */
 		case Logs::MySQLError:
 		case Logs::Error:
-			return 13; /* Red */
+			return Chat::Red; /* Red */
 		case Logs::MySQLQuery:
 		case Logs::Debug:
-			return 14; /* Light Green */
+			return Chat::Lime; /* Light Green */
 		case Logs::Quests:
-			return 258; /* Light Cyan */
+			return Chat::Group; /* Light Cyan */
 		case Logs::Commands:
 		case Logs::Mercenaries:
-			return 5; /* Light Purple */
+			return Chat::Magenta; /* Light Purple */
 		case Logs::Crash:
-			return 13; /* Red */
+			return Chat::Red; /* Red */
 		default:
-			return 15; /* Yellow */
+			return Chat::Yellow; /* Yellow */
 	}
 }
 

@@ -110,6 +110,9 @@ public:
 	void level(int newlevel);
 	void traindisc(int discipline_tome_item_id);
 	bool isdisctome(int item_id);
+    std::string getracename(uint16 race_id);
+    std::string getspellname(uint32 spell_id);
+    std::string getskillname(int skill_id);
 	void safemove();
 	void rain(int weather);
 	void snow(int weather);
@@ -175,6 +178,8 @@ public:
 	bool summonburiedplayercorpse(uint32 char_id, const glm::vec4& position);
 	bool summonallplayercorpses(uint32 char_id, const glm::vec4& position);
 	uint32 getplayerburiedcorpsecount(uint32 char_id);
+    int getplayercorpsecount(uint32 char_id);
+    int getplayercorpsecountbyzoneid(uint32 char_id, uint32 zone_id);
 	bool buryplayercorpse(uint32 char_id);
 	void forcedooropen(uint32 doorid, bool altmode);
 	void forcedoorclose(uint32 doorid, bool altmode);
@@ -220,6 +225,8 @@ public:
     int getlevel(uint8 type);
     int collectitems(uint32 item_id, bool remove);
     int collectitems_processSlot(int16 slot_id, uint32 item_id, bool remove);
+    int countitem(uint32 item_id);
+    std::string getitemname(uint32 item_id);
     void enabletitle(int titleset);
    	bool checktitle(int titlecheck);
    	void removetitle(int titlecheck);
@@ -243,6 +250,7 @@ public:
 	void AssignRaidToInstance(uint16 instance_id);
 	void RemoveFromInstance(uint16 instance_id);
     void RemoveFromInstanceByCharID(uint16 instance_id, uint32 char_id);
+    bool CheckInstanceByCharID(uint16 instance_id, uint32 char_id);
 	//void RemoveGroupFromInstance(uint16 instance_id);	//potentially useful but not implmented at this time.
 	//void RemoveRaidFromInstance(uint16 instance_id);	//potentially useful but not implmented at this time.
 	void RemoveAllFromInstance(uint16 instance_id);
@@ -251,7 +259,16 @@ public:
 	void FlagInstanceByRaidLeader(uint32 zone, int16 version);
 	const char* varlink(char* perltext, int item_id);
     std::string saylink(char *saylink_text, bool silent, const char *link_name);
+    const char* getcharnamebyid(uint32 char_id);
+    uint32 getcharidbyname(const char* name);
+    int getcurrencyitemid(int currency_id);
+    std::string getclassname(uint8 class_id, uint8 level = 0);
+    int getcurrencyid(uint32 item_id);
 	const char* getguildnamebyid(int guild_id);
+    int getguildidbycharid(uint32 char_id);
+    int getgroupidbycharid(uint32 char_id);
+    int getraididbycharid(uint32 char_id);
+    const char* getnpcnamebyid(uint32 npc_id);
 	void SetRunning(bool val);
 	bool IsRunning();
 	void FlyMode(uint8 flymode);
@@ -264,11 +281,20 @@ public:
     int32 GetZoneID(const char *zone);
     const char *GetZoneLongName(const char *zone);
 	void CrossZoneSignalPlayerByCharID(int charid, uint32 data);
+    void CrossZoneSignalPlayerByGroupID(int group_id, uint32 data);
+    void CrossZoneSignalPlayerByRaidID(int raid_id, uint32 data);
+    void CrossZoneSignalPlayerByGuildID(int guild_id, uint32 data);
 	void CrossZoneSignalNPCByNPCTypeID(uint32 npctype_id, uint32 data);
 	void CrossZoneSignalPlayerByName(const char *CharName, uint32 data);
 	void CrossZoneSetEntityVariableByNPCTypeID(uint32 npctype_id, const char *id, const char *m_var);
 	void CrossZoneSetEntityVariableByClientName(const char *CharName, const char *id, const char *m_var);
+    void CrossZoneSetEntityVariableByGroupID(int group_id, const char *id, const char *m_var);
+    void CrossZoneSetEntityVariableByRaidID(int raid_id, const char *id, const char *m_var);
+    void CrossZoneSetEntityVariableByGuildID(int guild_id, const char *id, const char *m_var);
 	void CrossZoneMessagePlayerByName(uint32 Type, const char *CharName, const char *Message);
+    void CrossZoneMessagePlayerByGroupID(uint32 Type, int GroupID, const char *Message);
+    void CrossZoneMessagePlayerByRaidID(uint32 Type, int RaidID, const char *Message);
+    void CrossZoneMessagePlayerByGuildID(uint32 Type, int GuildID, const char *Message);
 	void WorldWideMarquee(uint32 Type, uint32 Priority, uint32 FadeIn, uint32 FadeOut, uint32 Duration, const char *Message);
 	bool EnableRecipe(uint32 recipe_id);
 	bool DisableRecipe(uint32 recipe_id);
@@ -276,6 +302,10 @@ public:
 	void ReloadZoneStaticData();
 	void QSQGlobalUpdate(int charid, const char* varname, const char* newvalue, uint32 zoneid, int32 instanceid);
 	void SendDebug(std::string message, int level);
+
+    Expedition* GetExpeditionByCharID(uint32 char_id);
+    Expedition* GetExpeditionByInstanceID(uint32 instance_id);
+    Expedition* GetExpeditionForCurrentInstance();
 
 	Client *GetInitiator() const;
 	NPC *GetNPC() const;

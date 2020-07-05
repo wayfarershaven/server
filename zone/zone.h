@@ -71,6 +71,7 @@ struct item_tick_struct {
 };
 
 class Client;
+class Expedition;
 //class Map; //Unused? Needed to uncomment for NATS
 class Mob;
 class PathManager;
@@ -248,6 +249,8 @@ public:
 	bool	IsHotzone() const { return(is_hotzone); }
 	inline	bool BuffTimersSuspended() const { return newzone_data.SuspendBuffs != 0; };
 
+	std::unordered_map<uint32, std::unique_ptr<Expedition>> expedition_cache;
+
 	time_t	weather_timer;
 	uint8	weather_intensity;
 	uint8	zone_weather;
@@ -287,6 +290,7 @@ public:
 	void RequestUCSServerStatus();
 	void SetUCSServerAvailable(bool ucss_available, uint32 update_timestamp);
 	bool IsUCSServerAvailable() { return m_ucss_available; }
+    bool IsZone(uint32 zone_id, uint16 instance_id) const;
 
 	// random object that provides random values for the zone
 	EQEmu::Random random;

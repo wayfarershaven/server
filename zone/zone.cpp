@@ -37,6 +37,7 @@
 #include "../common/string_util.h"
 #include "../common/eqemu_logsys.h"
 
+#include "expedition.h"
 #include "guild_mgr.h"
 #include "map.h"
 #include "net.h"
@@ -1059,6 +1060,10 @@ bool Zone::Init(bool iStaticZone) {
 	petition_list.ClearPetitions();
 	petition_list.ReadDatabase();
 
+
+    Log(Logs::General, Logs::Status, "Loading active Expeditions");
+    Expedition::CacheAllFromDatabase();
+
 	Log(Logs::General, Logs::Status, "Loading timezone data...");
 	zone->zone_time.setEQTimeZone(database.GetZoneTZ(zoneid, GetInstanceVersion()));
 
@@ -1288,7 +1293,14 @@ bool Zone::Process() {
 		{
 			if(Instance_Timer->Check())
 			{
-				entity_list.GateAllClients();
+                // if this is a dynamic zone instance notify system associated with it
+                Expedition* expedition = Expedition::FindExpeditionByInstanceID(GetInstanceID());
+                if (expedition)
+                {
+                    expedition->RemoveAllMembers(false, false); // entity list will teleport clients out immediately
+                }
+                // todo: move corpses to non-instanced version of dz at same coords (if no graveyard)
+                entity_list.GateAllClientsToSafeReturn();
 				database.DeleteInstance(GetInstanceID());
 				Instance_Shutdown_Timer = new Timer(20000); //20 seconds
 			}
@@ -2438,4 +2450,9 @@ void Zone::SetUCSServerAvailable(bool ucss_available, uint32 update_timestamp) {
 	}
 	if (m_last_ucss_update < update_timestamp)
 		m_ucss_available = ucss_available;
+}
+
+bool Zone::IsZone(uint32 zone_id, uint16 instance_id) const
+{
+    return (zoneid == zone_id && instanceid == instance_id);
 }

@@ -33,12 +33,12 @@
 //FatherNitwit: location bits for searching specific
 //places with HasItem() and HasItemByUse()
 enum {
-	invWhereWorn		= 0x01,
-	invWherePersonal	= 0x02,	//in the character's inventory
-	invWhereBank		= 0x04,
-	invWhereSharedBank	= 0x08,
-	invWhereTrading		= 0x10,
-	invWhereCursor		= 0x20
+    invWhereWorn		= 0x01,
+    invWherePersonal	= 0x02,	//in the character's inventory
+    invWhereBank		= 0x04,
+    invWhereSharedBank	= 0x08,
+    invWhereTrading		= 0x10,
+    invWhereCursor		= 0x20
 };
 
 // ########################################
@@ -47,29 +47,29 @@ enum {
 class ItemInstQueue
 {
 public:
-	~ItemInstQueue();
-	/////////////////////////
-	// Public Methods
-	/////////////////////////
+    ~ItemInstQueue();
+    /////////////////////////
+    // Public Methods
+    /////////////////////////
 
-	inline std::list<EQEmu::ItemInstance*>::const_iterator cbegin() { return m_list.cbegin(); }
-	inline std::list<EQEmu::ItemInstance*>::const_iterator cend() { return m_list.cend(); }
+    inline std::list<EQEmu::ItemInstance*>::const_iterator cbegin() { return m_list.cbegin(); }
+    inline std::list<EQEmu::ItemInstance*>::const_iterator cend() { return m_list.cend(); }
 
-	inline int size() { return static_cast<int>(m_list.size()); } // TODO: change to size_t
-	inline bool empty() { return m_list.empty(); }
+    inline int size() { return static_cast<int>(m_list.size()); } // TODO: change to size_t
+    inline bool empty() { return m_list.empty(); }
 
-	void push(EQEmu::ItemInstance* inst);
-	void push_front(EQEmu::ItemInstance* inst);
-	EQEmu::ItemInstance* pop();
-	EQEmu::ItemInstance* pop_back();
-	EQEmu::ItemInstance* peek_front() const;
+    void push(EQEmu::ItemInstance* inst);
+    void push_front(EQEmu::ItemInstance* inst);
+    EQEmu::ItemInstance* pop();
+    EQEmu::ItemInstance* pop_back();
+    EQEmu::ItemInstance* peek_front() const;
 
 protected:
-	/////////////////////////
-	// Protected Members
-	/////////////////////////
+    /////////////////////////
+    // Protected Members
+    /////////////////////////
 
-	std::list<EQEmu::ItemInstance*> m_list;
+    std::list<EQEmu::ItemInstance*> m_list;
 };
 
 // ########################################
@@ -77,163 +77,154 @@ protected:
 //	Character inventory
 namespace EQEmu
 {
-	class InventoryProfile
-	{
-		friend class ItemInstance;
-	public:
-		///////////////////////////////
-		// Public Methods
-		///////////////////////////////
+    class InventoryProfile
+    {
+        friend class ItemInstance;
+    public:
+        ///////////////////////////////
+        // Public Methods
+        ///////////////////////////////
 
-		InventoryProfile() {
-			m_mob_version = versions::MobVersion::Unknown;
-			m_mob_version_set = false;
-			m_lookup = inventory::Lookup(versions::MobVersion::Unknown);
-		}
-		~InventoryProfile();
+        InventoryProfile() {
+            m_mob_version = versions::MobVersion::Unknown;
+            m_mob_version_set = false;
+            m_lookup = inventory::Lookup(versions::MobVersion::Unknown);
+        }
+        ~InventoryProfile();
 
-		bool SetInventoryVersion(versions::MobVersion inventory_version) {
-			if (!m_mob_version_set) {
-				m_mob_version = versions::ValidateMobVersion(inventory_version);
-				m_lookup = inventory::Lookup(m_mob_version);
-				m_mob_version_set = true;
-				return true;
-			}
-			else {
-				m_lookup = inventory::Lookup(versions::MobVersion::Unknown);
-				return false;
-			}
-		}
-		bool SetInventoryVersion(versions::ClientVersion client_version) { return SetInventoryVersion(versions::ConvertClientVersionToMobVersion(client_version)); }
+        bool SetInventoryVersion(versions::MobVersion inventory_version);
+        bool SetInventoryVersion(versions::ClientVersion client_version) { return SetInventoryVersion(versions::ConvertClientVersionToMobVersion(client_version)); }
 
-		versions::MobVersion InventoryVersion() { return m_mob_version; }
+        versions::MobVersion InventoryVersion() { return m_mob_version; }
 
-		static void CleanDirty();
-		static void MarkDirty(ItemInstance *inst);
+        const inventory::LookupEntry* GetLookup() const { return m_lookup; }
 
-		// Retrieve a writeable item at specified slot
-		ItemInstance* GetItem(int16 slot_id) const;
-		ItemInstance* GetItem(int16 slot_id, uint8 bagidx) const;
+        static void CleanDirty();
+        static void MarkDirty(ItemInstance *inst);
 
-		inline std::list<ItemInstance*>::const_iterator cursor_cbegin() { return m_cursor.cbegin(); }
-		inline std::list<ItemInstance*>::const_iterator cursor_cend() { return m_cursor.cend(); }
+        // Retrieve a writeable item at specified slot
+        ItemInstance* GetItem(int16 slot_id) const;
+        ItemInstance* GetItem(int16 slot_id, uint8 bagidx) const;
 
-		inline int CursorSize() { return m_cursor.size(); }
-		inline bool CursorEmpty() { return m_cursor.empty(); }
+        inline std::list<ItemInstance*>::const_iterator cursor_cbegin() { return m_cursor.cbegin(); }
+        inline std::list<ItemInstance*>::const_iterator cursor_cend() { return m_cursor.cend(); }
 
-		// Retrieve a read-only item from inventory
-		inline const ItemInstance* operator[](int16 slot_id) const { return GetItem(slot_id); }
+        inline int CursorSize() { return m_cursor.size(); }
+        inline bool CursorEmpty() { return m_cursor.empty(); }
 
-		// Add item to inventory
-		int16 PutItem(int16 slot_id, const ItemInstance& inst);
+        // Retrieve a read-only item from inventory
+        inline const ItemInstance* operator[](int16 slot_id) const { return GetItem(slot_id); }
 
-		// Add item to cursor queue
-		int16 PushCursor(const ItemInstance& inst);
+        // Add item to inventory
+        int16 PutItem(int16 slot_id, const ItemInstance& inst);
 
-		// Get cursor item in front of queue
-		ItemInstance* GetCursorItem();
+        // Add item to cursor queue
+        int16 PushCursor(const ItemInstance& inst);
 
-		// Swap items in inventory
-		enum SwapItemFailState : int8 { swapInvalid = -1, swapPass = 0, swapNotAllowed, swapNullData, swapRaceClass, swapDeity, swapLevel };
-		bool SwapItem(int16 slot_a, int16 slot_b, SwapItemFailState& fail_state, uint16 race_id = 0, uint8 class_id = 0, uint16 deity_id = 0, uint8 level = 0);
+        // Get cursor item in front of queue
+        ItemInstance* GetCursorItem();
 
-		// Remove item from inventory
-		bool DeleteItem(int16 slot_id, uint8 quantity = 0);
+        // Swap items in inventory
+        enum SwapItemFailState : int8 { swapInvalid = -1, swapPass = 0, swapNotAllowed, swapNullData, swapRaceClass, swapDeity, swapLevel };
+        bool SwapItem(int16 source_slot, int16 destination_slot, SwapItemFailState& fail_state, uint16 race_id = 0, uint8 class_id = 0, uint16 deity_id = 0, uint8 level = 0);
 
-		// Checks All items in a bag for No Drop
-		bool CheckNoDrop(int16 slot_id, bool recurse = true);
+        // Remove item from inventory
+        bool DeleteItem(int16 slot_id, uint8 quantity = 0);
 
-		// Remove item from inventory (and take control of memory)
-		ItemInstance* PopItem(int16 slot_id);
+        // Checks All items in a bag for No Drop
+        bool CheckNoDrop(int16 slot_id, bool recurse = true);
 
-		// Check whether there is space for the specified number of the specified item.
-		bool HasSpaceForItem(const ItemData *ItemToTry, int16 Quantity);
+        // Remove item from inventory (and take control of memory)
+        ItemInstance* PopItem(int16 slot_id);
 
-		// Check whether item exists in inventory
-		// where argument specifies OR'd list of invWhere constants to look
-		int16 HasItem(uint32 item_id, uint8 quantity = 0, uint8 where = 0xFF);
+        // Check whether there is space for the specified number of the specified item.
+        bool HasSpaceForItem(const ItemData *ItemToTry, int16 Quantity);
 
-		// Check whether item exists in inventory
-		// where argument specifies OR'd list of invWhere constants to look
-		int16 HasItemByUse(uint8 use, uint8 quantity = 0, uint8 where = 0xFF);
+        // Check whether item exists in inventory
+        // where argument specifies OR'd list of invWhere constants to look
+        int16 HasItem(uint32 item_id, uint8 quantity = 0, uint8 where = 0xFF);
 
-		// Check whether item exists in inventory
-		// where argument specifies OR'd list of invWhere constants to look
-		int16 HasItemByLoreGroup(uint32 loregroup, uint8 where = 0xFF);
+        // Check whether item exists in inventory
+        // where argument specifies OR'd list of invWhere constants to look
+        int16 HasItemByUse(uint8 use, uint8 quantity = 0, uint8 where = 0xFF);
 
-		// Locate an available inventory slot
-		int16 FindFreeSlot(bool for_bag, bool try_cursor, uint8 min_size = 0, bool is_arrow = false);
-		int16 FindFreeSlotForTradeItem(const ItemInstance* inst, int16 general_start = legacy::GENERAL_BEGIN, uint8 bag_start = inventory::containerBegin);
+        // Check whether item exists in inventory
+        // where argument specifies OR'd list of invWhere constants to look
+        int16 HasItemByLoreGroup(uint32 loregroup, uint8 where = 0xFF);
 
-		// Calculate slot_id for an item within a bag
-		static int16 CalcSlotId(int16 slot_id); // Calc parent bag's slot_id
-		static int16 CalcSlotId(int16 bagslot_id, uint8 bagidx); // Calc slot_id for item inside bag
-		static uint8 CalcBagIdx(int16 slot_id); // Calc bagidx for slot_id
-		static int16 CalcSlotFromMaterial(uint8 material);
-		static uint8 CalcMaterialFromSlot(int16 equipslot);
+        // Locate an available inventory slot
+        int16 FindFreeSlot(bool for_bag, bool try_cursor, uint8 min_size = 0, bool is_arrow = false);
+        int16 FindFreeSlotForTradeItem(const ItemInstance* inst, int16 general_start = invslot::GENERAL_BEGIN, uint8 bag_start = invbag::SLOT_BEGIN);
 
-		static bool CanItemFitInContainer(const ItemData *ItemToTry, const ItemData *Container);
+        // Calculate slot_id for an item within a bag
+        static int16 CalcSlotId(int16 slot_id); // Calc parent bag's slot_id
+        static int16 CalcSlotId(int16 bagslot_id, uint8 bagidx); // Calc slot_id for item inside bag
+        static uint8 CalcBagIdx(int16 slot_id); // Calc bagidx for slot_id
+        static int16 CalcSlotFromMaterial(uint8 material);
+        static uint8 CalcMaterialFromSlot(int16 equipslot);
 
-		//  Test for valid inventory casting slot
-		bool SupportsClickCasting(int16 slot_id);
-		bool SupportsPotionBeltCasting(int16 slot_id);
+        static bool CanItemFitInContainer(const ItemData *ItemToTry, const ItemData *Container);
 
-		// Test whether a given slot can support a container item
-		static bool SupportsContainers(int16 slot_id);
+        //  Test for valid inventory casting slot
+        bool SupportsClickCasting(int16 slot_id);
+        bool SupportsPotionBeltCasting(int16 slot_id);
 
-		int GetSlotByItemInst(ItemInstance *inst);
+        // Test whether a given slot can support a container item
+        static bool SupportsContainers(int16 slot_id);
 
-		uint8 FindBrightestLightType();
+        int GetSlotByItemInst(ItemInstance *inst);
 
-		void dumpEntireInventory();
-		void dumpWornItems();
-		void dumpInventory();
-		void dumpBankItems();
-		void dumpSharedBankItems();
+        uint8 FindBrightestLightType();
 
-		void SetCustomItemData(uint32 character_id, int16 slot_id, std::string identifier, std::string value);
-		void SetCustomItemData(uint32 character_id, int16 slot_id, std::string identifier, int value);
-		void SetCustomItemData(uint32 character_id, int16 slot_id, std::string identifier, float value);
-		void SetCustomItemData(uint32 character_id, int16 slot_id, std::string identifier, bool value);
-		std::string GetCustomItemData(int16 slot_id, std::string identifier);
-	protected:
-		///////////////////////////////
-		// Protected Methods
-		///////////////////////////////
+        void dumpEntireInventory();
+        void dumpWornItems();
+        void dumpInventory();
+        void dumpBankItems();
+        void dumpSharedBankItems();
 
-		int GetSlotByItemInstCollection(const std::map<int16, ItemInstance*> &collection, ItemInstance *inst);
-		void dumpItemCollection(const std::map<int16, ItemInstance*> &collection);
-		void dumpBagContents(ItemInstance *inst, std::map<int16, ItemInstance*>::const_iterator *it);
+        void SetCustomItemData(uint32 character_id, int16 slot_id, std::string identifier, std::string value);
+        void SetCustomItemData(uint32 character_id, int16 slot_id, std::string identifier, int value);
+        void SetCustomItemData(uint32 character_id, int16 slot_id, std::string identifier, float value);
+        void SetCustomItemData(uint32 character_id, int16 slot_id, std::string identifier, bool value);
+        std::string GetCustomItemData(int16 slot_id, std::string identifier);
+    protected:
+        ///////////////////////////////
+        // Protected Methods
+        ///////////////////////////////
 
-		// Retrieves item within an inventory bucket
-		ItemInstance* _GetItem(const std::map<int16, ItemInstance*>& bucket, int16 slot_id) const;
+        int GetSlotByItemInstCollection(const std::map<int16, ItemInstance*> &collection, ItemInstance *inst);
+        void dumpItemCollection(const std::map<int16, ItemInstance*> &collection);
+        void dumpBagContents(ItemInstance *inst, std::map<int16, ItemInstance*>::const_iterator *it);
 
-		// Private "put" item into bucket, without regard for what is currently in bucket
-		int16 _PutItem(int16 slot_id, ItemInstance* inst);
+        // Retrieves item within an inventory bucket
+        ItemInstance* _GetItem(const std::map<int16, ItemInstance*>& bucket, int16 slot_id) const;
 
-		// Checks an inventory bucket for a particular item
-		int16 _HasItem(std::map<int16, ItemInstance*>& bucket, uint32 item_id, uint8 quantity);
-		int16 _HasItem(ItemInstQueue& iqueue, uint32 item_id, uint8 quantity);
-		int16 _HasItemByUse(std::map<int16, ItemInstance*>& bucket, uint8 use, uint8 quantity);
-		int16 _HasItemByUse(ItemInstQueue& iqueue, uint8 use, uint8 quantity);
-		int16 _HasItemByLoreGroup(std::map<int16, ItemInstance*>& bucket, uint32 loregroup);
-		int16 _HasItemByLoreGroup(ItemInstQueue& iqueue, uint32 loregroup);
+        // Private "put" item into bucket, without regard for what is currently in bucket
+        int16 _PutItem(int16 slot_id, ItemInstance* inst);
+
+        // Checks an inventory bucket for a particular item
+        int16 _HasItem(std::map<int16, ItemInstance*>& bucket, uint32 item_id, uint8 quantity);
+        int16 _HasItem(ItemInstQueue& iqueue, uint32 item_id, uint8 quantity);
+        int16 _HasItemByUse(std::map<int16, ItemInstance*>& bucket, uint8 use, uint8 quantity);
+        int16 _HasItemByUse(ItemInstQueue& iqueue, uint8 use, uint8 quantity);
+        int16 _HasItemByLoreGroup(std::map<int16, ItemInstance*>& bucket, uint32 loregroup);
+        int16 _HasItemByLoreGroup(ItemInstQueue& iqueue, uint32 loregroup);
 
 
-		// Player inventory
-		std::map<int16, ItemInstance*>	m_worn;		// Items worn by character
-		std::map<int16, ItemInstance*>	m_inv;		// Items in character personal inventory
-		std::map<int16, ItemInstance*>	m_bank;		// Items in character bank
-		std::map<int16, ItemInstance*>	m_shbank;	// Items in character shared bank
-		std::map<int16, ItemInstance*>	m_trade;	// Items in a trade session
-		::ItemInstQueue					m_cursor;	// Items on cursor: FIFO
+        // Player inventory
+        std::map<int16, ItemInstance*>	m_worn;		// Items worn by character
+        std::map<int16, ItemInstance*>	m_inv;		// Items in character personal inventory
+        std::map<int16, ItemInstance*>	m_bank;		// Items in character bank
+        std::map<int16, ItemInstance*>	m_shbank;	// Items in character shared bank
+        std::map<int16, ItemInstance*>	m_trade;	// Items in a trade session
+        ::ItemInstQueue					m_cursor;	// Items on cursor: FIFO
 
-	private:
-		// Active mob version
-		versions::MobVersion m_mob_version;
-		bool m_mob_version_set;
-		const inventory::LookupEntry* m_lookup;
-	};
+    private:
+        // Active mob version
+        versions::MobVersion m_mob_version;
+        bool m_mob_version_set;
+        const inventory::LookupEntry* m_lookup;
+    };
 }
 
 #endif /*COMMON_INVENTORY_PROFILE_H*/

@@ -583,14 +583,14 @@ int32 Client::Tune_GetMeleeMitDmg(Mob* GM, Mob *attacker, int32 damage, int32 mi
 
 int32 Client::GetMeleeDamage(Mob* other, bool GetMinDamage)
 {
-	int Hand = EQEmu::inventory::slotPrimary;
+	int Hand = EQEmu::invslot::slotPrimary;
 
-	if (!other) 
+	if (!other)
 		return 0;
-	
+
 	EQEmu::ItemInstance* weapon;
-	weapon = GetInv().GetItem(EQEmu::inventory::slotPrimary);
-	
+	weapon = GetInv().GetItem(EQEmu::invslot::slotPrimary);
+
 	if(weapon != nullptr) {
 		if (!weapon->IsWeapon()) {
 			return(0);
@@ -628,7 +628,7 @@ int32 Client::GetMeleeDamage(Mob* other, bool GetMinDamage)
 
 		int ucDamageBonus = 0;
 
-		if (Hand == EQEmu::inventory::slotPrimary && GetLevel() >= 28 && IsWarriorClass())
+        if (Hand == EQEmu::invslot::slotPrimary && GetLevel() >= 28 && IsWarriorClass())
 		{
 			ucDamageBonus = GetWeaponDamageBonus(weapon ? weapon->GetItem() : (const EQEmu::ItemData*) nullptr);
 
@@ -662,26 +662,26 @@ void Mob::Tune_FindAccuaryByHitChance(Mob* defender, Mob *attacker, float hit_ch
 	if (attacker->IsClient())
 	{//Will check first equiped weapon for skill. Ie. remove wepaons to assess bow.
 		EQEmu::ItemInstance* weapon;
-		weapon = attacker->CastToClient()->GetInv().GetItem(EQEmu::inventory::slotPrimary);
-			
+		weapon = attacker->CastToClient()->GetInv().GetItem(EQEmu::invslot::slotPrimary);
+
 		if(weapon && weapon->IsWeapon()){
-			skillinuse = attacker->CastToClient()->AttackAnimation(EQEmu::inventory::slotPrimary, weapon);
+			skillinuse = attacker->CastToClient()->AttackAnimation(EQEmu::invslot::slotPrimary, weapon);
 		}
 		else {
-			weapon = attacker->CastToClient()->GetInv().GetItem(EQEmu::inventory::slotSecondary);
+			weapon = attacker->CastToClient()->GetInv().GetItem(EQEmu::invslot::slotSecondary);
 			if (weapon && weapon->IsWeapon())
-				skillinuse = attacker->CastToClient()->AttackAnimation(EQEmu::inventory::slotSecondary, weapon);
+				skillinuse = attacker->CastToClient()->AttackAnimation(EQEmu::invslot::slotSecondary, weapon);
 			else {
-				weapon = attacker->CastToClient()->GetInv().GetItem(EQEmu::inventory::slotRange);
+				weapon = attacker->CastToClient()->GetInv().GetItem(EQEmu::invslot::slotRange);
 				if (weapon && weapon->IsWeapon())
-					skillinuse = attacker->CastToClient()->AttackAnimation(EQEmu::inventory::slotRange, weapon);
+					skillinuse = attacker->CastToClient()->AttackAnimation(EQEmu::invslot::slotRange, weapon);
 			}
 		}
 	}
 
-	tmp_hit_chance = Tune_CheckHitChance(defender, attacker, skillinuse, EQEmu::inventory::slotPrimary, 0, 0, 0, avoid_override);
+	tmp_hit_chance = Tune_CheckHitChance(defender, attacker, skillinuse, EQEmu::invslot::slotPrimary, 0, 0, 0, avoid_override);
 
-	
+
 	Message(0, "#Tune - Begin Parse [Interval %i Max Loop Iterations %i]", interval, max_loop);
 	Message(0, "#Tune - Processing... Find Accuracy for hit chance on attacker of (%.0f) pct on defender [Current Hit Chance %.2f]", hit_chance, tmp_hit_chance);
 
@@ -689,9 +689,9 @@ void Mob::Tune_FindAccuaryByHitChance(Mob* defender, Mob *attacker, float hit_ch
 	if (tmp_hit_chance > hit_chance)
 		interval = interval * -1;
 
-	for (int j=0; j < max_loop; j++)        
+	for (int j=0; j < max_loop; j++)
 	{
-		tmp_hit_chance = Tune_CheckHitChance(defender, attacker, skillinuse, EQEmu::inventory::slotPrimary, 0, false, 0, avoid_override, add_acc);
+		tmp_hit_chance = Tune_CheckHitChance(defender, attacker, skillinuse, EQEmu::invslot::slotPrimary, 0, false, 0, avoid_override, add_acc);
 
 		if (Msg >= 3)
 			Message(15, "#Tune - Processing... [%i] [ACCURACY %i] Hit Chance %.2f ",j,add_acc,tmp_hit_chance);
@@ -705,9 +705,9 @@ void Mob::Tune_FindAccuaryByHitChance(Mob* defender, Mob *attacker, float hit_ch
 		}
 
 		if (end){
-			
-			Tune_CheckHitChance(defender, attacker, skillinuse, EQEmu::inventory::slotPrimary, 0, Msg, 0, avoid_override);//Display Stat Report
-			
+
+			Tune_CheckHitChance(defender, attacker, skillinuse, EQEmu::invslot::slotPrimary, 0, Msg, 0, avoid_override);//Display Stat Report
+
 			Message(0, " ");
 
 			if (attacker->IsNPC()){
@@ -742,24 +742,24 @@ void Mob::Tune_FindAvoidanceByHitChance(Mob* defender, Mob *attacker, float hit_
 	if (attacker->IsClient())
 	{//Will check first equiped weapon for skill. Ie. remove wepaons to assess bow.
 		EQEmu::ItemInstance* weapon;
-		weapon = attacker->CastToClient()->GetInv().GetItem(EQEmu::inventory::slotPrimary);
-			
+		weapon = attacker->CastToClient()->GetInv().GetItem(EQEmu::invslot::slotPrimary);
+
 		if(weapon && weapon->IsWeapon()){
-			skillinuse = attacker->CastToClient()->AttackAnimation(EQEmu::inventory::slotPrimary, weapon);
+			skillinuse = attacker->CastToClient()->AttackAnimation(EQEmu::invslot::slotPrimary, weapon);
 		}
 		else {
-			weapon = attacker->CastToClient()->GetInv().GetItem(EQEmu::inventory::slotSecondary);
+			weapon = attacker->CastToClient()->GetInv().GetItem(EQEmu::invslot::slotSecondary);
 			if (weapon && weapon->IsWeapon())
-				skillinuse = attacker->CastToClient()->AttackAnimation(EQEmu::inventory::slotSecondary, weapon);
+				skillinuse = attacker->CastToClient()->AttackAnimation(EQEmu::invslot::slotSecondary, weapon);
 			else {
-				weapon = attacker->CastToClient()->GetInv().GetItem(EQEmu::inventory::slotRange);
+				weapon = attacker->CastToClient()->GetInv().GetItem(EQEmu::invslot::slotRange);
 				if (weapon && weapon->IsWeapon())
-					skillinuse = attacker->CastToClient()->AttackAnimation(EQEmu::inventory::slotRange, weapon);
+					skillinuse = attacker->CastToClient()->AttackAnimation(EQEmu::invslot::slotRange, weapon);
 			}
 		}
 	}
 
-	tmp_hit_chance = Tune_CheckHitChance(defender, attacker, skillinuse, EQEmu::inventory::slotPrimary, 0, 0, acc_override, 0);
+	tmp_hit_chance = Tune_CheckHitChance(defender, attacker, skillinuse, EQEmu::invslot::slotPrimary, 0, 0, acc_override, 0);
 
 	Message(0, "#Tune - Begin Parse [Interval %i Max Loop Iterations %i]", interval, max_loop);
 	Message(0, "#Tune - Processing... Find Avoidance for hit chance on defender of (%.0f) pct from attacker. [Current Hit Chance %.2f]", hit_chance, tmp_hit_chance);
@@ -767,9 +767,9 @@ void Mob::Tune_FindAvoidanceByHitChance(Mob* defender, Mob *attacker, float hit_
 	if (tmp_hit_chance < hit_chance)
 		interval = interval * -1;
 
-	for (int j=0; j < max_loop; j++)        
+	for (int j=0; j < max_loop; j++)
 	{
-		tmp_hit_chance = Tune_CheckHitChance(defender, attacker, skillinuse, EQEmu::inventory::slotPrimary, 0, 0, acc_override, 0, 0, add_avoid);
+		tmp_hit_chance = Tune_CheckHitChance(defender, attacker, skillinuse, EQEmu::invslot::slotPrimary, 0, 0, acc_override, 0, 0, add_avoid);
 
 		if (Msg >= 3)
 			Message(0, "#Tune - Processing... [%i] [AVOIDANCE %i] Hit Chance %.2f ",j,add_avoid,tmp_hit_chance);
@@ -783,9 +783,9 @@ void Mob::Tune_FindAvoidanceByHitChance(Mob* defender, Mob *attacker, float hit_
 		}
 
 		if (end){
-			
-			Tune_CheckHitChance(defender, attacker, skillinuse, EQEmu::inventory::slotPrimary, 0, Msg, acc_override, 0);//Display Stat Report
-			
+
+			Tune_CheckHitChance(defender, attacker, skillinuse, EQEmu::invslot::slotPrimary, 0, Msg, acc_override, 0);//Display Stat Report
+
 			Message(0, " ");
 
 			if (defender->IsNPC()){
@@ -818,13 +818,13 @@ float Mob::Tune_CheckHitChance(Mob* defender, Mob* attacker, EQEmu::skills::Skil
 		chancetohit += RuleR(Combat, NPCBonusHitChance);
 
 	if (Msg){
-		
+
 		Message(0, "######### Hit Chance Report: Start [Detail Level %i]#########", Msg);
 		Message(0, "#ATTACKER: %s", attacker->GetCleanName());
 		Message(0, "#DEFENDER: %s", defender->GetCleanName());
-		if (Msg >= 2){ 
-			Message(0, " "); 
-			Message(0, "### Calculate Base Hit Chance ###"); 
+		if (Msg >= 2){
+			Message(0, " ");
+			Message(0, "### Calculate Base Hit Chance ###");
 			Message(0, "# + %.2f Total: %.2f #### RuleR(Combat, BaseHitChance)", RuleR(Combat, BaseHitChance), RuleR(Combat, BaseHitChance));
 			if (attacker->IsNPC())
 				Message(0, "# + %.2f Total: %.2f #### RuleR(Combat, NPCBonusHitChance)", RuleR(Combat, NPCBonusHitChance), chancetohit);
@@ -880,28 +880,28 @@ float Mob::Tune_CheckHitChance(Mob* defender, Mob* attacker, EQEmu::skills::Skil
 
 	if (Msg >= 2)
 		Message(0, "# + %.2f Total: %.2f #### Level Modifers",  chancetohit - temp_chancetohit, chancetohit);
-	
+
 	temp_chancetohit = chancetohit;
 
 	chancetohit -= ((float)defender->GetAGI() * RuleR(Combat, AgiHitFactor));
 
 	if (Msg >= 2)
 		Message(0, "# - %.2f Total: %.2f #### DEFENDER Agility",  ((float)defender->GetAGI() * RuleR(Combat, AgiHitFactor)), chancetohit);
-	
+
 	if(attacker->IsClient())
 	{
 		chancetohit -= (RuleR(Combat,WeaponSkillFalloff) * (attacker->CastToClient()->MaxSkill(skillinuse) - attacker->GetSkill(skillinuse)));
 		if (Msg >= 2)
 			Message(0, "# - %.2f Total: %.2f ##### ATTACKER Wpn Skill Mod: ",  (RuleR(Combat,WeaponSkillFalloff) * (attacker->CastToClient()->MaxSkill(skillinuse) - attacker->GetSkill(skillinuse))), chancetohit);
 	}
-		
+
 	if(defender->IsClient())
 	{
 		chancetohit += (RuleR(Combat, WeaponSkillFalloff) * (defender->CastToClient()->MaxSkill(EQEmu::skills::SkillDefense) - defender->GetSkill(EQEmu::skills::SkillDefense)));
 		if (Msg >= 2)
 			Message(0, "# + %.2f Total: %.2f #### DEFENDER Defense Skill Mod", (RuleR(Combat, WeaponSkillFalloff) * (defender->CastToClient()->MaxSkill(EQEmu::skills::SkillDefense) - defender->GetSkill(EQEmu::skills::SkillDefense))), chancetohit);
 	}
-	
+
 
 	//I dont think this is 100% correct, but at least it does something...
 	if(attacker->spellbonuses.MeleeSkillCheckSkill == skillinuse || attacker->spellbonuses.MeleeSkillCheckSkill == 255) {
@@ -949,7 +949,7 @@ float Mob::Tune_CheckHitChance(Mob* defender, Mob* attacker, EQEmu::skills::Skil
 
 	if (owner){
 		avoidanceBonus += owner->aabonuses.PetAvoidance + owner->spellbonuses.PetAvoidance + owner->itembonuses.PetAvoidance;
-	
+
 		if (Msg >= 2){
 			if (owner->aabonuses.PetAvoidance)
 				Message(0, "# %i #### DEFENDER SE_PetAvoidance(215) AA Bonus", owner->aabonuses.PetAvoidance);
@@ -1045,7 +1045,7 @@ float Mob::Tune_CheckHitChance(Mob* defender, Mob* attacker, EQEmu::skills::Skil
 	}
 	else if(attacker->IsClient()){
 		if (acc_override){
-			hitBonus = (acc_override / 15.0f); 
+			hitBonus = (acc_override / 15.0f);
 			if (Msg >= 2)
 				Message(0, "# %.2f #### ATTACKER 'ACCURACY OVERRIDE': %.2f ");
 		}

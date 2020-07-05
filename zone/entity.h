@@ -48,6 +48,7 @@ class Raid;
 class Spawn2;
 class Trap;
 
+struct DynamicZoneSafeReturn;
 struct GuildBankItemUpdate_Struct;
 struct NewSpawn_Struct;
 struct QGlobal;
@@ -155,6 +156,7 @@ public:
 		return nullptr;
 	}
 	NPC *GetNPCByNPCTypeID(uint32 npc_id);
+	NPC *GetNPCBySpawnID(uint32 spawn_id);
 	inline Merc *GetMercByID(uint16 id)
 	{
 		auto it = merc_list.find(id);
@@ -360,7 +362,7 @@ public:
 	void	QueueToGroupsForNPCHealthAA(Mob* sender, const EQApplicationPacket* app);
 	void	QueueManaged(Mob* sender, const EQApplicationPacket* app, bool ignore_sender=false, bool ackreq = true);
 
-	void	AEAttack(Mob *attacker, float dist, int Hand = EQEmu::inventory::slotPrimary, int count = 0, bool IsFromSpell = false);
+	void	AEAttack(Mob *attacker, float dist, int Hand = EQEmu::invslot::slotPrimary, int count = 0, bool IsFromSpell = false);
 	void	AETaunt(Client *caster, float range=0, int32 bonus_hate=0);
 	void	AESpell(Mob *caster, Mob *center, uint16 spell_id, bool affect_caster = true, int16 resist_adjust = 0, int *max_targets = nullptr);
 	void	MassGroupBuff(Mob *caster, Mob *center, uint16 spell_id, bool affect_caster = true);
@@ -452,6 +454,8 @@ public:
 	void	SendFindableNPCList(Client *c);
 	void	UpdateFindableNPCState(NPC *n, bool Remove);
 	void	HideCorpses(Client *c, uint8 CurrentMode, uint8 NewMode);
+
+    void GateAllClientsToSafeReturn();
 
 	uint16 GetClientCount();
 	void GetMobList(std::list<Mob*> &m_list);

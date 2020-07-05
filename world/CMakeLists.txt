@@ -8,6 +8,7 @@ SET(world_sources
 	clientlist.cpp
 	console.cpp
 	eql_config.cpp
+	expedition.cpp
 	launcher_link.cpp
 	launcher_list.cpp
 	lfplist.cpp
@@ -36,6 +37,7 @@ SET(world_headers
 	clientlist.h
 	console.h
 	eql_config.h
+	expedition.h
 	launcher_link.h
 	launcher_list.h
 	lfplist.h

@@ -94,6 +94,8 @@ class PTimerList;
 #	define _ISNAN_(a) std::isnan(a)
 #endif
 
+#define SQL(...) #__VA_ARGS__
+
 class Database : public DBcore {
 public:
 	Database();
@@ -368,10 +370,14 @@ public:
 	uint32	GetCharacterID(const char *name);
 	uint32	GetCharacterInfo(const char* iName, uint32* oAccID = 0, uint32* oZoneID = 0, uint32* oInstanceID = 0, float* oX = 0, float* oY = 0, float* oZ = 0);
 	uint32	GetGuildIDByCharID(uint32 char_id);
+    uint32  GetGroupIDByCharID(uint32 char_id);
+    uint32  GetRaidIDByCharID(uint32 char_id);
 	uint32	GetLevelByChar(const char* charname);
 
 	void	GetAccountName(uint32 accountid, char* name, uint32* oLSAccountID = 0);
 	void	GetCharName(uint32 char_id, char* name);
+    const char *GetCharNameByID(uint32 char_id);
+    const char *GetNPCNameByID(uint32 npc_id);
 	void	LoginIP(uint32 AccountID, const char* LoginIP);
 
 	/* Instancing */
@@ -510,7 +516,8 @@ public:
 	void	SetLFP(uint32 CharID, bool LFP);
 	void	SetLoginFlags(uint32 CharID, bool LFP, bool LFG, uint8 firstlogon);
 
-	void	ClearInvSnapshots(bool use_rule = true);
+	int		CountInvSnapshots();
+    void	ClearInvSnapshots(bool from_now = false);
 
 	/* EQEmuLogSys */
 	void	LoadLogSettings(EQEmuLogSys::LogSettings* log_settings);

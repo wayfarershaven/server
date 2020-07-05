@@ -52,11 +52,12 @@
 #include "../common/rulesys.h"
 #include "../common/serverinfo.h"
 #include "../common/string_util.h"
-#include "../say_link.h"
+#include "../common/say_link.h"
 #include "../common/eqemu_logsys.h"
 
 #include "data_bucket.h"
 #include "command.h"
+#include "expedition.h"
 #include "guild_mgr.h"
 #include "map.h"
 #include "qglobals.h"
@@ -175,7 +176,6 @@ int command_init(void)
 		command_add("castspell", "[spellid] - Cast a spell", 50, command_castspell) ||
 		command_add("chat", "[channel num] [message] - Send a channel message to all zones", 200, command_chat) ||
 		command_add("checklos", "- Check for line of sight to your target", 50, command_checklos) ||
-		command_add("clearinvsnapshots", "[use rule] - Clear inventory snapshot history (true - elapsed entries, false - all entries)", 200, command_clearinvsnapshots) ||
 		command_add("corpse", "- Manipulate corpses, use with no arguments for help", 50, command_corpse) ||
 		command_add("corpsefix", "Attempts to bring corpses from underneath the ground within close proximity of the player", 0, command_corpsefix) ||
 		command_add("crashtest", "- Crash the zoneserver", 255, command_crashtest) ||
@@ -195,6 +195,8 @@ int command_init(void)
 		command_add("disarmtrap",  "Analog for ldon disarm trap for the newer clients since we still don't have it working.", 80, command_disarmtrap) ||
 		command_add("distance", "- Reports the distance between you and your target.",  80, command_distance) ||
 		command_add("doanim", "[animnum] [type] - Send an EmoteAnim for you or your target", 50, command_doanim) ||
+        command_add("dz", "Manage expeditions and dynamic zone instances", 80, command_dz) ||
+        command_add("dzkickplayers", "Removes all players from current expedition. (/kickplayers alternative for pre-RoF clients)", 0, command_dzkickplayers) ||
 		command_add("dps", "- Get a report of DPS on target", 30, command_dps) ||
 		command_add("emote", "['name'/'world'/'zone'] [type] [message] - Send an emote message", 80, command_emote) ||
 		command_add("emotesearch", "Searches NPC Emotes", 80, command_emotesearch) ||
@@ -246,13 +248,12 @@ int command_init(void)
 		command_add("instance", "- Modify Instances", 200, command_instance) ||
 		command_add("interrogateinv", "- use [help] argument for available options", 0, command_interrogateinv) ||
 		command_add("interrupt", "[message id] [color] - Interrupt your casting. Arguments are optional.", 50, command_interrupt) ||
-		command_add("invsnapshot", "- Takes an inventory snapshot of your current target", 80, command_invsnapshot) ||
+		command_add("invsnapshot", "- Manipulates inventory snapshots for your current target", 80, command_invsnapshot) ||
 		command_add("invul", "[on/off] - Turn player target's or your invulnerable flag on or off", 80, command_invul) ||
 		command_add("ipban", "[IP address] - Ban IP by character name", 200, command_ipban) ||
 		command_add("iplookup", "[charname] - Look up IP address of charname", 200, command_iplookup) ||
 		command_add("issue", "- Report an issue with the server", 0, command_issue) ||
 		command_add("iteminfo", "- Get information about the item on your cursor", 10, command_iteminfo) ||
-		command_add("itemscore", "- Get itemscore of the item on your cursor", 30, command_itemscore) ||
 		command_add("itemsearch", "[search criteria] - Search for an item", 10, command_itemsearch) ||
 		command_add("kick", "[charname] - Disconnect charname", 150, command_kick) ||
 		command_add("kill", "- Kill your target", 100, command_kill) ||
@@ -1766,7 +1767,7 @@ void command_hideme(Client *c, const Seperator *sep)
 	else
 	{
 		c->SetHideMe(state);
-		c->Message_StringID(MT_Broadcasts, c->GetHideMe() ? NOW_INVISIBLE : NOW_VISIBLE, c->GetName());
+		c->Message_StringID(Chat::Broadcasts, c->GetHideMe() ? NOW_INVISIBLE : NOW_VISIBLE, c->GetName());
 	}
 }
 
@@ -2556,7 +2557,7 @@ void command_issue(Client *c, const Seperator *sep) {
 
 	std::string itemname = "";
 	uint32 itemid = 0;
-	auto inst = c->GetInv()[EQEmu::inventory::slotCursor];
+	auto inst = c->GetInv()[EQEmu::invslot::slotCursor];
 	if (inst) {
 		auto item = inst->GetItem();
 		if (item) {
@@ -3059,212 +3060,301 @@ void command_nukeitem(Client *c, const Seperator *sep)
 
 void command_peekinv(Client *c, const Seperator *sep)
 {
-	enum {
-		peekWorn = 0x01,
-		peekInv = 0x02,
-		peekCursor = 0x04,
-		peekTrib = 0x08,
-		peekBank = 0x10,
-		peekTrade = 0x20,
-		peekWorld = 0x40
-	} ;
+    // this can be cleaned up once inventory is cleaned up
+    enum {
+        peekNone = 0x0000,
+        peekEquip = 0x0001,
+        peekGen = 0x0002,
+        peekCursor = 0x0004,
+        peekLimbo = 0x0008,
+        peekTrib = 0x0010,
+        peekBank = 0x0020,
+        peekShBank = 0x0040,
+        peekTrade = 0x0080,
+        peekWorld = 0x0100,
+        peekOutOfScope = (peekWorld * 2) // less than
+    };
 
-	if (!c->GetTarget() || !c->GetTarget()->IsClient()) {
-		c->Message(0, "You must have a PC target selected for this command");
-		return;
-	}
+    static char* scope_prefix[] = { "Equip", "Gen", "Cursor", "Limbo", "Trib", "Bank", "ShBank", "Trade", "World" };
 
-	int scopeWhere = 0;
+    static int16 scope_range[][2] = {
+            { EQEmu::invslot::EQUIPMENT_BEGIN, EQEmu::invslot::EQUIPMENT_END },
+            { EQEmu::invslot::GENERAL_BEGIN, EQEmu::invslot::GENERAL_END },
+            { EQEmu::invslot::slotCursor, EQEmu::invslot::slotCursor },
+            { EQEmu::invslot::SLOT_INVALID, EQEmu::invslot::SLOT_INVALID },
+            { EQEmu::invslot::TRIBUTE_BEGIN, EQEmu::invslot::TRIBUTE_END },
+            { EQEmu::invslot::BANK_BEGIN, EQEmu::invslot::BANK_END },
+            { EQEmu::invslot::SHARED_BANK_BEGIN, EQEmu::invslot::SHARED_BANK_END },
+            { EQEmu::invslot::TRADE_BEGIN, EQEmu::invslot::TRADE_END },
+            { EQEmu::invslot::SLOT_BEGIN, (EQEmu::invtype::WORLD_SIZE - 1) }
+    };
 
-	if (strcasecmp(sep->arg[1], "all") == 0) { scopeWhere = ~0; }
-	else if (strcasecmp(sep->arg[1], "worn") == 0) { scopeWhere |= peekWorn; }
-	else if (strcasecmp(sep->arg[1], "inv") == 0) { scopeWhere |= peekInv; }
-	else if (strcasecmp(sep->arg[1], "cursor") == 0) { scopeWhere |= peekCursor; }
-	else if (strcasecmp(sep->arg[1], "trib") == 0) { scopeWhere |= peekTrib; }
-	else if (strcasecmp(sep->arg[1], "bank") == 0) { scopeWhere |= peekBank; }
-	else if (strcasecmp(sep->arg[1], "trade") == 0) { scopeWhere |= peekTrade; }
-	else if (strcasecmp(sep->arg[1], "world") == 0) { scopeWhere |= peekWorld; }
+    static bool scope_bag[] = { false, true, true, true, false, true, true, true, true };
 
-	if (scopeWhere == 0) {
-		c->Message(0, "Usage: #peekinv [worn|inv|cursor|trib|bank|trade|world|all]");
-		c->Message(0, "  Displays a portion of the targeted user's inventory");
-		c->Message(0, "  Caution: 'all' is a lot of information!");
-		return;
-	}
+    if (!c)
+        return;
 
-	Client* targetClient = c->GetTarget()->CastToClient();
-	const EQEmu::ItemInstance* inst_main = nullptr;
-	const EQEmu::ItemInstance* inst_sub = nullptr;
-	const EQEmu::ItemData* item_data = nullptr;
+    if (c->GetTarget() && !c->GetTarget()->IsClient()) {
+        c->Message(0, "You must target a PC for this command.");
+        return;
+    }
 
-	EQEmu::SayLinkEngine linker;
-	linker.SetLinkType(EQEmu::saylink::SayLinkItemInst);
+    int scopeMask = peekNone;
 
-	c->Message(0, "Displaying inventory for %s...",  targetClient->GetName());
+    if (strcasecmp(sep->arg[1], "all") == 0) { scopeMask = (peekOutOfScope - 1); }
+    else if (strcasecmp(sep->arg[1], "equip") == 0) { scopeMask |= peekEquip; }
+    else if (strcasecmp(sep->arg[1], "gen") == 0) { scopeMask |= peekGen; }
+    else if (strcasecmp(sep->arg[1], "cursor") == 0) { scopeMask |= peekCursor; }
+    else if (strcasecmp(sep->arg[1], "poss") == 0) { scopeMask |= (peekEquip | peekGen | peekCursor); }
+    else if (strcasecmp(sep->arg[1], "limbo") == 0) { scopeMask |= peekLimbo; }
+    else if (strcasecmp(sep->arg[1], "curlim") == 0) { scopeMask |= (peekCursor | peekLimbo); }
+    else if (strcasecmp(sep->arg[1], "trib") == 0) { scopeMask |= peekTrib; }
+    else if (strcasecmp(sep->arg[1], "bank") == 0) { scopeMask |= peekBank; }
+    else if (strcasecmp(sep->arg[1], "shbank") == 0) { scopeMask |= peekShBank; }
+    else if (strcasecmp(sep->arg[1], "allbank") == 0) { scopeMask |= (peekBank | peekShBank); }
+    else if (strcasecmp(sep->arg[1], "trade") == 0) { scopeMask |= peekTrade; }
+    else if (strcasecmp(sep->arg[1], "world") == 0) { scopeMask |= peekWorld; }
 
-	// worn
-	for (int16 indexMain = EQEmu::legacy::EQUIPMENT_BEGIN; (scopeWhere & peekWorn) && (indexMain <= EQEmu::legacy::EQUIPMENT_END); ++indexMain) {
-		inst_main = targetClient->GetInv().GetItem(indexMain);
-		item_data = (inst_main == nullptr) ? nullptr : inst_main->GetItem();
-		linker.SetItemInst(inst_main);
+    if (!scopeMask) {
+        c->Message(0, "Usage: #peekinv [equip|gen|cursor|poss|limbo|curlim|trib|bank|shbank|allbank|trade|world|all]");
+        c->Message(0, "- Displays a portion of the targeted user's inventory");
+        c->Message(0, "- Caution: 'all' is a lot of information!");
+        return;
+    }
 
-		c->Message((item_data == nullptr), "WornSlot: %i, Item: %i (%s), Charges: %i",
-                   indexMain, ((item_data == nullptr) ? 0 : item_data->ID), linker.GenerateLink().c_str(), ((inst_main == nullptr) ? 0 : inst_main->GetCharges()));
-	}
+    Client* targetClient = c;
+    if (c->GetTarget())
+        targetClient = c->GetTarget()->CastToClient();
 
-	if ((scopeWhere & peekWorn) && (targetClient->ClientVersion() >= EQEmu::versions::ClientVersion::SoF)) {
-		inst_main = targetClient->GetInv().GetItem(EQEmu::inventory::slotPowerSource);
-		item_data = (inst_main == nullptr) ? nullptr : inst_main->GetItem();
-		linker.SetItemInst(inst_main);
+    const EQEmu::ItemInstance* inst_main = nullptr;
+    const EQEmu::ItemInstance* inst_sub = nullptr;
+    const EQEmu::ItemInstance* inst_aug = nullptr;
+    const EQEmu::ItemData* item_data = nullptr;
 
-		c->Message((item_data == nullptr), "WornSlot: %i, Item: %i (%s), Charges: %i",
-                   EQEmu::inventory::slotPowerSource, ((item_data == nullptr) ? 0 : item_data->ID), linker.GenerateLink().c_str(), ((inst_main == nullptr) ? 0 : inst_main->GetCharges()));
-	}
+    EQEmu::SayLinkEngine linker;
+    linker.SetLinkType(EQEmu::saylink::SayLinkItemInst);
 
-	// inv
-	for (int16 indexMain = EQEmu::legacy::GENERAL_BEGIN; (scopeWhere & peekInv) && (indexMain <= EQEmu::legacy::GENERAL_END); ++indexMain) {
-		inst_main = targetClient->GetInv().GetItem(indexMain);
-		item_data = (inst_main == nullptr) ? nullptr : inst_main->GetItem();
-		linker.SetItemInst(inst_main);
+    c->Message(0, "Displaying inventory for %s...", targetClient->GetName());
 
-		c->Message((item_data == nullptr), "InvSlot: %i, Item: %i (%s), Charges: %i",
-                   indexMain, ((item_data == nullptr) ? 0 : item_data->ID), linker.GenerateLink().c_str(), ((inst_main == nullptr) ? 0 : inst_main->GetCharges()));
+    Object* objectTradeskill = targetClient->GetTradeskillObject();
 
-		for (uint8 indexSub = EQEmu::inventory::containerBegin; inst_main && inst_main->IsClassBag() && (indexSub < EQEmu::inventory::ContainerCount); ++indexSub) {
-			inst_sub = inst_main->GetItem(indexSub);
-			item_data = (inst_sub == nullptr) ? nullptr : inst_sub->GetItem();
-			linker.SetItemInst(inst_sub);
+    bool itemsFound = false;
 
-			c->Message((item_data == nullptr), "  InvBagSlot: %i (Slot #%i, Bag #%i), Item: %i (%s), Charges: %i",
-                       EQEmu::InventoryProfile::CalcSlotId(indexMain, indexSub), indexMain, indexSub, ((item_data == nullptr) ? 0 : item_data->ID), linker.GenerateLink().c_str(), ((inst_sub == nullptr) ? 0 : inst_sub->GetCharges()));
-		}
-	}
+    for (int scopeIndex = 0, scopeBit = peekEquip; scopeBit < peekOutOfScope; ++scopeIndex, scopeBit <<= 1) {
+        if (scopeBit & ~scopeMask)
+            continue;
 
-	// cursor
-	if (scopeWhere & peekCursor) {
-		if (targetClient->GetInv().CursorEmpty()) {
-			linker.SetItemInst(nullptr);
+        if (scopeBit & peekWorld) {
+            if (objectTradeskill == nullptr) {
+                c->Message(1, "No world tradeskill object selected...");
+                continue;
+            }
+            else {
+                c->Message(0, "[WorldObject DBID: %i (entityid: %i)]", objectTradeskill->GetDBID(), objectTradeskill->GetID());
+            }
+        }
 
-			c->Message(1, "CursorSlot: %i, Item: %i (%s), Charges: %i",
-                       EQEmu::inventory::slotCursor, 0, linker.GenerateLink().c_str(), 0);
-		}
-		else {
-			int cursorDepth = 0;
-			for (auto it = targetClient->GetInv().cursor_cbegin(); (it != targetClient->GetInv().cursor_cend()); ++it, ++cursorDepth) {
-				inst_main = *it;
-				item_data = (inst_main == nullptr) ? nullptr : inst_main->GetItem();
-				linker.SetItemInst(inst_main);
+        for (int16 indexMain = scope_range[scopeIndex][0]; indexMain <= scope_range[scopeIndex][1]; ++indexMain) {
+            if (indexMain == EQEmu::invslot::SLOT_INVALID)
+                continue;
 
-				c->Message((item_data == nullptr), "CursorSlot: %i, Depth: %i, Item: %i (%s), Charges: %i",
-                           EQEmu::inventory::slotCursor, cursorDepth, ((item_data == nullptr) ? 0 : item_data->ID), linker.GenerateLink().c_str(), ((inst_main == nullptr) ? 0 : inst_main->GetCharges()));
+            inst_main = ((scopeBit & peekWorld) ? objectTradeskill->GetItem(indexMain) : targetClient->GetInv().GetItem(indexMain));
+            if (inst_main) {
+                itemsFound = true;
+                item_data = inst_main->GetItem();
+            }
+            else {
+                item_data = nullptr;
+            }
 
-				for (uint8 indexSub = EQEmu::inventory::containerBegin; (cursorDepth == 0) && inst_main && inst_main->IsClassBag() && (indexSub < EQEmu::inventory::ContainerCount); ++indexSub) {
-					inst_sub = inst_main->GetItem(indexSub);
-					item_data = (inst_sub == nullptr) ? nullptr : inst_sub->GetItem();
-					linker.SetItemInst(inst_sub);
+            linker.SetItemInst(inst_main);
 
-					c->Message((item_data == nullptr), "  CursorBagSlot: %i (Slot #%i, Bag #%i), Item: %i (%s), Charges: %i",
-                               EQEmu::InventoryProfile::CalcSlotId(EQEmu::inventory::slotCursor, indexSub), EQEmu::inventory::slotCursor, indexSub, ((item_data == nullptr) ? 0 : item_data->ID), linker.GenerateLink().c_str(), ((inst_sub == nullptr) ? 0 : inst_sub->GetCharges()));
-				}
-			}
-		}
-	}
+            c->Message(
+                    (item_data == nullptr),
+                    "%sSlot: %i, Item: %i (%s), Charges: %i",
+                    scope_prefix[scopeIndex],
+                    ((scopeBit & peekWorld) ? (EQEmu::invslot::WORLD_BEGIN + indexMain) : indexMain),
+                    ((item_data == nullptr) ? 0 : item_data->ID),
+                    linker.GenerateLink().c_str(),
+                    ((inst_main == nullptr) ? 0 : inst_main->GetCharges())
+            );
 
-	// trib
-	for (int16 indexMain = EQEmu::legacy::TRIBUTE_BEGIN; (scopeWhere & peekTrib) && (indexMain <= EQEmu::legacy::TRIBUTE_END); ++indexMain) {
-		inst_main = targetClient->GetInv().GetItem(indexMain);
-		item_data = (inst_main == nullptr) ? nullptr : inst_main->GetItem();
-		linker.SetItemInst(inst_main);
+            if (inst_main && inst_main->IsClassCommon()) {
+                for (uint8 indexAug = EQEmu::invaug::SOCKET_BEGIN; indexAug <= EQEmu::invaug::SOCKET_END; ++indexAug) {
+                    inst_aug = inst_main->GetItem(indexAug);
+                    if (!inst_aug) // extant only
+                        continue;
 
-		c->Message((item_data == nullptr), "TributeSlot: %i, Item: %i (%s), Charges: %i",
-                   indexMain, ((item_data == nullptr) ? 0 : item_data->ID), linker.GenerateLink().c_str(), ((inst_main == nullptr) ? 0 : inst_main->GetCharges()));
-	}
+                    item_data = inst_aug->GetItem();
+                    linker.SetItemInst(inst_aug);
 
-	// bank
-	for (int16 indexMain = EQEmu::legacy::BANK_BEGIN; (scopeWhere & peekBank) && (indexMain <= EQEmu::legacy::BANK_END); ++indexMain) {
-		inst_main = targetClient->GetInv().GetItem(indexMain);
-		item_data = (inst_main == nullptr) ? nullptr : inst_main->GetItem();
-		linker.SetItemInst(inst_main);
+                    c->Message(
+                            (item_data == nullptr),
+                            ".%sAugSlot: %i (Slot #%i, Aug idx #%i), Item: %i (%s), Charges: %i",
+                            scope_prefix[scopeIndex],
+                            INVALID_INDEX,
+                            ((scopeBit & peekWorld) ? (EQEmu::invslot::WORLD_BEGIN + indexMain) : indexMain),
+                            indexAug,
+                            ((item_data == nullptr) ? 0 : item_data->ID),
+                            linker.GenerateLink().c_str(),
+                            ((inst_sub == nullptr) ? 0 : inst_sub->GetCharges())
+                    );
+                }
+            }
 
-		c->Message((item_data == nullptr), "BankSlot: %i, Item: %i (%s), Charges: %i",
-                   indexMain, ((item_data == nullptr) ? 0 : item_data->ID), linker.GenerateLink().c_str(), ((inst_main == nullptr) ? 0 : inst_main->GetCharges()));
+            if (!scope_bag[scopeIndex] || !(inst_main && inst_main->IsClassBag()))
+                continue;
 
-		for (uint8 indexSub = EQEmu::inventory::containerBegin; inst_main && inst_main->IsClassBag() && (indexSub < EQEmu::inventory::ContainerCount); ++indexSub) {
-			inst_sub = inst_main->GetItem(indexSub);
-			item_data = (inst_sub == nullptr) ? nullptr : inst_sub->GetItem();
-			linker.SetItemInst(inst_sub);
+            for (uint8 indexSub = EQEmu::invbag::SLOT_BEGIN; indexSub <= EQEmu::invbag::SLOT_END; ++indexSub) {
+                inst_sub = inst_main->GetItem(indexSub);
+                if (!inst_sub) // extant only
+                    continue;
 
-			c->Message((item_data == nullptr), "  BankBagSlot: %i (Slot #%i, Bag #%i), Item: %i (%s), Charges: %i",
-                       EQEmu::InventoryProfile::CalcSlotId(indexMain, indexSub), indexMain, indexSub, ((item_data == nullptr) ? 0 : item_data->ID), linker.GenerateLink().c_str(), ((inst_sub == nullptr) ? 0 : inst_sub->GetCharges()));
-		}
-	}
+                item_data = inst_sub->GetItem();
+                linker.SetItemInst(inst_sub);
 
-	for (int16 indexMain = EQEmu::legacy::SHARED_BANK_BEGIN; (scopeWhere & peekBank) && (indexMain <= EQEmu::legacy::SHARED_BANK_END); ++indexMain) {
-		inst_main = targetClient->GetInv().GetItem(indexMain);
-		item_data = (inst_main == nullptr) ? nullptr : inst_main->GetItem();
-		linker.SetItemInst(inst_main);
+                c->Message(
+                        (item_data == nullptr),
+                        "..%sBagSlot: %i (Slot #%i, Bag idx #%i), Item: %i (%s), Charges: %i",
+                        scope_prefix[scopeIndex],
+                        ((scopeBit & peekWorld) ? INVALID_INDEX : EQEmu::InventoryProfile::CalcSlotId(indexMain, indexSub)),
+                        ((scopeBit & peekWorld) ? (EQEmu::invslot::WORLD_BEGIN + indexMain) : indexMain),
+                        indexSub,
+                        ((item_data == nullptr) ? 0 : item_data->ID),
+                        linker.GenerateLink().c_str(),
+                        ((inst_sub == nullptr) ? 0 : inst_sub->GetCharges())
+                );
 
-		c->Message((item_data == nullptr), "SharedBankSlot: %i, Item: %i (%s), Charges: %i",
-                   indexMain, ((item_data == nullptr) ? 0 : item_data->ID), linker.GenerateLink().c_str(), ((inst_main == nullptr) ? 0 : inst_main->GetCharges()));
+                if (inst_sub->IsClassCommon()) {
+                    for (uint8 indexAug = EQEmu::invaug::SOCKET_BEGIN; indexAug <= EQEmu::invaug::SOCKET_END; ++indexAug) {
+                        inst_aug = inst_sub->GetItem(indexAug);
+                        if (!inst_aug) // extant only
+                            continue;
 
-		for (uint8 indexSub = EQEmu::inventory::containerBegin; inst_main && inst_main->IsClassBag() && (indexSub < EQEmu::inventory::ContainerCount); ++indexSub) {
-			inst_sub = inst_main->GetItem(indexSub);
-			item_data = (inst_sub == nullptr) ? nullptr : inst_sub->GetItem();
-			linker.SetItemInst(inst_sub);
+                        item_data = inst_aug->GetItem();
+                        linker.SetItemInst(inst_aug);
 
-			c->Message((item_data == nullptr), "  SharedBankBagSlot: %i (Slot #%i, Bag #%i), Item: %i (%s), Charges: %i",
-                       EQEmu::InventoryProfile::CalcSlotId(indexMain, indexSub), indexMain, indexSub, ((item_data == nullptr) ? 0 : item_data->ID), linker.GenerateLink().c_str(), ((inst_sub == nullptr) ? 0 : inst_sub->GetCharges()));
-		}
-	}
+                        c->Message(
+                                (item_data == nullptr),
+                                "...%sAugSlot: %i (Slot #%i, Sub idx #%i, Aug idx #%i), Item: %i (%s), Charges: %i",
+                                scope_prefix[scopeIndex],
+                                INVALID_INDEX,
+                                ((scopeBit & peekWorld) ? INVALID_INDEX : EQEmu::InventoryProfile::CalcSlotId(indexMain, indexSub)),
+                                indexSub,
+                                indexAug,
+                                ((item_data == nullptr) ? 0 : item_data->ID),
+                                linker.GenerateLink().c_str(),
+                                ((inst_sub == nullptr) ? 0 : inst_sub->GetCharges())
+                        );
+                    }
+                }
+            }
+        }
 
-	// trade
-	for (int16 indexMain = EQEmu::legacy::TRADE_BEGIN; (scopeWhere & peekTrade) && (indexMain <= EQEmu::legacy::TRADE_END); ++indexMain) {
-		inst_main = targetClient->GetInv().GetItem(indexMain);
-		item_data = (inst_main == nullptr) ? nullptr : inst_main->GetItem();
-		linker.SetItemInst(inst_main);
+        if (scopeBit & peekLimbo) {
+            int limboIndex = 0;
+            for (auto it = targetClient->GetInv().cursor_cbegin(); (it != targetClient->GetInv().cursor_cend()); ++it, ++limboIndex) {
+                if (it == targetClient->GetInv().cursor_cbegin())
+                    continue;
 
-		c->Message((item_data == nullptr), "TradeSlot: %i, Item: %i (%s), Charges: %i",
-                   indexMain, ((item_data == nullptr) ? 0 : item_data->ID), linker.GenerateLink().c_str(), ((inst_main == nullptr) ? 0 : inst_main->GetCharges()));
+                inst_main = *it;
+                if (inst_main) {
+                    itemsFound = true;
+                    item_data = inst_main->GetItem();
+                }
+                else {
+                    item_data = nullptr;
+                }
 
-		for (uint8 indexSub = EQEmu::inventory::containerBegin; inst_main && inst_main->IsClassBag() && (indexSub < EQEmu::inventory::ContainerCount); ++indexSub) {
-			inst_sub = inst_main->GetItem(indexSub);
-			item_data = (inst_sub == nullptr) ? nullptr : inst_sub->GetItem();
-			linker.SetItemInst(inst_sub);
+                linker.SetItemInst(inst_main);
 
-			c->Message((item_data == nullptr), "  TradeBagSlot: %i (Slot #%i, Bag #%i), Item: %i (%s), Charges: %i",
-                       EQEmu::InventoryProfile::CalcSlotId(indexMain, indexSub), indexMain, indexSub, ((item_data == nullptr) ? 0 : item_data->ID), linker.GenerateLink().c_str(), ((inst_sub == nullptr) ? 0 : inst_sub->GetCharges()));
-		}
-	}
+                c->Message(
+                        (item_data == nullptr),
+                        "%sSlot: %i, Item: %i (%s), Charges: %i",
+                        scope_prefix[scopeIndex],
+                        (8000 + limboIndex),
+                        ((item_data == nullptr) ? 0 : item_data->ID),
+                        linker.GenerateLink().c_str(),
+                        ((inst_main == nullptr) ? 0 : inst_main->GetCharges())
+                );
 
-	// world
-	if (scopeWhere & peekWorld) {
-		Object* objectTradeskill = targetClient->GetTradeskillObject();
+                if (inst_main && inst_main->IsClassCommon()) {
+                    for (uint8 indexAug = EQEmu::invaug::SOCKET_BEGIN; indexAug <= EQEmu::invaug::SOCKET_END; ++indexAug) {
+                        inst_aug = inst_main->GetItem(indexAug);
+                        if (!inst_aug) // extant only
+                            continue;
 
-		if (objectTradeskill == nullptr) {
-			c->Message(1, "No world tradeskill object selected...");
-		}
-		else {
-			c->Message(0, "[WorldObject DBID: %i (entityid: %i)]",  objectTradeskill->GetDBID(), objectTradeskill->GetID());
+                        item_data = inst_aug->GetItem();
+                        linker.SetItemInst(inst_aug);
 
-			for (int16 indexMain = EQEmu::inventory::slotBegin; indexMain < EQEmu::legacy::TYPE_WORLD_SIZE; ++indexMain) {
-				inst_main = objectTradeskill->GetItem(indexMain);
-				item_data = (inst_main == nullptr) ? nullptr : inst_main->GetItem();
-				linker.SetItemInst(inst_main);
+                        c->Message(
+                                (item_data == nullptr),
+                                ".%sAugSlot: %i (Slot #%i, Aug idx #%i), Item: %i (%s), Charges: %i",
+                                scope_prefix[scopeIndex],
+                                INVALID_INDEX,
+                                (8000 + limboIndex),
+                                indexAug,
+                                ((item_data == nullptr) ? 0 : item_data->ID),
+                                linker.GenerateLink().c_str(),
+                                ((inst_sub == nullptr) ? 0 : inst_sub->GetCharges())
+                        );
+                    }
+                }
 
-				c->Message((item_data == nullptr), "WorldSlot: %i, Item: %i (%s), Charges: %i",
-                           (EQEmu::legacy::WORLD_BEGIN + indexMain), ((item_data == nullptr) ? 0 : item_data->ID), linker.GenerateLink().c_str(), ((inst_main == nullptr) ? 0 : inst_main->GetCharges()));
+                if (!scope_bag[scopeIndex] || !(inst_main && inst_main->IsClassBag()))
+                    continue;
 
-				for (uint8 indexSub = EQEmu::inventory::containerBegin; inst_main && inst_main->IsType(EQEmu::item::ItemClassBag) && (indexSub < EQEmu::inventory::ContainerCount); ++indexSub) {
-					inst_sub = inst_main->GetItem(indexSub);
-					item_data = (inst_sub == nullptr) ? nullptr : inst_sub->GetItem();
-					linker.SetItemInst(inst_sub);
+                for (uint8 indexSub = EQEmu::invbag::SLOT_BEGIN; indexSub <= EQEmu::invbag::SLOT_END; ++indexSub) {
+                    inst_sub = inst_main->GetItem(indexSub);
+                    if (!inst_sub)
+                        continue;
 
-					c->Message((item_data == nullptr), "  WorldBagSlot: %i (Slot #%i, Bag #%i), Item: %i (%s), Charges: %i",
-                               INVALID_INDEX, indexMain, indexSub, ((item_data == nullptr) ? 0 : item_data->ID), linker.GenerateLink().c_str(), ((inst_sub == nullptr) ? 0 : inst_sub->GetCharges()));
-				}
-			}
-		}
-	}
+                    item_data = (inst_sub == nullptr) ? nullptr : inst_sub->GetItem();
+
+                    linker.SetItemInst(inst_sub);
+
+                    c->Message(
+                            (item_data == nullptr),
+                            "..%sBagSlot: %i (Slot #%i, Bag idx #%i), Item: %i (%s), Charges: %i",
+                            scope_prefix[scopeIndex],
+                            INVALID_INDEX,
+                            (8000 + limboIndex),
+                            indexSub,
+                            ((item_data == nullptr) ? 0 : item_data->ID),
+                            linker.GenerateLink().c_str(),
+                            ((inst_sub == nullptr) ? 0 : inst_sub->GetCharges())
+                    );
+
+                    if (inst_sub->IsClassCommon()) {
+                        for (uint8 indexAug = EQEmu::invaug::SOCKET_BEGIN; indexAug <= EQEmu::invaug::SOCKET_END; ++indexAug) {
+                            inst_aug = inst_sub->GetItem(indexAug);
+                            if (!inst_aug) // extant only
+                                continue;
+
+                            item_data = inst_aug->GetItem();
+                            linker.SetItemInst(inst_aug);
+
+                            c->Message(
+                                    (item_data == nullptr),
+                                    "...%sAugSlot: %i (Slot #%i, Sub idx #%i, Aug idx #%i), Item: %i (%s), Charges: %i",
+                                    scope_prefix[scopeIndex],
+                                    INVALID_INDEX,
+                                    (8000 + limboIndex),
+                                    indexSub,
+                                    indexAug,
+                                    ((item_data == nullptr) ? 0 : item_data->ID),
+                                    linker.GenerateLink().c_str(),
+                                    ((inst_sub == nullptr) ? 0 : inst_sub->GetCharges())
+                            );
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (!itemsFound)
+        c->Message(0, "No items found.");
 }
 
 void command_interrogateinv(Client *c, const Seperator *sep)
@@ -3337,31 +3427,344 @@ void command_interrogateinv(Client *c, const Seperator *sep)
 
 void command_invsnapshot(Client *c, const Seperator *sep)
 {
-	auto t = c->GetTarget();
-	if (!t || !t->IsClient()) {
-		c->Message(0, "Target must be a client");
+	if (!c)
+		return;
+
+	if (sep->argnum == 0 || strcmp(sep->arg[1], "help") == 0) {
+		std::string window_title = "Inventory Snapshot Argument Help Menu";
+
+		std::string window_text =
+				"<table>"
+				"<tr>"
+				"<td><c \"#FFFFFF\">Usage:</td>"
+				"<td></td>"
+				"<td>#invsnapshot arguments<br>(<c \"#00FF00\">required <c \"#FFFF00\">optional<c \"#FFFFFF\">)</td>"
+				"</tr>"
+				"<tr>"
+				"<td><c \"#FFFF00\">help</td>"
+				"<td></td>"
+				"<td><c \"#AAAAAA\">this menu</td>"
+				"</tr>"
+				"<tr>"
+				"<td><c \"#00FF00\">capture</td>"
+				"<td></td>"
+				"<td><c \"#AAAAAA\">takes snapshot of character inventory</td>"
+				"</tr>";
+
+		if (c->Admin() >= commandInvSnapshot)
+			window_text.append(
+					"<tr>"
+					"<td><c \"#00FF00\">gcount</td>"
+					"<td></td>"
+					"<td><c \"#AAAAAA\">returns global snapshot count</td>"
+					"</tr>"
+					"<tr>"
+					"<td><c \"#00FF00\">gclear</td>"
+					"<td><c \"#FFFF00\"><br>now</td>"
+					"<td><c \"#AAAAAA\">delete all snapshots - rule<br>delete all snapshots - now</td>"
+					"</tr>"
+					"<tr>"
+					"<td><c \"#00FF00\">count</td>"
+					"<td></td>"
+					"<td><c \"#AAAAAA\">returns character snapshot count</td>"
+					"</tr>"
+					"<tr>"
+					"<td><c \"#00FF00\">clear</td>"
+					"<td><c \"#FFFF00\"><br>now</td>"
+					"<td><c \"#AAAAAA\">delete character snapshots - rule<br>delete character snapshots - now</td>"
+					"</tr>"
+					"<tr>"
+					"<td><c \"#00FF00\">list</td>"
+					"<td><br><c \"#FFFF00\">count</td>"
+					"<td><c \"#AAAAAA\">lists entry ids for current character<br>limits to count</td>"
+					"</tr>"
+					"<tr>"
+					"<td><c \"#00FF00\">parse</td>"
+					"<td><c \"#00FF00\">tstmp</td>"
+					"<td><c \"#AAAAAA\">displays slots and items in snapshot</td>"
+					"</tr>"
+					"<tr>"
+					"<td><c \"#00FF00\">compare</td>"
+					"<td><c \"#00FF00\">tstmp</td>"
+					"<td><c \"#AAAAAA\">compares inventory against snapshot</td>"
+					"</tr>"
+					"<tr>"
+					"<td><c \"#00FF00\">restore</td>"
+					"<td><c \"#00FF00\">tstmp</td>"
+					"<td><c \"#AAAAAA\">restores slots and items in snapshot</td>"
+					"</tr>"
+			);
+
+		window_text.append(
+				"</table>"
+		);
+
+		c->SendPopupToClient(window_title.c_str(), window_text.c_str());
+
 		return;
 	}
 
-	if (database.SaveCharacterInventorySnapshot(((Client*)t)->CharacterID())) {
-		c->SetNextInvSnapshot(RuleI(Character, InvSnapshotMinIntervalM));
-		c->Message(0, "Successful inventory snapshot taken of %s", t->GetName());
-	}
-	else {
-		c->SetNextInvSnapshot(RuleI(Character, InvSnapshotMinRetryM));
-		c->Message(0, "Failed to take inventory snapshot of %s", t->GetName());
-	}
-}
+	if (c->Admin() >= commandInvSnapshot) { // global arguments
 
-void command_clearinvsnapshots(Client *c, const Seperator *sep)
-{
-	if (strcmp(sep->arg[1], "false") == 0) {
-		database.ClearInvSnapshots(false);
-		c->Message(0, "Inventory snapshots cleared using current time");
+		if (strcmp(sep->arg[1], "gcount") == 0) {
+			auto is_count = database.CountInvSnapshots();
+			c->Message(0, "There %s %i inventory snapshot%s.", (is_count == 1 ? "is" : "are"), is_count, (is_count == 1 ? "" : "s"));
+
+			return;
+		}
+
+		if (strcmp(sep->arg[1], "gclear") == 0) {
+			if (strcmp(sep->arg[2], "now") == 0) {
+				database.ClearInvSnapshots(true);
+				c->Message(0, "Inventory snapshots cleared using current time.");
+			}
+			else {
+				database.ClearInvSnapshots();
+				c->Message(0, "Inventory snapshots cleared using RuleI(Character, InvSnapshotHistoryD) (%i day%s).",
+						   RuleI(Character, InvSnapshotHistoryD), (RuleI(Character, InvSnapshotHistoryD) == 1 ? "" : "s"));
+			}
+
+			return;
+		}
 	}
-	else {
-		database.ClearInvSnapshots();
-		c->Message(0, "Inventory snapshots cleared using RuleI(Character, InvSnapshotHistoryD) (%i days)", RuleI(Character, InvSnapshotHistoryD));
+
+	if (!c->GetTarget() || !c->GetTarget()->IsClient()) {
+		c->Message(0, "Target must be a client.");
+		return;
+	}
+
+	auto tc = (Client*)c->GetTarget();
+
+	if (strcmp(sep->arg[1], "capture") == 0) {
+		if (database.SaveCharacterInvSnapshot(tc->CharacterID())) {
+			tc->SetNextInvSnapshot(RuleI(Character, InvSnapshotMinIntervalM));
+			c->Message(0, "Successful inventory snapshot taken of %s - setting next interval for %i minute%s.",
+					   tc->GetName(), RuleI(Character, InvSnapshotMinIntervalM), (RuleI(Character, InvSnapshotMinIntervalM) == 1 ? "" : "s"));
+		}
+		else {
+			tc->SetNextInvSnapshot(RuleI(Character, InvSnapshotMinRetryM));
+			c->Message(0, "Failed to take inventory snapshot of %s - retrying in %i minute%s.",
+					   tc->GetName(), RuleI(Character, InvSnapshotMinRetryM), (RuleI(Character, InvSnapshotMinRetryM) == 1 ? "" : "s"));
+		}
+
+		return;
+	}
+
+	if (c->Admin() >= commandInvSnapshot) {
+		if (strcmp(sep->arg[1], "count") == 0) {
+			auto is_count = database.CountCharacterInvSnapshots(tc->CharacterID());
+			c->Message(0, "%s (id: %u) has %i inventory snapshot%s.", tc->GetName(), tc->CharacterID(), is_count, (is_count == 1 ? "" : "s"));
+
+			return;
+		}
+
+		if (strcmp(sep->arg[1], "clear") == 0) {
+			if (strcmp(sep->arg[2], "now") == 0) {
+				database.ClearCharacterInvSnapshots(tc->CharacterID(), true);
+				c->Message(0, "%s\'s (id: %u) inventory snapshots cleared using current time.", tc->GetName(), tc->CharacterID());
+			}
+			else {
+				database.ClearCharacterInvSnapshots(tc->CharacterID());
+				c->Message(0, "%s\'s (id: %u) inventory snapshots cleared using RuleI(Character, InvSnapshotHistoryD) (%i day%s).",
+						   tc->GetName(), tc->CharacterID(), RuleI(Character, InvSnapshotHistoryD), (RuleI(Character, InvSnapshotHistoryD) == 1 ? "" : "s"));
+			}
+
+			return;
+		}
+
+		if (strcmp(sep->arg[1], "list") == 0) {
+			std::list<std::pair<uint32, int>> is_list;
+			database.ListCharacterInvSnapshots(tc->CharacterID(), is_list);
+
+			if (is_list.empty()) {
+				c->Message(0, "No inventory snapshots for %s (id: %u)", tc->GetName(), tc->CharacterID());
+				return;
+			}
+
+			auto list_count = 0;
+			if (sep->IsNumber(2))
+				list_count = atoi(sep->arg[2]);
+			if (list_count < 1 || list_count > is_list.size())
+				list_count = is_list.size();
+
+			std::string window_title = StringFormat("Snapshots for %s", tc->GetName());
+
+			std::string window_text =
+					"<table>"
+					"<tr>"
+					"<td>Timestamp</td>"
+					"<td>Entry Count</td>"
+					"</tr>";
+
+			for (auto iter : is_list) {
+				if (!list_count)
+					break;
+
+				window_text.append(StringFormat(
+						"<tr>"
+						"<td>%u</td>"
+						"<td>%i</td>"
+						"</tr>",
+						iter.first,
+						iter.second
+				));
+
+				--list_count;
+			}
+
+			window_text.append(
+					"</table>"
+			);
+
+			c->SendPopupToClient(window_title.c_str(), window_text.c_str());
+
+			return;
+		}
+
+		if (strcmp(sep->arg[1], "parse") == 0) {
+			if (!sep->IsNumber(2)) {
+				c->Message(0, "A timestamp is required to use this option.");
+				return;
+			}
+
+			uint32 timestamp = atoul(sep->arg[2]);
+
+			if (!database.ValidateCharacterInvSnapshotTimestamp(tc->CharacterID(), timestamp)) {
+				c->Message(0, "No inventory snapshots for %s (id: %u) exist at %u.", tc->GetName(), tc->CharacterID(), timestamp);
+				return;
+			}
+
+			std::list<std::pair<int16, uint32>> parse_list;
+			database.ParseCharacterInvSnapshot(tc->CharacterID(), timestamp, parse_list);
+
+			std::string window_title = StringFormat("Snapshot Parse for %s @ %u", tc->GetName(), timestamp);
+
+			std::string window_text = "Slot: ItemID - Description<br>";
+
+			for (auto iter : parse_list) {
+				auto item_data = database.GetItem(iter.second);
+				std::string window_line = StringFormat("%i: %u - %s<br>", iter.first, iter.second, (item_data ? item_data->Name : "[error]"));
+
+				if (window_text.length() + window_line.length() < 4095) {
+					window_text.append(window_line);
+				}
+				else {
+					c->Message(0, "Too many snapshot entries to list...");
+					break;
+				}
+			}
+
+			c->SendPopupToClient(window_title.c_str(), window_text.c_str());
+
+			return;
+		}
+
+		if (strcmp(sep->arg[1], "compare") == 0) {
+			if (!sep->IsNumber(2)) {
+				c->Message(0, "A timestamp is required to use this option.");
+				return;
+			}
+
+			uint32 timestamp = atoul(sep->arg[2]);
+
+			if (!database.ValidateCharacterInvSnapshotTimestamp(tc->CharacterID(), timestamp)) {
+				c->Message(0, "No inventory snapshots for %s (id: %u) exist at %u.", tc->GetName(), tc->CharacterID(), timestamp);
+				return;
+			}
+
+			std::list<std::pair<int16, uint32>> inv_compare_list;
+			database.DivergeCharacterInventoryFromInvSnapshot(tc->CharacterID(), timestamp, inv_compare_list);
+
+			std::list<std::pair<int16, uint32>> iss_compare_list;
+			database.DivergeCharacterInvSnapshotFromInventory(tc->CharacterID(), timestamp, iss_compare_list);
+
+			std::string window_title = StringFormat("Snapshot Comparison for %s @ %u", tc->GetName(), timestamp);
+
+			std::string window_text = "Slot: (action) Snapshot -&gt; Inventory<br>";
+
+			auto inv_iter = inv_compare_list.begin();
+			auto iss_iter = iss_compare_list.begin();
+
+			while (true) {
+				std::string window_line;
+
+				if (inv_iter == inv_compare_list.end() && iss_iter == iss_compare_list.end()) {
+					break;
+				}
+				else if (inv_iter != inv_compare_list.end() && iss_iter == iss_compare_list.end()) {
+					window_line = StringFormat("%i: (delete) [empty] -&gt; %u<br>", inv_iter->first, inv_iter->second);
+					++inv_iter;
+				}
+				else if (inv_iter == inv_compare_list.end() && iss_iter != iss_compare_list.end()) {
+					window_line = StringFormat("%i: (insert) %u -&gt; [empty]<br>", iss_iter->first, iss_iter->second);
+					++iss_iter;
+				}
+				else {
+					if (inv_iter->first < iss_iter->first) {
+						window_line = StringFormat("%i: (delete) [empty] -&gt; %u<br>", inv_iter->first, inv_iter->second);
+						++inv_iter;
+					}
+					else if (inv_iter->first > iss_iter->first) {
+						window_line = StringFormat("%i: (insert) %u -&gt; [empty]<br>", iss_iter->first, iss_iter->second);
+						++iss_iter;
+					}
+					else {
+						window_line = StringFormat("%i: (replace) %u -&gt; %u<br>", iss_iter->first, iss_iter->second, inv_iter->second);
+						++inv_iter;
+						++iss_iter;
+					}
+				}
+
+				if (window_text.length() + window_line.length() < 4095) {
+					window_text.append(window_line);
+				}
+				else {
+					c->Message(0, "Too many comparison entries to list...");
+					break;
+				}
+			}
+
+			c->SendPopupToClient(window_title.c_str(), window_text.c_str());
+
+			return;
+		}
+
+		if (strcmp(sep->arg[1], "restore") == 0) {
+			if (!sep->IsNumber(2)) {
+				c->Message(0, "A timestamp is required to use this option.");
+				return;
+			}
+
+			uint32 timestamp = atoul(sep->arg[2]);
+
+			if (!database.ValidateCharacterInvSnapshotTimestamp(tc->CharacterID(), timestamp)) {
+				c->Message(0, "No inventory snapshots for %s (id: %u) exist at %u.", tc->GetName(), tc->CharacterID(), timestamp);
+				return;
+			}
+
+			if (database.SaveCharacterInvSnapshot(tc->CharacterID())) {
+				tc->SetNextInvSnapshot(RuleI(Character, InvSnapshotMinIntervalM));
+			}
+			else {
+				c->Message(13, "Failed to take pre-restore inventory snapshot of %s (id: %u).",
+						   tc->GetName(), tc->CharacterID());
+				return;
+			}
+
+			if (database.RestoreCharacterInvSnapshot(tc->CharacterID(), timestamp)) {
+				// cannot delete all valid item slots from client..so, we worldkick
+				tc->WorldKick(); // self restores update before the 'kick' is processed
+
+				c->Message(0, "Successfully applied snapshot %u to %s's (id: %u) inventory.",
+						   timestamp, tc->GetName(), tc->CharacterID());
+			}
+			else {
+				c->Message(13, "Failed to apply snapshot %u to %s's (id: %u) inventory.",
+						   timestamp, tc->GetName(), tc->CharacterID());
+			}
+
+			return;
+		}
 	}
 }
 
@@ -3671,8 +4074,8 @@ void command_listpetition(Client *c, const Seperator *sep)
 void command_equipitem(Client *c, const Seperator *sep)
 {
 	uint32 slot_id = atoi(sep->arg[1]);
-	if (sep->IsNumber(1) && ((slot_id >= EQEmu::legacy::EQUIPMENT_BEGIN) && (slot_id <= EQEmu::legacy::EQUIPMENT_END) || (slot_id == EQEmu::inventory::slotPowerSource))) {
-		const EQEmu::ItemInstance* from_inst = c->GetInv().GetItem(EQEmu::inventory::slotCursor);
+	if (sep->IsNumber(1) && (slot_id >= EQEmu::invslot::EQUIPMENT_BEGIN && slot_id <= EQEmu::invslot::EQUIPMENT_END)) {
+		const EQEmu::ItemInstance* from_inst = c->GetInv().GetItem(EQEmu::invslot::slotCursor);
 		const EQEmu::ItemInstance* to_inst = c->GetInv().GetItem(slot_id); // added (desync issue when forcing stack to stack)
 		bool partialmove = false;
 		int16 movecount;
@@ -3680,7 +4083,7 @@ void command_equipitem(Client *c, const Seperator *sep)
 		if (from_inst && from_inst->IsClassCommon()) {
 			auto outapp = new EQApplicationPacket(OP_MoveItem, sizeof(MoveItem_Struct));
 			MoveItem_Struct* mi	= (MoveItem_Struct*)outapp->pBuffer;
-			mi->from_slot = EQEmu::inventory::slotCursor;
+            mi->from_slot = EQEmu::invslot::slotCursor;
 			mi->to_slot			= slot_id;
 			// mi->number_in_stack	= from_inst->GetCharges(); // replaced with con check for stacking
 
@@ -3877,10 +4280,10 @@ void command_corpse(Client *c, const Seperator *sep)
 	}
 	else if (strcasecmp(sep->arg[1], "buried") == 0) {
 		if (target == 0 || !target->IsClient())
-			c->Message(CC_Default, "Error: Target must be a player to list or summon their buried corpses.");
+			c->Message(Chat::White, "Error: Target must be a player to list or summon their buried corpses.");
 		else if (strlen(sep->arg[2]) > 0) {
 			if (strcasecmp(sep->arg[2], "list") == 0) {
-				c->Message(CC_Red, "Listing buried corpses");
+				c->Message(Chat::Red, "Listing buried corpses");
 				database.ListCharacterCorpses(target->CastToClient(), c, true, false);
 			}
 			else if (strcasecmp(sep->arg[2], "summon") == 0) {
@@ -3891,48 +4294,48 @@ void command_corpse(Client *c, const Seperator *sep)
 					if (c->GetTarget() && c->GetTarget()->IsClient() && c->GetGM())
 						t = c->GetTarget()->CastToClient();
 					else {
-						c->Message(CC_Default, "You must first turn your GM flag on and select a target!");
+						c->Message(Chat::White, "You must first turn your GM flag on and select a target!");
 						return;
 					}
 
 					if (!sep->IsNumber(3)) {
-						c->Message(CC_Default, "Usage: #corpse buried summon [corpse_id].");
+						c->Message(Chat::White, "Usage: #corpse buried summon [corpse_id].");
 						return;
 					}
 					else
 						corpseid = atoi(sep->arg[3]);
 
 					if (!database.IsValidCorpse(corpseid)) {
-						c->Message(CC_Red, "Corpse %i has been found! Please summon or delete it before attempting to restore trying to unbury it.", atoi(sep->arg[2]));
+						c->Message(Chat::Red, "Corpse %i has been found! Please summon or delete it before attempting to restore trying to unbury it.", atoi(sep->arg[2]));
 						return;
 					}
 					else if (!database.IsCorpseOwner(corpseid, t->CharacterID(), false)) {
-						c->Message(CC_Red, "Targetted player is not the owner of the specified corpse!");
+						c->Message(Chat::Red, "Targetted player is not the owner of the specified corpse!");
 						return;
 					}
 					else {
 						Corpse* PlayerCorpse = database.SummonCharacterCorpse(corpseid, t->CharacterID(), t->GetZoneID(), zone->GetInstanceID(), t->GetPosition());
 						database.BuryCharacterCorpse(corpseid, 0); // unbury corpse
 						if (!PlayerCorpse)
-							c->Message(CC_Default, "Summoning of backup corpse failed. Please escalate this issue.");
+							c->Message(Chat::White, "Summoning of backup corpse failed. Please escalate this issue.");
 						return;
 					}
 				}
 				else {
-					c->Message(CC_Default, "Insufficient status to summon backup corpses.");
+					c->Message(Chat::White, "Insufficient status to summon backup corpses.");
 				}
 			}
 		}
 		else {
-			c->Message(CC_Default, "Must provide argument 'list' or 'summon', ex: #corpse backup list");
+			c->Message(Chat::White, "Must provide argument 'list' or 'summon', ex: #corpse backup list");
 		}
 	}
 	else if (strcasecmp(sep->arg[1], "backup") == 0) {
 		if (target == 0 || !target->IsClient())
-			c->Message(CC_Default, "Error: Target must be a player to list their backups.");
+			c->Message(Chat::White, "Error: Target must be a player to list their backups.");
 		else if (strlen(sep->arg[2]) > 0) {
 			if (strcasecmp(sep->arg[2], "list") == 0) {
-				c->Message(CC_Red, "Listing backup corpses");
+				c->Message(Chat::Red, "Listing backup corpses");
 				database.ListCharacterCorpses(target->CastToClient(), c, false, true);
 			}
 			else if (strcasecmp(sep->arg[2], "summon") == 0) {
@@ -3943,12 +4346,12 @@ void command_corpse(Client *c, const Seperator *sep)
 					if (c->GetTarget() && c->GetTarget()->IsClient() && c->GetGM())
 						t = c->GetTarget()->CastToClient();
 					else {
-						c->Message(CC_Default, "You must first turn your GM flag on and select a target!");
+						c->Message(Chat::White, "You must first turn your GM flag on and select a target!");
 						return;
 					}
 
 					if (!sep->IsNumber(3)) {
-						c->Message(CC_Default, "Usage: #corpse backup summon [corpse_id].");
+						c->Message(Chat::White, "Usage: #corpse backup summon [corpse_id].");
 						return;
 					}
 					else
@@ -3956,17 +4359,17 @@ void command_corpse(Client *c, const Seperator *sep)
 
 					// Check if backup corpse exists
 					if (!database.IsValidCorpseBackup(corpseid)) {
-						c->Message(CC_Red, "Backup corpse %i not found.", corpseid);
+						c->Message(Chat::Red, "Backup corpse %i not found.", corpseid);
 						return;
 					}
 						// Check if corpse exists and is in buried list
 					else if (database.IsValidCorpse(corpseid)) {
-						c->Message(CC_Red, "Corpse %i has been found and is buried! Please summon or delete it before attempting to restore from a backup.", corpseid);
+						c->Message(Chat::Red, "Corpse %i has been found and is buried! Please summon or delete it before attempting to restore from a backup.", corpseid);
 						return;
 					}
 						// Check if corpse is owner of target
 					else if (!database.IsCorpseOwner(corpseid, t->CharacterID(), true)) {
-						c->Message(CC_Red, "Targetted player is not the owner of the specified corpse!");
+						c->Message(Chat::Red, "Targetted player is not the owner of the specified corpse!");
 						return;
 					}
 					else {
@@ -3974,25 +4377,25 @@ void command_corpse(Client *c, const Seperator *sep)
 							Corpse* PlayerCorpse = database.SummonCharacterCorpse(corpseid, t->CharacterID(), t->GetZoneID(), zone->GetInstanceID(), t->GetPosition());
 							database.BuryCharacterCorpse(corpseid, 0); // unbury corpse
 							if (!PlayerCorpse)
-								c->Message(CC_Default, "Summoning of backup corpse failed. Please escalate this issue.");
+								c->Message(Chat::White, "Summoning of backup corpse failed. Please escalate this issue.");
 							return;
 						}
 						else {
-							c->Message(CC_Red, "There was an error copying corpse %i. Please contact a DB admin.", corpseid);
+							c->Message(Chat::Red, "There was an error copying corpse %i. Please contact a DB admin.", corpseid);
 							return;
 						}
 					}
 				}
 				else {
-					c->Message(CC_Default, "Insufficient status to summon backup corpses.");
+					c->Message(Chat::White, "Insufficient status to summon backup corpses.");
 				}
 			}
 			else {
-				c->Message(CC_Default, "Must provide argument 'list' or 'summon', ex: #corpse backup list");
+				c->Message(Chat::White, "Must provide argument 'list' or 'summon', ex: #corpse backup list");
 			}
 		}
 		else {
-			c->Message(CC_Default, "Must provide argument 'list' or 'summon', ex: #corpse backup list");
+			c->Message(Chat::White, "Must provide argument 'list' or 'summon', ex: #corpse backup list");
 		}
 	}
 	else if (strcasecmp(sep->arg[1], "delete") == 0) {
@@ -4112,16 +4515,16 @@ void command_corpse(Client *c, const Seperator *sep)
         else if (strcasecmp(sep->arg[1], "backups") == 0)
         {
             if (target == 0 || !target->IsClient())
-                c->Message(CC_Default, "Error: Target must be a player to list their backups.");
+                c->Message(Chat::White, "Error: Target must be a player to list their backups.");
             else
             {
-                c->Message(CC_Red, "CorpseID : Zone , x , y , z , Items");
+                c->Message(Chat::Red, "CorpseID : Zone , x , y , z , Items");
                 std::string query = StringFormat("SELECT id, zone_id, x, y, z FROM character_corpses_backup WHERE charid = %d", target->CastToClient()->CharacterID());
                 auto results = database.QueryDatabase(query);
 
                 if (!results.Success() || results.RowCount() == 0)
                 {
-                    c->Message(CC_Red, "No corpse backups exist for %s with ID: %i.", target->GetName(), target->CastToClient()->CharacterID());
+                    c->Message(Chat::Red, "No corpse backups exist for %s with ID: %i.", target->GetName(), target->CastToClient()->CharacterID());
                     return;
                 }
 
@@ -4131,7 +4534,7 @@ void command_corpse(Client *c, const Seperator *sep)
                     auto ic_results = database.QueryDatabase(ic_query);
                     auto ic_row = ic_results.begin();
 
-                    c->Message(CC_Yellow, " %s:	%s, %s, %s, %s, (%s)", row[0], database.GetZoneName(atoi(row[1])), row[2], row[3], row[4], ic_row[0]);
+                    c->Message(Chat::Yellow, " %s:	%s, %s, %s, %s, (%s)", row[0], database.GetZoneName(atoi(row[1])), row[2], row[3], row[4], ic_row[0]);
                 }
             }
         }
@@ -4146,13 +4549,13 @@ void command_corpse(Client *c, const Seperator *sep)
                     t = c->GetTarget()->CastToClient();
                 else
                 {
-                    c->Message(CC_Default, "You must first turn your GM flag on and select a target!");
+                    c->Message(Chat::White, "You must first turn your GM flag on and select a target!");
                     return;
                 }
 
                 if (!sep->IsNumber(2))
                 {
-                    c->Message(CC_Default, "Usage: #corpse restore [corpse_id].");
+                    c->Message(Chat::White, "Usage: #corpse restore [corpse_id].");
                     return;
                 }
                 else
@@ -4160,17 +4563,17 @@ void command_corpse(Client *c, const Seperator *sep)
 
                 if (!database.IsValidCorpseBackup(corpseid))
                 {
-                    c->Message(CC_Red, "Backup corpse %i not found.", corpseid);
+                    c->Message(Chat::Red, "Backup corpse %i not found.", corpseid);
                     return;
                 }
                 else if (!database.IsValidCorpse(corpseid))
                 {
-                    c->Message(CC_Red, "Corpse %i has been found! Please summon or delete it before attempting to restore from a backup.", atoi(sep->arg[2]));
+                    c->Message(Chat::Red, "Corpse %i has been found! Please summon or delete it before attempting to restore from a backup.", atoi(sep->arg[2]));
                     return;
                 }
                 else if (!database.IsCorpseBackupOwner(corpseid, t->CharacterID()))
                 {
-                    c->Message(CC_Red, "Targetted player is not the owner of the specified corpse!");
+                    c->Message(Chat::Red, "Targetted player is not the owner of the specified corpse!");
                     return;
                 }
                 else
@@ -4180,20 +4583,20 @@ void command_corpse(Client *c, const Seperator *sep)
                         Corpse* PlayerCorpse = database.SummonCharacterCorpse(corpseid, t->CharacterID(), t->GetZoneID(), zone->GetInstanceID(), t->GetPosition());
 
                         if (!PlayerCorpse)
-                            c->Message(CC_Default, "Summoning of backup corpse failed. Please escalate this issue.");
+                            c->Message(Chat::White, "Summoning of backup corpse failed. Please escalate this issue.");
 
                         return;
                     }
                     else
                     {
-                        c->Message(CC_Red, "There was an error copying corpse %i. Please contact a DB admin.", corpseid);
+                        c->Message(Chat::Red, "There was an error copying corpse %i. Please contact a DB admin.", corpseid);
                         return;
                     }
                 }
             }
             else
             {
-                c->Message(CC_Default, "Insufficient status to summon backup corpses.");
+                c->Message(Chat::White, "Insufficient status to summon backup corpses.");
             }
         }
         */
@@ -5312,7 +5715,7 @@ void command_goto(Client *c, const Seperator *sep)
 
 void command_iteminfo(Client *c, const Seperator *sep)
 {
-	auto inst = c->GetInv()[EQEmu::inventory::slotCursor];
+	auto inst = c->GetInv()[EQEmu::invslot::slotCursor];
 	if (!inst) {
 		c->Message(13, "Error: You need an item on your cursor for this command");
 		return;
@@ -5357,42 +5760,6 @@ void command_iteminfo(Client *c, const Seperator *sep)
 
 	if (c->Admin() >= 200)
 		c->Message(0, ">> MinStatus: %u", item->MinStatus);
-}
-
-void command_itemscore(Client *c, const Seperator *sep)
-{
-
-	int itemScore = c->CastToClient()->GetCharacterItemScore();
-	int maxItemScore = 0;
-	std::string tmp_value;
-	RuleManager::Instance()->GetRule(StringFormat("ItemScore:Class%i", c->GetClass()).c_str(), tmp_value);
-	maxItemScore = std::stoi(tmp_value);
-	if (itemScore < 1) itemScore = 1;
-	if (itemScore > maxItemScore) maxItemScore = itemScore;
-
-	const char *windowTitle = "ItemScore";
-	std::string windowText = StringFormat("Your total ItemScore is: <c \"#FFDF00\">%i</c> (%i%%)<br>", itemScore, (itemScore * 100 / maxItemScore));
-
-	auto inst = c->GetInv()[EQEmu::legacy::InventorySlot::SLOT_CURSOR];
-	if (inst) {
-		windowText.append(StringFormat("<c \"#4444DD\">Cursor</c> (%s) ItemScore: %i<br>", inst->GetItem()->Name, inst->GetItemScore()));
-	}
-
-	int x;
-	//const EQEmu::ItemInstance* inst = nullptr;
-	std::string itemBreakdown = "";
-	for (x = EQEmu::legacy::EQUIPMENT_BEGIN; x < EQEmu::legacy::EQUIPMENT_END; x++) {
-		inst = c->GetInv().GetItem(x);
-		if (!inst) continue;
-		itemBreakdown.append(StringFormat("<c \"#4444DD\">%s</c> (%s) ItemScore: %i<br>", inst->GetSlotName(x).c_str(), inst->GetItem()->Name, inst->GetItemScore()));
-	}
-	windowText.append(itemBreakdown);
-
-
-	windowText.append("<br>ItemScore is a tally of all worn items, calculated based on modifiers of each stat and scaled in percent based on best known geared character of your class on server.<br>The best known geared player data is updated every 24 hours, and the formula for ItemScore is subject to change.<br>");
-	c->Message(0, "Your ItemScore is %i (%i%%). Use #itemscore with an item on cursor to get it's score.", itemScore, (itemScore * 100 / maxItemScore));
-
-	c->SendPopupToClient(windowTitle, windowText.c_str());
 }
 
 void command_uptime(Client *c, const Seperator *sep)
@@ -5957,18 +6324,152 @@ void command_dps(Client *c, const Seperator *sep)
 
 	//float my_dps_loss = (float)((float)my_hp_self_loss_net / cur_engage_duration);
 	//float my_dps_target_loss = (float)((float)my_hp_target_loss_net / cur_engage_duration);
-	//c->Message(MT_CritMelee, "------ %s DPS over %i seconds ----------", target->GetCleanName(), cur_engage_duration);
-	//c->Message(MT_CritMelee, "- dealt %i damage (%.1f DPS)", my_hp_self_loss_net, my_dps_loss);
-	//c->Message(MT_CritMelee, "- took %i damage (%.1f DPS)", my_hp_target_loss_net, my_dps_target_loss);
-	//c->Message(MT_CritMelee, "------ Participants ----------");
+	//c->Message(Chat::MeleeCrit, "------ %s DPS over %i seconds ----------", target->GetCleanName(), cur_engage_duration);
+	//c->Message(Chat::MeleeCrit, "- dealt %i damage (%.1f DPS)", my_hp_self_loss_net, my_dps_loss);
+	//c->Message(Chat::MeleeCrit, "- took %i damage (%.1f DPS)", my_hp_target_loss_net, my_dps_target_loss);
+	//c->Message(Chat::MeleeCrit, "------ Participants ----------");
 	//for (auto&& d : target->DPS()) {
 
 		//float cur_dps = (float)((float)d.hp_target_loss_net / cur_engage_duration);
 		//float cur_hps_taken = (float)((float)d.hp_self_gain_net / engage_duration);
 		//float cur_hps_dealt = (float)((float)d.hp_target_gain_net / engage_duration);
-		//c->Message(MT_CritMelee, "- %s: %i damage (%.1f DPS)", d.character_name.c_str(), d.hp_target_loss_net, cur_dps);
+		//c->Message(Chat::MeleeCrit, "- %s: %i damage (%.1f DPS)", d.character_name.c_str(), d.hp_target_loss_net, cur_dps);
 	//}
 
+}
+
+void command_dz(Client* c, const Seperator* sep)
+{
+    if (!c || !zone) {
+        return;
+    }
+
+    if (strcasecmp(sep->arg[1], "expedition") == 0)
+    {
+        if (strcasecmp(sep->arg[2], "list") == 0)
+        {
+            c->Message(Chat::White, fmt::format("Total Active Expeditions: [{}]", zone->expedition_cache.size()).c_str());
+            for (const auto& expedition : zone->expedition_cache)
+            {
+                auto seconds = expedition.second->GetDynamicZone().GetSecondsRemaining();
+                c->Message(Chat::White, fmt::format(
+                        "Expedition id: [{}]: leader: [{}] instance id: [{}] members: [{}] remaining: [{:02}:{:02}:{:02}]",
+                        expedition.second->GetID(),
+                        expedition.second->GetLeaderName(),
+                        expedition.second->GetInstanceID(),
+                        expedition.second->GetMemberCount(),
+                        seconds / 3600,      // hours
+                        (seconds / 60) % 60, // minutes
+                        seconds % 60         // seconds
+                ).c_str());
+            }
+        }
+        else if (strcasecmp(sep->arg[2], "reload") == 0)
+        {
+            Expedition::CacheAllFromDatabase();
+            c->Message(Chat::White, fmt::format(
+                    "Reloaded [{}] expeditions to cache from database.", zone->expedition_cache.size()
+            ).c_str());
+        }
+        else if (strcasecmp(sep->arg[2], "destroy") == 0 && sep->IsNumber(3))
+            {
+                auto expedition_id = std::strtoul(sep->arg[3], nullptr, 10);
+                auto expedition = Expedition::FindCachedExpeditionByID(expedition_id);
+                if (expedition)
+                {
+                    c->Message(Chat::White, fmt::format(
+                            "Destroying expedition [{}] ({})", expedition_id, expedition->GetName()).c_str()
+                    );
+                    expedition->RemoveAllMembers();
+                }
+                else
+                {
+                    c->Message(Chat::Red, fmt::format("Failed to destroy expedition [{}]", sep->arg[3]).c_str());
+            }
+        }
+    }
+    else if (strcasecmp(sep->arg[1], "list") == 0)
+    {
+        std::string query = SQL(
+                SELECT
+                dynamic_zones.type,
+                instance_list.id,
+                instance_list.zone,
+                instance_list.version,
+                instance_list.start_time,
+                instance_list.duration,
+                COUNT(instance_list.id) member_count
+                        FROM dynamic_zones
+                        INNER JOIN instance_list ON dynamic_zones.instance_id = instance_list.id
+                        LEFT JOIN instance_list_player ON instance_list.id = instance_list_player.id
+                        GROUP BY instance_list.id;
+        );
+
+        auto results = database.QueryDatabase(query);
+        if (results.Success())
+        {
+            c->Message(Chat::White, fmt::format("Total Dynamic Zones: [{}]", results.RowCount()).c_str());
+            for (auto row = results.begin(); row != results.end(); ++row)
+            {
+                auto start_time = strtoul(row[4], nullptr, 10);
+                auto duration = strtoul(row[5], nullptr, 10);
+                auto expire_time = std::chrono::system_clock::from_time_t(start_time + duration);
+                auto now = std::chrono::system_clock::now();
+                auto remaining = std::chrono::duration_cast<std::chrono::seconds>(expire_time - now);
+                auto seconds = std::max(0, static_cast<int>(remaining.count()));
+
+                bool is_expired = now > expire_time;
+
+                if (!is_expired || strcasecmp(sep->arg[2], "all") == 0)
+                {
+                    c->Message(Chat::White, fmt::format(
+                            "type: [{}] instance: [{}] zone: [{}] version: [{}] members: [{}] remaining: [{:02}:{:02}:{:02}]",
+                            strtoul(row[0], nullptr, 10),
+                            strtoul(row[1], nullptr, 10),
+                            strtoul(row[2], nullptr, 10),
+                            strtoul(row[3], nullptr, 10),
+                            strtoul(row[6], nullptr, 10),
+                            seconds / 3600,      // hours
+                            (seconds / 60) % 60, // minutes
+                            seconds % 60         // seconds
+                    ).c_str());
+                }
+            }
+        }
+    }
+    else if (strcasecmp(sep->arg[1], "lockouts") == 0)
+    {
+        if (strcasecmp(sep->arg[2], "remove") == 0 && sep->arg[3][0] != '\0')
+        {
+            c->Message(Chat::White, fmt::format(
+                    "Removing [{}] lockouts on [{}].", sep->arg[4][0] ? sep->arg[4] : "all", sep->arg[3]
+            ).c_str());
+
+            Expedition::RemoveAllCharacterLockouts(sep->arg[3], sep->arg[4]);
+        }
+    }
+    else
+    {
+        c->Message(Chat::White, "#dz usage:");
+        c->Message(Chat::White, "#dz expedition list - list expeditions in current zone cache");
+        c->Message(Chat::White, "#dz expedition reload - reload expedition zone cache from database");
+        c->Message(Chat::White, "#dz expedition destroy <expedition_id> - destroy expedition globally (must be in cache)");
+        c->Message(Chat::White, "#dz list [all] - list dynamic zone instances from database -- 'all' includes expired");
+        c->Message(Chat::White, "#dz lockouts remove <char_name> - delete all of character's expedition lockouts");
+        c->Message(Chat::White, "#dz lockouts remove <char_name> \"<expedition_name>\" - delete lockouts by expedition");
+    }
+}
+
+void command_dzkickplayers(Client* c, const Seperator* sep)
+{
+    if (c)
+    {
+        auto expedition = c->GetExpedition();
+        if (expedition)
+        {
+            expedition->DzKickPlayers(c);
+        }
+    }
 }
 
 void command_doanim(Client *c, const Seperator *sep)
@@ -6582,9 +7083,9 @@ void command_summonitem(Client *c, const Seperator *sep)
 	std::string cmd_msg = sep->msg;
 	size_t link_open = cmd_msg.find('\x12');
 	size_t link_close = cmd_msg.find_last_of('\x12');
-    if (link_open != link_close && (cmd_msg.length() - link_open) > EQEmu::constants::SayLinkBodySize) {
+    if (link_open != link_close && (cmd_msg.length() - link_open) > EQEmu::constants::SAY_LINK_BODY_SIZE) {
 		EQEmu::SayLinkBody_Struct link_body;
-        EQEmu::saylink::DegenerateLinkBody(link_body, cmd_msg.substr(link_open + 1, EQEmu::constants::SayLinkBodySize));
+        EQEmu::saylink::DegenerateLinkBody(link_body, cmd_msg.substr(link_open + 1, EQEmu::constants::SAY_LINK_BODY_SIZE));
 		itemid = link_body.item_id;
 	}
 	else if (!sep->IsNumber(1)) {
@@ -6768,15 +7269,15 @@ void command_setaapts(Client *c, const Seperator *sep)
 	else if(!strcasecmp(sep->arg[1], "group")) {
 		t->GetPP().group_leadership_points = atoi(sep->arg[2]);
 		t->GetPP().group_leadership_exp = 0;
-		t->Message(MT_Experience, "Setting Group AA points to %u", t->GetPP().group_leadership_points);
+		t->Message(Chat::Experience, "Setting Group AA points to %u", t->GetPP().group_leadership_points);
 	} else if(!strcasecmp(sep->arg[1], "raid")) {
 		t->GetPP().raid_leadership_points = atoi(sep->arg[2]);
 		t->GetPP().raid_leadership_exp = 0;
-		t->Message(MT_Experience, "Setting Raid AA points to %u", t->GetPP().raid_leadership_points);
+		t->Message(Chat::Experience, "Setting Raid AA points to %u", t->GetPP().raid_leadership_points);
 	} else {
 		t->GetPP().aapoints = atoi(sep->arg[2]);
 		t->GetPP().expAA = 0;
-		t->Message(MT_Experience, "Setting personal AA points to %u", t->GetPP().aapoints);
+		t->Message(Chat::Experience, "Setting personal AA points to %u", t->GetPP().aapoints);
 		t->SendAlternateAdvancementStats();
 	}
 }
@@ -8732,12 +9233,12 @@ void command_setgraveyard(Client *c, const Seperator *sep)
 void command_deletechar(Client *c, const Seperator *sep) {
 	if (sep->arg[1][0] != 0) {
 		if (!database.DeleteCharacter(sep->arg[1])) {
-			c->Message(CC_Red, "%s could not be deleted. Check the spelling of their name.", sep->arg[1]);
+			c->Message(Chat::Red, "%s could not be deleted. Check the spelling of their name.", sep->arg[1]);
 		} else {
-			c->Message(CC_Green, "%s successfully deleted!", sep->arg[1]);
+			c->Message(Chat::Green, "%s successfully deleted!", sep->arg[1]);
 		}
 	} else {
-		c->Message(CC_Default, "Usage: undeletechar [charname] - WARNING THIS BYPASSES THE UNDELETE FUNCTION");
+		c->Message(Chat::White, "Usage: undeletechar [charname] - WARNING THIS BYPASSES THE UNDELETE FUNCTION");
 	}
 }
 
@@ -11651,12 +12152,12 @@ void command_ucs(Client *c, const Seperator *sep)
 void command_undeletechar(Client *c, const Seperator *sep) {
 	if (sep->arg[1][0] != 0) {
 		if (!database.UnDeleteCharacter(sep->arg[1])) {
-			c->Message(CC_Red, "%s could not be undeleted. Check the spelling of their name.", sep->arg[1]);
+			c->Message(Chat::Red, "%s could not be undeleted. Check the spelling of their name.", sep->arg[1]);
 		} else {
-			c->Message(CC_Green, "%s successfully undeleted!", sep->arg[1]);
+			c->Message(Chat::Green, "%s successfully undeleted!", sep->arg[1]);
 		}
 	} else {
-		c->Message(CC_Default, "Usage: undeletechar [charname]");
+		c->Message(Chat::White, "Usage: undeletechar [charname]");
 	}
 }
 
@@ -11817,10 +12318,10 @@ void command_xpinfo(Client *c, const Seperator *sep){
 	uint32 currentaaxp = t->GetAAXP();
 	float aa_percent = (currentaaxp/maxaa) * 100.0;
 
-	c->Message(CC_Yellow, "%s has %d of %d required XP.", t->GetName(), currentxp, totalrequiredxp);
-	c->Message(CC_Yellow, "They need %0.1f more to get to %d. They are %0.2f percent towards this level.", xpforlevel, level+1, xp_percent);
-	c->Message(CC_Yellow, "Their XP loss at this level is %d which is %0.2f percent of their current level.", exploss, loss_percent);
-	c->Message(CC_Yellow, "They have %d of %0.1f towards an AA point. They are %0.2f percent towards this point.", currentaaxp, maxaa, aa_percent);
+	c->Message(Chat::Yellow, "%s has %d of %d required XP.", t->GetName(), currentxp, totalrequiredxp);
+	c->Message(Chat::Yellow, "They need %0.1f more to get to %d. They are %0.2f percent towards this level.", xpforlevel, level+1, xp_percent);
+	c->Message(Chat::Yellow, "Their XP loss at this level is %d which is %0.2f percent of their current level.", exploss, loss_percent);
+	c->Message(Chat::Yellow, "They have %d of %0.1f towards an AA point. They are %0.2f percent towards this point.", currentaaxp, maxaa, aa_percent);
 }
 
 void command_godmode(Client *c, const Seperator *sep){
@@ -11835,10 +12336,10 @@ void command_godmode(Client *c, const Seperator *sep){
 		c->SendAppearancePacket(AT_Levitate, state);
 		database.SetGMFlymode(account, state);
 		c->SetHideMe(state);
-		c->Message(CC_Default, "Turning GodMode %s for %s (zone for gmspeed to take effect)", state ? "On" : "Off", c->GetName());
+		c->Message(Chat::White, "Turning GodMode %s for %s (zone for gmspeed to take effect)", state ? "On" : "Off", c->GetName());
 	}
 	else
-		c->Message(CC_Default, "Usage: #godmode [on/off]");
+		c->Message(Chat::White, "Usage: #godmode [on/off]");
 }
 
 void command_trapinfo(Client *c, const Seperator *sep)
@@ -11849,7 +12350,7 @@ void command_trapinfo(Client *c, const Seperator *sep)
 void command_reloadtraps(Client *c, const Seperator *sep)
 {
 	entity_list.UpdateAllTraps(true, true);
-	c->Message(CC_Default, "Traps reloaded for %s.", zone->GetShortName());
+	c->Message(Chat::White, "Traps reloaded for %s.", zone->GetShortName());
 }
 
 void command_who(Client *c, const Seperator *sep)

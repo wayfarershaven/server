@@ -34,13 +34,16 @@ extern volatile bool RunLoops;
 
 #include "../common/eqemu_logsys.h"
 #include "../common/features.h"
-#include "../common/emu_legacy.h"
 #include "../common/spdat.h"
 #include "../common/guilds.h"
 #include "../common/rulesys.h"
 #include "../common/string_util.h"
 #include "../common/data_verification.h"
 #include "data_bucket.h"
+#include "expedition.h"
+#include "expedition_database.h"
+#include "expedition_lockout_timer.h"
+#include "expedition_request.h"
 #include "position.h"
 #include "net.h"
 #include "worldserver.h"
@@ -257,6 +260,7 @@ Client::Client(EQStreamInterface* ieqs)
 	mercSlot = 0;
 	InitializeMercInfo();
 	SetMerc(0);
+    dynamiczone_removal_timer.Disable();
 
 	//for good measure:
 	memset(&m_pp, 0, sizeof(m_pp));
@@ -677,7 +681,7 @@ bool Client::Save(uint8 iCommitNow) {
 
 	// perform snapshot before SaveCharacterData() so that m_epp will contain the updated time
 	if (RuleB(Character, ActiveInvSnapshots) && time(nullptr) >= GetNextInvSnapshotTime()) {
-		if (database.SaveCharacterInventorySnapshot(CharacterID())) {
+		if (database.SaveCharacterInvSnapshot(CharacterID())) {
 			SetNextInvSnapshot(RuleI(Character, InvSnapshotMinIntervalM));
 		}
 		else {
@@ -883,7 +887,7 @@ void Client::ChannelMessageReceived(uint8 chan_num, uint8 language, uint8 lang_s
 	{
 	case 0: { /* Guild Chat */
 		if (!IsInAGuild())
-			Message_StringID(MT_DefaultText, GUILD_NOT_MEMBER2);	//You are not a member of any guild.
+			Message_StringID(Chat::DefaultText, GUILD_NOT_MEMBER2);	//You are not a member of any guild.
 		else if (!guild_mgr.CheckPermission(GuildID(), GuildRank(), GUILD_SPEAK))
 			Message(0, "Error: You dont have permission to speak to the guild.");
 		else if (!worldserver.SendChannelMessage(this, targetname, chan_num, GuildID(), language, message))
@@ -1236,11 +1240,11 @@ void Client::ChannelMessageSend(const char* from, const char* to, uint8 chan_num
 }
 
 void Client::Message(uint32 type, const char* message, ...) {
-	if (GetFilter(FilterSpellDamage) == FilterHide && type == MT_NonMelee)
+	if (GetFilter(FilterSpellDamage) == FilterHide && type == Chat::NonMelee)
 		return;
-	if (GetFilter(FilterMeleeCrits) == FilterHide && type == MT_CritMelee) //98 is self...
+	if (GetFilter(FilterMeleeCrits) == FilterHide && type == Chat::MeleeCrit) //98 is self...
 		return;
-	if (GetFilter(FilterSpellCrits) == FilterHide && type == MT_SpellCrits)
+	if (GetFilter(FilterSpellCrits) == FilterHide && type == Chat::SpellCrit)
 		return;
 
 	va_list argptr;
@@ -1524,7 +1528,7 @@ void Client::IncreaseLanguageSkill(int skill_id, int value) {
 	QueuePacket(outapp);
 	safe_delete(outapp);
 
-	Message_StringID( MT_Skills, LANG_SKILL_IMPROVED ); //Notify client
+	Message_StringID( Chat::Skills, LANG_SKILL_IMPROVED ); //Notify client
 }
 
 void Client::AddSkill(EQEmu::skills::SkillType skillid, uint16 value) {
@@ -2100,7 +2104,7 @@ void Client::ReadBook(BookRequest_Struct *book) {
 
 			const EQEmu::ItemInstance *inst = nullptr;
 
-			if (read_from_slot <= EQEmu::legacy::SLOT_PERSONAL_BAGS_END)
+            if (read_from_slot <= EQEmu::invbag::GENERAL_BAGS_END)
 				{
 				inst = m_inv[read_from_slot];
 				}
@@ -2573,7 +2577,7 @@ uint16 Client::GetMaxSkillAfterSpecializationRules(EQEmu::skills::SkillType skil
 
 		}
 	}
-	
+
 	Result += spellbonuses.RaiseSkillCap[skillid] + itembonuses.RaiseSkillCap[skillid] + aabonuses.RaiseSkillCap[skillid];
 
 	return Result;
@@ -2584,7 +2588,7 @@ void Client::SetPVP(bool toggle, bool message) {
 
 	if (message) {
 		if(GetPVP())
-			this->Message_StringID(MT_Shout,PVP_ON);
+			this->Message_StringID(Chat::Shout,PVP_ON);
 		else
 			Message(13, "You no longer follow the ways of discord.");
 	}
@@ -2674,23 +2678,23 @@ void Client::LogMerchant(Client* player, Mob* merchant, uint32 quantity, uint32 
 }
 
 void Client::Disarm(Client* disarmer, int chance) {
-	int16 slot = -1;
-	const EQEmu::ItemInstance *inst = this->GetInv().GetItem(EQEmu::inventory::slotPrimary);
+    int16 slot = EQEmu::invslot::SLOT_INVALID;
+	const EQEmu::ItemInstance *inst = this->GetInv().GetItem(EQEmu::invslot::slotPrimary);
 	if (inst && inst->IsWeapon()) {
-		slot = EQEmu::inventory::slotPrimary;
+		slot = EQEmu::invslot::slotPrimary;
 	}
 	else {
-		inst = this->GetInv().GetItem(EQEmu::inventory::slotSecondary);
+		inst = this->GetInv().GetItem(EQEmu::invslot::slotSecondary);
 		if (inst && inst->IsWeapon())
-			slot = EQEmu::inventory::slotSecondary;
+			slot = EQEmu::invslot::slotSecondary;
 	}
 	if (slot != -1 && inst->IsClassCommon()) {
 		// We have an item that can be disarmed.
 		if (zone->random.Int(0, 1000) <= chance) {
 			// Find a free inventory slot
-			int16 slot_id = -1;
-			slot_id = m_inv.FindFreeSlot(false, true, inst->GetItem()->Size, inst->GetItem()->ItemType);
-			if (slot_id != -1)
+            int16 slot_id = EQEmu::invslot::SLOT_INVALID;
+            slot_id = m_inv.FindFreeSlot(false, true, inst->GetItem()->Size, (inst->GetItem()->ItemType == EQEmu::item::ItemTypeArrow));
+            if (slot_id != EQEmu::invslot::SLOT_INVALID)
 			{
 				EQEmu::ItemInstance *InvItem = m_inv.PopItem(slot);
 				if (InvItem) { // there should be no way it is not there, but check anyway
@@ -2705,28 +2709,28 @@ void Client::Disarm(Client* disarmer, int chance) {
 					FastQueuePacket(&outapp); // this deletes item from the weapon slot on the client
 					if (PutItemInInventory(slot_id, *InvItem, true))
 						database.SaveInventory(this->CharacterID(), NULL, slot);
-					int matslot = slot == EQEmu::inventory::slotPrimary ? EQEmu::textures::weaponPrimary : EQEmu::textures::weaponSecondary;
-					if (matslot != -1)
+                    auto matslot = (slot == EQEmu::invslot::slotPrimary ? EQEmu::textures::weaponPrimary : EQEmu::textures::weaponSecondary);
+                    if (matslot != EQEmu::textures::materialInvalid)
 						SendWearChange(matslot);
 				}
-				Message(MT_Skills, "You have been disarmed!");
+				Message(Chat::Skills, "You have been disarmed!");
 				if (disarmer != this)
-					disarmer->Message(MT_Skills, StringFormat("You have successfully disarmed %s", this->GetCleanName()).c_str());
-					// Message_StringID(MT_Skills, DISARM_SUCCESS, this->GetCleanName());
+					disarmer->Message(Chat::Skills, StringFormat("You have successfully disarmed %s", this->GetCleanName()).c_str());
+					// Message_StringID(Chat::Skills, DISARM_SUCCESS, this->GetCleanName());
 				if (chance != 1000)
 					disarmer->CheckIncreaseSkill(EQEmu::skills::SkillDisarm, nullptr, 4);
 				CalcBonuses();
 				// CalcEnduranceWeightFactor();
 				return;
 			}
-			disarmer->Message(MT_Skills, StringFormat("You have failed to disarm your target").c_str());
-			//disarmer->Message_StringID(MT_Skills, DISARM_FAILED);
+			disarmer->Message(Chat::Skills, StringFormat("You have failed to disarm your target").c_str());
+			//disarmer->Message_StringID(Chat::Skills, DISARM_FAILED);
 			if (chance != 1000)
 				disarmer->CheckIncreaseSkill(EQEmu::skills::SkillDisarm, nullptr, 2);
 			return;
 		}
 	}
-	disarmer->Message(MT_Skills, StringFormat("You have failed to disarm your target").c_str());
+	disarmer->Message(Chat::Skills, StringFormat("You have failed to disarm your target").c_str());
 }
 
 bool Client::BindWound(Mob *bindmob, bool start, bool fail)
@@ -3076,11 +3080,11 @@ void Client::ServerFilter(SetServerFilter_Struct* filter){
 // this version is for messages with no parameters
 void Client::Message_StringID(uint32 type, uint32 string_id, uint32 distance)
 {
-	if (GetFilter(FilterSpellDamage) == FilterHide && type == MT_NonMelee)
+	if (GetFilter(FilterSpellDamage) == FilterHide && type == Chat::NonMelee)
 		return;
-	if (GetFilter(FilterMeleeCrits) == FilterHide && type == MT_CritMelee) //98 is self...
+	if (GetFilter(FilterMeleeCrits) == FilterHide && type == Chat::MeleeCrit) //98 is self...
 		return;
-	if (GetFilter(FilterSpellCrits) == FilterHide && type == MT_SpellCrits)
+	if (GetFilter(FilterSpellCrits) == FilterHide && type == Chat::SpellCrit)
 		return;
 	auto outapp = new EQApplicationPacket(OP_SimpleMessage, 12);
 	SimpleMessage_Struct* sms = (SimpleMessage_Struct*)outapp->pBuffer;
@@ -3107,20 +3111,20 @@ void Client::Message_StringID(uint32 type, uint32 string_id, const char* message
 	const char* message5,const char* message6,const char* message7,
 	const char* message8,const char* message9, uint32 distance)
 {
-	if (GetFilter(FilterSpellDamage) == FilterHide && type == MT_NonMelee)
+	if (GetFilter(FilterSpellDamage) == FilterHide && type == Chat::NonMelee)
 		return;
-	if (GetFilter(FilterMeleeCrits) == FilterHide && type == MT_CritMelee) //98 is self...
+	if (GetFilter(FilterMeleeCrits) == FilterHide && type == Chat::MeleeCrit) //98 is self...
 		return;
-	if (GetFilter(FilterSpellCrits) == FilterHide && type == MT_SpellCrits)
+	if (GetFilter(FilterSpellCrits) == FilterHide && type == Chat::SpellCrit)
 		return;
-	if (GetFilter(FilterDamageShields) == FilterHide && type == MT_DS)
+	if (GetFilter(FilterDamageShields) == FilterHide && type == Chat::DamageShield)
 		return;
 
 	int i = 0, argcount = 0, length = 0;
 	char *bufptr = nullptr;
 	const char *message_arg[9] = {0};
 
-	if(type==MT_Emote)
+	if(type==Chat::Emote)
 		type=4;
 
 	if(!message1)
@@ -3163,6 +3167,27 @@ void Client::Message_StringID(uint32 type, uint32 string_id, const char* message
 	else
 		QueuePacket(outapp);
 	safe_delete(outapp);
+}
+
+void Client::MessageString(const ServerCZClientMessageString_Struct* msg)
+{
+    if (msg)
+    {
+        if (msg->string_params_size == 0)
+        {
+            Message_StringID(msg->chat_type, msg->string_id);
+        }
+        else
+        {
+            uint32_t outsize = sizeof(FormattedMessage_Struct) + msg->string_params_size;
+            auto outapp = std::unique_ptr<EQApplicationPacket>(new EQApplicationPacket(OP_FormattedMessage, outsize));
+            auto outbuf = reinterpret_cast<FormattedMessage_Struct*>(outapp->pBuffer);
+            outbuf->string_id = msg->string_id;
+            outbuf->type = msg->chat_type;
+            memcpy(outbuf->message, msg->string_params, msg->string_params_size);
+            QueuePacket(outapp.get());
+        }
+    }
 }
 
 // helper function, returns true if we should see the message
@@ -3235,7 +3260,7 @@ void Client::FilteredMessage_StringID(Mob *sender, uint32 type, eqFilterType fil
 	char *bufptr = nullptr;
 	const char *message_arg[9] = {0};
 
-	if (type == MT_Emote)
+	if (type == Chat::Emote)
 		type = 4;
 
 	if (!message1) {
@@ -3280,7 +3305,7 @@ void Client::Tell_StringID(uint32 string_id, const char *who, const char *messag
 	char string_id_str[10];
 	snprintf(string_id_str, 10, "%d", string_id);
 
-	Message_StringID(MT_TellEcho, TELL_QUEUED_MESSAGE, who, string_id_str, message);
+	Message_StringID(Chat::EchoTell, TELL_QUEUED_MESSAGE, who, string_id_str, message);
 }
 
 void Client::SetTint(int16 in_slot, uint32 color) {
@@ -3346,7 +3371,7 @@ void Client::SetLanguageSkill(int langid, int value)
 	QueuePacket(outapp);
 	safe_delete(outapp);
 
-	Message_StringID( MT_Skills, LANG_SKILL_IMPROVED ); //Notify the client
+	Message_StringID( Chat::Skills, LANG_SKILL_IMPROVED ); //Notify the client
 }
 
 void Client::LinkDead()
@@ -3364,7 +3389,14 @@ void Client::LinkDead()
 	if(raid){
 		raid->MemberZoned(this);
 	}
-//	save_timer.Start(2500);
+
+    Expedition* expedition = GetExpedition();
+    if (expedition)
+    {
+        expedition->SetMemberStatus(this, ExpeditionMemberStatus::LinkDead);
+    }
+
+    //	save_timer.Start(2500);
 	linkdead_timer.Start(RuleI(Zone,ClientLinkdeadMS));
 	SendAppearancePacket(AT_Linkdead, 1);
 	client_state = CLIENT_LINKDEAD;
@@ -3374,28 +3406,28 @@ void Client::LinkDead()
 uint8 Client::SlotConvert(uint8 slot,bool bracer){
 	uint8 slot2 = 0; // why are we returning MainCharm instead of INVALID_INDEX? (must be a pre-charm segment...)
 	if(bracer)
-		return EQEmu::inventory::slotWrist2;
+        return EQEmu::invslot::slotWrist2;
 	switch(slot) {
 	case EQEmu::textures::armorHead:
-		slot2 = EQEmu::inventory::slotHead;
+		slot2 = EQEmu::invslot::slotHead;
 		break;
 	case EQEmu::textures::armorChest:
-		slot2 = EQEmu::inventory::slotChest;
+		slot2 = EQEmu::invslot::slotChest;
 		break;
 	case EQEmu::textures::armorArms:
-		slot2 = EQEmu::inventory::slotArms;
+		slot2 = EQEmu::invslot::slotArms;
 		break;
 	case EQEmu::textures::armorWrist:
-		slot2 = EQEmu::inventory::slotWrist1;
+		slot2 = EQEmu::invslot::slotWrist1;
 		break;
 	case EQEmu::textures::armorHands:
-		slot2 = EQEmu::inventory::slotHands;
+		slot2 = EQEmu::invslot::slotHands;
 		break;
 	case EQEmu::textures::armorLegs:
-		slot2 = EQEmu::inventory::slotLegs;
+		slot2 = EQEmu::invslot::slotLegs;
 		break;
 	case EQEmu::textures::armorFeet:
-		slot2 = EQEmu::inventory::slotFeet;
+		slot2 = EQEmu::invslot::slotFeet;
 		break;
 	}
 	return slot2;
@@ -3404,25 +3436,25 @@ uint8 Client::SlotConvert(uint8 slot,bool bracer){
 uint8 Client::SlotConvert2(uint8 slot){
 	uint8 slot2 = 0; // same as above...
 	switch(slot){
-	case EQEmu::inventory::slotHead:
+	case EQEmu::invslot::slotHead:
 		slot2 = EQEmu::textures::armorHead;
 		break;
-	case EQEmu::inventory::slotChest:
+	case EQEmu::invslot::slotChest:
 		slot2 = EQEmu::textures::armorChest;
 		break;
-	case EQEmu::inventory::slotArms:
+	case EQEmu::invslot::slotArms:
 		slot2 = EQEmu::textures::armorArms;
 		break;
-	case EQEmu::inventory::slotWrist1:
+	case EQEmu::invslot::slotWrist1:
 		slot2 = EQEmu::textures::armorWrist;
 		break;
-	case EQEmu::inventory::slotHands:
+	case EQEmu::invslot::slotHands:
 		slot2 = EQEmu::textures::armorHands;
 		break;
-	case EQEmu::inventory::slotLegs:
+	case EQEmu::invslot::slotLegs:
 		slot2 = EQEmu::textures::armorLegs;
 		break;
-	case EQEmu::inventory::slotFeet:
+	case EQEmu::invslot::slotFeet:
 		slot2 = EQEmu::textures::armorFeet;
 		break;
 	}
@@ -3434,7 +3466,7 @@ void Client::Escape()
 	entity_list.RemoveFromTargets(this, true);
 	SetInvisible(1);
 
-	Message_StringID(MT_Skills, ESCAPE);
+	Message_StringID(Chat::Skills, ESCAPE);
 }
 
 float Client::CalcPriceMod(Mob* other, bool reverse)
@@ -4031,7 +4063,7 @@ void Client::SendPopupToClient(const char *Title, const char *Text, uint32 Popup
 
 	if ((strlen(Title) > (sizeof(olms->Title) - 1)) || (strlen(Text) > (sizeof(olms->Text) - 1))) {
 		safe_delete(outapp);
-		return;
+		return;/* Health Update Marquee Display: Custom*/
 	}
 
 	strcpy(olms->Title, Title);
@@ -4204,13 +4236,13 @@ void Client::FixClientXP()
 	{
 		if(Admin() == 0 && level > 1)
 		{
-			Message(CC_Red, "Error: Your current XP (%0.2f) is lower than your current level (%i)! It needs to be at least %i", currentxp, level, totalrequiredxp);
+			Message(Chat::Red, "Error: Your current XP (%0.2f) is lower than your current level (%i)! It needs to be at least %i", currentxp, level, totalrequiredxp);
 			SetEXP(totalrequiredxp, currentaa);
 			Save();
 			Kick();
 		}
 		else if(Admin() > 0 && level > 1)
-			Message(CC_Red, "Error: Your current XP (%0.2f) is lower than your current level (%i)! It needs to be at least %i. Use #level or #addxp to correct it and logout!", currentxp, level, totalrequiredxp);
+			Message(Chat::Red, "Error: Your current XP (%0.2f) is lower than your current level (%i)! It needs to be at least %i. Use #level or #addxp to correct it and logout!", currentxp, level, totalrequiredxp);
 	}
 }
 
@@ -4259,7 +4291,7 @@ bool Client::KeyRingCheck(uint32 item_id)
 
 const char* Client::GetForumName(uint32 acc_id)
 {
-	
+
 	std::string query = StringFormat("SELECT forumName FROM account join tblLoginServerAccounts on lsaccount_id = LoginServerID WHERE id = %i ", acc_id);
 	auto results = database.QueryDatabase(query);
 
@@ -4553,14 +4585,14 @@ bool Client::GroupFollow(Client* inviter) {
 uint16 Client::GetPrimarySkillValue()
 {
 	EQEmu::skills::SkillType skill = EQEmu::skills::HIGHEST_SKILL; //because nullptr == 0, which is 1H Slashing, & we want it to return 0 from GetSkill
-	bool equiped = m_inv.GetItem(EQEmu::inventory::slotPrimary);
+    bool equiped = m_inv.GetItem(EQEmu::invslot::slotPrimary);
 
 	if (!equiped)
 		skill = EQEmu::skills::SkillHandtoHand;
 
 	else {
 
-		uint8 type = m_inv.GetItem(EQEmu::inventory::slotPrimary)->GetItem()->ItemType; //is this the best way to do this?
+		uint8 type = m_inv.GetItem(EQEmu::invslot::slotPrimary)->GetItem()->ItemType; //is this the best way to do this?
 
 		switch (type) {
 		case EQEmu::item::ItemType1HSlash: // 1H Slashing
@@ -4973,7 +5005,7 @@ void Client::HandleLDoNOpen(NPC *target)
 
 		if(target->IsLDoNLocked())
 		{
-			Message_StringID(MT_Skills, LDON_STILL_LOCKED, target->GetCleanName());
+			Message_StringID(Chat::Skills, LDON_STILL_LOCKED, target->GetCleanName());
 			return;
 		}
 		else
@@ -5007,13 +5039,13 @@ void Client::HandleLDoNSenseTraps(NPC *target, uint16 skill, uint8 type)
 		{
 			if((target->GetLDoNTrapType() == LDoNTypeCursed || target->GetLDoNTrapType() == LDoNTypeMagical) && type != target->GetLDoNTrapType())
 			{
-				Message_StringID(MT_Skills, LDON_CANT_DETERMINE_TRAP, target->GetCleanName());
+				Message_StringID(Chat::Skills, LDON_CANT_DETERMINE_TRAP, target->GetCleanName());
 				return;
 			}
 
 			if(target->IsLDoNTrapDetected())
 			{
-				Message_StringID(MT_Skills, LDON_CERTAIN_TRAP, target->GetCleanName());
+				Message_StringID(Chat::Skills, LDON_CERTAIN_TRAP, target->GetCleanName());
 			}
 			else
 			{
@@ -5022,10 +5054,10 @@ void Client::HandleLDoNSenseTraps(NPC *target, uint16 skill, uint8 type)
 				{
 				case -1:
 				case 0:
-					Message_StringID(MT_Skills, LDON_DONT_KNOW_TRAPPED, target->GetCleanName());
+					Message_StringID(Chat::Skills, LDON_DONT_KNOW_TRAPPED, target->GetCleanName());
 					break;
 				case 1:
-					Message_StringID(MT_Skills, LDON_CERTAIN_TRAP, target->GetCleanName());
+					Message_StringID(Chat::Skills, LDON_CERTAIN_TRAP, target->GetCleanName());
 					target->SetLDoNTrapDetected(true);
 					break;
 				default:
@@ -5035,7 +5067,7 @@ void Client::HandleLDoNSenseTraps(NPC *target, uint16 skill, uint8 type)
 		}
 		else
 		{
-			Message_StringID(MT_Skills, LDON_CERTAIN_NOT_TRAP, target->GetCleanName());
+			Message_StringID(Chat::Skills, LDON_CERTAIN_NOT_TRAP, target->GetCleanName());
 		}
 	}
 }
@@ -5048,13 +5080,13 @@ void Client::HandleLDoNDisarm(NPC *target, uint16 skill, uint8 type)
 		{
 			if(!target->IsLDoNTrapped())
 			{
-				Message_StringID(MT_Skills, LDON_WAS_NOT_TRAPPED, target->GetCleanName());
+				Message_StringID(Chat::Skills, LDON_WAS_NOT_TRAPPED, target->GetCleanName());
 				return;
 			}
 
 			if((target->GetLDoNTrapType() == LDoNTypeCursed || target->GetLDoNTrapType() == LDoNTypeMagical) && type != target->GetLDoNTrapType())
 			{
-				Message_StringID(MT_Skills, LDON_HAVE_NOT_DISARMED, target->GetCleanName());
+				Message_StringID(Chat::Skills, LDON_HAVE_NOT_DISARMED, target->GetCleanName());
 				return;
 			}
 
@@ -5073,10 +5105,10 @@ void Client::HandleLDoNDisarm(NPC *target, uint16 skill, uint8 type)
 				target->SetLDoNTrapDetected(false);
 				target->SetLDoNTrapped(false);
 				target->SetLDoNTrapSpellID(0);
-				Message_StringID(MT_Skills, LDON_HAVE_DISARMED, target->GetCleanName());
+				Message_StringID(Chat::Skills, LDON_HAVE_DISARMED, target->GetCleanName());
 				break;
 			case 0:
-				Message_StringID(MT_Skills, LDON_HAVE_NOT_DISARMED, target->GetCleanName());
+				Message_StringID(Chat::Skills, LDON_HAVE_NOT_DISARMED, target->GetCleanName());
 				break;
 			case -1:
 				Message_StringID(13, LDON_ACCIDENT_SETOFF2);
@@ -5107,13 +5139,13 @@ void Client::HandleLDoNPickLock(NPC *target, uint16 skill, uint8 type)
 
 			if(!target->IsLDoNLocked())
 			{
-				Message_StringID(MT_Skills, LDON_WAS_NOT_LOCKED, target->GetCleanName());
+				Message_StringID(Chat::Skills, LDON_WAS_NOT_LOCKED, target->GetCleanName());
 				return;
 			}
 
 			if((target->GetLDoNTrapType() == LDoNTypeCursed || target->GetLDoNTrapType() == LDoNTypeMagical) && type != target->GetLDoNTrapType())
 			{
-				Message(MT_Skills, "You cannot unlock %s with this skill.", target->GetCleanName());
+				Message(Chat::Skills, "You cannot unlock %s with this skill.", target->GetCleanName());
 				return;
 			}
 
@@ -5123,11 +5155,11 @@ void Client::HandleLDoNPickLock(NPC *target, uint16 skill, uint8 type)
 			{
 			case 0:
 			case -1:
-				Message_StringID(MT_Skills, LDON_PICKLOCK_FAILURE, target->GetCleanName());
+				Message_StringID(Chat::Skills, LDON_PICKLOCK_FAILURE, target->GetCleanName());
 				break;
 			case 1:
 				target->SetLDoNLocked(false);
-				Message_StringID(MT_Skills, LDON_PICKLOCK_SUCCESS, target->GetCleanName());
+				Message_StringID(Chat::Skills, LDON_PICKLOCK_SUCCESS, target->GetCleanName());
 				break;
 			}
 		}
@@ -5723,7 +5755,7 @@ bool Client::TryReward(uint32 claim_id)
 	// save
 	uint32 free_slot = 0xFFFFFFFF;
 
-	for (int i = EQEmu::legacy::GENERAL_BEGIN; i <= EQEmu::legacy::GENERAL_END; ++i) {
+    for (int i = EQEmu::invslot::GENERAL_BEGIN; i <= EQEmu::invslot::GENERAL_END; ++i) {
 		EQEmu::ItemInstance *item = GetInv().GetItem(i);
 		if (!item) {
 			free_slot = i;
@@ -6058,56 +6090,33 @@ void Client::ProcessInspectRequest(Client* requestee, Client* requester) {
 		const EQEmu::ItemData* item = nullptr;
 		const EQEmu::ItemInstance* inst = nullptr;
 		int ornamentationAugtype = RuleI(Character, OrnamentationAugmentType);
-		for(int16 L = 0; L <= 20; L++) {
+		for(int16 L = EQEmu::invslot::EQUIPMENT_BEGIN; L <= EQEmu::invslot::EQUIPMENT_END; L++) {
 			inst = requestee->GetInv().GetItem(L);
 
 			if(inst) {
 				item = inst->GetItem();
 				if(item) {
 					strcpy(insr->itemnames[L], item->Name);
-					if (inst && inst->GetOrnamentationAug(ornamentationAugtype))
-					{
-						const EQEmu::ItemData *aug_item = inst->GetOrnamentationAug(ornamentationAugtype)->GetItem();
+					const EQEmu::ItemData *aug_item = nullptr;
+					if (inst->GetOrnamentationAug(ornamentationAugtype))
+						inst->GetOrnamentationAug(ornamentationAugtype)->GetItem();
+
+					if (aug_item)
 						insr->itemicons[L] = aug_item->Icon;
-					}
-					else if (inst && inst->GetOrnamentationIcon())
-					{
+					else if (inst->GetOrnamentationIcon())
 						insr->itemicons[L] = inst->GetOrnamentationIcon();
-					}
 					else
-					{
 						insr->itemicons[L] = item->Icon;
-					}
 				}
-				else
+				else {
+					insr->itemnames[L][0] = '\0';
 					insr->itemicons[L] = 0xFFFFFFFF;
 			}
-		}
-
-		inst = requestee->GetInv().GetItem(EQEmu::inventory::slotPowerSource);
-
-		if(inst) {
-			item = inst->GetItem();
-			if(item) {
-				// we shouldn't do this..but, that's the way it's coded atm...
-				// (this type of action should be handled exclusively in the client translator)
-				strcpy(insr->itemnames[SoF::invslot::PossessionsPowerSource], item->Name);
-				insr->itemicons[SoF::invslot::PossessionsPowerSource] = item->Icon;
 			}
-			else
-				insr->itemicons[SoF::invslot::PossessionsPowerSource] = 0xFFFFFFFF;
-		}
-
-		inst = requestee->GetInv().GetItem(EQEmu::inventory::slotAmmo);
-
-		if(inst) {
-			item = inst->GetItem();
-			if(item) {
-				strcpy(insr->itemnames[SoF::invslot::PossessionsAmmo], item->Name);
-				insr->itemicons[SoF::invslot::PossessionsAmmo] = item->Icon;
+			else {
+				insr->itemnames[L][0] = '\0';
+				insr->itemicons[L] = 0xFFFFFFFF;
 			}
-			else
-				insr->itemicons[SoF::invslot::PossessionsAmmo] = 0xFFFFFFFF;
 		}
 
 		strcpy(insr->text, requestee->GetInspectMessage().text);
@@ -6436,21 +6445,19 @@ void Client::CheckEmoteHail(Mob *target, const char* message)
 
 void Client::MarkSingleCompassLoc(float in_x, float in_y, float in_z, uint8 count)
 {
-
-	auto outapp = new EQApplicationPacket(OP_DzCompass, sizeof(ExpeditionInfo_Struct) +
-								sizeof(ExpeditionCompassEntry_Struct) * count);
-	ExpeditionCompass_Struct *ecs = (ExpeditionCompass_Struct*)outapp->pBuffer;
-	//ecs->clientid = GetID();
-	ecs->count = count;
-
-	if (count) {
-		ecs->entries[0].x = in_x;
-		ecs->entries[0].y = in_y;
-		ecs->entries[0].z = in_z;
+    if (count == 0)
+    {
+        m_quest_compass.zone_id = 0;
+    }
+    else
+    {
+        m_quest_compass.zone_id = zone ? zone->GetZoneID() : 0;
+        m_quest_compass.x = in_x;
+        m_quest_compass.y = in_y;
+        m_quest_compass.z = in_z;
 	}
 
-	FastQueuePacket(&outapp);
-	safe_delete(outapp);
+    SendDzCompassUpdate();
 }
 
 void Client::SendZonePoints()
@@ -6514,7 +6521,7 @@ void Client::LocateCorpse()
 
 	if(ClosestCorpse)
 	{
-		Message_StringID(MT_Spells, SENSE_CORPSE_DIRECTION);
+		Message_StringID(Chat::Spells, SENSE_CORPSE_DIRECTION);
 		SetHeading(CalculateHeadingToTarget(ClosestCorpse->GetX(), ClosestCorpse->GetY()));
 		SetTarget(ClosestCorpse);
 		SendTargetCommand(ClosestCorpse->GetID());
@@ -6577,13 +6584,13 @@ void Client::DragCorpses()
 		Mob *corpse = entity_list.GetMob(It->second);
 
 		if (corpse && corpse->IsPlayerCorpse() &&
-				(DistanceSquared(m_Position, corpse->GetPosition()) <= RuleR(Character, DragCorpseDistance)))
+				(DistanceSquaredNoZ(m_Position, corpse->GetPosition()) <= RuleR(Character, DragCorpseDistance)))
 			continue;
 
 		if (!corpse || !corpse->IsPlayerCorpse() ||
 				corpse->CastToCorpse()->IsBeingLooted() ||
 				!corpse->CastToCorpse()->Summon(this, false, false)) {
-			Message_StringID(MT_DefaultText, CORPSEDRAG_STOP);
+			Message_StringID(Chat::DefaultText, CORPSEDRAG_STOP);
 			It = DraggedCorpses.erase(It);
 			if (It == DraggedCorpses.end())
 				break;
@@ -7146,7 +7153,7 @@ void Client::SendStatsWindow(Client* client, bool use_window)
 	}
 
 	EQEmu::skills::SkillType skill = EQEmu::skills::SkillHandtoHand;
-	auto *inst = GetInv().GetItem(EQEmu::inventory::slotPrimary);
+	auto *inst = GetInv().GetItem(EQEmu::invslot::slotPrimary);
 	if (inst && inst->IsClassCommon()) {
 		switch (inst->GetItem()->ItemType) {
 		case EQEmu::item::ItemType1HSlash:
@@ -8052,7 +8059,7 @@ void Client::GarbleMessage(char *message, uint8 variance)
 	for (size_t i = 0; i < strlen(message); i++) {
 		// Client expects hex values inside of a text link body
 		if (message[i] == delimiter) {
-            if (!(delimiter_count & 1)) { i += EQEmu::constants::SayLinkBodySize; }
+			if (!(delimiter_count & 1)) { i += EQEmu::constants::SAY_LINK_BODY_SIZE; }
 			++delimiter_count;
 			continue;
 		}
@@ -8485,18 +8492,13 @@ void Client::TickItemCheck()
 
 	if(zone->tick_items.empty()) { return; }
 
-	//Scan equip slots for items
-	for (i = EQEmu::legacy::EQUIPMENT_BEGIN; i <= EQEmu::legacy::EQUIPMENT_END; i++)
-	{
-		TryItemTick(i);
-	}
-	//Scan main inventory + cursor
-	for (i = EQEmu::legacy::GENERAL_BEGIN; i <= EQEmu::inventory::slotCursor; i++)
+	//Scan equip, general, cursor slots for items
+	for (i = EQEmu::invslot::POSSESSIONS_BEGIN; i <= EQEmu::invslot::POSSESSIONS_END; i++)
 	{
 		TryItemTick(i);
 	}
 	//Scan bags
-	for (i = EQEmu::legacy::GENERAL_BAGS_BEGIN; i <= EQEmu::legacy::CURSOR_BAG_END; i++)
+    for (i = EQEmu::invbag::GENERAL_BAGS_BEGIN; i <= EQEmu::invbag::CURSOR_BAG_END; i++)
 	{
 		TryItemTick(i);
 	}
@@ -8512,7 +8514,7 @@ void Client::TryItemTick(int slot)
 
 	if(zone->tick_items.count(iid) > 0)
 	{
-		if (GetLevel() >= zone->tick_items[iid].level && zone->random.Int(0, 100) >= (100 - zone->tick_items[iid].chance) && (zone->tick_items[iid].bagslot || slot <= EQEmu::legacy::EQUIPMENT_END))
+        if (GetLevel() >= zone->tick_items[iid].level && zone->random.Int(0, 100) >= (100 - zone->tick_items[iid].chance) && (zone->tick_items[iid].bagslot || slot <= EQEmu::invslot::EQUIPMENT_END))
 		{
 			EQEmu::ItemInstance* e_inst = (EQEmu::ItemInstance*)inst;
 			parse->EventItem(EVENT_ITEM_TICK, this, e_inst, nullptr, "", slot);
@@ -8520,9 +8522,9 @@ void Client::TryItemTick(int slot)
 	}
 
 	//Only look at augs in main inventory
-	if (slot > EQEmu::legacy::EQUIPMENT_END) { return; }
+	if (slot > EQEmu::invslot::EQUIPMENT_END) { return; }
 
-	for (int x = EQEmu::inventory::socketBegin; x < EQEmu::inventory::SocketCount; ++x)
+    for (int x = EQEmu::invaug::SOCKET_BEGIN; x <= EQEmu::invaug::SOCKET_END; ++x)
 	{
 		EQEmu::ItemInstance * a_inst = inst->GetAugment(x);
 		if(!a_inst) { continue; }
@@ -8543,17 +8545,12 @@ void Client::TryItemTick(int slot)
 void Client::ItemTimerCheck()
 {
 	int i;
-	for (i = EQEmu::legacy::EQUIPMENT_BEGIN; i <= EQEmu::legacy::EQUIPMENT_END; i++)
+	for (i = EQEmu::invslot::POSSESSIONS_BEGIN; i <= EQEmu::invslot::POSSESSIONS_END; i++)
 	{
 		TryItemTimer(i);
 	}
 
-	for (i = EQEmu::legacy::GENERAL_BEGIN; i <= EQEmu::inventory::slotCursor; i++)
-	{
-		TryItemTimer(i);
-	}
-
-	for (i = EQEmu::legacy::GENERAL_BAGS_BEGIN; i <= EQEmu::legacy::CURSOR_BAG_END; i++)
+	for (i = EQEmu::invbag::GENERAL_BAGS_BEGIN; i <= EQEmu::invbag::CURSOR_BAG_END; i++)
 	{
 		TryItemTimer(i);
 	}
@@ -8575,11 +8572,11 @@ void Client::TryItemTimer(int slot)
 		++it_iter;
 	}
 
-	if (slot > EQEmu::legacy::EQUIPMENT_END) {
+	if (slot > EQEmu::invslot::EQUIPMENT_END) {
 		return;
 	}
 
-	for (int x = EQEmu::inventory::socketBegin; x < EQEmu::inventory::SocketCount; ++x)
+    for (int x = EQEmu::invaug::SOCKET_BEGIN; x <= EQEmu::invaug::SOCKET_END; ++x)
 	{
 		EQEmu::ItemInstance * a_inst = inst->GetAugment(x);
 		if(!a_inst) {
@@ -8867,12 +8864,12 @@ void Client::ShowNumHits()
 int Client::GetQuiverHaste(int delay)
 {
 	const EQEmu::ItemInstance *pi = nullptr;
-	for (int r = EQEmu::legacy::GENERAL_BEGIN; r <= EQEmu::legacy::GENERAL_END; r++) {
+    for (int r = EQEmu::invslot::GENERAL_BEGIN; r <= EQEmu::invslot::GENERAL_END; r++) {
 		pi = GetInv().GetItem(r);
 		if (pi && pi->IsClassBag() && pi->GetItem()->BagType == EQEmu::item::BagTypeQuiver &&
 		    pi->GetItem()->BagWR > 0)
 			break;
-		if (r == EQEmu::legacy::GENERAL_END)
+        if (r == EQEmu::invslot::GENERAL_END)
 			// we will get here if we don't find a valid quiver
 			return 0;
 	}
@@ -8905,14 +8902,14 @@ void Client::QuestReward(Mob* target, uint32 copper, uint32 silver, uint32 gold,
 	qr->silver = silver;
 	qr->gold = gold;
 	qr->platinum = platinum;
-	qr->item_id = itemid;
+    qr->item_id[0] = itemid;
 	qr->exp_reward = exp;
 
 	if (copper > 0 || silver > 0 || gold > 0 || platinum > 0)
 		AddMoneyToPP(copper, silver, gold, platinum, false);
 
 	if (itemid > 0)
-		SummonItem(itemid, 0, 0, 0, 0, 0, 0, false, EQEmu::inventory::slotPowerSource);
+        SummonItem(itemid, 0, 0, 0, 0, 0, 0, false, EQEmu::invslot::slotCursor);
 
 	if (faction)
 	{
@@ -8930,6 +8927,42 @@ void Client::QuestReward(Mob* target, uint32 copper, uint32 silver, uint32 gold,
 
 	QueuePacket(outapp, true, Client::CLIENT_CONNECTED);
 	safe_delete(outapp);
+}
+
+void Client::QuestReward(Mob* target, const QuestReward_Struct &reward, bool faction)
+{
+    auto outapp = new EQApplicationPacket(OP_Sound, sizeof(QuestReward_Struct));
+    memset(outapp->pBuffer, 0, sizeof(QuestReward_Struct));
+    QuestReward_Struct* qr = (QuestReward_Struct*)outapp->pBuffer;
+
+    memcpy(qr, &reward, sizeof(QuestReward_Struct));
+
+    // not set in caller because reasons
+    qr->mob_id = target->GetID();		// Entity ID for the from mob name
+
+    if (reward.copper > 0 || reward.silver > 0 || reward.gold > 0 || reward.platinum > 0)
+        AddMoneyToPP(reward.copper, reward.silver, reward.gold, reward.platinum, false);
+
+    for (int i = 0; i < QUESTREWARD_COUNT; ++i)
+        if (reward.item_id[i] > 0)
+            SummonItem(reward.item_id[i], 0, 0, 0, 0, 0, 0, false, EQEmu::invslot::slotCursor);
+
+    if (faction)
+    {
+        if (target->IsNPC())
+        {
+            int32 nfl_id = target->CastToNPC()->GetNPCFactionID();
+            SetFactionLevel(CharacterID(), nfl_id, GetBaseClass(), GetBaseRace(), GetDeity(), true);
+            qr->faction = target->CastToNPC()->GetPrimaryFaction();
+            qr->faction_mod = 1; // Too lazy to get real value, not sure if this is even used by client anyhow.
+        }
+    }
+
+    if (reward.exp_reward> 0)
+        AddEXP(reward.exp_reward);
+
+    QueuePacket(outapp, true, Client::CLIENT_CONNECTED);
+    safe_delete(outapp);
 }
 
 void Client::SendHPUpdateMarquee(){
@@ -9244,25 +9277,6 @@ void Client::SetPetCommandState(int button, int state)
 	FastQueuePacket(&app);
 }
 
-//Obtain an item score for a character based on worn inventory.
-int Client::GetCharacterItemScore() {
-	int x;
-	const EQEmu::ItemInstance* inst;
-	int itemScore = 0;
-
-	if (GetGM()) {
-		return itemScore;
-	}
-
-	for (x = EQEmu::legacy::EQUIPMENT_BEGIN; x < EQEmu::legacy::EQUIPMENT_END; x++) { // include cursor or not?
-		inst = GetInv().GetItem(x);
-		if (!inst) continue;
-		itemScore += inst->GetItemScore();
-	}
-	return itemScore;
-}
-
-
 /**
  * Used in #goto <player_name>
  *
@@ -9333,4 +9347,496 @@ bool Client::IsDevToolsWindowEnabled() const
 void Client::SetDevToolsWindowEnabled(bool in_dev_tools_window_enabled)
 {
     Client::dev_tools_window_enabled = in_dev_tools_window_enabled;
+}
+
+void Client::SendCrossZoneMessage(
+        Client* client, const std::string& character_name, uint16_t chat_type, const std::string& message)
+{
+    // if client is null, falls back to sending a cross zone message by name
+    if (!client)
+    {
+        client = entity_list.GetClientByName(character_name.c_str());
+    }
+
+    if (client)
+    {
+        client->Message(chat_type, message.c_str());
+    }
+    else if (message.size() > 0)
+    {
+        uint32_t msg_size = static_cast<uint32_t>(message.size()) + 1;
+        uint32_t pack_size = sizeof(ServerCZClientMessage_Struct) + msg_size;
+        auto pack = std::unique_ptr<ServerPacket>(new ServerPacket(ServerOP_CZClientMessage, pack_size));
+        auto buf = reinterpret_cast<ServerCZClientMessage_Struct*>(pack->pBuffer);
+        buf->chat_type = chat_type;
+        strn0cpy(buf->character_name, character_name.c_str(), sizeof(buf->character_name));
+        buf->message_size = msg_size;
+        strn0cpy(buf->message, message.c_str(), buf->message_size);
+
+        worldserver.SendPacket(pack.get());
+    }
+}
+
+void Client::SendCrossZoneMessageString(
+        Client* client, const std::string& character_name, uint16_t chat_type,
+        uint32_t string_id, const std::initializer_list<std::string>& parameters)
+{
+    // if client is null, falls back to sending a cross zone message by name
+    SerializeBuffer parameter_buffer;
+    for (const auto& parameter : parameters)
+    {
+        parameter_buffer.WriteString(parameter);
+    }
+
+    uint32_t pack_size = sizeof(ServerCZClientMessageString_Struct) + static_cast<uint32_t>(parameter_buffer.size());
+    auto pack = std::unique_ptr<ServerPacket>(new ServerPacket(ServerOP_CZClientMessageString, pack_size));
+    auto buf = reinterpret_cast<ServerCZClientMessageString_Struct*>(pack->pBuffer);
+    buf->string_id = string_id;
+    buf->chat_type = chat_type;
+    strn0cpy(buf->character_name, character_name.c_str(), sizeof(buf->character_name));
+    buf->string_params_size = static_cast<uint32_t>(parameter_buffer.size());
+    buf->string_params[0] = '\0';
+    if (parameter_buffer.size()) {
+        memcpy(buf->string_params, parameter_buffer.buffer(), parameter_buffer.size());
+    }
+
+    if (!client) // double check client isn't in this zone
+    {
+        client = entity_list.GetClientByName(character_name.c_str());
+    }
+
+    if (client)
+    {
+        client->MessageString(buf);
+    }
+    else
+    {
+        worldserver.SendPacket(pack.get());
+    }
+}
+
+void Client::UpdateExpeditionInfoAndLockouts()
+{
+    // this is processed by client after entering a zone
+    SendDzCompassUpdate();
+
+    auto expedition = GetExpedition();
+    if (expedition)
+    {
+        expedition->SendClientExpeditionInfo(this);
+
+        // live only adds lockouts obtained during the active expedition to new
+        // members once they zone into the expedition's dynamic zone instance
+        if (expedition->GetDynamicZone().IsCurrentZoneDzInstance())
+        {
+            ExpeditionDatabase::AssignPendingLockouts(CharacterID(), expedition->GetName());
+            expedition->SetMemberStatus(this, ExpeditionMemberStatus::InDynamicZone);
+        }
+        else
+        {
+            expedition->SetMemberStatus(this, ExpeditionMemberStatus::Online);
+        }
+    }
+    LoadAllExpeditionLockouts();
+
+    // ask world for any pending invite we saved from a previous zone
+    RequestPendingExpeditionInvite();
+}
+
+Expedition* Client::CreateExpedition(DynamicZone& dz_instance, ExpeditionRequest& request)
+{
+    return Expedition::TryCreate(this, dz_instance, request);
+}
+
+Expedition* Client::CreateExpedition(
+        std::string zone_name, uint32 version, uint32 duration, std::string expedition_name,
+        uint32 min_players, uint32 max_players, bool has_replay_timer, bool disable_messages)
+{
+    DynamicZone dz_instance{ zone_name, version, duration, DynamicZoneType::Expedition };
+    ExpeditionRequest request{ expedition_name, min_players, max_players, has_replay_timer, disable_messages };
+    return Expedition::TryCreate(this, dz_instance, request);
+}
+
+Expedition* Client::GetExpedition() const
+{
+    if (zone && m_expedition_id)
+    {
+        auto expedition_cache_iter = zone->expedition_cache.find(m_expedition_id);
+        if (expedition_cache_iter != zone->expedition_cache.end())
+        {
+            return expedition_cache_iter->second.get();
+        }
+    }
+    return nullptr;
+}
+
+std::vector<ExpeditionLockoutTimer> Client::GetExpeditionLockouts(const std::string& expedition_name)
+{
+    std::vector<ExpeditionLockoutTimer> lockouts;
+    for (const auto& lockout : m_expedition_lockouts)
+    {
+        if (lockout.GetExpeditionName() == expedition_name)
+        {
+            lockouts.emplace_back(lockout);
+        }
+    }
+    return lockouts;
+}
+
+void Client::AddExpeditionLockout(const ExpeditionLockoutTimer& lockout, bool update_db, bool update_client)
+{
+    // todo: support for account based lockouts like live AoC expeditions
+    auto it = std::find_if(m_expedition_lockouts.begin(), m_expedition_lockouts.end(),
+                           [&](const ExpeditionLockoutTimer& existing_lockout) {
+                               return existing_lockout.IsSameLockout(lockout);
+                           });
+
+    if (it != m_expedition_lockouts.end())
+    {
+        it->SetExpireTime(lockout.GetExpireTime());
+    }
+    else
+    {
+        m_expedition_lockouts.emplace_back(lockout);
+    }
+
+    if (update_db) // for quest api
+    {
+        ExpeditionDatabase::InsertCharacterLockouts(CharacterID(), { lockout }, true);
+    }
+
+    if (update_client)
+    {
+        SendExpeditionLockoutTimers();
+    }
+}
+
+void Client::AddNewExpeditionLockout(
+        const std::string& expedition_name, const std::string& event_name, uint32_t seconds)
+{
+    auto expire_at = std::chrono::system_clock::now() + std::chrono::seconds(seconds);
+    auto expire_time = static_cast<uint64_t>(std::chrono::system_clock::to_time_t(expire_at));
+    ExpeditionLockoutTimer lockout{ expedition_name, event_name, expire_time, seconds };
+    AddExpeditionLockout(lockout, true);
+}
+
+void Client::RemoveExpeditionLockout(
+        const std::string& expedition_name, const std::string& event_name, bool update_db, bool update_client)
+{
+    m_expedition_lockouts.erase(std::remove_if(m_expedition_lockouts.begin(), m_expedition_lockouts.end(),
+                                               [&](const ExpeditionLockoutTimer& lockout) {
+                                                   return lockout.IsSameLockout(expedition_name, event_name);
+                                               }
+    ), m_expedition_lockouts.end());
+
+    if (update_db) // for quest api
+    {
+        ExpeditionDatabase::DeleteCharacterLockout(CharacterID(), expedition_name, event_name);
+    }
+
+    if (update_client)
+    {
+        SendExpeditionLockoutTimers();
+    }
+}
+
+void Client::RemoveAllExpeditionLockouts(std::string expedition_name)
+{
+    if (expedition_name.empty())
+    {
+        ExpeditionDatabase::DeleteAllCharacterLockouts(CharacterID());
+        m_expedition_lockouts.clear();
+    }
+    else
+    {
+        ExpeditionDatabase::DeleteAllCharacterLockouts(CharacterID(), expedition_name);
+        m_expedition_lockouts.erase(std::remove_if(m_expedition_lockouts.begin(), m_expedition_lockouts.end(),
+                                                   [&](const ExpeditionLockoutTimer& lockout) {
+                                                       return lockout.GetExpeditionName() == expedition_name;
+                                                   }
+        ), m_expedition_lockouts.end());
+    }
+    SendExpeditionLockoutTimers();
+}
+
+const ExpeditionLockoutTimer* Client::GetExpeditionLockout(
+        const std::string& expedition_name, const std::string& event_name, bool include_expired) const
+{
+    for (const auto& expedition_lockout : m_expedition_lockouts)
+    {
+        if ((include_expired || expedition_lockout.GetSecondsRemaining() > 0) &&
+            expedition_lockout.IsSameLockout(expedition_name, event_name))
+        {
+            return &expedition_lockout;
+        }
+    }
+    return nullptr;
+}
+
+bool Client::HasExpeditionLockout(
+        const std::string& expedition_name, const std::string& event_name, bool include_expired)
+{
+    return (GetExpeditionLockout(expedition_name, event_name, include_expired) != nullptr);
+}
+
+void Client::LoadAllExpeditionLockouts()
+{
+    auto results = ExpeditionDatabase::LoadCharacterLockouts(CharacterID());
+    if (results.Success())
+    {
+        for (auto row = results.begin(); row != results.end(); ++row)
+        {
+            auto expire_time = strtoull(row[0], nullptr, 10);
+            auto original_duration = static_cast<uint32_t>(strtoul(row[1], nullptr, 10));
+            ExpeditionLockoutTimer lockout{ row[2], row[3], expire_time, original_duration };
+            AddExpeditionLockout(lockout, false, false);
+        }
+    }
+    SendExpeditionLockoutTimers();
+}
+
+void Client::SendExpeditionLockoutTimers()
+{
+    std::vector<ExpeditionLockoutTimerEntry_Struct> lockout_entries;
+
+    // erases expired lockouts while building lockout timer list
+    for (auto it = m_expedition_lockouts.begin(); it != m_expedition_lockouts.end();)
+    {
+        auto seconds_remaining = it->GetSecondsRemaining();
+        if (seconds_remaining <= 0)
+        {
+            it = m_expedition_lockouts.erase(it);
+        }
+        else
+        {
+            ExpeditionLockoutTimerEntry_Struct lockout;
+            strn0cpy(lockout.expedition_name, it->GetExpeditionName().c_str(), sizeof(lockout.expedition_name));
+            lockout.seconds_remaining = seconds_remaining;
+            lockout.event_type = it->IsReplayTimer() ? Expedition::REPLAY_TIMER_ID : Expedition::EVENT_TIMER_ID;
+            strn0cpy(lockout.event_name, it->GetEventName().c_str(), sizeof(lockout.event_name));
+
+            lockout_entries.emplace_back(lockout);
+            ++it;
+        }
+    }
+
+    uint32_t lockout_count = static_cast<uint32_t>(lockout_entries.size());
+    uint32_t lockout_entries_size = sizeof(ExpeditionLockoutTimerEntry_Struct) * lockout_count;
+    uint32_t outsize = sizeof(ExpeditionLockoutTimers_Struct) + lockout_entries_size;
+    auto outapp = std::unique_ptr<EQApplicationPacket>(new EQApplicationPacket(OP_DzExpeditionLockoutTimers, outsize));
+    auto outbuf = reinterpret_cast<ExpeditionLockoutTimers_Struct*>(outapp->pBuffer);
+    outbuf->client_id = 0;
+    outbuf->count = lockout_count;
+    if (!lockout_entries.empty())
+    {
+        memcpy(outbuf->timers, lockout_entries.data(), lockout_entries_size);
+    }
+    QueuePacket(outapp.get());
+}
+
+void Client::RequestPendingExpeditionInvite()
+{
+    uint32_t packsize = sizeof(ServerExpeditionCharacterID_Struct);
+    auto pack = std::unique_ptr<ServerPacket>(new ServerPacket(ServerOP_ExpeditionRequestInvite, packsize));
+    auto packbuf = reinterpret_cast<ServerExpeditionCharacterID_Struct*>(pack->pBuffer);
+    packbuf->character_id = CharacterID();
+    worldserver.SendPacket(pack.get());
+}
+
+void Client::DzListTimers()
+{
+    // only lists player's current replay timer lockouts, not all event lockouts
+    bool found = false;
+    for (const auto& lockout : m_expedition_lockouts)
+    {
+        if (lockout.IsReplayTimer())
+        {
+            found = true;
+            auto time_remaining = lockout.GetDaysHoursMinutesRemaining();
+            Message_StringID(
+                    Chat::Yellow, DZLIST_REPLAY_TIMER,
+                    time_remaining.days.c_str(), time_remaining.hours.c_str(), time_remaining.mins.c_str(),
+                    lockout.GetExpeditionName().c_str()
+            );
+        }
+    }
+
+    if (!found)
+    {
+        Message_StringID(Chat::Yellow, EXPEDITION_NO_TIMERS);
+    }
+}
+
+void Client::SetDzRemovalTimer(bool enable_timer)
+{
+    uint32_t timer_ms = RuleI(DynamicZone, ClientRemovalDelayMS);
+
+    //LogDynamicZones(
+    //        "Character [{}] instance [{}] removal timer enabled: [{}] delay (ms): [{}]",
+    //        CharacterID(), zone ? zone->GetInstanceID() : 0, enable_timer, timer_ms
+    //);
+
+    if (enable_timer)
+    {
+        dynamiczone_removal_timer.Start(timer_ms);
+    }
+    else
+    {
+        dynamiczone_removal_timer.Disable();
+    }
+}
+
+void Client::SendDzCompassUpdate()
+{
+    // a client may be associated with multiple dynamic zones with compasses
+    // in the same zone. any systems that use dynamic zones need checked here
+    std::vector<DynamicZoneCompassEntry_Struct> compass_entries;
+
+    Expedition* expedition = GetExpedition();
+    if (expedition)
+    {
+        auto compass = expedition->GetDynamicZone().GetCompassLocation();
+		if (zone && zone->GetZoneID() == compass.zone_id && zone->GetInstanceID() == 0)
+        {
+            DynamicZoneCompassEntry_Struct entry;
+            entry.dz_zone_id = static_cast<uint16_t>(expedition->GetDynamicZone().GetZoneID());
+            entry.dz_instance_id = static_cast<uint16_t>(expedition->GetDynamicZone().GetInstanceID());
+            entry.dz_type = static_cast<uint8_t>(expedition->GetDynamicZone().GetType());
+            entry.x = compass.x;
+            entry.y = compass.y;
+            entry.z = compass.z;
+
+            compass_entries.emplace_back(entry);
+        }
+    }
+
+    // todo: shared tasks, missions, and quests with an associated dz
+
+    // compass set via MarkSingleCompassLocation()
+	if (zone && zone->GetZoneID() == m_quest_compass.zone_id && zone->GetInstanceID() == 0)
+    {
+        DynamicZoneCompassEntry_Struct entry;
+        entry.dz_zone_id = 0;
+        entry.dz_instance_id = 0;
+        entry.dz_type = 0;
+        entry.x = m_quest_compass.x;
+        entry.y = m_quest_compass.y;
+        entry.z = m_quest_compass.z;
+
+        compass_entries.emplace_back(entry);
+    }
+
+    uint32 count = static_cast<uint32_t>(compass_entries.size());
+    uint32 entries_size = sizeof(DynamicZoneCompassEntry_Struct) * count;
+    uint32 outsize = sizeof(DynamicZoneCompass_Struct) + entries_size;
+    auto outapp = std::unique_ptr<EQApplicationPacket>(new EQApplicationPacket(OP_DzCompass, outsize));
+    auto outbuf = reinterpret_cast<DynamicZoneCompass_Struct*>(outapp->pBuffer);
+    outbuf->client_id = 0;
+    outbuf->count = count;
+    memcpy(outbuf->entries, compass_entries.data(), entries_size);
+
+    QueuePacket(outapp.get());
+}
+
+void Client::GoToDzSafeReturnOrBind(const DynamicZoneLocation& safereturn)
+{
+    Log(Logs::Detail, Logs::DynamicZones,
+        "Sending character [%i] in zone [%i]:[%i] to safereturn [%i] at ([%i], [%i], [%i], [%i]) or bind",
+            CharacterID(),
+            zone ? zone->GetZoneID() : 0,
+            zone ? zone->GetInstanceID() : 0,
+            safereturn.zone_id,
+            safereturn.x,
+            safereturn.y,
+            safereturn.z,
+            safereturn.heading
+    );
+
+    if (safereturn.zone_id == 0)
+    {
+        GoToBind();
+    }
+    else
+    {
+        MovePC(safereturn.zone_id, 0, safereturn.x, safereturn.y, safereturn.z, safereturn.heading);
+    }
+}
+
+void Client::MovePCDynamicZone(uint32 zone_id)
+{
+    if (zone_id == 0)
+    {
+        return;
+    }
+
+    // check client systems for any associated dynamic zones to the requested zone id
+    std::vector<DynamicZoneChooseZoneEntry_Struct> client_dzs;
+
+    DynamicZone single_dz;
+    Expedition* expedition = GetExpedition();
+    if (expedition && expedition->GetDynamicZone().GetZoneID() == zone_id)
+    {
+        single_dz = expedition->GetDynamicZone();
+        DynamicZoneChooseZoneEntry_Struct dz;
+        dz.dz_zone_id = expedition->GetDynamicZone().GetZoneID();
+        dz.dz_instance_id = expedition->GetDynamicZone().GetInstanceID();
+        dz.dz_type = static_cast<uint8_t>(expedition->GetDynamicZone().GetType());
+        //dz.unknown_id2 = expedition->GetDynamicZone().GetRealID();
+        strn0cpy(dz.description, expedition->GetName().c_str(), sizeof(dz.description));
+        strn0cpy(dz.leader_name, expedition->GetLeaderName().c_str(), sizeof(dz.leader_name));
+
+        client_dzs.emplace_back(dz);
+    }
+
+    // todo: check for Missions (Shared Tasks), Quests, or Tasks that have associated dzs to zone_id
+
+    if (client_dzs.empty())
+    {
+        Message_StringID(Chat::Red, DYNAMICZONE_WAY_IS_BLOCKED); // unconfirmed message
+    }
+    else if (client_dzs.size() == 1)
+    {
+        if (single_dz.GetInstanceID() == 0)
+        {
+            Log(Logs::General, Logs::DynamicZones, "Character [%i] has dz for zone [%i] with no instance id", CharacterID(), zone_id);
+        }
+        else
+        {
+            DynamicZoneLocation zonein = single_dz.GetZoneInLocation();
+            ZoneMode zone_mode = ZoneMode::ZoneToSafeCoords;
+            if (single_dz.HasZoneInLocation())
+            {
+                zone_mode = ZoneMode::ZoneSolicited;
+            }
+            MovePC(zone_id, single_dz.GetInstanceID(), zonein.x, zonein.y, zonein.z, zonein.heading, 0, zone_mode);
+        }
+    }
+    else if (client_dzs.size() > 1)
+    {
+        //LogDynamicZonesDetail(
+        //        "Sending DzSwitchListWnd to character [{}] associated with [{}] dynamic zone(s)",
+        //        CharacterID(), client_dzs.size()
+        //);
+
+        // more than one dynamic zone to this zone, send out the switchlist window
+
+        // note that this will most likely crash clients if they've reloaded the ui
+        // this occurs on live as well so it may just be a long lasting client bug
+        uint32 count = static_cast<uint32_t>(client_dzs.size());
+        uint32 entries_size = sizeof(DynamicZoneChooseZoneEntry_Struct) * count;
+        uint32 outsize = sizeof(DynamicZoneChooseZone_Struct) + entries_size;
+        auto outapp = std::unique_ptr<EQApplicationPacket>(new EQApplicationPacket(OP_DzChooseZone, outsize));
+        auto outbuf = reinterpret_cast<DynamicZoneChooseZone_Struct*>(outapp->pBuffer);
+        outbuf->client_id = 0;
+        outbuf->count = count;
+        memcpy(outbuf->choices, client_dzs.data(), entries_size);
+
+        QueuePacket(outapp.get());
+    }
+}
+
+void Client::MovePCDynamicZone(const std::string& zone_name)
+{
+    auto zone_id = database.GetZoneID(zone_name.c_str());
+    MovePCDynamicZone(zone_id);
 }

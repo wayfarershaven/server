@@ -84,13 +84,28 @@ int32 Mob::GetActSpellDamage(uint16 spell_id, int32 value, Mob* target) {
 			}
 		}
 
-		if (IsClient() && GetClass() == WIZARD)
+		if (IsClient() && GetClass() == WIZARD) {
 			ratio += RuleI(Spells, WizCritRatio); //Default is zero
+		}
+		
+		if (IsClient() && (spell_id == SPELL_HARM_TOUCH || spell_id == SPELL_HARM_TOUCH2 || spell_id == SPELL_IMP_HARM_TOUCH )) {
+			ratio += RuleI(Spells, HTCritRatio); //Default is zero
+		}
 
 		if (Critical){
-
+			
 			value = value_BaseEffect*ratio/100;
 
+			// Need to scale HT damage differently after level 40! It no longer scales by the constant value in the spell file. It scales differently, instead of 10 more damage per level, it does 30 more damage per level. So we multiply the level minus 40 times 20 if they are over level 40.
+			if ((spell_id == SPELL_HARM_TOUCH || spell_id == SPELL_HARM_TOUCH2 || spell_id == SPELL_IMP_HARM_TOUCH ) && GetLevel() > 40) {
+				value -= (GetLevel() - 40) * 20;
+			}
+
+			//This adds the extra damage from the AA Unholy Touch, 450 per level to the AA Improved Harm TOuch.
+			if (spell_id == SPELL_IMP_HARM_TOUCH && IsClient()) {//Improved Harm Touch
+				value -= GetAA(aaUnholyTouch) * 450; //Unholy Touch
+			}
+			
 			value += value_BaseEffect*GetFocusEffect(focusImprovedDamage, spell_id)/100;
 			value += value_BaseEffect*GetFocusEffect(focusImprovedDamage2, spell_id)/100;
 
@@ -121,11 +136,11 @@ int32 Mob::GetActSpellDamage(uint16 spell_id, int32 value, Mob* target) {
 					value = -MBCap;
 			}
 			
-			entity_list.MessageClose_StringID(this, true, 100, MT_SpellCrits,
+			entity_list.MessageClose_StringID(this, true, 100, Chat::SpellCrit,
 					OTHER_CRIT_BLAST, GetName(), itoa(-value));
 
 			if (IsClient())
-				Message_StringID(MT_SpellCrits, YOU_CRIT_BLAST, itoa(-value));
+				Message_StringID(Chat::SpellCrit, YOU_CRIT_BLAST, itoa(-value));
 
 			return value;
 		}
@@ -321,11 +336,11 @@ int32 Mob::GetActSpellHealing(uint16 spell_id, int32 value, Mob* target) {
 			value = int(static_cast<float>(value) * CastToNPC()->GetHealScale() / 100.0f);
 
 		if (Critical) {
-			entity_list.MessageClose_StringID(this, true, 100, MT_SpellCrits,
+			entity_list.MessageClose_StringID(this, true, 100, Chat::SpellCrit,
 					OTHER_CRIT_HEAL, GetName(), itoa(value));
 
 			if (IsClient())
-				Message_StringID(MT_SpellCrits, YOU_CRIT_HEAL, itoa(value));
+				Message_StringID(Chat::SpellCrit, YOU_CRIT_HEAL, itoa(value));
 		}
 
 		return value;
@@ -629,7 +644,7 @@ bool Client::UseDiscipline(uint32 spell_id, uint32 target) {
 
 	// sneak attack discs require you to be hidden for 4 seconds before use
 	if (spell.sneak && (!hidden || (hidden && (Timer::GetCurrentTime() - tmHidden) < 4000))) {
-		Message_StringID(MT_SpellFailure, SNEAK_RESTRICT);
+		Message_StringID(Chat::SpellFailure, SNEAK_RESTRICT);
 		return false;
 	}
 

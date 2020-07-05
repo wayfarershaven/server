@@ -348,6 +348,7 @@ RULE_INT(Spells, BaseCritRatio, 100) //base % bonus to damage on a successful sp
 RULE_INT(Spells, WizCritLevel, 12) //level wizards first get spell crits
 RULE_INT(Spells, WizCritChance, 7) //wiz's crit chance, on top of BaseCritChance
 RULE_INT(Spells, WizCritRatio, 0) //wiz's crit bonus, on top of BaseCritRatio (should be 0 for Live-like)
+RULE_INT(Spells, HTCritRatio, 200) //HT crit bonus, on top of BaseCritRatio
 RULE_INT(Spells, TranslocateTimeLimit, 0) // If not zero, time in seconds to accept a Translocate.
 RULE_INT(Spells, SacrificeMinLevel, 46)	//first level Sacrifice will work on
 RULE_INT(Spells, SacrificeMaxLevel, 69)	//last level Sacrifice will work on
@@ -745,6 +746,18 @@ RULE_CATEGORY_END()
 RULE_CATEGORY(Client)
 RULE_BOOL(Client, UseLiveFactionMessage, false) // Allows players to see faction adjustments like Live
 RULE_BOOL(Client, UseLiveBlockedMessage, false) // Allows players to see faction adjustments like Live
+RULE_CATEGORY_END()
+
+RULE_CATEGORY(Expedition)
+RULE_INT(Expedition, MinStatusToBypassPlayerCountRequirements, 80) //Minimum GM status to bypass minimum player requirements for Expedition creation
+RULE_BOOL(Expedition, UseDatabaseToVerifyLeaderCommands, false) //Use database instead of zone cache to verify Expedition leader for commands
+RULE_BOOL(Expedition, EmptyDzShutdownEnabled, true) //Enable early instance shutdown after last member of expedition removed
+RULE_INT(Expedition, EmptyDzShutdownDelaySeconds, 900) //Seconds to set dynamic zone instance expiration if early shutdown enabled
+RULE_INT(Expedition, RequestExpiredLockoutLeewaySeconds, 60) //Seconds remaining on lockout to count as expired for creation requests (client hides timers under 60s remaining)
+RULE_CATEGORY_END()
+
+RULE_CATEGORY(DynamicZone)
+RULE_INT(DynamicZone, ClientRemovalDelayMS, 60000) //Delay (ms) until a client is teleported out of dynamic zone after being removed as member
 RULE_CATEGORY_END()
 
 #undef RULE_CATEGORY

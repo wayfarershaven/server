@@ -347,6 +347,16 @@ void Client::DoZoneSuccess(ZoneChange_Struct *zc, uint16 zone_id, uint32 instanc
 	if(this->GetPet())
 		entity_list.RemoveFromHateLists(this->GetPet());
 
+    if (GetPendingExpeditionInviteID() != 0)
+    {
+        // live re-invites if client zoned with a pending invite, save pending invite info in world
+        auto expedition = Expedition::FindCachedExpeditionByID(GetPendingExpeditionInviteID());
+        if (expedition)
+        {
+            expedition->SendWorldPendingInvite(m_pending_expedition_invite, GetName());
+        }
+    }
+
 	Log(Logs::General, Logs::Status, "Zoning '%s' to: %s (%i) - (%i) x=%f, y=%f, z=%f", m_pp.name, database.GetZoneName(zone_id), zone_id, instance_id, dest_x, dest_y, dest_z);
 
 	//set the player's coordinates in the new zone so they have them
@@ -739,7 +749,7 @@ void NPC::Gate() {
 			return;
 		}
 	}
-	entity_list.MessageClose_StringID(this, true, RuleI(Range, SpellMessages), MT_Spells, GATES, GetCleanName());
+	entity_list.MessageClose_StringID(this, true, RuleI(Range, SpellMessages), Chat::Spells, GATES, GetCleanName());
 	Mob::Gate();
 }
 
