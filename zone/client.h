@@ -771,6 +771,9 @@ public:
 	virtual void UpdateEquipmentLight() { m_Light.Type[EQEmu::lightsource::LightEquipment] = m_inv.FindBrightestLightType(); m_Light.Level[EQEmu::lightsource::LightEquipment] = EQEmu::lightsource::TypeToLevel(m_Light.Type[EQEmu::lightsource::LightEquipment]); }
 
 	inline bool AutoSplitEnabled() { return m_pp.autosplit != 0; }
+	inline bool AutoConsentGroupEnabled() const { return m_pp.groupAutoconsent != 0; }
+	inline bool AutoConsentRaidEnabled() const { return m_pp.raidAutoconsent != 0; }
+	inline bool AutoConsentGuildEnabled() const { return m_pp.guildAutoconsent != 0; }
 
 	void SummonHorse(uint16 spell_id);
 	void SetHorseId(uint16 horseid_in);
@@ -931,7 +934,6 @@ public:
 
 	void EnteringMessages(Client* client);
 	void SendRules(Client* client);
-	std::list<std::string> consent_list;
 
 	//Anti-Cheat Stuff
 	uint32 m_TimeSinceLastPositionCheck;
@@ -1165,6 +1167,7 @@ public:
 	inline bool IsDraggingCorpse() { return (DraggedCorpses.size() > 0); }
 	void DragCorpses();
 	inline void ClearDraggedCorpses() { DraggedCorpses.clear(); }
+	void ConsentCorpses(std::string consent_name, bool deny = false);
 	inline void ResetPositionTimer() { position_timer_counter = 0; }
 	void SendAltCurrencies();
 	void SetAlternateCurrencyValue(uint32 currency_id, uint32 new_amount);
@@ -1563,7 +1566,8 @@ private:
 	Timer hp_self_update_throttle_timer; /* This is to prevent excessive packet sending under trains/fast combat */
 	Timer hp_other_update_throttle_timer; /* This is to keep clients from DOSing the server with macros that change client targets constantly */
 	Timer position_update_timer; /* Timer used when client hasn't updated within a 10 second window */
-    Timer dynamiczone_removal_timer;
+	Timer consent_throttle_timer;
+	Timer dynamiczone_removal_timer;
 
 	glm::vec3 m_Proximity;
 	glm::vec4 last_major_update_position;
