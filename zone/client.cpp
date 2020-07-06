@@ -72,101 +72,101 @@ extern PetitionList petition_list;
 bool commandlogged;
 char entirecommand[255];
 
-Client::Client(EQStreamInterface* ieqs)
-: Mob("No name",	// name
-	"",	// lastname
-	0,	// cur_hp
-	0,	// max_hp
-	0,	// gender
-	0,	// race
-	0,	// class
-	BT_Humanoid,	// bodytype
-	0,	// deity
-	0,	// level
-	0,	// npctypeid
-	0,	// size
-	0.7,	// runspeed
-	glm::vec4(),
-	0,	// light - verified for client innate_light value
-	0xFF,	// texture
-	0xFF,	// helmtexture
-	0,	// ac
-	0,	// atk
-	0,	// str
-	0,	// sta
-	0,	// dex
-	0,	// agi
-	0,	// int
-	0,	// wis
-	0,	// cha
-	0,	// Luclin Hair Colour
-	0,	// Luclin Beard Color
-	0,	// Luclin Eye1
-	0,	// Luclin Eye2
-	0,	// Luclin Hair Style
-	0,	// Luclin Face
-	0,	// Luclin Beard
-	0,	// Drakkin Heritage
-	0,	// Drakkin Tattoo
-	0,	// Drakkin Details
-	EQEmu::TintProfile(),	// Armor Tint
-	0xff,	// AA Title
-	0,	// see_invis
-	0,	// see_invis_undead
-	0,
-	0,
-	0,
-	0,
-	0,	// qglobal
-	0,	// maxlevel
-	0,	// scalerate
-	0,
-	0,
-	0,
-	0,
-	0
-	),
-	position_timer(250),
-	hpupdate_timer(2000),
-	camp_timer(29000),
-	process_timer(100),
-    consume_food_timer(CONSUMPTION_TIMER),
-	zoneinpacket_timer(1000),
-	linkdead_timer(RuleI(Zone,ClientLinkdeadMS)),
-	dead_timer(2000),
-	global_channel_timer(1000),
-	fishing_timer(8000),
-	endupkeep_timer(1000),
-	forget_timer(0),
-	autosave_timer(RuleI(Character, AutosaveIntervalS) * 1000),
-	client_scan_npc_aggro_timer(RuleI(Aggro, ClientAggroCheckInterval) * 1000),
-	tribute_timer(Tribute_duration),
-	proximity_timer(ClientProximity_interval),
-	TaskPeriodic_Timer(RuleI(TaskSystem, PeriodicCheckTimer) * 1000),
-	charm_update_timer(6000),
-	rest_timer(1),
-	charm_class_attacks_timer(3000),
-	charm_cast_timer(3500),
-	qglobal_purge_timer(30000),
-	TrackingTimer(2000),
-	RespawnFromHoverTimer(0),
-	merc_timer(RuleI(Mercs, UpkeepIntervalMS)),
-	ItemTickTimer(10000),
-	ItemQuestTimer(500),
-	anon_toggle_timer(250),
-	afk_toggle_timer(250),
-	helm_toggle_timer(250),
-	aggro_meter_timer(AGGRO_METER_UPDATE_MS),
-	m_Proximity(FLT_MAX, FLT_MAX, FLT_MAX), //arbitrary large number
-	m_ZoneSummonLocation(-2.0f,-2.0f,-2.0f),
-	m_AutoAttackPosition(0.0f, 0.0f, 0.0f, 0.0f),
-	m_AutoAttackTargetLocation(0.0f, 0.0f, 0.0f),
-	last_region_type(RegionTypeUnsupported),
-	m_dirtyautohaters(false),
-	npc_close_scan_timer(6000),
-	hp_self_update_throttle_timer(300),
-	hp_other_update_throttle_timer(500),
-	position_update_timer(10000)
+Client::Client(EQStreamInterface *ieqs)
+	: Mob("No name",   // name
+		  "",		   // lastname
+		  0,		   // cur_hp
+		  0,		   // max_hp
+		  0,		   // gender
+		  0,		   // race
+		  0,		   // class
+		  BT_Humanoid, // bodytype
+		  0,		   // deity
+		  0,		   // level
+		  0,		   // npctypeid
+		  0,		   // size
+		  0.7,		   // runspeed
+		  glm::vec4(),
+		  0,					// light - verified for client innate_light value
+		  0xFF,					// texture
+		  0xFF,					// helmtexture
+		  0,					// ac
+		  0,					// atk
+		  0,					// str
+		  0,					// sta
+		  0,					// dex
+		  0,					// agi
+		  0,					// int
+		  0,					// wis
+		  0,					// cha
+		  0,					// Luclin Hair Colour
+		  0,					// Luclin Beard Color
+		  0,					// Luclin Eye1
+		  0,					// Luclin Eye2
+		  0,					// Luclin Hair Style
+		  0,					// Luclin Face
+		  0,					// Luclin Beard
+		  0,					// Drakkin Heritage
+		  0,					// Drakkin Tattoo
+		  0,					// Drakkin Details
+		  EQEmu::TintProfile(), // Armor Tint
+		  0xff,					// AA Title
+		  0,					// see_invis
+		  0,					// see_invis_undead
+		  0,
+		  0,
+		  0,
+		  0,
+		  0, // qglobal
+		  0, // maxlevel
+		  0, // scalerate
+		  0,
+		  0,
+		  0,
+		  0,
+		  0),
+	  position_timer(250),
+	  hpupdate_timer(2000),
+	  camp_timer(29000),
+	  process_timer(100),
+	  consume_food_timer(CONSUMPTION_TIMER),
+	  zoneinpacket_timer(1000),
+	  linkdead_timer(RuleI(Zone, ClientLinkdeadMS)),
+	  dead_timer(2000),
+	  global_channel_timer(1000),
+	  fishing_timer(8000),
+	  endupkeep_timer(1000),
+	  forget_timer(0),
+	  autosave_timer(RuleI(Character, AutosaveIntervalS) * 1000),
+	  client_scan_npc_aggro_timer(RuleI(Aggro, ClientAggroCheckInterval) * 1000),
+	  tribute_timer(Tribute_duration),
+	  proximity_timer(ClientProximity_interval),
+	  TaskPeriodic_Timer(RuleI(TaskSystem, PeriodicCheckTimer) * 1000),
+	  charm_update_timer(6000),
+	  rest_timer(1),
+	  charm_class_attacks_timer(3000),
+	  charm_cast_timer(3500),
+	  qglobal_purge_timer(30000),
+	  TrackingTimer(2000),
+	  RespawnFromHoverTimer(0),
+	  merc_timer(RuleI(Mercs, UpkeepIntervalMS)),
+	  ItemTickTimer(10000),
+	  ItemQuestTimer(500),
+	  anon_toggle_timer(250),
+	  afk_toggle_timer(250),
+	  helm_toggle_timer(250),
+	  aggro_meter_timer(AGGRO_METER_UPDATE_MS),
+	  m_Proximity(FLT_MAX, FLT_MAX, FLT_MAX), //arbitrary large number
+	  m_ZoneSummonLocation(-2.0f, -2.0f, -2.0f),
+	  m_AutoAttackPosition(0.0f, 0.0f, 0.0f, 0.0f),
+	  m_AutoAttackTargetLocation(0.0f, 0.0f, 0.0f),
+	  last_region_type(RegionTypeUnsupported),
+	  m_dirtyautohaters(false),
+	  npc_close_scan_timer(6000),
+	  hp_self_update_throttle_timer(300),
+	  hp_other_update_throttle_timer(500),
+	  position_update_timer(10000),
+	  consent_throttle_timer(2000)
 {
 	for (int client_filter = 0; client_filter < _FilterCount; client_filter++)
 		ClientFilters[client_filter] = FilterShow;
@@ -6595,6 +6595,56 @@ void Client::DragCorpses()
 			if (It == DraggedCorpses.end())
 				break;
 		}
+	}
+}
+
+void Client::ConsentCorpses(std::string consent_name, bool deny)
+{
+	if (strcasecmp(consent_name.c_str(), GetName()) == 0) {
+		Message_StringID(Chat::Red, CONSENT_YOURSELF);
+	} else if (!consent_throttle_timer.Check()) {
+		Message_StringID(Chat::Red, CONSENT_WAIT);
+	} else {
+		auto pack = new ServerPacket(ServerOP_Consent, sizeof(ServerOP_Consent_Struct));
+		ServerOP_Consent_Struct *scs = (ServerOP_Consent_Struct *)pack->pBuffer;
+		strn0cpy(scs->grantname, consent_name.c_str(), sizeof(scs->grantname));
+		strn0cpy(scs->ownername, GetName(), sizeof(scs->ownername));
+		strn0cpy(scs->zonename, "Unknown", sizeof(scs->zonename));
+		scs->permission = deny ? 0 : 1;
+		scs->zone_id = zone->GetZoneID();
+		scs->instance_id = zone->GetInstanceID();
+		scs->consent_type = EQEmu::consent::Normal;
+		scs->consent_id = 0;
+		if (strcasecmp(scs->grantname, "group") == 0)
+		{
+			if (!deny)
+			{
+				Group *grp = GetGroup();
+				scs->consent_id = grp ? grp->GetID() : 0;
+			}
+			scs->consent_type = EQEmu::consent::Group;
+		}
+		else if (strcasecmp(scs->grantname, "raid") == 0)
+		{
+			if (!deny)
+			{
+				Raid *raid = GetRaid();
+				scs->consent_id = raid ? raid->GetID() : 0;
+			}
+			scs->consent_type = EQEmu::consent::Raid;
+		}
+		else if (strcasecmp(scs->grantname, "guild") == 0)
+		{
+			if (!deny)
+			{
+				scs->consent_id = GuildID();
+			}
+			scs->consent_type = EQEmu::consent::Guild;
+			// update all corpses in db so buried/unloaded corpses see new consent id
+			database.UpdateCharacterCorpseConsent(CharacterID(), scs->consent_id);
+		}
+		worldserver.SendPacket(pack);
+		safe_delete(pack);
 	}
 }
 

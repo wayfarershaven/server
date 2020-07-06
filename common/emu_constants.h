@@ -275,6 +275,14 @@ namespace invtype {
 		AltAbility = 0xFF
 	};
 
+	namespace consent {
+		enum eConsentType : uint8 {
+			Normal = 0,
+			Group,
+			Raid,
+			Guild
+		};
+	}; // namespace consent
 } /*EQEmu*/
 
 #endif /*COMMON_EMU_CONSTANTS_H*/
