@@ -147,6 +147,15 @@ void WorldDatabase::GetCharSelectInfo(uint32 accountID, EQApplicationPacket **ou
 		cse->Unknown2 = 0;
 		/* Fill End */
 
+		if (RuleB(World, EnableReturnHomeButton))
+		{
+			int now = time(nullptr);
+			if ((now - atoi(row[7])) >= RuleI(World, MinOfflineTimeToReturnHome))
+			{
+				cse->GoHome = 1;
+			}
+		}
+
 		/* Set Bind Point Data for any character that may possibly be missing it for any reason */
 		cquery = StringFormat("SELECT `zone_id`, `instance_id`, `x`, `y`, `z`, `heading` FROM `character_bind`  WHERE `id` = %i LIMIT 5", character_id);
 		auto results_bind = database.QueryDatabase(cquery);

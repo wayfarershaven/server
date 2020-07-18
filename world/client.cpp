@@ -736,79 +736,129 @@ bool Client::HandleCharacterCreatePacket(const EQApplicationPacket *app) {
 	return true;
 }
 
-bool Client::HandleEnterWorldPacket(const EQApplicationPacket *app) { 
-	if (GetAccountID() == 0) {
-		Log(Logs::Detail, Logs::World_Server,"Enter world with no logged in account");
-		eqs->Close();
-		return true;
-	}
-
-	if(GetAdmin() < 0)
+bool Client::HandleEnterWorldPacket(const EQApplicationPacket *app)
+{
+	if (GetAccountID() == 0)
 	{
-		Log(Logs::Detail, Logs::World_Server,"Account banned or suspended.");
+		Log(Logs::Detail, Logs::World_Server, "Enter world with no logged in account");
 		eqs->Close();
 		return true;
 	}
 
-	if (RuleB(World, EnableIPExemptions) || RuleI(World, MaxClientsPerIP) >= 0) {
+	if (GetAdmin() < 0)
+	{
+		Log(Logs::Detail, Logs::World_Server, "Account banned or suspended.");
+		eqs->Close();
+		return true;
+	}
+
+	if (RuleB(World, EnableIPExemptions) || RuleI(World, MaxClientsPerIP) >= 0)
+	{
 		client_list.GetCLEIP(this->GetIP()); //Check current CLE Entry IPs against incoming connection
 	}
 
-	EnterWorld_Struct *ew=(EnterWorld_Struct *)app->pBuffer;
+	EnterWorld_Struct *ew = (EnterWorld_Struct *)app->pBuffer;
 	strn0cpy(char_name, ew->name, 64);
 
 	EQApplicationPacket *outapp;
 	uint32 tmpaccid = 0;
 	charid = database.GetCharacterInfo(char_name, &tmpaccid, &zone_id, &instance_id);
-	if (charid == 0 || tmpaccid != GetAccountID()) {
-		Log(Logs::Detail, Logs::World_Server,"Could not get CharInfo for '%s'",char_name);
+	if (charid == 0 || tmpaccid != GetAccountID())
+	{
+		Log(Logs::Detail, Logs::World_Server, "Could not get CharInfo for '%s'", char_name);
 		eqs->Close();
 		return true;
 	}
 
 	// Make sure this account owns this character
-	if (tmpaccid != GetAccountID()) {
-		Log(Logs::Detail, Logs::World_Server,"This account does not own the character named '%s'",char_name);
+	if (tmpaccid != GetAccountID())
+	{
+		Log(Logs::Detail, Logs::World_Server, "This account does not own the character named '%s'", char_name);
 		eqs->Close();
 		return true;
 	}
 
 	// This can probably be moved outside and have another method return requested info (don't forget to remove the #include "../common/shareddb.h" above)
 	// (This is a literal translation of the original process..I don't see why it can't be changed to a single-target query over account iteration)
-	if (!is_player_zoning) {
+	if (!is_player_zoning)
+	{
 		size_t character_limit = EQEmu::constants::Lookup(eqs->ClientVersion())->CharacterCreationLimit;
-		if (character_limit > EQEmu::constants::CHARACTER_CREATION_LIMIT) { character_limit = EQEmu::constants::CHARACTER_CREATION_LIMIT; }
-        if (eqs->ClientVersion() == EQEmu::versions::ClientVersion::Titanium) { character_limit = Titanium::constants::CHARACTER_CREATION_LIMIT; }
-		if (eqs->ClientVersion() == EQEmu::versions::ClientVersion::Titanium) { character_limit = 8; }
+		if (character_limit > EQEmu::constants::CHARACTER_CREATION_LIMIT)
+		{
+			character_limit = EQEmu::constants::CHARACTER_CREATION_LIMIT;
+		}
+		if (eqs->ClientVersion() == EQEmu::versions::ClientVersion::Titanium)
+		{
+			character_limit = Titanium::constants::CHARACTER_CREATION_LIMIT;
+		}
+		if (eqs->ClientVersion() == EQEmu::versions::ClientVersion::Titanium)
+		{
+			character_limit = 8;
+		}
 
 		std::string tgh_query = StringFormat(
-				"SELECT                     "
-						"`id`,                      "
-						"name,                      "
-						"`level`,                   "
-						"last_login                 "
-						"FROM                       "
-						"character_data             "
-						"WHERE `account_id` = %i ORDER BY `name` LIMIT %u", GetAccountID(), character_limit);
+			"SELECT                     "
+			"`id`,                      "
+			"name,                      "
+			"`level`,                   "
+			"last_login                 "
+			"FROM                       "
+			"character_data             "
+			"WHERE `account_id` = %i ORDER BY `name` LIMIT %u",
+			GetAccountID(), character_limit);
 		auto tgh_results = database.QueryDatabase(tgh_query);
+
+		/* Check GoHome */
+		if (ew->return_home)
+		{
+			bool home_enabled = false;
+			for (auto row = tgh_results.begin(); row != tgh_results.end(); ++row)
+			{
+				if (strcasecmp(row[1], char_name) == 0)
+				{
+					if (RuleB(World, EnableReturnHomeButton))
+					{
+						int now = time(nullptr);
+						if ((now - atoi(row[3])) >= RuleI(World, MinOfflineTimeToReturnHome))
+						{
+							home_enabled = true;
+							break;
+						}
+					}
+				}
+			}
+
+			if (home_enabled)
+			{
+				zone_id = database.MoveCharacterToBind(charid, 0);
+			}
+			else
+			{
+				//LogInfo("[{}] is trying to go home before they're able", char_name);
+				database.SetHackerFlag(GetAccountName(), char_name, "MQGoHome: player tried to go home before they were able.");
+				eqs->Close();
+				return true;
+			}
+		}
 	}
 
-	if (zone_id == 0 || !database.GetZoneName(zone_id)) {
+	if (zone_id == 0 || !database.GetZoneName(zone_id))
+	{
 		// This is to save people in an invalid zone, once it's removed from the DB
 		database.MoveCharacterToZone(charid, "arena");
 		Log(Logs::Detail, Logs::World_Server, "Zone not found in database zone_id=%i, moveing char to arena character:%s", zone_id, char_name);
 	}
 
-	if(instance_id > 0)
+	if (instance_id > 0)
 	{
-		if(!database.VerifyInstanceAlive(instance_id, GetCharID()))
+		if (!database.VerifyInstanceAlive(instance_id, GetCharID()))
 		{
 			zone_id = database.MoveCharacterToBind(charid);
 			instance_id = 0;
 		}
 		else
 		{
-			if(!database.VerifyZoneInstance(zone_id, instance_id))
+			if (!database.VerifyZoneInstance(zone_id, instance_id))
 			{
 				zone_id = database.MoveCharacterToBind(charid);
 				instance_id = 0;
@@ -816,19 +866,23 @@ bool Client::HandleEnterWorldPacket(const EQApplicationPacket *app) {
 		}
 	}
 
-	if(!is_player_zoning) {
+	if (!is_player_zoning)
+	{
 		database.SetGroupID(char_name, 0, charid);
 		database.SetLoginFlags(charid, false, false, 1);
 	}
-	else{
+	else
+	{
 		uint32 groupid = database.GetGroupID(char_name);
-		if(groupid > 0){
-			char* leader = 0;
+		if (groupid > 0)
+		{
+			char *leader = 0;
 			char leaderbuf[64] = {0};
-			if((leader = database.GetGroupLeaderForLogin(char_name, leaderbuf)) && strlen(leader)>1){
+			if ((leader = database.GetGroupLeaderForLogin(char_name, leaderbuf)) && strlen(leader) > 1)
+			{
 				auto outapp3 = new EQApplicationPacket(OP_GroupUpdate, sizeof(GroupJoin_Struct));
-				GroupJoin_Struct* gj=(GroupJoin_Struct*)outapp3->pBuffer;
-				gj->action=8;
+				GroupJoin_Struct *gj = (GroupJoin_Struct *)outapp3->pBuffer;
+				gj->action = 8;
 				strcpy(gj->yourname, char_name);
 				strcpy(gj->membername, leader);
 				QueuePacket(outapp3);
@@ -839,13 +893,15 @@ bool Client::HandleEnterWorldPacket(const EQApplicationPacket *app) {
 
 	outapp = new EQApplicationPacket(OP_MOTD);
 	std::string tmp;
-	if (database.GetVariable("MOTD", tmp)) {
+	if (database.GetVariable("MOTD", tmp))
+	{
 		outapp->size = tmp.length() + 1;
 		outapp->pBuffer = new uchar[outapp->size];
-		memset(outapp->pBuffer,0,outapp->size);
-		strcpy((char*)outapp->pBuffer, tmp.c_str());
-
-	} else {
+		memset(outapp->pBuffer, 0, outapp->size);
+		strcpy((char *)outapp->pBuffer, tmp.c_str());
+	}
+	else
+	{
 		// Null Message of the Day. :)
 		outapp->size = 1;
 		outapp->pBuffer = new uchar[outapp->size];
@@ -858,14 +914,16 @@ bool Client::HandleEnterWorldPacket(const EQApplicationPacket *app) {
 	int MailKey = emu_random.Int(1, INT_MAX);
 
 	database.SetMailKey(charid, GetIP(), MailKey);
-	if (UCSServerAvailable_) {
+	if (UCSServerAvailable_)
+	{
 		const WorldConfig *Config = WorldConfig::get();
 		std::string buffer;
 
-	EQEmu::versions::UCSVersion ConnectionType = EQEmu::versions::ucsUnknown;
+		EQEmu::versions::UCSVersion ConnectionType = EQEmu::versions::ucsUnknown;
 
-	// chat server packet
-	switch (GetClientVersion()) {
+		// chat server packet
+		switch (GetClientVersion())
+		{
 		case EQEmu::versions::ClientVersion::Titanium:
 			ConnectionType = EQEmu::versions::ucsTitaniumChat;
 			break;
@@ -887,16 +945,15 @@ bool Client::HandleEnterWorldPacket(const EQApplicationPacket *app) {
 		default:
 			ConnectionType = EQEmu::versions::ucsUnknown;
 			break;
-	}
+		}
 
-	buffer = StringFormat("%s,%i,%s.%s,%c%08X",
-						  Config->ChatHost.c_str(),
-						  Config->ChatPort,
-						  Config->ShortName.c_str(),
-						  GetCharName(),
-						  ConnectionType,
-						  MailKey
-	);
+		buffer = StringFormat("%s,%i,%s.%s,%c%08X",
+							  Config->ChatHost.c_str(),
+							  Config->ChatPort,
+							  Config->ShortName.c_str(),
+							  GetCharName(),
+							  ConnectionType,
+							  MailKey);
 
 		outapp = new EQApplicationPacket(OP_SetChatServer, (buffer.length() + 1));
 		memcpy(outapp->pBuffer, buffer.c_str(), buffer.length());
@@ -906,13 +963,14 @@ bool Client::HandleEnterWorldPacket(const EQApplicationPacket *app) {
 		safe_delete(outapp);
 
 		// mail server packet
-		switch (GetClientVersion()) {
-			case EQEmu::versions::ClientVersion::Titanium:
-				ConnectionType = EQEmu::versions::ucsTitaniumMail;
-				break;
-			default:
-				// retain value from previous switch
-				break;
+		switch (GetClientVersion())
+		{
+		case EQEmu::versions::ClientVersion::Titanium:
+			ConnectionType = EQEmu::versions::ucsTitaniumMail;
+			break;
+		default:
+			// retain value from previous switch
+			break;
 		}
 
 		buffer = StringFormat("%s,%i,%s.%s,%c%08X",
@@ -921,8 +979,7 @@ bool Client::HandleEnterWorldPacket(const EQApplicationPacket *app) {
 							  Config->ShortName.c_str(),
 							  GetCharName(),
 							  ConnectionType,
-							  MailKey
-		);
+							  MailKey);
 
 		outapp = new EQApplicationPacket(OP_SetChatServer2, (buffer.length() + 1));
 		memcpy(outapp->pBuffer, buffer.c_str(), buffer.length());
