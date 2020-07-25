@@ -35,7 +35,7 @@ void RegisterAllPatches(EQStreamIdentifier &into)
 	//SoD::Register(into);
 	UF::Register(into);
 	//RoF::Register(into);
-	//RoF2::Register(into);
+	RoF2::Register(into);
 }
 
 void ReloadAllPatches()
@@ -45,5 +45,5 @@ void ReloadAllPatches()
 	//SoD::Reload();
 	UF::Reload();
 	//RoF::Reload();
-	//RoF2::Reload();
+	RoF2::Reload();
 }

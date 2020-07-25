@@ -147,6 +147,15 @@ void WorldDatabase::GetCharSelectInfo(uint32 accountID, EQApplicationPacket **ou
 		cse->Unknown2 = 0;
 		/* Fill End */
 
+		if (RuleB(World, EnableReturnHomeButton))
+		{
+			int now = time(nullptr);
+			if ((now - atoi(row[7])) >= RuleI(World, MinOfflineTimeToReturnHome))
+			{
+				cse->GoHome = 1;
+			}
+		}
+
 		/* Set Bind Point Data for any character that may possibly be missing it for any reason */
 		cquery = StringFormat("SELECT `zone_id`, `instance_id`, `x`, `y`, `z`, `heading` FROM `character_bind`  WHERE `id` = %i LIMIT 5", character_id);
 		auto results_bind = database.QueryDatabase(cquery);
@@ -269,15 +278,9 @@ void WorldDatabase::GetCharSelectInfo(uint32 accountID, EQApplicationPacket **ou
 	}
 }
 
-int WorldDatabase::MoveCharacterToBind(int CharID, uint8 bindnum)
+int WorldDatabase::MoveCharacterToBind(int CharID)
 {
-	/*  if an invalid bind point is specified, use the primary bind */
-	if (bindnum > 4)
-	{
-		bindnum = 0;
-	}
-
-	std::string query = StringFormat("SELECT zone_id, instance_id, x, y, z FROM character_bind WHERE id = %u AND slot = %u LIMIT 1", CharID, bindnum);
+	std::string query = StringFormat("SELECT zone_id, instance_id, x, y, z FROM character_bind WHERE id = %u LIMIT 1", CharID);
 	auto results = database.QueryDatabase(query);
 	if(!results.Success() || results.RowCount() == 0) {
 		return 0;

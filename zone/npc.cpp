@@ -642,11 +642,6 @@ void NPC::RemoveCash() {
 
 bool NPC::Process()
 {
-	if (IsStunned() && stunned_timer.Check()) {
-		Mob::UnStun();
-		this->spun_timer.Disable();
-	}
-
 	// Dirty fix for mobs going under the world. Reset them to spawn point.
 	if (!IsEngaged() && IsTrackable()) {
 		if (GetZ() <= zone->newzone_data.underworld) {
@@ -670,6 +665,12 @@ bool NPC::Process()
 		return false;
 	}
 
+	if (IsStunned() && stunned_timer.Check())
+	{
+		Mob::UnStun();
+		this->spun_timer.Disable();
+	}
+	
 	SpellProcess();
 
 	if (tic_timer.Check()) {

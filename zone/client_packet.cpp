@@ -4791,43 +4791,16 @@ void Client::Handle_OP_Consent(const EQApplicationPacket *app)
 {
 	if (app->size<64) {
 		Consent_Struct* c = (Consent_Struct*)app->pBuffer;
-		if (strcmp(c->name, GetName()) != 0) {
-			auto pack = new ServerPacket(ServerOP_Consent, sizeof(ServerOP_Consent_Struct));
-			ServerOP_Consent_Struct* scs = (ServerOP_Consent_Struct*)pack->pBuffer;
-			strcpy(scs->grantname, c->name);
-			strcpy(scs->ownername, GetName());
-			scs->message_string_id = 0;
-			scs->permission = 1;
-			scs->zone_id = zone->GetZoneID();
-			scs->instance_id = zone->GetInstanceID();
-			//consent_list.push_back(scs->grantname);
-			worldserver.SendPacket(pack);
-			safe_delete(pack);
-		}
-		else {
-			Message_StringID(0, CONSENT_YOURSELF);
-		}
+		ConsentCorpses(c->name, false);
 	}
-	return;
 }
 
 void Client::Handle_OP_ConsentDeny(const EQApplicationPacket *app)
 {
 	if (app->size<64) {
 		Consent_Struct* c = (Consent_Struct*)app->pBuffer;
-		auto pack = new ServerPacket(ServerOP_Consent, sizeof(ServerOP_Consent_Struct));
-		ServerOP_Consent_Struct* scs = (ServerOP_Consent_Struct*)pack->pBuffer;
-		strcpy(scs->grantname, c->name);
-		strcpy(scs->ownername, GetName());
-		scs->message_string_id = 0;
-		scs->permission = 0;
-		scs->zone_id = zone->GetZoneID();
-		scs->instance_id = zone->GetInstanceID();
-		//consent_list.remove(scs->grantname);
-		worldserver.SendPacket(pack);
-		safe_delete(pack);
+		ConsentCorpses(c->name, true);
 	}
-	return;
 }
 
 void Client::Handle_OP_Consider(const EQApplicationPacket *app)
@@ -8936,7 +8909,7 @@ void Client::Handle_OP_ItemVerifyRequest(const EQApplicationPacket *app)
 		}
 		else if (inst->IsClassCommon())
 		{
-			if (item->ItemType == EQEmu::item::ItemTypeSpell && (strstr((const char*)item->Name, "Tome of ") || strstr((const char*)item->Name, "Skill: ")))
+			if (!RuleB(Skills, RequireTomeHandin) && item->ItemType == EQEmu::item::ItemTypeSpell && (strstr((const char *)item->Name, "Tome of ") || strstr((const char *)item->Name, "Skill: ")))
 			{
 				DeleteItemInInventory(slot_id, 1, true);
 				TrainDiscipline(item->ID);
@@ -11483,6 +11456,11 @@ void Client::Handle_OP_RaidCommand(const EQApplicationPacket *app)
 				break;
 			}
 
+			if (player_to_invite_group && player_to_invite_group->IsGroupMember(this)) {
+				Message_StringID(Chat::Red, ALREADY_IN_PARTY);
+				break;
+			}
+
 			if (player_to_invite_group && !player_to_invite_group->IsLeader(player_to_invite)) {
 				Message(13, "You can only invite an ungrouped player or group leader to join your raid.");
 				break;
@@ -13573,6 +13551,21 @@ void Client::Handle_OP_SpawnAppearance(const EQApplicationPacket *app)
 			m_pp.showhelm = (sa->parameter == 1);
 			entity_list.QueueClients(this, app, true);
 		}
+	}
+	else if (sa->type == AT_GroupConsent)
+	{
+		m_pp.groupAutoconsent = (sa->parameter == 1);
+		ConsentCorpses("Group", (sa->parameter != 1));
+	}
+	else if (sa->type == AT_RaidConsent)
+	{
+		m_pp.raidAutoconsent = (sa->parameter == 1);
+		ConsentCorpses("Raid", (sa->parameter != 1));
+	}
+	else if (sa->type == AT_GuildConsent)
+	{
+		m_pp.guildAutoconsent = (sa->parameter == 1);
+		ConsentCorpses("Guild", (sa->parameter != 1));
 	}
 	else {
 		std::cout << "Unknown SpawnAppearance type: 0x" << std::hex << std::setw(4) << std::setfill('0') << sa->type << std::dec
