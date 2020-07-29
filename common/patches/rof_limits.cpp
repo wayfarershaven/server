@@ -219,10 +219,10 @@ const char* RoF::invslot::GetInvPossessionsSlotName(int16 inv_slot) {
             return "General 7";
         case invslot::slotGeneral8:
             return "General 8";
-        case invslot::slotGeneral9:
-            return "General 9";
-        case invslot::slotGeneral10:
-            return "General 10";
+        // case invslot::slotGeneral9:
+        //    return "General 9";
+        // case invslot::slotGeneral10:
+        //    return "General 10";
         case invslot::slotCursor:
             return "Cursor";
         default:

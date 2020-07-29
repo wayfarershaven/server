@@ -428,8 +428,8 @@ XS(XS__getinventoryslotid) {
 	else if (identifier == "general6")             RETVAL = EQEmu::invslot::slotGeneral6;
 	else if (identifier == "general7")             RETVAL = EQEmu::invslot::slotGeneral7;
 	else if (identifier == "general8")             RETVAL = EQEmu::invslot::slotGeneral8;
-	else if (identifier == "general9")             RETVAL = EQEmu::invslot::slotGeneral9;
-	else if (identifier == "general10")            RETVAL = EQEmu::invslot::slotGeneral10;
+	//else if (identifier == "general9")             RETVAL = EQEmu::invslot::slotGeneral9;
+	//else if (identifier == "general10")            RETVAL = EQEmu::invslot::slotGeneral10;
 	else                                           RETVAL = EQEmu::invslot::SLOT_INVALID;
 
 	XSprePUSH; PUSHu((IV)RETVAL);

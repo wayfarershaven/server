@@ -2064,8 +2064,6 @@ luabind::scope lua_register_slot() {
                     luabind::value("General6", static_cast<int>(EQEmu::invslot::slotGeneral6)),
                     luabind::value("General7", static_cast<int>(EQEmu::invslot::slotGeneral7)),
                     luabind::value("General8", static_cast<int>(EQEmu::invslot::slotGeneral8)),
-                    luabind::value("General9", static_cast<int>(EQEmu::invslot::slotGeneral9)),
-                    luabind::value("General10", static_cast<int>(EQEmu::invslot::slotGeneral10)),
                     luabind::value("Cursor", static_cast<int>(EQEmu::invslot::slotCursor)),
                     luabind::value("PossessionsBegin", static_cast<int>(EQEmu::invslot::POSSESSIONS_BEGIN)),
                     luabind::value("PossessionsEnd", static_cast<int>(EQEmu::invslot::POSSESSIONS_END)),
