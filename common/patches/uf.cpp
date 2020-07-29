@@ -4329,7 +4329,7 @@ namespace UF
 
 		if (slot_id_in <= EQEmu::invslot::slotGeneral8 && slot_id_in >= EQEmu::invslot::GENERAL_BEGIN)
 			SubSlotNumber = EQEmu::invbag::GENERAL_BAGS_BEGIN + ((slot_id_in - EQEmu::invslot::GENERAL_BEGIN) * EQEmu::invbag::SLOT_COUNT);
-		else if (slot_id_in <= EQEmu::invslot::GENERAL_END && slot_id_in > EQEmu::invslot::slotGeneral8)
+		else if (slot_id_in <= EQEmu::invslot::GENERAL_END && slot_id_in >= EQEmu::invslot::slotGeneral9)
 			SubSlotNumber = EQEmu::invbag::SLOT_INVALID;
 		else if (slot_id_in == EQEmu::invslot::slotCursor)
 			SubSlotNumber = EQEmu::invbag::CURSOR_BAG_BEGIN;

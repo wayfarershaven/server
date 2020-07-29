@@ -152,6 +152,8 @@ namespace RoF2
                 slotGeneral6,
                 slotGeneral7,
                 slotGeneral8,
+                slotGeneral9,
+                slotGeneral10,
                 slotCursor
 		};
 
@@ -170,8 +172,7 @@ namespace RoF2
         const int16 EQUIPMENT_COUNT = (EQUIPMENT_END - EQUIPMENT_BEGIN) + 1;
 
         const int16 GENERAL_BEGIN = slotGeneral1;
-		const int16 GENERAL_END = slotGeneral8;
-		// const int16 GENERAL_END = slotGeneral10; // Disabled for WFH
+        const int16 GENERAL_END = slotGeneral10;
         const int16 GENERAL_COUNT = (GENERAL_END - GENERAL_BEGIN) + 1;
 
         const int16 BONUS_BEGIN = invslot::slotCharm;
