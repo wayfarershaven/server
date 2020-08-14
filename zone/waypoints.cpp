@@ -806,9 +806,6 @@ float Mob::GetZOffset() const {
 	float offset = 3.125f;
 
 	switch (race) {
-		case RACE_ARMOR_OF_MARR_323:
-			offset = 1.0f;
-			break;
 		case RACE_BASILISK_436:
 			offset = 0.577f;
 			break;
