@@ -1189,11 +1189,13 @@ int32 Mob::CheckHealAggroAmount(uint16 spell_id, Mob *target, uint32 heal_possib
 
 	for (int o = 0; o < EFFECT_COUNT; o++) {
 		switch (spells[spell_id].effectid[o]) {
-		case SE_CurrentHP: {
-			if (heal_possible == 0) {
-				AggroAmount += 1;
-				break;
-			}
+			case SE_CurrentHP:
+			case SE_PercentalHeal:
+				{
+				if (heal_possible == 0) {
+					AggroAmount += 1;
+					break;
+				}
 			// hate based on base healing power of the spell
 			int val = CalcSpellEffectValue_formula(spells[spell_id].formula[o],
 							 spells[spell_id].base[o], spells[spell_id].max[o], GetLevel(), spell_id);
