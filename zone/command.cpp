@@ -2712,16 +2712,16 @@ void command_findspell(Client *c, const Seperator *sep)
 
 				strupr(sName);
 				char* pdest = strstr(sName, sCriteria);
-				if ((pdest != nullptr) && (count <=20)) {
+				if ((pdest != nullptr) && (count <=50)) {
 					c->Message(0, "  %i: %s",  i, spells[i].name);
 					count++;
 				}
-				else if (count > 20)
+				else if (count > 50)
 					break;
 			}
 		}
 		if (count > 20)
-			c->Message(0, "20 spells found... max reached.");
+			c->Message(0, "50 spells found... max reached.");
 		else
 			c->Message(0, "%i spells found.",  count);
 	}
