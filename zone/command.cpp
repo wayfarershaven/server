@@ -7230,12 +7230,12 @@ void command_itemsearch(Client *c, const Seperator *sep)
 				++count;
 			}
 
-			if (count == 50)
+			if (count == 100)
 				break;
 		}
 
-		if (count == 50)
-			c->Message(0, "50 items shown...too many results.");
+		if (count == 100)
+			c->Message(0, "100 items shown...too many results.");
 		else
 			c->Message(0, "%i items found",  count);
 
