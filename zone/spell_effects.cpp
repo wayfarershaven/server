@@ -1262,7 +1262,8 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 					MakePet(spell_id, spell.teleport_zone);
 					// TODO: we need to sync the states for these clients ...
 					// Will fix buttons for now
-					if (IsClient()) {
+					Mob *pet=GetPet();
+					if (IsClient() && pet) {
 						auto c = CastToClient();
 						if (c->ClientVersionBit() & EQEmu::versions::bit_UFAndLater) {
 							c->SetPetCommandState(PET_BUTTON_SIT, 0);
@@ -1270,7 +1271,9 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 							c->SetPetCommandState(PET_BUTTON_REGROUP, 0);
 							c->SetPetCommandState(PET_BUTTON_FOLLOW, 1);
 							c->SetPetCommandState(PET_BUTTON_GUARD, 0);
-							c->SetPetCommandState(PET_BUTTON_TAUNT, 1);
+							// Creating pet from spell - taunt always false
+							// If suspended pet - that will be restore there
+							// If logging in, client will send toggle
 							c->SetPetCommandState(PET_BUTTON_HOLD, 0);
 							c->SetPetCommandState(PET_BUTTON_GHOLD, 0);
 							c->SetPetCommandState(PET_BUTTON_FOCUS, 0);

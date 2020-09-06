@@ -937,7 +937,8 @@ void Client::CompleteConnect()
 		SetPetCommandState(PET_BUTTON_REGROUP, 0);
 		SetPetCommandState(PET_BUTTON_FOLLOW, 1);
 		SetPetCommandState(PET_BUTTON_GUARD, 0);
-		SetPetCommandState(PET_BUTTON_TAUNT, 1);
+		// Taunt saved on client side for logging on with pet
+		// In our db for when we zone.
 		SetPetCommandState(PET_BUTTON_HOLD, 0);
 		SetPetCommandState(PET_BUTTON_GHOLD, 0);
 		SetPetCommandState(PET_BUTTON_FOCUS, 0);
