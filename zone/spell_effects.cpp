@@ -2248,7 +2248,11 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 				if(zone->random.Roll(spells[spell_id].base[i])) {
 
 					if(caster && caster->IsClient())
-						caster->CastToClient()->Escape();
+						if (caster->spellbonuses.ShroudofStealth || caster->aabonuses.ShroudofStealth || caster->itembonuses.ShroudofStealth) {
+							caster->CastToClient()->Escape(1);
+						} else {
+							caster->CastToClient()->Escape(0);
+						}
 					else
 					{
 						entity_list.RemoveFromTargets(caster);
