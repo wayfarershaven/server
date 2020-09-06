@@ -3465,7 +3465,7 @@ uint8 Client::SlotConvert2(uint8 slot){
 void Client::Escape()
 {
 	entity_list.RemoveFromTargets(this, true);
-	if (spellbonuses.ShroudofStealth || aabonuses.ShroudofStealth || itembonuses.ShroudofStealth) {
+	if (this->spellbonuses.ShroudofStealth || this->aabonuses.ShroudofStealth || this->itembonuses.ShroudofStealth) {
 		SetInvisible(1, 4);
 	} else {
 		SetInvisible(1, 3);
