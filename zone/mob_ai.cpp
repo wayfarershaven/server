@@ -2232,6 +2232,21 @@ bool Mob::AddRampage(Mob *mob)
 	return true;
 }
 
+void Mob::RemoveFromRampage(Mob *mob)
+{
+	if (!mob) {
+		return;
+	}
+
+	for (int i = 0; i < RampageArray.size(); i++) {
+		// Find ID on Ramp Array, if found, then remove from array (Erase-Remove idiom)
+		if (mob->GetID() == RampageArray[i]) {
+			RampageArray.erase(std::remove(RampageArray.begin(), RampageArray.end(), mob->GetID()), RampageArray.end());
+			break;
+		}
+	}
+}
+
 void Mob::ClearRampage()
 {
 	RampageArray.clear();

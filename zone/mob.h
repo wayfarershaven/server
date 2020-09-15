@@ -978,6 +978,7 @@ public:
 	bool Flurry(ExtraAttackOptions *opts);
 	bool Rampage(ExtraAttackOptions *opts);
 	bool AddRampage(Mob*);
+	void RemoveFromRampage(Mob*);
 	void ClearRampage();
 	void AreaRampage(ExtraAttackOptions *opts);
 	inline bool IsSpecialAttack(eSpecialAttacks in) { return m_specialattacks == in; }
