@@ -2224,6 +2224,7 @@ bool Mob::AddRampage(Mob *mob)
 		return false;
 
 	for (int i = 0; i < RampageArray.size(); i++) {
+		Log(Logs::General, Logs::Debug, " DEBUG: AddRampage: Mob(Player) = [%i]",mob->GetID() );
 		// if Entity ID is already on the list don't add it again
 		if (mob->GetID() == RampageArray[i])
 			return false;
@@ -2234,13 +2235,16 @@ bool Mob::AddRampage(Mob *mob)
 
 void Mob::RemoveFromRampage(Mob *mob)
 {
-	if (!mob) {
-		return;
-	}
+	Log(Logs::General, Logs::Debug, " DEBUG: Entered Ramp Removal");
+	//if (!mob) {
+	//	return;
+	//}
 
 	for (int i = 0; i < RampageArray.size(); i++) {
 		// Find ID on Ramp Array, if found, then remove from array (Erase-Remove idiom)
+		Log(Logs::General, Logs::Debug, " DEBUG: RemoveFromRampage: Mob(Player) = [%i], Array Entry = [%i]",mob->GetID(), RampageArray[i] );
 		if (mob->GetID() == RampageArray[i]) {
+			Log(Logs::General, Logs::Debug, " DEBUG: RemoveFromRampage: Mob->GetID() == RampageArray[i] - Removing and Breaking loop");
 			RampageArray.erase(std::remove(RampageArray.begin(), RampageArray.end(), mob->GetID()), RampageArray.end());
 			break;
 		}
