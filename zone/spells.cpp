@@ -4199,13 +4199,13 @@ bool Mob::SpellOnTarget(uint16 spell_id, Mob *spelltar, bool reflect, bool use_r
 
 void Corpse::CastRezz(uint16 spellid, Mob* Caster)
 {
-	Log(Logs::Detail, Logs::Spells, "Corpse::CastRezz spellid %i, Rezzed() is %i, rezzexp is %i", spellid,IsRezzed(),rez_experience);
+	int exp_to_rez = rez_experience;
 
 	if(IsRezzed()){
-		if(Caster && Caster->IsClient())
-			Caster->Message(13,"This character has already been resurrected.");
-
-		return;
+		if(Caster && Caster->IsClient()) {
+			// Caster->Message(13,"This character has already been resurrected.");
+			exp_to_rez = 0;
+		}
 	}
 	/*
 	if(!can_rez) {
@@ -4214,6 +4214,8 @@ void Corpse::CastRezz(uint16 spellid, Mob* Caster)
 		return;
 	}
 	*/
+
+	Log(Logs::Detail, Logs::Spells, "Corpse::CastRezz spellid %i, Rezzed() is %i, rezzexp is %i", spellid,IsRezzed(),rez_experience);
 
 	auto outapp = new EQApplicationPacket(OP_RezzRequest, sizeof(Resurrect_Struct));
 	Resurrect_Struct* rezz = (Resurrect_Struct*) outapp->pBuffer;
@@ -4231,7 +4233,7 @@ void Corpse::CastRezz(uint16 spellid, Mob* Caster)
 	rezz->unknown020 = 0x00000000;
 	rezz->unknown088 = 0x00000000;
 	// We send this to world, because it needs to go to the player who may not be in this zone.
-	worldserver.RezzPlayer(outapp, rez_experience, corpse_db_id, OP_RezzRequest);
+	worldserver.RezzPlayer(outapp, exp_to_rez, corpse_db_id, OP_RezzRequest);
 	safe_delete(outapp);
 }
 
