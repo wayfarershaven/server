@@ -1593,7 +1593,7 @@ void Client::Damage(Mob* other, int32 damage, uint16 spell_id, EQEmu::skills::Sk
 	}
 }
 
-bool Client::Death(Mob* killerMob, int32 damage, uint16 spell, EQEmu::skills::SkillType attack_skill)
+bool Client::Death(Mob* killerMob, int32 damage, uint16 spell, EQEmu::skills::SkillType attack_skill, uint8 killedby)
 {
 	Log(Logs::General, Logs::Debug, "Entered Death Routine.");
 	if (!ClientFinishedLoading())
@@ -1683,6 +1683,7 @@ bool Client::Death(Mob* killerMob, int32 damage, uint16 spell, EQEmu::skills::Sk
 			parse->EventNPC(EVENT_SLAY, killerMob->CastToNPC(), this, "", 0);
 
 			mod_client_death_npc(killerMob);
+			killedby = Killed_NPC;
 
 			uint16 emoteid = killerMob->GetEmoteID();
 			if (emoteid != 0)
@@ -1701,6 +1702,7 @@ bool Client::Death(Mob* killerMob, int32 damage, uint16 spell, EQEmu::skills::Sk
 				entity_list.DuelMessage(killerMob, this, false);
 
 				mod_client_death_duel(killerMob);
+				killedby = Killed_DUEL;
 
 			}
 			else {
@@ -1711,6 +1713,9 @@ bool Client::Death(Mob* killerMob, int32 damage, uint16 spell, EQEmu::skills::Sk
 					who->CastToClient()->SetDuelTarget(0);
 				}
 			}
+		}
+		else if(killerMob->IsClient()) {
+			killedby = Killed_PVP;
 		}
 	}
 
@@ -1800,7 +1805,7 @@ bool Client::Death(Mob* killerMob, int32 damage, uint16 spell, EQEmu::skills::Sk
 		if ((RuleB(Character, LeaveCorpses) && GetLevel() >= RuleI(Character, DeathItemLossLevel)) || RuleB(Character, LeaveNakedCorpses))
 		{
 			// creating the corpse takes the cash/items off the player too
-			auto new_corpse = new Corpse(this, exploss);
+			auto new_corpse = new Corpse(this, exploss, killedby);
 
 			std::string tmp;
 			database.GetVariable("ServerType", tmp);
@@ -2154,7 +2159,7 @@ void NPC::Damage(Mob* other, int32 damage, uint16 spell_id, EQEmu::skills::Skill
 	}
 }
 
-bool NPC::Death(Mob* killer_mob, int32 damage, uint16 spell, EQEmu::skills::SkillType attack_skill) {
+bool NPC::Death(Mob* killer_mob, int32 damage, uint16 spell, EQEmu::skills::SkillType attack_skill, uint8 killedby) {
 	bool charmedNoXp = false;    // using if charmed pet dies, shouldn't give player experience.
 	if (HasOwner()) {
 		Mob *clientOwner = GetOwnerOrSelf();
