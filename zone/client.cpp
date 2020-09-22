@@ -3465,7 +3465,6 @@ uint8 Client::SlotConvert2(uint8 slot){
 void Client::Escape(uint8 type /* = 0*/)
 {
 	entity_list.RemoveFromTargets(this, true);
-	Mob::RemoveFromRampage(this);
 	if (type == 1) {
 		SetInvisible(1, 4);
 	} else {
