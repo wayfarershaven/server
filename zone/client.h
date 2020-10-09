@@ -191,14 +191,6 @@ struct XTarget_Struct
 	char Name[65];
 };
 
-typedef enum {
-	Killed_Other,
-	Killed_NPC,
-	Killed_ENV,
-	Killed_DUEL,
-	Killed_PVP
-} KilledByTypes;
-
 struct RespawnOption
 {
 	std::string name;
@@ -245,7 +237,7 @@ public:
 	bool GotoPlayer(std::string player_name);
 
 	//abstract virtual function implementations required by base abstract class
-	virtual bool Death(Mob* killerMob, int32 damage, uint16 spell_id, EQEmu::skills::SkillType attack_skill, uint8 killedby = 0);
+	virtual bool Death(Mob* killerMob, int32 damage, uint16 spell_id, EQEmu::skills::SkillType attack_skill);
 	virtual void Damage(Mob* from, int32 damage, uint16 spell_id, EQEmu::skills::SkillType attack_skill, bool avoidable = true, int8 buffslot = -1, bool iBuffTic = false, eSpecialAttacks special = eSpecialAttacks::None);
     virtual bool Attack(Mob* other, int Hand = EQEmu::invslot::slotPrimary, bool FromRiposte = false, bool IsStrikethrough = false, bool IsFromSpell = false,
 			ExtraAttackOptions *opts = nullptr);
