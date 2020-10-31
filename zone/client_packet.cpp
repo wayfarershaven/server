@@ -937,7 +937,8 @@ void Client::CompleteConnect()
 		SetPetCommandState(PET_BUTTON_REGROUP, 0);
 		SetPetCommandState(PET_BUTTON_FOLLOW, 1);
 		SetPetCommandState(PET_BUTTON_GUARD, 0);
-		SetPetCommandState(PET_BUTTON_TAUNT, 1);
+		// Taunt saved on client side for logging on with pet
+		// In our db for when we zone.
 		SetPetCommandState(PET_BUTTON_HOLD, 0);
 		SetPetCommandState(PET_BUTTON_GHOLD, 0);
 		SetPetCommandState(PET_BUTTON_FOCUS, 0);
@@ -10313,6 +10314,10 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
 
                     mypet->SetPetFeigned(false);
 
+					// fix GUI sit button to be unpressed and stop sitting regen
+					SetPetCommandState(PET_BUTTON_SIT, 0);
+					mypet->SetAppearance(eaStanding);
+
                     zone->AddAggroMob();
                     // classic acts like qattack
                     int hate = 1;
@@ -10356,6 +10361,10 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
                     }
 
                     mypet->SetPetFeigned(false);
+
+					// fix GUI sit button to be unpressed and stop sitting regen
+					SetPetCommandState(PET_BUTTON_SIT, 0);
+					mypet->SetAppearance(eaStanding);
 
                     zone->AddAggroMob();
                     mypet->AddToHateList(GetTarget(), 1, 0, true, false, false, SPELL_UNKNOWN, true);
@@ -10418,6 +10427,11 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
 
             if ((mypet->GetPetType() == petAnimation && aabonuses.PetCommands[PetCommand]) || mypet->GetPetType() != petAnimation) {
                 if (mypet->IsNPC()) {
+
+					// Set Sit button to unpressed - send stand anim/end hpregen
+					SetPetCommandState(PET_BUTTON_SIT, 0);
+					mypet->SendAppearancePacket(AT_Anim, ANIM_STAND);
+
                     mypet->SayTo_StringID(this, Chat::PetResponse, PET_GUARDINGLIFE);
                     mypet->SetPetFeigned(false);
                     mypet->SetPetOrder(SPO_Guard);
@@ -10439,6 +10453,8 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
                 mypet->SayTo_StringID(this, Chat::PetResponse, PET_FOLLOWING);
                 mypet->SetPetFeigned(false);
                 mypet->SetPetOrder(SPO_Follow);
+				// fix GUI sit button to be unpressed - send stand anim/end hpregen
+				SetPetCommandState(PET_BUTTON_SIT, 0);
                 mypet->SendAppearancePacket(AT_Anim, ANIM_STAND);
                 if (mypet->IsPetStop()) {
                     mypet->SetPetStop(false);
@@ -10483,6 +10499,8 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
                 mypet->SayTo_StringID(this, Chat::PetResponse, PET_GUARDME_STRING);
                 mypet->SetPetFeigned(false);
                 mypet->SetPetOrder(SPO_Follow);
+				// Set Sit button to unpressed - send stand anim/end hpregen
+				SetPetCommandState(PET_BUTTON_SIT, 0);
                 mypet->SendAppearancePacket(AT_Anim, ANIM_STAND);
                 if (mypet->IsPetStop()) {
                     mypet->SetPetStop(false);
@@ -10521,6 +10539,7 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
             if ((mypet->GetPetType() == petAnimation && aabonuses.PetCommands[PetCommand]) || mypet->GetPetType() != petAnimation) {
                 mypet->SayTo_StringID(this, Chat::PetResponse, PET_SIT_STRING);
                 mypet->SetPetFeigned(false);
+				SetPetCommandState(PET_BUTTON_SIT, 0);
                 mypet->SetPetOrder(SPO_Follow);
                 mypet->SendAppearancePacket(AT_Anim, ANIM_STAND);
             }
@@ -10532,6 +10551,7 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
             if ((mypet->GetPetType() == petAnimation && aabonuses.PetCommands[PetCommand]) || mypet->GetPetType() != petAnimation) {
                 mypet->SayTo_StringID(this, Chat::PetResponse, PET_SIT_STRING);
                 mypet->SetPetFeigned(false);
+				SetPetCommandState(PET_BUTTON_SIT, 1);
                 mypet->SetPetOrder(SPO_Sit);
                 mypet->SetRunAnimSpeed(0);
                 if (!mypet->UseBardSpellLogic())	//maybe we can have a bard pet
@@ -14306,6 +14326,12 @@ void Client::Handle_OP_Trader(const EQApplicationPacket *app)
 
 				if (Item->NoDrop == 0) {
 					Message(13, "NODROP Item in Trader Satchel. Unable to start trader mode");
+					TradeItemsValid = false;
+					break;
+				}
+
+				if(Item->IsClassBag()) {
+					Message(13, "Not allowed to sell bags, please convert to a token. Unable to start trader mode.");
 					TradeItemsValid = false;
 					break;
 				}

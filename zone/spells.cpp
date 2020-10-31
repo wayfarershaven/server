@@ -4033,9 +4033,9 @@ bool Mob::SpellOnTarget(uint16 spell_id, Mob *spelltar, bool reflect, bool use_r
 			// the witness check as far as P2002 knows is 40-50% change based on some articles and research
 			// An old cleric thread from early 2004 has some clerics running tests, and they also came up with the 50% chance for heals to aggro, testing on low level NPCs: http://www.eqclerics.org/forums/show...t=17872&page=3
 			// however their sample sizes are small. The data does indicate that rates are not the same for every spell. Endure Fire for example was witnessed at a lower rate (about 40-45%) than most other spells I had tested-- those were around 50
-			
+
 			int chance = 30;
-			
+
 			if(IsBuffSpell(spell_id)) {
 				chance = 20;
 				Log(Logs::Detail, Logs::Aggro, "Buff Spell setting base witness chance to 20%");

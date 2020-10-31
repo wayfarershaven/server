@@ -654,6 +654,7 @@ bool Client::Save(uint8 iCommitNow) {
 		pet->GetPetState(m_petinfo.Buffs, m_petinfo.Items, m_petinfo.Name);
 		m_petinfo.petpower = pet->GetPetPower();
 		m_petinfo.size = pet->GetSize();
+		m_petinfo.taunting = pet->CastToNPC()->IsTaunting();
 	} else {
 		memset(&m_petinfo, 0, sizeof(struct PetInfo));
 	}
@@ -3461,10 +3462,14 @@ uint8 Client::SlotConvert2(uint8 slot){
 	return slot2;
 }
 
-void Client::Escape()
+void Client::Escape(uint8 type /* = 0*/)
 {
 	entity_list.RemoveFromTargets(this, true);
-	SetInvisible(1);
+	if (type == 1) {
+		SetInvisible(1, 4);
+	} else {
+		SetInvisible(1, 3);
+	}
 
 	Message_StringID(Chat::Skills, ESCAPE);
 }
@@ -5983,6 +5988,8 @@ void Client::SuspendMinion()
 
 			CurrentPet->SetMana(m_suspendedminion.Mana);
 
+			CurrentPet->SetTaunting(m_suspendedminion.taunting);
+
 			Message_StringID(clientMessageTell, SUSPEND_MINION_UNSUSPEND, CurrentPet->GetCleanName());
 
 			memset(&m_suspendedminion, 0, sizeof(struct PetInfo));
@@ -5994,7 +6001,8 @@ void Client::SuspendMinion()
 				SetPetCommandState(PET_BUTTON_REGROUP, 0);
 				SetPetCommandState(PET_BUTTON_FOLLOW, 1);
 				SetPetCommandState(PET_BUTTON_GUARD, 0);
-				SetPetCommandState(PET_BUTTON_TAUNT, 1);
+				// Taunt saved on client side for logging on with pet
+				// In our db for when we zone.
 				SetPetCommandState(PET_BUTTON_HOLD, 0);
 				SetPetCommandState(PET_BUTTON_GHOLD, 0);
 				SetPetCommandState(PET_BUTTON_FOCUS, 0);
