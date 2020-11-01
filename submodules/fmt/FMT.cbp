@@ -8,18 +8,18 @@
 		<Option virtualFolders="CMake Files\;CMake Files\cmake\;CMake Files\common\;CMake Files\libs\;CMake Files\libs\luabind\;CMake Files\libs\libuv\;CMake Files\libs\recast\;CMake Files\submodules\;CMake Files\submodules\fmt\;CMake Files\submodules\fmt\support\;CMake Files\submodules\fmt\support\cmake\;CMake Files\shared_memory\;CMake Files\world\;CMake Files\zone\;CMake Files\ucs\;CMake Files\queryserv\;CMake Files\eqlaunch\;CMake Files\client_files\;CMake Files\client_files\import\;CMake Files\client_files\export\;"/>
 		<Build>
 			<Target title="all">
-				<Option working_dir="/root/souce/submodules/fmt"/>
+				<Option working_dir="/root/source/submodules/fmt"/>
 				<Option type="4"/>
 				<MakeCommands>
-					<Build command="/usr/bin/make -j24 -f &quot;/root/souce/submodules/fmt/Makefile&quot;  VERBOSE=1 all"/>
-					<CompileFile command="/usr/bin/make -j24 -f &quot;/root/souce/submodules/fmt/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
-					<Clean command="/usr/bin/make -j24 -f &quot;/root/souce/submodules/fmt/Makefile&quot;  VERBOSE=1 clean"/>
-					<DistClean command="/usr/bin/make -j24 -f &quot;/root/souce/submodules/fmt/Makefile&quot;  VERBOSE=1 clean"/>
+					<Build command="/usr/bin/make -f &quot;/root/source/submodules/fmt/Makefile&quot;  VERBOSE=1 all"/>
+					<CompileFile command="/usr/bin/make -f &quot;/root/source/submodules/fmt/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -f &quot;/root/source/submodules/fmt/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -f &quot;/root/source/submodules/fmt/Makefile&quot;  VERBOSE=1 clean"/>
 				</MakeCommands>
 			</Target>
 			<Target title="fmt">
-				<Option output="/root/souce/submodules/fmt/libfmt.a" prefix_auto="0" extension_auto="0"/>
-				<Option working_dir="/root/souce/submodules/fmt"/>
+				<Option output="/root/source/submodules/fmt/libfmtd.a" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/root/source/submodules/fmt"/>
 				<Option object_output="./"/>
 				<Option type="2"/>
 				<Option compiler="gcc"/>
@@ -48,35 +48,27 @@
 					<Add option="-DSANITIZE_LUA_LIBS"/>
 					<Add directory="/usr/lib/x86_64-linux-gnu/perl/5.26/CORE"/>
 					<Add directory="/usr/include/lua5.1"/>
-					<Add directory="/root/souce/luabind"/>
+					<Add directory="/root/source/luabind"/>
 					<Add directory="/usr/include/mysql"/>
-					<Add directory="/root/souce/dependencies/nats/include"/>
-					<Add directory="/root/souce/submodules/glm"/>
-					<Add directory="/root/souce/submodules/cereal/include"/>
-					<Add directory="/root/souce/submodules/fmt/include"/>
-					<Add directory="/root/souce/libs/libuv/include"/>
-					<Add directory="/root/souce/libs/libuv/src"/>
-					<Add directory="/root/souce/libs/recast/detour/include"/>
-					<Add directory="/root/souce/libs/recast/recast/include"/>
-					<Add directory="/usr/include/c++/7"/>
-					<Add directory="/usr/include/x86_64-linux-gnu/c++/7"/>
-					<Add directory="/usr/include/c++/7/backward"/>
-					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/7/include"/>
-					<Add directory="/usr/local/include"/>
-					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed"/>
-					<Add directory="/usr/include/x86_64-linux-gnu"/>
-					<Add directory="/usr/include"/>
+					<Add directory="/root/source/dependencies/nats/include"/>
+					<Add directory="/root/source/submodules/glm"/>
+					<Add directory="/root/source/submodules/cereal/include"/>
+					<Add directory="/root/source/submodules/fmt/include"/>
+					<Add directory="/root/source/libs/libuv/include"/>
+					<Add directory="/root/source/libs/libuv/src"/>
+					<Add directory="/root/source/libs/recast/detour/include"/>
+					<Add directory="/root/source/libs/recast/recast/include"/>
 				</Compiler>
 				<MakeCommands>
-					<Build command="/usr/bin/make -j24 -f &quot;/root/souce/submodules/fmt/Makefile&quot;  VERBOSE=1 fmt"/>
-					<CompileFile command="/usr/bin/make -j24 -f &quot;/root/souce/submodules/fmt/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
-					<Clean command="/usr/bin/make -j24 -f &quot;/root/souce/submodules/fmt/Makefile&quot;  VERBOSE=1 clean"/>
-					<DistClean command="/usr/bin/make -j24 -f &quot;/root/souce/submodules/fmt/Makefile&quot;  VERBOSE=1 clean"/>
+					<Build command="/usr/bin/make -f &quot;/root/source/submodules/fmt/Makefile&quot;  VERBOSE=1 fmt"/>
+					<CompileFile command="/usr/bin/make -f &quot;/root/source/submodules/fmt/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -f &quot;/root/source/submodules/fmt/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -f &quot;/root/source/submodules/fmt/Makefile&quot;  VERBOSE=1 clean"/>
 				</MakeCommands>
 			</Target>
 			<Target title="fmt/fast">
-				<Option output="/root/souce/submodules/fmt/libfmt.a" prefix_auto="0" extension_auto="0"/>
-				<Option working_dir="/root/souce/submodules/fmt"/>
+				<Option output="/root/source/submodules/fmt/libfmtd.a" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/root/source/submodules/fmt"/>
 				<Option object_output="./"/>
 				<Option type="2"/>
 				<Option compiler="gcc"/>
@@ -105,148 +97,140 @@
 					<Add option="-DSANITIZE_LUA_LIBS"/>
 					<Add directory="/usr/lib/x86_64-linux-gnu/perl/5.26/CORE"/>
 					<Add directory="/usr/include/lua5.1"/>
-					<Add directory="/root/souce/luabind"/>
+					<Add directory="/root/source/luabind"/>
 					<Add directory="/usr/include/mysql"/>
-					<Add directory="/root/souce/dependencies/nats/include"/>
-					<Add directory="/root/souce/submodules/glm"/>
-					<Add directory="/root/souce/submodules/cereal/include"/>
-					<Add directory="/root/souce/submodules/fmt/include"/>
-					<Add directory="/root/souce/libs/libuv/include"/>
-					<Add directory="/root/souce/libs/libuv/src"/>
-					<Add directory="/root/souce/libs/recast/detour/include"/>
-					<Add directory="/root/souce/libs/recast/recast/include"/>
-					<Add directory="/usr/include/c++/7"/>
-					<Add directory="/usr/include/x86_64-linux-gnu/c++/7"/>
-					<Add directory="/usr/include/c++/7/backward"/>
-					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/7/include"/>
-					<Add directory="/usr/local/include"/>
-					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed"/>
-					<Add directory="/usr/include/x86_64-linux-gnu"/>
-					<Add directory="/usr/include"/>
+					<Add directory="/root/source/dependencies/nats/include"/>
+					<Add directory="/root/source/submodules/glm"/>
+					<Add directory="/root/source/submodules/cereal/include"/>
+					<Add directory="/root/source/submodules/fmt/include"/>
+					<Add directory="/root/source/libs/libuv/include"/>
+					<Add directory="/root/source/libs/libuv/src"/>
+					<Add directory="/root/source/libs/recast/detour/include"/>
+					<Add directory="/root/source/libs/recast/recast/include"/>
 				</Compiler>
 				<MakeCommands>
-					<Build command="/usr/bin/make -j24 -f &quot;/root/souce/submodules/fmt/Makefile&quot;  VERBOSE=1 fmt/fast"/>
-					<CompileFile command="/usr/bin/make -j24 -f &quot;/root/souce/submodules/fmt/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
-					<Clean command="/usr/bin/make -j24 -f &quot;/root/souce/submodules/fmt/Makefile&quot;  VERBOSE=1 clean"/>
-					<DistClean command="/usr/bin/make -j24 -f &quot;/root/souce/submodules/fmt/Makefile&quot;  VERBOSE=1 clean"/>
+					<Build command="/usr/bin/make -f &quot;/root/source/submodules/fmt/Makefile&quot;  VERBOSE=1 fmt/fast"/>
+					<CompileFile command="/usr/bin/make -f &quot;/root/source/submodules/fmt/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -f &quot;/root/source/submodules/fmt/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -f &quot;/root/source/submodules/fmt/Makefile&quot;  VERBOSE=1 clean"/>
 				</MakeCommands>
 			</Target>
 		</Build>
-		<Unit filename="/root/souce/submodules/fmt/ChangeLog.rst">
+		<Unit filename="/root/source/submodules/fmt/ChangeLog.rst">
 			<Option target="fmt"/>
 		</Unit>
-		<Unit filename="/root/souce/submodules/fmt/README.rst">
+		<Unit filename="/root/source/submodules/fmt/README.rst">
 			<Option target="fmt"/>
 		</Unit>
-		<Unit filename="/root/souce/submodules/fmt/include/fmt/chrono.h">
+		<Unit filename="/root/source/submodules/fmt/include/fmt/chrono.h">
 			<Option target="fmt"/>
 		</Unit>
-		<Unit filename="/root/souce/submodules/fmt/include/fmt/color.h">
+		<Unit filename="/root/source/submodules/fmt/include/fmt/color.h">
 			<Option target="fmt"/>
 		</Unit>
-		<Unit filename="/root/souce/submodules/fmt/include/fmt/core.h">
+		<Unit filename="/root/source/submodules/fmt/include/fmt/core.h">
 			<Option target="fmt"/>
 		</Unit>
-		<Unit filename="/root/souce/submodules/fmt/include/fmt/format-inl.h">
+		<Unit filename="/root/source/submodules/fmt/include/fmt/format-inl.h">
 			<Option target="fmt"/>
 		</Unit>
-		<Unit filename="/root/souce/submodules/fmt/include/fmt/format.h">
+		<Unit filename="/root/source/submodules/fmt/include/fmt/format.h">
 			<Option target="fmt"/>
 		</Unit>
-		<Unit filename="/root/souce/submodules/fmt/include/fmt/locale.h">
+		<Unit filename="/root/source/submodules/fmt/include/fmt/locale.h">
 			<Option target="fmt"/>
 		</Unit>
-		<Unit filename="/root/souce/submodules/fmt/include/fmt/ostream.h">
+		<Unit filename="/root/source/submodules/fmt/include/fmt/ostream.h">
 			<Option target="fmt"/>
 		</Unit>
-		<Unit filename="/root/souce/submodules/fmt/include/fmt/posix.h">
+		<Unit filename="/root/source/submodules/fmt/include/fmt/posix.h">
 			<Option target="fmt"/>
 		</Unit>
-		<Unit filename="/root/souce/submodules/fmt/include/fmt/printf.h">
+		<Unit filename="/root/source/submodules/fmt/include/fmt/printf.h">
 			<Option target="fmt"/>
 		</Unit>
-		<Unit filename="/root/souce/submodules/fmt/include/fmt/ranges.h">
+		<Unit filename="/root/source/submodules/fmt/include/fmt/ranges.h">
 			<Option target="fmt"/>
 		</Unit>
-		<Unit filename="/root/souce/submodules/fmt/include/fmt/time.h">
+		<Unit filename="/root/source/submodules/fmt/include/fmt/time.h">
 			<Option target="fmt"/>
 		</Unit>
-		<Unit filename="/root/souce/submodules/fmt/src/format.cc">
+		<Unit filename="/root/source/submodules/fmt/src/format.cc">
 			<Option target="fmt"/>
 		</Unit>
-		<Unit filename="/root/souce/submodules/fmt/src/posix.cc">
+		<Unit filename="/root/source/submodules/fmt/src/posix.cc">
 			<Option target="fmt"/>
 		</Unit>
-		<Unit filename="/root/souce/CMakeLists.txt">
+		<Unit filename="/root/source/CMakeLists.txt">
 			<Option virtualFolder="CMake Files\"/>
 		</Unit>
-		<Unit filename="/root/souce/cmake/FindEQLua51.cmake">
+		<Unit filename="/root/source/cmake/FindEQLua51.cmake">
 			<Option virtualFolder="CMake Files\cmake\"/>
 		</Unit>
-		<Unit filename="/root/souce/cmake/FindMySQL.cmake">
+		<Unit filename="/root/source/cmake/FindMySQL.cmake">
 			<Option virtualFolder="CMake Files\cmake\"/>
 		</Unit>
-		<Unit filename="/root/souce/cmake/FindPackageHandleStandardArgs.cmake">
+		<Unit filename="/root/source/cmake/FindPackageHandleStandardArgs.cmake">
 			<Option virtualFolder="CMake Files\cmake\"/>
 		</Unit>
-		<Unit filename="/root/souce/cmake/FindPackageMessage.cmake">
+		<Unit filename="/root/source/cmake/FindPackageMessage.cmake">
 			<Option virtualFolder="CMake Files\cmake\"/>
 		</Unit>
-		<Unit filename="/root/souce/cmake/FindProtobuf.cmake">
+		<Unit filename="/root/source/cmake/FindProtobuf.cmake">
 			<Option virtualFolder="CMake Files\cmake\"/>
 		</Unit>
-		<Unit filename="/root/souce/cmake/FindSodium.cmake">
+		<Unit filename="/root/source/cmake/FindSodium.cmake">
 			<Option virtualFolder="CMake Files\cmake\"/>
 		</Unit>
-		<Unit filename="/root/souce/cmake/SelectLibraryConfigurations.cmake">
+		<Unit filename="/root/source/cmake/SelectLibraryConfigurations.cmake">
 			<Option virtualFolder="CMake Files\cmake\"/>
 		</Unit>
-		<Unit filename="/root/souce/common/CMakeLists.txt">
+		<Unit filename="/root/source/common/CMakeLists.txt">
 			<Option virtualFolder="CMake Files\common\"/>
 		</Unit>
-		<Unit filename="/root/souce/libs/CMakeLists.txt">
+		<Unit filename="/root/source/libs/CMakeLists.txt">
 			<Option virtualFolder="CMake Files\libs\"/>
 		</Unit>
-		<Unit filename="/root/souce/libs/luabind/CMakeLists.txt">
+		<Unit filename="/root/source/libs/luabind/CMakeLists.txt">
 			<Option virtualFolder="CMake Files\libs\luabind\"/>
 		</Unit>
-		<Unit filename="/root/souce/libs/libuv/CMakeLists.txt">
+		<Unit filename="/root/source/libs/libuv/CMakeLists.txt">
 			<Option virtualFolder="CMake Files\libs\libuv\"/>
 		</Unit>
-		<Unit filename="/root/souce/libs/recast/CMakeLists.txt">
+		<Unit filename="/root/source/libs/recast/CMakeLists.txt">
 			<Option virtualFolder="CMake Files\libs\recast\"/>
 		</Unit>
-		<Unit filename="/root/souce/submodules/fmt/CMakeLists.txt">
+		<Unit filename="/root/source/submodules/fmt/CMakeLists.txt">
 			<Option virtualFolder="CMake Files\submodules\fmt\"/>
 		</Unit>
-		<Unit filename="/root/souce/submodules/fmt/support/cmake/cxx14.cmake">
+		<Unit filename="/root/source/submodules/fmt/support/cmake/cxx14.cmake">
 			<Option virtualFolder="CMake Files\submodules\fmt\support\cmake\"/>
 		</Unit>
-		<Unit filename="/root/souce/shared_memory/CMakeLists.txt">
+		<Unit filename="/root/source/shared_memory/CMakeLists.txt">
 			<Option virtualFolder="CMake Files\shared_memory\"/>
 		</Unit>
-		<Unit filename="/root/souce/world/CMakeLists.txt">
+		<Unit filename="/root/source/world/CMakeLists.txt">
 			<Option virtualFolder="CMake Files\world\"/>
 		</Unit>
-		<Unit filename="/root/souce/zone/CMakeLists.txt">
+		<Unit filename="/root/source/zone/CMakeLists.txt">
 			<Option virtualFolder="CMake Files\zone\"/>
 		</Unit>
-		<Unit filename="/root/souce/ucs/CMakeLists.txt">
+		<Unit filename="/root/source/ucs/CMakeLists.txt">
 			<Option virtualFolder="CMake Files\ucs\"/>
 		</Unit>
-		<Unit filename="/root/souce/queryserv/CMakeLists.txt">
+		<Unit filename="/root/source/queryserv/CMakeLists.txt">
 			<Option virtualFolder="CMake Files\queryserv\"/>
 		</Unit>
-		<Unit filename="/root/souce/eqlaunch/CMakeLists.txt">
+		<Unit filename="/root/source/eqlaunch/CMakeLists.txt">
 			<Option virtualFolder="CMake Files\eqlaunch\"/>
 		</Unit>
-		<Unit filename="/root/souce/client_files/CMakeLists.txt">
+		<Unit filename="/root/source/client_files/CMakeLists.txt">
 			<Option virtualFolder="CMake Files\client_files\"/>
 		</Unit>
-		<Unit filename="/root/souce/client_files/import/CMakeLists.txt">
+		<Unit filename="/root/source/client_files/import/CMakeLists.txt">
 			<Option virtualFolder="CMake Files\client_files\import\"/>
 		</Unit>
-		<Unit filename="/root/souce/client_files/export/CMakeLists.txt">
+		<Unit filename="/root/source/client_files/export/CMakeLists.txt">
 			<Option virtualFolder="CMake Files\client_files\export\"/>
 		</Unit>
 	</Project>
