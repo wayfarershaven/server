@@ -39,6 +39,7 @@
 #include "raids.h"
 #include "string_ids.h"
 #include "worldserver.h"
+#include "npc_scale_manager.h"
 #include "../common/say_link.h"
 
 #ifdef _WINDOWS

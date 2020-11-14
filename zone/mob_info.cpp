@@ -22,6 +22,7 @@
 #include "mob.h"
 #include "../common/races.h"
 #include "../common/say_link.h"
+#include "npc_scale_manager.h"
 
 inline std::string GetMobAttributeByString(Mob *mob, const std::string &attribute)
 {
@@ -293,9 +294,6 @@ inline std::string GetMobAttributeByString(Mob *mob, const std::string &attribut
         }
         if (attribute == "max_hit") {
             return std::to_string((int)npc->GetMaxDMG());
-        }
-        if (attribute == "hp_regen") {
-            return std::to_string((int)npc->GetHPRegen());
         }
         if (attribute == "attack_delay") {
             return std::to_string(npc->GetAttackDelay());
@@ -686,16 +684,20 @@ void Mob::DisplayInfo(Mob *mob)
                 window_text += WriteDisplayInfoSection(mob, "Proximity", npc_proximity, 1, true);
             }
 
-            client->Message(
-                    0,
-                    "| # Target: %s",
-                    npc->GetCleanName());
+			int8        npc_type        = npc_scale_manager->GetNPCScalingType(npc);
+			std::string npc_type_string = npc_scale_manager->GetNPCScalingTypeName(npc);
+
+			client->Message(
+					0,
+					"| # Target: %s Type: %i (%s)",
+					npc->GetCleanName(),
+					npc_type,
+					npc_type_string.c_str());
 
             NPCCommandsMenu(client, npc);
         }
 
         std::cout << "Window Length: " << window_text.length() << std::endl;
-        // std::cout << "Window " << window_text << std::endl;
 
         if (client->GetDisplayMobInfoWindow()) {
             client->SendFullPopup(

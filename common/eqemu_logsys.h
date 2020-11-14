@@ -99,6 +99,7 @@ enum LogCategory {
 	Food,
     Expeditions,
     DynamicZones,
+	NPCScaling,
 	MaxCategoryID	/* Don't Remove this*/
 };
 

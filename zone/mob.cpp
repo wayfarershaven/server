@@ -1615,8 +1615,7 @@ void Mob::ShowStats(Client* client)
 				client->Message(0, "  NPCID: %u  SpawnGroupID: %u Grid: %i LootTable: %u FactionID: %i SpellsID: %u ",
 								GetNPCTypeID(), spawngroupid, n->GetGrid(), n->GetLoottableID(), n->GetNPCFactionID(),
 								n->GetNPCSpellsID());
-				client->Message(0, "  HP Regen: %i Mana Regen: %i Magic Atk: %i Immune to Melee: %i", n->GetHPRegen(),
-								n->GetManaRegen(), GetSpecialAbility(SPECATK_MAGICAL),
+				client->Message(0, "  Magic Atk: %i Immune to Melee: %i", GetSpecialAbility(SPECATK_MAGICAL),
 								GetSpecialAbility(IMMUNE_MELEE_NONMAGICAL));
 				client->Message(0, "  Accuracy: %i MerchantID: %i EmoteID: %i Runspeed: %.3f Walkspeed: %.3f",
 								n->GetAccuracyRating(), n->MerchantType, n->GetEmoteID(),
@@ -2093,14 +2092,20 @@ float Mob::GetPlayerHeight(uint16 race) {
 	{
 		case OGRE:
 		case TROLL:
-			return 8.0;
-		case VAHSHIR: case BARBARIAN:
+		case VAHSHIR:
+		case BARBARIAN:
 			return 7.0;
-		case HUMAN: case HIGH_ELF: case ERUDITE: case IKSAR:
+		case HUMAN:
+		case HIGH_ELF:
+		case ERUDITE:
+		case IKSAR:
 			return 6.0;
 		case HALF_ELF:
 			return 5.5;
-		case WOOD_ELF: case DARK_ELF: case WOLF: case ELEMENTAL:
+		case WOOD_ELF:
+		case DARK_ELF:
+		case WOLF:
+		case ELEMENTAL:
 			return 5.0;
 		case DWARF:
 			return 4.0;

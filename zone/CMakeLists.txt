@@ -92,6 +92,7 @@ SET(zone_sources
 	net.cpp
 	npc.cpp
 	npc_ai.cpp
+	npc_scale_manager.cpp
 	object.cpp
 	oriented_bounding_box.cpp
 	pathfinder_interface.cpp
@@ -218,6 +219,7 @@ SET(zone_headers
 	net.h
 	npc.h
 	npc_ai.h
+	npc_scale_manager.h
 	object.h
 	oriented_bounding_box.h
 	pathfinder_interface.h
