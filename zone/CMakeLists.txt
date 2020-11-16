@@ -36,6 +36,7 @@ SET(zone_sources
 	fastmath.cpp
 	fearpath.cpp
 	forage.cpp
+	global_loot_manager.cpp
 	groups.cpp
 	guild.cpp
 	guild_mgr.cpp
@@ -177,6 +178,7 @@ SET(zone_headers
 	expedition_request.h
 	fastmath.h
 	forage.h
+	global_loot_manager.h
 	groups.h
 	guild_mgr.h
 	hate_list.h
