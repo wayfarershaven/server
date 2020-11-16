@@ -756,7 +756,8 @@ public:
 	void SetFollowDistance(uint32 dist) { follow_dist = dist; }
 	uint32 GetFollowID() const { return follow; }
 	uint32 GetFollowDistance() const { return follow_dist; }
-    inline bool IsRareSpawn() const { return rare_spawn; }
+	inline bool IsRareSpawn() const { return rare_spawn; }
+	inline void SetRareSpawn(bool in) { rare_spawn = in; }
 
 	virtual void Message(uint32 type, const char* message, ...) { }
 	virtual void Message_StringID(uint32 type, uint32 string_id, uint32 distance = 0) { }
