@@ -286,6 +286,10 @@ void Client::GoFish()
 			auto npc = new NPC(tmp, nullptr, positionNPC, FlyMode3);
 			npc->AddLootTable();
 
+			if (npc->DropsGlobalLoot()) {
+				npc->CheckGlobalLootTables();
+			}
+
 			npc->AddToHateList(this, 1, 0, false); // no help yelling
 
 			entity_list.AddNPC(npc);

@@ -192,6 +192,7 @@ public:
 	void	AddItem(uint32 itemid, uint16 charges, bool equipitem = true, bool quest = false, uint32 aug1 = 0, uint32 aug2 = 0, uint32 aug3 = 0, uint32 aug4 = 0, uint32 aug5 = 0, uint32 aug6 = 0);
 	void	AddLootTable();
 	void	AddLootTable(uint32 ldid);
+	void	CheckGlobalLootTables();
 	void	DescribeAggro(Client *towho, Mob *mob, bool verbose);
 	void	RemoveItem(uint32 item_id, uint16 quantity = 0, uint16 slot = 0);
 	void	CheckMinMaxLevel(Mob *them);
@@ -204,6 +205,7 @@ public:
 	uint32	CountLoot();
 	inline uint32	GetLoottableID()	const { return loottable_id; }
 	virtual void UpdateEquipmentLight();
+	inline bool DropsGlobalLoot() const { return !skip_global_loot; }
 	bool	GetQuestLootItem(int16 itemid);
 	bool	HasQuestLootItem();
 	bool	RemoveQuestLootItems(int16 itemid);
@@ -590,6 +592,7 @@ protected:
 
 private:
 	uint32	loottable_id;
+	bool	skip_global_loot;
 	bool	p_depop;
 };
 

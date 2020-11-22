@@ -274,6 +274,7 @@ Mob::Mob(
 	IsFullHP	= (cur_hp == max_hp);
 	qglobal=0;
 	spawned = false;
+	rare_spawn = false;
 
 	InitializeBuffSlots();
 
