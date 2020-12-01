@@ -1,41 +1,58 @@
 # Object files
-*.o
-*.obj
+#*.o
+#*.obj
 
 # Libraries
-*.lib
-*.a
+#*.lib
+#*.a
 
 # Shared objects (inc. Windows DLLs)
-*.dll
-*.so
-*.so.*
-*.dylib
+#*.dll
+#*.so
+#*.so.*
+#*.dylib
 
 # Executables
 *.exe
 *.out
 *.app
 
-.bash_history
+# Clion
+.idea/*
+EQEmu.cbp
 
 # CMake
+cmake-build-debug/
 CMakeCache.txt
 CMakeFiles
 Makefile
 cmake_install.cmake
 install_manifest.txt
-[Bb]uild*/
+Build/
+build/
+Build32/
+build32/
+Build64/
+build64/
+Build_32/
+build_32/
+Build_64/
+build_64/
 log/
 logs/
-vcpkg/
-perl/
+!libcryptopp.a
+!libEQEmuAuthCrypto.a
+bin/*
 
-.idea/*
-*cbp
+# VisualStudio files
 
-submodules/*
-cmake-build-debug/
+#*.sln
+*.vcxproj*
+.vs/
+
+libs/format/FMT.cbp
+libs/libuv/libuv.cbp
+libs/format/fmt/libfmt.a
 
 .nfs.*
 
@@ -56,3 +73,7 @@ bin/
 /client_files/**/CMakeFiles/
 
 .idea
+
+# protobuf generated files
+common/message.pb.cc
+common/message.pb.h
