@@ -80,9 +80,9 @@ void WorldDatabase::GetCharSelectInfo(uint32 account_id, EQApplicationPacket **o
 			FROM
 			`character_data`
 			WHERE
-			`account_id` = {}
+			`account_id` = 0
 			AND
-			`deleted_at` IS NULL
+			`is_deleted` IS NULL
 			ORDER BY `name`
 			LIMIT {}
 		),
