@@ -2184,9 +2184,10 @@ bool Mob::Rampage(ExtraAttackOptions *opts)
 		// range is important
 		Mob *m_target = entity_list.GetMob(RampageArray[i]);
 		if (m_target) {
-			if (m_target == GetTarget())
+			if (m_target == GetTarget() || !IsAttackAllowed(m_target, false)) {    // make sure it is something you can't attack, ex: corpses.
 				continue;
-			if (DistanceSquaredNoZ(GetPosition(), m_target->GetPosition()) <= NPC_RAMPAGE_RANGE2) {
+			}
+			if ((DistanceSquared(m_Position, m_target->GetPosition()) < (RuleI(Combat, RampageDistance)*RuleI(Combat, RampageDistance))) && !m_target->CastToClient()->GetFeigned()) {
 				ProcessAttackRounds(m_target, opts);
 				index_hit++;
 			}

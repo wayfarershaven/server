@@ -470,6 +470,7 @@ RULE_BOOL(Combat, UseNPCDamageClassLevelMods, true, "Uses GetClassLevelDamageMod
 RULE_BOOL(Combat, UseExtendedPoisonProcs, false, "Allow old school poisons to last until characrer zones, at a lower proc rate")
 RULE_BOOL(Combat, EnableSneakPull, false, "Enable implementation of Sneak Pull")
 RULE_INT(Combat, SneakPullAssistRange, 400, "Modified range of assist for sneak pull")
+RULE_INT(Combat, RampageDistance, 100, "Distance a mob can Rampage")
 RULE_CATEGORY_END()
 
 RULE_CATEGORY(NPC)
