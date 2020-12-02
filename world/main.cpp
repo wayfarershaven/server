@@ -317,10 +317,6 @@ int main(int argc, char** argv) {
 		}
 	}
 
-	if (!ignore_db) {
-		LogInfo("Checking Database Conversions");
-		database.CheckDatabaseConversions();
-	}
 	LogInfo("Loading variables");
 	database.LoadVariables();
 
