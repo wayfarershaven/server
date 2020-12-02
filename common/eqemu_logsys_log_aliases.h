@@ -431,6 +431,11 @@
         OutF(LogSys, Logs::Detail, Logs::HPUpdate, __FILE__, __func__, __LINE__, message, ##__VA_ARGS__);\
 } while (0)
 
+#define LogFaction(message, ...) do {\
+    if (LogSys.log_settings[Logs::Faction].is_category_enabled == 1)\
+        OutF(LogSys, Logs::General, Logs::Faction, __FILE__, __func__, __LINE__, message, ##__VA_ARGS__);\
+} while (0)
+
 #define LogFixZ(message, ...) do {\
     if (LogSys.log_settings[Logs::FixZ].is_category_enabled == 1)\
         OutF(LogSys, Logs::General, Logs::FixZ, __FILE__, __func__, __LINE__, message, ##__VA_ARGS__);\
