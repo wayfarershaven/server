@@ -5982,7 +5982,6 @@ bool Mob::TryDeathSave() {
 					entity_list.MessageCloseString(this, false, 200, Chat::MeleeCrit, DEATH_PACT, GetCleanName());
 
 				SendHPUpdate();
-				BuffFadeBySlot(buffSlot);
 				return true;
 			}
 			else if (UD_HealMod) {
