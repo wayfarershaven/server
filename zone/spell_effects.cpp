@@ -1249,6 +1249,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 				}
 				else
 				{
+					LogSpells("Making a Pet");
 					MakePet(spell_id, spell.teleport_zone);
 					// TODO: we need to sync the states for these clients ...
 					// Will fix buttons for now
@@ -5001,8 +5002,11 @@ int16 Mob::CalcFocusEffect(focusType type, uint16 focus_id, uint16 spell_id, boo
 			break;
 
 		case SE_PetPowerIncrease:
-			if (type == focusPetPower && focus_spell.base[i] > value)
+			LogSpells("Calc pet power value: [{}] base: [{}]", value, focus_spell.base[i]);
+			if (type == focusPetPower && focus_spell.base[i] > value) {
 				value = focus_spell.base[i];
+				return (value * lvlModifier / 100);
+			}
 			break;
 
 		case SE_SpellResistReduction:
@@ -5183,6 +5187,7 @@ int16 Mob::CalcFocusEffect(focusType type, uint16 focus_id, uint16 spell_id, boo
 			SpellFinished(Caston_spell_id, this, EQ::spells::CastingSlot::Item, 0, -1, spells[Caston_spell_id].ResistDiff);
 	}
 
+	LogSpells("Calculating Focus [{}] effect returning [{}]", type, (value * lvlModifier / 100));
 	return (value * lvlModifier / 100);
 }
 
@@ -5309,6 +5314,7 @@ uint16 Client::GetSympatheticFocusEffect(focusType type, uint16 spell_id) {
 
 int16 Client::GetFocusEffect(focusType type, uint16 spell_id)
 {
+	LogSpells("Looking for focus effect: [{}] for spell: [{}]", static_cast<int>(type), spell_id);
 	if (IsBardSong(spell_id) && type != focusFcBaseEffects && type != focusSpellDuration)
 		return 0;
 
@@ -5322,11 +5328,13 @@ int16 Client::GetFocusEffect(focusType type, uint16 spell_id)
 
 	//Improved Healing, Damage & Mana Reduction are handled differently in that some are random percentages
 	//In these cases we need to find the most powerful effect, so that each piece of gear wont get its own chance
-	if(RuleB(Spells, LiveLikeFocusEffects) && (type == focusManaCost || type == focusImprovedHeal || type == focusImprovedDamage || type == focusImprovedDamage2 || type == focusResistRate))
+	if(RuleB(Spells, LiveLikeFocusEffects) && (type == focusManaCost || type == focusImprovedHeal || type == focusImprovedDamage || type == focusImprovedDamage2 || type == focusResistRate || type == focusPetPower)) {
 		rand_effectiveness = true;
+	}
 
 	//Check if item focus effect exists for the client.
 	if (itembonuses.FocusEffects[type]){
+		LogSpells("Found focus effect: [{}]", static_cast<int>(type));
 
 		const EQ::ItemData* TempItem = nullptr;
 		const EQ::ItemData* UsedItem = nullptr;
@@ -5343,9 +5351,13 @@ int16 Client::GetFocusEffect(focusType type, uint16 spell_id)
 			if (!ins)
 				continue;
 			TempItem = ins->GetItem();
+			LogSpells("Looking at item: [{}]", TempItem->Name);
 			if (TempItem && TempItem->Focus.Effect > 0 && TempItem->Focus.Effect != SPELL_UNKNOWN) {
+				LogSpells("Calculating Focus effect [{}]", TempItem->Focus.Effect);
 				if(rand_effectiveness) {
+					LogSpells("Calculating Focus effect Randomized [{}]", TempItem->Focus.Effect);
 					focus_max = CalcFocusEffect(type, TempItem->Focus.Effect, spell_id, true);
+					LogSpells("focus_max [{}]", focus_max);
 					if (focus_max > 0 && focus_max_real >= 0 && focus_max > focus_max_real) {
 						focus_max_real = focus_max;
 						UsedItem = TempItem;
