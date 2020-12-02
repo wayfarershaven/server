@@ -972,12 +972,16 @@ bool Client::HandleEnterWorldPacket(const EQApplicationPacket *app) {
 bool Client::HandleDeleteCharacterPacket(const EQApplicationPacket *app) {
 
 	uint32 char_acct_id = database.GetAccountIDByChar((char*)app->pBuffer);
+	uint32 level = database.GetLevelByChar((char*)app->pBuffer);
 	if(char_acct_id == GetAccountID()) {
 		LogInfo("Delete character: [{}]", app->pBuffer);
-		database.DeleteCharacter((char *)app->pBuffer);
+		if (level >= 30) {
+			database.MarkCharacterDeleted((char *) app->pBuffer);
+		} else {
+			database.DeleteCharacter((char *) app->pBuffer);
+		}
 		SendCharInfo();
 	}
-
 	return true;
 }
 

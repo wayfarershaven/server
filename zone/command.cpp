@@ -422,6 +422,7 @@ int command_init(void)
 		command_add("trapinfo", "- Gets infomation about the traps currently spawned in the zone.", 81, command_trapinfo) ||
 		command_add("tune",  "Calculate ideal statical values related to combat.",  100, command_tune) ||
 		command_add("ucs", "- Attempts to reconnect to the UCS server", 0, command_ucs) ||
+		command_add("undeletechar", "- Undelete a character that was previously deleted.", 255, command_undeletechar) ||
 		command_add("undyeme", "- Remove dye from all of your armor slots", 0, command_undyeme) ||
 		command_add("unfreeze", "- Unfreeze your target", 80, command_unfreeze) ||
 		command_add("unlock", "- Unlock the worldserver", 150, command_unlock) ||
@@ -13379,6 +13380,18 @@ void command_mysqltest(Client *c, const Seperator *sep)
 		}
 	}
 	LogDebug("MySQL Test Took [{}] seconds", ((float)(std::clock() - t)) / CLOCKS_PER_SEC);
+}
+
+void command_undeletechar(Client *c, const Seperator *sep) {
+	if (sep->arg[1][0] != 0) {
+		if (!database.UnDeleteCharacter(sep->arg[1])) {
+			c->Message(Chat::Red, "%s could not be undeleted. Check the spelling of their name.", sep->arg[1]);
+		} else {
+			c->Message(Chat::Green, "%s successfully undeleted!", sep->arg[1]);
+		}
+	} else {
+		c->Message(Chat::White, "Usage: undeletechar [charname]");
+	}
 }
 
 void command_resetaa_timer(Client *c, const Seperator *sep) {
