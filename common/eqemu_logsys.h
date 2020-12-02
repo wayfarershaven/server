@@ -53,75 +53,75 @@ namespace Logs {
 		AI,
 		Aggro,
 		Attack,
-		PacketClientServer,
+		PacketClientServer, // 5
 		Combat,
 		Commands,
 		Crash,
 		Debug,
-		Doors,
+		Doors, // 10
 		Error,
 		Faction,
 		Guilds,
 		Inventory,
-		Launcher,
+		Launcher, // 15
 		Netcode,
 		Normal,
 		Object,
 		Pathing,
-		QSServer,
+		QSServer, // 20
 		Quests,
 		Rules,
 		Skills,
 		Spawns,
-		Spells,
+		Spells, // 25
 		Status,
 		TCPConnection,
 		Tasks,
 		Tradeskills,
-		Trading,
+		Trading, // 30
 		Tribute,
 		UCSServer,
 		WebInterfaceServer,
 		WorldServer,
-		ZoneServer,
+		ZoneServer, // 35
 		MySQLError,
 		MySQLQuery,
 		Mercenaries,
 		QuestDebug,
-		PacketServerClient,
+		PacketServerClient, // 40
 		PacketClientServerUnhandled,
 		PacketServerClientWithDump,
 		PacketClientServerWithDump,
 		Loginserver,
-		ClientLogin,
+		ClientLogin, // 45
 		HeadlessClient,
 		HPUpdate,
 		FixZ,
 		Food,
-		Traps,
+		Traps, // 50
 		NPCRoamBox,
 		NPCScaling,
 		MobAppearance,
 		Info,
-		Warning,
+		Warning, // 55
 		Critical,
 		Emergency,
 		Alert,
 		Notice,
-		AIScanClose,
+		AIScanClose, // 60
 		AIYellForHelp,
 		AICastBeneficialClose,
 		AoeCast,
 		EntityManagement,
-		Flee,
+		Flee, // 65
 		Aura,
 		HotReload,
 		Merchants,
 		ZonePoints,
-		Loot,
+		Loot, // 70
 		Expeditions,
 		DynamicZones,
-		Scheduler,
+		Scheduler, // 73
 		MaxCategoryID /* Don't Remove this */
 	};
 
