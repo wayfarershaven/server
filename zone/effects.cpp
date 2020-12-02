@@ -359,15 +359,34 @@ int32 Client::GetActSpellCost(uint16 spell_id, int32 cost)
 		cost -= mana_back;
 	}
 
-	int spec = GetSpecializeSkillValue(spell_id);
-	int PercentManaReduction = 0;
-	if (spec)
-		PercentManaReduction = 1 + spec / 20; // there seems to be some non-obvious rounding here, let's truncate for now.
+	// Formula used from Graffe's testing
+	// https://www.graffe.com/forums/showthread.php?3471-Spell-Casting-Mastery-tests-(no-NOT-fury-mastery)
+	// Info in in-era for 2002
+	float SpecializeSkill = GetSpecializeSkillValue(spell_id);
+	float PercentManaReduction = SpecializeSkill / 20.0f;
+
+	float bonus = 1.0;
+	switch (GetAA(aaSpellCastingMastery))
+	{
+		case 1:
+			PercentManaReduction += 2.5;
+			break;
+		case 2:
+			PercentManaReduction += 5.0;
+			break;
+		case 3:
+			PercentManaReduction += 10.0;
+			break;
+	}
+
+	bonus += 0.05f * GetAA(aaAdvancedSpellCastingMastery);
 
 	int16 focus_redux = GetFocusEffect(focusManaCost, spell_id);
+
+	// random roll of mana preservation effects handled inside GetFocusEffect function, no need to randomize here
 	PercentManaReduction += focus_redux;
 
-	cost -= cost * PercentManaReduction / 100;
+	cost -= (cost * (PercentManaReduction / 100));
 
 	// Gift of Mana - reduces spell cost to 1 mana
 	if(focus_redux >= 100) {
