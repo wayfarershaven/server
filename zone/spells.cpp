@@ -1180,6 +1180,23 @@ void Mob::CastedSpellFinished(uint16 spell_id, uint32 target_id, CastingSlot slo
 					bool HasInstrument = true;
 					int InstComponent = spells[spell_id].NoexpendReagent[0];
 
+					// Lyssa's Solidarity of Vision has Instrument compoents
+					if (InstComponent == -1)
+					{
+						for(int t_count = 0; t_count < 4; t_count++) {
+							int32 component = spells[spell_id].components[t_count];
+							if (component == -1)
+							{
+								continue;
+							}
+							else
+							{
+								InstComponent = component;
+								break;
+							}
+						}
+					}
+
 					switch (InstComponent) {
 						case -1:
 							continue;		// no instrument required, go to next component
@@ -2145,7 +2162,7 @@ bool Mob::SpellFinished(uint16 spell_id, Mob *spell_target, CastingSlot slot, ui
 	}
 
 	// check line of sight to target if it's a detrimental spell
-	if(!spells[spell_id].npc_no_los && spell_target && IsDetrimentalSpell(spell_id) && !CheckLosFN(spell_target) && !IsHarmonySpell(spell_id) && spells[spell_id].targettype != ST_TargetOptional)
+	if(!spells[spell_id].npc_no_los && spell_target && IsDetrimentalSpell(spell_id) && !CheckLosFN(spell_target) && !IsHarmonySpell(spell_id) && spells[spell_id].targettype != ST_TargetOptional && !IsBindSightSpell(spell_id))
 	{
 		LogSpells("Spell [{}]: cannot see target [{}]", spell_id, spell_target->GetName());
 		MessageString(Chat::Red,CANT_SEE_TARGET);
@@ -2551,7 +2568,7 @@ bool Mob::ApplyNextBardPulse(uint16 spell_id, Mob *spell_target, CastingSlot slo
 	}
 
 	// check line of sight to target if it's a detrimental spell
-	if(spell_target && IsDetrimentalSpell(spell_id) && !CheckLosFN(spell_target))
+	if(spell_target && IsDetrimentalSpell(spell_id) && !CheckLosFN(spell_target) && !IsBindSightSpell(spell_id) && !IsHarmonySpell(spell_id))
 	{
 		LogSpells("Bard Song Pulse [{}]: cannot see target [{}]", spell_target->GetName());
 		MessageString(Chat::Red, CANT_SEE_TARGET);
@@ -3522,11 +3539,7 @@ bool Mob::SpellOnTarget(uint16 spell_id, Mob *spelltar, bool reflect, bool use_r
 	}
 
 	// select target
-	if	// Bind Sight line of spells
-	(
-		spell_id == 500 ||	// bind sight
-		spell_id == 407		// cast sight
-	)
+	if(IsBindSightSpell(spell_id))	// Bind Sight line of spells
 	{
 		action->target = GetID();
 	}

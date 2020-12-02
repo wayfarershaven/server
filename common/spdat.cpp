@@ -197,6 +197,11 @@ bool IsHasteSpell(uint16 spell_id)
 	return false;
 }
 
+bool IsBindSightSpell(uint16 spell_id)
+{
+	return IsEffectInSpell(spell_id, SE_BindSight);
+}
+
 bool IsHarmonySpell(uint16 spell_id)
 {
 	// IsEffectInSpell(spell_id, SE_Lull) - Lull is not calculated anywhere atm
@@ -243,7 +248,7 @@ bool IsBeneficialSpell(uint16 spell_id)
 				     sai == SAI_Calm_Song))
 					return false;
 			} else {
-				// If the resisttype is not magic and spell is Bind Sight or Cast Sight
+				// If the resisttype is not magic and spell is Bind Sight or Cast Sight or Harmony
 				// It's not beneficial
 				if ((sai == SAI_Calm && IsEffectInSpell(spell_id, SE_Harmony)) || (sai == SAI_Calm_Song && IsEffectInSpell(spell_id, SE_BindSight)) || (sai == SAI_Dispell_Sight && spells[spell_id].skill == 18 && !IsEffectInSpell(spell_id, SE_VoiceGraft)))
 					return false;
