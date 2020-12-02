@@ -3400,3 +3400,38 @@ bool NPC::IsGuard()
 	}
 	return false;
 }
+
+bool NPC::AddQuestLoot(int16 itemid)
+{
+	const EQ::ItemData* item = database.GetItem(itemid);
+	auto loot_drop_entry = NPC::NewLootDropEntry();
+	if(item)
+	{
+		AddLootDrop(item, &itemlist, loot_drop_entry, false, true);
+	}
+	else
+		return false;
+
+	return true;
+}
+
+void NPC::DeleteQuestLoot(int16 itemid1, int16 itemid2, int16 itemid3, int16 itemid4)
+{
+	int16 items = itemlist.size();
+	for (int i = 0; i < items; ++i)
+	{
+		if(itemid1 == 0)
+		{
+			if(!RemoveQuestLootItems(itemid1))
+				break;
+		}
+		else
+		{
+			if(!RemoveQuestLootItems(itemid1) && !RemoveQuestLootItems(itemid2) &&
+			   !RemoveQuestLootItems(itemid3) && !RemoveQuestLootItems(itemid4))
+			{
+				break;
+			}
+		}
+	}
+}

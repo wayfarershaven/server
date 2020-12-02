@@ -5459,6 +5459,7 @@ struct ServerLootItem_Struct {
 	uint16 trivial_max_level;
 	uint16 npc_min_level;
 	uint16 npc_max_level;
+	uint8 quest; // is item in the quest loot table
 };
 
 //Found in client near a ref to the string:

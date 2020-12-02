@@ -401,6 +401,64 @@ static const uint8 SkillDamageTypes[EQ::skills::HIGHEST_SKILL + 1] = // change t
 };
 
 /*
+**  Material use slots
+**
+*/
+enum MaterialUseSlots : uint8
+{
+	MaterialHead = 0,
+	MaterialChest,
+	MaterialArms,
+	MaterialWrist,
+	MaterialHands,
+	MaterialLegs,
+	MaterialFeet,
+	MaterialPrimary,
+	MaterialSecondary,
+	_MaterialCount,
+	_MaterialInvalid = 255
+};
+
+enum InventoryMainTypes : int16 {
+	MainCursor = 0,
+	MainEar1,
+	MainHead,
+	MainFace,
+	MainEar2,
+	MainNeck,
+	MainShoulders,
+	MainArms,
+	MainBack,
+	MainWrist1,
+	MainWrist2,
+	MainRange,
+	MainHands,
+	MainPrimary,
+	MainSecondary,
+	MainFinger1,
+	MainFinger2,
+	MainChest,
+	MainLegs,
+	MainFeet,
+	MainWaist,
+	MainPowerSource = 9999, // temp
+	MainQuest = 9999,
+	MainAmmo = 21, // temp
+	MainGeneral1,
+	MainGeneral2,
+	MainGeneral3,
+	MainGeneral4,
+	MainGeneral5,
+	MainGeneral6,
+	MainGeneral7,
+	MainGeneral8,
+	//MainGeneral9,
+	//MainGeneral10,
+	//MainCursor,
+	_MainCount
+};
+
+/*
 // Used for worn NPC inventory tracking. NPCs don't use
 // augments, so only the basic slots need to be kept track of.
 #define MAX_WORN_INVENTORY	22

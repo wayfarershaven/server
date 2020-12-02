@@ -138,6 +138,12 @@ public:
 	void RecalculateSkills();
 	void ScaleNPC(uint8 npc_level);
 	bool IsRaidTarget();
+	void AddQuestLoot(int itemid);
+	bool GetQuestLoot(int itemid);
+	bool HasQuestLoot();
+	void DeleteQuestLoot();
+	void DeleteQuestLoot(int itemid1, int itemid2, int itemid3, int itemid4);
+	bool QuestLootCount(int itemid1, int itemid2, int itemid3, int itemid4);
 };
 
 #endif

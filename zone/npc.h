@@ -189,8 +189,8 @@ public:
 	virtual void SpellProcess();
 	virtual void FillSpawnStruct(NewSpawn_Struct* ns, Mob* ForWho);
 
-	void	AddItem(const EQ::ItemData* item, uint16 charges, bool equipitem = true);
-	void	AddItem(uint32 itemid, uint16 charges, bool equipitem = true, uint32 aug1 = 0, uint32 aug2 = 0, uint32 aug3 = 0, uint32 aug4 = 0, uint32 aug5 = 0, uint32 aug6 = 0);
+	void	AddItem(const EQ::ItemData* item, uint16 charges, bool equipitem = true, bool quest = false);
+	void	AddItem(uint32 itemid, uint16 charges, bool equipitem = true, bool quest = false, uint32 aug1 = 0, uint32 aug2 = 0, uint32 aug3 = 0, uint32 aug4 = 0, uint32 aug5 = 0, uint32 aug6 = 0);
 	void	AddLootTable();
 	void	AddLootTable(uint32 ldid);
 	void	CheckGlobalLootTables();
@@ -207,6 +207,11 @@ public:
 	inline uint32	GetLoottableID()	const { return loottable_id; }
 	virtual void UpdateEquipmentLight();
 	inline bool DropsGlobalLoot() const { return !skip_global_loot; }
+	bool	GetQuestLootItem(int16 itemid);
+	bool	HasQuestLootItem();
+	bool	RemoveQuestLootItems(int16 itemid);
+	bool	QuestLootCount(uint16 itemid1, uint16 itemid2, uint16 itemid3, uint16 itemid4);
+	void	RemoveItem(ServerLootItem_Struct* item_data);
 
 	inline uint32	GetCopper()		const { return copper; }
 	inline uint32	GetSilver()		const { return silver; }
@@ -300,6 +305,7 @@ public:
 		ItemList *itemlist,
 		LootDropEntries_Struct loot_drop,
 		bool wear_change = false,
+		bool quest = false,
 		uint32 aug1 = 0,
 		uint32 aug2 = 0,
 		uint32 aug3 = 0,
@@ -475,6 +481,8 @@ public:
 
 	bool IsRaidTarget() const { return raid_target; };
 	void ResetHPUpdateTimer() { send_hp_update_timer.Start(); }
+	bool AddQuestLoot(int16 itemid);
+	void DeleteQuestLoot(int16 itemid1, int16 itemid2 = 0, int16 itemid3 = 0, int16 itemid4 = 0);
 
 	bool IgnoreDespawn() { return ignore_despawn; }
 
