@@ -196,8 +196,13 @@ int Mob::GetTotalToHit(EQ::skills::SkillType skill, int chance_mod)
 	// unsure on the stacking order of these effects, rather hard to parse
 	// item mod2 accuracy isn't applied to range? Theory crafting and parses back it up I guess
 	// mod2 accuracy -- flat bonus
-	if (skill != EQ::skills::SkillArchery && skill != EQ::skills::SkillThrowing)
-		accuracy += itembonuses.HitChance;
+	// NOTE: Removing the Ranged/Thrown check as I could find the occasional source that says Accuracy SHOULD affect ranged/thrown in era,
+	// and the only stuff I could find that said otherwise was from Omens Expansion or later when Sharpshooting (accuracy for Ranged/Thrown) was added.
+	// Also applying a scale factor as sources suggest Accuracy should reduce number of missing by 0.1% per point, so 150 = 15% reduction in misses.
+	// Based on my calculator 150 Accuracy was reducing misses by too much (closer to 20%)
+	// NOTE: This doesn't mean if you have a 30% miss chance you now miss 15%.  It means if you have a 30% miss chance you now have a 30% * (100% - 15%) = 30% * 85% = 25.5% miss chance
+	// Using same scale factor for Avoidance and Accuracy since they impact the formula about the same.
+	accuracy += itembonuses.HitChance * RuleI(Combat, PCAccAvoidMod2ScaleFactor) / 100;
 
 	// 216 Melee Accuracy Amt aka SE_Accuracy -- flat bonus
 	accuracy += itembonuses.Accuracy[EQ::skills::HIGHEST_SKILL + 1] +
@@ -259,7 +264,11 @@ int Mob::compute_defense()
 		defense += CastToClient()->GetHeroicAGI() / 10;
 	}
 
-	defense += itembonuses.AvoidMeleeChance; // item mod2
+	// Based on my calculator 150 Avoidance was reducing misses by too much (closer to 20%)
+	// NOTE: This doesn't mean if you have a 30% miss chance you now miss 15%.  It means if you have a 30% miss chance you now have a 30% * (100% - 15%) = 30% * 85% = 25.5% miss chance
+	// Using same scale factor for Avoidance and Accuracy since they impact the formula about the same.
+	defense += itembonuses.AvoidMeleeChance * RuleI(Combat, PCAccAvoidMod2ScaleFactor) / 100; // item mod2
+
 	if (IsNPC()) {
 		defense += CastToNPC()->GetAvoidanceRating();
 	}
@@ -5504,6 +5513,7 @@ void Mob::CommonOutgoingHitSuccess(Mob* defender, DamageHitInfo &hit, ExtraAttac
 		int headshot = TryHeadShot(defender, hit.skill);
 		if (headshot > 0) {
 			hit.damage_done = headshot;
+			return;
 		}
 		else if (GetClass() == RANGER && GetLevel() > 50) { // no double dmg on headshot
 			// Double Damage Bonus should apply to Permarooted mobs
@@ -5529,8 +5539,10 @@ void Mob::CommonOutgoingHitSuccess(Mob* defender, DamageHitInfo &hit, ExtraAttac
 		}
 		else {
 			int ass = TryAssassinate(defender, hit.skill);
-			if (ass > 0)
+			if (ass > 0) {
 				hit.damage_done = ass;
+				return;
+			}
 		}
 	}
 	else if (hit.skill == EQ::skills::SkillFrenzy && GetClass() == BERSERKER && GetLevel() > 50) {
