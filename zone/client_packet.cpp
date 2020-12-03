@@ -13453,8 +13453,10 @@ void Client::Handle_OP_ShopRequest(const EQApplicationPacket *app)
 	return;
 }
 
-void Client::Handle_OP_Sneak(const EQApplicationPacket *app)
-{
+void Client::Handle_OP_Sneak(const EQApplicationPacket *app) {
+	// A flag to check if the player is underwater.
+	bool is_underwater = (zone->watermap && zone->watermap->InLiquid(glm::vec3(m_Position)));
+
 	if (!HasSkill(EQ::skills::SkillSneak) && GetSkill(EQ::skills::SkillSneak) == 0) {
 		return; //You cannot sneak if you do not have sneak
 	}
@@ -13477,13 +13479,19 @@ void Client::Handle_OP_Sneak(const EQApplicationPacket *app)
 		sa_out->parameter = 0;
 		entity_list.QueueClients(this, outapp, true);
 		safe_delete(outapp);
-	}
-	else {
-		CheckIncreaseSkill(EQ::skills::SkillSneak, nullptr, 5);
+	} else {
+		// Only possible if not underwater.
+		if (!is_underwater) {
+			CheckIncreaseSkill(EQ::skills::SkillSneak, nullptr, 5);
+		} else {
+			Message(0, "You cannot start sneaking underwater.");
+			return;
+		}
 	}
 	float hidechance = ((GetSkill(EQ::skills::SkillSneak) / 300.0f) + .25) * 100;
 	float random = zone->random.Real(0, 99);
-	if (!was && random < hidechance) {
+	// If we are underwater, we cannot start sneaking.
+	if (!is_underwater && !was && random < hidechance) {
 		sneaking = true;
 	}
 	auto outapp = new EQApplicationPacket(OP_SpawnAppearance, sizeof(SpawnAppearance_Struct));
@@ -13495,12 +13503,11 @@ void Client::Handle_OP_Sneak(const EQApplicationPacket *app)
 	safe_delete(outapp);
 	if (GetClass() == ROGUE) {
 		outapp = new EQApplicationPacket(OP_SimpleMessage, 12);
-		SimpleMessage_Struct *msg = (SimpleMessage_Struct *)outapp->pBuffer;
+		SimpleMessage_Struct *msg = (SimpleMessage_Struct *) outapp->pBuffer;
 		msg->color = 0x010E;
 		if (sneaking) {
 			msg->string_id = 347;
-		}
-		else {
+		} else {
 			msg->string_id = 348;
 		}
 		FastQueuePacket(&outapp);
@@ -14502,8 +14509,7 @@ void Client::Handle_OP_TraderBuy(const EQApplicationPacket *app)
 	return;
 }
 
-void Client::Handle_OP_TradeRequest(const EQApplicationPacket *app)
-{
+void Client::Handle_OP_TradeRequest(const EQApplicationPacket *app) {
 	if (app->size != sizeof(TradeRequest_Struct)) {
 		LogError("Wrong size: OP_TradeRequest, size=[{}], expected [{}]", app->size, sizeof(TradeRequest_Struct));
 		return;
@@ -14511,8 +14517,8 @@ void Client::Handle_OP_TradeRequest(const EQApplicationPacket *app)
 	// Client requesting a trade session from an npc/client
 	// Trade session not started until OP_TradeRequestAck is sent
 
-	TradeRequest_Struct* msg = (TradeRequest_Struct*)app->pBuffer;
-	Mob* tradee = entity_list.GetMob(msg->to_mob_id);
+	TradeRequest_Struct *msg = (TradeRequest_Struct *) app->pBuffer;
+	Mob *tradee = entity_list.GetMob(msg->to_mob_id);
 
 	// If the tradee is an untargettable mob - ignore
 	// Helps in cases where servers use invisible_man, body type 11 for quests
@@ -14530,20 +14536,22 @@ void Client::Handle_OP_TradeRequest(const EQApplicationPacket *app)
 #ifndef BOTS
 	else if (tradee && tradee->IsNPC()) {
 #else
-	else if (tradee && (tradee->IsNPC() || tradee->IsBot())) {
+		else if (tradee && (tradee->IsNPC() || tradee->IsBot())) {
 #endif
-        if (!tradee->IsEngaged()) {
-            trade->Start(msg->to_mob_id);
-            EQApplicationPacket *outapp = new EQApplicationPacket(OP_TradeRequestAck, sizeof(TradeRequest_Struct));
-            TradeRequest_Struct *acc = (TradeRequest_Struct *) outapp->pBuffer;
-            acc->from_mob_id = msg->to_mob_id;
-            acc->to_mob_id = msg->from_mob_id;
-            FastQueuePacket(&outapp);
-            safe_delete(outapp);
-        }
-    }
-	return;
+		if (!tradee->IsEngaged()) {
+			trade->Start(msg->to_mob_id);
+			EQApplicationPacket *outapp = new EQApplicationPacket(OP_TradeRequestAck, sizeof(TradeRequest_Struct));
+			TradeRequest_Struct *acc = (TradeRequest_Struct *) outapp->pBuffer;
+			acc->from_mob_id = msg->to_mob_id;
+			acc->to_mob_id = msg->from_mob_id;
+			FastQueuePacket(&outapp);
+			safe_delete(outapp);
+		} else {
+			Message(Chat::White, "Your target cannot trade with you at this moment.");
+		}
 	}
+	return;
+}
 
 void Client::Handle_OP_TradeRequestAck(const EQApplicationPacket *app)
 {
