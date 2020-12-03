@@ -4483,31 +4483,51 @@ bool Mob::IsImmuneToSpell(uint16 spell_id, Mob *caster)
 
 int Mob::GetResist(uint8 resist_type)
 {
-	switch(resist_type)
-	{
-	case RESIST_FIRE:
-		return GetFR();
-	case RESIST_COLD:
-		return GetCR();
-	case RESIST_MAGIC:
-		return GetMR();
-	case RESIST_DISEASE:
-		return GetDR();
-	case RESIST_POISON:
-		return GetPR();
-	case RESIST_CORRUPTION:
-		return GetCorrup();
-	case RESIST_PRISMATIC:
-		return (GetFR() + GetCR() + GetMR() + GetDR() + GetPR()) / 5;
-	case RESIST_CHROMATIC:
-		return std::min({GetFR(), GetCR(), GetMR(), GetDR(), GetPR()});
-	case RESIST_PHYSICAL:
-		if (IsNPC())
-			return GetPhR();
-		else
+	int target_resist;
+	switch(resist_type) {
+		case RESIST_FIRE:
+			target_resist = GetFR();
+			if (IsNPC()) {
+				target_resist += RuleI(Spells, NPCResistModFire);
+			}
+			return target_resist;
+		case RESIST_COLD:
+			target_resist = GetCR();
+			if (IsNPC()) {
+				target_resist += RuleI(Spells, NPCResistModCold);
+			}
+			return target_resist;
+		case RESIST_MAGIC:
+			target_resist = GetMR();
+			if (IsNPC()) {
+				target_resist += RuleI(Spells, NPCResistModMagic);
+			}
+			return target_resist;
+		case RESIST_DISEASE:
+			target_resist = GetDR();
+			if (IsNPC()) {
+				target_resist += RuleI(Spells, NPCResistModDisease);
+			}
+			return target_resist;
+		case RESIST_POISON:
+			target_resist = GetPR();
+			if (IsNPC()) {
+				target_resist += RuleI(Spells, NPCResistModPoison);
+			}
+			return target_resist;
+		case RESIST_CORRUPTION:
+			return GetCorrup();
+		case RESIST_PRISMATIC:
+			return (GetFR() + GetCR() + GetMR() + GetDR() + GetPR()) / 5;
+		case RESIST_CHROMATIC:
+			return std::min({GetFR(), GetCR(), GetMR(), GetDR(), GetPR()});
+		case RESIST_PHYSICAL:
+			if (IsNPC())
+				return GetPhR();
+			else
+				return 0;
+		default:
 			return 0;
-	default:
-		return 0;
 	}
 }
 
@@ -4768,6 +4788,9 @@ float Mob::ResistSpell(uint8 resist_type, uint16 spell_id, Mob *caster, bool use
 
 	if (IsNPC()) {
 		resist_chance += RuleI(Spells, NPCResistMod);
+		if (IsDamageSpell(spell_id)) {
+			resist_chance += RuleI(Spells, NPCResistModDamage);
+		}
 	}
 
 	//Finally our roll
