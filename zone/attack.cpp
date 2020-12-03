@@ -150,10 +150,21 @@ EQ::skills::SkillType Mob::AttackAnimation(int Hand, const EQ::ItemInstance* wea
 
 int Mob::compute_tohit(EQ::skills::SkillType skillinuse)
 {
-	int tohit = GetSkill(EQ::skills::SkillOffense) + 7;
-	tohit += GetSkill(skillinuse);
-	if (IsNPC())
+	int tohit = 0;
+
+	if (IsNPC() && !IsPet() && !IsTempPet()) {
+		tohit += GetMobFixedWeaponSkill();
+		if (RuleB(Combat, UseMobFixedOffenseSkill)) {
+			tohit += GetMobFixedOffenseSkill() + 7;
+		} else {
+			tohit += GetSkill(EQ::skills::SkillOffense) + 7;
+		}
 		tohit += CastToNPC()->GetAccuracyRating();
+	}
+	else {
+		tohit += GetSkill(EQ::skills::SkillOffense) + 7;
+		tohit += GetSkill(skillinuse);
+	}
 	if (IsClient()) {
 		double reduction = CastToClient()->m_pp.intoxication / 2.0;
 		if (reduction > 20.0) {
@@ -234,13 +245,24 @@ int Mob::GetTotalToHit(EQ::skills::SkillType skill, int chance_mod)
 int Mob::compute_defense()
 {
 	int defense = GetSkill(EQ::skills::SkillDefense) * 400 / 225;
-	defense += (8000 * (GetAGI() - 40)) / 36000;
-	if (IsClient())
+	int AgiScaleFactor = 1000;
+	// In new code, AGI becomes a large contributor to avoidance at low levels, since AGI isn't capped by Level but Defense is
+	// A scale factor is implemented for PCs to reduce the effect of AGI at low levels.  This isn't applied to NPCs since they can be
+	// easily controlled via the Database.
+	if (IsClient()) {
+		AgiScaleFactor = std::min(1000, static_cast<int>(GetLevel()) * 1000 /
+										70); // Scales Agi Contribution for PC's Level, max Contribution at Level 70
+	}
+
+	defense += AgiScaleFactor * (800 * (GetAGI() - 40)) / 3600 / 1000;
+	if (IsClient()) {
 		defense += CastToClient()->GetHeroicAGI() / 10;
+	}
 
 	defense += itembonuses.AvoidMeleeChance; // item mod2
-	if (IsNPC())
+	if (IsNPC()) {
 		defense += CastToNPC()->GetAvoidanceRating();
+	}
 
 	if (IsClient()) {
 		double reduction = CastToClient()->m_pp.intoxication / 2.0;
@@ -892,6 +914,9 @@ int Mob::GetBestMeleeSkill()
 int Mob::offense(EQ::skills::SkillType skill)
 {
 	int offense = GetSkill(skill);
+	if (IsNPC() && !IsPet() && !IsTempPet()) {
+		offense = GetMobFixedWeaponSkill();
+	}
 	int stat_bonus = GetSTR();
 
 	switch (skill) {
@@ -912,10 +937,20 @@ int Mob::offense(EQ::skills::SkillType skill)
 			break;
 	}
 
-	if (stat_bonus >= 75)
+	if (stat_bonus >= 75) {
 		offense += (2 * stat_bonus - 150) / 3;
+	}
 
-	offense += GetATK();
+	// GetATK() = ATK + itembonuses.ATK + spellbonuses.ATK.  However, ATK appears to already be itembonuses.ATK + spellbonuses.ATK for PCs, so as is, it is double counting attack
+	// This causes attack to be significantly more important than it should be based on era rule of thumbs.  I do not want to change the GetATK() function in case doing so breaks something,
+	// so instead I am just adding a /2 to remedy the double counting.  NPCs do not have this issue, so they are broken up.
+	// PCAttackPowerScaling is used to help bring attack power further in line with era estimates.
+	if (IsClient()) {
+		offense += (GetATK() / 2) * RuleI(Combat, PCAttackPowerScaling) / 100;
+	} else {
+		offense += GetATK();
+	}
+
 	return offense;
 }
 
@@ -4052,8 +4087,9 @@ void Mob::TryDefensiveProc(Mob *on, uint16 hand) {
 		float ProcChance, ProcBonus;
 		on->GetDefensiveProcChances(ProcBonus, ProcChance, hand, this);
 
-		if (hand != EQ::invslot::slotPrimary)
+		if (hand == EQ::invslot::slotSecondary) {
 			ProcChance /= 2;
+		}
 
 		int level_penalty = 0;
 		int level_diff = GetLevel() - on->GetLevel();
@@ -4125,8 +4161,9 @@ void Mob::TryWeaponProc(const EQ::ItemInstance *inst, const EQ::ItemData *weapon
 	ProcBonus += static_cast<float>(itembonuses.ProcChance) / 10.0f; // Combat Effects
 	float ProcChance = GetProcChances(ProcBonus, hand);
 
-	if (hand != EQ::invslot::slotPrimary) //Is Archery intened to proc at 50% rate?
+	if (hand == EQ::invslot::slotSecondary) {
 		ProcChance /= 2;
+	}
 
 	// Try innate proc on weapon
 	// We can proc once here, either weapon or one aug
@@ -4204,8 +4241,9 @@ void Mob::TrySpellProc(const EQ::ItemInstance *inst, const EQ::ItemData *weapon,
 	float ProcChance = 0.0f;
 	ProcChance = GetProcChances(ProcBonus, hand);
 
-	if (hand != EQ::invslot::slotPrimary) //Is Archery intened to proc at 50% rate?
+	if (hand == EQ::invslot::slotSecondary) {
 		ProcChance /= 2;
+	}
 
 	bool rangedattk = false;
 	if (weapon && hand == EQ::invslot::slotRange) {
@@ -4843,6 +4881,250 @@ const DamageTable &Mob::GetDamageTable() const
 	return which[level - 50];
 }
 
+int Mob::GetMobFixedOffenseSkill()
+{
+	// Due to new code using a combination of Offense and Weapon skill to determine hit, depending on the class
+	// and weapon wielded by a mob, the hit rate of an equal level mob could vary between 15% and 60%, which made
+	// many mobs far too easy.  This particular call replaces the class based Offense Skill with a fixed value
+	// equal to that of a Warrior of appropriate Level if UseMobFixedOffenseSkill flag is TRUE.
+
+	int level = std::max(1,static_cast<int>(GetLevel()));
+
+	// Current tables are flat above Level 60
+	if (level > 60)
+		level = 60;
+
+	int FixedOffenseSkillTable[] = {
+			10, // 1
+			15,
+			20,
+			25,
+			30, // 5
+			35,
+			40,
+			45,
+			50,
+			55, // 10
+			60,
+			65,
+			70,
+			75,
+			80, // 15
+			85,
+			90,
+			95,
+			100,
+			105, // 20
+			110,
+			115,
+			120,
+			125,
+			130, // 25
+			135,
+			140,
+			145,
+			150,
+			155, // 30
+			160,
+			165,
+			170,
+			175,
+			180, // 35
+			185,
+			190,
+			195,
+			200,
+			205, // 40
+			210,
+			210,
+			210,
+			210,
+			210, // 45
+			210,
+			210,
+			210,
+			210,
+			210, // 50
+			215,
+			220,
+			225,
+			230,
+			235, // 55
+			240,
+			245,
+			250,
+			252,
+			252, // 60
+	};
+
+	return FixedOffenseSkillTable[level - 1];
+}
+
+int Mob::GetMobFixedWeaponSkill()
+{
+	// Due to new code using a combination of Offense and Weapon skill to determine hit, depending on the class
+	// and weapon wielded by a mob, the hit rate of an equal level mob could vary between 15% and 60%, which made
+	// many mobs far too easy.  This particular call replaces the weapon/class based Weapon Skill with a fixed value.
+	// Two tables exist, one equal to a Warrior of appropriate level, and one modified to make hit rate equal to the old code
+	// assuming the UseMobFixedOffenseSkill flag is set TRUE or the mob class is a Warrior (all the the bonus is in Weapon Skill).
+
+	int level = std::max(1,static_cast<int>(GetLevel()));
+
+	// Current tables are flat above Level 70
+	if (level > 70)
+		level = 70;
+
+	int FixedWeaponSkillTable[] = {
+			10, // 1
+			15,
+			20,
+			25,
+			30, // 5
+			35,
+			40,
+			45,
+			50,
+			55, // 10
+			60,
+			65,
+			70,
+			75,
+			80, // 15
+			85,
+			90,
+			95,
+			100,
+			105, // 20
+			110,
+			115,
+			120,
+			125,
+			130, // 25
+			135,
+			140,
+			145,
+			150,
+			155, // 30
+			160,
+			165,
+			170,
+			175,
+			180, // 35
+			185,
+			190,
+			195,
+			200,
+			200, // 40
+			200,
+			200,
+			200,
+			200,
+			200, // 45
+			200,
+			200,
+			200,
+			200,
+			200, // 50
+			205,
+			210,
+			215,
+			220,
+			225, // 55
+			230,
+			235,
+			240,
+			245,
+			250, // 60
+			250,
+			250,
+			250,
+			250,
+			250, // 65
+			255,
+			260,
+			265,
+			270,
+			275, // 70
+	};
+
+	int EnhancedFixedWeaponSkillTable[] = {
+			5, // 1
+			11,
+			18,
+			24,
+			30, // 5
+			37,
+			44,
+			49,
+			55,
+			62, // 10
+			68,
+			74,
+			80,
+			87,
+			94, // 15
+			99,
+			106,
+			112,
+			117,
+			124, // 20
+			131,
+			137,
+			143,
+			150,
+			156, // 25
+			163,
+			167,
+			174,
+			181,
+			188, // 30
+			193,
+			200,
+			206,
+			212,
+			219, // 35
+			224,
+			231,
+			237,
+			243,
+			250, // 40
+			257,
+			257,
+			258,
+			259,
+			260, // 45
+			260,
+			261,
+			263,
+			264,
+			264, // 50
+			270,
+			277,
+			283,
+			288,
+			295, // 55
+			302,
+			307,
+			314,
+			318,
+			319, // 60
+			326,
+			327,
+			328,
+			328,
+			329, // 65
+			330,
+			331,
+			332,
+			333,
+			334, // 70
+	};
+
+	auto &UsedTable = (RuleB(Combat, UseEnhancedMobFixedWeaponSkill)) ? EnhancedFixedWeaponSkillTable : FixedWeaponSkillTable;
+
+	return UsedTable[level - 1];
+}
+
 void Mob::ApplyDamageTable(DamageHitInfo &hit)
 {
 #ifdef LUA_EQEMU
@@ -5068,8 +5350,9 @@ float Mob::GetSkillProcChances(uint16 ReuseTime, uint16 hand) {
 	if (!ReuseTime && hand) {
 		weapon_speed = GetWeaponSpeedbyHand(hand);
 		ProcChance = static_cast<float>(weapon_speed) * (RuleR(Combat, AvgProcsPerMinute) / 60000.0f);
-		if (hand != EQ::invslot::slotPrimary)
+		if (hand == EQ::invslot::slotSecondary) {
 			ProcChance /= 2;
+		}
 	}
 
 	else
@@ -5219,7 +5502,6 @@ void Mob::CommonOutgoingHitSuccess(Mob* defender, DamageHitInfo &hit, ExtraAttac
 			}
 		}
 		//Scale Factor for Archery Damage Tuning
-		LogAttack("ArcheryBaseDamageBonus [{}]", RuleR(Combat, ArcheryBaseDamageBonus));
 		hit.damage_done *= RuleR(Combat, ArcheryBaseDamageBonus);
 	}
 
