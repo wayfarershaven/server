@@ -1786,7 +1786,6 @@ bool Client::Death(Mob* killerMob, int32 damage, uint16 spell, EQ::skills::Skill
 
 	entity_list.RemoveFromTargets(this, true);
 	hate_list.RemoveEntFromHateList(this);
-	RemoveAutoXTargets();
 
 	//remove ourself from all proximities
 	ClearAllProximities();
@@ -2569,7 +2568,6 @@ bool NPC::Death(Mob* killer_mob, int32 damage, uint16 spell, EQ::skills::SkillTy
 				this->CheckTrivialMinMaxLevelDrop(killer);
 		}
 
-		entity_list.RemoveFromAutoXTargets(this);
 		uint16 emoteid = this->GetEmoteID();
 		auto corpse = new Corpse(this, &itemlist, GetNPCTypeID(), &NPCTypedata,
 			level > 54 ? RuleI(NPC, MajorNPCCorpseDecayTimeMS)
@@ -2659,9 +2657,6 @@ bool NPC::Death(Mob* killer_mob, int32 damage, uint16 spell, EQ::skills::SkillTy
 				}
 			}
 		}
-	}
-	else {
-		entity_list.RemoveFromXTargets(this);
 	}
 
 	// Parse quests even if we're killed by an NPC
@@ -2814,9 +2809,6 @@ void Mob::AddToHateList(Mob* other, uint32 hate /*= 0*/, int32 damage /*= 0*/, b
 
 	hate_list.AddEntToHateList(other, hate, damage, bFrenzy, !iBuffTic);
 
-	if (other->IsClient() && !on_hatelist && !IsOnFeignMemory(other->CastToClient()))
-		other->CastToClient()->AddAutoXTarget(this);
-
 #ifdef BOTS
 	// if other is a bot, add the bots client to the hate list
 	while (other->IsBot()) {
@@ -2866,13 +2858,8 @@ void Mob::AddToHateList(Mob* other, uint32 hate /*= 0*/, int32 damage /*= 0*/, b
 		else {
 			// cb:2007-08-17
 			// owner must get on list, but he's not actually gained any hate yet
-			if (
-				!owner->GetSpecialAbility(IMMUNE_AGGRO) &&
-				!(this->GetSpecialAbility(IMMUNE_AGGRO_CLIENT) && owner->IsClient()) && 
-				!(this->GetSpecialAbility(IMMUNE_AGGRO_NPC) && owner->IsNPC())
-			) {
-				if (owner->IsClient() && !CheckAggro(owner))
-					owner->CastToClient()->AddAutoXTarget(this);
+			if (!owner->GetSpecialAbility(IMMUNE_AGGRO))
+			{
 				hate_list.AddEntToHateList(owner, 0, 0, false, !iBuffTic);
 			}
 		}

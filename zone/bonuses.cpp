@@ -1412,7 +1412,6 @@ void Mob::ApplyAABonuses(const AA::Rank &rank, StatBonuses *newbon)
 			newbon->ATK += base1;
 			break;
 		case SE_IncreaseExtTargetWindow:
-			newbon->extra_xtargets += base1;
 			break;
 
 		case SE_PC_Pet_Rampage: {

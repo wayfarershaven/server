@@ -1450,11 +1450,6 @@ void Mob::SendHPUpdate(bool skip_self /*= false*/, bool force_update_all /*= fal
 	entity_list.QueueClientsByTarget(this, &hp_packet, false, 0, false, true, EQ::versions::maskAllClients);
 
 	/**
-	 * Update those who have us on x-target
-	 */
-	entity_list.QueueClientsByXTarget(this, &hp_packet, false);
-
-	/**
 	 * Update groups using Group LAA health name tag counter
 	 */
 	entity_list.QueueToGroupsForNPCHealthAA(this, &hp_packet);
@@ -3297,10 +3292,6 @@ void Mob::SetTarget(Mob *mob)
 #endif
 	}
 
-	if (IsPet() && GetOwner() && GetOwner()->IsClient()) {
-		GetOwner()->CastToClient()->UpdateXTargetType(MyPetTarget, mob);
-	}
-
 	if (this->IsClient() && this->GetTarget() && this->CastToClient()->hp_other_update_throttle_timer.Check()) {
 		this->GetTarget()->SendHPUpdate(false, true);
 	}
@@ -4641,9 +4632,6 @@ void Mob::SetGrouped(bool v)
 	if(IsClient())
 	{
 			parse->EventPlayer(EVENT_GROUP_CHANGE, CastToClient(), "", 0);
-
-		if(!v)
-			CastToClient()->RemoveGroupXTargets();
 	}
 }
 

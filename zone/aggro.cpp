@@ -1223,15 +1223,6 @@ void Mob::RemoveFromFeignMemory(Client* attacker) {
 }
 
 void Mob::ClearFeignMemory() {
-	auto RememberedCharID = feign_memory_list.begin();
-	while (RememberedCharID != feign_memory_list.end())
-	{
-		Client* remember_client = entity_list.GetClientByCharID(*RememberedCharID);
-		if(remember_client != nullptr) //Still in zone
-			remember_client->RemoveXTarget(this, false);
-		++RememberedCharID;
-	}
-
 	feign_memory_list.clear();
 	minLastFightingDelayMoving = RuleI(NPC, LastFightingDelayMovingMin);
 	maxLastFightingDelayMoving = RuleI(NPC, LastFightingDelayMovingMax);

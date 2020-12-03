@@ -781,7 +781,6 @@ bool Group::DelMember(Mob* oldmember, bool ignoresender)
 
 	if(oldmember->IsClient()) {
 		SendMarkedNPCsToMember(oldmember->CastToClient(), true);
-		oldmember->CastToClient()->LeaveGroupXTargets(this);
 	}
 
 	if(GroupCount() < 3)
@@ -970,8 +969,6 @@ void Group::DisbandGroup(bool joinraid) {
 			database.SetGroupID(members[i]->GetCleanName(), 0, members[i]->CastToClient()->CharacterID(), false);
 			members[i]->CastToClient()->QueuePacket(outapp);
 			SendMarkedNPCsToMember(members[i]->CastToClient(), true);
-			if (!joinraid)
-				members[i]->CastToClient()->LeaveGroupXTargets(this);
 		}
 		
 		if (members[i]->IsMerc())
@@ -2360,14 +2357,6 @@ const char *Group::GetClientNameByIndex(uint8 index)
 
 void Group::UpdateXTargetMarkedNPC(uint32 Number, Mob *m)
 {
-	for(uint32 i = 0; i < MAX_GROUP_MEMBERS; ++i)
-	{
-		if(members[i] && members[i]->IsClient())
-		{
-			members[i]->CastToClient()->UpdateXTargetType((Number == 1) ? GroupMarkTarget1 : ((Number == 2) ? GroupMarkTarget2 : GroupMarkTarget3), m);
-		}
-	}
-
 }
 
 void Group::SetDirtyAutoHaters()
@@ -2379,19 +2368,6 @@ void Group::SetDirtyAutoHaters()
 
 void Group::JoinRaidXTarget(Raid *raid, bool first)
 {
-	if (!GetXTargetAutoMgr()->empty())
-		raid->GetXTargetAutoMgr()->merge(*GetXTargetAutoMgr());
-
-	for (int i = 0; i < MAX_GROUP_MEMBERS; ++i) {
-		if (members[i] && members[i]->IsClient()) {
-			auto *client = members[i]->CastToClient();
-			if (!first)
-				client->RemoveAutoXTargets();
-			client->SetXTargetAutoMgr(raid->GetXTargetAutoMgr());
-			if (!client->GetXTargetAutoMgr()->empty())
-				client->SetDirtyAutoHaters();
-		}
-	}
 }
 
 void Group::SetMainTank(const char *NewMainTankName)
