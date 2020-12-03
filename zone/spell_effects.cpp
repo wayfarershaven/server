@@ -287,11 +287,9 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 				if (spell_id == 2751 && caster) //Manaburn
 				{
 					int MBMult = zone->random.Int(150, 200); //Manaburn deals 150-200% of mana
-					int32 MBCap = 9492;  //Manaburn Damage Cap
 					dmg = caster->GetMana()*MBMult / 100;
-					if (dmg > MBCap)
-						dmg = MBCap;
 					dmg *= -1;	//Damage should be negative
+					dmg = caster->GetActSpellDamage(spell_id, dmg, this); // Spell can crit, so need this.  Damage cap handled in this function.
 					LogSpells("MBMult [{}], Mana [{}], Damage [{}]", MBMult, caster->GetMana(), dmg);
 					caster->SetMana(0);
 				} else if (spell_id == 2755 && caster) //Lifeburn
@@ -3090,6 +3088,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 			case SE_Sanctuary:
 			case SE_PetMeleeMitigation:
 			case SE_SkillProc:
+			case SE_IncreaseArchery:
 			case SE_SkillProcSuccess:
 			case SE_SpellResistReduction:
 			{
