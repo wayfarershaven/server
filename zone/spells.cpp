@@ -1451,8 +1451,12 @@ void Mob::CastedSpellFinished(uint16 spell_id, uint32 target_id, CastingSlot slo
 		{
 			Client *c = CastToClient();
 			c->CheckSongSkillIncrease(spell_id);
-			if (spells[spell_id].EndurTimerIndex > 0 && slot < CastingSlot::MaxGems)
+			if (!IsFromItem) {
+				c->CheckSongSkillIncrease(spell_id);
+			}
+			if (spells[spell_id].EndurTimerIndex > 0 && slot < CastingSlot::MaxGems) {
 				c->SetLinkedSpellReuseTimer(spells[spell_id].EndurTimerIndex, spells[spell_id].recast_time / 1000);
+			}
 			c->MemorizeSpell(static_cast<uint32>(slot), spell_id, memSpellSpellbar);
 		}
 		LogSpells("Bard song [{}] should be started", spell_id);
@@ -1473,7 +1477,7 @@ void Mob::CastedSpellFinished(uint16 spell_id, uint32 target_id, CastingSlot slo
 			SetMana(GetMana());
 
 			// skills
-			if (EQ::skills::IsCastingSkill(spells[spell_id].skill)) {
+			if (EQ::skills::IsCastingSkill(spells[spell_id].skill) && !IsFromItem) {
 				c->CheckIncreaseSkill(spells[spell_id].skill, nullptr);
 
 				// increased chance of gaining channel skill if you regained concentration
