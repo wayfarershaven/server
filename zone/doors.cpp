@@ -58,6 +58,7 @@ Doors::Doors(const Door *door) :
 	this->guild_id                = door->guild_id;
 	this->lockpick                = door->lock_pick;
 	this->key_item_id             = door->keyitem;
+	this->alt_key_id			  = door->altkeyitem;
 	this->no_key_ring             = door->nokeyring;
 	this->trigger_door            = door->trigger_door;
 	this->trigger_type            = door->trigger_type;
@@ -94,6 +95,7 @@ Doors::Doors(const char *model, const glm::vec4 &position, uint8 open_type, uint
 	this->guild_id                = 0;
 	this->lockpick                = 0;
 	this->key_item_id             = 0;
+	this->alt_key_id			  = 0;
 	this->no_key_ring             = 0;
 	this->trigger_door            = 0;
 	this->trigger_type            = 0;
@@ -144,11 +146,12 @@ void Doors::HandleClick(Client* sender, uint8 trigger) {
 	);
 
 	Log(Logs::Detail, Logs::Doors,
-	    "incline %d, open_type %d, lockpick %d, key %d, nokeyring %d, trigger %d type %d, param %d",
+	    "incline %d, open_type %d, lockpick %d, keys %d %d, nokeyring %d, trigger %d type %d, param %d",
 	    this->incline,
 	    this->open_type,
 	    this->lockpick,
 	    this->key_item_id,
+	    this->alt_key_id,
 	    this->no_key_ring,
 	    this->trigger_door,
 	    this->trigger_type,
@@ -210,15 +213,20 @@ void Doors::HandleClick(Client* sender, uint8 trigger) {
 	// todo: if IsDzDoor() call Client::MovePCDynamicZone(target_zone_id) (for systems that use dzs)
 
 	uint32 required_key_item       = GetKeyItem();
+	uint32 alt_key_item			   = GetAltKeyItem();
 	uint8  disable_add_to_key_ring = GetNoKeyring();
 	uint32 player_has_key          = 0;
+	uint32 player_has_alt_key	   = 0;
 	uint32 player_key              = 0;
 
 	const EQ::ItemInstance *lock_pick_item = sender->GetInv().GetItem(EQ::invslot::slotCursor);
 	player_has_key = static_cast<uint32>(sender->GetInv().HasItem(required_key_item, 1));
+	player_has_alt_key = static_cast<uint32>(sender->GetInv().HasItem(alt_key_item, 1));
 
 	if (player_has_key != INVALID_INDEX) {
 		player_key = required_key_item;
+	} else if (player_has_alt_key != INVALID_INDEX) {
+		player_key = alt_key_item;
 	}
 
 	/**
@@ -304,7 +312,7 @@ void Doors::HandleClick(Client* sender, uint8 trigger) {
 			 * Key required and client is using the right key
 			 */
 			if (required_key_item &&
-			    (required_key_item == player_key)) {
+			    (required_key_item == player_key) || (alt_key_item && (alt_key_item == player_key))) {
 
 				if (!disable_add_to_key_ring) {
 					sender->KeyRingAdd(player_key);
@@ -449,7 +457,7 @@ void Doors::HandleClick(Client* sender, uint8 trigger) {
 		 */
 		else if (
 				(!IsDoorOpen() || open_type == 58) &&
-				(required_key_item && ((required_key_item == player_key) || sender->GetGM()))
+				(required_key_item && ((required_key_item == player_key) || (alt_key_item && (alt_key_item == player_key)) || sender->GetGM()))
 		) {
 
 			if (!disable_add_to_key_ring) {
@@ -714,7 +722,8 @@ bool ZoneDatabase::LoadDoors(int32 door_count, Door *into, const char *zone_name
 			" 	size, "
 			" 	is_ldon_door, "
 			" 	client_version_mask, "
-			" 	disable_timer  "
+			" 	disable_timer,  "
+   			"   altkeyitem "
 			" FROM "
 			" 	doors  "
 			" WHERE "
@@ -770,6 +779,7 @@ bool ZoneDatabase::LoadDoors(int32 door_count, Door *into, const char *zone_name
 		into[row_index].is_ldon_door        = static_cast<uint8>(atoi(row[25]));
 		into[row_index].client_version_mask = (uint32) strtoul(row[26], nullptr, 10);
 		into[row_index].disable_timer       = static_cast<uint8>(atoi(row[27]));
+		into[row_index].altkeyitem 			= static_cast<uint32>(atoi(row[28]));
 
 		Log(Logs::Detail, Logs::Doors, "Door Load: db id: %u, door_id %u disable_timer: %i",
 			into[row_index].db_id,

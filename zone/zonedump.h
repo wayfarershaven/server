@@ -230,6 +230,7 @@ struct Door {
 	float	dest_heading;
 	uint8	is_ldon_door;
 	uint32	client_version_mask;
+	uint32	altkeyitem;
 };
 
 #pragma pack()
