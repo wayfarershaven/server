@@ -1569,6 +1569,7 @@ public:
 	void ResetHPUpdateTimer() { hpupdate_timer.Start(); }
 
 	void SendHPUpdateMarquee();
+	std::string CreateSayLink(const char* message, const char* name);
 
 	void CheckRegionTypeChanges();
 
