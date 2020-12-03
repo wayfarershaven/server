@@ -136,6 +136,7 @@ public:
 	bool LoadGroundSpawns();
 	bool LoadZoneCFG(const char *filename, uint16 instance_id);
 	bool LoadZoneObjects();
+	bool IsSpecialBindLocation(const glm::vec4& location);
 	bool Process();
 	bool SaveZoneCFG();
 
