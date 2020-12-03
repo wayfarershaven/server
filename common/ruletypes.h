@@ -400,6 +400,8 @@ RULE_INT(Combat, ThrowingCritDifficulty, 1100, "Value against which is rolled to
 RULE_BOOL(Combat, NPCCanCrit, false, "Setting whether an NPC can land critical hits")
 RULE_BOOL(Combat, UseIntervalAC, true, "Switch whether bonuses, armour class, multipliers, classes and caps should be considered in the calculation of damage values")
 RULE_INT(Combat, PetAttackMagicLevel, 30, "Level at which pets can cause magic damage")
+RULE_INT(Combat, LevelDifferenceRollCheck, 20, "")
+RULE_REAL(Combat, LevelDifferenceRollBonus, 0.5, "")
 RULE_BOOL(Combat, EnableFearPathing, true, "Setting whether to use pathing during fear")
 RULE_BOOL(Combat, FleeGray, true, "If true FleeGrayHPRatio will be used")
 RULE_INT(Combat, FleeGrayHPRatio, 50, "HP percentage when a Gray NPC begins to flee")
