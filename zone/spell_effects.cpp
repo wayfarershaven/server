@@ -510,10 +510,13 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 #ifdef SPELL_EFFECT_SPAM
 						LogDebug("Succor/Evacuation Spell In Same Zone");
 #endif
-							if(IsClient())
-								CastToClient()->MovePC(zone->GetZoneID(), zone->GetInstanceID(), x, y, z, heading, 0, EvacToSafeCoords);
-							else
-								GMMove(x, y, z, heading);
+						if (IsClient()) {
+							CastToClient()->MovePC(zone->GetZoneID(), zone->GetInstanceID(), x, y, z, heading, 0,
+												   EvacToSafeCoords);
+						} else {
+							GMMove(x, y, z, heading);
+						}
+						entity_list.ClearAggro(this);
 					}
 					else {
 #ifdef SPELL_EFFECT_SPAM
@@ -1530,6 +1533,10 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 				snprintf(effect_desc, _EDLEN, "Memory Blur: %d", effect_value);
 #endif
 				int wipechance = spells[spell_id].base[i];
+				// if 0 chance of wipe then special case of clearing aggro for clients
+				if (!wipechance && IsClient()) {
+					entity_list.ClearAggro(this);
+				}
 				int bonus = 0;
 
 				if (caster){
