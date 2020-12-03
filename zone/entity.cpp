@@ -1831,6 +1831,17 @@ Corpse *EntityList::GetCorpseByOwner(Client *client)
 	return nullptr;
 }
 
+Corpse *EntityList::GetCorpseByOwnerName(const char *name)
+{
+	auto it = corpse_list.begin();
+	while (it != corpse_list.end()) {
+		if (strcasecmp(it->second->GetOwnerName(), name) == 0)
+			return it->second;
+		++it;
+	}
+	return nullptr;
+}
+
 Corpse *EntityList::GetCorpseByOwnerWithinRange(Client *client, Mob *center, int range)
 {
 	auto it = corpse_list.begin();
@@ -3145,20 +3156,36 @@ void EntityList::ListNPCCorpses(Client *client)
 	client->Message(Chat::White, "%d npc corpses listed.", x);
 }
 
-void EntityList::ListPlayerCorpses(Client *client)
+void EntityList::ListPlayerCorpses(Client *client, Client *target)
 {
 	uint32 x = 0;
 
 	auto it = corpse_list.begin();
 	client->Message(Chat::White, "Player Corpses in the zone:");
 	while (it != corpse_list.end()) {
-		if (it->second->IsPlayerCorpse()) {
-			client->Message(Chat::White, "  %5d: %s", it->first, it->second->GetName());
+		if (it->second->IsPlayerCorpse() && (!target || strcasecmp(it->second->GetOwnerName(), target->GetName()) == 0)) {
+			client->Message(0, "  %5d: %s - %f, %f, %f, corpse_db_id: %u", it->first, it->second->GetName(), it->second->GetX(), it->second->GetY(), it->second->GetZ(), it->second->GetCorpseDBID());
 			x++;
 		}
 		++it;
 	}
 	client->Message(Chat::White, "%d player corpses listed.", x);
+}
+
+void EntityList::ListAllCorpses(Client *client, Mob *target)
+{
+	uint32 x = 0;
+
+	auto it = corpse_list.begin();
+	client->Message(0, "Corpses in the zone:");
+	while (it != corpse_list.end()) {
+		if (!target || strcasecmp(it->second->GetOwnerName(), target->GetName()) == 0) {
+			client->Message(0, "  %5d: %s - %f, %f, %f, corpse_db_id: %u", it->first, it->second->GetName(), it->second->GetX(), it->second->GetY(), it->second->GetZ(), it->second->GetCorpseDBID());
+			x++;
+		}
+		++it;
+	}
+	client->Message(0, "%d corpses listed.", x);
 }
 
 // returns the number of corpses deleted. A negative number indicates an error code.

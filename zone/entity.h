@@ -200,6 +200,7 @@ public:
 	Raid *GetRaidByLeaderName(const char *leader);
 
 	Corpse *GetCorpseByOwner(Client* client);
+	Corpse *GetCorpseByOwnerName(const char *name);
 	Corpse *GetCorpseByOwnerWithinRange(Client* client, Mob* center, int range);
 	inline Corpse *GetCorpseByID(uint16 id)
 	{
@@ -438,7 +439,8 @@ public:
 	void	AddLootToNPCS(uint32 item_id, uint32 count);
 
 	void	ListNPCCorpses(Client* client);
-	void	ListPlayerCorpses(Client* client);
+	void	ListPlayerCorpses(Client* client, Client* target=nullptr);
+	void	ListAllCorpses(Client* client, Mob* target = nullptr);
 	int32	DeleteNPCCorpses();
 	int32	DeletePlayerCorpses();
 	void	CorpseFix(Client* c);
