@@ -501,6 +501,16 @@ bool isAlphaNumeric(const char *text)
 	return true;
 }
 
+void replace_all(std::string& in, std::string old, std::string repl)
+{
+	for (std::string::size_type pos = 0;
+		 (pos = in.find(old, pos)) != std::string::npos;
+		 pos += repl.size())
+	{
+		in.replace(pos, old.size(), repl);
+	}
+}
+
 // Function to convert single digit or two digit number into words
 std::string convert2digit(int n, std::string suffix)
 {
