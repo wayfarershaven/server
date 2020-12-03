@@ -1802,7 +1802,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 					Group* group = entity_list.GetGroupByClient(caster->CastToClient());
 					if(group) {
 						if(!group->IsGroupMember(TargetClient)) {
-							Message(Chat::Red, "Your target must be a group member for this spell.");
+							caster->Message(Chat::Red, "Your target must be a group member for this spell.");
 							break;
 						}
 					}
@@ -2219,7 +2219,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 					if (caster->IsClient()) {
 						Group* group = entity_list.GetGroupByClient(caster->CastToClient());
 						if (!group || !group->IsGroupMember(this->CastToClient())) {
-							Message(13, "Your target must be a group member for this spell.");
+							caster->Message(Chat::Red, "Your target must be a group member for this spell.");
 							break;
 						}
 						// clear aggro when summoned in zone
