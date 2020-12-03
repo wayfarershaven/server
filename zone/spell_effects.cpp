@@ -1799,7 +1799,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 						TargetClient = this->CastToClient();
 
 					// We now have a valid target for this spell. Either the caster himself or a targetted player. Lets see if the target is in the group.
-					Group* group = entity_list.GetGroupByClient(TargetClient);
+					Group* group = entity_list.GetGroupByClient(caster->CastToClient());
 					if(group) {
 						if(!group->IsGroupMember(TargetClient)) {
 							Message(Chat::Red, "Your target must be a group member for this spell.");
@@ -2216,9 +2216,16 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 					break;
 				}
 				if (IsClient()) {
-					// clear aggro when summoned in zone
-					if (caster->CalculateDistance(GetX(), GetY(), GetZ()) >= RuleR(Spells, CallOfTheHeroAggroClearDist)) {
-						entity_list.ClearAggro(this);
+					if (caster->IsClient()) {
+						Group* group = entity_list.GetGroupByClient(caster->CastToClient());
+						if (!group || !group->IsGroupMember(this->CastToClient())) {
+							Message(13, "Your target must be a group member for this spell.");
+							break;
+						}
+						// clear aggro when summoned in zone
+						if (caster->CalculateDistance(GetX(), GetY(), GetZ()) >= RuleR(Spells, CallOfTheHeroAggroClearDist)) {
+							entity_list.ClearAggro(this);
+						}
 					}
 					CastToClient()->MovePC(zone->GetZoneID(), zone->GetInstanceID(), caster->GetX(),
 							       caster->GetY(), caster->GetZ(), caster->GetHeading(), 2,
@@ -2227,7 +2234,6 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 				} else {
 					caster->Message(Chat::Red, "This spell can only be cast on players.");
 				}
-
 				break;
 			}
 
