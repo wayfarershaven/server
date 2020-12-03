@@ -359,7 +359,7 @@ bool Mob::CheckWillAggro(Mob *mob) {
 		(
 				(mob->IsClient() && mob->CastToClient()->IsSitting())
 				|| (mob->GetLevelCon(GetLevel()) != CON_GREEN)
-				|| ( GetLevel() >= RuleB(Aggro, GrayAggroLevel))
+				|| ( GetLevel() >= RuleI(Aggro, GrayAggroLevel))
 				|| ( RuleB(Aggro, UndeadAlwaysAggro) && GetBodyType() == BT_Undead)
 				|| ( GetINT() <= RuleI(Aggro, IntAggroThreshold) )
 

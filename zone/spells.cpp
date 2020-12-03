@@ -3008,7 +3008,7 @@ int Mob::CheckStackConflict(uint16 spellid1, int caster_level1, uint16 spellid2,
 			if(effect2 == SE_StackingCommand_Overwrite)
 			{
 				overwrite_effect = sp2.base[i];
-				overwrite_slot = sp2.formula[i] - 201;	//they use base 1 for slots, we use base 0
+				overwrite_slot = sp2.base2[i];
 				overwrite_below_value = sp2.max[i];
 				if(sp1.effectid[overwrite_slot] == overwrite_effect)
 				{
@@ -3017,7 +3017,7 @@ int Mob::CheckStackConflict(uint16 spellid1, int caster_level1, uint16 spellid2,
 					LogSpells("[{}] ([{}]) overwrites existing spell if effect [{}] on slot [{}] is below [{}]. Old spell has value [{}] on that slot/effect. [{}]",
 						sp2.name, spellid2, overwrite_effect, overwrite_slot, overwrite_below_value, sp1_value, (sp1_value < overwrite_below_value)?"Overwriting":"Not overwriting");
 
-					if(sp1_value < overwrite_below_value)
+					if(sp1_value > 0 && sp1_value < overwrite_below_value)
 					{
 						LogSpells("Overwrite spell because sp1_value < overwrite_below_value");
 						return 1;			// overwrite spell if its value is less
@@ -3030,8 +3030,8 @@ int Mob::CheckStackConflict(uint16 spellid1, int caster_level1, uint16 spellid2,
 			} else if (effect1 == SE_StackingCommand_Block)
 			{
 				blocked_effect = sp1.base[i];
-				blocked_slot = sp1.formula[i] - 201;
 				blocked_below_value = sp1.max[i];
+				blocked_slot = sp1.base2[i];
 
 				if (sp2.effectid[blocked_slot] == blocked_effect)
 				{
@@ -3040,7 +3040,7 @@ int Mob::CheckStackConflict(uint16 spellid1, int caster_level1, uint16 spellid2,
 					LogSpells("[{}] ([{}]) blocks effect [{}] on slot [{}] below [{}]. New spell has value [{}] on that slot/effect. [{}]",
 						sp1.name, spellid1, blocked_effect, blocked_slot, blocked_below_value, sp2_value, (sp2_value < blocked_below_value)?"Blocked":"Not blocked");
 
-					if (sp2_value < blocked_below_value)
+					if (sp2_value > 0 && sp2_value < blocked_below_value)
 					{
 						LogSpells("Blocking spell because sp2_Value < blocked_below_value");
 						return -1;		//blocked
@@ -3072,8 +3072,9 @@ int Mob::CheckStackConflict(uint16 spellid1, int caster_level1, uint16 spellid2,
 	bool values_equal = true;
 	for(i = 0; i < EFFECT_COUNT; i++)
 	{
-		if(IsBlankSpellEffect(spellid1, i) || IsBlankSpellEffect(spellid2, i))
+		if (IsBlankSpellEffect(spellid1, i) || IsBlankSpellEffect(spellid2, i)) {
 			continue;
+		}
 
 		effect1 = sp1.effectid[i];
 		effect2 = sp2.effectid[i];
@@ -3127,6 +3128,13 @@ int Mob::CheckStackConflict(uint16 spellid1, int caster_level1, uint16 spellid2,
 		sp1_value = CalcSpellEffectValue(spellid1, i, caster_level1);
 		sp2_value = CalcSpellEffectValue(spellid2, i, caster_level2);
 
+		// Spells like SoW won't stack if a snare effect is already in place.
+		if (effect2 == SE_MovementSpeed) {
+			if (effect1 == SE_MovementSpeed && sp1_value < 0 && sp2_value > 0)
+				return -1;
+			continue;
+		}
+
 		// some spells are hard to compare just on value. attack speed spells
 		// have a value that's a percentage for instance
 		if
@@ -3139,18 +3147,21 @@ int Mob::CheckStackConflict(uint16 spellid1, int caster_level1, uint16 spellid2,
 			sp2_value -= 100;
 		}
 
-		if(sp1_value < 0)
-			sp1_value = 0 - sp1_value;
-		if(sp2_value < 0)
-			sp2_value = 0 - sp2_value;
+		if(sp1_value < 0) {
+			sp1_value = -sp1_value;
+		}
+		if(sp2_value < 0) {
+			sp2_value = -sp2_value;
+		}
 
 		if(sp2_value < sp1_value) {
 			LogSpells("Spell [{}] (value [{}]) is not as good as [{}] (value [{}]). Rejecting [{}]",
 				sp2.name, sp2_value, sp1.name, sp1_value, sp2.name);
 			return -1;	// can't stack
 		}
-		if (sp2_value != sp1_value)
+		if (sp2_value != sp1_value) {
 			values_equal = false;
+		}
 		//we dont return here... a better value on this one effect dosent mean they are
 		//all better...
 
