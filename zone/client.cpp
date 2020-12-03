@@ -644,15 +644,16 @@ bool Client::Save(uint8 iCommitNow) {
 	m_pp.heading = m_Position.w;
 
 	/* Mana and HP */
+	// If the client is dead, HP, Mana and Endurance are fully restored.
 	if (GetHP() <= 0) {
-		m_pp.cur_hp = GetMaxHP();
+		m_pp.cur_hp    = GetMaxHP();
+		m_pp.mana      = GetMaxMana();
+		m_pp.endurance = GetMaxEndurance();
+	} else { 	// Otherwise, no changes.
+		m_pp.cur_hp    = GetHP();
+		m_pp.mana      = current_mana;
+		m_pp.endurance = current_endurance;
 	}
-	else {
-		m_pp.cur_hp = GetHP();
-	}
-
-	m_pp.mana = current_mana;
-	m_pp.endurance = current_endurance;
 
 	/* Save Character Currency */
 	database.SaveCharacterCurrency(CharacterID(), &m_pp);
