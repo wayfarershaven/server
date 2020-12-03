@@ -9680,7 +9680,7 @@ void Client::Handle_OP_Mend(const EQApplicationPacket *app)
 
 	int mendhp = GetMaxHP() / 4;
 	int currenthp = GetHP();
-	if (zone->random.Int(0, 199) < (int)GetSkill(EQ::skills::SkillMend)) {
+	if (zone->random.Int(0, 99) < (int)GetSkill(EQ::skills::SkillMend)) {
 
 		int criticalchance = spellbonuses.CriticalMend + itembonuses.CriticalMend + aabonuses.CriticalMend;
 
@@ -9699,7 +9699,7 @@ void Client::Handle_OP_Mend(const EQApplicationPacket *app)
 		0 skill - 25% chance to worsen
 		20 skill - 23% chance to worsen
 		50 skill - 16% chance to worsen */
-		if ((GetSkill(EQ::skills::SkillMend) <= 75) && (zone->random.Int(GetSkill(EQ::skills::SkillMend), 100) < 75) && (zone->random.Int(1, 3) == 1))
+		if ((GetSkill(EQ::skills::SkillMend) <= 50) && (zone->random.Int(GetSkill(EQ::skills::SkillMend), 100) < 75) && (zone->random.Int(1, 3) == 1))
 		{
 			SetHP(currenthp > mendhp ? (GetHP() - mendhp) : 1);
 			SendHPUpdate();
