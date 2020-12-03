@@ -154,6 +154,7 @@ RULE_BOOL(Character, AllowMQTarget, false, "Disables putting players in the 'hac
 RULE_BOOL(Character, UseOldBindWound, false, "Uses the original bind wound behavior")
 RULE_BOOL(Character, GrantHoTTOnCreate, false, "Grant Health of Target's Target leadership AA on character creation")
 RULE_BOOL(Character, UseOldConSystem, false, "Setting whether the pre SoF era consider system should be used")
+RULE_INT(Character, UnusedAAPointCap, 30, "Cap for Unused AA Points.  Default: 30.  NOTE: DO NOT LOWER THIS WITHOUT KNOWING WHAT YOU ARE DOING.  MAY RESULT IN PLAYERS LOSING AAs.")
 RULE_BOOL(Character, OPClientUpdateVisualDebug, false, "Shows a pulse and forward directional particle each time the client sends its position to server")
 RULE_BOOL(Character, AllowCrossClassTrainers, false, "If the value is true, a player can also train with other class Guildmasters.")
 RULE_BOOL(Character, PetsUseReagents, true, "Conjuring pets consumes reagents")
