@@ -474,6 +474,7 @@ RULE_INT(Combat, SneakPullAssistRange, 400, "Modified range of assist for sneak 
 RULE_INT(Combat, RampageDistance, 100, "Distance a mob can Rampage")
 RULE_INT(Combat, TripleAttackChanceWarrior, 125, "Innate Chance for Warrior to Triple Attack after a Double Attack (125 = 12.5%). DEFAULT: 125")
 RULE_INT(Combat, TripleAttackChanceMonk, 200, "Innate Chance for Monk to Triple Attack after a Double Attack (200 = 20%). DEFAULT: 200")
+RULE_REAL(Combat, SlayDamageAdjustment, 1.0, "Slay Damage Adjustment")
 RULE_CATEGORY_END()
 
 RULE_CATEGORY(NPC)
