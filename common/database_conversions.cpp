@@ -650,6 +650,7 @@ bool Database::CheckDatabaseConvertPPDeblob(){
 				" 	`career_radiant_crystals` int(11) UNSIGNED NOT NULL DEFAULT 0,     "
 				" 	`ebon_crystals` int(11) UNSIGNED NOT NULL DEFAULT 0,               "
 				" 	`career_ebon_crystals` int(11) UNSIGNED NOT NULL DEFAULT 0,        "
+				"   `platinum_shared` int(11) UNSIGNED NOT NULL DEFAULT 0,             "
 				" 	PRIMARY KEY (`id`),                                                "
 				"   KEY `id` (`id`)                                                    "
 				" ) ENGINE=InnoDB DEFAULT CHARSET=latin1;             "
@@ -959,8 +960,8 @@ bool Database::CheckDatabaseConvertPPDeblob(){
 				std::string rquery = StringFormat("REPLACE INTO `character_currency` (id, platinum, gold, silver, copper,"
 					"platinum_bank, gold_bank, silver_bank, copper_bank,"
 					"platinum_cursor, gold_cursor, silver_cursor, copper_cursor, "
-					"radiant_crystals, career_radiant_crystals, ebon_crystals, career_ebon_crystals)"
-					"VALUES (%u, %u, %u, %u, %u, %u, %u, %u, %u, %u, %u, %u, %u, %u, %u, %u, %u)",
+					"radiant_crystals, career_radiant_crystals, ebon_crystals, career_ebon_crystals, platinum_shared)"
+					"VALUES (%u, %u, %u, %u, %u, %u, %u, %u, %u, %u, %u, %u, %u, %u, %u, %u, %u, %u)",
 					character_id,
 					pp->platinum,
 					pp->gold,
@@ -977,7 +978,8 @@ bool Database::CheckDatabaseConvertPPDeblob(){
 					pp->currentRadCrystals,
 					pp->careerRadCrystals,
 					pp->currentEbonCrystals,
-					pp->careerEbonCrystals
+					pp->careerEbonCrystals,
+					pp->platinum_shared
 					);
 				auto results = QueryDatabase(rquery);
 
