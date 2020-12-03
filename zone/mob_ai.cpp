@@ -1066,8 +1066,9 @@ void Mob::AI_Process() {
 	}
 
 	if (engaged) {
-		if (!(m_PlayerState & static_cast<uint32>(PlayerState::Aggressive)))
+		if (!(m_PlayerState & static_cast<uint32>(PlayerState::Aggressive))) {
 			SendAddPlayerState(PlayerState::Aggressive);
+		}
 
 		// NPCs will forget people after 10 mins of not interacting with them or out of range
 		// both of these maybe zone specific, hardcoded for now
@@ -1076,15 +1077,16 @@ void Mob::AI_Process() {
 			if (hate_list.IsHateListEmpty()) {
 				AI_Event_NoLongerEngaged();
 				zone->DelAggroMob();
-				if (IsNPC() && !RuleB(Aggro, AllowTickPulling))
+				if (IsNPC() && !RuleB(Aggro, AllowTickPulling)) {
 					ResetAssistCap();
+				}
 			}
 		}
 		// we are prevented from getting here if we are blind and don't have a target in range
 		// from above, so no extra blind checks needed
-		if ((IsRooted() && !GetSpecialAbility(IGNORE_ROOT_AGGRO_RULES)) || IsBlind())
+		if ((IsRooted() && !GetSpecialAbility(IGNORE_ROOT_AGGRO_RULES)) || IsBlind()) {
 			SetTarget(hate_list.GetClosestEntOnHateList(this));
-		else {
+		} else {
 			if (AI_target_check_timer->Check()) {
 				if (IsFocused()) {
 					if (!target) {
@@ -1092,15 +1094,18 @@ void Mob::AI_Process() {
 					}
 				}
 				else {
-					if (!ImprovedTaunt())
+					if (IsPet() && GetPetTargetLockID()) {
+						SetTarget(hate_list.GetEntOnHateListByID(GetPetTargetLockID()));
+					} else if (!ImprovedTaunt()) {
 						SetTarget(hate_list.GetEntWithMostHateOnList(this));
+					}
 				}
-
 			}
 		}
 
-		if (!target)
+		if (!target) {
 			return;
+		}
 
 		if (target->IsCorpse()) {
 			RemoveFromHateList(this);

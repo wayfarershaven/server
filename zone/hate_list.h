@@ -44,6 +44,7 @@ public:
 	Mob *GetClosestEntOnHateList(Mob *hater, bool skip_mezzed = false);
 	Mob *GetDamageTopOnHateList(Mob *hater); // didn't add 'skip_mezzed' due to calls being in ::Death()
 	Mob *GetEntWithMostHateOnList(Mob *center, Mob *skip = nullptr, bool skip_mezzed = false);
+	Mob *GetEntOnHateListByID(uint16 mobId);
 	Mob *GetRandomEntOnHateList(bool skip_mezzed = false);
 	Mob *GetEntWithMostHateOnList(bool skip_mezzed = false);
 	Mob *GetEscapingEntOnHateList(); // returns first eligble entity
