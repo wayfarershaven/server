@@ -29,6 +29,7 @@
 
 #include <limits.h>
 #include <math.h>
+#include <vector>
 #include <sstream>
 #include <algorithm>
 
@@ -577,27 +578,27 @@ void Mob::SetInvisible(uint8 state /* = 0*/, uint8 type /*= 0*/)
 //check to see if `this` is invisible to `other`
 bool Mob::IsInvisible(Mob* other) const
 {
-	if(!other)
-		return(false);
-
-	uint8 SeeInvisBonus = 0;
-	if (IsClient())
-		SeeInvisBonus = aabonuses.SeeInvis;
+	if(!other) {
+		return (false);
+	}
 
 	//check regular invisibility
-	if (invisible && invisible > (other->SeeInvisible()))
+	if (invisible && invisible > other->SeeInvisible()) {
 		return true;
+	}
 
 	//check invis vs. undead
 	if (other->GetBodyType() == BT_Undead || other->GetBodyType() == BT_SummonedUndead) {
-		if(invisible_undead && !other->SeeInvisibleUndead())
+		if(invisible_undead && !other->SeeInvisibleUndead()) {
 			return true;
+		}
 	}
 
 	//check invis vs. animals...
 	if (other->GetBodyType() == BT_Animal){
-		if(invisible_animals && !other->SeeInvisible())
+		if(invisible_animals && !other->SeeInvisible()) {
 			return true;
+		}
 	}
 
 	if(hidden){
@@ -614,8 +615,9 @@ bool Mob::IsInvisible(Mob* other) const
 
 	//handle sneaking
 	if(sneaking) {
-		if(BehindMob(other, GetX(), GetY()) )
+		if(BehindMob(other, GetX(), GetY())) {
 			return true;
+		}
 	}
 
 	return(false);
@@ -2442,6 +2444,15 @@ void Mob::ChangeSize(float in_size = 0, bool bNoRestriction) {
 	//End of Size Code
 	size = in_size;
 	SendAppearancePacket(AT_Size, (uint32) in_size);
+}
+
+uint8 Mob::SeeInvisible()
+{
+	// it's not clear how multiple sources of see invis should be handled - for now, simply taking a maximum of all sources
+	std::vector<uint8> v{ see_invis, aabonuses.SeeInvis, spellbonuses.SeeInvis, itembonuses.SeeInvis };
+	auto biggest = std::max_element(std::begin(v), std::end(v));
+
+	return *biggest;
 }
 
 Mob* Mob::GetOwnerOrSelf() {
