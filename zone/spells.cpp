@@ -4040,7 +4040,8 @@ bool Mob::SpellOnTarget(uint16 spell_id, Mob *spelltar, bool reflect, bool use_r
 			}
 
 			Log(Logs::Detail, Logs::Aggro, "Witness Chance: %d", chance);
-			if (zone->random.Roll(chance)) {
+			// Roll the witness check if we are a client
+			if (IsClient() && zone->random.Roll(chance)) {
 				Log(Logs::Detail, Logs::Aggro, "Witness Check passed no aggro given");
 				entity_list.AddHealAggro(spelltar, this, aggro_amount);
 			}
@@ -4049,7 +4050,7 @@ bool Mob::SpellOnTarget(uint16 spell_id, Mob *spelltar, bool reflect, bool use_r
 			if (aggro_amount > RuleI(Aggro, MaxScalingProcAggro)) {
 				aggro_amount = RuleI(Aggro, MaxScalingProcAggro);
 			}
-			Log(Logs::Detail, Logs::Aggro, "Adding bebefical spell aggro amount %d to %s", aggro_amount, spelltar->GetCleanName());
+			Log(Logs::Detail, Logs::Aggro, "Adding benefical spell aggro amount %d to %s", aggro_amount, spelltar->GetCleanName());
 			entity_list.AddHealAggro(spelltar, this, aggro_amount);
 		}
 	}
