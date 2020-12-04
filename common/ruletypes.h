@@ -680,6 +680,7 @@ RULE_BOOL(Bazaar, AuditTrail, false, "Setting whether a path to the trader shoul
 RULE_INT(Bazaar, MaxSearchResults, 50, "Maximum number of search results in Bazaar")
 RULE_BOOL(Bazaar, EnableWarpToTrader, true, "Setting whether teleport to the selected trader should be active")
 RULE_INT(Bazaar, MaxBarterSearchResults, 200, "The maximum results returned in the /barter search")
+RULE_BOOL(Bazaar, BuyerEnabled, true, "Allow Barter Mode")
 RULE_CATEGORY_END()
 
 RULE_CATEGORY(Mail)
