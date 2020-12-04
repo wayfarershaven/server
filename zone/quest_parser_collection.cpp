@@ -365,6 +365,7 @@ int QuestParserCollection::EventPlayerGlobal(QuestEventID evt, Client *client, s
 int QuestParserCollection::EventItem(QuestEventID evt, Client *client, EQ::ItemInstance *item, Mob *mob, std::string data, uint32 extra_data,
 									 std::vector<EQ::Any> *extra_pointers) {
 	// needs pointer validation check on 'item' argument
+	if(!item) { return 0; }
 	
 	std::string item_script;
 	if(item->GetItem()->ScriptFileID != 0) {
