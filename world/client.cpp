@@ -1523,16 +1523,17 @@ bool Client::OPCharCreate(char *name, CharCreate_Struct *cc)
 	pp.hunger_level = 6000;
 	pp.thirst_level = 6000;
 
+	/* Set default skills for everybody */
+	pp.skills[EQ::skills::SkillSwimming] = RuleI(Skills, SwimmingStartValue);
+	pp.skills[EQ::skills::SkillSenseHeading] = RuleI(Skills, SenseHeadingStartValue);
+
 	/* Set Racial and Class specific language and skills */
 	SetRacialLanguages(&pp);
 	SetRaceStartingSkills(&pp);
 	SetClassStartingSkills(&pp);
 	SetClassLanguages(&pp);
 
-	pp.skills[EQ::skills::SkillSwimming] = RuleI(Skills, SwimmingStartValue);
-	pp.skills[EQ::skills::SkillSenseHeading] = RuleI(Skills, SenseHeadingStartValue);
-
-//	strcpy(pp.servername, WorldConfig::get()->ShortName.c_str());
+	//	strcpy(pp.servername, WorldConfig::get()->ShortName.c_str());
 
 	memset(pp.spell_book, 0xFF, (sizeof(uint32) * EQ::spells::SPELLBOOK_SIZE));
 	memset(pp.mem_spells, 0xFF, (sizeof(uint32) * EQ::spells::SPELL_GEM_COUNT));
@@ -1601,15 +1602,6 @@ bool Client::OPCharCreate(char *name, CharCreate_Struct *cc)
 	if (cc->tutorial && RuleB(World, EnableTutorialButton)) {
 		pp.zone_id = RuleI(World, TutorialZoneID);
 		content_db.GetSafePoints(ZoneName(pp.zone_id), 0, &pp.x, &pp.y, &pp.z);
-	}
-
-	/*  Will either be the same as home or tutorial if enabled. */
-	if(RuleB(World, StartZoneSameAsBindOnCreation))	{
-		pp.binds[0].zone_id = pp.zone_id;
-		pp.binds[0].x = pp.x;
-		pp.binds[0].y = pp.y;
-		pp.binds[0].z = pp.z;
-		pp.binds[0].heading = pp.heading;
 	}
 
 	Log(Logs::Detail, Logs::WorldServer, "Current location: %s (%d)  %0.2f, %0.2f, %0.2f, %0.2f",
@@ -1925,7 +1917,6 @@ void Client::SetRaceStartingSkills( PlayerProfile_Struct *pp )
 	switch( pp->race )
 	{
 	case BARBARIAN:
-	case DWARF:
 	case ERUDITE:
 	case HALF_ELF:
 	case HIGH_ELF:
@@ -1935,6 +1926,11 @@ void Client::SetRaceStartingSkills( PlayerProfile_Struct *pp )
 	case DRAKKIN:	//Drakkin are supposed to get a starting AA Skill
 		{
 			// No Race Specific Skills
+			break;
+		}
+	case DWARF:
+		{
+			pp->skills[EQ::skills::SkillSenseHeading] = 50;
 			break;
 		}
 	case DARK_ELF:

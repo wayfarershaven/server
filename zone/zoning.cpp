@@ -717,10 +717,10 @@ void Client::ZonePC(uint32 zoneID, uint32 instance_id, float x, float y, float z
 			m_Position = m_ZoneSummonLocation;
 			break;
 		case SummonPCEvac:
-			safePoint = zone->GetSafePoint();
-			x = safePoint.x;
-			y = safePoint.y;
-			z = safePoint.z;
+			zone_safe_point = zone->GetSafePoint();
+			x = zone_safe_point.x;
+			y = zone_safe_point.y;
+			z = zone_safe_point.z;
 			SetHeading(heading);
 			break;
 		case Rewind:
