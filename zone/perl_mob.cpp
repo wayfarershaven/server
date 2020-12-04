@@ -973,19 +973,52 @@ XS(XS_Mob_FindBuffBySlot) {
 	XSRETURN(1);
 }
 
-XS(XS_Mob_BuffCount); /* prototype to pass -Wmissing-prototypes */
-XS(XS_Mob_BuffCount) {
+XS(XS_Mob_GetDetBuffCount); /* prototype to pass -Wmissing-prototypes */
+XS(XS_Mob_GetDetBuffCount) {
 	dXSARGS;
 	if (items != 1)
-		Perl_croak(aTHX_ "Usage: Mob::BuffCount(THIS)"); // @categories Script Utility, Spells and Disciplines
+		Perl_croak(aTHX_ "Usage: Mob::GetDetBuffCount(THIS)");
 	{
 		Mob *THIS;
 		uint32  RETVAL;
 		dXSTARG;
-		VALIDATE_THIS_IS_MOB;
-		RETVAL = THIS->BuffCount();
+
+		if (sv_derived_from(ST(0), "Mob")) {
+			IV tmp = SvIV((SV *) SvRV(ST(0)));
+			THIS = INT2PTR(Mob *, tmp);
+		} else
+			Perl_croak(aTHX_ "THIS is not of type Mob");
+		if (THIS == nullptr)
+			Perl_croak(aTHX_ "THIS is nullptr, avoiding crash.");
+
+		RETVAL = THIS->GetDetBuffCount();
 		XSprePUSH;
 		PUSHu((UV) RETVAL);		
+	}
+	XSRETURN(1);
+}
+
+XS(XS_Mob_GetBeneBuffCount); /* prototype to pass -Wmissing-prototypes */
+XS(XS_Mob_GetBeneBuffCount) {
+	dXSARGS;
+	if (items != 1)
+		Perl_croak(aTHX_ "Usage: Mob::GetBeneBuffCount(THIS)");
+	{
+		Mob *THIS;
+		uint32  RETVAL;
+		dXSTARG;
+
+		if (sv_derived_from(ST(0), "Mob")) {
+			IV tmp = SvIV((SV *) SvRV(ST(0)));
+			THIS = INT2PTR(Mob *, tmp);
+		} else
+			Perl_croak(aTHX_ "THIS is not of type Mob");
+		if (THIS == nullptr)
+			Perl_croak(aTHX_ "THIS is nullptr, avoiding crash.");
+
+		RETVAL = THIS->GetBeneBuffCount();
+		XSprePUSH;
+		PUSHu((UV) RETVAL);
 	}
 	XSRETURN(1);
 }
@@ -6320,7 +6353,8 @@ XS(boot_Mob) {
 	newXSproto(strcpy(buf, "SetInvisible"), XS_Mob_SetInvisible, file, "$$");
 	newXSproto(strcpy(buf, "FindBuff"), XS_Mob_FindBuff, file, "$$");
 	newXSproto(strcpy(buf, "FindBuffBySlot"), XS_Mob_FindBuffBySlot, file, "$$");
-	newXSproto(strcpy(buf, "BuffCount"), XS_Mob_BuffCount, file, "$");
+	newXSproto(strcpy(buf, "GetDetBuffCount"), XS_Mob_GetDetBuffCount, file, "$");
+	newXSproto(strcpy(buf, "GetBeneBuffCount"), XS_Mob_GetBeneBuffCount, file, "$");
 	newXSproto(strcpy(buf, "FindType"), XS_Mob_FindType, file, "$$;$$");
 	newXSproto(strcpy(buf, "GetBuffSlotFromType"), XS_Mob_GetBuffSlotFromType, file, "$$");
 	newXSproto(strcpy(buf, "MakePet"), XS_Mob_MakePet, file, "$$$;$");

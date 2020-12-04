@@ -4236,13 +4236,25 @@ uint16 Mob::FindBuffBySlot(int slot) {
 	return 0;
 }
 
-uint32 Mob::BuffCount() {
+uint32 Mob::GetDetBuffCount() {
 	uint32 active_buff_count = 0;
 	int buff_count = GetMaxTotalSlots();
-	for (int i = 0; i < buff_count; i++) 
-		if (buffs[i].spellid != SPELL_UNKNOWN)
+	for (int i = 0; i < buff_count; i++)
+		if (buffs[i].spellid != SPELL_UNKNOWN && IsDetrimentalSpell(buffs[i].spellid)) {
 			active_buff_count++;
+		}
 	
+	return active_buff_count;
+}
+
+uint32 Mob::GetBeneBuffCount() {
+	uint32 active_buff_count = 0;
+	int buff_count = GetMaxTotalSlots();
+	for (int i = 0; i < buff_count; i++)
+		if (buffs[i].spellid != SPELL_UNKNOWN && !IsDetrimentalSpell(buffs[i].spellid)) {
+			active_buff_count++;
+		}
+
 	return active_buff_count;
 }
 
