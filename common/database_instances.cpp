@@ -484,6 +484,8 @@ void Database::BuryCorpsesInInstance(uint16 instance_id) {
 
 void Database::DeleteInstance(uint16 instance_id)
 {
+	MoveCharOutInstance(instance_id);
+
 	std::string query;
 	
 	query = StringFormat("DELETE FROM instance_list_player WHERE id=%u", instance_id);
@@ -499,6 +501,16 @@ void Database::DeleteInstance(uint16 instance_id)
 	DynamicZonesRepository::DeleteWhere(*this, fmt::format("instance_id = {}", instance_id));
 
 	BuryCorpsesInInstance(instance_id);
+}
+
+void Database::MoveCharOutInstance(uint16 instance_id)
+{
+
+	std::string query = StringFormat("UPDATE character_data "
+									 "INNER JOIN zone ON character_data.zone_id = zone.zoneidnumber "
+									 "SET character_data.x = zone.safe_x, character_data.y = zone.safe_y, character_data.z = zone.safe_z, character_data.zone_instance = '0' "
+									 "WHERE character_data.zone_instance = %u;", instance_id);
+	QueryDatabase(query);
 }
 
 void Database::FlagInstanceByGroupLeader(uint32 zone, int16 version, uint32 charid, uint32 gid)
