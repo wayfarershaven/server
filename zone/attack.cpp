@@ -5411,8 +5411,9 @@ bool Mob::TryRootFadeByDamage(int buffslot, Mob* attacker) {
 	- Root break chance values obtained from live parses.
 	*/
 
-	if (!attacker || !spellbonuses.Root[0] || spellbonuses.Root[1] < 0)
+	if (!attacker || !spellbonuses.Root[0] || spellbonuses.Root[1] < 0) {
 		return false;
+	}
 
 	if (IsDetrimentalSpell(spellbonuses.Root[1]) && spellbonuses.Root[1] != buffslot) {
 		int BreakChance = RuleI(Spells, RootBreakFromSpells);
@@ -5422,29 +5423,28 @@ bool Mob::TryRootFadeByDamage(int buffslot, Mob* attacker) {
 
 		//Use baseline if level difference <= 1 (ie. If target is (1) level less than you, or equal or greater level)
 
-		if (level_diff == 2)
+		if (level_diff == 2) {
 			BreakChance = (BreakChance * 80) / 100; //Decrease by 20%;
-
-		else if (level_diff >= 3 && level_diff <= 20)
+		} else if (level_diff >= 3 && level_diff <= 20) {
 			BreakChance = (BreakChance * 60) / 100; //Decrease by 40%;
-
-		else if (level_diff > 21)
+		} else if (level_diff > 21) {
 			BreakChance = (BreakChance * 20) / 100; //Decrease by 80%;
+		}
 
-		if (BreakChance < 1)
+		if (BreakChance < 1) {
 			BreakChance = 1;
+		}
 
 		if (zone->random.Roll(BreakChance)) {
 
 			if (!TryFadeEffect(spellbonuses.Root[1])) {
 				BuffFadeBySlot(spellbonuses.Root[1]);
-				LogCombat("Spell broke root! BreakChance percent chance");
+				LogCombat("Spell broke root! BreakChance = [{}]", BreakChance);
 				return true;
 			}
 		}
+		LogCombat("Spell did not break root. BreakChance = [{}]", BreakChance);
 	}
-
-	LogCombat("Spell did not break root. BreakChance percent chance");
 	return false;
 }
 
