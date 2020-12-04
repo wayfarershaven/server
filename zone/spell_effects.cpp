@@ -1092,18 +1092,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 					break;
 				}
 
-				int buff_count = GetMaxTotalSlots();
-				for(int slot = 0; slot < buff_count; slot++) {
-					if(	buffs[slot].spellid != SPELL_UNKNOWN &&
-						spells[buffs[slot].spellid].dispel_flag == 0 &&
-						!IsDiscipline(buffs[slot].spellid))
-					{
-						if (caster && TryDispel(caster->GetLevel(),buffs[slot].casterlevel, effect_value)){
-							BuffFadeBySlot(slot);
-							slot = buff_count;
-						}
-					}
-				}
+				DispelMagic(caster);
 				break;
 			}
 
@@ -6277,6 +6266,20 @@ bool Mob::PassLimitClass(uint32 Classes_, uint16 Class_)
 		Classes_ >>= 1;
 	}
 	return false;
+}
+
+void Mob::DispelMagic(Mob* caster) {
+	for (int slot = 0; slot < GetMaxTotalSlots(); slot++) {
+		if (buffs[slot].spellid != SPELL_UNKNOWN &&
+			spells[buffs[slot].spellid].dispel_flag == 0 &&
+			!IsDiscipline(buffs[slot].spellid))
+		{
+			if (caster) {
+				BuffFadeBySlot(slot);
+				break;
+			}
+		}
+	}
 }
 
 uint16 Mob::GetSpellEffectResistChance(uint16 spell_id)
