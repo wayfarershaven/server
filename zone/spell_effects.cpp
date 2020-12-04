@@ -7002,7 +7002,6 @@ void Client::BreakFeignDeathWhenCastOn(bool IsResisted) {
 
 
 		if (chance && (zone->random.Roll(chance))) {
-			MessageString(Chat::SpellFailure, FD_CAST_ON_NO_BREAK);
 			return;
 		}
 
