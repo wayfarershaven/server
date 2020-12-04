@@ -14431,6 +14431,12 @@ void Client::Handle_OP_Trader(const EQApplicationPacket *app)
 					TradeItemsValid = false;
 					break;
 				}
+
+				if(Item->IsClassBag()) {
+					Message(Chat::Red, "Not allowed to sell bags, please convert to a token. Unable to start trader mode.");
+					TradeItemsValid = false;
+					break;
+				}
 			}
 
 			if (!TradeItemsValid) {
