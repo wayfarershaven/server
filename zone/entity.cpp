@@ -3577,17 +3577,7 @@ void EntityList::AddHealAggro(Mob *target, Mob *caster, uint16 hate)
 			continue;
 		}
 
-		// 50% chance for heals/runes/beneficial spells to not add any hate
-		if (zone->random.Roll(50)) { // witness check -- place holder
-			// This is either a level check (con color check?) or a stat roll
-			continue;
-		}
-
-		if ((npc->IsMezzed() || npc->IsStunned()) && hate > 4) {// patch notes say stunned/mezzed NPCs get a fraction of the hate
-			npc->AddToHateList(caster, hate / 4); // made up number
-		} else {
-			npc->AddToHateList(caster, hate);
-		}
+		npc->AddToHateList(caster, hate);
 	}
 }
 
