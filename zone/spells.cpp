@@ -249,6 +249,14 @@ bool Mob::CastSpell(uint16 spell_id, uint16 target_id, CastingSlot slot,
 		}
 	}
 
+	// check to see if target is a caster mob before performing a mana tap
+	if(GetTarget() && IsManaTapSpell(spell_id)) {
+		if(GetTarget()->GetCasterClass() == 'N') {
+			InterruptSpell(TARGET_NO_MANA, 0x121, spell_id);
+			return(false);
+		}
+	}
+
 	if (HasActiveSong() && IsBardSong(spell_id)) {
 		LogSpells("Casting a new song while singing a song. Killing old song [{}]", bardsong);
 		//Note: this does NOT tell the client
@@ -2159,14 +2167,6 @@ bool Mob::SpellFinished(uint16 spell_id, Mob *spell_target, CastingSlot slot, ui
 		spell_target = nullptr;
 		ae_center = beacon;
 		CastAction = AECaster;
-	}
-
-	// check to see if target is a caster mob before performing a mana tap
-	if(spell_target && IsManaTapSpell(spell_id)) {
-		if(spell_target->GetCasterClass() == 'N' || target->GetMana() == 0) {
-			MessageString(Chat::Red, TARGET_NO_MANA);
-			return false;
-		}
 	}
 
 	//range check our target, if we have one and it is not us
