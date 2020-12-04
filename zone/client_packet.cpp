@@ -10260,27 +10260,27 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
 
 	if (!mypet || pet->command == PET_LEADER) {
 		if (pet->command == PET_LEADER) {
-			// we either send the ID of an NPC we're interested in or no ID for our own pet
-			if (target) {
-				auto owner = target->GetOwner();
-				if (owner)
-					target->SayString(PET_LEADERIS, owner->GetCleanName());
-				else
-					target->SayString(I_FOLLOW_NOONE);
-			} else if (mypet) {
+			if (mypet && (!GetTarget() || GetTarget() == mypet)) {
 				mypet->SayString(PET_LEADERIS, GetName());
+			} else if ((mypet = GetTarget())) {
+				Mob *Owner = mypet->GetOwner();
+				if (Owner)
+					mypet->SayString(PET_LEADERIS, Owner->GetCleanName());
+				else if (mypet->IsNPC())
+					mypet->SayString(I_FOLLOW_NOONE);
 			}
 		}
-
 		return;
 	}
 
-	if (mypet->GetPetType() == petTargetLock && (pet->command != PET_HEALTHREPORT && pet->command != PET_GETLOST))
+	if (mypet->GetPetType() == petTargetLock && (pet->command != PET_HEALTHREPORT && pet->command != PET_GETLOST)) {
 		return;
+	}
 
 	// just let the command "/pet get lost" work for familiars
-	if (mypet->GetPetType() == petFamiliar && pet->command != PET_GETLOST)
+	if (mypet->GetPetType() == petFamiliar && pet->command != PET_GETLOST) {
 		return;
+	}
 
 	uint32 PetCommand = pet->command;
 
