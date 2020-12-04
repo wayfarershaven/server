@@ -645,15 +645,19 @@ bool Client::UseDiscipline(uint32 spell_id, uint32 target) {
 		// and yes, the focus effect can be used to increase the durations (spell 38944)
 		if (focus > reduced_recast) {
 			reduced_recast = 0;
-			if (GetPTimers().Enabled((uint32)DiscTimer))
-				GetPTimers().Clear(&database, (uint32)DiscTimer);
+			if (GetPTimers().Enabled((uint32)DiscTimer)) {
+				GetPTimers().Clear(&database, (uint32) DiscTimer);
+			}
 		} else {
 			reduced_recast -= focus;
 		}
 
-		if (reduced_recast > 0)
-			CastSpell(spell_id, target, EQ::spells::CastingSlot::Discipline, -1, -1, 0, -1, (uint32)DiscTimer, reduced_recast);
-		else{
+		reduced_recast = SpellRecastMod(spell_id, reduced_recast);
+
+		if (reduced_recast > 0) {
+			CastSpell(spell_id, target, EQ::spells::CastingSlot::Discipline, -1, -1, 0, -1, (uint32) DiscTimer,
+					  reduced_recast);
+		} else {
 			CastSpell(spell_id, target, EQ::spells::CastingSlot::Discipline);
 			return true;
 		}
