@@ -13965,6 +13965,18 @@ void Client::Handle_OP_TargetCommand(const EQApplicationPacket *app)
 						return;
 					}
 				}
+			} else if (!GetTarget()->IsClient() && std::abs(m_Position.z - GetTarget()->GetZ()) > RuleI(Character, MaxZTargetDistance)) {
+				auto outapp = new EQApplicationPacket(OP_TargetReject, sizeof(TargetReject_Struct));
+				outapp->pBuffer[0] = 0x2f;
+				outapp->pBuffer[1] = 0x01;
+				outapp->pBuffer[4] = 0x0d;
+				if (GetTarget()) {
+					GetTarget()->IsTargeted(0);
+					SetTarget(nullptr);
+				}
+				QueuePacket(outapp);
+				safe_delete(outapp);
+				return;
 			}
 			else if (DistanceSquared(m_Position, GetTarget()->GetPosition()) > (zone->newzone_data.maxclip*zone->newzone_data.maxclip))
 			{
