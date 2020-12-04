@@ -984,12 +984,6 @@ void Mob::CastedSpellFinished(uint16 spell_id, uint32 target_id, CastingSlot slo
 	bool IsFromItem = false;
 	EQ::ItemInstance *item = nullptr;
 
-	if (IsClient() && (IsDiscipline(spell_id) || IsDisciplineBuff(spell_id))) {
-		std::string msg = "%s";
-		msg += spells[spell_id].cast_on_other;
-		entity_list.MessageClose(this, true, 200, 0, msg.c_str(), this->GetCleanName());
-	}
-
 	if(IsClient() && slot != CastingSlot::Item && slot != CastingSlot::PotionBelt && spells[spell_id].recast_time > 1000) { // 10 is item
 		if(!CastToClient()->GetPTimers().Expired(&database, pTimerSpellStart + spell_id, false)) {
 			//should we issue a message or send them a spell gem packet?
@@ -3542,6 +3536,12 @@ bool Mob::SpellOnTarget(uint16 spell_id, Mob *spelltar, bool reflect, bool use_r
 	uint16 caster_level = level_override > 0 ? level_override : GetCasterLevel(spell_id);
 
 	LogSpells("Casting spell [{}] on [{}] with effective caster level [{}]", spell_id, spelltar->GetName(), caster_level);
+
+	if (IsClient() && (IsDiscipline(spell_id) || IsDisciplineBuff(spell_id))) {
+		std::string msg = "%s";
+		msg += spells[spell_id].cast_on_other;
+		entity_list.MessageClose(this, true, 200, 0, msg.c_str(), this->GetCleanName());
+	}
 
 	// Actual cast action - this causes the caster animation and the particles
 	// around the target
