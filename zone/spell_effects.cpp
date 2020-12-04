@@ -6338,8 +6338,9 @@ bool Mob::TryDispel(uint8 caster_level, uint8 buff_level, int level_modifier){
 
 	/*This should provide a somewhat accurate conversion between pre 5/14 base values and post.
 	until more information is avialble - Kayen*/
-	if (level_modifier >= 100)
-		level_modifier = level_modifier/100;
+	if (level_modifier >= 100) {
+		level_modifier = level_modifier / 100;
+	}
 
 	//Dispels - Check level of caster agianst buffs level (level of the caster who cast the buff)
 	//Effect value of dispels are treated as a level modifier.
@@ -6349,22 +6350,23 @@ bool Mob::TryDispel(uint8 caster_level, uint8 buff_level, int level_modifier){
 	int dispel_chance = 32; //Baseline chance if no level difference and no modifier
 	int level_diff = caster_level - buff_level;
 
-	if (level_diff > 0)
+	if (level_diff > 0) {
 		dispel_chance += level_diff * 7;
-
-	else if (level_diff < 0)
+	} else if (level_diff < 0) {
 		dispel_chance += level_diff * 2;
+	}
 
-	if (dispel_chance >= 100)
+	if (dispel_chance >= 100) {
 		return true;
-
-	else if (dispel_chance < 10)
+	} else if (dispel_chance < 10) {
 		dispel_chance = 10;
+	}
 
-	if (zone->random.Roll(dispel_chance))
+	if (zone->random.Roll(dispel_chance)) {
 		return true;
-	else
+	} else {
 		return false;
+	}
 }
 
 
