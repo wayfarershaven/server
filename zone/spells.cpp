@@ -3518,9 +3518,11 @@ bool Mob::SpellOnTarget(uint16 spell_id, Mob *spelltar, bool reflect, bool use_r
 		return false;
 
 	if(IsDetrimentalSpell(spell_id) && !IsAttackAllowed(spelltar, true) && !IsResurrectionEffects(spell_id)) {
-		if(!IsClient() || !CastToClient()->GetGM()) {
-			MessageString(Chat::SpellFailure, SPELL_NO_HOLD);
-			return false;
+		if(spell_id != 727) { // Bard Group Dispell
+			if (!IsClient() || !CastToClient()->GetGM()) {
+				MessageString(Chat::SpellFailure, SPELL_NO_HOLD);
+				return false;
+			}
 		}
 	}
 
@@ -3823,7 +3825,7 @@ bool Mob::SpellOnTarget(uint16 spell_id, Mob *spelltar, bool reflect, bool use_r
 				}
 			}
 		}
-		else if	( !IsAttackAllowed(spelltar, true) && !IsResurrectionEffects(spell_id)) // Detrimental spells - PVP check
+		else if	( !IsAttackAllowed(spelltar, true) && !IsResurrectionEffects(spell_id) && spell_id != 727) // Detrimental spells - PVP check (excluding bard group dispell)
 		{
 			LogSpells("Detrimental spell [{}] can't take hold [{}] -> [{}]", spell_id, GetName(), spelltar->GetName());
 			spelltar->MessageString(Chat::SpellFailure, YOU_ARE_PROTECTED, GetCleanName());
