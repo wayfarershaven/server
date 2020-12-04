@@ -1224,8 +1224,9 @@ void Client::ActivateAlternateAdvancementAbility(int rank_id, int target_id) {
 		cooldown = 0;
 	}
 
-	if (!IsCastWhileInvis(rank->spell))
+	if (!IsCastWhileInvis(rank->spell)) {
 		CommonBreakInvisible();
+	}
 
 	if (spells[rank->spell].sneak && (!hidden || (hidden && (Timer::GetCurrentTime() - tmHidden) < 4000))) {
 		MessageString(Chat::SpellFailure, SNEAK_RESTRICT);
@@ -1253,11 +1254,11 @@ void Client::ActivateAlternateAdvancementAbility(int rank_id, int target_id) {
 			return;
 		}
 		ExpendAlternateAdvancementCharge(ability->id);
-	} else {
-		if(!CastSpell(rank->spell, target_id, EQ::spells::CastingSlot::AltAbility, -1, -1, 0, -1, rank->spell_type + pTimerAAStart, cooldown, nullptr, rank->id)) {
-			return;
-		}
+	} else if (!CastSpell(rank->spell, target_id, EQ::spells::CastingSlot::AltAbility, -1, -1, 0, -1,
+						  rank->spell_type + pTimerAAStart, cooldown, nullptr, rank->id)) {
+		return;
 	}
+
 
 	CastToClient()->GetPTimers().Start(rank->spell_type + pTimerAAStart, cooldown);
 	SendAlternateAdvancementTimer(rank->spell_type, 0, 0);
