@@ -2965,16 +2965,17 @@ void command_findspell(Client *c, const Seperator *sep)
 
 				strupr(sName);
 				char* pdest = strstr(sName, sCriteria);
-				if ((pdest != nullptr) && (count <=20)) {
+				if ((pdest != nullptr) && (count <=50)) {
 					c->Message(Chat::White, "  %i: %s",  i, spells[i].name);
 					count++;
 				}
-				else if (count > 20)
+				else if (count > 50) {
 					break;
+				}
 			}
 		}
 		if (count > 20)
-			c->Message(Chat::White, "20 spells found... max reached.");
+			c->Message(Chat::White, "50 spells found... max reached.");
 		else
 			c->Message(Chat::White, "%i spells found.",  count);
 	}
@@ -8321,12 +8322,13 @@ void command_itemsearch(Client *c, const Seperator *sep)
 				++count;
 			}
 
-			if (count == 50)
+			if (count == 100) {
 				break;
+			}
 		}
 
-		if (count == 50)
-			c->Message(Chat::White, "50 items shown...too many results.");
+		if (count == 100)
+			c->Message(Chat::White, "100 items shown...too many results.");
 		else
 			c->Message(Chat::White, "%i items found",  count);
 
