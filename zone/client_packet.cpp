@@ -4054,6 +4054,11 @@ void Client::Handle_OP_CancelTrade(const EQApplicationPacket *app)
 
 void Client::Handle_OP_CastSpell(const EQApplicationPacket *app)
 {
+	//break feign if casting
+	if (feigned) {
+		SetFeigned(false);
+	}
+
 	using EQ::spells::CastingSlot;
 	if (app->size != sizeof(CastSpell_Struct)) {
 		std::cout << "Wrong size: OP_CastSpell, size=" << app->size << ", expected " << sizeof(CastSpell_Struct) << std::endl;
