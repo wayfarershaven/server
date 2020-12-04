@@ -2723,7 +2723,7 @@ void Mob::AddToHateList(Mob* other, uint32 hate /*= 0*/, int32 damage /*= 0*/, b
 	if (other->IsTrap())
 		return;
 
-	if (damage < 0) {
+	if (damage < 0 && !iYellForHelp) {
 		hate = 1;
 	}
 
@@ -2751,9 +2751,7 @@ void Mob::AddToHateList(Mob* other, uint32 hate /*= 0*/, int32 damage /*= 0*/, b
 		}
 		else {
 			hate += RuleI(Aggro, InitialAggroBonus); // Bonus Initial Aggro
-			if (other->IsNPC() && other->IsPet() && other->IsPetOwnerClient() && other->IsCharmed()) { // charmed mobs get double initial aggro
-				hate += RuleI(Aggro, InitialAggroBonus);
-			}
+			LogCombat("InitialAggroBonus: [{}]", RuleI(Aggro, InitialAggroBonus));
 		}
 	}
 
