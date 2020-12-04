@@ -893,12 +893,10 @@ void Client::GoToSafeCoords(uint16 zone_id, uint16 instance_id) {
 	MovePC(zone_id, instance_id, 0.0f, 0.0f, 0.0f, 0.0f, 0, ZoneToSafeCoords);
 }
 
-
 void Mob::Gate(uint8 bind_number) {
 	GoToBind(bind_number);
-	if (RuleB(NPC, NPCHealOnGate) && this->IsNPC() && this->GetHPRatio() <= RuleR(NPC, NPCHealOnGateAmount)) {
-		auto HealAmount = (RuleR(NPC, NPCHealOnGateAmount) / 100);
-		SetHP(int(this->GetMaxHP() * HealAmount));
+	if (this->GetHPRatio() <= 20) {
+		SetHP(int(this->GetMaxHP() * 0.25));
 	}
 }
 
@@ -907,6 +905,12 @@ void Client::Gate(uint8 bind_number) {
 }
 
 void NPC::Gate(uint8 bind_number) {
+	if (IsNPC()) {
+		auto npcSpawnPoint = CastToNPC()->GetSpawnPoint();
+		if (DistanceSquaredNoZ(m_Position, npcSpawnPoint) < RuleI(NPC, NPCGateDistanceBind)) {
+			return;
+		}
+	}
 	entity_list.MessageCloseString(this, true, RuleI(Range, SpellMessages), Chat::Spells, GATES, GetCleanName());
 
 	Mob::Gate(bind_number);
