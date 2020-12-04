@@ -12849,87 +12849,11 @@ void Client::Handle_OP_Shielding(const EQApplicationPacket *app)
 		LogError("OP size error: OP_Shielding expected:[{}] got:[{}]", sizeof(Shielding_Struct), app->size);
 		return;
 	}
-	if (GetClass() != WARRIOR && GetLevel() < 30) {
-		return;
-	}
-
-	if (!p_timers.Expired(&database, pTimerShield, false)) {
-		Message(13, "Ability recovery time not yet met.");
-		return;
-	}
-
-	// end current shielding
-	if (shield_target) {
-		ShieldClear();
-	}
 
 	// set new shield target
 	Shielding_Struct* shield = (Shielding_Struct*)app->pBuffer;
-	shield_target = entity_list.GetMob(shield->target_id);
+	Shield(entity_list.GetMob(shield->target_id));
 
-	if (!shield_target) {
-		return;
-	}
-
-	// check if target is in range
-	if (!this->CombatRange(shield_target, 2.0)) {
-		Message(13, "Your target is out of range.");
-		return;
-	}
-
-	bool ack = false;
-
-	// calculate shield bonus for shielder (>=50ac = 50% damage)
-	uint16 shieldbonus = 0;
-	EQ::ItemInstance* inst = GetInv().GetItem(EQ::invslot::slotSecondary);
-	if (inst) {
-		const EQ::ItemData* shield = inst->GetItem();
-		if (shield && shield->IsTypeShield()) {
-			shieldbonus = shield->AC / 2;
-		}
-	}
-
-	// calculate duration bonus
-	int shield_duration_bonus = 0;
-	switch (GetAA(197)) {
-		case 1:
-			shield_duration_bonus = 12000;
-			break;
-		case 2:
-			shield_duration_bonus = 24000;
-			break;
-		case 3:
-			shield_duration_bonus = 36000;
-			break;
-	}
-
-	for (int x = 0; x < 2; x++) {
-		if (shield_target->shielder[x].shielder_id == 0) {
-			entity_list.MessageCloseString(this, false, 100, 0,
-											  START_SHIELDING, GetName(), shield_target->GetName());
-			shield_target->shielder[x].shielder_id = GetID();
-
-			shield_target->shielder[x].shielder_bonus = shieldbonus;
-
-			// start timers
-			p_timers.Start(pTimerShield, ShieldReuseTime - 1);
-			shield_timer.Start();
-			if (shield_duration_bonus) {
-				shield_duration_timer.SetTimer(12000 + shield_duration_bonus);
-			}
-			shield_duration_timer.Start();
-
-			ack = true;
-			break;
-		}
-	}
-
-
-	if (!ack) {
-		MessageString(Chat::White, ALREADY_SHIELDED);
-		shield_target = 0;
-		return;
-	}
 	return;
 }
 

@@ -501,6 +501,8 @@ RULE_REAL(Combat, SlayDamageAdjustment, 1.0, "Slay Damage Adjustment")
 RULE_CATEGORY_END()
 
 RULE_CATEGORY(NPC)
+RULE_INT(NPC, DefaultShieldReuseTimer, 60, "Default Shield Reuse Timer")
+RULE_REAL(NPC, ShieldStartHPRatio, 95.0, "")
 RULE_INT(NPC, MinorNPCCorpseDecayTimeMS, 450000, "NPC corpse decay time, if NPC below level 55 (milliseconds)")
 RULE_INT(NPC, MajorNPCCorpseDecayTimeMS, 1500000, "NPC corpse decay time, if NPC equal or greater than level 55 (milliseconds)")
 RULE_INT(NPC, CorpseUnlockTimer, 150000, "Time after which corpses are unlocked for everyone to loot (milliseconds)")

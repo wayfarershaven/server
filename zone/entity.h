@@ -476,6 +476,7 @@ public:
 	bool	Merc_AICheckCloseBeneficialSpells(Merc* caster, uint8 iChance, float iRange, uint32 iSpellTypes);
 	Mob*	GetTargetForMez(Mob* caster);
 	uint32	CheckNPCsClose(Mob *center);
+	NPC*	GetTargetToShield(NPC* shielder);
 
 	Corpse* GetClosestCorpse(Mob* sender, const char *Name);
 	NPC* GetClosestBanker(Mob* sender, uint32 &distance);
