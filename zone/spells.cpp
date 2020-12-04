@@ -2367,6 +2367,7 @@ bool Mob::SpellFinished(uint16 spell_id, Mob *spell_target, CastingSlot slot, ui
 					if(target_group)
 					{
 						target_group->CastGroupSpell(this, spell_id);
+						SpellOnTarget(spell_id, this);
 					}
 				}
 				else if(spell_target->IsRaidGrouped() && spell_target->IsClient())
