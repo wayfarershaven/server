@@ -3835,6 +3835,18 @@ void Mob::CommonDamage(Mob* attacker, int &damage, const uint16 spell_id, const 
 		}
 	}	//end `if damage was done`
 
+	//clamp damage to max npc damage
+	if (
+			spell_id == SPELL_UNKNOWN &&
+			attacker->IsNPC()
+			)
+	{
+
+		if (damage > attacker->CastToNPC()->GetDBMaxDamage()) {
+			damage = attacker->CastToNPC()->GetDBMaxDamage();
+		}
+	}
+
 		//send damage packet...
 	if (!iBuffTic) { //buff ticks do not send damage, instead they just call SendHPUpdate(), which is done above
 		auto outapp = new EQApplicationPacket(OP_Damage, sizeof(CombatDamage_Struct));

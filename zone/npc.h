@@ -287,6 +287,7 @@ public:
 	uint32	GetMinDMG() const {return min_dmg;}
 	int GetBaseDamage() const { return base_damage; }
 	int GetMinDamage() const { return min_damage; }
+	int GetDBMaxDamage() const { return dbmax_dmg; }
 	float GetSlowMitigation() const { return slow_mitigation; }
 	float	GetAttackSpeed() const {return attack_speed;}
 	int		GetAttackDelay() const {return attack_delay;}
@@ -559,6 +560,7 @@ protected:
 	bool HasAISpellEffects;
 
 	uint32	max_dmg;
+	uint32	dbmax_dmg;
 	uint32	min_dmg;
 	int		base_damage;
 	int		min_damage;
