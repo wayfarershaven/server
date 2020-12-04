@@ -2265,12 +2265,6 @@ void NPC::PetOnSpawn(NewSpawn_Struct* ns)
 		if (RuleB(Pets, UnTargetableSwarmPet))
 		{
 			ns->spawn.bodytype = 11;
-			if(!IsCharmed() && swarmOwner->IsClient()) {
-				std::string tmp_lastname = swarmOwner->GetName();
-				tmp_lastname += "'s Pet";
-				if (tmp_lastname.size() < sizeof(ns->spawn.lastName))
-					strn0cpy(ns->spawn.lastName, tmp_lastname.c_str(), sizeof(ns->spawn.lastName));
-			}
 		}
 	}
 	else if(GetOwnerID())
