@@ -3500,13 +3500,16 @@ void Client::Handle_OP_Barter(const EQApplicationPacket *app)
 
 	case Barter_BuyerModeOn:
 	{
-		if (!Trader) {
-			ToggleBuyerMode(true);
-		}
-		else {
+		if(!zone->IsBuyerAllowed(GetPosition())) {
 			Buf = (char *)app->pBuffer;
 			VARSTRUCT_ENCODE_TYPE(uint32, Buf, Barter_BuyerModeOff);
-			Message(Chat::Red, "You cannot be a Trader and Buyer at the same time.");
+			Message(13, "You must be under the center row bazaar tent for trader mode.");
+		} else if (Trader) {
+			Buf = (char *)app->pBuffer;
+			VARSTRUCT_ENCODE_TYPE(uint32, Buf, Barter_BuyerModeOff);
+			Message(13, "You cannot be a Trader and Buyer at the same time.");
+		} else {
+			ToggleBuyerMode(true);
 		}
 		QueuePacket(app);
 		break;
@@ -4564,8 +4567,9 @@ void Client::Handle_OP_ClientUpdate(const EQApplicationPacket *app) {
 	if (cy != m_Position.y || cx != m_Position.x) {
 
 		// End trader mode if we move
-		if(Trader) {
+		if(Trader || Buyer) {
 			Trader_EndTrader();
+			ToggleBuyerMode(false);
 		}
 
 		/* Break Hide if moving without sneaking and set rewind timer if moved */
