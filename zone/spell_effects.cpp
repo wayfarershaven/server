@@ -516,7 +516,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 								GetPet()->BuffFadeByEffect(SE_Charm);
 							}
 							CastToClient()->MovePC(zone->GetZoneID(), zone->GetInstanceID(), x, y, z, heading, 0,
-												   EvacToSafeCoords);
+												   SummonPCEvac);
 						} else {
 							GMMove(x, y, z, heading);
 						}

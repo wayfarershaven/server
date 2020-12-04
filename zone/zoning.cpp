@@ -648,6 +648,9 @@ void Client::ProcessMovePC(uint32 zoneID, uint32 instance_id, float x, float y, 
 			Message(Chat::Yellow, "You have been summoned!");
 			ZonePC(zoneID, instance_id, x, y, z, heading, ignorerestrictions, zm);
 			break;
+		case SummonPCEvac:
+			ZonePC(zoneID, instance_id, x, y, z, heading, ignorerestrictions, zm);
+			break;
 		case Rewind:
 			Message(Chat::Yellow, "Rewinding to previous location.");
 			ZonePC(zoneID, instance_id, x, y, z, heading, ignorerestrictions, zm);
@@ -712,6 +715,13 @@ void Client::ZonePC(uint32 zoneID, uint32 instance_id, float x, float y, float z
 		case SummonPC:
 			m_ZoneSummonLocation = glm::vec4(x, y, z, heading);
 			m_Position = m_ZoneSummonLocation;
+			break;
+		case SummonPCEvac:
+			safePoint = zone->GetSafePoint();
+			x = safePoint.x;
+			y = safePoint.y;
+			z = safePoint.z;
+			SetHeading(heading);
 			break;
 		case Rewind:
 			LogDebug("[{}] has requested a /rewind from [{}], [{}], [{}], to [{}], [{}], [{}] in [{}]", GetName(),
