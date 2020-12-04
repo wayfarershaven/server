@@ -58,8 +58,32 @@ RULE_REAL(Character, ExpMultiplier, 0.5, "If greater than 0, the experience gain
 RULE_REAL(Character, AAExpMultiplier, 0.5, "If greater than 0, the AA experience gained is multiplied by this value. ")
 RULE_REAL(Character, GroupExpMultiplier, 0.5, "The experience in a group is multiplied by this value in addition to the group multiplier. The group multiplier is: 2 members=x 1.2, 3=x1.4, 4=x1.6, 5=x1.8, 6=x2.16")
 RULE_REAL(Character, RaidExpMultiplier, 0.2, "The experience gained in raids is multiplied by (1-RaidExpMultiplier) ")
-RULE_BOOL(Character, UseXPConScaling, true, "When activated, the experience is modified depending on the difference between player level and NPC level. The values from the rules GreenModifier to RedModifier are used")
-RULE_INT(Character, ShowExpValues, 0, "Show experience values. 0=normal, 1=show raw experience values, 2=show raw experience values and percent")
+
+RULE_BOOL(Character, ExpConBasedBonus, true, "Con based XP Bonus - WFH Rule")
+
+RULE_REAL(Character, ExpMultiplierGreen, 0.3, "EXP Multiplier - WFH Rule")
+RULE_REAL(Character, ExpMultiplierLightBlue, 1.0, "EXP Multiplier - WFH Rule")
+RULE_REAL(Character, ExpMultiplierDarkBlue, 1.0, "EXP Multiplier - WFH Rule")
+RULE_REAL(Character, ExpMultiplierWhite, 1.0, "EXP Multiplier - WFH Rule")
+RULE_REAL(Character, ExpMultiplierYellow, 1.0, "EXP Multiplier - WFH Rule")
+RULE_REAL(Character, ExpMultiplierRed, 1.0, "EXP Multiplier - WFH Rule")
+RULE_INT(Character, ExpByLevelDivsor, 100,"")
+RULE_REAL(Character, ExpByLevelMultiplyer, 3,"")
+
+RULE_REAL(Character, AAExpMultiplierGreen, 0.3, "AA Multiplier - WFH Rule")
+RULE_REAL(Character, AAExpMultiplierLightBlue, 1.0, "AA Multiplier - WFH Rule")
+RULE_REAL(Character, AAExpMultiplierDarkBlue, 1.0, "AA Multiplier - WFH Rule")
+RULE_REAL(Character, AAExpMultiplierWhite, 1.0, "AA Multiplier - WFH Rule")
+RULE_REAL(Character, AAExpMultiplierYellow, 1.0, "AA Multiplier - WFH Rule")
+RULE_REAL(Character, AAExpMultiplierRed, 1.0, "AA Multiplier - WFH Rule")
+RULE_INT(Character, MaxAAExpPerKill, 3596474, "Maximum AA EXP per Kill")
+
+RULE_REAL(Character, ExpInstanceMultiplier, 0.20, "Instance based XP modifier")
+RULE_INT(Character, MaxLevelExpMultiplier, 60, "Maximum level allowed to receive Bonus EXP modifier")
+
+RULE_BOOL(Character, UseXPConScaling, true, "When activated, the experience is modified depending on the difference between player level and NPC level. The settings Green/LightBlue/Blue//White/Yellow and RedModifier are used")
+RULE_INT(Character, ShowExpValues, 0, "Show expirience values. 0=normal, 1=show raw experience values, 2=show raw experience values and percent")
+
 RULE_INT(Character, GreenModifier, 20, "The experience obtained for green con mobs is multiplied by value/100")
 RULE_INT(Character, LightBlueModifier, 40, "The experience obtained for light-blue con mobs is multiplied by value/100")
 RULE_INT(Character, BlueModifier, 90, "The experience obtained for blue con mobs is multiplied by value/100")
