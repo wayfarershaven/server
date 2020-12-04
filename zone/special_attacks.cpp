@@ -1618,14 +1618,14 @@ void NPC::DoClassAttacks(Mob *target) {
 		switch(GetClass()){
 			case SHADOWKNIGHT: case SHADOWKNIGHTGM:{
 				if (CastSpell(SPELL_NPC_HARM_TOUCH, target->GetID())) {
-					knightreuse = HarmTouchReuseTime * 1000;
+					knightreuse = HarmTouchReuseTime * 1000 - (GetAA(aaTouchoftheWicked) * 720);
 					}
 				break;
 			}
 			case PALADIN: case PALADINGM:{
 				if(GetHPRatio() < 20) {
 					if (CastSpell(SPELL_LAY_ON_HANDS, GetID())) {
-						knightreuse = LayOnHandsReuseTime * 1000;
+						knightreuse = LayOnHandsReuseTime * 1000 - (GetAA(aaFervrentBlessing) * 720);
 					}
 				} else {
 					knightreuse = 2000; //Check again in two seconds.
