@@ -10306,6 +10306,8 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
 				SetPetCommandState(PET_BUTTON_SIT, 0);
 				mypet->SetAppearance(eaStanding);
 
+				mypet->SetPetFeigned(false);
+
 				zone->AddAggroMob();
 				// classic acts like qattack
 				int hate = 1;
@@ -10349,6 +10351,8 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
 				// fix GUI sit button to be unpressed and stop sitting regen
 				SetPetCommandState(PET_BUTTON_SIT, 0);
 				mypet->SetAppearance(eaStanding);
+
+				mypet->SetPetFeigned(false);
 
 				zone->AddAggroMob();
 				mypet->AddToHateList(GetTarget(), 1, 0, true, false, false, SPELL_UNKNOWN, true);
@@ -10417,6 +10421,7 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
 				mypet->SendAppearancePacket(AT_Anim, ANIM_STAND);
 
 				mypet->SayString(this, Chat::PetResponse, PET_GUARDINGLIFE);
+				mypet->SetPetFeigned(false);
 				mypet->SetPetOrder(SPO_Guard);
 				mypet->CastToNPC()->SaveGuardSpot(mypet->GetPosition());
 				if (!mypet->GetTarget()) // want them to not twitch if they're chasing something down
@@ -10434,6 +10439,7 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
 
 		if ((mypet->GetPetType() == petAnimation && aabonuses.PetCommands[PetCommand]) || mypet->GetPetType() != petAnimation) {
 			mypet->SayString(this, Chat::PetResponse, PET_FOLLOWING);
+			mypet->SetPetFeigned(false);
 			mypet->SetPetOrder(SPO_Follow);
 
 			// fix GUI sit button to be unpressed - send stand anim/end hpregen
@@ -10481,6 +10487,7 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
 
 		if ((mypet->GetPetType() == petAnimation && aabonuses.PetCommands[PetCommand]) || mypet->GetPetType() != petAnimation) {
 			mypet->SayString(this, Chat::PetResponse, PET_GUARDME_STRING);
+			mypet->SetPetFeigned(false);
 			mypet->SetPetOrder(SPO_Follow);
 
 			// Set Sit button to unpressed - send stand anim/end hpregen
@@ -10501,12 +10508,14 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
 			if (mypet->GetPetOrder() == SPO_Sit)
 			{
 				mypet->SayString(this, Chat::PetResponse, PET_SIT_STRING);
+				mypet->SetPetFeigned(false);
 				mypet->SetPetOrder(SPO_Follow);
 				mypet->SendAppearancePacket(AT_Anim, ANIM_STAND);
 			}
 			else
 			{
 				mypet->SayString(this, Chat::PetResponse, PET_SIT_STRING);
+				mypet->SetPetFeigned(false);
 				mypet->SetPetOrder(SPO_Sit);
 				mypet->SetRunAnimSpeed(0);
 				if (!mypet->UseBardSpellLogic())	//maybe we can have a bard pet
@@ -10521,6 +10530,7 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
 
 		if ((mypet->GetPetType() == petAnimation && aabonuses.PetCommands[PetCommand]) || mypet->GetPetType() != petAnimation) {
 			mypet->SayString(this, Chat::PetResponse, PET_SIT_STRING);
+			mypet->SetPetFeigned(false);
 			SetPetCommandState(PET_BUTTON_SIT, 0);
 			mypet->SetPetOrder(SPO_Follow);
 			mypet->SendAppearancePacket(AT_Anim, ANIM_STAND);
@@ -10532,6 +10542,7 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
 
 		if ((mypet->GetPetType() == petAnimation && aabonuses.PetCommands[PetCommand]) || mypet->GetPetType() != petAnimation) {
 			mypet->SayString(this, Chat::PetResponse, PET_SIT_STRING);
+			mypet->SetPetFeigned(false);
 			SetPetCommandState(PET_BUTTON_SIT, 1);
 			mypet->SetPetOrder(SPO_Sit);
 			mypet->SetRunAnimSpeed(0);
@@ -10720,6 +10731,64 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
 				if (m_ClientVersionBit & EQ::versions::maskSoDAndLater)
 					MessageString(Chat::PetResponse, PET_FOCUS_SET_OFF);
 				mypet->SetFocused(false);
+			}
+		}
+		break;
+	}
+	case PET_FEIGN: {
+		if (!p_timers.Expired(&database, pTimerPetFeignDeath, false)) {
+			Message(Chat::Red, "Ability recovery time not yet met.");
+			return;
+		}
+
+		if (aabonuses.PetCommands[PetCommand] && mypet->IsNPC()) {
+			mypet->SetPetFeigned(false);
+
+			if (mypet->IsFeared()) {
+				break;
+			}
+
+			uint8 feignchance = 0;
+
+			switch (GetAA(aaFeignedMinion)) {
+				case 1:
+					feignchance = 25;
+					break;
+				case 2:
+					feignchance = 50;
+					break;
+				case 3:
+					feignchance = 75;
+					break;
+			}
+
+			if (feignchance < 25) {
+				break;
+			}
+
+			if (zone->random.Roll(feignchance)) {
+				Log(Logs::General, Logs::Combat, "[DEBUG] - Pet succeeded at Feigning Death! feignchance = %i",
+					feignchance);
+				mypet->SetPetFeigned(true);
+				mypet->WipeHateList();
+				entity_list.RemoveFromTargets(mypet);
+				mypet->SetPetOrder(SPO_Sit);
+				mypet->SetHeld(true);
+				mypet->SetRunAnimSpeed(0);
+				mypet->SayString(Chat::PetResponse, PET_CALMING);
+				mypet->SendAppearancePacket(AT_Anim, ANIM_DEATH);
+				p_timers.Start(pTimerPetFeignDeath, 15);
+				mypet->SendAppearancePacket(AT_Anim, ANIM_DEATH);
+				return;
+			} else {
+				Log(Logs::General, Logs::Combat, "[DEBUG] - Pet failed at Feigning Death! feignchance = %i", feignchance);
+				mypet->SetPetOrder(SPO_Sit);
+				mypet->SetHeld(true);
+				mypet->SetRunAnimSpeed(0);
+				mypet->SendAppearancePacket(AT_Anim, ANIM_DEATH);
+				p_timers.Start(pTimerPetFeignDeath, 15);
+				entity_list.MessageCloseString(this, false, 200, 10, STRING_FEIGNFAILED, GetPet()->GetCleanName());
+				return;
 			}
 		}
 		break;

@@ -367,6 +367,7 @@ Mob::Mob(
 	nocast            = false;
 	focused           = false;
 	pet_stop          = false;
+	pet_feigned 	  = false;
 	pet_regroup       = false;
 	_IsTempPet        = false;
 	pet_owner_client  = false;
