@@ -2333,6 +2333,7 @@ bool NPC::Death(Mob* killer_mob, int32 damage, uint16 spell, EQ::skills::SkillTy
 
 	Mob* killer = GetHateDamageTop(this);
 
+	entity_list.DepopTargetLockedPets(this); // like unswerving hammer pets
 	entity_list.RemoveFromTargets(this, p_depop);
 
 	if (p_depop == true)
@@ -3554,12 +3555,14 @@ void Mob::CommonDamage(Mob* attacker, int &damage, const uint16 spell_id, const 
 		if (attacker->IsClient()) {
 			if (!RuleB(Combat, EXPFromDmgShield)) {
 				// Damage shield damage shouldn't count towards who gets EXP
-				if (!attacker->CastToClient()->GetFeigned() && !FromDamageShield)
+				if (!attacker->CastToClient()->GetFeigned() && !FromDamageShield) {
 					AddToHateList(attacker, 0, damage, true, false, iBuffTic, spell_id);
+				}
 			}
 			else {
-				if (!attacker->CastToClient()->GetFeigned())
+				if (!attacker->CastToClient()->GetFeigned()) {
 					AddToHateList(attacker, 0, damage, true, false, iBuffTic, spell_id);
+				}
 			}
 		}
 		else
@@ -3587,8 +3590,9 @@ void Mob::CommonDamage(Mob* attacker, int &damage, const uint16 spell_id, const 
 				Client* shielder_client = entity_list.GetMob(shielder[0].shielder_id)->CastToClient();
 				if (shielder_client) {
 					float dmg_mod = (75. - (float)shielder[0].shielder_bonus) / 100.;
-					if (dmg_mod < 0.5)
+					if (dmg_mod < 0.5) {
 						dmg_mod = 0.5;
+					}
 
 					int32 shielder_dmg = (int32) (damage*dmg_mod);
 					shielder_client->Damage(attacker, shielder_dmg, spell_id, skill_used, avoidable, buffslot, iBuffTic, special);
@@ -3652,21 +3656,27 @@ void Mob::CommonDamage(Mob* attacker, int &damage, const uint16 spell_id, const 
 
 		//see if any runes want to reduce this damage
 		if (spell_id == SPELL_UNKNOWN) {
+			if (IsClient()) {
+				CommonBreakInvisible();
+			}
 			damage = ReduceDamage(damage);
 			LogCombat("Melee Damage reduced to [{}]", damage);
 			damage = ReduceAllDamage(damage);
 			TryTriggerThreshHold(damage, SE_TriggerMeleeThreshold, attacker);
 
-			if (skill_used)
+			if (skill_used) {
 				CheckNumHitsRemaining(NumHit::IncomingHitSuccess);
+			}
 
 		}
 		else {
 			int32 origdmg = damage;
 			damage = AffectMagicalDamage(damage, spell_id, iBuffTic, attacker);
 			if (origdmg != damage && attacker && attacker->IsClient()) {
-				if (attacker->CastToClient()->GetFilter(FilterDamageShields) != FilterHide)
-					attacker->Message(Chat::Yellow, "The Spellshield absorbed %d of %d points of damage", origdmg - damage, origdmg);
+				if (attacker->CastToClient()->GetFilter(FilterDamageShields) != FilterHide) {
+					attacker->Message(Chat::Yellow, "The Spellshield absorbed %d of %d points of damage",
+									  origdmg - damage, origdmg);
+				}
 			}
 			if (damage == 0 && attacker && origdmg != damage && IsClient()) {
 				//Kayen: Probably need to add a filter for this - Not sure if this msg is correct but there should be a message for spell negate/runes.
@@ -3674,10 +3684,6 @@ void Mob::CommonDamage(Mob* attacker, int &damage, const uint16 spell_id, const 
 			}
 			damage = ReduceAllDamage(damage);
 			TryTriggerThreshHold(damage, SE_TriggerSpellThreshold, attacker);
-		}
-
-		if (IsClient()) {
-			CommonBreakInvisible();
 		}
 
 		if (attacker && attacker->IsClient() && attacker->CastToClient()->sneaking) {
@@ -3689,12 +3695,12 @@ void Mob::CommonDamage(Mob* attacker, int &damage, const uint16 spell_id, const 
 
 		SetHP(GetHP() - damage);
 
-
 		if (HasDied()) {
 			bool IsSaved = false;
 
-			if (TryDivineSave())
+			if (TryDivineSave()) {
 				IsSaved = true;
+			}
 
 			if (!IsSaved && !TrySpellOnDeath()) {
 				SetHP(-500);

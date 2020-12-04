@@ -1467,6 +1467,17 @@ void EntityList::ReplaceWithTarget(Mob *pOldMob, Mob *pNewTarget)
 	}
 }
 
+void EntityList::DepopTargetLockedPets(Mob *mob) {
+	auto iterator = mob->GetHateList().begin();
+	while (iterator != mob->GetHateList().end()) {
+		Mob* entity = (*iterator)->entity_on_hatelist;
+		if (entity != nullptr && entity->IsNPC() && entity->CastToNPC()->IsPet() && entity->CastToNPC()->GetPetType() == petTargetLock) {
+			entity->Depop();
+		}
+		++iterator;
+	}
+}
+
 void EntityList::RemoveFromTargets(Mob *mob, bool RemoveFromXTargets)
 {
 	auto it = mob_list.begin();
@@ -1479,9 +1490,6 @@ void EntityList::RemoveFromTargets(Mob *mob, bool RemoveFromXTargets)
 		}
 
 		m->RemoveFromHateList(mob);
-		if (m->IsPet() && m->GetPetType() == petTargetLock) {
-			m->Depop();
-		}
 	}
 }
 
