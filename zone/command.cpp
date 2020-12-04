@@ -14148,6 +14148,21 @@ void command_who(Client *c, const Seperator *sep)
 				0
 			  ) as account_name,
 			  COALESCE(
+			  	(
+			  		select
+						tblLoginServerAccounts.ForumName
+					from
+						tblLoginServerAccounts,
+						account
+					where
+						tblLoginServerAccounts.LoginServerID = account.lsaccount_id
+					and
+						account.id = character_data.account_id
+					LIMIT 1
+			  	),
+			  	""
+			  ) as forum_name,
+			  COALESCE(
 				(
 				  select
 					account_ip.ip
@@ -14203,7 +14218,8 @@ void command_who(Client *c, const Seperator *sep)
 		auto        player_class        = static_cast<uint32>(atoi(row[7]));
 		auto        account_status      = static_cast<uint32>(atoi(row[8]));
 		std::string account_name        = row[9];
-		std::string account_ip          = row[10];
+		std::string forum_name    		= row[10];
+		std::string account_ip          = row[11];
 		std::string base_class_name     = GetClassIDName(static_cast<uint8>(player_class), 1);
 		std::string displayed_race_name = GetRaceIDName(static_cast<uint16>(player_race));
 
@@ -14216,6 +14232,7 @@ void command_who(Client *c, const Seperator *sep)
 						 str_tolower(base_class_name).find(search_string) != std::string::npos ||
 						 str_tolower(guild_name).find(search_string) != std::string::npos ||
 						 str_tolower(account_name).find(search_string) != std::string::npos ||
+						 str_tolower(forum_name).find(search_string) != std::string::npos ||
 						 str_tolower(account_ip).find(search_string) != std::string::npos
 					 );
 
@@ -14242,7 +14259,7 @@ void command_who(Client *c, const Seperator *sep)
 		std::string display_class_name = GetClassIDName(static_cast<uint8>(player_class), static_cast<uint8>(player_level));
 
 		c->Message(
-			5, "%s[%u %s] %s (%s) %s ZONE: %s (%u) (%s) (%s) (%s)",
+			5, "%s[%u %s] %s (%s) %s ZONE: %s (%u) (%s) L: (%s) F: (%s) (%s)",
 			(account_status > 0 ? "* GM * " : ""),
 			player_level,
 			EQ::SayLinkEngine::GenerateQuestSaylink(StringFormat("#who %s", base_class_name.c_str()), false, display_class_name).c_str(),
@@ -14253,6 +14270,7 @@ void command_who(Client *c, const Seperator *sep)
 			zone_instance,
 			goto_saylink.c_str(),
 			EQ::SayLinkEngine::GenerateQuestSaylink(StringFormat("#who %s", account_name.c_str()), false, account_name).c_str(),
+			EQ::SayLinkEngine::GenerateQuestSaylink(StringFormat("#who %s", forum_name.c_str()), false, forum_name).c_str(),
 			EQ::SayLinkEngine::GenerateQuestSaylink(StringFormat("#who %s", account_ip.c_str()), false, account_ip).c_str()
 		);
 
