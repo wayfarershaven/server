@@ -6264,16 +6264,18 @@ void Client::DragCorpses()
 		Mob *corpse = entity_list.GetMob(It->second);
 
 		if (corpse && corpse->IsPlayerCorpse() &&
-				(DistanceSquaredNoZ(m_Position, corpse->GetPosition()) <= RuleR(Character, DragCorpseDistance)))
+				(DistanceSquared(m_Position, corpse->GetPosition()) <= RuleR(Character, DragCorpseDistance))) {
 			continue;
+		}
 
 		if (!corpse || !corpse->IsPlayerCorpse() ||
 				corpse->CastToCorpse()->IsBeingLooted() ||
 				!corpse->CastToCorpse()->Summon(this, false, false)) {
 			MessageString(Chat::DefaultText, CORPSEDRAG_STOP);
 			It = DraggedCorpses.erase(It);
-			if (It == DraggedCorpses.end())
+			if (It == DraggedCorpses.end()) {
 				break;
+			}
 		}
 	}
 }
