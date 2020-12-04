@@ -12879,14 +12879,17 @@ void Client::Handle_OP_Shielding(const EQApplicationPacket *app)
 
 	bool ack = false;
 
-	int shieldbonus = 0;
+	// calculate shield bonus for shielder (>=50ac = 50% damage)
+	uint16 shieldbonus = 0;
 	EQ::ItemInstance* inst = GetInv().GetItem(EQ::invslot::slotSecondary);
 	if (inst) {
 		const EQ::ItemData* shield = inst->GetItem();
-		if (shield && shield->ItemType == EQ::item::ItemTypeShield) {
-			int shieldbonus = shield->AC / 2;
+		if (shield && shield->IsTypeShield()) {
+			shieldbonus = shield->AC / 2;
 		}
 	}
+
+	// calculate duration bonus
 	int shield_duration_bonus = 0;
 	switch (GetAA(197)) {
 		case 1:
