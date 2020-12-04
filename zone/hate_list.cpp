@@ -322,6 +322,7 @@ Mob *HateList::GetEntWithMostHateOnList(Mob *center, Mob *skip, bool skip_mezzed
 		while (iterator != list.end()) {
 			struct_HateList *cur = (*iterator);
 			int16 aggro_mod = 0;
+			int16 hate_mod = 0;
 
 			if (!cur) {
 				++iterator;
@@ -379,16 +380,26 @@ Mob *HateList::GetEntWithMostHateOnList(Mob *center, Mob *skip, bool skip_mezzed
 #endif
 
 				if (center) {
-					if (center->GetTarget() == cur->entity_on_hatelist)
+					if (center->GetTarget() == cur->entity_on_hatelist) {
 						aggro_mod += RuleI(Aggro, CurrentTargetAggroMod);
-					if (RuleI(Aggro, MeleeRangeAggroMod) != 0) {
-						if (center->CombatRange(cur->entity_on_hatelist)) {
-							aggro_mod += RuleI(Aggro, MeleeRangeAggroMod);
+					}
+					if (center->CombatRange(cur->entity_on_hatelist)) {
+						int32 max_hp = center->GetMaxHP();
+						if (max_hp < 4000) {
+							hate_mod = 100;
+						} else if (max_hp >= 4000 && max_hp <= 60000) {
+							hate_mod = ((max_hp - 4000) / 75) + 100;
+						} else {
+							hate_mod = (max_hp / 100) + 250;
+						}
 
-							if (current_hate > hate_client_type_in_range || cur->is_entity_frenzy) {
-								hate_client_type_in_range = current_hate;
-								top_client_type_in_range = cur->entity_on_hatelist;
-							}
+						if (hate_mod > 2250) {
+							hate_mod = 2250;
+						}
+
+						if (current_hate > hate_client_type_in_range || cur->is_entity_frenzy) {
+							hate_client_type_in_range = current_hate;
+							top_client_type_in_range = cur->entity_on_hatelist;
 						}
 					}
 				}
@@ -412,7 +423,7 @@ Mob *HateList::GetEntWithMostHateOnList(Mob *center, Mob *skip, bool skip_mezzed
 			}
 
 			if (aggro_mod) {
-				current_hate += (current_hate * aggro_mod / 100);
+				current_hate += (current_hate * aggro_mod / 100) + hate_mod;
 			}
 
 			if (current_hate > hate || cur->is_entity_frenzy) {
