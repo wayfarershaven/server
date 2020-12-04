@@ -569,11 +569,15 @@ void Mob::SetInvisible(uint8 state /* = 0*/, uint8 type /*= 0*/)
 		invisible_animals = true;
 	}
 	else if (type == 3) {
+		invisible = state;
 		hidden = true;
+		SendAppearancePacket(AT_Invis, invisible);
 	}
 	else if (type == 4) {
+		invisible = state;
 		improved_hidden = true;
 		hidden = true;
+		SendAppearancePacket(AT_Invis, invisible);
 	}
 
 	// All types of invis and hide depops summoned pets and breaks charms
