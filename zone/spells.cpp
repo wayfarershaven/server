@@ -2079,46 +2079,26 @@ bool Mob::SpellFinished(uint16 spell_id, Mob *spell_target, CastingSlot slot, ui
 	if(!IsValidSpell(spell_id))
 		return false;
 
-	//Guard Assist Code
-	if (RuleB(Character, PVPEnableGuardFactionAssist) && IsDetrimentalSpell(spell_id) && spell_target != this) {
-		if (IsClient() || (HasOwner() && GetOwner()->IsClient())) {
-			auto& mob_list = entity_list.GetCloseMobList(spell_target);
-			for (auto& e : mob_list) {
-				auto mob = e.second;
-				if (mob->IsNPC() && mob->CastToNPC()->IsGuard()) {
-					float distance = Distance(spell_target->GetPosition(), mob->GetPosition());
-					if ((mob->CheckLosFN(spell_target) || mob->CheckLosFN(this)) && distance <= 70) {
-						auto petorowner = GetOwnerOrSelf();
-						if (spell_target->GetReverseFactionCon(mob) <= petorowner->GetReverseFactionCon(mob)) {
-							mob->AddToHateList(this);
-						}
-					}
-				}
+	if (spells[spell_id].zonetype == 1 && !zone->CanCastOutdoor()) {
+		if (IsClient()) {
+			if (!CastToClient()->GetGM()) {
+				MessageString(Chat::Red, CAST_OUTDOORS);
+				return false;
 			}
 		}
 	}
 
-	if( spells[spell_id].zonetype == 1 && !zone->CanCastOutdoor()){
-		if(IsClient()){
-				if(!CastToClient()->GetGM()){
-					MessageString(Chat::Red, CAST_OUTDOORS);
-					return false;
-				}
+	if (IsEffectInSpell(spell_id, SE_Levitate) && !zone->CanLevitate()) {
+		if (IsClient()) {
+			if (!CastToClient()->GetGM()) {
+				Message(13, "You can't levitate in this zone.");
+				return false;
 			}
 		}
+	}
 
-	if(IsEffectInSpell(spell_id, SE_Levitate) && !zone->CanLevitate()){
-			if(IsClient()){
-				if(!CastToClient()->GetGM()){
-					Message(Chat::Red, "You can't levitate in this zone.");
-					return false;
-				}
-			}
-		}
-
-	if(IsClient() && !CastToClient()->GetGM()){
-
-		if(zone->IsSpellBlocked(spell_id, glm::vec3(GetPosition()))){
+	if (IsClient() && !CastToClient()->GetGM()) {
+		if (zone->IsSpellBlocked(spell_id, glm::vec3(GetPosition()))) {
 			const char *msg = zone->GetSpellBlockedMessage(spell_id, glm::vec3(GetPosition()));
 			if(msg){
 				Message(Chat::Red, msg);
@@ -5768,6 +5748,8 @@ uint32 Mob::SpellRecastMod(uint32 spell_id, uint32 base_recast) {
 			}
 			break;
 		}
+		default:
+			break;
 	}
 	return base_recast;
 }

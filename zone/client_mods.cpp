@@ -1508,8 +1508,11 @@ int32 Client::CalcATK()
 
 uint32 Mob::GetInstrumentMod(uint16 spell_id) const
 {
-	if (GetClass() != BARD || spells[spell_id].IsDisciplineBuff) // Puretone is Singing but doesn't get any mod
+	// Puretone is Singing but doesn't get any mod
+	// Amplification (2603) is singing but doesn't get any mod
+	if (GetClass() != BARD || spells[spell_id].IsDisciplineBuff || spell_id == 2603) {
 		return 10;
+	}
 
 	uint32 effectmod = 10;
 	int effectmodcap = 0;
@@ -1517,10 +1520,11 @@ uint32 Mob::GetInstrumentMod(uint16 spell_id) const
 	if (RuleB(Character, UseSpellFileSongCap)) {
 		effectmodcap = spells[spell_id].songcap / 10;
 		// this looks a bit weird, but easiest way I could think to keep both systems working
-		if (effectmodcap == 0)
+		if (effectmodcap == 0) {
 			nocap = true;
-		else
+		} else {
 			effectmodcap += 10;
+		}
 	} else {
 		effectmodcap = RuleI(Character, BaseInstrumentSoftCap);
 	}
