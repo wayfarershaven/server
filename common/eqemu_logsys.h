@@ -121,7 +121,8 @@ namespace Logs {
 		Loot, // 70
 		Expeditions,
 		DynamicZones,
-		Scheduler, // 73
+		Group,
+		Scheduler, // 74
 		MaxCategoryID /* Don't Remove this */
 	};
 
@@ -202,6 +203,7 @@ namespace Logs {
 		"Loot",
 		"Expeditions",
 		"DynamicZones",
+		"Group",
 		"Scheduler",
 	};
 }
