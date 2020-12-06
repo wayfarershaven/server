@@ -400,6 +400,8 @@ NPC::NPC(const NPCType *npc_type_data, Spawn2 *in_respawn, const glm::vec4 &posi
 	qGlobals = nullptr;
 
 	SetEmoteID(static_cast<uint16>(npc_type_data->emoteid));
+	SetCombatHPRegen(npc_type_data->combat_hp_regen);
+	SetCombatManaRegen(npc_type_data->combat_mana_regen);
 	InitializeBuffSlots();
 	CalcBonuses();
 
@@ -774,59 +776,14 @@ bool NPC::Process()
 			npc_sitting_regen_bonus += 3;
 		}
 
-		int32 ooc_regen_calc = 0;
-		if (ooc_regen > 0) { //should pull from Mob class
-			ooc_regen_calc += GetMaxHP() * ooc_regen / 100;
+		// Hp regen
+		if(GetHP() < GetMaxHP()) {
+			SetHP(GetHP() + GetHPRegen());
 		}
 
-		/**
-		 * Use max value between two values
-		 */
-		npc_regen = std::max(npc_hp_regen, ooc_regen_calc);
-
-		if ((GetHP() < GetMaxHP()) && !IsPet()) {
-			if (!IsEngaged()) {
-				SetHP(GetHP() + npc_regen + npc_sitting_regen_bonus);
-			}
-			else {
-				SetHP(GetHP() + npc_hp_regen);
-			}
-		}
-		else if (GetHP() < GetMaxHP() && GetOwnerID() != 0) {
-			if (!IsEngaged()) {
-				if (ooc_regen > 0) {
-					pet_regen_bonus = std::max(ooc_regen_calc, npc_hp_regen);
-				}
-				else {
-					pet_regen_bonus = npc_hp_regen + (GetLevel() / 5);
-				}
-
-				SetHP(GetHP() + npc_sitting_regen_bonus + pet_regen_bonus);
-			}
-			else {
-				SetHP(GetHP() + npc_hp_regen);
-			}
-
-		}
-		else {
-			SetHP(GetHP() + npc_hp_regen + npc_sitting_regen_bonus);
-		}
-
+		// mana regen
 		if (GetMana() < GetMaxMana()) {
-			if (RuleB(NPC, UseMeditateBasedManaRegen)) {
-				int32 npc_idle_mana_regen_bonus = 2;
-				uint16 meditate_skill = GetSkill(EQ::skills::SkillMeditate);
-				if (!IsEngaged() && meditate_skill > 0) {
-					uint8 clevel = GetLevel();
-					npc_idle_mana_regen_bonus =
-						(((meditate_skill / 10) +
-						(clevel - (clevel / 4))) / 4) + 4;
-				}
-				SetMana(GetMana() + mana_regen + npc_idle_mana_regen_bonus);
-			}
-			else {
-				SetMana(GetMana() + mana_regen + npc_sitting_regen_bonus);
-			}
+			SetMana(GetMana() + GetManaRegen());
 		}
 
 		SendHPUpdate();
@@ -2516,6 +2473,61 @@ void NPC::ModifyNPCStat(const char *identifier, const char *new_value)
 		AI_AddNPCSpellsEffects(atoi(val.c_str()));
 		CalcBonuses();
 		return;
+	}
+}
+
+int32 NPC::GetHPRegen() {
+	uint32 bonus = 0;
+	if (GetAppearance() == eaSitting) {
+		bonus += 3;
+	}
+
+	if ((GetHP() < GetMaxHP()) && !IsPet()) {
+		// OOC
+		if (!IsEngaged()) {
+			return (GetNPCHPRegen() + bonus); // hp_regen + spell/item regen + sitting bonus
+			// In Combat
+		} else {
+			return (GetCombatHPRegen() + (GetNPCHPRegen() - hp_regen)); // combat_regen + spell/item regen
+		}
+	}
+		// Pet
+	else if (GetHP() < GetMaxHP() && GetOwnerID() != 0) {
+		if (!IsEngaged()) {
+			return (GetNPCHPRegen() + bonus + (GetLevel() / 5));
+		} else {
+			return (GetCombatHPRegen() + (GetNPCHPRegen() - hp_regen));
+		}
+	} else {
+		return 0;
+	}
+}
+
+int32 NPC::GetManaRegen() {
+	uint32 bonus = 0;
+	if (GetAppearance() == eaSitting) {
+		bonus += 3;
+	}
+
+	// Non-Pet
+	if ((GetMana() < GetMaxMana()) && !IsPet()) {
+		// OOC
+		if (!IsEngaged()) {
+			return (GetNPCManaRegen() + bonus); // mana_regen + spell/item regen + sitting bonus
+			// In Combat
+		} else {
+			return (GetCombatManaRegen() + (GetNPCManaRegen() - mana_regen)); // combat_regen + spell/item regen
+		}
+	}
+		// Pet
+	else if (GetMana() < GetMaxMana() && GetOwnerID() != 0) {
+		if (!IsEngaged()) {
+			return (GetNPCManaRegen() + bonus + (GetLevel() / 5));
+		} else {
+			return (GetCombatManaRegen() + (GetNPCManaRegen() - mana_regen));
+		}
+	} else {
+		return 0;
 	}
 }
 
