@@ -1187,7 +1187,7 @@ int ZoneDatabase::GetRandomWaypointLocFromGrid(glm::vec4 &loc, uint16 zoneid, in
 
 	if (results.RowCount() > 0)
 	{
-		int roll = zone->random.Int(0, results.RowCount() - 1);
+		int roll = zone->random.Int(1, results.RowCount() - 1);
 		int i = 0;
 		auto row = results.begin();
 		while (i < roll)
