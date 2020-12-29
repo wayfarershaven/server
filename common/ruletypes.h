@@ -533,6 +533,7 @@ RULE_REAL(Combat, SlayDamageAdjustment, 1.0, "Slay Damage Adjustment")
 RULE_CATEGORY_END()
 
 RULE_CATEGORY(NPC)
+RULE_BOOL(NPC, PetZoneWithOwner, false, "Should Pets Zone with Owner")
 RULE_INT(NPC, DefaultShieldReuseTimer, 60, "Default Shield Reuse Timer")
 RULE_REAL(NPC, ShieldStartHPRatio, 95.0, "")
 RULE_INT(NPC, MinorNPCCorpseDecayTimeMS, 450000, "NPC corpse decay time, if NPC below level 55 (milliseconds)")
