@@ -4336,14 +4336,11 @@ uint32 ZoneDatabase::SendCharacterCorpseToGraveyard(uint32 dbid, uint32 zone_id,
 	return dbid;
 }
 
-void ZoneDatabase::SendCharacterCorpseToNonInstance(uint32 corpse_db_id)
-{
-	if (corpse_db_id != 0)
-	{
+void ZoneDatabase::SendCharacterCorpseToNonInstance(uint32 corpse_db_id) {
+	if (corpse_db_id != 0) {
 		auto query = fmt::format(SQL(
-			UPDATE character_corpses SET instance_id = 0 WHERE id = {};
-		), corpse_db_id);
-
+										 UPDATE character_corpses SET instance_id = 0 WHERE id = {};
+								 ), corpse_db_id);
 		QueryDatabase(query);
 	}
 }

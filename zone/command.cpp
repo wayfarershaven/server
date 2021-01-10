@@ -5178,35 +5178,39 @@ void command_corpse(Client *c, const Seperator *sep) {
 		}
 	} else if (strcasecmp(sep->arg[1], "delete") == 0) {
 		if (target == 0 || !target->IsCorpse()) {
-			c->Message(0, "Error: Target the corpse you wish to delete");
+			c->Message(Chat::Red, "Error: Target the corpse you wish to delete");
 			return;
 		}
 		if (target->IsNPCCorpse()) {
-			c->Message(0, "Depoping %s.", target->GetName());
+			c->Message(Chat::White, "Depoping %s.", target->GetName());
 			target->CastToCorpse()->Delete();
 		} else if (target->IsPlayerCorpse() && c->Admin() >= commandEditPlayerCorpses) {
-			c->Message(0, "Deleting %s.", target->GetName());
+			c->Message(Chat::White, "Deleting %s.", target->GetName());
 			target->CastToCorpse()->Delete();
 		} else if (strlen(sep->arg[2]) > 0 && sep->IsNumber(2)) {
 			database.DeleteCharacterCorpse(atoi(sep->arg[2]));
 		} else
-			c->Message(0, "Insufficient status to delete player corpse.");
+			c->Message(Chat::White, "Insufficient status to delete player corpse.");
+	} else if (strcasecmp(sep->arg[1], "moveallgraveyard") == 0) {
+		int count = entity_list.MovePlayerCorpsesToGraveyard(true);
+		c->Message(Chat::White, "Moved [%d] player corpse(s) to zone graveyard", count);
 	} else if (sep->arg[1][0] == 0 || strcasecmp(sep->arg[1], "help") == 0) {
-		c->Message(0, "#Corpse Sub-Commands:");
-		c->Message(0, "  lock - Lock corpse, only GM can loot");
-		c->Message(0, "  unlock - unlocks corpse, allowing anybody to loot");
-		c->Message(0, "  locate (all) - Find Targeted persons corpses in zone and optional (all) for world.");
-		c->Message(0, "  listPC - Show all Player corpse locations in zone");
-		c->Message(0, "  listNPC - Show all NPC corpse locations in zone");
-		c->Message(0, "  depop (1) - Depop target corpse. Optional (1) will bury corpse.");
-		c->Message(0,
+		c->Message(Chat::White, "#Corpse Sub-Commands:");
+		c->Message(Chat::White, "  lock - Lock corpse, only GM can loot");
+		c->Message(Chat::White, "  unlock - unlocks corpse, allowing anybody to loot");
+		c->Message(Chat::White, "  locate (all) - Find Targeted persons corpses in zone and optional (all) for world.");
+		c->Message(Chat::White, "  listPC - Show all Player corpse locations in zone");
+		c->Message(Chat::White, "  listNPC - Show all NPC corpse locations in zone");
+		c->Message(Chat::White, "  depop (1) - Depop target corpse. Optional (1) will bury corpse.");
+		c->Message(Chat::White,
 				   "  summon - Summon target or name - Example #corpse summon mythsong OR #corpse summon with a target");
-		c->Message(0, "  buried - #corpse buried list, #corpse buried summon");
-		c->Message(0, "  backup - #corpse backup list, #corpse backup summon");
-		c->Message(0,
+		c->Message(Chat::White, "  buried - #corpse buried list, #corpse buried summon");
+		c->Message(Chat::White, "  backup - #corpse backup list, #corpse backup summon");
+		c->Message(Chat::White,
 				   "  delete (Corpsenumber) - Delete a corpse permanently. Corpsenumber optional if no corpse target");
+		c->Message(Chat::White, "  MoveAllGraveyard - move all player corpses to zone's graveyard or non-instance");
 	} else {
-		c->Message(0, "Error, #corpse sub-command not found");
+		c->Message(Chat::White, "Error, #corpse sub-command not found");
 	}
 }
 
