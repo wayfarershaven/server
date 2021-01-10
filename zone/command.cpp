@@ -13270,6 +13270,19 @@ void command_questerrors(Client *c, const Seperator *sep)
 	}
 }
 
+void command_endurance(Client *c, const Seperator *sep) {
+	Mob *t;
+
+	t = c->GetTarget() ? c->GetTarget() : c;
+
+	if (t->IsClient())
+		t->CastToClient()->SetEndurance(t->CastToClient()->GetMaxEndurance());
+	else
+		t->SetEndurance(t->GetMaxEndurance());
+
+	t->Message(Chat::White, "Your endurance has been refilled.");
+}
+
 void command_enablerecipe(Client *c, const Seperator *sep)
 {
 	uint32 recipe_id = 0;
