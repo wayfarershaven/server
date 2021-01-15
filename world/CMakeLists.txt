@@ -20,6 +20,7 @@ SET(world_sources
 	login_server.cpp
 	login_server_list.cpp
 	main.cpp
+	nats_manager.cpp
 	queryserv.cpp
 	ucs.cpp
 	web_interface.cpp
@@ -55,6 +56,7 @@ SET(world_headers
 	lfplist.h
 	login_server.h
 	login_server_list.h
+	nats_manager.h
 	queryserv.h
 	sof_char_create_data.h
 	ucs.h

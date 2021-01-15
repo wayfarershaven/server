@@ -38,6 +38,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include "world_store.h"
 #include "dynamic_zone.h"
 #include "expedition_message.h"
+#include "nats_manager.h"
 
 extern ClientList client_list;
 extern GroupLFPList LFPGroupList;
@@ -48,6 +49,7 @@ extern volatile bool UCSServerAvailable_;
 extern AdventureManager adventure_manager;
 extern UCSConnection UCSLink;
 extern QueryServConnection QSLink;
+extern NatsManager nats;
 void CatchSignal(int sig_num);
 
 ZoneServer::ZoneServer(std::shared_ptr<EQ::Net::ServertalkServerConnection> connection, EQ::Net::ConsoleServer *console)
@@ -420,6 +422,7 @@ void ZoneServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p) {
 		if (pack->size < sizeof(ServerChannelMessage_Struct))
 			break;
 		ServerChannelMessage_Struct* scm = (ServerChannelMessage_Struct*)pack->pBuffer;
+		nats.OnChannelMessage(scm);
 		if (scm->chan_num == ChatChannel_UCSRelay)
 		{
 			UCSLink.SendMessage(scm->from, scm->message);
@@ -518,6 +521,7 @@ void ZoneServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p) {
 	}
 	case ServerOP_EmoteMessage: {
 		ServerEmoteMessage_Struct* sem = (ServerEmoteMessage_Struct*)pack->pBuffer;
+		nats.OnEmoteMessage(sem);
 		zoneserver_list.SendEmoteMessageRaw(sem->to, sem->guilddbid, sem->minstatus, sem->type, sem->message);
 		break;
 	}

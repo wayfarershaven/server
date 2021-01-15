@@ -93,6 +93,7 @@ SET(zone_sources
 	mob_movement_manager.cpp
 	mob_info.cpp
 	mod_functions.cpp
+	nats_manager.cpp
 	npc.cpp
 	npc_ai.cpp
 	npc_scale_manager.cpp
@@ -228,6 +229,7 @@ SET(zone_headers
 	merc.h
 	mob.h
 	mob_movement_manager.h
+	nats_manager.h
 	npc.h
 	npc_ai.h
 	npc_scale_manager.h

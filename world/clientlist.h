@@ -72,6 +72,7 @@ public:
 
 	void GetClientList(Json::Value &response);
 
+	std::string GetWhoAll();
 private:
 	void OnTick(EQ::Timer *t);
 	inline uint32 GetNextCLEID() { return NextCLEID++; }

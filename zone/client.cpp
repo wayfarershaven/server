@@ -60,9 +60,11 @@ extern volatile bool RunLoops;
 #include "quest_parser_collection.h"
 #include "queryserv.h"
 #include "mob_movement_manager.h"
+#include "nats_manager.h"
 #include "../common/content/world_content_service.h"
 #include "../common/expedition_lockout_timer.h"
 
+extern NatsManager nats;
 extern QueryServ* QServ;
 extern EntityList entity_list;
 extern Zone* zone;
@@ -3939,6 +3941,7 @@ void Client::Sacrifice(Client *caster)
 			app.priority = 6;
 			entity_list.QueueClients(this, &app);
 
+			nats.OnDeathEvent(d);
 			BuffFadeAll();
 			UnmemSpellAll();
 			Group *g = GetGroup();

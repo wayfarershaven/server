@@ -28,6 +28,7 @@
 #include "zonedb.h"
 #include "zone_store.h"
 #include "global_loot_manager.h"
+#include "nats_manager.h"
 #include "../common/repositories/criteria/content_filter_criteria.h"
 #include "../common/say_link.h"
 
@@ -37,6 +38,8 @@
 #ifdef _WINDOWS
 #define snprintf	_snprintf
 #endif
+
+extern NatsManager nats;
 
 // Queries the loottable: adds item & coin to the npc
 void ZoneDatabase::AddLootTableToNPC(NPC* npc,uint32 loottable_id, ItemList* itemlist, uint32* copper, uint32* silver, uint32* gold, uint32* plat) {
@@ -346,6 +349,7 @@ void NPC::AddLootDrop(
 		p_wear_change_struct = (WearChange_Struct *) outapp->pBuffer;
 		p_wear_change_struct->spawn_id = GetID();
 		p_wear_change_struct->material = 0;
+		nats.OnWearChangeEvent(this->GetID(), p_wear_change_struct);
 	}
 
 	item->item_id           = item2->ID;

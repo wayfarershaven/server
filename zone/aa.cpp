@@ -27,6 +27,7 @@ Copyright (C) 2001-2016 EQEMu Development Team (http://eqemulator.net)
 #include "client.h"
 #include "corpse.h"
 #include "groups.h"
+#include "nats_manager.h"
 #include "mob.h"
 #include "queryserv.h"
 #include "raids.h"
@@ -36,6 +37,7 @@ Copyright (C) 2001-2016 EQEMu Development Team (http://eqemulator.net)
 #include "zone_store.h"
 
 extern QueryServ* QServ;
+extern NatsManager nats;
 
 void Mob::TemporaryPets(uint16 spell_id, Mob *targ, const char *name_override, uint32 duration_override, bool followme, bool sticktarg, uint16 *eye_id) {
 
@@ -938,6 +940,7 @@ void Client::SendAlternateAdvancementStats() {
 	aps->percentage = m_epp.perAA;
 	QueuePacket(outapp);
 	safe_delete(outapp);
+	nats.OnAlternateAdvancementStats(GetID(), aps);
 }
 
 void Client::SendAlternateAdvancementPoints() {
@@ -973,6 +976,7 @@ void Client::SendAlternateAdvancementTimer(int ability, int begin, int end) {
 	uaaout->end = end;
 	QueuePacket(outapp);
 	safe_delete(outapp);
+	nats.OnAlternateAdvancementAction(GetID(), uaaout);
 }
 
 //sends all AA timers.
@@ -992,6 +996,7 @@ void Client::SendAlternateAdvancementTimers() {
 		uaaout->begin = cur->GetStartTime();
 		uaaout->end = static_cast<uint32>(time(nullptr));
 		uaaout->ability = cur->GetType() - pTimerAAStart; // uuaaout->ability is really a shared timer number
+		nats.OnAlternateAdvancementAction(GetID(), uaaout);
 		QueuePacket(outapp);
 	}
 
@@ -1024,6 +1029,8 @@ void Client::ResetAlternateAdvancementTimers() {
 		uaaout->ability = cur->GetType() - pTimerAAStart;
 		r_timers.push_back(cur->GetType());
 		QueuePacket(outapp);
+
+		nats.OnAlternateAdvancementAction(GetID(), uaaout);
 	}
 
 	for(auto &i : r_timers) {

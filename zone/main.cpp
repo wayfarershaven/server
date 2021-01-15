@@ -57,6 +57,7 @@
 #include "lua_parser.h"
 #include "questmgr.h"
 #include "npc_scale_manager.h"
+#include "nats_manager.h"
 
 #include "../common/net/eqstream.h"
 #include "../common/content/world_content_service.h"
@@ -95,6 +96,8 @@ ZoneStore zone_store;
 uint32 numclients = 0;
 char errorname[32];
 extern Zone* zone;
+NatsManager nats;
+
 npcDecayTimes_Struct npcCorpseDecayTimes[100];
 TitleManager title_manager;
 QueryServ *QServ          = 0;
@@ -149,6 +152,7 @@ int main(int argc, char** argv) {
 		return 1;
 	}
 	Config = ZoneConfig::get();
+	nats.Load();
 
 	const char *zone_name;
 	uint32 instance_id = 0;
@@ -552,9 +556,15 @@ int main(int argc, char** argv) {
 				entity_list.EncounterProcess();
 				event_scheduler.Process(zone, &content_service);
 
+				if (zone->IsLoaded()) {
+					nats.ZoneSubscribe(zone->GetShortName(), zone->GetInstanceID());
+					nats.Process();
+				}
+
 				if (zone) {
 					if (!zone->Process()) {
 						Zone::Shutdown();
+						nats.Unregister();
 					}
 				}
 
@@ -589,8 +599,10 @@ int main(int argc, char** argv) {
 
 	safe_delete(Config);
 
-	if (zone != 0)
+	if (zone != 0) {
 		Zone::Shutdown(true);
+		nats.Unregister();
+	}
 	//Fix for Linux world server problem.
 	safe_delete(task_manager);
 	safe_delete(npc_scale_manager);

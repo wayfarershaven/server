@@ -90,6 +90,7 @@ union semun {
 #include "console.h"
 #include "expedition_database.h"
 #include "expedition_state.h"
+#include "nats_manager.h"
 
 #include "../common/net/servertalk_server.h"
 #include "../zone/data_bucket.h"
@@ -118,6 +119,7 @@ const WorldConfig *Config;
 EQEmuLogSys LogSys;
 WorldContentService content_service;
 WebInterfaceList web_interface;
+NatsManager nats;
 
 void CatchSignal(int sig_num);
 void CheckForServerScript(bool force_download = false);
@@ -422,6 +424,7 @@ int main(int argc, char** argv) {
 	}
 
 	adventure_manager.LoadLeaderboardInfo();
+	nats.Load();
 
 	LogInfo("Purging expired expeditions");
 	ExpeditionDatabase::PurgeExpiredExpeditions();
@@ -460,6 +463,7 @@ int main(int argc, char** argv) {
 	server_connection->Listen(server_opts);
 	LogInfo("Server (TCP) listener started");
 
+	nats.SendAdminMessage("World server booted up.");
 	server_connection->OnConnectionIdentified(
 		"Zone", [&console](std::shared_ptr<EQ::Net::ServertalkServerConnection> connection) {
 			LogInfo("New Zone Server connection from [{2}] at [{0}:{1}]",
@@ -627,6 +631,7 @@ int main(int argc, char** argv) {
 		LFPGroupList.Process();
 		adventure_manager.Process();
 		expedition_state.Process();
+		nats.Process();
 
 		if (InterserverTimer.Check()) {
 			InterserverTimer.Start();

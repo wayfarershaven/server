@@ -47,6 +47,7 @@
 #include "wguild_mgr.h"
 #include "sof_char_create_data.h"
 #include "world_store.h"
+#include "nats_manager.h"
 
 #include <iostream>
 #include <iomanip>
@@ -84,6 +85,7 @@ extern LoginServerList loginserverlist;
 extern ClientList client_list;
 extern EQ::Random emu_random;
 extern uint32 numclients;
+extern NatsManager nats;
 extern volatile bool RunLoops;
 extern volatile bool UCSServerAvailable_;
 

@@ -250,8 +250,11 @@ public:
 	bool	GetZoneGraveyard(const uint32 graveyard_id, uint32* graveyard_zoneid = 0, float* graveyard_x = 0, float* graveyard_y = 0, float* graveyard_z = 0, float* graveyard_heading = 0);
 	bool	GetZoneLongName(const char* short_name, char** long_name, char* file_name = 0, float* safe_x = 0, float* safe_y = 0, float* safe_z = 0, uint32* graveyard_id = 0, uint32* maxclients = 0);
 	bool	LoadPTimers(uint32 charid, PTimerList &into);
+	bool	LoadZoneNames();
 
+	const char*	GetZoneName(uint32 zoneID, bool ErrorUnknown = false);
 	uint32	GetZoneGraveyardID(uint32 zone_id, uint32 version);
+	uint32	GetZoneID(const char* zonename);
 
 	uint8	GetPEQZone(uint32 zoneID, uint32 version);
 	uint8	GetRaceSkill(uint8 skillid, uint8 in_race);
@@ -275,6 +278,8 @@ public:
 	void	LoadLogSettings(EQEmuLogSys::LogSettings* log_settings);
 
 private:
+
+	std::map<uint32,std::string>	zonename_array;
 
 	Mutex Mvarcache;
 	VarCache_Struct varcache;

@@ -81,6 +81,7 @@ Copyright (C) 2001-2002 EQEMu Development Team (http://eqemu.org)
 #include "quest_parser_collection.h"
 #include "string_ids.h"
 #include "worldserver.h"
+#include "nats_manager.h"
 #include "fastmath.h"
 
 #include <assert.h>
@@ -107,6 +108,7 @@ Copyright (C) 2001-2002 EQEMu Development Team (http://eqemu.org)
 extern Zone* zone;
 extern volatile bool is_zone_loaded;
 extern WorldServer worldserver;
+extern NatsManager nats;
 extern FastMath g_Math;
 
 using EQ::spells::CastingSlot;
@@ -276,6 +278,7 @@ bool Mob::CastSpell(uint16 spell_id, uint16 target_id, CastingSlot slot,
 					LogError("HACKER: [{}] (account: [{}]) attempted to click an equip-only effect on item [{}] (id: [{}]) which they shouldn't be able to equip!",
 						CastToClient()->GetCleanName(), CastToClient()->AccountName(), itm->GetItem()->Name, itm->GetItem()->ID);
 					database.SetHackerFlag(CastToClient()->AccountName(), CastToClient()->GetCleanName(), "Clicking equip-only item with an invalid class");
+					nats.SendAdminMessage(StringFormat("Hacker %s: Clicking equip-only item with an invalid class.", GetCleanName()));
 				}
 				else {
 					MessageString(Chat::Red, MUST_EQUIP_ITEM);
@@ -288,6 +291,7 @@ bool Mob::CastSpell(uint16 spell_id, uint16 target_id, CastingSlot slot,
 					LogError("HACKER: [{}] (account: [{}]) attempted to click a race/class restricted effect on item [{}] (id: [{}]) which they shouldn't be able to click!",
 						CastToClient()->GetCleanName(), CastToClient()->AccountName(), itm->GetItem()->Name, itm->GetItem()->ID);
 					database.SetHackerFlag(CastToClient()->AccountName(), CastToClient()->GetCleanName(), "Clicking race/class restricted item with an invalid class");
+					nats.SendAdminMessage(StringFormat("Hacker %s: Clicking race/class restricted item with invalid class.", GetCleanName()));
 				}
 				else {
 					if (CastToClient()->ClientVersion() >= EQ::versions::ClientVersion::RoF)
@@ -308,6 +312,7 @@ bool Mob::CastSpell(uint16 spell_id, uint16 target_id, CastingSlot slot,
 				// They are attempting to cast a must equip clicky without having it equipped
 				LogError("HACKER: [{}] (account: [{}]) attempted to click an equip-only effect on item [{}] (id: [{}]) without equiping it!", CastToClient()->GetCleanName(), CastToClient()->AccountName(), itm->GetItem()->Name, itm->GetItem()->ID);
 				database.SetHackerFlag(CastToClient()->AccountName(), CastToClient()->GetCleanName(), "Clicking equip-only item without equiping it");
+				nats.SendAdminMessage(StringFormat("Hacker %s: Clicking equip-only item without equipping it.", GetCleanName()));
 			}
 			else {
 				MessageString(Chat::Red, MUST_EQUIP_ITEM);
@@ -2760,6 +2765,7 @@ void Mob::BardPulse(uint16 spell_id, Mob *caster) {
 			safe_delete(message_packet);
 			safe_delete(packet);
 
+			nats.OnDamageEvent(cd->source, cd);
 		}
 		//we are done...
 		return;
@@ -4173,6 +4179,7 @@ bool Mob::SpellOnTarget(uint16 spell_id, Mob *spelltar, bool reflect, bool use_r
 	}
 	safe_delete(action_packet);
 	safe_delete(message_packet);
+	nats.OnDamageEvent(cd->source, cd);
 
 	LogSpells("Cast of [{}] by [{}] on [{}] complete successfully", spell_id, GetName(), spelltar->GetName());
 

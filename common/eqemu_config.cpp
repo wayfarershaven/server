@@ -167,6 +167,11 @@ void EQEmuConfig::parse_config()
 	ZoneExe = _root["server"]["launcher"].get("exe", "./zone").asString();
 #endif
 
+	/**
+	 * NATS
+	 */
+	NATSHost    = _root["server"]["NATS"].get("host", "localhost").asString();
+	NATSPort    = atoi(_root["server"]["NATS"].get("port", "4222").asString().c_str());
 }
 std::string EQEmuConfig::GetByName(const std::string &var_name) const
 {

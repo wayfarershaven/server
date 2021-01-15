@@ -63,6 +63,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include "worldserver.h"
 #include "zone.h"
 #include "mob_movement_manager.h"
+#include "nats_manager.h"
 #include "../common/repositories/criteria/content_filter_criteria.h"
 
 #ifdef BOTS
@@ -75,6 +76,7 @@ extern volatile bool is_zone_loaded;
 extern WorldServer worldserver;
 extern PetitionList petition_list;
 extern EntityList entity_list;
+extern NatsManager nats;
 typedef void (Client::*ClientPacketProc)(const EQApplicationPacket *app);
 
 
@@ -1186,6 +1188,7 @@ void Client::Handle_Connect_OP_ZoneComplete(const EQApplicationPacket *app)
 	auto outapp = new EQApplicationPacket(OP_0x0347, 0);
 	QueuePacket(outapp);
 	safe_delete(outapp);
+	nats.OnZoneCompleteEvent(GetID());
 	return;
 }
 
@@ -1224,7 +1227,7 @@ void Client::Handle_Connect_OP_ZoneEntry(const EQApplicationPacket *app)
 	if (client != 0) {
 		struct in_addr ghost_addr;
 		ghost_addr.s_addr = eqs->GetRemoteIP();
-
+		//nats.SendAdminMessage(StringFormat("Ghosting client: Account ID:%i Name:%s Character:%s IP:%s", client->AccountID(), client->AccountName(), client->GetName(), inet_ntoa(ghost_addr)));
 		LogError("Ghosting client: Account ID:[{}] Name:[{}] Character:[{}] IP:[{}]",
 			client->AccountID(), client->AccountName(), client->GetName(), inet_ntoa(ghost_addr));
 		client->Save();
@@ -1797,6 +1800,8 @@ void Client::Handle_OP_AAAction(const EQApplicationPacket *app)
 		return;
 	}
 	AA_Action* action = (AA_Action*)app->pBuffer;
+
+	nats.OnAlternateAdvancementActionRequest(GetID(), action);
 
 	//break feign if casting
 	if (feigned) {
@@ -2948,6 +2953,7 @@ void Client::Handle_OP_Assist(const EQApplicationPacket *app)
 		}
 	}
 
+	nats.OnEntityEvent(OP_Assist, this->GetID(), eid->entity_id);
 	FastQueuePacket(&outapp);
 	return;
 }
@@ -4010,9 +4016,11 @@ void Client::Handle_OP_Camp(const EQApplicationPacket *app)
 	//if (group && group->GroupCount() < 2)
 	//	group->DisbandGroup();
 #endif
-	if (IsLFP())
+	if (IsLFP()) {
 		worldserver.StopLFP(CharacterID());
+	}
 
+	nats.OnEntityEvent(OP_Camp, this->GetID(), 0);
 	if (GetGM())
 	{
 		OnDisconnect(true);
@@ -4259,6 +4267,7 @@ void Client::Handle_OP_ChannelMessage(const EQApplicationPacket *app)
 	{
 		skill_in_language = m_pp.languages[cm->language];
 	}
+	nats.OnChannelMessageEvent(this->GetID(), cm);
 	ChannelMessageReceived(cm->chan_num, cm->language, skill_in_language, cm->message, cm->targetname);
 	return;
 }
@@ -5244,6 +5253,7 @@ void Client::Handle_OP_Damage(const EQApplicationPacket *app)
 	CombatDamage_Struct* damage = (CombatDamage_Struct*)app->pBuffer;
 	//dont send to originator of falling damage packets
 	entity_list.QueueClients(this, app, (damage->type == DamageTypeFalling));
+	nats.OnDamageEvent(damage->source, damage);
 	return;
 }
 
@@ -6170,6 +6180,7 @@ void Client::Handle_OP_GMBecomeNPC(const EQApplicationPacket *app)
 	if (this->Admin() < minStatusToUseGMCommands) {
 		Message(Chat::Red, "Your account has been reported for hacking.");
 		database.SetHackerFlag(this->account_name, this->name, "/becomenpc");
+		nats.SendAdminMessage(StringFormat("Hacker %s /becomenpc attempt.", GetCleanName()));
 		return;
 	}
 	if (app->size != sizeof(BecomeNPC_Struct)) {
@@ -6212,6 +6223,7 @@ void Client::Handle_OP_GMDelCorpse(const EQApplicationPacket *app)
 	if (this->Admin() < commandEditPlayerCorpses) {
 		Message(Chat::Red, "Your account has been reported for hacking.");
 		database.SetHackerFlag(this->account_name, this->name, "/delcorpse");
+		nats.SendAdminMessage(StringFormat("Hacker %s /delcorpse attempt.", GetCleanName()));
 		return;
 	}
 	GMDelCorpse_Struct* dc = (GMDelCorpse_Struct *)app->pBuffer;
@@ -6233,6 +6245,7 @@ void Client::Handle_OP_GMEmoteZone(const EQApplicationPacket *app)
 	if (this->Admin() < minStatusToUseGMCommands) {
 		Message(Chat::Red, "Your account has been reported for hacking.");
 		database.SetHackerFlag(this->account_name, this->name, "/emote");
+		nats.SendAdminMessage(StringFormat("Hacker %s /emote attempt.", GetCleanName()));
 		return;
 	}
 	if (app->size != sizeof(GMEmoteZone_Struct)) {
@@ -6266,6 +6279,7 @@ void Client::Handle_OP_GMFind(const EQApplicationPacket *app)
 	if (this->Admin() < minStatusToUseGMCommands) {
 		Message(Chat::Red, "Your account has been reported for hacking.");
 		database.SetHackerFlag(this->account_name, this->name, "/find");
+		nats.SendAdminMessage(StringFormat("Hacker %s /find attempt.", GetCleanName()));
 		return;
 	}
 	if (app->size != sizeof(GMSummon_Struct)) {
@@ -6304,6 +6318,7 @@ void Client::Handle_OP_GMGoto(const EQApplicationPacket *app)
 	if (this->Admin() < minStatusToUseGMCommands) {
 		Message(Chat::Red, "Your account has been reported for hacking.");
 		database.SetHackerFlag(this->account_name, this->name, "/goto");
+		nats.SendAdminMessage(StringFormat("Hacker %s /goto attempt.", GetCleanName()));
 		return;
 	}
 	GMSummon_Struct* gmg = (GMSummon_Struct*)app->pBuffer;
@@ -6331,6 +6346,7 @@ void Client::Handle_OP_GMHideMe(const EQApplicationPacket *app)
 	if (this->Admin() < minStatusToUseGMCommands) {
 		Message(Chat::Red, "Your account has been reported for hacking.");
 		database.SetHackerFlag(this->account_name, this->name, "/hideme");
+		nats.SendAdminMessage(StringFormat("Hacker %s /hideme attempt.", GetCleanName()));
 		return;
 	}
 	if (app->size != sizeof(SpawnAppearance_Struct)) {
@@ -6351,6 +6367,7 @@ void Client::Handle_OP_GMKick(const EQApplicationPacket *app)
 	if (this->Admin() < minStatusToKick) {
 		Message(Chat::Red, "Your account has been reported for hacking.");
 		database.SetHackerFlag(this->account_name, this->name, "/kick");
+		nats.SendAdminMessage(StringFormat("Hacker %s /kick attempt.", GetCleanName()));
 		return;
 	}
 	GMKick_Struct* gmk = (GMKick_Struct *)app->pBuffer;
@@ -6381,6 +6398,7 @@ void Client::Handle_OP_GMKill(const EQApplicationPacket *app)
 	if (this->Admin() < minStatusToUseGMCommands) {
 		Message(Chat::Red, "Your account has been reported for hacking.");
 		database.SetHackerFlag(this->account_name, this->name, "/kill");
+		nats.SendAdminMessage(StringFormat("Hacker %s /kill attempt.", GetCleanName()));
 		return;
 	}
 	if (app->size != sizeof(GMKill_Struct)) {
@@ -6433,6 +6451,7 @@ void Client::Handle_OP_GMLastName(const EQApplicationPacket *app)
 			if (this->Admin() < minStatusToUseGMCommands) {
 				Message(Chat::Red, "Your account has been reported for hacking.");
 				database.SetHackerFlag(client->account_name, client->name, "/lastname");
+				nats.SendAdminMessage(StringFormat("Hacker %s /lastname attempt.", GetCleanName()));
 				return;
 			}
 			else
@@ -6458,6 +6477,7 @@ void Client::Handle_OP_GMNameChange(const EQApplicationPacket *app)
 	if (this->Admin() < minStatusToUseGMCommands) {
 		Message(Chat::Red, "Your account has been reported for hacking.");
 		database.SetHackerFlag(this->account_name, this->name, "/name");
+		nats.SendAdminMessage(StringFormat("Hacker %s /name attempt.", GetCleanName()));
 		return;
 	}
 	Client* client = entity_list.GetClientByName(gmn->oldname);
@@ -6601,6 +6621,7 @@ void Client::Handle_OP_GMToggle(const EQApplicationPacket *app)
 	if (this->Admin() < minStatusToUseGMCommands) {
 		Message(Chat::Red, "Your account has been reported for hacking.");
 		database.SetHackerFlag(this->account_name, this->name, "/toggle");
+		nats.SendAdminMessage(StringFormat("Hacker %s /toggle attempt.", GetCleanName()));
 		return;
 	}
 	GMToggle_Struct *ts = (GMToggle_Struct *)app->pBuffer;
@@ -6648,6 +6669,7 @@ void Client::Handle_OP_GMZoneRequest(const EQApplicationPacket *app)
 	if (this->Admin() < minStatusToBeGM) {
 		Message(Chat::Red, "Your account has been reported for hacking.");
 		database.SetHackerFlag(this->account_name, this->name, "/zone");
+		nats.SendAdminMessage(StringFormat("Hacker %s /zone attempt.", GetCleanName()));
 		return;
 	}
 

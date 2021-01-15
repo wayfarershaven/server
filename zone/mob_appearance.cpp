@@ -28,10 +28,13 @@
 #include "quest_parser_collection.h"
 #include "zonedb.h"
 #include "zone_store.h"
+#include "nats_manager.h"
 
 #ifdef BOTS
 #include "bot.h"
 #endif
+
+extern NatsManager nats;
 
 /**
  * Stores internal representation of mob texture by material slot
@@ -442,6 +445,7 @@ void Mob::SendWearChange(uint8 material_slot, Client *one_client)
 		one_client->QueuePacket(packet, false, Client::CLIENT_CONNECTED);
 	}
 
+	nats.OnWearChangeEvent(this->GetID(), wear_change);
 	safe_delete(packet);
 }
 
@@ -484,6 +488,7 @@ void Mob::SendTextureWC(
 	SetMobTextureProfile(slot, texture, wear_change->color.Color, hero_forge_model);
 
 	entity_list.QueueClients(this, outapp);
+	nats.OnWearChangeEvent(this->GetID(), wear_change);
 	safe_delete(outapp);
 }
 
@@ -514,6 +519,7 @@ void Mob::SetSlotTint(uint8 material_slot, uint8 red_tint, uint8 green_tint, uin
 	SetMobTextureProfile(material_slot, texture, color);
 
 	entity_list.QueueClients(this, outapp);
+	nats.OnWearChangeEvent(this->GetID(), wc);
 	safe_delete(outapp);
 }
 
@@ -545,5 +551,6 @@ void Mob::WearChange(uint8 material_slot, uint16 texture, uint32 color, uint32 h
 	wear_change->wear_slot_id     = material_slot;
 
 	entity_list.QueueClients(this, outapp);
+	nats.OnWearChangeEvent(this->GetID(), wear_change);
 	safe_delete(outapp);
 }
