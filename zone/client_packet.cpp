@@ -1659,7 +1659,7 @@ void Client::Handle_Connect_OP_ZoneEntry(const EQApplicationPacket *app)
 	if (m_pp.RestTimer)
 		rest_timer.Start(m_pp.RestTimer * 1000);
 
-	if (!RuleB(NPC, PetZoneWithOwner)) {
+	if (RuleB(NPC, PetZoneWithOwner)) {
 		/* Load Pet */
 		database.LoadPetInfo(this);
 		if (m_petinfo.SpellID > 1 && !GetPet() && m_petinfo.SpellID <= SPDAT_RECORDS) {
