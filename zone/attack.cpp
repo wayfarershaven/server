@@ -3844,20 +3844,6 @@ void Mob::CommonDamage(Mob* attacker, int &damage, const uint16 spell_id, const 
 					!iBuffTic); // the OP_Damage actually updates the client in these cases, so we skip the HP update for them
 		}
 	}	//end `if damage was done`
-
-	//clamp damage to max npc damage
-	if (
-			spell_id == SPELL_UNKNOWN &&
-			attacker->IsNPC() &&
-			!attacker->IsPet() &&
-			skill_used != EQ::skills::SkillBackstab
-			) {
-
-		if (damage > attacker->CastToNPC()->GetDBMaxDamage()) {
-			damage = attacker->CastToNPC()->GetDBMaxDamage();
-		}
-	}
-
 		//send damage packet...
 	if (!iBuffTic) { //buff ticks do not send damage, instead they just call SendHPUpdate(), which is done above
 		auto outapp = new EQApplicationPacket(OP_Damage, sizeof(CombatDamage_Struct));
