@@ -166,7 +166,6 @@ public:
 
 	inline int GetMinDamage() const { return min_dmg; }
 	inline int GetMaxDamage() const { return max_dmg; }
-	inline int GetDBMaxDamage() const { return dbmax_dmg; }
 	virtual void	SetAttackTimer();
 	virtual void	RangedAttack(Mob* other);
 	virtual void	ThrowingAttack(Mob* other) { }
@@ -516,7 +515,6 @@ protected:
 	bool HasAISpellEffects;
 
 	uint32	max_dmg;
-	uint32 dbmax_dmg;
 	uint32	min_dmg;
 	int		base_damage;
 	int		min_damage;

@@ -2120,27 +2120,23 @@ void NPC::Damage(Mob* other, int32 damage, uint16 spell_id, EQEmu::skills::Skill
 	attacked_timer.Start(CombatEventTimer_expire);
 
 	if (!IsEngaged()) {
-		zone->AddAggroMob();
-  }
+        zone->AddAggroMob();
+    }
 
-	//if (GetClass() == LDON_TREASURE)
-	//{
-		//if (IsLDoNLocked() && GetLDoNLockedSkill() != LDoNTypeMechanical)
-		//{
-			//damage = -5;
-		//}
-		//else
-		//{
-			//if (IsLDoNTrapped())
-			//{
-				//Message_StringID(13, LDON_ACCIDENT_SETOFF2);
-				//SpellFinished(GetLDoNTrapSpellID(), other, EQEmu::CastingSlot::Item, 0, -1, spells[GetLDoNTrapSpellID()].ResistDiff, false);
-				//SetLDoNTrapSpellID(0);
-				//SetLDoNTrapped(false);
-				//SetLDoNTrapDetected(false);
-			//}
-		//}
-	//}
+	if (GetClass() == LDON_TREASURE) {
+        if (IsLDoNLocked() && GetLDoNLockedSkill() != LDoNTypeMechanical) {
+            damage = -5;
+        } else {
+            if (IsLDoNTrapped()) {
+                Message_StringID(13, LDON_ACCIDENT_SETOFF2);
+                SpellFinished(GetLDoNTrapSpellID(), other, EQEmu::CastingSlot::Item, 0, -1,
+                              spells[GetLDoNTrapSpellID()].ResistDiff, false);
+                SetLDoNTrapSpellID(0);
+                SetLDoNTrapped(false);
+                SetLDoNTrapDetected(false);
+            }
+        }
+    }
 
 	//do a majority of the work...
 	CommonDamage(other, damage, spell_id, attack_skill, avoidable, buffslot, iBuffTic, special);
@@ -3477,258 +3473,242 @@ void Mob::CommonDamage(Mob* attacker, int &damage, const uint16 spell_id, const 
 	}
 
 	if (damage > 0) {
-		//if there is some damage being done and theres an attacker involved
-		int previousHPRatio = GetHPRatio();	 	// store current hp ratio so we know when it drops below 16 for trydeathsave.
-		if (attacker) {
-			// if spell is lifetap add hp to the caster
-			if (spell_id != SPELL_UNKNOWN && IsLifetapSpell(spell_id)) {
-				int healed = damage;
+        //if there is some damage being done and theres an attacker involved
+        int previousHPRatio = GetHPRatio();        // store current hp ratio so we know when it drops below 16 for trydeathsave.
+        if (attacker) {
+            // if spell is lifetap add hp to the caster
+            if (spell_id != SPELL_UNKNOWN && IsLifetapSpell(spell_id)) {
+                int healed = damage;
 
-				healed = attacker->GetActSpellHealing(spell_id, healed);
-				Log(Logs::Detail, Logs::Combat, "Applying lifetap heal of %d to %s", healed, attacker->GetName());
-				attacker->HealDamage(healed);
+                healed = attacker->GetActSpellHealing(spell_id, healed);
+                Log(Logs::Detail, Logs::Combat, "Applying lifetap heal of %d to %s", healed, attacker->GetName());
+                attacker->HealDamage(healed);
 
-				//we used to do a message to the client, but its gone now.
-				// emote goes with every one ... even npcs
-				entity_list.MessageClose(this, true, RuleI(Range, SpellMessages), Chat::Emote, "%s beams a smile at %s", attacker->GetCleanName(), this->GetCleanName());
-			}
+                //we used to do a message to the client, but its gone now.
+                // emote goes with every one ... even npcs
+                entity_list.MessageClose(this, true, RuleI(Range, SpellMessages), Chat::Emote, "%s beams a smile at %s",
+                                         attacker->GetCleanName(), this->GetCleanName());
+            }
 
-			if (shielder[0].shielder_id && spell_id == SPELL_UNKNOWN) {
-				Client* shielder_client = entity_list.GetMob(shielder[0].shielder_id)->CastToClient();
-				if (shielder_client) {
-					float dmg_mod = (75. - shielder[0].shielder_bonus) / 100.;
-					if (dmg_mod < 0.5)
-						dmg_mod = 0.5;
+            if (shielder[0].shielder_id && spell_id == SPELL_UNKNOWN) {
+                Client *shielder_client = entity_list.GetMob(shielder[0].shielder_id)->CastToClient();
+                if (shielder_client) {
+                    float dmg_mod = (75. - shielder[0].shielder_bonus) / 100.;
+                    if (dmg_mod < 0.5)
+                        dmg_mod = 0.5;
 
-					int32 shielder_dmg = (int32) (damage*dmg_mod);
-					shielder_client->Damage(attacker, shielder_dmg, spell_id, skill_used, avoidable, buffslot, iBuffTic, special);
-					damage = damage / 2;
-				}
-			}
+                    int32 shielder_dmg = (int32) (damage * dmg_mod);
+                    shielder_client->Damage(attacker, shielder_dmg, spell_id, skill_used, avoidable, buffslot, iBuffTic,
+                                            special);
+                    damage = damage / 2;
+                }
+            }
 
-			// If a client pet is damaged while sitting, stand, fix sit button,
-			// and remove sitting regen.  Removes bug where client clicks sit
-			// during battle and gains pet hp-regen and bugs the sit button.
-			if (IsPet()) {
-				Mob *owner = this->GetOwner();
-				if (owner && owner->IsClient()) {
-					if (GetPetOrder() == SPO_Sit) {
-						SetPetOrder(SPO_Follow);
-					}
-					// fix GUI sit button to be unpressed and stop sitting regen
-					owner->CastToClient()->SetPetCommandState(PET_BUTTON_SIT, 0);
-					SetAppearance(eaStanding);
-				}
-			}
+            // If a client pet is damaged while sitting, stand, fix sit button,
+            // and remove sitting regen.  Removes bug where client clicks sit
+            // during battle and gains pet hp-regen and bugs the sit button.
+            if (IsPet()) {
+                Mob *owner = this->GetOwner();
+                if (owner && owner->IsClient()) {
+                    if (GetPetOrder() == SPO_Sit) {
+                        SetPetOrder(SPO_Follow);
+                    }
+                    // fix GUI sit button to be unpressed and stop sitting regen
+                    owner->CastToClient()->SetPetCommandState(PET_BUTTON_SIT, 0);
+                    SetAppearance(eaStanding);
+                }
+            }
 
-		}	//end `if there is some damage being done and theres anattacker person involved`
+        }    //end `if there is some damage being done and theres anattacker person involved`
 
-		Mob *pet = GetPet();
-		// pets that have GHold will never automatically add NPCs
-		// pets that have Hold and no Focus will add NPCs if they're engaged
-		// pets that have Hold and Focus will not add NPCs
-		if (pet && !pet->IsFamiliar() && !pet->GetSpecialAbility(IMMUNE_AGGRO) && !pet->IsEngaged() && attacker && attacker != this && !attacker->IsCorpse() && !pet->IsGHeld() && !attacker->IsTrap())
-		{
-			if (!pet->IsHeld()) {
-				Log(Logs::Detail, Logs::Aggro, "Sending pet %s into battle due to attack.", pet->GetName());
-				if (IsClient()) {
-					// if pet was sitting his new mode is follow
-					// following after the battle (live verified)
-					if (pet->GetPetOrder() == SPO_Sit) {
-						pet->SetPetOrder(SPO_Follow);
-					}
+        Mob *pet = GetPet();
+        // pets that have GHold will never automatically add NPCs
+        // pets that have Hold and no Focus will add NPCs if they're engaged
+        // pets that have Hold and Focus will not add NPCs
+        if (pet && !pet->IsFamiliar() && !pet->GetSpecialAbility(IMMUNE_AGGRO) && !pet->IsEngaged() && attacker &&
+            attacker != this && !attacker->IsCorpse() && !pet->IsGHeld() && !attacker->IsTrap()) {
+            if (!pet->IsHeld()) {
+                Log(Logs::Detail, Logs::Aggro, "Sending pet %s into battle due to attack.", pet->GetName());
+                if (IsClient()) {
+                    // if pet was sitting his new mode is follow
+                    // following after the battle (live verified)
+                    if (pet->GetPetOrder() == SPO_Sit) {
+                        pet->SetPetOrder(SPO_Follow);
+                    }
 
-					// fix GUI sit button to be unpressed and stop sitting regen
-					this->CastToClient()->SetPetCommandState(PET_BUTTON_SIT, 0);
-					pet->SetAppearance(eaStanding);
-				}
-				pet->AddToHateList(attacker, 1, 0, true, false, false, spell_id);
-				pet->SetTarget(attacker);
-				Message_StringID(10, PET_ATTACKING, pet->GetCleanName(), attacker->GetCleanName());
-			}
-		}
+                    // fix GUI sit button to be unpressed and stop sitting regen
+                    this->CastToClient()->SetPetCommandState(PET_BUTTON_SIT, 0);
+                    pet->SetAppearance(eaStanding);
+                }
+                pet->AddToHateList(attacker, 1, 0, true, false, false, spell_id);
+                pet->SetTarget(attacker);
+                Message_StringID(10, PET_ATTACKING, pet->GetCleanName(), attacker->GetCleanName());
+            }
+        }
 
-		//see if any runes want to reduce this damage
-		if (spell_id == SPELL_UNKNOWN) {
-			if (IsClient())
-				CommonBreakInvisible();
-			damage = ReduceDamage(damage);
-			Log(Logs::Detail, Logs::Combat, "Melee Damage reduced to %d", damage);
-			damage = ReduceAllDamage(damage);
-			TryTriggerThreshHold(damage, SE_TriggerMeleeThreshold, attacker);
+        //see if any runes want to reduce this damage
+        if (spell_id == SPELL_UNKNOWN) {
+            if (IsClient())
+                CommonBreakInvisible();
+            damage = ReduceDamage(damage);
+            Log(Logs::Detail, Logs::Combat, "Melee Damage reduced to %d", damage);
+            damage = ReduceAllDamage(damage);
+            TryTriggerThreshHold(damage, SE_TriggerMeleeThreshold, attacker);
 
-			if (skill_used)
-				CheckNumHitsRemaining(NumHit::IncomingHitSuccess);
-		}
-		else {
-			int32 origdmg = damage;
-			damage = AffectMagicalDamage(damage, spell_id, iBuffTic, attacker);
-			if (origdmg != damage && attacker && attacker->IsClient()) {
-				if (attacker->CastToClient()->GetFilter(FilterDamageShields) != FilterHide)
-					attacker->Message(15, "The Spellshield absorbed %d of %d points of damage", origdmg - damage, origdmg);
-			}
-			if (damage == 0 && attacker && origdmg != damage && IsClient()) {
-				//Kayen: Probably need to add a filter for this - Not sure if this msg is correct but there should be a message for spell negate/runes.
-				Message(263, "%s tries to cast on YOU, but YOUR magical skin absorbs the spell.", attacker->GetCleanName());
-			}
-			damage = ReduceAllDamage(damage);
-			TryTriggerThreshHold(damage, SE_TriggerSpellThreshold, attacker);
-		}
+            if (skill_used)
+                CheckNumHitsRemaining(NumHit::IncomingHitSuccess);
+        } else {
+            int32 origdmg = damage;
+            damage = AffectMagicalDamage(damage, spell_id, iBuffTic, attacker);
+            if (origdmg != damage && attacker && attacker->IsClient()) {
+                if (attacker->CastToClient()->GetFilter(FilterDamageShields) != FilterHide)
+                    attacker->Message(15, "The Spellshield absorbed %d of %d points of damage", origdmg - damage,
+                                      origdmg);
+            }
+            if (damage == 0 && attacker && origdmg != damage && IsClient()) {
+                //Kayen: Probably need to add a filter for this - Not sure if this msg is correct but there should be a message for spell negate/runes.
+                Message(263, "%s tries to cast on YOU, but YOUR magical skin absorbs the spell.",
+                        attacker->GetCleanName());
+            }
+            damage = ReduceAllDamage(damage);
+            TryTriggerThreshHold(damage, SE_TriggerSpellThreshold, attacker);
+        }
 
-		if (IsClient() && CastToClient()->sneaking) {
-			CastToClient()->sneaking = false;
-			SendAppearancePacket(AT_Sneak, 0);
-		}
+        if (IsClient() && CastToClient()->sneaking) {
+            CastToClient()->sneaking = false;
+            SendAppearancePacket(AT_Sneak, 0);
+        }
 
-		if (attacker && attacker->IsClient() && attacker->CastToClient()->sneaking) {
-			attacker->CastToClient()->sneaking = false;
-			attacker->SendAppearancePacket(AT_Sneak, 0);
-		}
+        if (attacker && attacker->IsClient() && attacker->CastToClient()->sneaking) {
+            attacker->CastToClient()->sneaking = false;
+            attacker->SendAppearancePacket(AT_Sneak, 0);
+        }
 
-		//final damage has been determined.
+        //final damage has been determined.
 
-		int32 pre_hit_hp;
+        int32 pre_hit_hp;
 
-		if(attacker->IsClient()) {
-			player_damage += damage;
-		}
-		pre_hit_hp = GetHP();
-		SetHP(GetHP() - damage);
+        if (attacker->IsClient()) {
+            player_damage += damage;
+        }
+        pre_hit_hp = GetHP();
+        SetHP(GetHP() - damage);
 
-		if (HasDied() && pre_hit_hp > 0) {  // Don't make the mob die over and over if it was at 0 hp
-			bool IsSaved = false;
+        if (HasDied() && pre_hit_hp > 0) {  // Don't make the mob die over and over if it was at 0 hp
+            bool IsSaved = false;
 
-			if (TryDivineSave())
-				IsSaved = true;
+            if (TryDivineSave())
+                IsSaved = true;
 
-			if (!IsSaved && !TrySpellOnDeath()) {
-				SetHP(-500);
+            if (!IsSaved && !TrySpellOnDeath()) {
+                SetHP(-500);
 
-				if (Death(attacker, damage, spell_id, skill_used)) {
-					return;
-				}
-			}
-		}
-		else {
-			if(GetHPRatio() < 16 && previousHPRatio >= 16)
-				TryDeathSave();
-		}
+                if (Death(attacker, damage, spell_id, skill_used)) {
+                    return;
+                }
+            }
+        } else {
+            if (GetHPRatio() < 16 && previousHPRatio >= 16)
+                TryDeathSave();
+        }
 
-		TryTriggerOnValueAmount(true);
+        TryTriggerOnValueAmount(true);
 
-		//fade mez if we are mezzed
-		if (IsMezzed() && attacker) {
-			Log(Logs::Detail, Logs::Combat, "Breaking mez due to attack.");
-			entity_list.MessageClose_StringID(
-					this, /* Sender */
-					true,  /* Skip Sender */
-					RuleI(Range, SpellMessages),
-					Chat::SpellWornOff, /* 284 */
-					HAS_BEEN_AWAKENED, // %1 has been awakened by %2.
-					GetCleanName(), /* Message1 */
-					attacker->GetCleanName() /* Message2 */
-			);
-			BuffFadeByEffect(SE_Mez);
-			SendPosition();
-		}
+        //fade mez if we are mezzed
+        if (IsMezzed() && attacker) {
+            Log(Logs::Detail, Logs::Combat, "Breaking mez due to attack.");
+            entity_list.MessageClose_StringID(
+                    this, /* Sender */
+                    true,  /* Skip Sender */
+                    RuleI(Range, SpellMessages),
+                    Chat::SpellWornOff, /* 284 */
+                    HAS_BEEN_AWAKENED, // %1 has been awakened by %2.
+                    GetCleanName(), /* Message1 */
+                    attacker->GetCleanName() /* Message2 */
+            );
+            BuffFadeByEffect(SE_Mez);
+            SendPosition();
+        }
 
-		// broken up for readability
-		// This is based on what the client is doing
-		// We had a bunch of stuff like BaseImmunityLevel checks, which I think is suppose to just be for spells
-		// This is missing some merc checks, but those mostly just skipped the spell bonuses I think ...
-		bool can_stun = false;
-		int stunbash_chance = 0; // bonus
-		if (attacker) {
-			if (skill_used == EQEmu::skills::SkillBash) {
-				can_stun = true;
-				if (attacker->IsClient())
-					stunbash_chance = attacker->spellbonuses.StunBashChance +
-									  attacker->itembonuses.StunBashChance +
-									  attacker->aabonuses.StunBashChance;
-			}
-			else if (skill_used == EQEmu::skills::SkillKick &&
-					 (attacker->GetLevel() > 55 || attacker->IsNPC()) && GetClass() == WARRIOR) {
-				can_stun = true;
-			}
+        // broken up for readability
+        // This is based on what the client is doing
+        // We had a bunch of stuff like BaseImmunityLevel checks, which I think is suppose to just be for spells
+        // This is missing some merc checks, but those mostly just skipped the spell bonuses I think ...
+        bool can_stun = false;
+        int stunbash_chance = 0; // bonus
+        if (attacker) {
+            if (skill_used == EQEmu::skills::SkillBash) {
+                can_stun = true;
+                if (attacker->IsClient())
+                    stunbash_chance = attacker->spellbonuses.StunBashChance +
+                                      attacker->itembonuses.StunBashChance +
+                                      attacker->aabonuses.StunBashChance;
+            } else if (skill_used == EQEmu::skills::SkillKick &&
+                       (attacker->GetLevel() > 55 || attacker->IsNPC()) && GetClass() == WARRIOR) {
+                can_stun = true;
+            }
 
-			if ((GetBaseRace() == OGRE || GetBaseRace() == OGGOK_CITIZEN) &&
-				!attacker->BehindMob(this, attacker->GetX(), attacker->GetY()))
-				can_stun = false;
-			if (GetSpecialAbility(UNSTUNABLE))
-				can_stun = false;
-		}
-		if (can_stun) {
-			int bashsave_roll = zone->random.Int(0, 100);
-			if (bashsave_roll > 98 || bashsave_roll > (55 - stunbash_chance)) {
-				// did stun -- roll other resists
-				// SE_FrontalStunResist description says any angle now a days
-				int stun_resist2 = spellbonuses.FrontalStunResist + itembonuses.FrontalStunResist +
-								   aabonuses.FrontalStunResist;
-				if (zone->random.Int(1, 100) > stun_resist2) {
-					// stun resist 2 failed
-					// time to check SE_StunResist and mod2 stun resist
-					int stun_resist =
-							spellbonuses.StunResist + itembonuses.StunResist + aabonuses.StunResist;
-					if (zone->random.Int(0, 100) >= stun_resist) {
-						// did stun
-						// nothing else to check!
-						Stun(2000); // straight 2 seconds every time
-					}
-					else {
-						// stun resist passed!
-						if (IsClient())
-							Message_StringID(Chat::Stun, SHAKE_OFF_STUN);
-					}
-				}
-				else {
-					// stun resist 2 passed!
-					if (IsClient())
-						Message_StringID(Chat::Stun, AVOID_STUNNING_BLOW);
-				}
-			}
-			else {
-				// main stun failed -- extra interrupt roll
-				if (IsCasting() &&
-					!EQEmu::ValueWithin(casting_spell_id, 859, 1023)) // these spells are excluded
-					// 90% chance >< -- stun immune won't reach this branch though :(
-					if (zone->random.Int(0, 9) > 1)
-						InterruptSpell();
-			}
-		}
+            if ((GetBaseRace() == OGRE || GetBaseRace() == OGGOK_CITIZEN) &&
+                !attacker->BehindMob(this, attacker->GetX(), attacker->GetY()))
+                can_stun = false;
+            if (GetSpecialAbility(UNSTUNABLE))
+                can_stun = false;
+        }
+        if (can_stun) {
+            int bashsave_roll = zone->random.Int(0, 100);
+            if (bashsave_roll > 98 || bashsave_roll > (55 - stunbash_chance)) {
+                // did stun -- roll other resists
+                // SE_FrontalStunResist description says any angle now a days
+                int stun_resist2 = spellbonuses.FrontalStunResist + itembonuses.FrontalStunResist +
+                                   aabonuses.FrontalStunResist;
+                if (zone->random.Int(1, 100) > stun_resist2) {
+                    // stun resist 2 failed
+                    // time to check SE_StunResist and mod2 stun resist
+                    int stun_resist =
+                            spellbonuses.StunResist + itembonuses.StunResist + aabonuses.StunResist;
+                    if (zone->random.Int(0, 100) >= stun_resist) {
+                        // did stun
+                        // nothing else to check!
+                        Stun(2000); // straight 2 seconds every time
+                    } else {
+                        // stun resist passed!
+                        if (IsClient())
+                            Message_StringID(Chat::Stun, SHAKE_OFF_STUN);
+                    }
+                } else {
+                    // stun resist 2 passed!
+                    if (IsClient())
+                        Message_StringID(Chat::Stun, AVOID_STUNNING_BLOW);
+                }
+            } else {
+                // main stun failed -- extra interrupt roll
+                if (IsCasting() &&
+                    !EQEmu::ValueWithin(casting_spell_id, 859, 1023)) // these spells are excluded
+                    // 90% chance >< -- stun immune won't reach this branch though :(
+                    if (zone->random.Int(0, 9) > 1)
+                        InterruptSpell();
+            }
+        }
 
-		if (spell_id != SPELL_UNKNOWN && !iBuffTic) {
-			//see if root will break
-			if (IsRooted() && !FromDamageShield)  // neotoyko: only spells cancel root
-				TryRootFadeByDamage(buffslot, attacker);
-		}
-		else if (spell_id == SPELL_UNKNOWN)
-		{
-			//increment chances of interrupting
-			if (IsCasting()) { //shouldnt interrupt on regular spell damage
-				attacked_count++;
-				Log(Logs::Detail, Logs::Combat, "Melee attack while casting. Attack count %d", attacked_count);
-			}
-		}
+        if (spell_id != SPELL_UNKNOWN && !iBuffTic) {
+            //see if root will break
+            if (IsRooted() && !FromDamageShield)  // neotoyko: only spells cancel root
+                TryRootFadeByDamage(buffslot, attacker);
+        } else if (spell_id == SPELL_UNKNOWN) {
+            //increment chances of interrupting
+            if (IsCasting()) { //shouldnt interrupt on regular spell damage
+                attacked_count++;
+                Log(Logs::Detail, Logs::Combat, "Melee attack while casting. Attack count %d", attacked_count);
+            }
+        }
 
-		//send an HP update if we are hurt
-		if (GetHP() < GetMaxHP()) {
-			SendHPUpdate();
-    }
-	}	//end `if damage was done`
+        //send an HP update if we are hurt
+        if (GetHP() < GetMaxHP()) {
+            SendHPUpdate();
+        }
+    }	//end `if damage was done`
 
-//clamp damage to max npc damage
-  if (
-      spell_id == SPELL_UNKNOWN &&
-      attacker->IsNPC() &&
-			!attacker->IsPet() &&
-			skill_used != EQEmu::skills::SkillBackstab
-     )
-  {
 
-      if (damage > attacker->CastToNPC()->GetDBMaxDamage()) {
-        damage = attacker->CastToNPC()->GetDBMaxDamage();
-      }
-  }
 	//send damage packet...
 	if (!iBuffTic) { //buff ticks do not send damage, instead they just call SendHPUpdate(), which is done above
 		auto outapp = new EQApplicationPacket(OP_Damage, sizeof(CombatDamage_Struct));
