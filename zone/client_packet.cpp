@@ -577,8 +577,9 @@ void Client::CompleteConnect()
 				entity_list.AddRaid(raid, raidid);
 				raid->LoadLeadership(); // Recreating raid in new zone, get leadership from DB
 			}
-			else
-				raid = nullptr;
+            else {
+                safe_delete(raid);
+            }
 		}
 		if (raid) {
 			SetRaidGrouped(true);

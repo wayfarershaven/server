@@ -966,10 +966,11 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p) {
                 if (!group) {    //nobody from our group is here... start a new group
                     group = new Group(groupid);
 
-                    if (group->GetID() != 0)
+                    if (group->GetID() != 0) {
                         entity_list.AddGroup(group, groupid);
-                    else
-                        group = nullptr;
+                    } else {
+                        safe_delete(group);
+                    }
                 }
 
                 if (group)
