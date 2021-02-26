@@ -2762,6 +2762,7 @@ void Client::Handle_OP_AltCurrencySell(const EQApplicationPacket *app)
 		}
 
 		if (!RuleB(Merchant, EnableAltCurrencySell)) {
+            Message(13, "Selling alt currency items is disabled");
 			return;
 		}
 
