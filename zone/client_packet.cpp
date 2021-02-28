@@ -577,8 +577,9 @@ void Client::CompleteConnect()
 				entity_list.AddRaid(raid, raidid);
 				raid->LoadLeadership(); // Recreating raid in new zone, get leadership from DB
 			}
-			else
-				raid = nullptr;
+            else {
+                safe_delete(raid);
+            }
 		}
 		if (raid) {
 			SetRaidGrouped(true);
@@ -2761,6 +2762,7 @@ void Client::Handle_OP_AltCurrencySell(const EQApplicationPacket *app)
 		}
 
 		if (!RuleB(Merchant, EnableAltCurrencySell)) {
+            Message(13, "Selling alt currency items is disabled");
 			return;
 		}
 
@@ -4952,35 +4954,34 @@ void Client::Handle_OP_ConsiderCorpse(const EQApplicationPacket *app)
 	}
 	else if (tcorpse && tcorpse->IsPlayerCorpse()) {
 		uint32 day, hour, min, sec, ttime;
+		if ((ttime = tcorpse->GetRemainingRezTime()) > 0)
+		{
+			sec = (ttime / 1000) % 60; // Total seconds
+			min = (ttime / 60000) % 60; // Total seconds
+			hour = (ttime / 3600000) % 24; // Total hours
+			if (hour)
+				Message(0, "This corpse's resurrection time will expire in %i hour(s) %i minute(s) and %i seconds.", hour, min, sec);
+			else
+				Message(0, "This corpse's resurrection time will expire in %i minute(s) and %i seconds.", min, sec);
+
+			hour = 0;
+		}
+		else
+			Message(0, "This corpse is too old to be resurrected.");
+
 		if ((ttime = tcorpse->GetDecayTime()) != 0) {
 			sec = (ttime / 1000) % 60; // Total seconds
 			min = (ttime / 60000) % 60; // Total seconds
 			hour = (ttime / 3600000) % 24; // Total hours
 			day = ttime / 86400000; // Total Days
 			if (day)
-				Message(0, "This corpse will decay in %i days, %i hours, %i minutes and %i seconds.", day, hour, min, sec);
+				Message(0, "This corpse will decay in %i day(s) %i hour(s) %i minute(s) and %i seconds.", day, hour, min, sec);
 			else if (hour)
-				Message(0, "This corpse will decay in %i hours, %i minutes and %i seconds.", hour, min, sec);
+				Message(0, "This corpse will decay in %i hour(s) %i minute(s) and %i seconds.", hour, min, sec);
 			else
-				Message(0, "This corpse will decay in %i minutes and %i seconds.", min, sec);
+				Message(0, "This corpse will decay in %i minute(s) and %i seconds.", min, sec);
 
-			Message(0, "This corpse %s be resurrected.", tcorpse->IsRezzed() ? "cannot" : "can");
-			/*
 			hour = 0;
-
-			if((ttime = tcorpse->GetResTime()) != 0) {
-			sec = (ttime/1000)%60; // Total seconds
-			min = (ttime/60000)%60; // Total seconds
-			hour = (ttime/3600000)%24; // Total hours
-			if(hour)
-			Message(0, "This corpse can be resurrected for %i hours, %i minutes and %i seconds.", hour, min, sec);
-			else
-			Message(0, "This corpse can be resurrected for %i minutes and %i seconds.", min, sec);
-			}
-			else {
-			Message_StringID(0, CORPSE_TOO_OLD);
-			}
-			*/
 		}
 		else {
 			Message_StringID(10, CORPSE_DECAY_NOW);
