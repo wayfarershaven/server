@@ -81,6 +81,7 @@
 #define ServerOP_UpdateSpawn		0x003f
 #define ServerOP_SpawnStatusChange	0x0040
 #define ServerOP_ChangeGroupLeader	0x0041
+#define ServerOP_IsOwnerOnline		0x0042
 #define ServerOP_ReloadTasks		0x0060
 #define ServerOP_DepopAllPlayersCorpses	0x0061
 #define ServerOP_ReloadTitles		0x0062
