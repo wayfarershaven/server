@@ -227,16 +227,15 @@ bool Mob::CastSpell(uint16 spell_id, uint16 target_id, CastingSlot slot,
 		BuffFadeByEffect(SE_NegateIfCombat);
 	}
 
-	// check line of sight to target if it's a detrimental spell
-	if (spells[spell_id].targettype != ST_AECaster && !spells[spell_id].npc_no_los && GetTarget() && IsDetrimentalSpell(spell_id) && !CheckLosFN(GetTarget()) && !IsHarmonySpell(spell_id) && spells[spell_id].targettype != ST_TargetOptional && !IsBindSightSpell(spell_id))
-	{
-		LogSpells("Spell [{}]: cannot see target [{}]", spell_id, GetTarget()->GetName());
-		MessageString(Chat::Red, CANT_SEE_TARGET);
-		if (IsClient()) {
-			CastToClient()->SendSpellBarEnable(spell_id);
-		}
-		return(false);
-	}
+    // check line of sight to target if it's a detrimental spell
+    if (spells[spell_id].targettype != ST_AECaster && !spells[spell_id].npc_no_los && GetTarget() && IsDetrimentalSpell(spell_id) && !CheckLosFN(GetTarget()) && !IsHarmonySpell(spell_id) && spells[spell_id].targettype != ST_TargetOptional && !IsBindSightSpell(spell_id))
+    {
+        Log(Logs::Detail, Logs::Spells, "Spell %d: cannot see target %s", spell_id, GetTarget()->GetName());
+        MessageString(13, CANT_SEE_TARGET);
+        if (IsClient())
+            CastToClient()->SendSpellBarEnable(spell_id);
+        return(false);
+    }
 
 	if(IsClient() && GetTarget() && IsHarmonySpell(spell_id))
 	{
@@ -2282,11 +2281,11 @@ bool Mob::SpellFinished(uint16 spell_id, Mob *spell_target, CastingSlot slot, ui
 			break;
 		}
 
-		case AECaster:
-		case AETarget:
-		{
+        case AECaster:
+        case AETarget:
+        {
 #ifdef BOTS
-			if(IsBot()) {
+            if(IsBot()) {
 				bool StopLogic = false;
 				if(!this->CastToBot()->DoFinishedSpellAETarget(spell_id, spell_target, slot, StopLogic))
 					return false;
@@ -2295,43 +2294,29 @@ bool Mob::SpellFinished(uint16 spell_id, Mob *spell_target, CastingSlot slot, ui
 			}
 #endif //BOTS
 
-			// we can't cast an AE spell without something to center it on
-			assert(ae_center != nullptr);
+            // we can't cast an AE spell without something to center it on
+            assert(ae_center != nullptr);
 
-			if(ae_center->IsBeacon()) {
-				// special ae duration spell
-				ae_center->CastToBeacon()->AELocationSpell(this, spell_id, resist_adjust);
-			} else {
-				// unsure if we actually need this? Need to find some spell examples
-				// regular PB AE or targeted AE spell - spell_target is null if PB
-				if(spell_target)	// this must be an AETarget spell
-				{
-					bool cast_on_target = true;
-					if (spells[spell_id].targettype == ST_TargetAENoPlayersPets && spell_target->IsPetOwnerClient())
-						cast_on_target = false;
-					if (spells[spell_id].targettype == ST_AreaClientOnly && !spell_target->IsClient())
-						cast_on_target = false;
-					if (spells[spell_id].targettype == ST_AreaNPCOnly && !spell_target->IsNPC())
-						cast_on_target = false;
+            if(ae_center->IsBeacon()) {
+                // special ae duration spell
+                ae_center->CastToBeacon()->AELocationSpell(this, spell_id, resist_adjust);
+            } else {
 
-					// affect the target too
-					if (cast_on_target)
-						SpellOnTarget(spell_id, spell_target, false, true, resist_adjust);
-				}
-				if(ae_center && ae_center == this && IsBeneficialSpell(spell_id))
-					SpellOnTarget(spell_id, this);
+                // unsure if we actually need this? Need to find some spell examples
+                if (ae_center && ae_center == this && IsBeneficialSpell(spell_id))
+                    SpellOnTarget(spell_id, this);
 
-				// NPCs should never be affected by an AE they cast. PB AEs shouldn't affect caster either
-				// I don't think any other cases that get here matter
-				bool affect_caster = !IsNPC() && spells[spell_id].targettype != ST_AECaster;
+                // NPCs should never be affected by an AE they cast. PB AEs shouldn't affect caster either
+                // I don't think any other cases that get here matter
+                bool affect_caster = !IsNPC() && spells[spell_id].targettype != ST_AECaster;
 
-				if (spells[spell_id].targettype == ST_AETargetHateList)
-					hate_list.SpellCast(this, spell_id, spells[spell_id].aoerange, ae_center);
-				else
-					entity_list.AESpell(this, ae_center, spell_id, affect_caster, resist_adjust);
-			}
-			break;
-		}
+                if (spells[spell_id].targettype == ST_AETargetHateList)
+                    hate_list.SpellCast(this, spell_id, spells[spell_id].aoerange, ae_center);
+                else
+                    entity_list.AESpell(this, ae_center, spell_id, affect_caster, resist_adjust);
+            }
+            break;
+        }
 
 		case GroupSpell:
 		{
