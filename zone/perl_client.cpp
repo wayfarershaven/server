@@ -4533,26 +4533,6 @@ XS(XS_Client_GetTargetRingZ) {
 	XSRETURN(1);
 }
 
-XS(XS_Client_CalcEXP); /* prototype to pass -Wmissing-prototypes */
-XS(XS_Client_CalcEXP) {
-	dXSARGS;
-	if (items < 1 || items > 2)
-		Perl_croak(aTHX_ "Usage: CalcEXP(THIS, uint8 conlevel)");
-	{
-		Client *THIS;
-		uint8  conlevel = 0xFF;
-		uint32 RETVAL;
-		if (items == 2)
-			conlevel = (uint16) SvUV(ST(1));
-		dXSTARG;
-		VALIDATE_THIS_IS_CLIENT;
-		RETVAL = THIS->CalcEXP(conlevel);
-		XSprePUSH;
-		PUSHi((IV) RETVAL);
-	}
-	XSRETURN(1);
-}
-
 XS(XS_Client_QuestReward); /* prototype to pass -Wmissing-prototypes */
 XS(XS_Client_QuestReward) {
 	dXSARGS;
@@ -5357,7 +5337,6 @@ XS(boot_Client) {
 	newXSproto(strcpy(buf, "AssignToInstance"), XS_Client_AssignToInstance, file, "$$");
 	newXSproto(strcpy(buf, "AutoSplitEnabled"), XS_Client_AutoSplitEnabled, file, "$");
 	newXSproto(strcpy(buf, "BreakInvis"), XS_Client_BreakInvis, file, "$");
-	newXSproto(strcpy(buf, "CalcEXP"), XS_Client_CalcEXP, file, "$");
 	newXSproto(strcpy(buf, "CalcPriceMod"), XS_Client_CalcPriceMod, file, "$;$$");
 	newXSproto(strcpy(buf, "CanHaveSkill"), XS_Client_CanHaveSkill, file, "$$");
 	newXSproto(strcpy(buf, "ChangeLastName"), XS_Client_ChangeLastName, file, "$$");

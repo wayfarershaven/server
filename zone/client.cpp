@@ -4211,6 +4211,29 @@ void Client::SendWindow(
 	FastQueuePacket(&app);
 }
 
+void Client::FixClientXP()
+{
+    //This is only necessary when the XP formula changes. However, it should be left for toons that have not been converted.
+
+    uint16 level = GetLevel();
+    uint32 totalrequiredxp = GetEXPForLevel(level);
+    uint32 currentxp = GetEXP();
+    uint32 currentaa = GetAAXP();
+
+    if(currentxp < totalrequiredxp)
+    {
+        if(Admin() == 0 && level > 1)
+        {
+            Message(Chat::Red, "Error: Your current XP (%0.2f) is lower than your current level (%i)! It needs to be at least %i", currentxp, level, totalrequiredxp);
+            SetEXP(totalrequiredxp, currentaa);
+            Save();
+            Kick("XP Fix");
+        }
+        else if(Admin() > 0 && level > 1)
+            Message(Chat::Red, "Error: Your current XP (%0.2f) is lower than your current level (%i)! It needs to be at least %i. Use #level or #addxp to correct it and logout!", currentxp, level, totalrequiredxp);
+    }
+}
+
 void Client::KeyRingLoad()
 {
 	std::string query = StringFormat("SELECT item_id FROM keyring "

@@ -323,17 +323,16 @@ bool Mob::CheckWillAggro(Mob *mob) {
                 (
                         (mob->IsClient() && mob->CastToClient()->IsSitting())
                         || (mob->GetLevelCon(GetLevel()) != CON_GRAY)
-                        || (GetLevel() >= RuleI(Aggro, MinAggroLevel))
-                        || (RuleB(Aggro, UndeadAlwaysAggro) && GetBodyType() == BT_Undead)
-                        || (GetINT() <= RuleI(Aggro, IntAggroThreshold))
+                        || ( GetLevel() >= RuleI(Aggro, MinAggroLevel))
+                        || ( RuleB(Aggro, UndeadAlwaysAggro) && GetBodyType() == BT_Undead)
+                        || ( GetINT() <= RuleI(Aggro, IntAggroThreshold) )
                 )
                 &&
                 (
                         (
                                 fv == FACTION_SCOWLS
                                 ||
-                                (mob->GetPrimaryFaction() != GetPrimaryFaction() && mob->GetPrimaryFaction() == -4 &&
-                                 GetOwner() == nullptr)
+                                (mob->GetPrimaryFaction() != GetPrimaryFaction() && mob->GetPrimaryFaction() == -4 && GetOwner() == nullptr)
                                 ||
                                 (
                                         fv == FACTION_THREATENLY
@@ -341,7 +340,8 @@ bool Mob::CheckWillAggro(Mob *mob) {
                                 )
                         )
                 )
-        )) {
+        ))
+    {
         //FatherNiwtit: make sure we can see them. last since it is very expensive
         if (CheckLosFN(mob)) {
             LogAggro("Check aggro for [{}] target [{}]", GetName(), mob->GetName());

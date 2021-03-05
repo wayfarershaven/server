@@ -617,12 +617,8 @@ public:
 	void SendCrystalCounts();
 
 	uint32 GetExperienceForKill(Mob *against);
-	void AddEXP(uint32 in_add_exp, uint8 conlevel = 0xFF, bool resexp = false, uint32 mob_level = 0);
-	uint32 CalcEXP(uint8 conlevel = 0xFF);
 	void CalculateNormalizedAAExp(uint32 &add_aaxp, uint8 conlevel, bool resexp);
-	void CalculateStandardAAExp(uint32 &add_aaxp, uint8 conlevel, bool resexp);
 	void CalculateLeadershipExp(uint32 &add_exp, uint8 conlevel);
-	void CalculateExp(uint32 in_add_exp, uint32 &add_exp, uint32 &add_aaxp, uint8 conlevel, bool resexp);
 	void SetEXP(uint32 set_exp, uint32 set_aaxp, bool resexp=false);
 	void AddLevelBasedExp(uint8 exp_percentage, uint8 max_level = 0, bool ignore_mods = false);
 	void SetLeadershipEXP(uint32 group_exp, uint32 raid_exp);
@@ -888,6 +884,7 @@ public:
 	void ResetAA();
 	void RefundAA();
 	void SendClearAA();
+    inline uint32 GetMaxAAXP(void) const { return max_AAXP; }
 	inline uint32 GetAAXP() const { return m_pp.expAA; }
 	inline uint32 GetAAPercent() const { return m_epp.perAA; }
 	int16 CalcAAFocus(focusType type, const AA::Rank &rank, uint16 spell_id);
@@ -1570,6 +1567,7 @@ public:
 
 	void ResetHPUpdateTimer() { hpupdate_timer.Start(); }
 
+    void FixClientXP();
 	void SendHPUpdateMarquee();
 	std::string CreateSayLink(const char* message, const char* name);
 
@@ -1587,6 +1585,15 @@ public:
 	Raid *p_raid_instance;
 
 	void ShowDevToolsMenu();
+
+    // exp.cpp
+    uint32 GetEXPForLevel(uint16 level, bool aa = false);
+    void AddEXP(uint32 in_add_exp, uint8 conlevel = 0xFF, bool resexp = false, uint32 mob_level = 0);
+    bool IsInRange(Mob* defender);
+    bool IsInLevelRange(uint8 maxlevel);
+    void AddQuestEXP(uint32 in_add_exp);
+    void AddEXPPercent(uint8 percent, uint8 level = 1);
+    void GetExpLoss(Mob* attacker, uint16 spell, int &exploss);
 
 protected:
 	friend class Mob;
@@ -1758,7 +1765,6 @@ private:
 	bool temp_pvp;
 
 	void NPCSpawn(const Seperator* sep);
-	uint32 GetEXPForLevel(uint16 level);
 
 	bool CanBeInZone();
 	void SendLogoutPackets();
@@ -1832,6 +1838,7 @@ private:
 
 	uint32 tribute_master_id;
 
+    uint32 max_AAXP;
 	bool npcflag;
 	uint8 npclevel;
 	bool feigned;

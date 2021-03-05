@@ -71,6 +71,7 @@
 #include "titles.h"
 #include "water_map.h"
 #include "worldserver.h"
+#include "client.h"
 #include "nats_manager.h"
 #include "fastmath.h"
 #include "mob_movement_manager.h"
@@ -448,6 +449,7 @@ int command_init(void)
 		command_add("wpadd", "[pause] [-h] - Add your current location as a waypoint to your NPC target's AI path", 170, command_wpadd) ||
 		command_add("wpinfo", "- Show waypoint info about your NPC target", 170, command_wpinfo) ||
 		command_add("worldwide", "Performs world-wide GM functions such as cast (can be extended for other commands). Use caution", 250, command_worldwide) ||
+        command_add("xpinfo", "- Show XP info about your current target", 250, command_xpinfo) ||
 		command_add("xtargets",  "Show your targets Extended Targets and optionally set how many xtargets they can have.",  250, command_xtargets) ||
 		command_add("zclip", "[min] [max] - modifies and resends zhdr packet", 80, command_zclip) ||
 		command_add("zcolor", "[red] [green] [blue] - Change sky color", 80, command_zcolor) ||
@@ -6231,14 +6233,18 @@ void command_setxp(Client *c, const Seperator *sep)
 	if(c->GetTarget() && c->GetTarget()->IsClient())
 		t=c->GetTarget()->CastToClient();
 
+    uint32 currentaaXP = t->GetAAXP();
+
 	if (sep->IsNumber(1)) {
-		if (atoi(sep->arg[1]) > 9999999)
-			c->Message(Chat::White, "Error: Value too high.");
-		else
-			t->AddEXP(atoi(sep->arg[1]));
+		if (atoi(sep->arg[1]) > 9999999) {
+            c->Message(Chat::White, "Error: Value too high.");
+        } else{
+            t->AddEXP(atoi(sep->arg[1]), currentaaXP);
+        }
 	}
-	else
-		c->Message(Chat::White, "Usage: #setxp number");
+	else {
+        c->Message(Chat::White, "Usage: #setxp number");
+    }
 }
 
 void command_setpvppoints(Client *c, const Seperator *sep)
@@ -14487,6 +14493,37 @@ void command_godmode(Client *c, const Seperator *sep){
 	}
 	else
 		c->Message(Chat::White, "Usage: #godmode [on/off]");
+}
+
+void command_xpinfo(Client *c, const Seperator *sep){
+
+	Client *t;
+
+	if (c->GetTarget() && c->GetTarget()->IsClient()) {
+		t = c->GetTarget()->CastToClient();
+	} else {
+		t = c;
+	}
+
+	uint16 level = t->GetLevel();
+	uint32 totalrequiredxp = t->GetEXPForLevel(level + 1);
+	uint32 currentxp = t->GetEXP();
+	float xpforlevel = totalrequiredxp - currentxp;
+	float totalxpforlevel = totalrequiredxp - t->GetEXPForLevel(level);
+	float xp_percent = 100.0 - ((xpforlevel/totalxpforlevel) * 100.0);
+
+	int exploss;
+	t->GetExpLoss(nullptr, 0, exploss);
+	float loss_percent = (exploss/totalxpforlevel) * 100.0;
+
+	float maxaa = t->GetEXPForLevel(0, true);
+	uint32 currentaaxp = t->GetAAXP();
+	float aa_percent = (currentaaxp/maxaa) * 100.0;
+
+	c->Message(Chat::Yellow, "%s has %d of %d required XP.", t->GetName(), currentxp, totalrequiredxp);
+	c->Message(Chat::Yellow, "They need %0.1f more to get to %d. They are %0.2f percent towards this level.", xpforlevel, level+1, xp_percent);
+	c->Message(Chat::Yellow, "Their XP loss at this level is %d which is %0.2f percent of their current level.", exploss, loss_percent);
+	c->Message(Chat::Yellow, "They have %d of %0.1f towards an AA point. They are %0.2f percent towards this point.", currentaaxp, maxaa, aa_percent);
 }
 
 // All new code added to command.cpp should be BEFORE this comment line. Do no append code to this file below the BOTS code block.

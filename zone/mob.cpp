@@ -468,6 +468,10 @@ Mob::Mob(
 	PrimaryAggro = false;
 	AssistAggro = false;
 	npc_assist_cap = 0;
+    dire_charmed = false;
+    player_damage = 0;
+    dire_pet_damage = 0;
+    total_damage = 0;
 
 #ifdef BOTS
 	m_manual_follow = false;
