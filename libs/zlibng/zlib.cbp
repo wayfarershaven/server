@@ -1,0 +1,545 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6"/>
+	<Project>
+		<Option title="zlib"/>
+		<Option makefile_is_custom="1"/>
+		<Option compiler="gcc"/>
+		<Option virtualFolders="CMake Files\;CMake Files\cmake\;CMake Files\common\;CMake Files\libs\;CMake Files\libs\luabind\;CMake Files\libs\zlibng\;CMake Files\submodules\;CMake Files\submodules\fmt\;CMake Files\submodules\fmt\support\;CMake Files\submodules\fmt\support\cmake\;CMake Files\submodules\libuv\;CMake Files\submodules\recastnavigation\;CMake Files\submodules\recastnavigation\DebugUtils\;CMake Files\submodules\recastnavigation\Detour\;CMake Files\submodules\recastnavigation\DetourCrowd\;CMake Files\submodules\recastnavigation\DetourTileCache\;CMake Files\submodules\recastnavigation\Recast\;CMake Files\shared_memory\;CMake Files\world\;CMake Files\zone\;CMake Files\ucs\;CMake Files\queryserv\;CMake Files\eqlaunch\;CMake Files\loginserver\;CMake Files\client_files\;CMake Files\client_files\import\;CMake Files\client_files\export\;"/>
+		<Build>
+			<Target title="all">
+				<Option working_dir="/root/source/libs/zlibng"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j24 -f &quot;/root/source/libs/zlibng/Makefile&quot;  VERBOSE=1 all"/>
+					<CompileFile command="/usr/bin/make -j24 -f &quot;/root/source/libs/zlibng/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j24 -f &quot;/root/source/libs/zlibng/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j24 -f &quot;/root/source/libs/zlibng/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="zlibstatic">
+				<Option output="/root/source/libs/zlibng/libz.a" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/root/source/libs/zlibng"/>
+				<Option object_output="./"/>
+				<Option type="2"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DHAS_UNION_SEMUN"/>
+					<Add option="-DGLM_FORCE_RADIANS"/>
+					<Add option="-DGLM_FORCE_CTOR_INIT"/>
+					<Add option="-DGLM_ENABLE_EXPERIMENTAL"/>
+					<Add option="-DCOMMANDS_LOGGING"/>
+					<Add option="-DEQEMU_USE_OPENSSL"/>
+					<Add option="-DENABLE_SECURITY"/>
+					<Add option="-DBUILD_LOGGING"/>
+					<Add option="-DLUA_EQEMU"/>
+					<Add option="-DSANITIZE_LUA_LIBS"/>
+					<Add option="-DEMBPERL"/>
+					<Add option="-DEMBPERL_PLUGIN"/>
+					<Add option="-DZLIB_COMPAT"/>
+					<Add option="-DWITH_GZFILEOP"/>
+					<Add option="-D_LARGEFILE64_SOURCE=1"/>
+					<Add option="-D__USE_LARGEFILE64"/>
+					<Add option="-DHAVE_HIDDEN"/>
+					<Add option="-DHAVE_INTERNAL"/>
+					<Add option="-DHAVE_BUILTIN_CTZL"/>
+					<Add option="-DUNALIGNED_OK"/>
+					<Add option="-DX86_CPUID"/>
+					<Add option="-DX86_SSE4_2_CRC_HASH"/>
+					<Add option="-DX86_SSE4_2_CRC_INTRIN"/>
+					<Add option="-DX86_QUICK_STRATEGY"/>
+					<Add option="-DX86_SSE2"/>
+					<Add option="-DX86_PCLMULQDQ_CRC"/>
+					<Add directory="/usr/include/mysql"/>
+					<Add directory="/root/source/libs/zlibng"/>
+					<Add directory="/root/source/dependencies/nats/include"/>
+					<Add directory="/root/source/submodules/glm"/>
+					<Add directory="/root/source/submodules/cereal/include"/>
+					<Add directory="/root/source/submodules/fmt/include"/>
+					<Add directory="/root/source/submodules/libuv/include"/>
+					<Add directory="/root/source/submodules/recastnavigation/DebugUtils/Include"/>
+					<Add directory="/root/source/submodules/recastnavigation/Detour/Include"/>
+					<Add directory="/root/source/submodules/recastnavigation/DetourCrowd/Include"/>
+					<Add directory="/root/source/submodules/recastnavigation/DetourTileCache/Include"/>
+					<Add directory="/root/source/submodules/recastnavigation/Recast/Include"/>
+					<Add directory="/root/source/submodules/websocketpp"/>
+					<Add directory="/usr/include/lua5.1"/>
+					<Add directory="/root/source/libs/luabind"/>
+					<Add directory="/usr/lib/x86_64-linux-gnu/perl/5.26/CORE"/>
+					<Add directory="/usr/include/c++/7"/>
+					<Add directory="/usr/include/x86_64-linux-gnu/c++/7"/>
+					<Add directory="/usr/include/c++/7/backward"/>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/7/include"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed"/>
+					<Add directory="/usr/include/x86_64-linux-gnu"/>
+					<Add directory="/usr/include"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j24 -f &quot;/root/source/libs/zlibng/Makefile&quot;  VERBOSE=1 zlibstatic"/>
+					<CompileFile command="/usr/bin/make -j24 -f &quot;/root/source/libs/zlibng/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j24 -f &quot;/root/source/libs/zlibng/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j24 -f &quot;/root/source/libs/zlibng/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="zlibstatic/fast">
+				<Option output="/root/source/libs/zlibng/libz.a" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/root/source/libs/zlibng"/>
+				<Option object_output="./"/>
+				<Option type="2"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DHAS_UNION_SEMUN"/>
+					<Add option="-DGLM_FORCE_RADIANS"/>
+					<Add option="-DGLM_FORCE_CTOR_INIT"/>
+					<Add option="-DGLM_ENABLE_EXPERIMENTAL"/>
+					<Add option="-DCOMMANDS_LOGGING"/>
+					<Add option="-DEQEMU_USE_OPENSSL"/>
+					<Add option="-DENABLE_SECURITY"/>
+					<Add option="-DBUILD_LOGGING"/>
+					<Add option="-DLUA_EQEMU"/>
+					<Add option="-DSANITIZE_LUA_LIBS"/>
+					<Add option="-DEMBPERL"/>
+					<Add option="-DEMBPERL_PLUGIN"/>
+					<Add option="-DZLIB_COMPAT"/>
+					<Add option="-DWITH_GZFILEOP"/>
+					<Add option="-D_LARGEFILE64_SOURCE=1"/>
+					<Add option="-D__USE_LARGEFILE64"/>
+					<Add option="-DHAVE_HIDDEN"/>
+					<Add option="-DHAVE_INTERNAL"/>
+					<Add option="-DHAVE_BUILTIN_CTZL"/>
+					<Add option="-DUNALIGNED_OK"/>
+					<Add option="-DX86_CPUID"/>
+					<Add option="-DX86_SSE4_2_CRC_HASH"/>
+					<Add option="-DX86_SSE4_2_CRC_INTRIN"/>
+					<Add option="-DX86_QUICK_STRATEGY"/>
+					<Add option="-DX86_SSE2"/>
+					<Add option="-DX86_PCLMULQDQ_CRC"/>
+					<Add directory="/usr/include/mysql"/>
+					<Add directory="/root/source/libs/zlibng"/>
+					<Add directory="/root/source/dependencies/nats/include"/>
+					<Add directory="/root/source/submodules/glm"/>
+					<Add directory="/root/source/submodules/cereal/include"/>
+					<Add directory="/root/source/submodules/fmt/include"/>
+					<Add directory="/root/source/submodules/libuv/include"/>
+					<Add directory="/root/source/submodules/recastnavigation/DebugUtils/Include"/>
+					<Add directory="/root/source/submodules/recastnavigation/Detour/Include"/>
+					<Add directory="/root/source/submodules/recastnavigation/DetourCrowd/Include"/>
+					<Add directory="/root/source/submodules/recastnavigation/DetourTileCache/Include"/>
+					<Add directory="/root/source/submodules/recastnavigation/Recast/Include"/>
+					<Add directory="/root/source/submodules/websocketpp"/>
+					<Add directory="/usr/include/lua5.1"/>
+					<Add directory="/root/source/libs/luabind"/>
+					<Add directory="/usr/lib/x86_64-linux-gnu/perl/5.26/CORE"/>
+					<Add directory="/usr/include/c++/7"/>
+					<Add directory="/usr/include/x86_64-linux-gnu/c++/7"/>
+					<Add directory="/usr/include/c++/7/backward"/>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/7/include"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed"/>
+					<Add directory="/usr/include/x86_64-linux-gnu"/>
+					<Add directory="/usr/include"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j24 -f &quot;/root/source/libs/zlibng/Makefile&quot;  VERBOSE=1 zlibstatic/fast"/>
+					<CompileFile command="/usr/bin/make -j24 -f &quot;/root/source/libs/zlibng/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j24 -f &quot;/root/source/libs/zlibng/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j24 -f &quot;/root/source/libs/zlibng/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="zlib">
+				<Option output="/root/source/libs/zlibng/libz.so" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/root/source/libs/zlibng"/>
+				<Option object_output="./"/>
+				<Option type="3"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DHAS_UNION_SEMUN"/>
+					<Add option="-DGLM_FORCE_RADIANS"/>
+					<Add option="-DGLM_FORCE_CTOR_INIT"/>
+					<Add option="-DGLM_ENABLE_EXPERIMENTAL"/>
+					<Add option="-DCOMMANDS_LOGGING"/>
+					<Add option="-DEQEMU_USE_OPENSSL"/>
+					<Add option="-DENABLE_SECURITY"/>
+					<Add option="-DBUILD_LOGGING"/>
+					<Add option="-DLUA_EQEMU"/>
+					<Add option="-DSANITIZE_LUA_LIBS"/>
+					<Add option="-DEMBPERL"/>
+					<Add option="-DEMBPERL_PLUGIN"/>
+					<Add option="-DZLIB_COMPAT"/>
+					<Add option="-DWITH_GZFILEOP"/>
+					<Add option="-D_LARGEFILE64_SOURCE=1"/>
+					<Add option="-D__USE_LARGEFILE64"/>
+					<Add option="-DHAVE_HIDDEN"/>
+					<Add option="-DHAVE_INTERNAL"/>
+					<Add option="-DHAVE_BUILTIN_CTZL"/>
+					<Add option="-DUNALIGNED_OK"/>
+					<Add option="-DX86_CPUID"/>
+					<Add option="-DX86_SSE4_2_CRC_HASH"/>
+					<Add option="-DX86_SSE4_2_CRC_INTRIN"/>
+					<Add option="-DX86_QUICK_STRATEGY"/>
+					<Add option="-DX86_SSE2"/>
+					<Add option="-DX86_PCLMULQDQ_CRC"/>
+					<Add directory="/usr/include/mysql"/>
+					<Add directory="/root/source/libs/zlibng"/>
+					<Add directory="/root/source/dependencies/nats/include"/>
+					<Add directory="/root/source/submodules/glm"/>
+					<Add directory="/root/source/submodules/cereal/include"/>
+					<Add directory="/root/source/submodules/fmt/include"/>
+					<Add directory="/root/source/submodules/libuv/include"/>
+					<Add directory="/root/source/submodules/recastnavigation/DebugUtils/Include"/>
+					<Add directory="/root/source/submodules/recastnavigation/Detour/Include"/>
+					<Add directory="/root/source/submodules/recastnavigation/DetourCrowd/Include"/>
+					<Add directory="/root/source/submodules/recastnavigation/DetourTileCache/Include"/>
+					<Add directory="/root/source/submodules/recastnavigation/Recast/Include"/>
+					<Add directory="/root/source/submodules/websocketpp"/>
+					<Add directory="/usr/include/lua5.1"/>
+					<Add directory="/root/source/libs/luabind"/>
+					<Add directory="/usr/lib/x86_64-linux-gnu/perl/5.26/CORE"/>
+					<Add directory="/usr/include/c++/7"/>
+					<Add directory="/usr/include/x86_64-linux-gnu/c++/7"/>
+					<Add directory="/usr/include/c++/7/backward"/>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/7/include"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed"/>
+					<Add directory="/usr/include/x86_64-linux-gnu"/>
+					<Add directory="/usr/include"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j24 -f &quot;/root/source/libs/zlibng/Makefile&quot;  VERBOSE=1 zlib"/>
+					<CompileFile command="/usr/bin/make -j24 -f &quot;/root/source/libs/zlibng/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j24 -f &quot;/root/source/libs/zlibng/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j24 -f &quot;/root/source/libs/zlibng/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="zlib/fast">
+				<Option output="/root/source/libs/zlibng/libz.so" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/root/source/libs/zlibng"/>
+				<Option object_output="./"/>
+				<Option type="3"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DHAS_UNION_SEMUN"/>
+					<Add option="-DGLM_FORCE_RADIANS"/>
+					<Add option="-DGLM_FORCE_CTOR_INIT"/>
+					<Add option="-DGLM_ENABLE_EXPERIMENTAL"/>
+					<Add option="-DCOMMANDS_LOGGING"/>
+					<Add option="-DEQEMU_USE_OPENSSL"/>
+					<Add option="-DENABLE_SECURITY"/>
+					<Add option="-DBUILD_LOGGING"/>
+					<Add option="-DLUA_EQEMU"/>
+					<Add option="-DSANITIZE_LUA_LIBS"/>
+					<Add option="-DEMBPERL"/>
+					<Add option="-DEMBPERL_PLUGIN"/>
+					<Add option="-DZLIB_COMPAT"/>
+					<Add option="-DWITH_GZFILEOP"/>
+					<Add option="-D_LARGEFILE64_SOURCE=1"/>
+					<Add option="-D__USE_LARGEFILE64"/>
+					<Add option="-DHAVE_HIDDEN"/>
+					<Add option="-DHAVE_INTERNAL"/>
+					<Add option="-DHAVE_BUILTIN_CTZL"/>
+					<Add option="-DUNALIGNED_OK"/>
+					<Add option="-DX86_CPUID"/>
+					<Add option="-DX86_SSE4_2_CRC_HASH"/>
+					<Add option="-DX86_SSE4_2_CRC_INTRIN"/>
+					<Add option="-DX86_QUICK_STRATEGY"/>
+					<Add option="-DX86_SSE2"/>
+					<Add option="-DX86_PCLMULQDQ_CRC"/>
+					<Add directory="/usr/include/mysql"/>
+					<Add directory="/root/source/libs/zlibng"/>
+					<Add directory="/root/source/dependencies/nats/include"/>
+					<Add directory="/root/source/submodules/glm"/>
+					<Add directory="/root/source/submodules/cereal/include"/>
+					<Add directory="/root/source/submodules/fmt/include"/>
+					<Add directory="/root/source/submodules/libuv/include"/>
+					<Add directory="/root/source/submodules/recastnavigation/DebugUtils/Include"/>
+					<Add directory="/root/source/submodules/recastnavigation/Detour/Include"/>
+					<Add directory="/root/source/submodules/recastnavigation/DetourCrowd/Include"/>
+					<Add directory="/root/source/submodules/recastnavigation/DetourTileCache/Include"/>
+					<Add directory="/root/source/submodules/recastnavigation/Recast/Include"/>
+					<Add directory="/root/source/submodules/websocketpp"/>
+					<Add directory="/usr/include/lua5.1"/>
+					<Add directory="/root/source/libs/luabind"/>
+					<Add directory="/usr/lib/x86_64-linux-gnu/perl/5.26/CORE"/>
+					<Add directory="/usr/include/c++/7"/>
+					<Add directory="/usr/include/x86_64-linux-gnu/c++/7"/>
+					<Add directory="/usr/include/c++/7/backward"/>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/7/include"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed"/>
+					<Add directory="/usr/include/x86_64-linux-gnu"/>
+					<Add directory="/usr/include"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j24 -f &quot;/root/source/libs/zlibng/Makefile&quot;  VERBOSE=1 zlib/fast"/>
+					<CompileFile command="/usr/bin/make -j24 -f &quot;/root/source/libs/zlibng/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j24 -f &quot;/root/source/libs/zlibng/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j24 -f &quot;/root/source/libs/zlibng/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+		</Build>
+		<Unit filename="/root/source/libs/zlibng/adler32.c">
+			<Option target="zlibstatic"/>
+			<Option target="zlib"/>
+		</Unit>
+		<Unit filename="/root/source/libs/zlibng/arch/x86/crc_folding.c">
+			<Option target="zlibstatic"/>
+			<Option target="zlib"/>
+		</Unit>
+		<Unit filename="/root/source/libs/zlibng/arch/x86/crc_folding.h">
+			<Option target="zlibstatic"/>
+			<Option target="zlib"/>
+		</Unit>
+		<Unit filename="/root/source/libs/zlibng/arch/x86/deflate_quick.c">
+			<Option target="zlibstatic"/>
+			<Option target="zlib"/>
+		</Unit>
+		<Unit filename="/root/source/libs/zlibng/arch/x86/fill_window_sse.c">
+			<Option target="zlibstatic"/>
+			<Option target="zlib"/>
+		</Unit>
+		<Unit filename="/root/source/libs/zlibng/arch/x86/insert_string_sse.c">
+			<Option target="zlibstatic"/>
+			<Option target="zlib"/>
+		</Unit>
+		<Unit filename="/root/source/libs/zlibng/arch/x86/x86.c">
+			<Option target="zlibstatic"/>
+			<Option target="zlib"/>
+		</Unit>
+		<Unit filename="/root/source/libs/zlibng/arch/x86/x86.h">
+			<Option target="zlibstatic"/>
+			<Option target="zlib"/>
+		</Unit>
+		<Unit filename="/root/source/libs/zlibng/compress.c">
+			<Option target="zlibstatic"/>
+			<Option target="zlib"/>
+		</Unit>
+		<Unit filename="/root/source/libs/zlibng/crc32.c">
+			<Option target="zlibstatic"/>
+			<Option target="zlib"/>
+		</Unit>
+		<Unit filename="/root/source/libs/zlibng/crc32.h">
+			<Option target="zlibstatic"/>
+			<Option target="zlib"/>
+		</Unit>
+		<Unit filename="/root/source/libs/zlibng/deflate.c">
+			<Option target="zlibstatic"/>
+			<Option target="zlib"/>
+		</Unit>
+		<Unit filename="/root/source/libs/zlibng/deflate.h">
+			<Option target="zlibstatic"/>
+			<Option target="zlib"/>
+		</Unit>
+		<Unit filename="/root/source/libs/zlibng/deflate_fast.c">
+			<Option target="zlibstatic"/>
+			<Option target="zlib"/>
+		</Unit>
+		<Unit filename="/root/source/libs/zlibng/deflate_medium.c">
+			<Option target="zlibstatic"/>
+			<Option target="zlib"/>
+		</Unit>
+		<Unit filename="/root/source/libs/zlibng/deflate_slow.c">
+			<Option target="zlibstatic"/>
+			<Option target="zlib"/>
+		</Unit>
+		<Unit filename="/root/source/libs/zlibng/functable.c">
+			<Option target="zlibstatic"/>
+			<Option target="zlib"/>
+		</Unit>
+		<Unit filename="/root/source/libs/zlibng/functable.h">
+			<Option target="zlibstatic"/>
+			<Option target="zlib"/>
+		</Unit>
+		<Unit filename="/root/source/libs/zlibng/gzclose.c">
+			<Option target="zlibstatic"/>
+			<Option target="zlib"/>
+		</Unit>
+		<Unit filename="/root/source/libs/zlibng/gzguts.h">
+			<Option target="zlibstatic"/>
+			<Option target="zlib"/>
+		</Unit>
+		<Unit filename="/root/source/libs/zlibng/gzlib.c">
+			<Option target="zlibstatic"/>
+			<Option target="zlib"/>
+		</Unit>
+		<Unit filename="/root/source/libs/zlibng/gzread.c">
+			<Option target="zlibstatic"/>
+			<Option target="zlib"/>
+		</Unit>
+		<Unit filename="/root/source/libs/zlibng/gzwrite.c">
+			<Option target="zlibstatic"/>
+			<Option target="zlib"/>
+		</Unit>
+		<Unit filename="/root/source/libs/zlibng/infback.c">
+			<Option target="zlibstatic"/>
+			<Option target="zlib"/>
+		</Unit>
+		<Unit filename="/root/source/libs/zlibng/inffast.c">
+			<Option target="zlibstatic"/>
+			<Option target="zlib"/>
+		</Unit>
+		<Unit filename="/root/source/libs/zlibng/inffast.h">
+			<Option target="zlibstatic"/>
+			<Option target="zlib"/>
+		</Unit>
+		<Unit filename="/root/source/libs/zlibng/inffixed.h">
+			<Option target="zlibstatic"/>
+			<Option target="zlib"/>
+		</Unit>
+		<Unit filename="/root/source/libs/zlibng/inflate.c">
+			<Option target="zlibstatic"/>
+			<Option target="zlib"/>
+		</Unit>
+		<Unit filename="/root/source/libs/zlibng/inflate.h">
+			<Option target="zlibstatic"/>
+			<Option target="zlib"/>
+		</Unit>
+		<Unit filename="/root/source/libs/zlibng/inftrees.c">
+			<Option target="zlibstatic"/>
+			<Option target="zlib"/>
+		</Unit>
+		<Unit filename="/root/source/libs/zlibng/inftrees.h">
+			<Option target="zlibstatic"/>
+			<Option target="zlib"/>
+		</Unit>
+		<Unit filename="/root/source/libs/zlibng/trees.c">
+			<Option target="zlibstatic"/>
+			<Option target="zlib"/>
+		</Unit>
+		<Unit filename="/root/source/libs/zlibng/trees.h">
+			<Option target="zlibstatic"/>
+			<Option target="zlib"/>
+		</Unit>
+		<Unit filename="/root/source/libs/zlibng/uncompr.c">
+			<Option target="zlibstatic"/>
+			<Option target="zlib"/>
+		</Unit>
+		<Unit filename="/root/source/libs/zlibng/win32/zlib1.rc">
+			<Option target="zlib"/>
+		</Unit>
+		<Unit filename="/root/source/libs/zlibng/zconf.h">
+			<Option target="zlibstatic"/>
+			<Option target="zlib"/>
+		</Unit>
+		<Unit filename="/root/source/libs/zlibng/zlib.h">
+			<Option target="zlibstatic"/>
+			<Option target="zlib"/>
+		</Unit>
+		<Unit filename="/root/source/libs/zlibng/zutil.c">
+			<Option target="zlibstatic"/>
+			<Option target="zlib"/>
+		</Unit>
+		<Unit filename="/root/source/libs/zlibng/zutil.h">
+			<Option target="zlibstatic"/>
+			<Option target="zlib"/>
+		</Unit>
+		<Unit filename="/root/source/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\"/>
+		</Unit>
+		<Unit filename="/root/source/cmake/FindLua51.cmake">
+			<Option virtualFolder="CMake Files\cmake\"/>
+		</Unit>
+		<Unit filename="/root/source/cmake/FindMariaDB.cmake">
+			<Option virtualFolder="CMake Files\cmake\"/>
+		</Unit>
+		<Unit filename="/root/source/cmake/FindMySQL.cmake">
+			<Option virtualFolder="CMake Files\cmake\"/>
+		</Unit>
+		<Unit filename="/root/source/cmake/FindPackageHandleStandardArgs.cmake">
+			<Option virtualFolder="CMake Files\cmake\"/>
+		</Unit>
+		<Unit filename="/root/source/cmake/FindPackageMessage.cmake">
+			<Option virtualFolder="CMake Files\cmake\"/>
+		</Unit>
+		<Unit filename="/root/source/cmake/FindProtobuf.cmake">
+			<Option virtualFolder="CMake Files\cmake\"/>
+		</Unit>
+		<Unit filename="/root/source/cmake/FindSodium.cmake">
+			<Option virtualFolder="CMake Files\cmake\"/>
+		</Unit>
+		<Unit filename="/root/source/cmake/FindmbedTLS.cmake">
+			<Option virtualFolder="CMake Files\cmake\"/>
+		</Unit>
+		<Unit filename="/root/source/cmake/SelectLibraryConfigurations.cmake">
+			<Option virtualFolder="CMake Files\cmake\"/>
+		</Unit>
+		<Unit filename="/root/source/common/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\common\"/>
+		</Unit>
+		<Unit filename="/root/source/libs/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\libs\"/>
+		</Unit>
+		<Unit filename="/root/source/libs/luabind/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\libs\luabind\"/>
+		</Unit>
+		<Unit filename="/root/source/libs/zlibng/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\libs\zlibng\"/>
+		</Unit>
+		<Unit filename="/root/source/libs/zlibng/zconf.h.cmakein">
+			<Option virtualFolder="CMake Files\libs\zlibng\"/>
+		</Unit>
+		<Unit filename="/root/source/libs/zlibng/zlib.pc.cmakein">
+			<Option virtualFolder="CMake Files\libs\zlibng\"/>
+		</Unit>
+		<Unit filename="/root/source/submodules/fmt/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\submodules\fmt\"/>
+		</Unit>
+		<Unit filename="/root/source/submodules/fmt/support/cmake/cxx14.cmake">
+			<Option virtualFolder="CMake Files\submodules\fmt\support\cmake\"/>
+		</Unit>
+		<Unit filename="/root/source/submodules/libuv/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\submodules\libuv\"/>
+		</Unit>
+		<Unit filename="/root/source/submodules/libuv/libuv.pc.in">
+			<Option virtualFolder="CMake Files\submodules\libuv\"/>
+		</Unit>
+		<Unit filename="/root/source/submodules/recastnavigation/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\submodules\recastnavigation\"/>
+		</Unit>
+		<Unit filename="/root/source/submodules/recastnavigation/DebugUtils/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\submodules\recastnavigation\DebugUtils\"/>
+		</Unit>
+		<Unit filename="/root/source/submodules/recastnavigation/Detour/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\submodules\recastnavigation\Detour\"/>
+		</Unit>
+		<Unit filename="/root/source/submodules/recastnavigation/DetourCrowd/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\submodules\recastnavigation\DetourCrowd\"/>
+		</Unit>
+		<Unit filename="/root/source/submodules/recastnavigation/DetourTileCache/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\submodules\recastnavigation\DetourTileCache\"/>
+		</Unit>
+		<Unit filename="/root/source/submodules/recastnavigation/Recast/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\submodules\recastnavigation\Recast\"/>
+		</Unit>
+		<Unit filename="/root/source/shared_memory/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\shared_memory\"/>
+		</Unit>
+		<Unit filename="/root/source/world/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\world\"/>
+		</Unit>
+		<Unit filename="/root/source/zone/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\zone\"/>
+		</Unit>
+		<Unit filename="/root/source/ucs/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\ucs\"/>
+		</Unit>
+		<Unit filename="/root/source/queryserv/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\queryserv\"/>
+		</Unit>
+		<Unit filename="/root/source/eqlaunch/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\eqlaunch\"/>
+		</Unit>
+		<Unit filename="/root/source/loginserver/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\loginserver\"/>
+		</Unit>
+		<Unit filename="/root/source/client_files/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\client_files\"/>
+		</Unit>
+		<Unit filename="/root/source/client_files/import/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\client_files\import\"/>
+		</Unit>
+		<Unit filename="/root/source/client_files/export/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\client_files\export\"/>
+		</Unit>
+	</Project>
+</CodeBlocks_project_file>

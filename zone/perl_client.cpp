@@ -3622,10 +3622,7 @@ XS(XS_Client_AddLevelBasedExp) {
 		if (items > 2)
 			max_level = (uint8) SvUV(ST(2));
 
-		if (items > 3)
-			ignore_mods = (bool) SvTRUE(ST(3));
-
-		THIS->AddLevelBasedExp(exp_percentage, max_level, ignore_mods);
+		THIS->AddLevelBasedExp(exp_percentage, max_level);
 	}
 	XSRETURN_EMPTY;
 }
