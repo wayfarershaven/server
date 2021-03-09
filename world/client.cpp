@@ -88,6 +88,17 @@ extern NatsManager nats;
 extern volatile bool RunLoops;
 extern volatile bool UCSServerAvailable_;
 
+// unused ATM, but here for reference, should match RoF2
+enum class NameApprovalResponse : int {
+	NotValid = -1, // string ID 1576
+	Rejected = 0, // string ID 1581
+	Approved = 1,
+	CharacterLimit = 2, // string ID 1591 older clients mention 1 char on server
+	ThreeDeity = 3, // string ID 5502. 3 toons same deity team limit
+	HeadStartPreOoW = 4, // string ID 6862, head start failed due to OoW not being unlocked
+	HeadStartNoOoW = 5, // string ID 6863, head start failed due to not owning OoW
+};
+
 Client::Client(EQStreamInterface* ieqs)
 :	autobootup_timeout(RuleI(World, ZoneAutobootTimeoutMS)),
 	CLE_keepalive_timer(RuleI(World, ClientKeepaliveTimeoutMS)),
@@ -525,58 +536,75 @@ bool Client::HandleSendLoginInfoPacket(const EQApplicationPacket *app) {
 	return true;
 }
 
-bool Client::HandleNameApprovalPacket(const EQApplicationPacket *app)
-{
-	if (GetAccountID() == 0) {
-		Log(Logs::Detail, Logs::World_Server,"Name approval request with no logged in account");
-		return false;
-	}
+bool Client::HandleNameApprovalPacket(const EQApplicationPacket *app) {
+    if (GetAccountID() == 0) {
+        Log(Logs::Detail, Logs::World_Server, "Name approval request with no logged in account");
+        return false;
+    }
 
-	snprintf(char_name, 64, "%s", (char*)app->pBuffer);
-	uchar race = app->pBuffer[64];
-	uchar clas = app->pBuffer[68];
+    auto length = snprintf(char_name, 64, "%s", (char *) app->pBuffer);
+    uchar race = app->pBuffer[64];
+    uchar clas = app->pBuffer[68];
 
-	if (race < 0 || race > 255) {
-		Log(Logs::Detail, Logs::World_Server, "Client::HandleNameApprovalPacket Race was less then zero or over 255");
-		return false;
-	}
+    if (race < 0 || race > 255) {
+        Log(Logs::Detail, Logs::World_Server, "Client::HandleNameApprovalPacket Race was less then zero or over 255");
+        return false;
+    }
 
-	if (clas < 0 || clas > 255) {
-		Log(Logs::Detail, Logs::World_Server, "Client::HandleNameApprovalPacket Class was less then zero or over 255");
-		return false;
-	}
+    if (clas < 0 || clas > 255) {
+        Log(Logs::Detail, Logs::World_Server, "Client::HandleNameApprovalPacket Class was less then zero or over 255");
+        return false;
+    }
 
-	Log(Logs::Detail, Logs::World_Server, "Name approval request. Name=%s, race=%s, class=%s", char_name, GetRaceIDName(race), GetClassIDName(clas));
+    Log(Logs::Detail, Logs::World_Server, "Name approval request. Name=%s, race=%s, class=%s", char_name,
+        GetRaceIDName(race), GetClassIDName(clas));
 
-	EQApplicationPacket *outapp;
-	outapp = new EQApplicationPacket;
-	outapp->SetOpcode(OP_ApproveName);
-	outapp->pBuffer = new uchar[1];
-	outapp->size = 1;
+    EQApplicationPacket *outapp;
+    outapp = new EQApplicationPacket;
+    outapp->SetOpcode(OP_ApproveName);
+    outapp->pBuffer = new uchar[1];
+    outapp->size = 1;
 
-	bool valid = false;
-	if(!database.CheckNameFilter(char_name)) { 
-		valid = false; 
-	}
-	/* Name must begin with an upper-case letter. */
-	else if (islower(char_name[0])) { 
-		valid = false; 
-	} 
-	else if (database.ReserveName(GetAccountID(), char_name)) { 
-		valid = true; 	
-	}
-	else { 
-		valid = false; 
-	}
+    bool valid = true;
+    /* Name must be between 4 and 15 characters long, packet forged if this is true */
+    if (length < 4 || length > 15) {
+        valid = false;
+    }
+    /* Name must begin with an upper-case letter, can be sent with some tricking of the client */
+    else if (islower(char_name[0])) {
+        valid = false;
+    }
+    /* Name must not have any spaces, packet forged if this is true */
+    else if (strstr(char_name, " ")) {
+        valid = false;
+    }
+    /* I would like to do this later, since it's likely more expensive, but oh well */
+    else if (!database.CheckNameFilter(char_name)) {
+        valid = false;
+    } else {
+        /* Name must not not contain any uppercase letters, can be sent with some tricking of the client */
+        for (int i = 1; i < length; ++i) {
+            if (isupper(char_name[i])) {
+                valid = false;
+                break;
+            }
+        }
+    }
 
-	outapp->pBuffer[0] = valid? 1 : 0;
-	QueuePacket(outapp);
-	safe_delete(outapp);
+    /* Still not invalid, let's see if it's taken */
+    if (valid) {
+        valid = database.ReserveName(GetAccountID(), char_name);
+    }
 
-	if (!valid)
-		memset(char_name, 0, sizeof(char_name));
+    outapp->pBuffer[0] = valid ? 1 : 0;
+    QueuePacket(outapp);
+    safe_delete(outapp);
 
-	return true;
+    if (!valid) {
+        memset(char_name, 0, sizeof(char_name));
+    }
+
+    return true;
 }
 
 bool Client::HandleGenerateRandomNamePacket(const EQApplicationPacket *app) {
