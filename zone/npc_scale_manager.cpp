@@ -47,65 +47,65 @@ void NpcScaleManager::ScaleNPC(NPC *npc)
 		return;
 	}
 
-	if (npc->GetAC() == 0 && is_auto_scaled) {
+	if (npc->GetAC() == -1 && is_auto_scaled) {
 		npc->ModifyNPCStat("ac", std::to_string(scale_data.ac).c_str());
 	}
-	if (npc->GetMaxHP() == 0) {
+	if (npc->GetMaxHP() == -1) {
 		npc->ModifyNPCStat("max_hp", std::to_string(scale_data.hp).c_str());
 		npc->Heal();
 	}
-	if (npc->GetAccuracyRating() == 0) {
+	if (npc->GetAccuracyRating() == -1) {
 		npc->ModifyNPCStat("accuracy", std::to_string(scale_data.accuracy).c_str());
 	}
-	if (npc->GetSlowMitigation() == 0) {
+	if (npc->GetSlowMitigation() == -1) {
 		npc->ModifyNPCStat("slow_mitigation", std::to_string(scale_data.slow_mitigation).c_str());
 	}
-	if (npc->GetATK() == 0) {
+	if (npc->GetATK() == -1) {
 		npc->ModifyNPCStat("atk", std::to_string(scale_data.attack).c_str());
 	}
-	if (npc->GetSTR() == 0) {
+	if (npc->GetSTR() == -1) {
 		npc->ModifyNPCStat("str", std::to_string(scale_data.strength).c_str());
 	}
-	if (npc->GetSTA() == 0) {
+	if (npc->GetSTA() == -1) {
 		npc->ModifyNPCStat("sta", std::to_string(scale_data.stamina).c_str());
 	}
-	if (npc->GetDEX() == 0) {
+	if (npc->GetDEX() == -1) {
 		npc->ModifyNPCStat("dex", std::to_string(scale_data.dexterity).c_str());
 	}
-	if (npc->GetAGI() == 0) {
+	if (npc->GetAGI() == -1) {
 		npc->ModifyNPCStat("agi", std::to_string(scale_data.agility).c_str());
 	}
-	if (npc->GetINT() == 0) {
+	if (npc->GetINT() == -1) {
 		npc->ModifyNPCStat("int", std::to_string(scale_data.intelligence).c_str());
 	}
-	if (npc->GetWIS() == 0) {
+	if (npc->GetWIS() == -1) {
 		npc->ModifyNPCStat("wis", std::to_string(scale_data.wisdom).c_str());
 	}
-	if (npc->GetCHA() == 0) {
+	if (npc->GetCHA() == -1) {
 		npc->ModifyNPCStat("cha", std::to_string(scale_data.charisma).c_str());
 	}
-	if (npc->GetMR() == 0) {
+	if (npc->GetMR() == -1) {
 		npc->ModifyNPCStat("mr", std::to_string(scale_data.magic_resist).c_str());
 	}
-	if (npc->GetCR() == 0) {
+	if (npc->GetCR() == -1) {
 		npc->ModifyNPCStat("cr", std::to_string(scale_data.cold_resist).c_str());
 	}
-	if (npc->GetFR() == 0) {
+	if (npc->GetFR() == -1) {
 		npc->ModifyNPCStat("fr", std::to_string(scale_data.fire_resist).c_str());
 	}
-	if (npc->GetPR() == 0) {
+	if (npc->GetPR() == -1) {
 		npc->ModifyNPCStat("pr", std::to_string(scale_data.poison_resist).c_str());
 	}
-	if (npc->GetDR() == 0) {
+	if (npc->GetDR() == -1) {
 		npc->ModifyNPCStat("dr", std::to_string(scale_data.disease_resist).c_str());
 	}
-	if (npc->GetCorrup() == 0 && is_auto_scaled) {
+	if (npc->GetCorrup() == -1 && is_auto_scaled) {
 		npc->ModifyNPCStat("cor", std::to_string(scale_data.corruption_resist).c_str());
 	}
-	if (npc->GetPhR() == 0 && is_auto_scaled) {
+	if (npc->GetPhR() == -1 && is_auto_scaled) {
 		npc->ModifyNPCStat("phr", std::to_string(scale_data.physical_resist).c_str());
 	}
-	if (npc->GetMinDMG() == 0 && npc->GetMaxDMG() == 0) {
+	if (npc->GetMinDMG() == -1 && npc->GetMaxDMG() == -1) {
 		int min_dmg = scale_data.min_dmg;
 		if (RuleB(Combat, UseNPCDamageClassLevelMods)) {
 			int32 class_level_damage_mod = GetClassLevelDamageMod(npc->GetLevel(), npc->GetClass());
@@ -116,7 +116,7 @@ void NpcScaleManager::ScaleNPC(NPC *npc)
 
 		npc->ModifyNPCStat("min_hit", std::to_string(min_dmg).c_str());
 	}
-	if (npc->GetMaxDMG() == 0) {
+	if (npc->GetMaxDMG() == -1) {
 		int max_dmg = scale_data.max_dmg;
 		if (RuleB(Combat, UseNPCDamageClassLevelMods)) {
 			int32 class_level_damage_mod = GetClassLevelDamageMod(npc->GetLevel(), npc->GetClass());
@@ -127,16 +127,16 @@ void NpcScaleManager::ScaleNPC(NPC *npc)
 
 		npc->ModifyNPCStat("max_hit", std::to_string(max_dmg).c_str());
 	}
-	if (npc->GetHPRegen() == 0 && is_auto_scaled) {
+	if (npc->GetHPRegen() == -1 && is_auto_scaled) {
 		npc->ModifyNPCStat("hp_regen", std::to_string(scale_data.hp_regen_rate).c_str());
 	}
-	if (npc->GetAttackDelay() == 0) {
+	if (npc->GetAttackDelay() == -1) {
 		npc->ModifyNPCStat("attack_delay", std::to_string(scale_data.attack_delay).c_str());
 	}
-	if (npc->GetSpellScale() == 0) {
+	if (npc->GetSpellScale() == -1) {
 		npc->ModifyNPCStat("spell_scale", std::to_string(scale_data.spell_scale).c_str());
 	}
-	if (npc->GetHealScale() == 0) {
+	if (npc->GetHealScale() == -1) {
 		npc->ModifyNPCStat("heal_scale", std::to_string(scale_data.heal_scale).c_str());
 	}
 	if (!npc->HasSpecialAbilities() && is_auto_scaled) {
