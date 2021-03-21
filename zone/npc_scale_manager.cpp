@@ -462,21 +462,21 @@ std::string NpcScaleManager::GetNPCScalingTypeName(NPC *&npc)
 bool NpcScaleManager::IsAutoScaled(NPC *npc)
 {
 	return
-		(npc->GetHP() == 0 &&
-		 npc->GetMaxDMG() == 0 &&
-		 npc->GetMinDMG() == 0 &&
-		 npc->GetSTR() == 0 &&
-		 npc->GetSTA() == 0 &&
-		 npc->GetDEX() == 0 &&
-		 npc->GetAGI() == 0 &&
-		 npc->GetINT() == 0 &&
-		 npc->GetWIS() == 0 &&
-		 npc->GetCHA() == 0 &&
-		 npc->GetMR() == 0 &&
-		 npc->GetFR() == 0 &&
-		 npc->GetCR() == 0 &&
-		 npc->GetPR() == 0 &&
-		 npc->GetDR() == 0);
+		(npc->GetHP() == -1 &&
+		 npc->GetMaxDMG() == -1 &&
+		 npc->GetMinDMG() == -1 &&
+		 npc->GetSTR() == -1 &&
+		 npc->GetSTA() == -1 &&
+		 npc->GetDEX() == -1 &&
+		 npc->GetAGI() == -1 &&
+		 npc->GetINT() == -1 &&
+		 npc->GetWIS() == -1 &&
+		 npc->GetCHA() == -1 &&
+		 npc->GetMR() == -1 &&
+		 npc->GetFR() == -1 &&
+		 npc->GetCR() == -1 &&
+		 npc->GetPR() == -1 &&
+		 npc->GetDR() == -1);
 }
 
 /**
