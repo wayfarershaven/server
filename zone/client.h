@@ -572,7 +572,7 @@ public:
 
 	inline uint32 GetEXP() const { return m_pp.exp; }
 
-	bool UpdateLDoNPoints(int32 points, uint32 theme);
+	bool UpdateLDoNPoints(uint32 theme_id, int points);
 	void SetPVPPoints(uint32 Points) { m_pp.PVPCurrentPoints = Points; }
 	uint32 GetPVPPoints() { return m_pp.PVPCurrentPoints; }
 	void AddPVPPoints(uint32 Points);
@@ -1064,8 +1064,8 @@ public:
 	uint32 GetLDoNWinsTheme(uint32 t);
 	uint32 GetLDoNLossesTheme(uint32 t);
 	uint32 GetLDoNPointsTheme(uint32 t);
-	void UpdateLDoNWins(uint32 t, int32 n);
-	void UpdateLDoNLosses(uint32 t, int32 n);
+	void AddLDoNWin(uint32 theme_id);
+	void AddLDoNLoss(uint32 theme_id);
 	void CheckLDoNHail(Mob *target);
 	void CheckEmoteHail(Mob *target, const char* message);
 

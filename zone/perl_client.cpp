@@ -928,24 +928,24 @@ XS(XS_Client_UpdateLDoNPoints)
 {
 	dXSARGS;
 	if (items != 3)
-		Perl_croak(aTHX_ "Usage: Client::UpdateLDoNPoints(THIS, points, theme)");
+		Perl_croak(aTHX_ "Usage: Client::UpdateLDoNPoints(THIS, uint32 theme_id, int points)"); // @categories Currency and Points
 	{
-		Client *		THIS;
-		bool		RETVAL;
-		int32		points = (int32)SvIV(ST(1));
-		uint32		theme = (uint32)SvUV(ST(2));
+	Client *		THIS;
+	bool RETVAL;
+	uint32 theme_id = (uint32) SvUV(ST(1));
+	int points = (int) SvIV(ST(2));
 
-		if (sv_derived_from(ST(0), "Client")) {
-			IV tmp = SvIV((SV*)SvRV(ST(0)));
-			THIS = INT2PTR(Client *,tmp);
-		}
-		else
-			Perl_croak(aTHX_ "THIS is not of type Client");
-		if(THIS == nullptr)
-			Perl_croak(aTHX_ "THIS is nullptr, avoiding crash.");
+	if (sv_derived_from(ST(0), "Client")) {
+		IV tmp = SvIV((SV*)SvRV(ST(0)));
+		THIS = INT2PTR(Client *,tmp);
+	}
+	else
+		Perl_croak(aTHX_ "THIS is not of type Client");
+	if(THIS == nullptr)
+		Perl_croak(aTHX_ "THIS is nullptr, avoiding crash.");
 
-		RETVAL = THIS->UpdateLDoNPoints(points, theme);
-		ST(0) = boolSV(RETVAL);
+	RETVAL = THIS->UpdateLDoNPoints(theme_id, points);
+	ST(0) = boolSV(RETVAL);
 		sv_2mortal(ST(0));
 	}
 	XSRETURN(1);
@@ -6559,6 +6559,35 @@ XS(XS_Client_Popup2)
     XSRETURN_EMPTY;
 }
 
+XS(XS_Client_AddLDoNLoss);
+XS(XS_Client_AddLDoNLoss) {
+dXSARGS;
+if (items != 2)
+Perl_croak(aTHX_ "Usage: Client::AddLDoNLoss(THIS, uint32 theme_id)");
+{
+Client* THIS;
+uint32 theme_id = (uint32) SvUV(ST(1));
+
+THIS->AddLDoNLoss(theme_id);
+}
+XSRETURN_EMPTY;
+}
+
+XS(XS_Client_AddLDoNWin);
+XS(XS_Client_AddLDoNWin) {
+dXSARGS;
+if (items != 2)
+Perl_croak(aTHX_ "Usage: Client::AddLDoNWin(THIS, uint32 theme_id)");
+{
+Client *THIS;
+uint32 theme_id = (uint32) SvUV(ST(1));
+
+THIS->
+AddLDoNWin(theme_id);
+}
+XSRETURN_EMPTY;
+}
+
 #ifdef __cplusplus
 extern "C"
 #endif
@@ -6618,6 +6647,8 @@ XS(boot_Client)
 		newXSproto(strcpy(buf, "UpdateLDoNPoints"), XS_Client_UpdateLDoNPoints, file, "$$$");
 		newXSproto(strcpy(buf, "SetDeity"), XS_Client_SetDeity, file, "$$");
 		newXSproto(strcpy(buf, "AddEXP"), XS_Client_AddEXP, file, "$$;$$");
+newXSproto(strcpy(buf, "AddLDoNLoss"), XS_Client_AddLDoNLoss, file, "$$");
+newXSproto(strcpy(buf, "AddLDoNWin"), XS_Client_AddLDoNWin, file, "$$");
 		newXSproto(strcpy(buf, "SetEXP"), XS_Client_SetEXP, file, "$$$;$");
 		newXSproto(strcpy(buf, "SetBindPoint"), XS_Client_SetBindPoint, file, "$;$$$$$");
 		newXSproto(strcpy(buf, "GetBindX"), XS_Client_GetBindX, file, "$$");
