@@ -1594,6 +1594,10 @@ void lua_cross_zone_add_ldon_win_by_expedition_id(uint32 expedition_id, uint32 t
 	quest_manager.CrossZoneLDoNUpdate(update_type, update_subtype, expedition_id, theme_id);
 }
 
+std::string lua_get_hex_color_code(std::string color_name) {
+	return quest_manager.gethexcolorcode(color_name);
+}
+
 #define LuaCreateNPCParse(name, c_type, default_value) do { \
 	cur = table[#name]; \
 	if(luabind::type(cur) != LUA_TNIL) { \
@@ -2011,6 +2015,7 @@ luabind::scope lua_register_general() {
                     luabind::def("create_npc", &lua_create_npc),
                     luabind::def("debug", (void(*)(std::string))&lua_debug),
                     luabind::def("debug", (void(*)(std::string, int))&lua_debug),
+					luabind::def("get_hex_color_code", &lua_get_hex_color_code),
                     luabind::def("adminmessage", &lua_adminmessage),
                     luabind::def("get_expedition", (Lua_Expedition(*)())&lua_get_expedition),
                     luabind::def("get_expedition_by_char_id", (Lua_Expedition(*)(uint32 char_id))&lua_get_expedition_by_char_id),
