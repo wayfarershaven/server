@@ -957,7 +957,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 						if(caster && caster->IsClient() && caster != this)
 							caster->CastToClient()->QueuePacket(message_packet);
 
-						CastToClient()->SetBindPoint();
+						CastToClient()->SetBindPoint(spells[spell_id].base[i] - 1);
 						Save();
 						safe_delete(action_packet);
 						safe_delete(message_packet);
@@ -1011,7 +1011,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 								if(caster->IsClient() && caster != this)
 									caster->CastToClient()->QueuePacket(message_packet);
 
-								CastToClient()->SetBindPoint();
+								CastToClient()->SetBindPoint(spells[spell_id].base[i] - 1);
 								Save();
 								safe_delete(action_packet);
 								safe_delete(message_packet);
@@ -1050,7 +1050,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 							if(caster->IsClient() && caster != this)
 								caster->CastToClient()->QueuePacket(message_packet);
 
-							CastToClient()->SetBindPoint();
+							CastToClient()->SetBindPoint(spells[spell_id].base[i] - 1);
 							Save();
 							safe_delete(action_packet);
 							safe_delete(message_packet);
@@ -1068,7 +1068,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 				if (!spellbonuses.AntiGate) {
 
 					if (zone->random.Roll(effect_value)) {
-						Gate();
+						Gate(spells[spell_id].base2[i] - 1);
 					} else if (caster) {
 						caster->Message_StringID(Chat::SpellFailure, GATE_FAIL);
 					}
@@ -2518,6 +2518,14 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 
 				break;
 			}
+
+			case SE_GateToHomeCity:
+			{
+				if(IsClient())
+					CastToClient()->GoToBind(4);
+				break;
+			}
+
 
 			case SE_SuspendMinion:
 			case SE_SuspendPet:

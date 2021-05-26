@@ -731,18 +731,18 @@ void Client::GoToSafeCoords(uint16 zone_id, uint16 instance_id) {
 }
 
 
-void Mob::Gate() {
-	GoToBind();
+void Mob::Gate(uint8 bindnum) {
+	GoToBind(bindnum);
 	if (this->GetHPRatio() <= 20) {
 		SetHP(int(this->GetMaxHP() * 0.25));
 	}
 }
 
-void Client::Gate() {
-	Mob::Gate();
+void Client::Gate(uint8 bindnum) {
+	Mob::Gate(bindnum);
 }
 
-void NPC::Gate() {
+void NPC::Gate(uint8 bindnum) {
 	if (IsNPC()) {
 		auto npcSpawnPoint = CastToNPC()->GetSpawnPoint();
 		if (DistanceNoZ(m_Position, npcSpawnPoint) < RuleI(NPC, NPCGateDistanceFromBind)) {
@@ -750,12 +750,14 @@ void NPC::Gate() {
 		}
 	}
 	entity_list.MessageClose_StringID(this, true, RuleI(Range, SpellMessages), Chat::Spells, GATES, GetCleanName());
-	Mob::Gate();
+	Mob::Gate(bindnum);
 }
 
-void Client::SetBindPoint(int to_zone, int to_instance, const glm::vec3 &location)
+void Client::SetBindPoint(int bind_num, int to_zone, int to_instance, const glm::vec3 &location)
 {
-	int bind_num = 0;
+	if (bind_num < 0 || bind_num >= 4) {
+		bind_num = 0;
+	}
 
 	if (to_zone == -1) {
 		m_pp.binds[bind_num].zoneId = zone->GetZoneID();
@@ -771,12 +773,22 @@ void Client::SetBindPoint(int to_zone, int to_instance, const glm::vec3 &locatio
 		m_pp.binds[bind_num].y = location.y;
 		m_pp.binds[bind_num].z = location.z;
 	}
-	database.SaveCharacterBindPoint(this->CharacterID(), m_pp.binds[bind_num]);
+	database.SaveCharacterBindPoint(this->CharacterID(), m_pp.binds[bind_num], bind_num);
 }
 
-void Client::GoToBind() {
+void Client::GoToBind(uint8 bindnum) {
+	// if the bind number is invalid, use the primary bind
+	if (bindnum > 4) {
+		bindnum = 0;
+	}
 	// move the client, which will zone them if needed.
+	// ignore restrictions on the zone request..?
+	if (bindnum == 0) {
 		MovePC(m_pp.binds[0].zoneId, m_pp.binds[0].instance_id, 0.0f, 0.0f, 0.0f, 0.0f, 1, GateToBindPoint);
+	} else {
+		MovePC(m_pp.binds[bindnum].zoneId, m_pp.binds[bindnum].instance_id, m_pp.binds[bindnum].x,
+			   m_pp.binds[bindnum].y, m_pp.binds[bindnum].z, m_pp.binds[bindnum].heading, 1);
+	}
 }
 
 void Client::GoToDeath() {

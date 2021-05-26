@@ -38,7 +38,7 @@ class WorldDatabase : public SharedDatabase {
 public:
 	bool GetStartZone(PlayerProfile_Struct* in_pp, CharCreate_Struct* in_cc, bool isTitanium);
 	void GetCharSelectInfo(uint32 accountID, EQApplicationPacket **outApp, uint32 clientVersionBit);
-	int MoveCharacterToBind(int CharID);
+	int MoveCharacterToBind(int CharID, uint8 bindnum = 0);
 
 	void GetLauncherList(std::vector<std::string> &result);
 	bool GetCharacterLevel(const char *name, int &level);

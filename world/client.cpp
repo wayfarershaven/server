@@ -830,7 +830,7 @@ bool Client::HandleEnterWorldPacket(const EQApplicationPacket *app)
 
 			if (home_enabled)
 			{
-				zone_id = database.MoveCharacterToBind(charid);
+				zone_id = database.MoveCharacterToBind(charid, 4);
 			}
 			else
 			{
