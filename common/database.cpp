@@ -2259,7 +2259,7 @@ void Database::ClearRaidLeader(uint32 gid, uint32 rid)
 	QueryDatabase(query);
 }
 
-void Database::UpdateAdventureStatsEntry(uint32 char_id, uint8 theme, bool win)
+void Database::UpdateAdventureStatsEntry(uint32 char_id, uint8 theme, bool win, bool remove)
 {
 
 	std::string field;
@@ -2297,12 +2297,22 @@ void Database::UpdateAdventureStatsEntry(uint32 char_id, uint8 theme, bool win)
 		}
 	}
 
-	if (win)
+	if (win) {
 		field += "wins";
-	else
+	} else {
 		field += "losses";
+	}
 
-	std::string query = StringFormat("UPDATE `adventure_stats` SET %s=%s+1 WHERE player_id=%u",field.c_str(), field.c_str(), char_id);
+	std::string modification;
+
+	if (remove){
+		modification = "-1";
+	} else {
+		modification = "+1";
+	}
+
+
+	std::string query = StringFormat("UPDATE `adventure_stats` SET %s=%s%s WHERE player_id=%u",field.c_str(), field.c_str(), modification.c_str(), char_id);
 	auto results = QueryDatabase(query);
 
 	if (results.RowsAffected() != 0)
