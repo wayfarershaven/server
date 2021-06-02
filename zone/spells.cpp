@@ -912,7 +912,7 @@ void Mob::InterruptSpell(uint16 message, uint16 color, uint16 spellid)
 
 	if(casting_spell_aa_id && IsClient()) { //Rest AA Timer on failed cast
 		CastToClient()->Message_StringID(Chat::SpellFailure, ABILITY_FAILED);
-		casting_spell_aa_id_interrupt = true;
+		CastToClient()->ResetAlternateAdvancementTimer(casting_spell_aa_id);
 	}
 
 	ZeroCastingVars();	// resets all the state keeping stuff

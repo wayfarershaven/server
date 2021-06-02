@@ -1443,7 +1443,6 @@ protected:
 	uint32 casting_spell_type;
 	int16 casting_spell_resist_adjust;
 	uint32 casting_spell_aa_id;
-	bool casting_spell_aa_id_interrupt;
 	bool casting_spell_checks;
 	uint16 bardsong;
 	EQEmu::CastingSlot bardsong_slot;

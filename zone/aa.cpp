@@ -1237,16 +1237,8 @@ void Client::ActivateAlternateAdvancementAbility(int rank_id, int target_id) {
 		return;
 	}
 
-	// If AA Interrupted Reset AA Timer
-	if (casting_spell_aa_id_interrupt)
-	{
-		CastToClient()->ResetAlternateAdvancementTimer(casting_spell_aa_id);
-		casting_spell_aa_id_interrupt = false;
-	}
-	else {
-		CastToClient()->GetPTimers().Start(rank->spell_type + pTimerAAStart, cooldown);
-		SendAlternateAdvancementTimer(rank->spell_type, 0, 0);
-	}
+	CastToClient()->GetPTimers().Start(rank->spell_type + pTimerAAStart, cooldown);
+	SendAlternateAdvancementTimer(rank->spell_type, 0, 0);
 
 	// If the AA is Improved Harm Touch or Leech Touch, we need to
 	// synchronize the normal Harm Touch timer also.
