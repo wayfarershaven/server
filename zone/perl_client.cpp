@@ -6588,6 +6588,34 @@ AddLDoNWin(theme_id);
 XSRETURN_EMPTY;
 }
 
+XS(XS_Client_RemoveLDoNLoss);
+XS(XS_Client_RemoveLDoNLoss) {
+dXSARGS;
+if (items != 2)
+Perl_croak(aTHX_ "Usage: Client::RemoveLDoNLoss(THIS, uint32 theme_id)");
+{
+Client* THIS;
+uint32 theme_id = (uint32) SvUV(ST(1));
+
+THIS->RemoveLDoNLoss(theme_id);
+}
+XSRETURN_EMPTY;
+}
+
+XS(XS_Client_RemoveLDoNWin);
+XS(XS_Client_RemoveLDoNWin) {
+dXSARGS;
+if (items != 2)
+Perl_croak(aTHX_ "Usage: Client::RemoveLDoNWin(THIS, uint32 theme_id)");
+{
+Client* THIS;
+uint32 theme_id = (uint32) SvUV(ST(1));
+
+THIS->RemoveLDoNWin(theme_id);
+}
+XSRETURN_EMPTY;
+}
+
 #ifdef __cplusplus
 extern "C"
 #endif
@@ -6744,6 +6772,8 @@ newXSproto(strcpy(buf, "AddLDoNWin"), XS_Client_AddLDoNWin, file, "$$");
 		newXSproto(strcpy(buf, "DecreaseByID"), XS_Client_DecreaseByID, file, "$$$");
 		newXSproto(strcpy(buf, "SlotConvert2"), XS_Client_SlotConvert2, file, "$$");
 		newXSproto(strcpy(buf, "Escape"), XS_Client_Escape, file, "$");
+newXSproto(strcpy(buf, "RemoveLDoNLoss"), XS_Client_RemoveLDoNLoss, file, "$$");
+newXSproto(strcpy(buf, "RemoveLDoNwin"), XS_Client_RemoveLDoNWin, file, "$$");
 		newXSproto(strcpy(buf, "RemoveNoRent"), XS_Client_RemoveNoRent, file, "$");
 		newXSproto(strcpy(buf, "GoFish"), XS_Client_GoFish, file, "$");
 		newXSproto(strcpy(buf, "ForageItem"), XS_Client_ForageItem, file, "$");
