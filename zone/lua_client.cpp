@@ -198,9 +198,9 @@ uint32 Lua_Client::GetTotalSecondsPlayed() {
     return self->GetTotalSecondsPlayed();
 }
 
-void Lua_Client::UpdateLDoNPoints(int points, uint32 theme) {
+void Lua_Client::UpdateLDoNPoints(uint32 theme_id, int points) {
     Lua_Safe_Call_Void();
-    self->UpdateLDoNPoints(points, theme);
+	self->UpdateLDoNPoints(theme_id, points);
 }
 
 void Lua_Client::SetDeity(int v) {
@@ -240,27 +240,27 @@ void Lua_Client::SetBindPoint() {
 
 void Lua_Client::SetBindPoint(int to_zone) {
     Lua_Safe_Call_Void();
-    self->SetBindPoint(to_zone);
+    self->SetBindPoint(0,to_zone);
 }
 
 void Lua_Client::SetBindPoint(int to_zone, int to_instance) {
     Lua_Safe_Call_Void();
-    self->SetBindPoint(to_zone, to_instance);
+    self->SetBindPoint(0,to_zone, to_instance);
 }
 
 void Lua_Client::SetBindPoint(int to_zone, int to_instance, float new_x) {
     Lua_Safe_Call_Void();
-    self->SetBindPoint(to_zone, to_instance, glm::vec3(new_x,0.0f,0.0f));
+    self->SetBindPoint(0,to_zone, to_instance, glm::vec3(new_x,0.0f,0.0f));
 }
 
 void Lua_Client::SetBindPoint(int to_zone, int to_instance, float new_x, float new_y) {
     Lua_Safe_Call_Void();
-    self->SetBindPoint(to_zone, to_instance, glm::vec3(new_x, new_y, 0.0f));
+    self->SetBindPoint(0,to_zone, to_instance, glm::vec3(new_x, new_y, 0.0f));
 }
 
 void Lua_Client::SetBindPoint(int to_zone, int to_instance, float new_x, float new_y, float new_z) {
     Lua_Safe_Call_Void();
-    self->SetBindPoint(to_zone, to_instance, glm::vec3(new_x, new_y, new_z));
+    self->SetBindPoint(0,to_zone, to_instance, glm::vec3(new_x, new_y, new_z));
 }
 
 float Lua_Client::GetBindX() {
@@ -720,7 +720,7 @@ void Lua_Client::DeleteItemInInventory(int slot_id, int quantity, bool update_cl
 
 void Lua_Client::SummonItem(uint32 item_id) {
     Lua_Safe_Call_Void();
-    self->SummonItem(item_id, 0, false, MainQuest);
+    self->SummonItem(item_id);
 }
 
 void Lua_Client::SummonItem(uint32 item_id, int charges) {
@@ -1665,6 +1665,26 @@ void Lua_Client::MovePCDynamicZone(std::string zone_name) {
     return self->MovePCDynamicZone(zone_name);
 }
 
+void Lua_Client::AddLDoNLoss(uint32 theme_id) {
+	Lua_Safe_Call_Void();
+	self->AddLDoNLoss(theme_id);
+}
+
+void Lua_Client::AddLDoNWin(uint32 theme_id) {
+	Lua_Safe_Call_Void();
+	self->AddLDoNWin(theme_id);
+}
+
+void Lua_Client::RemoveLDoNLoss(uint32 theme_id) {
+	Lua_Safe_Call_Void();
+	self->RemoveLDoNLoss(theme_id);
+}
+
+void Lua_Client::RemoveLDoNWin(uint32 theme_id) {
+	Lua_Safe_Call_Void();
+	self->RemoveLDoNWin(theme_id);
+}
+
 luabind::scope lua_register_client() {
     return luabind::class_<Lua_Client, Lua_Mob>("Client")
             .def(luabind::constructor<>())
@@ -1704,7 +1724,7 @@ luabind::scope lua_register_client() {
             .def("GetAAExp", (uint32(Lua_Client::*)(void))&Lua_Client::GetAAExp)
             .def("GetAAPercent", (uint32(Lua_Client::*)(void))&Lua_Client::GetAAPercent)
             .def("GetTotalSecondsPlayed", (uint32(Lua_Client::*)(void))&Lua_Client::GetTotalSecondsPlayed)
-            .def("UpdateLDoNPoints", (void(Lua_Client::*)(int,uint32))&Lua_Client::UpdateLDoNPoints)
+			.def("UpdateLDoNPoints", (void(Lua_Client::*)(uint32,int))&Lua_Client::UpdateLDoNPoints)
             .def("SetDeity", (void(Lua_Client::*)(int))&Lua_Client::SetDeity)
             .def("AddEXP", (void(Lua_Client::*)(uint32))&Lua_Client::AddEXP)
             .def("AddEXP", (void(Lua_Client::*)(uint32,int))&Lua_Client::AddEXP)
@@ -1957,7 +1977,11 @@ luabind::scope lua_register_client() {
             .def("RemoveExpeditionLockout", (void(Lua_Client::*)(std::string, std::string))&Lua_Client::RemoveExpeditionLockout)
             .def("HasExpeditionLockout", (bool(Lua_Client::*)(std::string, std::string))&Lua_Client::HasExpeditionLockout)
             .def("MovePCDynamicZone", (void(Lua_Client::*)(uint32))&Lua_Client::MovePCDynamicZone)
-            .def("MovePCDynamicZone", (void(Lua_Client::*)(std::string))&Lua_Client::MovePCDynamicZone);
+            .def("MovePCDynamicZone", (void(Lua_Client::*)(std::string))&Lua_Client::MovePCDynamicZone)
+			.def("AddLDoNLoss", (void(Lua_Client::*)(uint32))&Lua_Client::AddLDoNLoss)
+			.def("AddLDoNWin", (void(Lua_Client::*)(uint32))&Lua_Client::AddLDoNWin)
+			.def("RemoveLDoNLoss", (void(Lua_Client::*)(uint32))&Lua_Client::RemoveLDoNLoss)
+			.def("RemoveLDoNWin", (void(Lua_Client::*)(uint32))&Lua_Client::RemoveLDoNWin);
 }
 
 luabind::scope lua_register_inventory_where() {

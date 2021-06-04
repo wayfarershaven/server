@@ -1253,6 +1253,7 @@ void ZoneServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p) {
         case ServerOP_ReloadTitles:
         case ServerOP_SpawnStatusChange:
         case ServerOP_ReloadTasks:
+		case ServerOP_CZLDoNUpdate:
         case ServerOP_ReloadWorld:
         case ServerOP_UpdateSpawn: {
             zoneserver_list.SendPacket(pack);
