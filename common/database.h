@@ -351,7 +351,6 @@ public:
 	bool	SetMQDetectionFlag(const char* accountname, const char* charactername, const char* hacked, const char* zone);
 	bool	StoreCharacter(uint32 account_id, PlayerProfile_Struct* pp, EQEmu::InventoryProfile* inv);
 	bool	UpdateName(const char* oldname, const char* newname);
-	bool	SaveCharacterBindPoint(uint32 character_id, const BindStruct &bind);
 	bool	MarkCharacterDeleted(char* name);
 	bool	UnDeleteCharacter(const char* name);
 
@@ -414,7 +413,7 @@ public:
 
 	/* Adventure related. */
 
-	void UpdateAdventureStatsEntry(uint32 char_id, uint8 theme, bool win);
+	void UpdateAdventureStatsEntry(uint32 char_id, uint8 theme, bool win, bool remove = false);
 	bool GetAdventureStats(uint32 char_id, AdventureStats_Struct *as);
 
 	/* Account Related */

@@ -156,9 +156,11 @@ public:
 	void pause(int duration);
 	void moveto(const glm::vec4& position, bool saveguardspot);
 	void resume();
-	void addldonpoints(int32 points, uint32 theme);
-	void addldonwin(int32 wins, uint32 theme);
-	void addldonloss(int32 losses, uint32 theme);
+	void addldonpoints(uint32 theme_id, int points);
+	void addldonloss(uint32 theme_id);
+	void addldonwin(uint32 theme_id);
+	void removeldonloss(uint32 theme_id);
+	void removeldonwin(uint32 theme_id);
 	void setnexthpevent(int at);
 	void setnextinchpevent(int at);
 	void respawn(int npc_type, int grid);
@@ -280,6 +282,7 @@ public:
 	uint16 CreateDoor( const char* model, float x, float y, float z, float heading, uint8 opentype, uint16 size);
     int32 GetZoneID(const char *zone);
     const char *GetZoneLongName(const char *zone);
+	void CrossZoneLDoNUpdate(uint8 type, uint8 subtype, int identifier, uint32 theme_id, int points = 1);
 	void CrossZoneSignalPlayerByCharID(int charid, uint32 data);
     void CrossZoneSignalPlayerByGroupID(int group_id, uint32 data);
     void CrossZoneSignalPlayerByRaidID(int raid_id, uint32 data);
@@ -299,6 +302,7 @@ public:
 	bool EnableRecipe(uint32 recipe_id);
 	bool DisableRecipe(uint32 recipe_id);
 	void ClearNPCTypeCache(int npctype_id);
+	std::string gethexcolorcode(std::string color_name);
 	void ReloadZoneStaticData();
 	void QSQGlobalUpdate(int charid, const char* varname, const char* newvalue, uint32 zoneid, int32 instanceid);
 	void SendDebug(std::string message, int level);

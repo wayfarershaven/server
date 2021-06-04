@@ -231,6 +231,7 @@
 #define ServerOP_CZSetEntityVariableByGuildID 0x4024
 #define ServerOP_CZClientMessage 0x4025
 #define ServerOP_CZClientMessageString 0x4026
+#define ServerOP_CZLDoNUpdate 0x4564
 /* Query Server OP Codes */
 #define ServerOP_QSPlayerLogTrades					0x5010
 #define ServerOP_QSPlayerLogHandins					0x5011
@@ -249,6 +250,22 @@
 #define ServerOP_QSPlayerTSEvents					0x5024
 #define ServerOP_QSPlayerQGlobalUpdates				0x5025
 #define ServerOP_QSPlayerLootRecords				0x5026
+
+enum {
+	CZLDoNUpdateType_Character = 0,
+	CZLDoNUpdateType_Group,
+	CZLDoNUpdateType_Raid,
+	CZLDoNUpdateType_Guild,
+	CZLDoNUpdateType_Expedition
+};
+
+enum {
+	CZLDoNUpdateSubtype_WinAdd = 0,
+	CZLDoNUpdateSubtype_WinRemove,
+	CZLDoNUpdateSubtype_LossAdd,
+	CZLDoNUpdateSubtype_LossRemove,
+	CZLDoNUpdateSubtype_Points
+};
 
 /* Query Serv Generic Packet Flag/Type Enumeration */
 enum { QSG_LFGuild = 0 };
@@ -1502,6 +1519,14 @@ struct CZSetEntVarByGuildID_Struct {
 
 struct ReloadWorld_Struct{
 	uint32 Option;
+};
+
+struct CZLDoNUpdate_Struct {
+	uint8 update_type; // 0 - Character, 1 - Group, 2 - Raid, 3 - Guild, 4 - Expedition
+	uint8 update_subtype; // 0 - Win, 1 - Loss, 2 - Points
+	int update_identifier; // Character ID, Group ID, Raid ID, Guild ID, or Expedition ID based on update type
+	uint32 theme_id;
+	int points; // Always 1, except for when Points are used
 };
 
 struct ServerRequestTellQueue_Struct {
