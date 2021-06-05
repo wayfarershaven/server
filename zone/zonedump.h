@@ -132,7 +132,6 @@ struct NPCType
 	uint8	handtexture;
 	uint8	legtexture;
 	uint8	feettexture;
-	uint8	chesttexture;
 	uint32  combat_hp_regen;
 	uint32  combat_mana_regen;
 	bool	ignore_despawn;
@@ -147,7 +146,6 @@ struct PlayerCorpse_Struct {
 	bool	locked;
 	uint32	itemcount;
 	uint32	exp;
-	uint32	gmexp;
 	float	size;
 	uint8	level;
 	uint32	race;
@@ -168,9 +166,6 @@ struct PlayerCorpse_Struct {
 	uint8 hairstyle;
 	uint8 face;
 	uint8 beard;
-	uint8 killedby;
-	bool  rezzable;
-	uint32	rez_time;
 	uint32 drakkin_heritage;
 	uint32 drakkin_tattoo;
 	uint32 drakkin_details;

@@ -124,7 +124,6 @@ Client::Client(EQStreamInterface *ieqs)
 		  0,
 		  0,
 		  0,
-		  0,
 		  0),
 	  position_timer(250),
 	  hpupdate_timer(2000),
