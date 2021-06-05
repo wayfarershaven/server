@@ -985,6 +985,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 						if(!zone->CanBind())
 						{
 							MessageString(Chat::SpellFailure, CANNOT_BIND);
+							Log(Logs::General, Logs::General, "!zone->CanBind()");
 							break;
 						}
 						if(!zone->IsCity())
@@ -992,6 +993,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 							if(caster != this && !zone->IsSpecialBindLocation(GetPosition()))
 							{
 								MessageString(Chat::SpellFailure, CANNOT_BIND);
+								Log(Logs::General, Logs::General, "Zone is not a city and is Not in the Special Bind Location");
 								break;
 							}
 							else
