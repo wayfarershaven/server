@@ -841,7 +841,7 @@ void EntityList::AESpell(
 			continue;
 		}
 
-		if (!current_mob->IsTargetable() || current_mob->isHorse()) {
+		if (!current_mob->IsTargetable()) {
 			continue;
 		}
 
