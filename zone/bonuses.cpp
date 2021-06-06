@@ -1931,19 +1931,17 @@ void Mob::ApplySpellsBonuses(uint16 spell_id, uint8 casterlevel, StatBonuses *ne
 
 			case SE_CastingLevel2:
 			{
-				// snare effect will override movement boosts
-				if (effect_value < 0) {
-					new_bonus->movementspeed = effect_value;
-				} else {
-					if (new_bonus->movementspeed >= 0) {
-						new_bonus->movementspeed += effect_value;
-					}
-				}
+				new_bonus->effective_casting_level += effect_value;
 				break;
 			}
 
 			case SE_MovementSpeed:
-				new_bonus->movementspeed += effect_value;
+				// snare effect will override movement boosts
+				if (effect_value < 0)
+					new_bonus->movementspeed = effect_value;
+				else
+					if (new_bonus->movementspeed >= 0)
+						new_bonus->movementspeed += effect_value;
 				break;
 
 			case SE_SpellDamageShield:
