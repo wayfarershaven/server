@@ -1309,6 +1309,8 @@ public:
 	uint32 GetLDoNPointsTheme(uint32 t);
 	void AddLDoNWin(uint32 theme_id);
 	void AddLDoNLoss(uint32 theme_id);
+	void RemoveLDoNWin(uint32 theme_id);
+	void RemoveLDoNLoss(uint32 theme_id);
 	void CheckLDoNHail(Mob *target);
 	void CheckEmoteHail(Mob *target, const char* message);
 
