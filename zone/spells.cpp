@@ -3681,30 +3681,57 @@ bool Mob::SpellOnTarget(uint16 spell_id, Mob *spelltar, bool reflect, bool use_r
 	// Not sure if all 3 should be stacking
 
 	if (!RuleB(Spells, AllowDoubleInvis)) {
-		if (IsEffectInSpell(spell_id, SE_Invisibility))
-		{
-			if (spelltar->invisible)
-			{
+	if (IsEffectInSpell(spell_id, SE_Invisibility)) {
+		if (spelltar->IsClient()) {
+			if (IsClient()) {
+				if (spelltar != this && !entity_list.IsInSameGroupOrRaidGroup(spelltar->CastToClient(), this->CastToClient())) {
+					Message(Chat::Red, "Your target must be a group member for this spell.");
+					return false;
+				}
+			}
+		}
+		else
+			Message(Chat::Red, "This spell can only be cast on players.");
+
+		if (spelltar->invisible) {
 				spelltar->MessageString(Chat::SpellFailure, ALREADY_INVIS, GetCleanName());
 				safe_delete(action_packet);
 				return false;
 			}
 		}
 
-		if (IsEffectInSpell(spell_id, SE_InvisVsUndead))
-		{
-			if (spelltar->invisible_undead)
-			{
+	if (IsEffectInSpell(spell_id, SE_InvisVsUndead)) {
+		if (spelltar->IsClient()) {
+			if (IsClient()) {
+				if (spelltar != this && !entity_list.IsInSameGroupOrRaidGroup(spelltar->CastToClient(), this->CastToClient())) {
+					Message(Chat::Red, "Your target must be a group member for this spell.");
+					return false;
+				}
+			}
+		}
+		else {
+			Message(Chat::Red, "This spell can only be cast on players.");
+		}
+
+		if (spelltar->invisible_undead) {
 				spelltar->MessageString(Chat::SpellFailure, ALREADY_INVIS, GetCleanName());
 				safe_delete(action_packet);
 				return false;
 			}
 		}
+		if (IsEffectInSpell(spell_id, SE_InvisVsAnimals)) {
+			if (spelltar->IsClient()) {
+				if (IsClient()) {
+					if (spelltar != this && !entity_list.IsInSameGroupOrRaidGroup(spelltar->CastToClient(), this->CastToClient())) {
+						Message(Chat::Red, "Your target must be a group member for this spell.");
+						return false;
+					}
+				}
+			} else {
+			Message(Chat::Red, "This spell can only be cast on players.");
+			}
 
-		if (IsEffectInSpell(spell_id, SE_InvisVsAnimals))
-		{
-			if (spelltar->invisible_animals)
-			{
+			if (spelltar->invisible_animals) {
 				spelltar->MessageString(Chat::SpellFailure, ALREADY_INVIS, GetCleanName());
 				safe_delete(action_packet);
 				return false;
