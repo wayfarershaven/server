@@ -208,7 +208,6 @@ int command_init(void)
 		command_add("emotesearch", "Searches NPC Emotes", 80, command_emotesearch) ||
 		command_add("emoteview", "Lists all NPC Emotes", 80, command_emoteview) ||
 		command_add("enablerecipe",  "[recipe_id] - Enables a recipe using the recipe id.",  80, command_enablerecipe) ||
-		command_add("endurance", "Restores you or your target's endurance.", 50, command_endurance) ||
 		command_add("equipitem", "[slotid(0-21)] - Equip the item on your cursor into the specified slot", 50, command_equipitem) ||
 		command_add("face", "- Change the face of your target", 80, command_face) ||
 		command_add("faction", "[Find (criteria | all ) | Review (criteria | all) | Reset (id)] - Resets Player's Faction", 80, command_faction) ||
@@ -13268,19 +13267,6 @@ void command_questerrors(Client *c, const Seperator *sep)
 		++i;
 		++iter;
 	}
-}
-
-void command_endurance(Client *c, const Seperator *sep) {
-	Mob *t;
-
-	t = c->GetTarget() ? c->GetTarget() : c;
-
-	if (t->IsClient())
-		t->CastToClient()->SetEndurance(t->CastToClient()->GetMaxEndurance());
-	else
-		t->SetEndurance(t->GetMaxEndurance());
-
-	t->Message(Chat::White, "Your endurance has been refilled.");
 }
 
 void command_enablerecipe(Client *c, const Seperator *sep)
