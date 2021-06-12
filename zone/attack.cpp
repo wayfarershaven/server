@@ -5784,7 +5784,7 @@ bool Client::CheckDualWield()
 	return zone->random.Int(1, 375) <= chance;
 }
 
-void Mob::DoMainHandAttackRounds(Mob *target, ExtraAttackOptions *opts, eSpecialAttacks special)
+void Mob::DoMainHandAttackRounds(Mob *target, ExtraAttackOptions *opts)
 {
 	if (!target)
 		return;
@@ -5806,10 +5806,6 @@ void Mob::DoMainHandAttackRounds(Mob *target, ExtraAttackOptions *opts, eSpecial
 
 	if (IsNPC()) {
 		int16 n_atk = CastToNPC()->GetNumberOfAttacks();
-		if (special == eSpecialAttacks::Rampage || special == eSpecialAttacks::AERampage) {
-			n_atk = GetSpecialAbilityParam(SPECATK_RAMPAGE, 8);
-		}
-
 		if (n_atk <= 1) {
             Attack(target, EQEmu::invslot::slotPrimary, false, false, false, opts);
 		}
@@ -5845,7 +5841,7 @@ void Mob::DoMainHandAttackRounds(Mob *target, ExtraAttackOptions *opts, eSpecial
 	}
 }
 
-void Mob::DoOffHandAttackRounds(Mob *target, ExtraAttackOptions *opts, eSpecialAttacks special)
+void Mob::DoOffHandAttackRounds(Mob *target, ExtraAttackOptions *opts)
 {
 	if (!target)
 		return;

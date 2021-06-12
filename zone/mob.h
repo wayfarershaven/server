@@ -37,7 +37,7 @@
 
 char* strn0cpy(char* dest, const char* source, uint32 size);
 
-#define MAX_SPECIAL_ATTACK_PARAMS 9
+#define MAX_SPECIAL_ATTACK_PARAMS 8
 
 class EGNode;
 class Client;
@@ -282,16 +282,16 @@ public:
 	void CommonBreakInvisibleFromCombat();
 	bool HasDied();
 	virtual bool CheckDualWield();
-	void DoMainHandAttackRounds(Mob *target, ExtraAttackOptions *opts = nullptr, eSpecialAttacks special = eSpecialAttacks::None);
-	void DoOffHandAttackRounds(Mob *target, ExtraAttackOptions *opts = nullptr, eSpecialAttacks special = eSpecialAttacks::None);
+	void DoMainHandAttackRounds(Mob *target, ExtraAttackOptions *opts = nullptr);
+	void DoOffHandAttackRounds(Mob *target, ExtraAttackOptions *opts = nullptr);
 	virtual bool CheckDoubleAttack();
 	// inline process for places where we need to do them outside of the AI_Process
-	void ProcessAttackRounds(Mob *target, ExtraAttackOptions *opts = nullptr, eSpecialAttacks special = eSpecialAttacks::None)
+	void ProcessAttackRounds(Mob *target, ExtraAttackOptions *opts = nullptr)
 	{
 		if (target) {
-			DoMainHandAttackRounds(target, opts, special);
+			DoMainHandAttackRounds(target, opts);
 			if (CanThisClassDualWield())
-				DoOffHandAttackRounds(target, opts, special);
+				DoOffHandAttackRounds(target, opts);
 		}
 		return;
 	}
