@@ -1429,6 +1429,10 @@ void Mob::AI_Process() {
 							if (cur > 0) {
 								opts.crit_flat = cur;
 							}
+							cur = GetSpecialAbilityParam(SPECATK_AREA_RAMPAGE, 8);
+							if (cur > 0) {
+								opts.maxhitamount = cur;
+							}
 							Rampage(&opts);
 							specialed = true;
 						}
@@ -1463,6 +1467,11 @@ void Mob::AI_Process() {
 							cur = GetSpecialAbilityParam(SPECATK_AREA_RAMPAGE, 7);
 							if (cur > 0) {
 								opts.crit_flat = cur;
+							}
+
+							cur = GetSpecialAbilityParam(SPECATK_AREA_RAMPAGE, 8);
+							if (cur > 0) {
+								opts.maxhitamount = cur;
 							}
 
 							AreaRampage(&opts);
@@ -2261,14 +2270,14 @@ bool Mob::Rampage(ExtraAttackOptions *opts)
 			if (m_target == GetTarget() || !IsAttackAllowed(m_target, false))	// make sure it is something you can't attack, ex: corpses.
 				continue;
 			if ((DistanceSquared(m_Position, m_target->GetPosition()) < (RuleI(Combat, RampageDistance)*RuleI(Combat, RampageDistance))) && !m_target->CastToClient()->GetFeigned()) {
-				ProcessAttackRounds(m_target, opts);
+				ProcessAttackRounds(m_target, opts,m_specialattacks);
 				index_hit++;
 			}
 		}
 	}
 
 	if (RuleB(Combat, RampageHitsTarget) && index_hit < rampage_targets)
-		ProcessAttackRounds(GetTarget(), opts);
+		ProcessAttackRounds(GetTarget(), opts,m_specialattacks);
 
 	m_specialattacks = eSpecialAttacks::None;
 
@@ -2290,7 +2299,7 @@ void Mob::AreaRampage(ExtraAttackOptions *opts)
 	index_hit = hate_list.AreaRampage(this, GetTarget(), rampage_targets, opts);
 
 	if(index_hit == 0)
-		ProcessAttackRounds(GetTarget(), opts);
+		ProcessAttackRounds(GetTarget(), opts,m_specialattacks);
   	m_specialattacks = eSpecialAttacks::None;
 }
 
