@@ -1839,7 +1839,7 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 		break;
 	}
 	case ServerOP_ReloadLogs: {
-		database.LoadLogSettings(LogSys.log_settings);
+		LogSys.LoadLogDatabaseSettings();
 		break;
 	}
 	case ServerOP_ReloadPerlExportSettings: {
