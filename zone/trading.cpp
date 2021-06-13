@@ -1268,7 +1268,7 @@ uint32 Client::FindTraderItemSerialNumber(int32 ItemID) {
 	uint16 SlotID = 0;
 	for (int i = EQ::invslot::GENERAL_BEGIN; i <= EQ::invslot::GENERAL_END; i++){
 		item = this->GetInv().GetItem(i);
-		if (item && item->GetItem()->ID == 17899){ //Traders Satchel
+		if (item && item->GetItem()->BagType == EQ::item::BagTypeTradersSatchel){
 			for (int x = EQ::invbag::SLOT_BEGIN; x <= EQ::invbag::SLOT_END; x++) {
 				// we already have the parent bag and a contents iterator..why not just iterate the bag!??
 				SlotID = EQ::InventoryProfile::CalcSlotId(i, x);
@@ -1291,7 +1291,7 @@ EQ::ItemInstance* Client::FindTraderItemBySerialNumber(int32 SerialNumber){
 	uint16 SlotID = 0;
 	for (int i = EQ::invslot::GENERAL_BEGIN; i <= EQ::invslot::GENERAL_END; i++){
 		item = this->GetInv().GetItem(i);
-		if(item && item->GetItem()->ID == 17899){ //Traders Satchel
+		if (item && item->GetItem()->BagType == EQ::item::BagTypeTradersSatchel){
 			for (int x = EQ::invbag::SLOT_BEGIN; x <= EQ::invbag::SLOT_END; x++) {
 				// we already have the parent bag and a contents iterator..why not just iterate the bag!??
 				SlotID = EQ::InventoryProfile::CalcSlotId(i, x);
@@ -1324,7 +1324,7 @@ GetItems_Struct* Client::GetTraderItems(){
 		if (ndx >= 80)
 			break;
 		item = this->GetInv().GetItem(i);
-		if(item && item->GetItem()->ID == 17899){ //Traders Satchel
+		if (item && item->GetItem()->BagType == EQ::item::BagTypeTradersSatchel){
 			for (int x = EQ::invbag::SLOT_BEGIN; x <= EQ::invbag::SLOT_END; x++) {
 				if (ndx >= 80)
 					break;
@@ -1351,7 +1351,7 @@ uint16 Client::FindTraderItem(int32 SerialNumber, uint16 Quantity){
 	uint16 SlotID = 0;
 	for (int i = EQ::invslot::GENERAL_BEGIN; i <= EQ::invslot::GENERAL_END; i++) {
 		item = this->GetInv().GetItem(i);
-		if(item && item->GetItem()->ID == 17899){ //Traders Satchel
+		if (item && item->GetItem()->BagType == EQ::item::BagTypeTradersSatchel){
 			for (int x = EQ::invbag::SLOT_BEGIN; x <= EQ::invbag::SLOT_END; x++){
 				SlotID = EQ::InventoryProfile::CalcSlotId(i, x);
 
