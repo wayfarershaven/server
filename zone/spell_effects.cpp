@@ -1349,7 +1349,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 #endif
 				if (caster)
 					effect_value = caster->ApplySpellEffectiveness(spell_id, effect_value);
-				
+
 				buffs[buffslot].melee_rune = effect_value;
 				break;
 			}
@@ -1506,8 +1506,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 					}
 				}
 
-				for (int x = EQ::textures::textureBegin; x <= EQ::textures::LastTintableTexture; x++)
-					SendWearChange(x);
+				SendArmorAppearance();
 
 				if (caster == this && spell.id != 287 && spell.id != 601 &&
 				    (spellbonuses.IllusionPersistence || aabonuses.IllusionPersistence ||
@@ -1851,7 +1850,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 						Group* group = client_target->GetGroup();
 						if (!group->IsGroupMember(caster)) {
 							if (caster != this) {
-								caster->MessageString(Chat::Red, SUMMON_ONLY_GROUP_CORPSE);	
+								caster->MessageString(Chat::Red, SUMMON_ONLY_GROUP_CORPSE);
 								break;
 							}
 						}
@@ -1872,7 +1871,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 							}
 						}
 					}
-					
+
 					if (client_target) {
 						if (database.CountCharacterCorpses(client_target->CharacterID()) == 0) {
 							if (caster == this) {
@@ -2331,7 +2330,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 			}
 
 			case SE_AETaunt:
-			{			
+			{
 #ifdef SPELL_EFFECT_SPAM
 				snprintf(effect_desc, _EDLEN, "AE Taunt");
 #endif
@@ -3919,30 +3918,30 @@ void Mob::BuffFadeBySlot(int slot, bool iRecalcBonuses)
 			case SE_Illusion:
 			{
 				SendIllusionPacket(0, GetBaseGender());
-				if(GetRace() == OGRE){
+				if (GetRace() == OGRE) {
 					SendAppearancePacket(AT_Size, 9);
 				}
-				else if(GetRace() == TROLL){
+				else if (GetRace() == TROLL) {
 					SendAppearancePacket(AT_Size, 8);
 				}
-				else if(GetRace() == VAHSHIR || GetRace() == FROGLOK || GetRace() == BARBARIAN){
+				else if (GetRace() == VAHSHIR || GetRace() == FROGLOK || GetRace() == BARBARIAN) {
 					SendAppearancePacket(AT_Size, 7);
 				}
-				else if(GetRace() == HALF_ELF || GetRace() == WOOD_ELF || GetRace() == DARK_ELF){
+				else if (GetRace() == HALF_ELF || GetRace() == WOOD_ELF || GetRace() == DARK_ELF) {
 					SendAppearancePacket(AT_Size, 5);
 				}
-				else if(GetRace() == DWARF){
+				else if (GetRace() == DWARF) {
 					SendAppearancePacket(AT_Size, 4);
 				}
-				else if(GetRace() == HALFLING || GetRace() == GNOME){
+				else if (GetRace() == HALFLING || GetRace() == GNOME) {
 					SendAppearancePacket(AT_Size, 3);
 				}
-				else{
+				else {
 					SendAppearancePacket(AT_Size, 6);
 				}
-				for (int x = EQ::textures::textureBegin; x <= EQ::textures::LastTintableTexture; x++){
-					SendWearChange(x);
-				}
+
+				SendArmorAppearance();
+
 				break;
 			}
 
@@ -4194,7 +4193,7 @@ void Mob::BuffFadeBySlot(int slot, bool iRecalcBonuses)
 					CastToClient()->SetControlledMobId(0);
 					}
 			}
-					
+
 		}
 	}
 
@@ -6864,24 +6863,24 @@ void Mob::ResourceTap(int32 damage, uint16 spellid)
 	for (int i = 0; i < EFFECT_COUNT; i++) {
 		if (spells[spellid].effectid[i] == SE_ResourceTap) {
 			damage = (damage * spells[spellid].base[i]) / 1000;
-			
+
 			if (damage) {
 				if (spells[spellid].max[i] && (damage > spells[spellid].max[i]))
 					damage = spells[spellid].max[i];
-	
+
 				if (spells[spellid].base2[i] == 0) { // HP Tap
 					if (damage > 0)
 						HealDamage(damage);
 					else
 						Damage(this, -damage, 0, EQ::skills::SkillEvocation, false);
 				}
-	
+
 				if (spells[spellid].base2[i] == 1) // Mana Tap
 					SetMana(GetMana() + damage);
-	
+
 				if (spells[spellid].base2[i] == 2 && IsClient()) // Endurance Tap
 					CastToClient()->SetEndurance(CastToClient()->GetEndurance() + damage);
-			
+
 			}
 		}
 	}
