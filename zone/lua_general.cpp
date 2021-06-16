@@ -2534,6 +2534,10 @@ std::string lua_get_clean_npc_name_by_id(uint32 npc_id) {
 }
 
 
+std::string lua_get_deity_name(uint32 deity_id) {
+	return quest_manager.getdeityname(deity_id);
+}
+
 std::string lua_get_inventory_slot_name(int16 slot_id) {
 	return quest_manager.getinventoryslotname(slot_id);
 }
@@ -3090,9 +3094,10 @@ luabind::scope lua_register_general() {
 		luabind::def("set_aa_exp_modifier_by_char_id", &lua_set_aa_exp_modifier_by_char_id),
 		luabind::def("set_exp_modifier_by_char_id", &lua_set_exp_modifier_by_char_id),
 		luabind::def("adminmessage", &lua_adminmessage),
+		luabind::def("get_deity_name", &lua_get_deity_name),
 		luabind::def("get_inventory_slot_name", &lua_get_inventory_slot_name),
 		luabind::def("rename", &lua_rename),
-    
+
 		/**
 		 * Expansions
 		 */
