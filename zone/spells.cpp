@@ -5150,7 +5150,7 @@ float Mob::GetAOERange(uint16 spell_id)
 		range = 10;
 	}
 
-	if(IsBardSong(spell_id)) {
+	if (IsBardSong(spell_id) && IsBeneficialSpell(spell_id)) {
 		//Live AA - Extended Notes, SionachiesCrescendo
 		float song_bonus = static_cast<float>(aabonuses.SongRange + spellbonuses.SongRange + itembonuses.SongRange);
 		range += range * song_bonus / 100.0f;
