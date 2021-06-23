@@ -4738,7 +4738,7 @@ void Mob::ApplyMeleeDamageMods(uint16 skill, int &damage, Mob *defender, ExtraAt
 		}
 
 		if (defender->IsClient()) {
-			dmgbonusmod -= (defender->spellbonuses.MeleeMitigationEffect + itembonuses.MeleeMitigationEffect +
+			dmgbonusmod += (defender->spellbonuses.MeleeMitigationEffect + itembonuses.MeleeMitigationEffect +
 							aabonuses.MeleeMitigationEffect);
 		}
 	}
