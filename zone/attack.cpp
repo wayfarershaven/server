@@ -3499,7 +3499,7 @@ void Mob::CommonDamage(Mob* attacker, int &damage, const uint16 spell_id, const 
     bool FromDamageShield = (skill_used == EQ::skills::SkillAbjuration);
     bool ignore_invul = false;
     if (IsValidSpell(spell_id))
-        ignore_invul = spell_id == 982 || spells[spell_id].cast_not_standing; // cazic touch
+		ignore_invul = spell_id == SPELL_CAZIC_TOUCH || spells[spell_id].cast_not_standing;
 
     if (!ignore_invul && (GetInvul() || DivineAura())) {
         LogCombat("Avoiding [{}] damage due to invulnerability", damage);
@@ -3598,8 +3598,19 @@ void Mob::CommonDamage(Mob* attacker, int &damage, const uint16 spell_id, const 
         // pets that have GHold will never automatically add NPCs
         // pets that have Hold and no Focus will add NPCs if they're engaged
         // pets that have Hold and Focus will not add NPCs
-        if (pet && !pet->IsFamiliar() && !pet->GetSpecialAbility(IMMUNE_AGGRO) && !pet->IsEngaged() && attacker && attacker != this && !attacker->IsCorpse() && !pet->IsGHeld() && !attacker->IsTrap())
-        {
+		if (
+			pet && 
+			!pet->IsFamiliar() && 
+			!pet->GetSpecialAbility(IMMUNE_AGGRO) && 
+			!pet->IsEngaged() && 
+			attacker && 
+			!(pet->GetSpecialAbility(IMMUNE_AGGRO_CLIENT) && attacker->IsClient()) && 
+			!(pet->GetSpecialAbility(IMMUNE_AGGRO_NPC) && attacker->IsNPC()) && 
+			attacker != this && 
+			!attacker->IsCorpse() && 
+			!pet->IsGHeld() && 
+			!attacker->IsTrap()
+		) {
             if (!pet->IsHeld()) {
                 LogAggro("Sending pet [{}] into battle due to attack", pet->GetName());
                 if (IsClient()) {
@@ -3664,15 +3675,10 @@ void Mob::CommonDamage(Mob* attacker, int &damage, const uint16 spell_id, const 
 
         //final damage has been determined.
 
-        int32 pre_hit_hp;
-
-        if(attacker->IsClient()) {
-            player_damage += damage;
-        }
-        pre_hit_hp = GetHP();
         SetHP(GetHP() - damage);
 
-        if (HasDied() && pre_hit_hp > 0) {  // Don't make the mob die over and over if it was at 0 hp
+
+	if (HasDied()) {
             bool IsSaved = false;
 
             if (TryDivineSave()) {
@@ -3964,7 +3970,6 @@ void Mob::CommonDamage(Mob* attacker, int &damage, const uint16 spell_id, const 
             );
         }
     } //end packet sending
-
 }
 
 void Mob::HealDamage(uint32 amount, Mob *caster, uint16 spell_id)
