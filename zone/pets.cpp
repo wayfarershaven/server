@@ -301,16 +301,39 @@ void Mob::MakePoweredPet(uint16 spell_id, const char* pettype, int16 petpower,
 		strcat(npc_type->name, "`s_pet");
 	}
 
-	// Beastlord Pets
-	if(record.petnaming == 2) {
-		uint16 race_id = GetBaseRace();
-		auto beastlord_pet_data = content_db.GetBeastlordPetData(race_id);
-		npc_type->race = beastlord_pet_data.race_id;
-		npc_type->texture = beastlord_pet_data.texture;
-		npc_type->helmtexture = beastlord_pet_data.helm_texture;
-		npc_type->gender = beastlord_pet_data.gender;
-		npc_type->size *= beastlord_pet_data.size_modifier;
-		npc_type->luclinface = beastlord_pet_data.face;
+	//handle beastlord pet appearance
+	if(record.petnaming == 2)
+	{
+		switch(GetBaseRace())
+		{
+		case VAHSHIR:
+			npc_type->race = TIGER;
+			npc_type->size *= 0.8f;
+			break;
+		case TROLL:
+			npc_type->race = ALLIGATOR;
+			npc_type->size *= 2.5f;
+			break;
+		case OGRE:
+			npc_type->race = BEAR;
+			npc_type->texture = 3;
+			npc_type->gender = 2;
+			break;
+		case BARBARIAN:
+			npc_type->race = WOLF;
+			npc_type->texture = 2;
+			break;
+		case IKSAR:
+			npc_type->race = WOLF;
+			npc_type->texture = 0;
+			npc_type->gender = 1;
+			npc_type->size *= 2.0f;
+			npc_type->luclinface = 0;
+			break;
+		default:
+			npc_type->race = WOLF;
+			npc_type->texture = 0;
+		}
 	}
 
 	// handle monster summoning pet appearance
