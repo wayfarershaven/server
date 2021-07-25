@@ -475,6 +475,7 @@ public:
 	int		GetHatedCount(Mob *attacker, Mob *exclude, bool inc_gray_con);
 	bool	Merc_AICheckCloseBeneficialSpells(Merc* caster, uint8 iChance, float iRange, uint32 iSpellTypes);
 	Mob*	GetTargetForMez(Mob* caster);
+	bool AICheckCloseBeneficialSpells(NPC* caster, uint8 chance, float cast_range, uint32 spell_types);
 	uint32	CheckNPCsClose(Mob *center);
 	NPC*	GetTargetToShield(NPC* shielder);
 
