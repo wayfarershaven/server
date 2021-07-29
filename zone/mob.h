@@ -927,6 +927,11 @@ public:
 	inline int16 GetSpellPowerDistanceMod() const { return SpellPowerDistanceMod; };
 	inline void SetSpellPowerDistanceMod(int16 value) { SpellPowerDistanceMod = value; };
 	int32 GetSpellStat(uint32 spell_id, const char *identifier, uint8 slot = 0);
+	bool HarmonySpellLevelCheck(int32 spell_id, Mob* target = nullptr);
+	
+	void CastSpellOnLand(Mob* caster, uint32 spell_id);
+	void FocusProcLimitProcess();
+	bool ApplyFocusProcLimiter(uint32 spell_id, int buffslot = -1);
 
 	void ModSkillDmgTaken(EQ::skills::SkillType skill_num, int value);
 	int16 GetModSkillDmgTaken(const EQ::skills::SkillType skill_num);

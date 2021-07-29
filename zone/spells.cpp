@@ -237,17 +237,9 @@ bool Mob::CastSpell(uint16 spell_id, uint16 target_id, CastingSlot slot,
         return(false);
     }
 
-	if(IsClient() && GetTarget() && IsHarmonySpell(spell_id))
-	{
-		for(int i = 0; i < EFFECT_COUNT; i++) {
-			// not important to check limit on SE_Lull as it doesnt have one and if the other components won't land, then SE_Lull wont either
-			if (spells[spell_id].effectid[i] == SE_ChangeFrenzyRad || spells[spell_id].effectid[i] == SE_Harmony) {
-				if((spells[spell_id].max[i] != 0 && GetTarget()->GetLevel() > spells[spell_id].max[i]) || GetTarget()->GetSpecialAbility(IMMUNE_PACIFY)) {
-					InterruptSpell(CANNOT_AFFECT_NPC, 0x121, spell_id);
-					return(false);
-				}
-			}
-		}
+	if (IsClient() && IsHarmonySpell(spell_id) && !HarmonySpellLevelCheck(spell_id, entity_list.GetMobID(target_id))) {
+		InterruptSpell(SPELL_NO_EFFECT, 0x121, spell_id);
+		return false;
 	}
 
 	// check to see if target is a caster mob before performing a mana tap
@@ -3864,6 +3856,12 @@ bool Mob::SpellOnTarget(uint16 spell_id, Mob *spelltar, bool reflect, bool use_r
 			return false;
 		}
 	}
+	//Need this to account for special AOE cases.
+	if (IsClient() && IsHarmonySpell(spell_id) && !HarmonySpellLevelCheck(spell_id, spelltar)) {
+		MessageString(Chat::SpellFailure, SPELL_NO_EFFECT);
+		return false;
+	}
+			
 	// Block next spell effect should be used up first(since its blocking the next spell)
 	if(CanBlockSpell()) {
 		int buff_count = GetMaxTotalSlots();
