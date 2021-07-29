@@ -440,6 +440,7 @@ RULE_INT(Spells, AOEMaxTargets, 0, "Max number of targets a Targeted AOE spell c
 RULE_BOOL(Spells, PreventFactionWarOnCharmBreak, false, "Enable spell interupts and dot removal on charm break to prevent faction wars.")
 RULE_BOOL(Spells, AllowDoubleInvis, false, "Allows you to cast invisibility spells on a player that is already invisible")
 RULE_BOOL(Spells, AllowSpellMemorizeFromItem, false, "Allows players to memorize spells by right-clicking spell scrolls")
+RULE_BOOL(Spells, CazicTouchTargetsPetOwner, true, "If True, causes Cazic Touch to swap targets from pet to pet owner if a pet is tanking.")
 RULE_CATEGORY_END()
 
 RULE_CATEGORY(Combat)
