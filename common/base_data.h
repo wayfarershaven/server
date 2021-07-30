@@ -24,8 +24,8 @@ struct BaseDataStruct
 	double base_hp;
 	double base_mana;
 	double base_end;
-	double hp_regen;
-	double end_regen;
+	double unk1;
+	double unk2;
 	double hp_factor;
 	double mana_factor;
 	double endurance_factor;

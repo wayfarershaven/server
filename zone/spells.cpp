@@ -4398,19 +4398,6 @@ bool Mob::IsAffectedByBuff(uint16 spell_id)
 	return false;
 }
 
-bool Mob::IsAffectedByBuffByGlobalGroup(GlobalGroup group)
-{
-	int buff_count = GetMaxTotalSlots();
-	for (int i = 0; i < buff_count; ++i) {
-		if (buffs[i].spellid == SPELL_UNKNOWN)
-			continue;
-		if (spells[buffs[i].spellid].spell_category == static_cast<int>(group))
-			return true;
-	}
-
-	return false;
-}
-
 void Mob::BuffDetachCaster(Mob *caster)
 {
 	if (!caster)

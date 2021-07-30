@@ -1751,54 +1751,6 @@ void Lua_Client::FilteredMessage(Mob *sender, uint32 type, int filter, const cha
 	self->FilteredMessage(sender, type, (eqFilterType)filter, message);
 }
 
-void Lua_Client::EnableAreaHPRegen(int value)
-{
-	Lua_Safe_Call_Void();
-	self->EnableAreaHPRegen(value);
-}
-
-void Lua_Client::DisableAreaHPRegen()
-{
-	Lua_Safe_Call_Void();
-	self->DisableAreaHPRegen();
-}
-
-void Lua_Client::EnableAreaManaRegen(int value)
-{
-	Lua_Safe_Call_Void();
-	self->EnableAreaManaRegen(value);
-}
-
-void Lua_Client::DisableAreaManaRegen()
-{
-	Lua_Safe_Call_Void();
-	self->DisableAreaManaRegen();
-}
-
-void Lua_Client::EnableAreaEndRegen(int value)
-{
-	Lua_Safe_Call_Void();
-	self->EnableAreaEndRegen(value);
-}
-
-void Lua_Client::DisableAreaEndRegen()
-{
-	Lua_Safe_Call_Void();
-	self->DisableAreaEndRegen();
-}
-
-void Lua_Client::EnableAreaRegens(int value)
-{
-	Lua_Safe_Call_Void();
-	self->EnableAreaRegens(value);
-}
-
-void Lua_Client::DisableAreaRegens()
-{
-	Lua_Safe_Call_Void();
-	self->DisableAreaRegens();
-}
-
 void Lua_Client::SetPrimaryWeaponOrnamentation(uint32 model_id) {
 	Lua_Safe_Call_Void();
 	self->SetPrimaryWeaponOrnamentation(model_id);
@@ -2483,14 +2435,6 @@ luabind::scope lua_register_client() {
 		.def("CalcCurrentWeight", &Lua_Client::CalcCurrentWeight)
 		.def("CalcATK", &Lua_Client::CalcATK)
 		.def("FilteredMessage", &Lua_Client::FilteredMessage)
-		.def("EnableAreaHPRegen", &Lua_Client::EnableAreaHPRegen)
-		.def("DisableAreaHPRegen", &Lua_Client::DisableAreaHPRegen)
-		.def("EnableAreaManaRegen", &Lua_Client::EnableAreaManaRegen)
-		.def("DisableAreaManaRegen", &Lua_Client::DisableAreaManaRegen)
-		.def("EnableAreaEndRegen", &Lua_Client::EnableAreaEndRegen)
-		.def("DisableAreaEndRegen", &Lua_Client::DisableAreaEndRegen)
-		.def("EnableAreaRegens", &Lua_Client::EnableAreaRegens)
-		.def("DisableAreaRegens", &Lua_Client::DisableAreaRegens)
 		.def("SetClientMaxLevel", (void(Lua_Client::*)(int))&Lua_Client::SetClientMaxLevel)
 		.def("GetClientMaxLevel", (int(Lua_Client::*)(void))&Lua_Client::GetClientMaxLevel)
 		.def("CreateExpedition", (Lua_Expedition(Lua_Client::*)(luabind::object))&Lua_Client::CreateExpedition)
