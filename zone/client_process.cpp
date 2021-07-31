@@ -126,7 +126,8 @@ bool Client::Process() {
 		}
 
 		// Purple Bug Hack
-		if (GetHP() <= 0) {
+		Log(Logs::General, Logs::Debug, "GetHP = [%i]", GetHP());
+		if (GetHP() < 0) {
 			Log(Logs::General, Logs::Debug, "GetHP < 0 - Killing!");
 			Death(0, 32000, SPELL_UNKNOWN, EQ::skills::SkillHandtoHand);
 		}

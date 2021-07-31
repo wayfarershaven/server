@@ -5889,16 +5889,8 @@ void Client::Handle_OP_EnvDamage(const EQApplicationPacket *app)
 	int damage = ed->damage;
 
 	if (ed->dmgtype == 252) { // FALLING DAMAGE
-		if (zone->HasWaterMap()) {
-			auto targetPosition = glm::vec3(this->GetX(), this->GetY(), this->GetZ());
-			if (!zone->watermap->InLiquid(targetPosition)) {
-				return;
-			}
-		}
-
-		int mod = spellbonuses.ReduceFallDamage + itembonuses.ReduceFallDamage + aabonuses.ReduceFallDamage;
-
-		damage -= damage * mod / 100;
+	int mod = spellbonuses.ReduceFallDamage + itembonuses.ReduceFallDamage + aabonuses.ReduceFallDamage;
+	damage -= damage * mod / 100;
 	}
 
 	if (damage <= 0) {
@@ -5932,6 +5924,7 @@ void Client::Handle_OP_EnvDamage(const EQApplicationPacket *app)
 	if (GetHP() <= 0) {
 		mod_client_death_env();
 		Death(0, 32000, SPELL_UNKNOWN, EQ::skills::SkillHandtoHand);
+		return;
 	}
 	SendHPUpdate();
 	return;
