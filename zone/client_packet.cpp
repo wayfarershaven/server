@@ -5901,8 +5901,9 @@ void Client::Handle_OP_EnvDamage(const EQApplicationPacket *app)
 		damage -= damage * mod / 100;
 	}
 
-	if (damage < 0)
-		damage = 31337;
+	if (damage <= 0) {
+		damage = 32000;
+	}
 
 	if (admin >= minStatusToAvoidFalling && GetGM()) {
 		Message(Chat::Red, "Your GM status protects you from %i points of type %i environmental damage.", ed->damage, ed->dmgtype);
