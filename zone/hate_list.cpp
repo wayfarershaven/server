@@ -777,6 +777,40 @@ void HateList::SpellCast(Mob *caster, uint32 spell_id, float range, Mob* ae_cent
 	}
 }
 
+//When a death happens, this trigger causes entities on the hate list a trigger
+void HateList::OnDeathTrigger()
+{
+
+	// uint32 rank;
+	auto iterator = list.begin();
+	while (iterator != list.end())
+	{
+		struct_HateList *h = (*iterator);
+		Mob *mobHated = h->entity_on_hatelist;
+
+		// Custom non-implemented feature
+		/*if (mobHated->IsClient()) {
+			uint8 rank = mobHated->CastToClient()->GetBuildRank(SHADOWKNIGHT, RB_SHD_ROTTENCORE);
+			if (rank > 0) {
+				uint32 counters = mobHated->CastToClient()->GetCoreCounter();
+				mobHated->CastToClient()->AddCoreCounter(1);
+				if (counters < mobHated->CastToClient()->GetCoreCounter()) {
+					mobHated->Message(MT_FocusEffect, "Rotten Core %u increased to %u counters.", rank, mobHated->CastToClient()->GetCoreCounter());
+				}
+			}
+			rank = mobHated->CastToClient()->GetBuildRank(ROGUE, RB_ROG_KILLINGSPREE);
+			if (rank > 0) {
+				uint32 counters = mobHated->CastToClient()->GetCoreCounter();
+				mobHated->CastToClient()->AddCoreCounter(1);
+				if (counters < mobHated->CastToClient()->GetCoreCounter()) {
+					mobHated->Message(MT_FocusEffect, "Killing Spree %u increased to %u counters.", rank, mobHated->CastToClient()->GetCoreCounter());
+				}
+			}
+		} */
+		++iterator;
+	}
+}
+
 void HateList::RemoveStaleEntries(int time_ms, float dist)
 {
 	auto it = list.begin();

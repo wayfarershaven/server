@@ -409,6 +409,7 @@ public:
 	int32 GetRawAC() const { return AC; }
 
 	void	ModifyNPCStat(const char *identifier, const char *new_value);
+	void	SetConLevel(uint8 in_level, Client *specific_target = nullptr);
 	virtual void SetLevel(uint8 in_level, bool command = false);
 
 	bool IsLDoNTrapped() const { return (ldon_trapped); }

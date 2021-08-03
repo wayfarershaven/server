@@ -514,6 +514,16 @@ bool Client::HandleNameApprovalPacket(const EQApplicationPacket *app)
 	uchar race = app->pBuffer[64];
 	uchar clas = app->pBuffer[68];
 
+    	if (race < 0 || race > 255) {
+        	LogInfo("Client::HandleNameApprovalPacket Race was less then zero or over 255");
+        	return false;
+    	}
+
+    	if (clas < 0 || clas > 255) {
+        	LogInfo("Client::HandleNameApprovalPacket Class was less then zero or over 255");
+        	return false;
+    	}
+
 	LogInfo("Name approval request. Name=[{}], race=[{}], class=[{}]", char_name, GetRaceIDName(race), GetClassIDName(clas));
 
 	EQApplicationPacket *outapp;
@@ -538,8 +548,7 @@ bool Client::HandleNameApprovalPacket(const EQApplicationPacket *app)
 	/* I would like to do this later, since it's likely more expensive, but oh well */
 	else if (!database.CheckNameFilter(char_name)) {
 		valid = false;
-	}
-	else {
+    	} else {
 		/* Name must not not contain any uppercase letters, can be sent with some tricking of the client */
 		for (int i = 1; i < length; ++i) {
 			if (isupper(char_name[i])) {
@@ -558,8 +567,9 @@ bool Client::HandleNameApprovalPacket(const EQApplicationPacket *app)
 	QueuePacket(outapp);
 	safe_delete(outapp);
 
-	if (!valid)
+    if (!valid) {
 		memset(char_name, 0, sizeof(char_name));
+    }
 
 	return true;
 }
@@ -797,30 +807,6 @@ bool Client::HandleEnterWorldPacket(const EQApplicationPacket *app) {
 			else {
 				LogInfo("[{}] is trying to go home before they're able", char_name);
 				database.SetHackerFlag(GetAccountName(), char_name, "MQGoHome: player tried to go home before they were able.");
-				eqs->Close();
-				return true;
-			}
-		}
-
-		/* Check Tutorial*/
-		if (RuleB(World, EnableTutorialButton) && (ew->tutorial || StartInTutorial)) {
-			bool tutorial_enabled = false;
-			for (auto row = tgh_results.begin(); row != tgh_results.end(); ++row) {
-				if (strcasecmp(row[1], char_name) == 0) {
-					if (RuleB(World, EnableTutorialButton) && ((uint8)atoi(row[2]) <= RuleI(World, MaxLevelForTutorial))) {
-						tutorial_enabled = true;
-						break;
-					}
-				}
-			}
-
-			if (tutorial_enabled) {
-				zone_id = RuleI(World, TutorialZoneID);
-				database.MoveCharacterToZone(charid, zone_id);
-			}
-			else {
-				LogInfo("[{}] is trying to go to tutorial but are not allowed", char_name);
-				database.SetHackerFlag(GetAccountName(), char_name, "MQTutorial: player tried to enter the tutorial without having tutorial enabled for this character.");
 				eqs->Close();
 				return true;
 			}

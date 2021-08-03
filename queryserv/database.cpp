@@ -447,6 +447,6 @@ void Database::GeneralQueryReceive(ServerPacket *pack)
 		LogInfo("[{}]", query.c_str());
 	}
 
-	safe_delete(pack);
+	// safe_delete(pack);
 	safe_delete_array(queryBuffer);
 }

@@ -2329,8 +2329,24 @@ void Mob::AreaRampage(ExtraAttackOptions *opts)
     m_specialattacks = eSpecialAttacks::None;
 }
 
-uint32 Mob::GetLevelCon(uint8 mylevel, uint8 iOtherLevel) {
+uint8 Mob::GetLevelForClientCon(uint8 mylevel, uint8 iOtherLevel) {
+	signed diff = iOtherLevel - mylevel;
 
+	if (diff >= 0 || mylevel > MAX_CON_LEVELS)
+		return iOtherLevel; // white/yellow/red is correct as database level
+
+	// this determines a "fake" level to send a
+	// client based on their level to give era-correct con color
+	auto levels = CON_LEVELS_MAP[mylevel - 1];
+	if (levels[2] && iOtherLevel <= levels[0] )
+		return levels[2]; // green
+	else if (levels[3] && iOtherLevel <= levels[1])
+		return levels[3]; // light blue
+	else
+		return iOtherLevel; // blue
+}
+
+uint32 Mob::GetLevelCon(uint8 mylevel, uint8 iOtherLevel) {
     uint32 conlevel = 0;
 
     if (RuleB(Character, UseOldConSystem))
@@ -2344,150 +2360,117 @@ uint32 Mob::GetLevelCon(uint8 mylevel, uint8 iOtherLevel) {
         else if (diff >= 3)
             return CON_RED;
 
-        if (mylevel <= 8)
-        {
+        if (mylevel <= 8) {
             if (diff <= -4)
                 conlevel = CON_GRAY;
             else
                 conlevel = CON_BLUE;
-        }
-        else if (mylevel <= 9)
-        {
+        } else if (mylevel <= 9) {
             if (diff <= -6)
                 conlevel = CON_GRAY;
             else if (diff <= -4)
                 conlevel = CON_LIGHTBLUE;
             else
                 conlevel = CON_BLUE;
-        }
-        else if (mylevel <= 13)
-        {
+        } else if (mylevel <= 13) {
             if (diff <= -7)
                 conlevel = CON_GRAY;
             else if (diff <= -5)
                 conlevel = CON_LIGHTBLUE;
             else
                 conlevel = CON_BLUE;
-        }
-        else if (mylevel <= 15)
-        {
+        } else if (mylevel <= 15) {
             if (diff <= -7)
                 conlevel = CON_GRAY;
             else if (diff <= -5)
                 conlevel = CON_LIGHTBLUE;
             else
                 conlevel = CON_BLUE;
-        }
-        else if (mylevel <= 17)
-        {
+        } else if (mylevel <= 17) {
             if (diff <= -8)
                 conlevel = CON_GRAY;
             else if (diff <= -6)
                 conlevel = CON_LIGHTBLUE;
             else
                 conlevel = CON_BLUE;
-        }
-        else if (mylevel <= 21)
-        {
+        } else if (mylevel <= 21) {
             if (diff <= -9)
                 conlevel = CON_GRAY;
             else if (diff <= -7)
                 conlevel = CON_LIGHTBLUE;
             else
                 conlevel = CON_BLUE;
-        }
-        else if (mylevel <= 25)
-        {
+        } else if (mylevel <= 25) {
             if (diff <= -10)
                 conlevel = CON_GRAY;
             else if (diff <= -8)
                 conlevel = CON_LIGHTBLUE;
             else
                 conlevel = CON_BLUE;
-        }
-        else if (mylevel <= 29)
-        {
+        } else if (mylevel <= 29) {
             if (diff <= -11)
                 conlevel = CON_GRAY;
             else if (diff <= -9)
                 conlevel = CON_LIGHTBLUE;
             else
                 conlevel = CON_BLUE;
-        }
-        else if (mylevel <= 31)
-        {
+        } else if (mylevel <= 31) {
             if (diff <= -12)
                 conlevel = CON_GRAY;
             else if (diff <= -9)
                 conlevel = CON_LIGHTBLUE;
             else
                 conlevel = CON_BLUE;
-        }
-        else if (mylevel <= 33)
-        {
+        } else if (mylevel <= 33) {
             if (diff <= -13)
                 conlevel = CON_GRAY;
             else if (diff <= -10)
                 conlevel = CON_LIGHTBLUE;
             else
                 conlevel = CON_BLUE;
-        }
-        else if (mylevel <= 37)
-        {
+        } else if (mylevel <= 37) {
             if (diff <= -14)
                 conlevel = CON_GRAY;
             else if (diff <= -11)
                 conlevel = CON_LIGHTBLUE;
             else
                 conlevel = CON_BLUE;
-        }
-        else if (mylevel <= 41)
-        {
+        } else if (mylevel <= 41) {
             if (diff <= -16)
                 conlevel = CON_GRAY;
             else if (diff <= -12)
                 conlevel = CON_LIGHTBLUE;
             else
                 conlevel = CON_BLUE;
-        }
-        else if (mylevel <= 45)
-        {
+        } else if (mylevel <= 45) {
             if (diff <= -17)
                 conlevel = CON_GRAY;
             else if (diff <= -13)
                 conlevel = CON_LIGHTBLUE;
             else
                 conlevel = CON_BLUE;
-        }
-        else if (mylevel <= 49)
-        {
+        } else if (mylevel <= 49) {
             if (diff <= -18)
                 conlevel = CON_GRAY;
             else if (diff <= -14)
                 conlevel = CON_LIGHTBLUE;
             else
                 conlevel = CON_BLUE;
-        }
-        else if (mylevel <= 53)
-        {
+        } else if (mylevel <= 53) {
             if (diff <= -19)
                 conlevel = CON_GRAY;
             else if (diff <= -15)
                 conlevel = CON_LIGHTBLUE;
             else
                 conlevel = CON_BLUE;
-        }
-        else if (mylevel <= 55)
-        {
+        } else if (mylevel <= 55) {
             if (diff <= -20)
                 conlevel = CON_GRAY;
             else if (diff <= -15)
                 conlevel = CON_LIGHTBLUE;
             else
                 conlevel = CON_BLUE;
-        }
-        else
-        {
+        } else {
             if (diff <= -21)
                 conlevel = CON_GRAY;
             else if (diff <= -16)
@@ -2495,9 +2478,7 @@ uint32 Mob::GetLevelCon(uint8 mylevel, uint8 iOtherLevel) {
             else
                 conlevel = CON_BLUE;
         }
-    }
-    else
-    {
+    } else {
         int16 diff = iOtherLevel - mylevel;
         uint32 conGrayLvl = mylevel - (int32)((mylevel + 5) / 3);
         uint32 conGreenLvl = mylevel - (int32)((mylevel + 7) / 4);
@@ -2509,33 +2490,24 @@ uint32 Mob::GetLevelCon(uint8 mylevel, uint8 iOtherLevel) {
         else if (diff >= 4)
             return CON_RED;
 
-        if (mylevel <= 15)
-        {
+        if (mylevel <= 15) {
             if (diff <= -6)
                 conlevel = CON_GRAY;
             else
                 conlevel = CON_BLUE;
-        }
-        else
-        if (mylevel <= 20)
-        {
+        } else if (mylevel <= 20) {
             if (iOtherLevel <= conGrayLvl)
                 conlevel = CON_GRAY;
-            else
-            if (iOtherLevel <= conGreenLvl)
+            else if (iOtherLevel <= conGreenLvl)
                 conlevel = CON_GREEN;
             else
                 conlevel = CON_BLUE;
-        }
-        else
-        {
+        } else {
             if (iOtherLevel <= conGrayLvl)
                 conlevel = CON_GRAY;
-            else
-            if (iOtherLevel <= conGreenLvl)
+            else if (iOtherLevel <= conGreenLvl)
                 conlevel = CON_GREEN;
-            else
-            if (diff <= -6)
+            else if (diff <= -6)
                 conlevel = CON_LIGHTBLUE;
             else
                 conlevel = CON_BLUE;

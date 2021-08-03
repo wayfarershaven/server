@@ -2239,6 +2239,9 @@ bool NPC::Death(Mob* killer_mob, int32 damage, uint16 spell, EQ::skills::SkillTy
     LogCombat("Fatal blow dealt by [{}] with [{}] damage, spell [{}], skill [{}]",
               ((killer_mob) ? (killer_mob->GetName()) : ("[nullptr]")), damage, spell, attack_skill);
 
+	//Shin: On death, see if anyone is on hate list that causes a trigger on death
+	hate_list.OnDeathTrigger();
+
     Mob *oos = nullptr;
     if (killer_mob) {
         oos = killer_mob->GetOwnerOrSelf();
@@ -2334,6 +2337,12 @@ bool NPC::Death(Mob* killer_mob, int32 damage, uint16 spell, EQ::skills::SkillTy
         respawn2->DeathReset(1);
     }
 
+	/* std::string adminMessage = "";
+	adminMessage.append(StringFormat("Raidmob: %s has died", GetName()));
+	if (IsRaidTarget() && IsNPC()) {
+		nats.SendAdminMessage(adminMessage);
+	}
+	*/
     if (killer_mob && GetClass() != LDON_TREASURE)
         hate_list.AddEntToHateList(killer_mob, damage);
 
@@ -2344,7 +2353,6 @@ bool NPC::Death(Mob* killer_mob, int32 damage, uint16 spell, EQ::skills::SkillTy
     }
 
     if (give_exp && give_exp->HasOwner()) {
-
         bool ownerInGroup = false;
         if ((give_exp->HasGroup() && give_exp->GetGroup()->IsGroupMember(give_exp->GetUltimateOwner()))
             || (give_exp->IsPet() && (give_exp->GetOwner()->IsClient()
@@ -3675,10 +3683,15 @@ void Mob::CommonDamage(Mob* attacker, int &damage, const uint16 spell_id, const 
 
         //final damage has been determined.
 
+        int32 pre_hit_hp;
+
+        if (attacker->IsClient()) {
+            player_damage += damage;
+        }
+        pre_hit_hp = GetHP();
         SetHP(GetHP() - damage);
 
-
-	if (HasDied()) {
+        if (HasDied() && pre_hit_hp > 0) {  // Don't make the mob die over and over if it was at 0 hp
             bool IsSaved = false;
 
             if (TryDivineSave()) {
@@ -3692,8 +3705,7 @@ void Mob::CommonDamage(Mob* attacker, int &damage, const uint16 spell_id, const 
                     return;
                 }
             }
-        }
-        else {
+        } else {
             if(GetHPRatio() < 16 && previousHPRatio >= 16) {
                 TryDeathSave();
             }
@@ -4645,12 +4657,11 @@ bool Mob::TryFinishingBlow(Mob *defender, int &damage)
         else if (FB_Level < itembonuses.FinishingBlowLvl[0])
             FB_Level = itembonuses.FinishingBlowLvl[0];
 
-        // modern AA description says rank 1 (500) is 50% chance
+		// With our code, 500 = 5%.
         int ProcChance =
-                aabonuses.FinishingBlow[0] + spellbonuses.FinishingBlow[0] + spellbonuses.FinishingBlow[0];
+				(aabonuses.FinishingBlow[0] + spellbonuses.FinishingBlow[0] + spellbonuses.FinishingBlow[0])/10;
 
-        if (FB_Level && FB_Dmg && (defender->GetLevel() <= FB_Level) && defender->currently_fleeing &&
-            (ProcChance >= zone->random.Int(1, 1000))) {
+		if (FB_Level && FB_Dmg && (defender->GetLevel() <= FB_Level) && defender->currently_fleeing && defender->flee_mode && (ProcChance >= zone->random.Int(1, 1000))) {
 
             /* Finishing Blow Critical Message */
             entity_list.FilteredMessageCloseString(
