@@ -407,6 +407,8 @@ NPC::NPC(const NPCType *npc_type_data, Spawn2 *in_respawn, const glm::vec4 &posi
 	raid_target    = npc_type_data->raid_target;
 	ignore_despawn = npc_type_data->ignore_despawn;
 	m_targetable   = !npc_type_data->untargetable;
+	base_texture   = npc_type_data->texture;
+	base_size	   = npc_type_data->size;
 
 	npc_scale_manager->ScaleNPC(this);
 

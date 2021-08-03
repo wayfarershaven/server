@@ -661,6 +661,7 @@ public:
 	inline const float GetRelativeHeading() const { return m_RelativePosition.w; }
 	inline const float GetSize() const { return size; }
 	inline const float GetBaseSize() const { return base_size; }
+	inline const float GetBaseTexture() const { return base_texture; }
 	inline const GravityBehavior GetFlyMode() const { return flymode; }
 	bool IsBoat() const;
 	bool IsControllableBoat() const;
@@ -1333,6 +1334,8 @@ public:
 	bool GetManualFollow() const { return m_manual_follow; }
 #endif
 
+	float GetPlayerHeight(uint16 race);
+
 protected:
 	void CommonDamage(Mob* other, int &damage, const uint16 spell_id, const EQ::skills::SkillType attack_skill, bool &avoidable, const int8 buffslot, const bool iBuffTic, eSpecialAttacks specal = eSpecialAttacks::None);
 	static uint16 GetProcID(uint16 spell_id, uint8 effect_index);
@@ -1440,6 +1443,7 @@ protected:
 	glm::vec4 m_RelativePosition;
 	int animation; // this is really what MQ2 calls SpeedRun just packed like (int)(SpeedRun * 40.0f)
 	float base_size;
+	uint8 base_texture;
 	float size;
 	float runspeed;
 	float walkspeed;

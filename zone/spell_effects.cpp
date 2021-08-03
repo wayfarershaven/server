@@ -1452,6 +1452,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 							}
 						}
 					}
+					/* Might need to re-enable this - TEST
 					// Change Gender Illusions
 					else {
 						if(caster && caster->GetTarget()) {
@@ -1467,9 +1468,11 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 							);
 						}
 					}
+					*/
 				}
 				// Racial Illusions
 				else {
+					float realsize = GetPlayerHeight(spell.base[i]);
 					SendIllusionPacket
 					(
 						spell.base[i],

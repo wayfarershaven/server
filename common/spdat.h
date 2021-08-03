@@ -1163,4 +1163,6 @@ bool IsShortDurationBuff(uint16 spell_id);
 bool IsSpellUsableThisZoneType(uint16 spell_id, uint8 zone_type);
 const char *GetSpellName(uint16 spell_id);
 
+bool IsRacialIllusion(uint16 spell_id);
+
 #endif
