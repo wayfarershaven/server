@@ -1478,7 +1478,10 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 						spell.base[i],
 						Mob::GetDefaultGender(spell.base[i], GetGender()),
 						spell.base2[i],
-						spell.max[i]
+						spell.max[i],
+						0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,
+						0xFF,0xFF,0xFF,
+						realsize
 					);
 					if(spell.base[i] == OGRE){
 						SendAppearancePacket(AT_Size, 9);
@@ -3920,28 +3923,20 @@ void Mob::BuffFadeBySlot(int slot, bool iRecalcBonuses)
 			case SE_IllusionCopy:
 			case SE_Illusion:
 			{
-				SendIllusionPacket(0, GetBaseGender());
-				if (GetRace() == OGRE) {
-					SendAppearancePacket(AT_Size, 9);
+				uint8 texture = 0xFF;
+				if (IsNPC() && ~IsPlayerRace(GetBaseRace())) {
+					texture = CastToNPC()->GetBaseTexture();
 				}
-				else if (GetRace() == TROLL) {
-					SendAppearancePacket(AT_Size, 8);
-				}
-				else if (GetRace() == VAHSHIR || GetRace() == FROGLOK || GetRace() == BARBARIAN) {
-					SendAppearancePacket(AT_Size, 7);
-				}
-				else if (GetRace() == HALF_ELF || GetRace() == WOOD_ELF || GetRace() == DARK_ELF) {
-					SendAppearancePacket(AT_Size, 5);
-				}
-				else if (GetRace() == DWARF) {
-					SendAppearancePacket(AT_Size, 4);
-				}
-				else if (GetRace() == HALFLING || GetRace() == GNOME) {
-					SendAppearancePacket(AT_Size, 3);
-				}
-				else {
-					SendAppearancePacket(AT_Size, 6);
-				}
+
+				SendIllusionPacket
+				(
+				0,
+				GetBaseGender(),
+				texture,
+				0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+				0xFF, 0xFF, 0xFF,
+				GetBaseSize()
+				);
 
 				for (int x = EQ::textures::textureBegin; x <= EQ::textures::LastTintableTexture; x++) {
 					SendWearChange(x);
