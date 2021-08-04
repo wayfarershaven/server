@@ -1402,6 +1402,9 @@ void Client::Handle_Connect_OP_ZoneEntry(const EQApplicationPacket *app)
 	if (class_ == MONK)
 		consume_food_timer.SetTimer(CONSUMPTION_MNK_TIMER);
 
+	size = GetPlayerHeight(race);
+	base_size = size;
+
 	/* If GM not set in DB, and does not meet min status to be GM, reset */
 	if (m_pp.gm && admin < minStatusToBeGM)
 		m_pp.gm = 0;
@@ -2056,8 +2059,9 @@ void Client::Handle_OP_AdventureMerchantPurchase(const EQApplicationPacket *app)
 	{
 		int32 requiredpts = (int32)item->LDoNPrice*-1;
 
-		if (!UpdateLDoNPoints(6, requiredpts))
+		if (!UpdateLDoNPoints(6, requiredpts)) {
 			return;
+		}
 	}
 	else if (aps->Type == DiscordMerchant)
 	{
@@ -8900,8 +8904,9 @@ void Client::Handle_OP_ItemVerifyRequest(const EQApplicationPacket *app)
 	}
 
 	// Modern clients don't require pet targeted for item clicks that are ST_Pet
-	if (spell_id > 0 && (spells[spell_id].targettype == ST_Pet || spells[spell_id].targettype == ST_SummonedPet))
+	if (spell_id > 0 && (spells[spell_id].targettype == ST_Pet || spells[spell_id].targettype == ST_SummonedPet)) {
 		target_id = GetPetID();
+	}
 
 	LogDebug("OP ItemVerifyRequest: spell=[{}], target=[{}], inv=[{}]", spell_id, target_id, slot_id);
 
@@ -12699,6 +12704,15 @@ void Client::Handle_OP_SenseHeading(const EQApplicationPacket *app)
 
 	int chancemod = 0;
 
+	// The client seems to limit sense heading packets based on skill
+	// level.  So if we're really low, we don't hit this routine very often.
+	// I think it's the GUI deciding when to skill you up.
+	// So, I'm adding a mod here which is larger at lower levels so
+	// very low levels get a much better chance to skill up when the GUI
+	// eventually sends a message.
+	if (GetLevel() <= 8)
+		chancemod += (9 - level) * 10;
+
 	CheckIncreaseSkill(EQ::skills::SkillSenseHeading, nullptr, chancemod);
 
 	return;
@@ -13767,11 +13781,12 @@ void Client::Handle_OP_Split(const EQApplicationPacket *app)
 	Group *group = nullptr;
 	Raid *raid = nullptr;
 
-	if (IsRaidGrouped())
+	if (IsRaidGrouped()) {
 		raid = GetRaid();
-	else if (IsGrouped())
+	} else if (IsGrouped()) {
 		group = GetGroup();
-
+	}
+	
 	// is there an actual error message for this?
 	if (raid == nullptr && group == nullptr) {
 		Message(Chat::Red, "You can not split money if you're not in a group.");
@@ -13786,11 +13801,12 @@ void Client::Handle_OP_Split(const EQApplicationPacket *app)
 		return;
 	}
 
-	if (raid)
+	if (raid) {
 		raid->SplitMoney(raid->GetGroup(this), split->copper, split->silver, split->gold, split->platinum);
-	else if (group)
+	} else if (group) {
 		group->SplitMoney(split->copper, split->silver, split->gold, split->platinum);
-
+	}
+	
 	return;
 
 }
@@ -14006,7 +14022,6 @@ void Client::Handle_OP_TargetCommand(const EQApplicationPacket *app)
 			}
 
 			QueuePacket(app);
-
 			GetTarget()->IsTargeted(1);
 			SendHPUpdate();
 		}
@@ -14618,16 +14633,23 @@ void Client::Handle_OP_TradeRequest(const EQApplicationPacket *app) {
 #else
 		else if (tradee && (tradee->IsNPC() || tradee->IsBot())) {
 #endif
-		if (!tradee->IsEngaged()) {
+		// If the NPC is engaged, we cannot trade with it.
+		// Note that this work as intended, if the NPC is charmed
+		// you can still trade with it.
+		if (tradee->IsEngaged()) {
+			Message(0, "Your target cannot trade with you at this moment.");
+		}
+			// If it not engaged, it will automatically accept the trade.
+		else {
+			//npcs always accept
 			trade->Start(msg->to_mob_id);
+
 			EQApplicationPacket *outapp = new EQApplicationPacket(OP_TradeRequestAck, sizeof(TradeRequest_Struct));
 			TradeRequest_Struct *acc = (TradeRequest_Struct *) outapp->pBuffer;
 			acc->from_mob_id = msg->to_mob_id;
 			acc->to_mob_id = msg->from_mob_id;
 			FastQueuePacket(&outapp);
 			safe_delete(outapp);
-		} else {
-			Message(Chat::White, "Your target cannot trade with you at this moment.");
 		}
 	}
 	return;

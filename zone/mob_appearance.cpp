@@ -468,6 +468,9 @@ void Mob::SendTextureWC(
 	auto outapp       = new EQApplicationPacket(OP_WearChange, sizeof(WearChange_Struct));
 	auto *wear_change = (WearChange_Struct *) outapp->pBuffer;
 
+	wear_change->spawn_id = this->GetID();
+	wear_change->material = texture;
+
 	if (this->IsClient()) {
 		wear_change->color.Color = GetEquipmentColor(slot);
 	}
