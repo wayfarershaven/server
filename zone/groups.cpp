@@ -320,13 +320,11 @@ bool Group::AddMember(Mob* newmember, const char *NewMemberName, uint32 Characte
 		}
 	}
 
-	if(InZone)
-	{
+	if(InZone) {
 		//put new member in his own list.
 		newmember->SetGrouped(true);
 
-		if(newmember->IsClient())
-		{
+		if (newmember->IsClient()) {
 			strcpy(newmember->CastToClient()->GetPP().groupMembers[x], NewMemberName);
 			newmember->CastToClient()->Save();
 			database.SetGroupID(NewMemberName, GetID(), newmember->CastToClient()->CharacterID(), false);
@@ -337,21 +335,17 @@ bool Group::AddMember(Mob* newmember, const char *NewMemberName, uint32 Characte
 			NotifyPuller(newmember->CastToClient(), 1);
 		}
 
-		if(newmember->IsMerc())
-		{
+		if (newmember->IsMerc()) {
 			Client* owner = newmember->CastToMerc()->GetMercOwner();
-			if(owner)
-			{
+			if (owner) {
 				database.SetGroupID(NewMemberName, GetID(), owner->CharacterID(), true);
 			}
 		}
-
 		Group* group = newmember->CastToClient()->GetGroup();
 		if (group) {
 			group->SendHPManaEndPacketsTo(newmember);
 			group->SendHPPacketsFrom(newmember);
 		}
-
 	}
 	else
 	{
@@ -398,8 +392,7 @@ void Group::QueuePacket(const EQApplicationPacket *app, bool ack_req)
 
 // Sends the rest of the group's hps to member. this is useful when someone
 // first joins a group, but otherwise there shouldn't be a need to call it
-void Group::SendHPManaEndPacketsTo(Mob *member)
-{
+void Group::SendHPManaEndPacketsTo(Mob *member) {
 	if(member && member->IsClient()) {
 		EQApplicationPacket hpapp;
 		EQApplicationPacket outapp(OP_MobManaUpdate, sizeof(MobManaUpdate_Struct));
@@ -410,15 +403,12 @@ void Group::SendHPManaEndPacketsTo(Mob *member)
 				member->CastToClient()->QueuePacket(&hpapp, false);
 				safe_delete_array(hpapp.pBuffer);
 				hpapp.size = 0;
-
 				if (member->CastToClient()->ClientVersion() >= EQ::versions::ClientVersion::SoD) {
 					outapp.SetOpcode(OP_MobManaUpdate);
-
 					MobManaUpdate_Struct *mana_update = (MobManaUpdate_Struct *)outapp.pBuffer;
 					mana_update->spawn_id = members[i]->GetID();
 					mana_update->mana = members[i]->GetManaPercent();
 					member->CastToClient()->QueuePacket(&outapp, false);
-
 					MobEnduranceUpdate_Struct *endurance_update = (MobEnduranceUpdate_Struct *)outapp.pBuffer;
 					outapp.SetOpcode(OP_MobEnduranceUpdate);
 					endurance_update->endurance = members[i]->GetEndurancePercent();
@@ -448,7 +438,6 @@ void Group::SendHPPacketsFrom(Mob *member)
 				mana_update->spawn_id = member->GetID();
 				mana_update->mana = member->GetManaPercent();
 				members[i]->CastToClient()->QueuePacket(&outapp, false);
-
 				MobEnduranceUpdate_Struct *endurance_update = (MobEnduranceUpdate_Struct *)outapp.pBuffer;
 				outapp.SetOpcode(OP_MobEnduranceUpdate);
 				endurance_update->endurance = member->GetEndurancePercent();
@@ -501,9 +490,6 @@ void Group::SendEndurancePacketFrom(Mob* member)
 //updates a group member's client pointer when they zone in
 //if the group was in the zone already
 bool Group::UpdatePlayer(Mob* update){
-
-	if (!update)
-		return false;
 
 	bool updateSuccess = false;
 
@@ -613,23 +599,12 @@ bool Group::DelMemberOOZ(const char *Name, bool checkleader) {
 
 	bool removed = false;
 	// If a member out of zone has disbanded, clear out their name.
-	for (unsigned int i = 0; i < MAX_GROUP_MEMBERS; i++) {
-		if (!strcasecmp(Name, membername[i])) {
+	for(unsigned int i = 0; i < MAX_GROUP_MEMBERS; i++)
+	{
+		if(!strcasecmp(Name, membername[i]))
+		{
 			// This shouldn't be called if the member is in this zone.
 			if (!members[i]) {
-				if (!strncmp(GetLeaderName(), Name, 64)) {
-					//TODO: Transfer leadership if leader disbands OOZ.
-					UpdateGroupAAs();
-				}
-
-				if (GroupCount() < 3) {
-					UnDelegateMarkNPC(NPCMarkerName.c_str());
-					if (GetLeader() && GetLeader()->IsClient() &&
-						GetLeader()->CastToClient()->ClientVersion() < EQ::versions::ClientVersion::SoD) {
-						UnDelegateMainAssist(MainAssistName.c_str());
-					}
-					ClearAllNPCMarks();
-				}
 				if (Name == mentoree_name) {
 					ClearGroupMentor();
 				}
@@ -670,6 +645,14 @@ bool Group::DelMember(Mob* oldmember, bool ignoresender)
 	{
 		return false;
 	}
+
+	/* let's try to fix it
+	// Temporary fix for zone crashing. causing groups to fully break as they did before.
+	if (oldmember == GetLeader()) {
+		DisbandGroup();
+		return true;
+	}
+	*/
 
 	for (uint32 i = 0; i < MAX_GROUP_MEMBERS; i++)
 	{
@@ -749,58 +732,17 @@ bool Group::DelMember(Mob* oldmember, bool ignoresender)
 		if(oldmember->IsClient())
 			oldmember->CastToClient()->QueuePacket(outapp);
 	}
-	
-	safe_delete(outapp);
 
 	if(oldmember->IsClient())
 	{
 		database.SetGroupID(oldmember->GetCleanName(), 0, oldmember->CastToClient()->CharacterID(), false);
 	}
-	
-	if(oldmember->IsMerc())
-	{
-		Client* owner = oldmember->CastToMerc()->GetMercOwner();
-		if(owner)
-		{
-			database.SetGroupID(oldmember->GetCleanName(), 0, owner->CharacterID(), true);
-		}
-	}
 
 	oldmember->SetGrouped(false);
 	disbandcheck = true;
 
-	if(HasRole(oldmember, RoleTank))
-	{
-		SetGroupTankTarget(0);
-		UnDelegateMainTank(oldmember->GetCleanName());
-	}
-
-	if(HasRole(oldmember, RoleAssist))
-	{
-		SetGroupAssistTarget(0);
-		UnDelegateMainAssist(oldmember->GetCleanName());
-	}
-
-	if(HasRole(oldmember, RolePuller))
-	{
-		SetGroupPullerTarget(0);
-		UnDelegatePuller(oldmember->GetCleanName());
-	}
-
-	if (oldmember->GetName() == mentoree_name)
+	if (oldmember->GetName() == mentoree_name) {
 		ClearGroupMentor();
-
-	if(oldmember->IsClient()) {
-		SendMarkedNPCsToMember(oldmember->CastToClient(), true);
-	}
-
-	if(GroupCount() < 3)
-	{
-		UnDelegateMarkNPC(NPCMarkerName.c_str());
-		if (GetLeader() && GetLeader()->IsClient() && GetLeader()->CastToClient()->ClientVersion() < EQ::versions::ClientVersion::SoD) {
-			UnDelegateMainAssist(MainAssistName.c_str());
-		}
-		ClearAllNPCMarks();
 	}
 
 #ifdef BOTS
@@ -808,6 +750,7 @@ bool Group::DelMember(Mob* oldmember, bool ignoresender)
 #endif
 
 	safe_delete(outapp);
+
 	return true;
 }
 
@@ -1468,6 +1411,7 @@ uint16 Group::GetAvgLevel()
 
 void Group::MarkNPC(Mob* Target, int Number)
 {
+	/* WFH doesn't have XTarget (or Marking)
 	// Send a packet to all group members in this zone causing the client to prefix the Target mob's name
 	// with the specified Number.
 	//
@@ -1534,6 +1478,7 @@ void Group::MarkNPC(Mob* Target, int Number)
 	safe_delete(outapp);
 
 	UpdateXTargetMarkedNPC(Number, m);
+	*/
 }
 
 void Group::DelegateMainTank(const char *NewMainTankName, uint8 toggle)
@@ -1542,7 +1487,7 @@ void Group::DelegateMainTank(const char *NewMainTankName, uint8 toggle)
 	// (or himself). All group members in the zone are notified of the new Main Tank and it is recorded
 	// in the group_leaders table so as to persist across zones.
 	//
-
+	/* WFH doesn't have XTarget (or delegating main tank)
 	bool updateDB = false;
 
 	if(!NewMainTankName)
@@ -1583,6 +1528,7 @@ void Group::DelegateMainTank(const char *NewMainTankName, uint8 toggle)
 		if (!results.Success())
 			LogError("Unable to set group main tank: [{}]\n", results.ErrorMessage().c_str());
 	}
+	*/
 }
 
 void Group::DelegateMainAssist(const char *NewMainAssistName, uint8 toggle)
@@ -1591,7 +1537,7 @@ void Group::DelegateMainAssist(const char *NewMainAssistName, uint8 toggle)
 	// (or himself). All group members in the zone are notified of the new Main Assist and it is recorded
 	// in the group_leaders table so as to persist across zones.
 	//
-
+	/* WFH doesn't have XTarget (or delegating main assist)
 	bool updateDB = false;
 
 	if(!NewMainAssistName)
@@ -1630,6 +1576,7 @@ void Group::DelegateMainAssist(const char *NewMainAssistName, uint8 toggle)
 			LogError("Unable to set group main assist: [{}]\n", results.ErrorMessage().c_str());
 
 	}
+	*/
 }
 
 void Group::DelegatePuller(const char *NewPullerName, uint8 toggle)
@@ -1638,7 +1585,7 @@ void Group::DelegatePuller(const char *NewPullerName, uint8 toggle)
 	// (or himself). All group members in the zone are notified of the new Puller and it is recorded
 	// in the group_leaders table so as to persist across zones.
 	//
-
+	/* WFH doesn't have XTarget (or delegation)
 	bool updateDB = false;
 
 	if(!NewPullerName)
@@ -1677,7 +1624,7 @@ void Group::DelegatePuller(const char *NewPullerName, uint8 toggle)
 			LogError("Unable to set group main puller: [{}]\n", results.ErrorMessage().c_str());
 
 	}
-
+	*/
 }
 
 void Group::NotifyMainTank(Client *c, uint8 toggle)
@@ -1820,6 +1767,7 @@ void Group::UnDelegateMainTank(const char *OldMainTankName, uint8 toggle)
 	// Called when the group Leader removes the Main Tank delegation. Sends a packet to each group member in the zone
 	// informing them of the change and update the group_leaders table.
 	//
+	/* WFH doesn't have XTarget (or delagation)
 	if(OldMainTankName == MainTankName) {
 
 		std::string query = StringFormat("UPDATE group_leaders SET maintank = '' WHERE gid = %i LIMIT 1", GetID());
@@ -1840,6 +1788,7 @@ void Group::UnDelegateMainTank(const char *OldMainTankName, uint8 toggle)
 
 		SetMainTank("");
 	}
+	*/
 }
 
 void Group::UnDelegateMainAssist(const char *OldMainAssistName, uint8 toggle)
@@ -1847,6 +1796,7 @@ void Group::UnDelegateMainAssist(const char *OldMainAssistName, uint8 toggle)
 	// Called when the group Leader removes the Main Assist delegation. Sends a packet to each group member in the zone
 	// informing them of the change and update the group_leaders table.
 	//
+	/* WFH doesn't have XTarget (or delagation)
 	if(OldMainAssistName == MainAssistName) {
 		auto outapp = new EQApplicationPacket(OP_DelegateAbility, sizeof(DelegateAbility_Struct));
 
@@ -1890,6 +1840,7 @@ void Group::UnDelegateMainAssist(const char *OldMainAssistName, uint8 toggle)
 
 		SetMainAssist("");
 	}
+	*/
 }
 
 void Group::UnDelegatePuller(const char *OldPullerName, uint8 toggle)
@@ -1897,6 +1848,7 @@ void Group::UnDelegatePuller(const char *OldPullerName, uint8 toggle)
 	// Called when the group Leader removes the Puller delegation. Sends a packet to each group member in the zone
 	// informing them of the change and update the group_leaders table.
 	//
+	/* WFH doesn't have XTarget (or delagation)
 	if(OldPullerName == PullerName) {
 
 		std::string query = StringFormat("UPDATE group_leaders SET puller = '' WHERE gid = %i LIMIT 1", GetID());
@@ -1917,10 +1869,12 @@ void Group::UnDelegatePuller(const char *OldPullerName, uint8 toggle)
 
 		SetPuller("");
 	}
+	*/
 }
 
 bool Group::IsNPCMarker(Client *c)
 {
+	/* WFH doesn't have XTarget (or delagation)
 	// Returns true if the specified client has been delegated the NPC Marker Role
 	//
 	if(!c)
@@ -1930,13 +1884,15 @@ bool Group::IsNPCMarker(Client *c)
 		return(c->GetName() == NPCMarkerName);
 
 	return false;
-
+	*/
+	return false;
 }
 
 void Group::SetGroupAssistTarget(Mob *m)
 {
 	// Notify all group members in the zone of the new target the Main Assist has selected.
 	//
+	/* WFH doesn't have XTarget (or delagation)
 	AssistTargetID = m ? m->GetID() : 0;
 
 	for(uint32 i = 0; i < MAX_GROUP_MEMBERS; ++i)
@@ -1946,10 +1902,13 @@ void Group::SetGroupAssistTarget(Mob *m)
 			NotifyAssistTarget(members[i]->CastToClient());
 		}
 	}
+	*/
 }
 
 void Group::SetGroupTankTarget(Mob *m)
 {
+	/* WFH doesn't have XTarget (or delagation)
+
 	TankTargetID = m ? m->GetID() : 0;
 
 	for(uint32 i = 0; i < MAX_GROUP_MEMBERS; ++i)
@@ -1959,10 +1918,12 @@ void Group::SetGroupTankTarget(Mob *m)
 			members[i]->CastToClient()->UpdateXTargetType(GroupTankTarget, m);
 		}
 	}
+	*/
 }
 
 void Group::SetGroupPullerTarget(Mob *m)
 {
+	/* WFH doesn't have XTarget (or delagation)
 	PullerTargetID = m ? m->GetID() : 0;
 
 	for(uint32 i = 0; i < MAX_GROUP_MEMBERS; ++i)
@@ -1972,10 +1933,12 @@ void Group::SetGroupPullerTarget(Mob *m)
 			members[i]->CastToClient()->UpdateXTargetType(PullerTarget, m);
 		}
 	}
+	*/
 }
 
 void Group::SetGroupMentor(int percent, char *name)
 {
+	/* WFH doesn't have XTarget (or mentors)
 	mentoree_name = name;
 	mentor_percent = percent;
 	Client *client = entity_list.GetClientByName(name);
@@ -1986,10 +1949,12 @@ void Group::SetGroupMentor(int percent, char *name)
 	auto results = database.QueryDatabase(query);
 	if (!results.Success())
 		LogError("Unable to set group mentor: [{}]\n", results.ErrorMessage().c_str());
+	*/
 }
 
 void Group::ClearGroupMentor()
 {
+	/* WFH doesn't have XTarget (or mentors)
 	mentoree_name.clear();
 	mentor_percent = 0;
 	mentoree = nullptr;
@@ -1997,12 +1962,13 @@ void Group::ClearGroupMentor()
 	auto results = database.QueryDatabase(query);
 	if (!results.Success())
 		LogError("Unable to clear group mentor: [{}]\n", results.ErrorMessage().c_str());
+	*/
 }
 
 void Group::NotifyAssistTarget(Client *c)
 {
 	// Send a packet to the specified client notifying them of the group target selected by the Main Assist.
-
+	/* WFH doesn't have XTarget (or delagation)
 	if(!c)
 		return;
 
@@ -2021,31 +1987,37 @@ void Group::NotifyAssistTarget(Client *c)
 	Mob *m = entity_list.GetMob(AssistTargetID);
 
 	c->UpdateXTargetType(GroupAssistTarget, m);
+	*/
 
 }
 
 void Group::NotifyTankTarget(Client *c)
 {
+	/*
 	if(!c)
 		return;
 
 	Mob *m = entity_list.GetMob(TankTargetID);
 
 	c->UpdateXTargetType(GroupTankTarget, m);
+	*/
 }
 
 void Group::NotifyPullerTarget(Client *c)
 {
+	/* WFH doesn't have XTarget (or notifications)
 	if(!c)
 		return;
 
 	Mob *m = entity_list.GetMob(PullerTargetID);
 
 	c->UpdateXTargetType(PullerTarget, m);
+	*/
 }
 
 void Group::DelegateMarkNPC(const char *NewNPCMarkerName)
 {
+	/* WFH doesn't have XTarget (or notifications)
 	// Called when the group leader has delegated the Mark NPC ability to a group member.
 	// Notify all group members in the zone of the change and save the change in the group_leaders
 	// table to persist across zones.
@@ -2067,10 +2039,12 @@ void Group::DelegateMarkNPC(const char *NewNPCMarkerName)
     auto results = database.QueryDatabase(query);
 	if (!results.Success())
 		LogError("Unable to set group mark npc: [{}]\n", results.ErrorMessage().c_str());
+	*/
 }
 
 void Group::NotifyMarkNPC(Client *c)
 {
+	/* WFH doesn't have XTarget (or notifications)
 	// Notify the specified client who the group member is who has been delgated the Mark NPC ability.
 
 	if(!c)
@@ -2096,10 +2070,12 @@ void Group::NotifyMarkNPC(Client *c)
 	c->QueuePacket(outapp);
 
 	safe_delete(outapp);
-
+	*/
 }
+
 void Group::SetNPCMarker(const char *NewNPCMarkerName)
 {
+	/* WFH doesn't have XTarget (or notifications)
 	NPCMarkerName = NewNPCMarkerName;
 
 	Client *m = entity_list.GetClientByName(NPCMarkerName.c_str());
@@ -2108,10 +2084,12 @@ void Group::SetNPCMarker(const char *NewNPCMarkerName)
 		NPCMarkerID = 0;
 	else
 		NPCMarkerID = m->GetID();
+	*/
 }
 
 void Group::UnDelegateMarkNPC(const char *OldNPCMarkerName)
 {
+	/* WFH doesn't have XTarget (or notifications)
 	// Notify all group members in the zone that the Mark NPC ability has been rescinded from the specified
 	// group member.
 
@@ -2148,11 +2126,12 @@ void Group::UnDelegateMarkNPC(const char *OldNPCMarkerName)
     auto results = database.QueryDatabase(query);
 	if (!results.Success())
 		LogError("Unable to clear group marknpc: [{}]\n", results.ErrorMessage().c_str());
-
+	*/
 }
 
 void Group::SaveGroupLeaderAA()
 {
+	/*
 	// Stores the Group Leaders Leadership AA data from the Player Profile as a blob in the group_leaders table.
 	// This is done so that group members not in the same zone as the Leader still have access to this information.
 	auto queryBuffer = new char[sizeof(GroupLeadershipAA_Struct) * 2 + 1];
@@ -2165,7 +2144,7 @@ void Group::SaveGroupLeaderAA()
     auto results = database.QueryDatabase(query);
 	if (!results.Success())
 		LogError("Unable to store LeadershipAA: [{}]\n", results.ErrorMessage().c_str());
-
+	*/
 }
 
 void Group::UnMarkNPC(uint16 ID)
@@ -2175,7 +2154,7 @@ void Group::UnMarkNPC(uint16 ID)
 	// If the given mob has been marked by this group, it is removed from the list of marked NPCs.
 	// The primary reason for doing this is so that when a new group member joins or zones in, we
 	// send them correct details of which NPCs are currently marked.
-
+	/* WFH doesn't have XTarget (or marking)
 	if(AssistTargetID == ID)
 		AssistTargetID = 0;
 
@@ -2194,6 +2173,7 @@ void Group::UnMarkNPC(uint16 ID)
 			UpdateXTargetMarkedNPC(i + 1, nullptr);
 		}
 	}
+	*/
 }
 
 void Group::SendMarkedNPCsToMember(Client *c, bool Clear)
@@ -2202,6 +2182,7 @@ void Group::SendMarkedNPCsToMember(Client *c, bool Clear)
 	// If Clear == true, then tell the client to unmark the NPCs (when a member disbands).
 	//
 	//
+	/* WFH doesn't have XTarget (or marking)
 	if(!c)
 		return;
 
@@ -2231,6 +2212,7 @@ void Group::SendMarkedNPCsToMember(Client *c, bool Clear)
 	}
 
 	safe_delete(outapp);
+	*/
 }
 
 void Group::ClearAllNPCMarks()
@@ -2238,6 +2220,7 @@ void Group::ClearAllNPCMarks()
 	// This method is designed to be called when the number of members in the group drops below 3 and leadership AA
 	// may no longer be used. It removes all NPC marks.
 	//
+	/* WFH doesn't have XTarget (or marking)
 	for(uint8 i = 0; i < MAX_GROUP_MEMBERS; ++i)
 		if(members[i] && members[i]->IsClient())
 			SendMarkedNPCsToMember(members[i]->CastToClient(), true);
@@ -2254,6 +2237,7 @@ void Group::ClearAllNPCMarks()
 
 		MarkedNPCs[i] = 0;
 	}
+	*/
 
 }
 
