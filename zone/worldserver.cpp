@@ -205,42 +205,39 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 		break;
 	}
 	case ServerOP_ChannelMessage: {
-		if (!is_zone_loaded)
-			break;
-		ServerChannelMessage_Struct* scm = (ServerChannelMessage_Struct*)pack->pBuffer;
-		if (scm->deliverto[0] == 0) {
-			entity_list.ChannelMessageFromWorld(scm->from, scm->to, scm->chan_num, scm->guilddbid, scm->language, scm->lang_skill, scm->message);
+		if (!is_zone_loaded) {
+				break;
 		}
-		else {
-			Client* client = entity_list.GetClientByName(scm->deliverto);
-			if (client && client->Connected()) {
-				if (scm->chan_num == ChatChannel_TellEcho) {
-					if (scm->queued == 1) // tell was queued
+		
+		ServerChannelMessage_Struct *scm = (ServerChannelMessage_Struct *) pack->pBuffer;
+		if (scm->deliverto[0] == 0) {
+			entity_list.ChannelMessageFromWorld(scm->from, scm->to, scm->chan_num, scm->guilddbid, scm->language, scm->lang_skill,
+													scm->message);
+		} else {
+			Client *client = entity_list.GetClientByName(scm->deliverto);
+			if (client) {
+				if (client->Connected()) {
+					if (scm->queued == 1) { // tell was queued
 						client->Tell_StringID(QUEUED_TELL, scm->to, scm->message);
-					else if (scm->queued == 2) // tell queue was full
+					} else if (scm->queued == 2) { // tell queue was full
 						client->Tell_StringID(QUEUE_TELL_FULL, scm->to, scm->message);
-					else if (scm->queued == 3) // person was offline
+					} else if (scm->queued == 3) { // person was offline
 						client->MessageString(Chat::EchoTell, TOLD_NOT_ONLINE, scm->to);
-					else // normal tell echo "You told Soanso, 'something'"
-							// tell echo doesn't use language, so it looks normal to you even if nobody can understand your tells
+					} else { // normal stuff
 						client->ChannelMessageSend(scm->from, scm->to, scm->chan_num, 0, 100, scm->message);
-				}
-				else if (scm->chan_num == ChatChannel_Tell) {
-					client->ChannelMessageSend(scm->from, scm->to, scm->chan_num, scm->language, scm->lang_skill, scm->message);
-					if (scm->queued == 0) { // this is not a queued tell
-						// if it's a tell, echo back to acknowledge it and make it show on the sender's client
-						scm->chan_num = ChatChannel_TellEcho;
-						memset(scm->deliverto, 0, sizeof(scm->deliverto));
-						strcpy(scm->deliverto, scm->from);
-						SendPacket(pack);
+						if (!scm->noreply && scm->chan_num != ChatChannel_Group) { //dont echo on group chat
+							// if it's a tell, echo back so it shows up
+							scm->noreply = true;
+							scm->chan_num = ChatChannel_TellEcho;
+							memset(scm->deliverto, 0, sizeof(scm->deliverto));
+							strcpy(scm->deliverto, scm->from);
+							SendPacket(pack);
+						}
 					}
 				}
-				else {
-					client->ChannelMessageSend(scm->from, scm->to, scm->chan_num, scm->language, scm->lang_skill, scm->message);
-				}
 			}
-		}
 		break;
+		}
 	}
 	case ServerOP_VoiceMacro: {
 
