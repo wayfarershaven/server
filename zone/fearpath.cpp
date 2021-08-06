@@ -30,8 +30,7 @@ extern Zone* zone;
 #define FEAR_PATHING_DEBUG
 
 //this is called whenever we are damaged to process possible fleeing
-void Mob::CheckFlee()
-{
+void Mob::CheckFlee() {
 
 	// if mob is dead why would you run?
 	if (GetHP() == 0) {
@@ -71,18 +70,16 @@ void Mob::CheckFlee()
 	}
 
 	// If no special flee_percent check for Gray or Other con rates
-	if (GetLevelCon(hate_top->GetLevel(), GetLevel()) == CON_GRAY && flee_ratio == 0 && RuleB(Combat, FleeGray) &&
-		GetLevel() <= RuleI(Combat, FleeGrayMaxLevel)) {
+	if(hate_top != nullptr && GetLevelCon(hate_top->GetLevel(), GetLevel()) == CON_GRAY && flee_ratio == 0 && GetLevel() <= RuleI(Combat, FleeGrayMaxLevel)) {
 		flee_ratio = RuleI(Combat, FleeGrayHPRatio);
 		LogFlee("Mob [{}] using combat flee gray hp_ratio [{}] flee_ratio [{}]", GetCleanName(), hp_ratio, flee_ratio);
-	}
-	else if (flee_ratio == 0) {
+	} else if (flee_ratio == 0) {
 		flee_ratio = RuleI(Combat, FleeHPRatio);
 		LogFlee("Mob [{}] using combat flee hp_ratio [{}] flee_ratio [{}]", GetCleanName(), hp_ratio, flee_ratio);
 	}
 
-	bool mob_has_low_enough_health_to_flee = hp_ratio >= flee_ratio;
-	if (mob_has_low_enough_health_to_flee) {
+	// Mob does not have low enough health to flee
+	if(hp_ratio >= flee_ratio) {
 		LogFlee(
 			"Mob [{}] does not have low enough health to flee | hp_ratio [{}] flee_ratio [{}]",
 			GetCleanName(),
@@ -137,13 +134,7 @@ void Mob::CheckFlee()
 	);
 
 	// If we got here we are allowed to roll on flee chance if there is not other hated NPC's in the area.
-	// ALWAYS_FLEE, skip roll
-	// if FleeIfNotAlone is true, we skip alone check
-	// roll chance
-	if (GetSpecialAbility(ALWAYS_FLEE) ||
-		((RuleB(Combat, FleeIfNotAlone) || entity_list.GetHatedCount(hate_top, this, true) == 0) &&
-		 zone->random.Roll(flee_chance))) {
-
+	if (entity_list.GetHatedCount(hate_top, this, true) == 0 && zone->random.Roll(flee_chance)) {
 		LogFlee(
 			"Passed all checks to flee | Mob [{}] con [{}] hp_ratio [{}] flee_ratio [{}] flee_chance [{}]",
 			GetCleanName(),
@@ -170,24 +161,21 @@ void Mob::ProcessFlee()
 		return;
 	}
 
-	int hpratio = GetIntHPRatio();
+    	//see if we are still dying, if so, do nothing
+    	// If no special flee_percent check for Green or Other con rates
 	int fleeratio = GetSpecialAbility(FLEE_PERCENT); // if a special flee_percent exists
-	Mob *hate_top = GetHateTop();
 
-	// If no special flee_percent check for Gray or Other con rates
-	if(hate_top != nullptr && GetLevelCon(hate_top->GetLevel(), GetLevel()) == CON_GRAY && fleeratio == 0 && RuleB(Combat, FleeGray)) {
+    	if(target != nullptr && GetLevelCon(target->GetLevel(), GetLevel()) == CON_GRAY && fleeratio == 0 && GetLevel() <= RuleI(Combat, FleeGrayMaxLevel)) {
 		fleeratio = RuleI(Combat, FleeGrayHPRatio);
 	} else if(fleeratio == 0) {
 		fleeratio = RuleI(Combat, FleeHPRatio );
 	}
 
-	// Mob is still too low. Keep Running
-	if(hpratio < fleeratio) {
+    	if (GetHPRatio() < fleeratio) {
 		return;
 	}
 
 	//we are not dying anymore... see what we do next
-
 	flee_mode = false;
 
 	//see if we are legitimately feared or blind now
