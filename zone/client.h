@@ -191,14 +191,6 @@ struct XTarget_Struct
 	char Name[65];
 };
 
-typedef enum {
-	Killed_Other,
-	Killed_NPC,
-	Killed_ENV,
-	Killed_DUEL,
-	Killed_PVP
-} KilledByTypes;
-
 struct RespawnOption
 {
 	std::string name;
@@ -245,7 +237,7 @@ public:
 	bool GotoPlayer(std::string player_name);
 
 	//abstract virtual function implementations required by base abstract class
-	virtual bool Death(Mob* killerMob, int32 damage, uint16 spell_id, EQEmu::skills::SkillType attack_skill, uint8 killedby = 0);
+	virtual bool Death(Mob* killerMob, int32 damage, uint16 spell_id, EQEmu::skills::SkillType attack_skill);
 	virtual void Damage(Mob* from, int32 damage, uint16 spell_id, EQEmu::skills::SkillType attack_skill, bool avoidable = true, int8 buffslot = -1, bool iBuffTic = false, eSpecialAttacks special = eSpecialAttacks::None);
     virtual bool Attack(Mob* other, int Hand = EQEmu::invslot::slotPrimary, bool FromRiposte = false, bool IsStrikethrough = false, bool IsFromSpell = false,
 			ExtraAttackOptions *opts = nullptr);
@@ -580,7 +572,7 @@ public:
 
 	inline uint32 GetEXP() const { return m_pp.exp; }
 
-	bool UpdateLDoNPoints(int32 points, uint32 theme);
+	bool UpdateLDoNPoints(uint32 theme_id, int points);
 	void SetPVPPoints(uint32 Points) { m_pp.PVPCurrentPoints = Points; }
 	uint32 GetPVPPoints() { return m_pp.PVPCurrentPoints; }
 	void AddPVPPoints(uint32 Points);
@@ -613,10 +605,10 @@ public:
 	uint32 GetTotalSecondsPlayed() { return(TotalSecondsPlayed); }
 	virtual void SetLevel(uint8 set_level, bool command = false);
 
-	void GoToBind();
+	void GoToBind(uint8 bindnum = 0);
 	void GoToSafeCoords(uint16 zone_id, uint16 instance_id);
-	void Gate();
-	void SetBindPoint(int to_zone = -1, int to_instance = 0, const glm::vec3& location = glm::vec3());
+	void Gate(uint8 bindnum = 0);
+	void SetBindPoint(int bind_num = 0, int to_zone = -1, int to_instance = 0, const glm::vec3& location = glm::vec3());
 	void SetStartZone(uint32 zoneid, float x = 0.0f, float y =0.0f, float z = 0.0f);
 	uint32 GetStartZone(void);
 	void MovePC(const char* zonename, float x, float y, float z, float heading, uint8 ignorerestrictions = 0, ZoneMode zm = ZoneSolicited);
@@ -1072,8 +1064,10 @@ public:
 	uint32 GetLDoNWinsTheme(uint32 t);
 	uint32 GetLDoNLossesTheme(uint32 t);
 	uint32 GetLDoNPointsTheme(uint32 t);
-	void UpdateLDoNWins(uint32 t, int32 n);
-	void UpdateLDoNLosses(uint32 t, int32 n);
+	void AddLDoNWin(uint32 theme_id);
+	void AddLDoNLoss(uint32 theme_id);
+	void RemoveLDoNWin(uint32 theme_id);
+	void RemoveLDoNLoss(uint32 theme_id);
 	void CheckLDoNHail(Mob *target);
 	void CheckEmoteHail(Mob *target, const char* message);
 

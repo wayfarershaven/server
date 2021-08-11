@@ -801,9 +801,10 @@ bool Client::CheckFizzle(uint16 spell_id)
 	int spellDifficulty = (minLvl * 5 < 255) ? minLvl * 5 : 255;
 
 	// CALCULATE EFFECTIVE CASTING SKILL WITH BONUSES
-	int bonusCastingLevel = itembonuses.effective_casting_level + spellbonuses.effective_casting_level + aabonuses.effective_casting_level;
+	int bonusCastingLevel = itembonuses.adjusted_casting_skill + spellbonuses.adjusted_casting_skill + aabonuses.adjusted_casting_skill;
 	int casterSkill = GetSkill(spells[spell_id].skill) + bonusCastingLevel * 5;
 	casterSkill = (casterSkill < 255) ? casterSkill : 255;
+	Log(Logs::Detail, Logs::Spells, "Caster Skill - itembonus.ACS(112) [%d] + spellbonus.ACS(112) [%d] + aabonus.ACS(112) [%d] = TotalBonusCastingLevel [%d] | casterSkill [%d] (Max 255)", itembonuses.adjusted_casting_skill, spellbonuses.adjusted_casting_skill, aabonuses.adjusted_casting_skill, bonusCastingLevel, casterSkill);
 
 	// CALCULATE EFFECTIVE SPECIALIZATION SKILL VALUE
 	float specializeSkill = GetSpecializeSkillValue(spell_id);
@@ -4199,34 +4200,21 @@ bool Mob::SpellOnTarget(uint16 spell_id, Mob *spelltar, bool reflect, bool use_r
 
 void Corpse::CastRezz(uint16 spellid, Mob* Caster)
 {
-	Log(Logs::General, Logs::Spells, "Corpse::CastRezz spellid %i, Rezzed() is %i, rezzexp is %i rez_timer enabled: %i", spellid,IsRezzed(),rez_experience, corpse_rez_timer.Enabled());
+	Log(Logs::Detail, Logs::Spells, "Corpse::CastRezz spellid %i, Rezzed() is %i, rezzexp is %i", spellid,IsRezzed(),rez_experience);
 
-	// Rez timer has expired, only GMs can rez at this point. (uses rezzable)
-	if(!IsRezzable())
-	{
-		if(Caster && Caster->IsClient() && !Caster->CastToClient()->GetGM())
-		{
-			Caster->Message_StringID(0, REZZ_ALREADY_PENDING);
-			Caster->Message_StringID(0, CORPSE_TOO_OLD);
-			return;
-		}
-	}
-
-	// Corpse has been rezzed, but timer is still active. Players can corpse gate, GMs can rez for XP. (uses is_rezzed)
-	if(IsRezzed())
-	{
+	if(IsRezzed()){
 		if(Caster && Caster->IsClient())
-		{
-			if(Caster->CastToClient()->GetGM())
-			{
-				rez_experience = gm_rez_experience;
-				gm_rez_experience = 0;
-			}
-			else {
-				rez_experience = 0;
-			}
-		}
+			Caster->Message(13,"This character has already been resurrected.");
+
+		return;
 	}
+	/*
+	if(!can_rez) {
+		if(Caster && Caster->IsClient())
+			Caster->Message_StringID(0, CORPSE_TOO_OLD);
+		return;
+	}
+	*/
 
 	auto outapp = new EQApplicationPacket(OP_RezzRequest, sizeof(Resurrect_Struct));
 	Resurrect_Struct* rezz = (Resurrect_Struct*) outapp->pBuffer;
@@ -5091,7 +5079,7 @@ float Mob::GetAOERange(uint16 spell_id) {
 	if(range == 0)
 		range = 10;	//something....
 
-	if(IsBardSong(spell_id)) {
+	if (IsBardSong(spell_id) && IsBeneficialSpell(spell_id)) {
 		//Live AA - Extended Notes, SionachiesCrescendo
 		float song_bonus = static_cast<float>(aabonuses.SongRange + spellbonuses.SongRange + itembonuses.SongRange);
 		range += range*song_bonus /100.0f;
@@ -5818,7 +5806,7 @@ int Mob::GetCasterLevel(uint16 spell_id) {
 	//level += itembonuses.effective_casting_level + spellbonuses.effective_casting_level + aabonuses.effective_casting_level;
 	if (GetClass() == BARD)
 		level += itembonuses.effective_casting_level + aabonuses.effective_casting_level;
-	Log(Logs::Detail, Logs::Spells, "Determined effective casting level %d+%d+%d=%d", GetLevel(), spellbonuses.effective_casting_level, itembonuses.effective_casting_level, level);
+	Log(Logs::Detail, Logs::Spells, "Determined effective casting level(72) %d+%d+%d=%d", GetLevel(), spellbonuses.effective_casting_level, itembonuses.effective_casting_level, level);
 	return std::max(1, level);
 }
 

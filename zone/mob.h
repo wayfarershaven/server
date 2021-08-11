@@ -209,9 +209,7 @@ public:
 		uint8		in_bracertexture,
 		uint8		in_handtexture,
 		uint8		in_legtexture,
-		uint8		in_feettexture,
-		uint8		in_chesttexture
-
+		uint8		in_feettexture
 	);
 	virtual ~Mob();
 
@@ -478,7 +476,7 @@ public:
 	virtual uint32 IsEliteMaterialItem(uint8 material_slot) const;
 	bool CanClassEquipItem(uint32 item_id);
 	bool AffectedBySpellExcludingSlot(int slot, int effect);
-	virtual bool Death(Mob* killerMob, int32 damage, uint16 spell_id, EQEmu::skills::SkillType attack_skill, uint8 killedby = 0) = 0;
+	virtual bool Death(Mob* killerMob, int32 damage, uint16 spell_id, EQEmu::skills::SkillType attack_skill) = 0;
 	virtual void Damage(Mob* from, int32 damage, uint16 spell_id, EQEmu::skills::SkillType attack_skill,
 						bool avoidable = true, int8 buffslot = -1, bool iBuffTic = false, eSpecialAttacks special = eSpecialAttacks::None) = 0;
 	inline virtual void SetHP(int32 hp) { if (hp >= max_hp) cur_hp = max_hp; else cur_hp = hp;}
@@ -618,8 +616,8 @@ public:
 	void Warp(const glm::vec3& location);
 	inline bool IsMoving() const { return moving; }
 	virtual void SetMoving(bool move) { moving = move; m_Delta = glm::vec4(); }
-	virtual void GoToBind() { }
-	virtual void Gate();
+	virtual void GoToBind(uint8 bindnum = 0) { }
+	virtual void Gate(uint8 bindnum = 0);
 	int GetWalkspeed() const { return(_GetWalkSpeed()); }
 	int GetRunspeed() const { return(_GetRunSpeed()); }
 	void SetCurrentSpeed(int in);

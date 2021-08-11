@@ -46,11 +46,8 @@ RULE_INT(Character, DeathExpLossMaxLevel, 255)	// Any level greater than this wi
 RULE_INT(Character, DeathItemLossLevel, 10)
 RULE_INT(Character, DeathExpLossMultiplier, 3) //Adjust how much exp is lost
 RULE_BOOL(Character, UseDeathExpLossMult, false) //Adjust to use the above multiplier or to use code default.
-RULE_INT(Character, CorpseDecayTimeMS, 604800000)
-RULE_INT( Character, EmptyCorpseDecayTimeMS, 10800000 ) // 3 hours
+RULE_INT(Character, CorpseDecayTimeMS, 10800000)
 RULE_INT(Character, CorpseResTimeMS, 10800000) // time before cant res corpse(3 hours)
-RULE_INT( Character, DuelCorpseResTimeMS, 600000 ) // time before cant res corpse after a duel (10 minutes)
-RULE_INT( Character, CorpseOwnerOnlineTimeMS, 30000 ) // how often corpse will check if its owner is online
 RULE_BOOL(Character, LeaveCorpses, true)
 RULE_BOOL(Character, LeaveNakedCorpses, false)
 RULE_INT(Character, MaxDraggedCorpses, 2)

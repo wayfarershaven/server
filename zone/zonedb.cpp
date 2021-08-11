@@ -1251,9 +1251,9 @@ bool ZoneDatabase::LoadCharacterPotions(uint32 character_id, PlayerProfile_Struc
 }
 
 bool ZoneDatabase::LoadCharacterBindPoint(uint32 character_id, PlayerProfile_Struct *pp) {
-	std::string query = StringFormat("SELECT `zone_id`, `instance_id`, `x`, `y`, `z`, `heading` FROM "
-											 "`%s` WHERE `id` = %u LIMIT 1",
-									 Database::CHARACTER_BIND_TABLE.c_str(), character_id);
+	std::string query = StringFormat("SELECT `slot`, `zone_id`, `instance_id`, `x`, `y`, `z`, `heading` FROM "
+									 "`character_bind` WHERE `id` = %u LIMIT 5",
+									 character_id);
 	auto results = database.QueryDatabase(query);
 
 	if (!results.RowCount()) {
@@ -1261,24 +1261,43 @@ bool ZoneDatabase::LoadCharacterBindPoint(uint32 character_id, PlayerProfile_Str
 	}
 
 	for (auto row = results.begin(); row != results.end(); ++row) {
-		pp->binds[0].zoneId = atoi(row[0]);
-		pp->binds[0].instance_id = atoi(row[1]);
-		pp->binds[0].x = atoi(row[2]);
-		pp->binds[0].y = atoi(row[3]);
-		pp->binds[0].z = atoi(row[4]);
-		pp->binds[0].heading = atoi(row[5]);
-	}
+		int index = atoi(row[0]);
+		if (index < 0 || index > 4) {
+			continue;
+		}
 
-	pp->binds[1] = pp->binds[0];
-	pp->binds[2] = pp->binds[0];
-	pp->binds[3] = pp->binds[0];
-	pp->binds[4] = pp->binds[0];
+		pp->binds[index].zoneId = atoi(row[1]);
+		pp->binds[index].instance_id = atoi(row[2]);
+		pp->binds[index].x = atoi(row[3]);
+		pp->binds[index].y = atoi(row[4]);
+		pp->binds[index].z = atoi(row[5]);
+		pp->binds[index].heading = atoi(row[6]);
+	}
 	return true;
 }
 
 bool ZoneDatabase::SaveCharacterLanguage(uint32 character_id, uint32 lang_id, uint32 value){
 	std::string query = StringFormat("REPLACE INTO `character_languages` (id, lang_id, value) VALUES (%u, %u, %u)", character_id, lang_id, value); QueryDatabase(query);
 	Log(Logs::General, Logs::None, "ZoneDatabase::SaveCharacterLanguage for character ID: %i, lang_id:%u value:%u done", character_id, lang_id, value);
+	return true;
+}
+
+bool ZoneDatabase::SaveCharacterBindPoint(uint32 character_id, const BindStruct &bind, uint32 bind_num) {
+	/* Save Home Bind Point */
+	std::string query =
+			StringFormat("REPLACE INTO `character_bind` (id, zone_id, instance_id, x, y, z, heading, slot) VALUES (%u, "
+						 "%u, %u, %f, %f, %f, %f, %i)",
+						 character_id, bind.zoneId, bind.instance_id, bind.x, bind.y, bind.z, bind.heading, bind_num);
+
+	Log(Logs::General, Logs::None, "ZoneDatabase::SaveCharacterBindPoint for character ID: %i zone_id: %u "
+								   "instance_id: %u position: %f %f %f %f bind_num: %u",
+		character_id, bind.zoneId, bind.instance_id, bind.x, bind.y, bind.z, bind.heading, bind_num);
+
+	auto results = QueryDatabase(query);
+	if (!results.RowsAffected()) {
+		Log(Logs::General, Logs::None, "ERROR Bind Home Save: %s. %s", results.ErrorMessage().c_str(),
+			query.c_str());
+	}
 	return true;
 }
 
@@ -3957,6 +3976,18 @@ uint32 ZoneDatabase::SendCharacterCorpseToGraveyard(uint32 dbid, uint32 zone_id,
 	return dbid;
 }
 
+void ZoneDatabase::SendCharacterCorpseToNonInstance(uint32 corpse_db_id)
+{
+	if (corpse_db_id != 0)
+	{
+		auto query = fmt::format(SQL(
+			UPDATE character_corpses SET instance_id = 0 WHERE id = {};
+		), corpse_db_id);
+
+		QueryDatabase(query);
+	}
+}
+
 uint32 ZoneDatabase::GetCharacterCorpseDecayTimer(uint32 corpse_db_id){
 	std::string query = StringFormat("SELECT(UNIX_TIMESTAMP() - UNIX_TIMESTAMP(time_of_death)) FROM `character_corpses` WHERE `id` = %d AND NOT `time_of_death` = 0", corpse_db_id);
 	auto results = QueryDatabase(query);
@@ -3980,55 +4011,19 @@ uint32 ZoneDatabase::UpdateCharacterCorpse(uint32 db_id, uint32 char_id, const c
 									 "`hair_style`  = %u, `face` = %u, `beard` = %u, `drakkin_heritage` = %u, "
 									 "`drakkin_tattoo`  = %u, `drakkin_details` = %u, `wc_1` = %u, "
 									 "`wc_2` = %u, `wc_3` = %u, `wc_4` = %u, `wc_5` = %u, `wc_6` = %u, "
-									 "`wc_7` = %u, `wc_8` = %u, `wc_9` = %u, `killedby` = %u, `rezzable` = %d, "
-		  							 "`rez_time` = %u, `is_rezzed` = %u "
+									 "`wc_7` = %u, `wc_8` = %u, `wc_9` = %u "
 									 "WHERE `id` = %u",
-									 EscapeString(char_name).c_str(),
-									 zone_id,
-									 instance_id,
-									 char_id,
-									 position.x,
-									 position.y,
-									 position.z,
-									 position.w,
-									 guild_id,
-									 dbpc->locked,
-									 dbpc->exp,
-									 dbpc->size,
-									 dbpc->level,
-									 dbpc->race,
-									 dbpc->gender,
-									 dbpc->class_,
-									 dbpc->deity,
-									 dbpc->texture,
-									 dbpc->helmtexture,
-									 dbpc->copper,
-									 dbpc->silver,
-									 dbpc->gold,
-									 dbpc->plat,
-									 dbpc->haircolor,
-									 dbpc->beardcolor,
-									 dbpc->eyecolor1,
-									 dbpc->eyecolor2,
-									 dbpc->hairstyle,
-									 dbpc->face,
-									 dbpc->beard,
-									 dbpc->drakkin_heritage,
-									 dbpc->drakkin_tattoo,
-									 dbpc->drakkin_details,
-									 dbpc->item_tint.Head.Color,
-									 dbpc->item_tint.Chest.Color,
-									 dbpc->item_tint.Arms.Color,
-									 dbpc->item_tint.Wrist.Color,
-									 dbpc->item_tint.Hands.Color,
-									 dbpc->item_tint.Legs.Color,
-									 dbpc->item_tint.Feet.Color,
-									 dbpc->item_tint.Primary.Color,
-									 dbpc->item_tint.Secondary.Color,
-									 dbpc->killedby,
-									 dbpc->rezzable,
-									 dbpc->rez_time,
-									 is_rezzed,
+									 EscapeString(char_name).c_str(), zone_id, instance_id, char_id,
+									 position.x, position.y, position.z, position.w, guild_id,
+									 dbpc->locked, dbpc->exp, dbpc->size, dbpc->level, dbpc->race,
+									 dbpc->gender, dbpc->class_, dbpc->deity, dbpc->texture,
+									 dbpc->helmtexture, dbpc->copper, dbpc->silver, dbpc->gold,
+									 dbpc->plat, dbpc->haircolor, dbpc->beardcolor, dbpc->eyecolor1,
+									 dbpc->eyecolor2, dbpc->hairstyle, dbpc->face, dbpc->beard,
+									 dbpc->drakkin_heritage, dbpc->drakkin_tattoo, dbpc->drakkin_details,
+									 dbpc->item_tint.Head.Color, dbpc->item_tint.Chest.Color, dbpc->item_tint.Arms.Color,
+									 dbpc->item_tint.Wrist.Color, dbpc->item_tint.Hands.Color, dbpc->item_tint.Legs.Color,
+									 dbpc->item_tint.Feet.Color, dbpc->item_tint.Primary.Color, dbpc->item_tint.Secondary.Color,
 									 db_id);
 	auto results = QueryDatabase(query);
 	/*
@@ -4099,10 +4094,7 @@ uint32 ZoneDatabase::SaveCharacterCorpse(uint32 charid, const char *charname, ui
 		"`wc_6` = %u, "
 		"`wc_7` = %u, "
 		"`wc_8` = %u, "
-		"`wc_9`	= %u, "
-		"`killedby` = %u, "
-		"`rezzable` = %d, "
-		"`rez_time` = %u",
+		"`wc_9`	= %u ",
 		EscapeString(charname).c_str(),
 		zoneid,
 		instanceid,
@@ -4144,10 +4136,7 @@ uint32 ZoneDatabase::SaveCharacterCorpse(uint32 charid, const char *charname, ui
 		dbpc->item_tint.Legs.Color,
 		dbpc->item_tint.Feet.Color,
 		dbpc->item_tint.Primary.Color,
-		dbpc->item_tint.Secondary.Color,
-		dbpc->killedby,
-		dbpc->rezzable,
-		dbpc->rez_time);
+		dbpc->item_tint.Secondary.Color);
 
 	auto results = QueryDatabase(query);
 	uint32 last_insert_id = results.LastInsertedID();
@@ -4301,10 +4290,7 @@ bool ZoneDatabase::LoadCharacterCorpseData(uint32 corpse_id, PlayerCorpse_Struct
 		"`wc_6`, "
 		"`wc_7`, "
 		"`wc_8`, "
-		"`wc_9`, "
-		"killedby, "
-		"rezzable, "
-		"rez_time "
+		"`wc_9` "
 		"FROM "
 		"character_corpses "
 		"WHERE `id` = %u",
@@ -4346,9 +4332,6 @@ bool ZoneDatabase::LoadCharacterCorpseData(uint32 corpse_id, PlayerCorpse_Struct
 		pcs->item_tint.Feet.Color = atoul(row[i++]);		// wc_7,
 		pcs->item_tint.Primary.Color = atoul(row[i++]);		// wc_8,
 		pcs->item_tint.Secondary.Color = atoul(row[i++]);	// wc_9
-		pcs->killedby = atoi(row[i++]);						// killedby
-		pcs->rezzable = atoi(row[i++]);						// rezzable
-		pcs->rez_time = atoul(row[i++]);					// rez_time
 	}
 	query = StringFormat(
 		"SELECT                       \n"

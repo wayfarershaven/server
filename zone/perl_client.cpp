@@ -928,24 +928,24 @@ XS(XS_Client_UpdateLDoNPoints)
 {
 	dXSARGS;
 	if (items != 3)
-		Perl_croak(aTHX_ "Usage: Client::UpdateLDoNPoints(THIS, points, theme)");
+		Perl_croak(aTHX_ "Usage: Client::UpdateLDoNPoints(THIS, uint32 theme_id, int points)"); // @categories Currency and Points
 	{
-		Client *		THIS;
-		bool		RETVAL;
-		int32		points = (int32)SvIV(ST(1));
-		uint32		theme = (uint32)SvUV(ST(2));
+	Client *		THIS;
+	bool RETVAL;
+	uint32 theme_id = (uint32) SvUV(ST(1));
+	int points = (int) SvIV(ST(2));
 
-		if (sv_derived_from(ST(0), "Client")) {
-			IV tmp = SvIV((SV*)SvRV(ST(0)));
-			THIS = INT2PTR(Client *,tmp);
-		}
-		else
-			Perl_croak(aTHX_ "THIS is not of type Client");
-		if(THIS == nullptr)
-			Perl_croak(aTHX_ "THIS is nullptr, avoiding crash.");
+	if (sv_derived_from(ST(0), "Client")) {
+		IV tmp = SvIV((SV*)SvRV(ST(0)));
+		THIS = INT2PTR(Client *,tmp);
+	}
+	else
+		Perl_croak(aTHX_ "THIS is not of type Client");
+	if(THIS == nullptr)
+		Perl_croak(aTHX_ "THIS is nullptr, avoiding crash.");
 
-		RETVAL = THIS->UpdateLDoNPoints(points, theme);
-		ST(0) = boolSV(RETVAL);
+	RETVAL = THIS->UpdateLDoNPoints(theme_id, points);
+	ST(0) = boolSV(RETVAL);
 		sv_2mortal(ST(0));
 	}
 	XSRETURN(1);
@@ -1098,7 +1098,7 @@ XS(XS_Client_SetBindPoint)
 			new_z = (float)SvNV(ST(5));
 		}
 
-        THIS->SetBindPoint(to_zone, to_instance, glm::vec3(new_x, new_y, new_z));
+		THIS->SetBindPoint(0, to_zone, to_instance, glm::vec3(new_x, new_y, new_z));
 	}
 	XSRETURN_EMPTY;
 }
@@ -6559,6 +6559,63 @@ XS(XS_Client_Popup2)
     XSRETURN_EMPTY;
 }
 
+XS(XS_Client_AddLDoNLoss);
+XS(XS_Client_AddLDoNLoss) {
+dXSARGS;
+if (items != 2)
+Perl_croak(aTHX_ "Usage: Client::AddLDoNLoss(THIS, uint32 theme_id)");
+{
+Client* THIS;
+uint32 theme_id = (uint32) SvUV(ST(1));
+
+THIS->AddLDoNLoss(theme_id);
+}
+XSRETURN_EMPTY;
+}
+
+XS(XS_Client_AddLDoNWin);
+XS(XS_Client_AddLDoNWin) {
+dXSARGS;
+if (items != 2)
+Perl_croak(aTHX_ "Usage: Client::AddLDoNWin(THIS, uint32 theme_id)");
+{
+Client *THIS;
+uint32 theme_id = (uint32) SvUV(ST(1));
+
+THIS->
+AddLDoNWin(theme_id);
+}
+XSRETURN_EMPTY;
+}
+
+XS(XS_Client_RemoveLDoNLoss);
+XS(XS_Client_RemoveLDoNLoss) {
+dXSARGS;
+if (items != 2)
+Perl_croak(aTHX_ "Usage: Client::RemoveLDoNLoss(THIS, uint32 theme_id)");
+{
+Client* THIS;
+uint32 theme_id = (uint32) SvUV(ST(1));
+
+THIS->RemoveLDoNLoss(theme_id);
+}
+XSRETURN_EMPTY;
+}
+
+XS(XS_Client_RemoveLDoNWin);
+XS(XS_Client_RemoveLDoNWin) {
+dXSARGS;
+if (items != 2)
+Perl_croak(aTHX_ "Usage: Client::RemoveLDoNWin(THIS, uint32 theme_id)");
+{
+Client* THIS;
+uint32 theme_id = (uint32) SvUV(ST(1));
+
+THIS->RemoveLDoNWin(theme_id);
+}
+XSRETURN_EMPTY;
+}
+
 #ifdef __cplusplus
 extern "C"
 #endif
@@ -6618,6 +6675,8 @@ XS(boot_Client)
 		newXSproto(strcpy(buf, "UpdateLDoNPoints"), XS_Client_UpdateLDoNPoints, file, "$$$");
 		newXSproto(strcpy(buf, "SetDeity"), XS_Client_SetDeity, file, "$$");
 		newXSproto(strcpy(buf, "AddEXP"), XS_Client_AddEXP, file, "$$;$$");
+newXSproto(strcpy(buf, "AddLDoNLoss"), XS_Client_AddLDoNLoss, file, "$$");
+newXSproto(strcpy(buf, "AddLDoNWin"), XS_Client_AddLDoNWin, file, "$$");
 		newXSproto(strcpy(buf, "SetEXP"), XS_Client_SetEXP, file, "$$$;$");
 		newXSproto(strcpy(buf, "SetBindPoint"), XS_Client_SetBindPoint, file, "$;$$$$$");
 		newXSproto(strcpy(buf, "GetBindX"), XS_Client_GetBindX, file, "$$");
@@ -6713,6 +6772,8 @@ XS(boot_Client)
 		newXSproto(strcpy(buf, "DecreaseByID"), XS_Client_DecreaseByID, file, "$$$");
 		newXSproto(strcpy(buf, "SlotConvert2"), XS_Client_SlotConvert2, file, "$$");
 		newXSproto(strcpy(buf, "Escape"), XS_Client_Escape, file, "$");
+newXSproto(strcpy(buf, "RemoveLDoNLoss"), XS_Client_RemoveLDoNLoss, file, "$$");
+newXSproto(strcpy(buf, "RemoveLDoNwin"), XS_Client_RemoveLDoNWin, file, "$$");
 		newXSproto(strcpy(buf, "RemoveNoRent"), XS_Client_RemoveNoRent, file, "$");
 		newXSproto(strcpy(buf, "GoFish"), XS_Client_GoFish, file, "$");
 		newXSproto(strcpy(buf, "ForageItem"), XS_Client_ForageItem, file, "$");

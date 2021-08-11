@@ -109,8 +109,7 @@ NPC::NPC(const NPCType* d, Spawn2* in_respawn, const glm::vec4& position, int if
 		d->bracertexture,
 		d->handtexture,
 		d->legtexture,
-	  	d->feettexture,
-	  	d->chesttexture),
+		d->feettexture),
 	attacked_timer(CombatEventTimer_expire),
 	swarm_timer(100),
 	classattack_timer(1000),
@@ -139,21 +138,20 @@ NPC::NPC(const NPCType* d, Spawn2* in_respawn, const glm::vec4& position, int if
 	if (size <= 0.0f)
 		size = GetRaceGenderDefaultHeight(race, gender);
 
-	taunting = false;
-	proximity = nullptr;
-	copper = 0;
-	silver = 0;
-	gold = 0;
-	platinum = 0;
-	max_dmg = d->max_dmg;
-  dbmax_dmg = d->max_dmg;
-	min_dmg = d->min_dmg;
-	attack_count = d->attack_count;
-	grid = 0;
-	wp_m = 0;
-	max_wp=0;
-	save_wp = 0;
-	spawn_group = 0;
+	taunting 	 = false;
+	proximity 	 = nullptr;
+	copper 		 = 0;
+	silver 		 = 0;
+	gold 		 = 0;
+	platinum 	 = 0;
+	max_dmg 	 = d->max_dmg;
+	min_dmg 	 = d->min_dmg;
+	attack_count 	 = d->attack_count;
+	grid 		 = 0;
+	wp_m 		 = 0;
+	max_wp		 = 0;
+	save_wp 	 = 0;
+	spawn_group	 = 0;
 	swarmInfoPtr = nullptr;
 	spellscale = d->spellscale;
 	healscale = d->healscale;

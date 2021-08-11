@@ -291,6 +291,7 @@ public:
 	bool	LoadCharacterLeadershipAA(uint32 character_id, PlayerProfile_Struct* pp);
 
 	/* Character Data Saves  */
+	bool	SaveCharacterBindPoint(uint32 character_id, const BindStruct &bind, uint32 bind_num);
 	bool	SaveCharacterCurrency(uint32 character_id, PlayerProfile_Struct* pp);
 	bool	SaveCharacterData(uint32 character_id, uint32 account_id, PlayerProfile_Struct* pp, ExtendedProfile_Struct* m_epp);
 	bool	SaveCharacterAA(uint32 character_id, uint32 aa_id, uint32 current_level, uint32 charges);
@@ -360,6 +361,7 @@ public:
 	uint32		GetCharacterCorpseID(uint32 char_id, uint8 corpse);
 	uint32		GetCharacterCorpseItemAt(uint32 corpse_id, uint16 slotid);
 	uint32		GetPlayerCorpseTimeLeft(uint8 corpse, uint8 type);
+	void        SendCharacterCorpseToNonInstance(uint32 corpse_db_id);
 	bool		IsValidCorpseBackup(uint32 corpse_id);
 	bool		IsValidCorpse(uint32 corpse_id);
 	bool		IsCorpseOwner(uint32 corpse_id, uint32 char_id, bool backup = false);

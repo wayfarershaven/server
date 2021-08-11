@@ -890,11 +890,18 @@ bool Database::SaveCharacterCreate(uint32 character_id, uint32 account_id, Playe
 	);
 	auto results = QueryDatabase(query);
 	/* Save Bind Points */
-	SaveCharacterBindPoint(character_id, pp->binds[0]);
-
-	//query = StringFormat("REPLACE INTO `%s` (id, zone_id, instance_id, x, y, z, heading) VALUES (%u, %u, %u, %f, %f, %f, %f, %i)",
-	//					 CHARACTER_BIND_TABLE.c_str(), character_id, pp->binds[0].zoneId, 0, pp->binds[0].x, pp->binds[0].y, pp->binds[0].z, pp->binds[0].heading
-	//); results = QueryDatabase(query);
+	query = StringFormat("REPLACE INTO `character_bind` (id, zone_id, instance_id, x, y, z, heading, slot)"
+						 " VALUES (%u, %u, %u, %f, %f, %f, %f, %i), "
+						 "(%u, %u, %u, %f, %f, %f, %f, %i), "
+						 "(%u, %u, %u, %f, %f, %f, %f, %i), "
+						 "(%u, %u, %u, %f, %f, %f, %f, %i), "
+						 "(%u, %u, %u, %f, %f, %f, %f, %i)",
+						 character_id, pp->binds[0].zoneId, 0, pp->binds[0].x, pp->binds[0].y, pp->binds[0].z, pp->binds[0].heading, 0,
+						 character_id, pp->binds[1].zoneId, 0, pp->binds[1].x, pp->binds[1].y, pp->binds[1].z, pp->binds[1].heading, 1,
+						 character_id, pp->binds[2].zoneId, 0, pp->binds[2].x, pp->binds[2].y, pp->binds[2].z, pp->binds[2].heading, 2,
+						 character_id, pp->binds[3].zoneId, 0, pp->binds[3].x, pp->binds[3].y, pp->binds[3].z, pp->binds[3].heading, 3,
+						 character_id, pp->binds[4].zoneId, 0, pp->binds[4].x, pp->binds[4].y, pp->binds[4].z, pp->binds[4].heading, 4
+	); results = QueryDatabase(query);
 
         /* HoTT Ability */
         if(RuleB(Character, GrantHoTTOnCreate))
@@ -932,25 +939,6 @@ bool Database::SaveCharacterCreate(uint32 character_id, uint32 account_id, Playe
 		}
 	}
 	results = QueryDatabase(query); 
-
-	return true;
-}
-
-bool Database::SaveCharacterBindPoint(uint32 character_id, const BindStruct &bind)
-{
-	/* Save Home Bind Point */
-	std::string query =
-			StringFormat("REPLACE INTO `%s` (id, zone_id, instance_id, x, y, z, heading)"
-								 "VALUES (%u, %u, %u, %f, %f, %f, %f)",
-						 CHARACTER_BIND_TABLE.c_str(), character_id, bind.zoneId, bind.instance_id, bind.x, bind.y, bind.z, bind.heading);
-
-	Log(Logs::General, Logs::None, "ZoneDatabase::SaveCharacterBindPoint for character ID: %i zone_id: %u instance_id: %u position: %f %f %f %f",
-			character_id, bind.zoneId, bind.instance_id, bind.x, bind.y, bind.z, bind.heading);
-
-	auto results = QueryDatabase(query);
-	if (!results.RowsAffected())
-		Log(Logs::General, Logs::None, "ERROR Bind Home Save: %s. %s", results.ErrorMessage().c_str(),
-				query.c_str());
 
 	return true;
 }
@@ -2271,7 +2259,7 @@ void Database::ClearRaidLeader(uint32 gid, uint32 rid)
 	QueryDatabase(query);
 }
 
-void Database::UpdateAdventureStatsEntry(uint32 char_id, uint8 theme, bool win)
+void Database::UpdateAdventureStatsEntry(uint32 char_id, uint8 theme, bool win, bool remove)
 {
 
 	std::string field;
@@ -2309,12 +2297,22 @@ void Database::UpdateAdventureStatsEntry(uint32 char_id, uint8 theme, bool win)
 		}
 	}
 
-	if (win)
+	if (win) {
 		field += "wins";
-	else
+	} else {
 		field += "losses";
+	}
 
-	std::string query = StringFormat("UPDATE `adventure_stats` SET %s=%s+1 WHERE player_id=%u",field.c_str(), field.c_str(), char_id);
+	std::string modification;
+
+	if (remove){
+		modification = "-1";
+	} else {
+		modification = "+1";
+	}
+
+
+	std::string query = StringFormat("UPDATE `adventure_stats` SET %s=%s%s WHERE player_id=%u",field.c_str(), field.c_str(), modification.c_str(), char_id);
 	auto results = QueryDatabase(query);
 
 	if (results.RowsAffected() != 0)
