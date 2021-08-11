@@ -53,7 +53,12 @@ bin/*
 libs/format/FMT.cbp
 libs/libuv/libuv.cbp
 libs/format/fmt/libfmt.a
+libs/zlibng/*
 
 # protobuf generated files
 common/message.pb.cc
 common/message.pb.h
+
+# misc
+.vscode/*
+submodules/*
