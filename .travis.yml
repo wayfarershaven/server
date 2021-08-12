@@ -21,6 +21,7 @@ script:
   - wget https://launchpad.net/~maarten-fonville/+archive/ubuntu/protobuf/+files/libprotoc-dev_3.1.0-0ubuntu1~maarten0_amd64.deb 
   - wget https://launchpad.net/~maarten-fonville/+archive/ubuntu/protobuf/+files/libprotobuf10_3.1.0-0ubuntu1~maarten0_amd64.deb
   - sudo dpkg -i *.deb
+  - git submodule update
   - cmake -G "Unix Makefiles" -DEQEMU_BUILD_TESTS=ON -DEQEMU_BUILD_LOGIN=ON
   - make -j2
   - ./bin/tests
