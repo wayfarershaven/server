@@ -6,6 +6,7 @@ jobs:
     docker:
       - image: ubuntu:xenial
     steps:
+      - checkout
       - run: |
           apt-get update -qq
           apt-get install -y -qq gcc-4.8 g++-4.8 libmysqlclient-dev libperl-dev libboost-dev liblua5.1-0-dev zlib1g-dev uuid-dev libssl-dev build-essential make cmake git-core unzip curl wget software-properties-common
@@ -28,7 +29,6 @@ jobs:
       - run:
           name: Check Protobuf Version
           command: 'protoc --version'
-      - checkout
       - run: |
           git submodule update
           cmake -G "Unix Makefiles" -DEQEMU_BUILD_TESTS=ON -DEQEMU_BUILD_LOGIN=ON
