@@ -14578,7 +14578,8 @@ void command_who(Client *c, const Seperator *sep)
 						 str_tolower(guild_name).find(search_string) != std::string::npos ||
 						 str_tolower(account_name).find(search_string) != std::string::npos ||
 						 str_tolower(forum_name).find(search_string) != std::string::npos ||
-						 str_tolower(account_ip).find(search_string) != std::string::npos
+						 str_tolower(account_ip).find(search_string) != std::string::npos ||
+						 str_tolower(trader_mode).find(search_string) != std::string::npos
 					 );
 
 			if (!found_search_term) {
@@ -14604,7 +14605,7 @@ void command_who(Client *c, const Seperator *sep)
 		std::string display_class_name = GetClassIDName(static_cast<uint8>(player_class), static_cast<uint8>(player_level));
 
 		c->Message(
-			5, "%s[%u %s] %s (%s) %s ZONE: %s (%u) (%s) L: (%s) F: (%s) (%s)",
+			5, "%s[%u %s] %s (%s) %s ZONE: %s (%u) (%s) L: (%s) F: (%s) (%s) Trader: (%s)",
 			(account_status > 0 ? "* GM * " : ""),
 			player_level,
 			EQ::SayLinkEngine::GenerateQuestSaylink(StringFormat("#who %s", base_class_name.c_str()), false, display_class_name).c_str(),
