@@ -14517,7 +14517,10 @@ void command_who(Client *c, const Seperator *sep)
 					1
 				),
 				""
-			  ) as account_ip
+			  ) as account_ip,
+			  IF(
+				   character_data.pvp_status = 0, 'No', 'Yes'
+			  ) AS trader_mode
 			FROM
 			  character_data
 			WHERE
@@ -14563,6 +14566,7 @@ void command_who(Client *c, const Seperator *sep)
 		std::string account_ip          = row[11];
 		std::string base_class_name     = GetClassIDName(static_cast<uint8>(player_class), 1);
 		std::string displayed_race_name = GetRaceIDName(static_cast<uint16>(player_race));
+		std::string trader_mode    		= row[12];
 
 		if (search_string.length() > 0) {
 			bool found_search_term =
@@ -14612,7 +14616,8 @@ void command_who(Client *c, const Seperator *sep)
 			goto_saylink.c_str(),
 			EQ::SayLinkEngine::GenerateQuestSaylink(StringFormat("#who %s", account_name.c_str()), false, account_name).c_str(),
 			EQ::SayLinkEngine::GenerateQuestSaylink(StringFormat("#who %s", forum_name.c_str()), false, forum_name).c_str(),
-			EQ::SayLinkEngine::GenerateQuestSaylink(StringFormat("#who %s", account_ip.c_str()), false, account_ip).c_str()
+			EQ::SayLinkEngine::GenerateQuestSaylink(StringFormat("#who %s", account_ip.c_str()), false, account_ip).c_str(),
+			trader_mode
 		);
 
 		found_count++;
