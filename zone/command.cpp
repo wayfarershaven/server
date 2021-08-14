@@ -454,7 +454,7 @@ int command_init(void)
 		command_add("wpadd", "[pause] [-h] - Add your current location as a waypoint to your NPC target's AI path. (-h to use current heading)", 170, command_wpadd) ||
 		command_add("wpinfo", "- Show waypoint info about your NPC target", 170, command_wpinfo) ||
 		command_add("worldwide", "Performs world-wide GM functions such as cast (can be extended for other commands). Use caution", 250, command_worldwide) ||
-        command_add("xpinfo", "- Show XP info about your current target", 250, command_xpinfo) ||
+		command_add("xpinfo", "- Show XP info about your current target", 250, command_xpinfo) ||
 		command_add("xtargets",  "Show your targets Extended Targets and optionally set how many xtargets they can have.",  250, command_xtargets) ||
 		command_add("zclip", "[min] [max] - modifies and resends zhdr packet", 80, command_zclip) ||
 		command_add("zcolor", "[red] [green] [blue] - Change sky color", 80, command_zcolor) ||
@@ -875,14 +875,14 @@ void command_setfaction(Client *c, const Seperator *sep)
 	if((sep->arg[1][0] == 0 || strcasecmp(sep->arg[1],"*")==0) || ((c->GetTarget()==0) || (c->GetTarget()->IsClient()))) {
 		c->Message(Chat::White, "Usage: #setfaction [faction number]");
 		return;
-    }
+	}
 
-    auto npcTypeID = c->GetTarget()->CastToNPC()->GetNPCTypeID();
-    c->Message(Chat::Yellow,"Setting NPC %u to faction %i",  npcTypeID, atoi(sep->argplus[1]));
+	auto npcTypeID = c->GetTarget()->CastToNPC()->GetNPCTypeID();
+	c->Message(Chat::Yellow,"Setting NPC %u to faction %i",  npcTypeID, atoi(sep->argplus[1]));
 
-    std::string query = StringFormat("UPDATE npc_types SET npc_faction_id = %i WHERE id = %i",
-                                    atoi(sep->argplus[1]), npcTypeID);
-    content_db.QueryDatabase(query);
+	std::string query = StringFormat("UPDATE npc_types SET npc_faction_id = %i WHERE id = %i",
+									atoi(sep->argplus[1]), npcTypeID);
+	content_db.QueryDatabase(query);
 }
 
 void command_serversidename(Client *c, const Seperator *sep)
@@ -1576,24 +1576,24 @@ void command_viewpetition(Client *c, const Seperator *sep)
 	if (sep->arg[1][0] == 0) {
 		c->Message(Chat::White, "Usage: #viewpetition (petition number) Type #listpetition for a list");
 		return;
-    }
+	}
 
-    c->Message(Chat::Red,"	ID : Character Name , Petition Text");
+	c->Message(Chat::Red,"	ID : Character Name , Petition Text");
 
-    std::string query = "SELECT petid, charname, petitiontext FROM petitions ORDER BY petid";
-    auto results = database.QueryDatabase(query);
-    if (!results.Success())
-        return;
+	std::string query = "SELECT petid, charname, petitiontext FROM petitions ORDER BY petid";
+	auto results = database.QueryDatabase(query);
+	if (!results.Success())
+		return;
 
-    LogInfo("View petition request from [{}], petition number: [{}]",  c->GetName(), atoi(sep->argplus[1]) );
+	LogInfo("View petition request from [{}], petition number: [{}]",  c->GetName(), atoi(sep->argplus[1]) );
 
-    if (results.RowCount() == 0) {
-        c->Message(Chat::Red,"There was an error in your request: ID not found! Please check the Id and try again.");
-        return;
-    }
+	if (results.RowCount() == 0) {
+		c->Message(Chat::Red,"There was an error in your request: ID not found! Please check the Id and try again.");
+		return;
+	}
 
-    for (auto row = results.begin(); row != results.end(); ++row)
-        if (strcasecmp(row[0], sep->argplus[1]) == 0)
+	for (auto row = results.begin(); row != results.end(); ++row)
+		if (strcasecmp(row[0], sep->argplus[1]) == 0)
 			c->Message(Chat::Yellow, " %s:	%s , %s ",  row[0], row[1], row[2]);
 
 }
@@ -1603,19 +1603,19 @@ void command_petitioninfo(Client *c, const Seperator *sep)
 	if (sep->arg[1][0] == 0) {
 		c->Message(Chat::White, "Usage: #petitioninfo (petition number) Type #listpetition for a list");
 		return;
-    }
+	}
 
-    std::string query = "SELECT petid, charname, accountname, zone, charclass, charrace, charlevel FROM petitions ORDER BY petid";
-    auto results = database.QueryDatabase(query);
-    if (!results.Success())
-        return;
+	std::string query = "SELECT petid, charname, accountname, zone, charclass, charrace, charlevel FROM petitions ORDER BY petid";
+	auto results = database.QueryDatabase(query);
+	if (!results.Success())
+		return;
 
-    LogInfo("Petition information request from [{}], petition number:",  c->GetName(), atoi(sep->argplus[1]) );
+	LogInfo("Petition information request from [{}], petition number:",  c->GetName(), atoi(sep->argplus[1]) );
 
-    if (results.RowCount() == 0) {
+	if (results.RowCount() == 0) {
 		c->Message(Chat::Red,"There was an error in your request: ID not found! Please check the Id and try again.");
-        return;
-    }
+		return;
+	}
 
 	for (auto row = results.begin(); row != results.end(); ++row)
 		if (strcasecmp(row[0],sep->argplus[1])== 0)
@@ -1628,15 +1628,15 @@ void command_delpetition(Client *c, const Seperator *sep)
 	if (sep->arg[1][0] == 0 || strcasecmp(sep->arg[1],"*") == 0) {
 		c->Message(Chat::White, "Usage: #delpetition (petition number) Type #listpetition for a list");
 		return;
-    }
+	}
 
 	c->Message(Chat::Red,"Attempting to delete petition number: %i", atoi(sep->argplus[1]));
 	std::string query = StringFormat("DELETE FROM petitions WHERE petid = %i",  atoi(sep->argplus[1]));
 	auto results = database.QueryDatabase(query);
 	if (!results.Success())
-        return;
+		return;
 
-    LogInfo("Delete petition request from [{}], petition number:",  c->GetName(), atoi(sep->argplus[1]) );
+	LogInfo("Delete petition request from [{}], petition number:",  c->GetName(), atoi(sep->argplus[1]) );
 
 }
 
@@ -2714,8 +2714,8 @@ void command_wp(Client *c, const Seperator *sep)
 			if (strcasecmp("-h", sep->arg[5]) == 0) {
 				content_db.AddWP(c, grid_id, waypoint, c->GetPosition(), pause, zone_id);
 			} else {
-    	        auto position = c->GetPosition();
-    	        position.w = -1;
+				auto position = c->GetPosition();
+				position.w = -1;
 				content_db.AddWP(c, grid_id, waypoint, position, pause, zone_id);
 			}
 			c->Message(
@@ -2747,7 +2747,7 @@ void command_wp(Client *c, const Seperator *sep)
 void command_iplookup(Client *c, const Seperator *sep)
 {
 	auto pack =
-	    new ServerPacket(ServerOP_IPLookup, sizeof(ServerGenericWorldQuery_Struct) + strlen(sep->argplus[1]) + 1);
+		new ServerPacket(ServerOP_IPLookup, sizeof(ServerGenericWorldQuery_Struct) + strlen(sep->argplus[1]) + 1);
 	ServerGenericWorldQuery_Struct* s = (ServerGenericWorldQuery_Struct *) pack->pBuffer;
 	strcpy(s->from, c->GetName());
 	s->admin = c->Admin();
@@ -4635,7 +4635,7 @@ void command_findnpctype(Client *c, const Seperator *sep)
 	if(sep->arg[1][0] == 0) {
 		c->Message(Chat::White, "Usage: #findnpctype [search criteria]");
 		return;
-    }
+	}
 
 	std::string query;
 
@@ -4645,33 +4645,33 @@ void command_findnpctype(Client *c, const Seperator *sep)
 	else // Otherwise, look for just that npc id.
 		query = StringFormat("SELECT id, name FROM npc_types WHERE id = %i",  id);
 
-    auto results = content_db.QueryDatabase(query);
-    if (!results.Success()) {
-        c->Message (0, "Error querying database.");
+	auto results = content_db.QueryDatabase(query);
+	if (!results.Success()) {
+		c->Message (0, "Error querying database.");
 		c->Message (0, query.c_str());
-    }
+	}
 
-    if (results.RowCount() == 0) // No matches found.
-        c->Message (0, "No matches found for %s.",  sep->arg[1]);
+	if (results.RowCount() == 0) // No matches found.
+		c->Message (0, "No matches found for %s.",  sep->arg[1]);
 
-    // If query runs successfully.
+	// If query runs successfully.
 	int count = 0;
-    const int maxrows = 20;
+	const int maxrows = 20;
 
-    // Process each row returned.
+	// Process each row returned.
 	for (auto row = results.begin(); row != results.end(); ++row) {
 		// Limit to returning maxrows rows.
-        if (++count > maxrows) {
-            c->Message (0, "%i npc types shown. Too many results.",  maxrows);
-            break;
-        }
+		if (++count > maxrows) {
+			c->Message (0, "%i npc types shown. Too many results.",  maxrows);
+			break;
+		}
 
-        c->Message (0, "  %s: %s",  row[0], row[1]);
-    }
+		c->Message (0, "  %s: %s",  row[0], row[1]);
+	}
 
-    // If we did not hit the maxrows limit.
-    if (count <= maxrows)
-        c->Message (0, "Query complete. %i rows shown.",  count);
+	// If we did not hit the maxrows limit.
+	if (count <= maxrows)
+		c->Message (0, "Query complete. %i rows shown.",  count);
 
 }
 
@@ -5086,17 +5086,17 @@ void command_listpetition(Client *c, const Seperator *sep)
 	std::string query = "SELECT petid, charname, accountname FROM petitions ORDER BY petid";
 	auto results = database.QueryDatabase(query);
 	if (!results.Success())
-        return;
+		return;
 
-    LogInfo("Petition list requested by [{}]",  c->GetName());
+	LogInfo("Petition list requested by [{}]",  c->GetName());
 
-    if (results.RowCount() == 0)
-        return;
+	if (results.RowCount() == 0)
+		return;
 
-    c->Message(Chat::Red,"	ID : Character Name , Account Name");
+	c->Message(Chat::Red,"	ID : Character Name , Account Name");
 
-    for (auto row = results.begin(); row != results.end(); ++row)
-        c->Message(Chat::Yellow, " %s:	%s , %s ", row[0],row[1],row[2]);
+	for (auto row = results.begin(); row != results.end(); ++row)
+		c->Message(Chat::Yellow, " %s:	%s , %s ", row[0],row[1],row[2]);
 }
 
 void command_equipitem(Client *c, const Seperator *sep)
@@ -6256,7 +6256,7 @@ void command_repop(Client *c, const Seperator *sep)
 	}
 
 	if (!sep->IsNumber(timearg)) {
-        c->Message(Chat::White, "Zone depopped - repopping now.");
+		c->Message(Chat::White, "Zone depopped - repopping now.");
 
 		zone->Repop();
 
@@ -6265,7 +6265,7 @@ void command_repop(Client *c, const Seperator *sep)
 		return;
 	}
 
-    c->Message(Chat::White, "Zone depoped. Repop in %i seconds",  atoi(sep->arg[timearg]));
+	c->Message(Chat::White, "Zone depoped. Repop in %i seconds",  atoi(sep->arg[timearg]));
 	zone->Repop(atoi(sep->arg[timearg]) * 1000);
 
 	zone->spawn2_timer.Trigger();
@@ -6496,18 +6496,18 @@ void command_setxp(Client *c, const Seperator *sep)
 	if(c->GetTarget() && c->GetTarget()->IsClient())
 		t=c->GetTarget()->CastToClient();
 
-    uint32 currentaaXP = t->GetAAXP();
+	uint32 currentaaXP = t->GetAAXP();
 
 	if (sep->IsNumber(1)) {
 		if (atoi(sep->arg[1]) > 9999999) {
-            c->Message(Chat::White, "Error: Value too high.");
-        } else{
-            t->AddEXP(atoi(sep->arg[1]), currentaaXP);
-        }
+			c->Message(Chat::White, "Error: Value too high.");
+		} else{
+			t->AddEXP(atoi(sep->arg[1]), currentaaXP);
+		}
 	}
 	else {
-        c->Message(Chat::White, "Usage: #setxp number");
-    }
+		c->Message(Chat::White, "Usage: #setxp number");
+	}
 }
 
 void command_setpvppoints(Client *c, const Seperator *sep)
@@ -6783,26 +6783,26 @@ void command_spawnfix(Client *c, const Seperator *sep) {
 	if (!targetMob || !targetMob->IsNPC()) {
 		c->Message(Chat::White, "Error: #spawnfix: Need an NPC target.");
 		return;
-    }
+	}
 
-    Spawn2* s2 = targetMob->CastToNPC()->respawn2;
+	Spawn2* s2 = targetMob->CastToNPC()->respawn2;
 
-    if(!s2) {
-        c->Message(Chat::White, "#spawnfix FAILED -- cannot determine which spawn entry in the database this mob came from.");
-        return;
-    }
+	if(!s2) {
+		c->Message(Chat::White, "#spawnfix FAILED -- cannot determine which spawn entry in the database this mob came from.");
+		return;
+	}
 
-    std::string query = StringFormat("UPDATE spawn2 SET x = '%f', y = '%f', z = '%f', heading = '%f' WHERE id = '%i'",
-                                    c->GetX(), c->GetY(), c->GetZ(), c->GetHeading(),s2->GetID());
-    auto results = content_db.QueryDatabase(query);
-    if (!results.Success()) {
-        c->Message(Chat::Red, "Update failed! MySQL gave the following error:");
-        c->Message(Chat::Red, results.ErrorMessage().c_str());
-        return;
-    }
+	std::string query = StringFormat("UPDATE spawn2 SET x = '%f', y = '%f', z = '%f', heading = '%f' WHERE id = '%i'",
+									c->GetX(), c->GetY(), c->GetZ(), c->GetHeading(),s2->GetID());
+	auto results = content_db.QueryDatabase(query);
+	if (!results.Success()) {
+		c->Message(Chat::Red, "Update failed! MySQL gave the following error:");
+		c->Message(Chat::Red, results.ErrorMessage().c_str());
+		return;
+	}
 
-    c->Message(Chat::White, "Updating coordinates successful.");
-    targetMob->Depop(false);
+	c->Message(Chat::White, "Updating coordinates successful.");
+	targetMob->Depop(false);
 }
 
 void command_loc(Client *c, const Seperator *sep)
@@ -8763,57 +8763,57 @@ if(sep->arg[1][0] == 0 || sep->arg[2][0] == 0) {
 		return;
 	}
 
-    auto account_id = database.GetAccountIDByChar(sep->arg[1]);
+	auto account_id = database.GetAccountIDByChar(sep->arg[1]);
 
-    std::string message;
-    int i = 2;
-    while(1) {
-        if(sep->arg[i][0] == 0) {
-            break;
-        }
+	std::string message;
+	int i = 2;
+	while(1) {
+		if(sep->arg[i][0] == 0) {
+			break;
+		}
 
-        if(message.length() > 0) {
-            message.push_back(' ');
-        }
+		if(message.length() > 0) {
+			message.push_back(' ');
+		}
 
-        message += sep->arg[i];
-        ++i;
-    }
+		message += sep->arg[i];
+		++i;
+	}
 
-    if(message.length() == 0) {
-        c->Message(Chat::White, "Usage: #ban <charname> <message>");
-        return;
-    }
+	if(message.length() == 0) {
+		c->Message(Chat::White, "Usage: #ban <charname> <message>");
+		return;
+	}
 
-    if(account_id == 0) {
-        c->Message(Chat::Red, "Character does not exist.");
-        return;
-    }
+	if(account_id == 0) {
+		c->Message(Chat::Red, "Character does not exist.");
+		return;
+	}
 
-    std::string query = StringFormat("UPDATE account SET status = -2, ban_reason = '%s' "
-                                    "WHERE id = %i",  EscapeString(message).c_str(), account_id);
-    auto results = database.QueryDatabase(query);
+	std::string query = StringFormat("UPDATE account SET status = -2, ban_reason = '%s' "
+									"WHERE id = %i",  EscapeString(message).c_str(), account_id);
+	auto results = database.QueryDatabase(query);
 
-    c->Message(Chat::Red, "Account number %i with the character %s has been banned with message: \"%s\"",  account_id, sep->arg[1], message.c_str());
+	c->Message(Chat::Red, "Account number %i with the character %s has been banned with message: \"%s\"",  account_id, sep->arg[1], message.c_str());
 
-    ServerPacket flagUpdatePack(ServerOP_FlagUpdate, 6);
-    *((uint32*)&flagUpdatePack.pBuffer[0]) = account_id;
-    *((int16*)&flagUpdatePack.pBuffer[4]) = -2;
-    worldserver.SendPacket(&flagUpdatePack);
+	ServerPacket flagUpdatePack(ServerOP_FlagUpdate, 6);
+	*((uint32*)&flagUpdatePack.pBuffer[0]) = account_id;
+	*((int16*)&flagUpdatePack.pBuffer[4]) = -2;
+	worldserver.SendPacket(&flagUpdatePack);
 
-    Client *client = nullptr;
-    client = entity_list.GetClientByName(sep->arg[1]);
-    if(client) {
-        client->WorldKick();
-        return;
-    }
+	Client *client = nullptr;
+	client = entity_list.GetClientByName(sep->arg[1]);
+	if(client) {
+		client->WorldKick();
+		return;
+	}
 
-    ServerPacket kickPlayerPack(ServerOP_KickPlayer, sizeof(ServerKickPlayer_Struct));
-    ServerKickPlayer_Struct* skp = (ServerKickPlayer_Struct*)kickPlayerPack.pBuffer;
-    strcpy(skp->adminname, c->GetName());
-    strcpy(skp->name, sep->arg[1]);
-    skp->adminrank = c->Admin();
-    worldserver.SendPacket(&kickPlayerPack);
+	ServerPacket kickPlayerPack(ServerOP_KickPlayer, sizeof(ServerKickPlayer_Struct));
+	ServerKickPlayer_Struct* skp = (ServerKickPlayer_Struct*)kickPlayerPack.pBuffer;
+	strcpy(skp->adminname, c->GetName());
+	strcpy(skp->name, sep->arg[1]);
+	skp->adminrank = c->Admin();
+	worldserver.SendPacket(&kickPlayerPack);
 }
 
 void command_suspend(Client *c, const Seperator *sep)
@@ -8821,73 +8821,73 @@ void command_suspend(Client *c, const Seperator *sep)
 	if((sep->arg[1][0] == 0) || (sep->arg[2][0] == 0)) {
 		c->Message(Chat::White, "Usage: #suspend <charname> <days> (Specify 0 days to lift the suspension immediately) <message>");
 		return;
-    }
+	}
 
-    int duration = atoi(sep->arg[2]);
+	int duration = atoi(sep->arg[2]);
 
 	if(duration < 0)
 		duration = 0;
 
-    std::string message;
+	std::string message;
 
-    if(duration > 0) {
-        int i = 3;
-        while(1) {
-            if(sep->arg[i][0] == 0) {
-                break;
-            }
+	if(duration > 0) {
+		int i = 3;
+		while(1) {
+			if(sep->arg[i][0] == 0) {
+				break;
+			}
 
-            if(message.length() > 0) {
-                message.push_back(' ');
-            }
+			if(message.length() > 0) {
+				message.push_back(' ');
+			}
 
-            message += sep->arg[i];
-            ++i;
-        }
+			message += sep->arg[i];
+			++i;
+		}
 
-        if(message.length() == 0) {
-            c->Message(Chat::White, "Usage: #suspend <charname> <days>(Specify 0 days to lift the suspension immediately) <message>");
-            return;
-        }
-    }
+		if(message.length() == 0) {
+			c->Message(Chat::White, "Usage: #suspend <charname> <days>(Specify 0 days to lift the suspension immediately) <message>");
+			return;
+		}
+	}
 
-    auto escName = new char[strlen(sep->arg[1]) * 2 + 1];
-    database.DoEscapeString(escName, sep->arg[1], strlen(sep->arg[1]));
-    int accountID = database.GetAccountIDByChar(escName);
-    safe_delete_array(escName);
+	auto escName = new char[strlen(sep->arg[1]) * 2 + 1];
+	database.DoEscapeString(escName, sep->arg[1], strlen(sep->arg[1]));
+	int accountID = database.GetAccountIDByChar(escName);
+	safe_delete_array(escName);
 
-    if (accountID <= 0) {
-        c->Message(Chat::Red,"Character does not exist.");
-        return;
-    }
+	if (accountID <= 0) {
+		c->Message(Chat::Red,"Character does not exist.");
+		return;
+	}
 
 	std::string query = StringFormat("UPDATE `account` SET `suspendeduntil` = DATE_ADD(NOW(), INTERVAL %i DAY), "
-                                    "suspend_reason = '%s' WHERE `id` = %i",
-                                    duration, EscapeString(message).c_str(), accountID);
-    auto results = database.QueryDatabase(query);
+									"suspend_reason = '%s' WHERE `id` = %i",
+									duration, EscapeString(message).c_str(), accountID);
+	auto results = database.QueryDatabase(query);
 
-    if(duration)
-        c->Message(Chat::Red,"Account number %i with the character %s has been temporarily suspended for %i day(s).",  accountID, sep->arg[1], duration);
-    else
-        c->Message(Chat::Red,"Account number %i with the character %s is no longer suspended.",  accountID, sep->arg[1]);
+	if(duration)
+		c->Message(Chat::Red,"Account number %i with the character %s has been temporarily suspended for %i day(s).",  accountID, sep->arg[1], duration);
+	else
+		c->Message(Chat::Red,"Account number %i with the character %s is no longer suspended.",  accountID, sep->arg[1]);
 
-    Client *bannedClient = entity_list.GetClientByName(sep->arg[1]);
+	Client *bannedClient = entity_list.GetClientByName(sep->arg[1]);
 
-    if(bannedClient) {
-        bannedClient->WorldKick();
-        return;
-    }
+	if(bannedClient) {
+		bannedClient->WorldKick();
+		return;
+	}
 
-    auto pack = new ServerPacket(ServerOP_KickPlayer, sizeof(ServerKickPlayer_Struct));
-    ServerKickPlayer_Struct *sks = (ServerKickPlayer_Struct *)pack->pBuffer;
+	auto pack = new ServerPacket(ServerOP_KickPlayer, sizeof(ServerKickPlayer_Struct));
+	ServerKickPlayer_Struct *sks = (ServerKickPlayer_Struct *)pack->pBuffer;
 
-    strn0cpy(sks->adminname, c->GetName(), sizeof(sks->adminname));
-    strn0cpy(sks->name, sep->arg[1], sizeof(sks->name));
-    sks->adminrank = c->Admin();
+	strn0cpy(sks->adminname, c->GetName(), sizeof(sks->adminname));
+	strn0cpy(sks->name, sep->arg[1], sizeof(sks->name));
+	sks->adminrank = c->Admin();
 
-    worldserver.SendPacket(pack);
+	worldserver.SendPacket(pack);
 
-    safe_delete(pack);
+	safe_delete(pack);
 }
 
 void command_ipban(Client *c, const Seperator *sep)
@@ -8911,24 +8911,24 @@ void command_revoke(Client *c, const Seperator *sep)
 		return;
 	}
 
-    uint32 characterID = database.GetAccountIDByChar(sep->arg[1]);
-    if(characterID == 0) {
-        c->Message(Chat::Red,"Character does not exist.");
-        return;
-    }
+	uint32 characterID = database.GetAccountIDByChar(sep->arg[1]);
+	if(characterID == 0) {
+		c->Message(Chat::Red,"Character does not exist.");
+		return;
+	}
 
-    int flag = sep->arg[2][0] == '1' ? true : false;
-    std::string query = StringFormat("UPDATE account SET revoked = %d WHERE id = %i",  flag, characterID);
-    auto results = database.QueryDatabase(query);
+	int flag = sep->arg[2][0] == '1' ? true : false;
+	std::string query = StringFormat("UPDATE account SET revoked = %d WHERE id = %i",  flag, characterID);
+	auto results = database.QueryDatabase(query);
 
-    c->Message(Chat::Red,"%s account number %i with the character %s.",  flag? "Revoking": "Unrevoking",  characterID, sep->arg[1]);
+	c->Message(Chat::Red,"%s account number %i with the character %s.",  flag? "Revoking": "Unrevoking",  characterID, sep->arg[1]);
 
-    Client* revokee = entity_list.GetClientByAccID(characterID);
-    if(revokee) {
-        c->Message(Chat::White, "Found %s in this zone.",  revokee->GetName());
-        revokee->SetRevoked(flag);
-        return;
-    }
+	Client* revokee = entity_list.GetClientByAccID(characterID);
+	if(revokee) {
+		c->Message(Chat::White, "Found %s in this zone.",  revokee->GetName());
+		revokee->SetRevoked(flag);
+		return;
+	}
 
 	c->Message(Chat::Red, "#revoke: Couldn't find %s in this zone, passing request to worldserver.", sep->arg[1]);
 
@@ -9434,455 +9434,455 @@ void command_npcedit(Client *c, const Seperator *sep)
 
 	uint32 npcTypeID = c->GetTarget()->CastToNPC()->GetNPCTypeID();
 	if (strcasecmp(sep->arg[1], "name") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u now has the name %s.", npcTypeID, sep->argplus[2]);
+		c->Message(Chat::Yellow,"NPCID %u now has the name %s.", npcTypeID, sep->argplus[2]);
 		std::string query = StringFormat("UPDATE npc_types SET name = '%s' WHERE id = %i",  sep->argplus[2],npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "lastname") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u now has the lastname %s.", npcTypeID, sep->argplus[2]);
+		c->Message(Chat::Yellow,"NPCID %u now has the lastname %s.", npcTypeID, sep->argplus[2]);
 		std::string query = StringFormat("UPDATE npc_types SET lastname = '%s' WHERE id = %i", sep->argplus[2],npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "flymode") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u now has flymode [%s]", npcTypeID, sep->argplus[2]);
+		c->Message(Chat::Yellow,"NPCID %u now has flymode [%s]", npcTypeID, sep->argplus[2]);
 		std::string query = StringFormat("UPDATE npc_types SET flymode = '%s' WHERE id = %i",  sep->argplus[2],npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "race") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u now has the race %i.", npcTypeID, atoi(sep->argplus[2]));
+		c->Message(Chat::Yellow,"NPCID %u now has the race %i.", npcTypeID, atoi(sep->argplus[2]));
 		std::string query = StringFormat("UPDATE npc_types SET race = %i WHERE id = %i",  atoi(sep->argplus[2]),npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "class") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u is now class %i.", npcTypeID, atoi(sep->argplus[2]));
+		c->Message(Chat::Yellow,"NPCID %u is now class %i.", npcTypeID, atoi(sep->argplus[2]));
 		std::string query = StringFormat("UPDATE npc_types SET class = %i WHERE id = %i",  atoi(sep->argplus[2]),npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "bodytype") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u now has type %i bodytype.",  npcTypeID, atoi(sep->argplus[2]));
+		c->Message(Chat::Yellow,"NPCID %u now has type %i bodytype.",  npcTypeID, atoi(sep->argplus[2]));
 		std::string query = StringFormat("UPDATE npc_types SET bodytype = %i WHERE id = %i",  atoi(sep->argplus[2]),npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "hp") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u now has %i Hitpoints.",  npcTypeID, atoi(sep->argplus[2]));
+		c->Message(Chat::Yellow,"NPCID %u now has %i Hitpoints.",  npcTypeID, atoi(sep->argplus[2]));
 		std::string query = StringFormat("UPDATE npc_types SET hp = %i WHERE id = %i",  atoi(sep->argplus[2]),npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "gender") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u is now gender %i.",  npcTypeID, atoi(sep->argplus[2]));
+		c->Message(Chat::Yellow,"NPCID %u is now gender %i.",  npcTypeID, atoi(sep->argplus[2]));
 		std::string query = StringFormat("UPDATE npc_types SET gender = %i WHERE id = %i",  atoi(sep->argplus[2]),npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "texture") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u now uses texture %i.",  npcTypeID, atoi(sep->argplus[2]));
+		c->Message(Chat::Yellow,"NPCID %u now uses texture %i.",  npcTypeID, atoi(sep->argplus[2]));
 		std::string query = StringFormat("UPDATE npc_types SET texture = %i WHERE id = %i",  atoi(sep->argplus[2]),npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "helmtexture") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u now uses helmtexture %i.",  npcTypeID, atoi(sep->argplus[2]));
+		c->Message(Chat::Yellow,"NPCID %u now uses helmtexture %i.",  npcTypeID, atoi(sep->argplus[2]));
 		std::string query = StringFormat("UPDATE npc_types SET helmtexture = %i WHERE id = %i",  atoi(sep->argplus[2]),npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "armtexture") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u now uses armtexture %i.",  npcTypeID, atoi(sep->argplus[2]));
+		c->Message(Chat::Yellow,"NPCID %u now uses armtexture %i.",  npcTypeID, atoi(sep->argplus[2]));
 		std::string query = StringFormat("UPDATE npc_types SET armtexture = %i WHERE id = %i",  atoi(sep->argplus[2]),npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "bracertexture") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u now uses bracertexture %i.",  npcTypeID, atoi(sep->argplus[2]));
+		c->Message(Chat::Yellow,"NPCID %u now uses bracertexture %i.",  npcTypeID, atoi(sep->argplus[2]));
 		std::string query = StringFormat("UPDATE npc_types SET bracertexture = %i WHERE id = %i",  atoi(sep->argplus[2]),npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "handtexture") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u now uses handtexture %i.",  npcTypeID, atoi(sep->argplus[2]));
+		c->Message(Chat::Yellow,"NPCID %u now uses handtexture %i.",  npcTypeID, atoi(sep->argplus[2]));
 		std::string query = StringFormat("UPDATE npc_types SET handtexture = %i WHERE id = %i",  atoi(sep->argplus[2]),npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "legtexture") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u now uses legtexture %i.",  npcTypeID, atoi(sep->argplus[2]));
+		c->Message(Chat::Yellow,"NPCID %u now uses legtexture %i.",  npcTypeID, atoi(sep->argplus[2]));
 		std::string query = StringFormat("UPDATE npc_types SET legtexture = %i WHERE id = %i",  atoi(sep->argplus[2]), npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "feettexture") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u now uses feettexture %i.",  npcTypeID, atoi(sep->argplus[2]));
+		c->Message(Chat::Yellow,"NPCID %u now uses feettexture %i.",  npcTypeID, atoi(sep->argplus[2]));
 		std::string query = StringFormat("UPDATE npc_types SET feettexture = %i WHERE id = %i",  atoi(sep->argplus[2]),npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "herosforgemodel") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u now uses herosforgemodel %i.",  npcTypeID, atoi(sep->argplus[2]));
+		c->Message(Chat::Yellow,"NPCID %u now uses herosforgemodel %i.",  npcTypeID, atoi(sep->argplus[2]));
 		std::string query = StringFormat("UPDATE npc_types SET herosforgemodel = %i WHERE id = %i",  atoi(sep->argplus[2]),npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "size") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u is now size %i.",  npcTypeID, atoi(sep->argplus[2]));
+		c->Message(Chat::Yellow,"NPCID %u is now size %i.",  npcTypeID, atoi(sep->argplus[2]));
 		std::string query = StringFormat("UPDATE npc_types SET size = %i WHERE id = %i",  atoi(sep->argplus[2]),npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "hpregen") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u now regens %i hitpoints per tick.",  npcTypeID, atoi(sep->argplus[2]));
+		c->Message(Chat::Yellow,"NPCID %u now regens %i hitpoints per tick.",  npcTypeID, atoi(sep->argplus[2]));
 		std::string query = StringFormat("UPDATE npc_types SET hp_regen_rate = %i WHERE id = %i",  atoi(sep->argplus[2]),npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "manaregen") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u now regens %i mana per tick.",  npcTypeID, atoi(sep->argplus[2]));
+		c->Message(Chat::Yellow,"NPCID %u now regens %i mana per tick.",  npcTypeID, atoi(sep->argplus[2]));
 		std::string query = StringFormat("UPDATE npc_types SET mana_regen_rate = %i WHERE id = %i",  atoi(sep->argplus[2]),npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
-    if (strcasecmp(sep->arg[1], "loottable") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u is now on loottable_id %i.",  npcTypeID, atoi(sep->argplus[2]));
+	if (strcasecmp(sep->arg[1], "loottable") == 0) {
+		c->Message(Chat::Yellow,"NPCID %u is now on loottable_id %i.",  npcTypeID, atoi(sep->argplus[2]));
 		std::string query = StringFormat("UPDATE npc_types SET loottable_id = %i WHERE id = %i",  atoi(sep->argplus[2]),npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "merchantid") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u is now merchant_id %i.",  npcTypeID, atoi(sep->argplus[2]));
+		c->Message(Chat::Yellow,"NPCID %u is now merchant_id %i.",  npcTypeID, atoi(sep->argplus[2]));
 		std::string query = StringFormat("UPDATE npc_types SET merchant_id = %i WHERE id = %i",  atoi(sep->argplus[2]),npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "alt_currency_id") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u now has field 'alt_currency_id' set to %s.",  npcTypeID, atoi(sep->argplus[2]));
+		c->Message(Chat::Yellow,"NPCID %u now has field 'alt_currency_id' set to %s.",  npcTypeID, atoi(sep->argplus[2]));
 		std::string query = StringFormat("UPDATE npc_types SET alt_currency_id = '%s' WHERE id = %i",  sep->argplus[2],npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "npc_spells_effects_id") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u now has field 'npc_spells_effects_id' set to %s.",  npcTypeID, sep->argplus[2]);
+		c->Message(Chat::Yellow,"NPCID %u now has field 'npc_spells_effects_id' set to %s.",  npcTypeID, sep->argplus[2]);
 		std::string query = StringFormat("UPDATE npc_types SET npc_spells_effects_id = '%s' WHERE id = %i",  sep->argplus[2],npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "adventure_template_id") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u now has field 'adventure_template_id' set to %s.",  npcTypeID, sep->argplus[2]);
+		c->Message(Chat::Yellow,"NPCID %u now has field 'adventure_template_id' set to %s.",  npcTypeID, sep->argplus[2]);
 		std::string query = StringFormat("UPDATE npc_types SET adventure_template_id = '%s' WHERE id = %i",  sep->argplus[2],npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "trap_template") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u now has field 'trap_template' set to %s.",  npcTypeID, sep->argplus[2]);
+		c->Message(Chat::Yellow,"NPCID %u now has field 'trap_template' set to %s.",  npcTypeID, sep->argplus[2]);
 		std::string query = StringFormat("UPDATE npc_types SET trap_template = '%s' WHERE id = %i",  sep->argplus[2],npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "special_abilities") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u now has field 'special_abilities' set to %s.",  npcTypeID, sep->argplus[2]);
+		c->Message(Chat::Yellow,"NPCID %u now has field 'special_abilities' set to %s.",  npcTypeID, sep->argplus[2]);
 		std::string query = StringFormat("UPDATE npc_types SET special_abilities = '%s' WHERE id = %i",  sep->argplus[2],npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "spell") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u now uses spell list %i",  npcTypeID, atoi(sep->argplus[2]));
+		c->Message(Chat::Yellow,"NPCID %u now uses spell list %i",  npcTypeID, atoi(sep->argplus[2]));
 		std::string query = StringFormat("UPDATE npc_types SET npc_spells_id = %i WHERE id = %i",  atoi(sep->argplus[2]),npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "faction") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u is now faction %i",  npcTypeID, atoi(sep->argplus[2]));
+		c->Message(Chat::Yellow,"NPCID %u is now faction %i",  npcTypeID, atoi(sep->argplus[2]));
 		std::string query = StringFormat("UPDATE npc_types SET npc_faction_id = %i WHERE id = %i",  atoi(sep->argplus[2]),npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "damage") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u now hits from %i to %i",  npcTypeID, atoi(sep->arg[2]), atoi(sep->arg[3]));
+		c->Message(Chat::Yellow,"NPCID %u now hits from %i to %i",  npcTypeID, atoi(sep->arg[2]), atoi(sep->arg[3]));
 		std::string query = StringFormat("UPDATE npc_types SET mindmg = %i, maxdmg = %i WHERE id = %i",  atoi(sep->arg[2]), atoi(sep->arg[3]), npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "meleetype") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u now has a primary melee type of %i and a secondary melee type of %i.",  npcTypeID, atoi(sep->arg[2]), atoi(sep->arg[3]));
+		c->Message(Chat::Yellow,"NPCID %u now has a primary melee type of %i and a secondary melee type of %i.",  npcTypeID, atoi(sep->arg[2]), atoi(sep->arg[3]));
 		std::string query = StringFormat("UPDATE npc_types SET prim_melee_type = %i, sec_melee_type = %i WHERE id = %i",  atoi(sep->arg[2]), atoi(sep->arg[3]), npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "rangedtype") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u now has a ranged type of %i.",  npcTypeID, atoi(sep->argplus[2]));
+		c->Message(Chat::Yellow,"NPCID %u now has a ranged type of %i.",  npcTypeID, atoi(sep->argplus[2]));
 		std::string query = StringFormat("UPDATE npc_types SET ranged_type = %i WHERE id = %i",  atoi(sep->argplus[2]), npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "ammoidfile") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u's ammo id file is now %i",  npcTypeID, atoi(sep->argplus[2]));
+		c->Message(Chat::Yellow,"NPCID %u's ammo id file is now %i",  npcTypeID, atoi(sep->argplus[2]));
 		std::string query = StringFormat("UPDATE npc_types SET ammoidfile = %i WHERE id = %i",  atoi(sep->argplus[2]), npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "aggroradius") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u now has an aggro radius of %i",  npcTypeID, atoi(sep->argplus[2]));
+		c->Message(Chat::Yellow,"NPCID %u now has an aggro radius of %i",  npcTypeID, atoi(sep->argplus[2]));
 		std::string query = StringFormat("UPDATE npc_types SET aggroradius = %i WHERE id = %i",  atoi(sep->argplus[2]), npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "assistradius") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u now has an assist radius of %i",  npcTypeID, atoi(sep->argplus[2]));
+		c->Message(Chat::Yellow,"NPCID %u now has an assist radius of %i",  npcTypeID, atoi(sep->argplus[2]));
 		std::string query = StringFormat("UPDATE npc_types SET assistradius = %i WHERE id = %i",  atoi(sep->argplus[2]), npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "social") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u social status is now %i",  npcTypeID, atoi(sep->argplus[2]));
+		c->Message(Chat::Yellow,"NPCID %u social status is now %i",  npcTypeID, atoi(sep->argplus[2]));
 		std::string query = StringFormat("UPDATE npc_types SET social = %i WHERE id = %i",  atoi(sep->argplus[2]), npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "runspeed") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u now runs at %f",  npcTypeID, atof(sep->argplus[2]));
+		c->Message(Chat::Yellow,"NPCID %u now runs at %f",  npcTypeID, atof(sep->argplus[2]));
 		std::string query = StringFormat("UPDATE npc_types SET runspeed = %f WHERE id = %i",  atof(sep->argplus[2]), npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "walkspeed") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u now walks at %f",  npcTypeID, atof(sep->argplus[2]));
+		c->Message(Chat::Yellow,"NPCID %u now walks at %f",  npcTypeID, atof(sep->argplus[2]));
 		std::string query = StringFormat("UPDATE npc_types SET walkspeed = %f WHERE id = %i",  atof(sep->argplus[2]), npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "AGI") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u now has %i Agility.",  npcTypeID, atoi(sep->argplus[2]));
+		c->Message(Chat::Yellow,"NPCID %u now has %i Agility.",  npcTypeID, atoi(sep->argplus[2]));
 		std::string query = StringFormat("UPDATE npc_types SET AGI = %i WHERE id = %i",  atoi(sep->argplus[2]), npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "CHA") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u now has %i Charisma.",  npcTypeID, atoi(sep->argplus[2]));
+		c->Message(Chat::Yellow,"NPCID %u now has %i Charisma.",  npcTypeID, atoi(sep->argplus[2]));
 		std::string query = StringFormat("UPDATE npc_types SET CHA = %i WHERE id = %i",  atoi(sep->argplus[2]), npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "DEX") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u now has %i Dexterity.",  npcTypeID, atoi(sep->argplus[2]));
+		c->Message(Chat::Yellow,"NPCID %u now has %i Dexterity.",  npcTypeID, atoi(sep->argplus[2]));
 		std::string query = StringFormat("UPDATE npc_types SET DEX = %i WHERE id = %i",  atoi(sep->argplus[2]), npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "INT") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u now has %i Intelligence.",  npcTypeID, atoi(sep->argplus[2]));
+		c->Message(Chat::Yellow,"NPCID %u now has %i Intelligence.",  npcTypeID, atoi(sep->argplus[2]));
 		std::string query = StringFormat("UPDATE npc_types SET _INT = %i WHERE id = %i",  atoi(sep->argplus[2]), npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "STA") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u now has %i Stamina.",  npcTypeID, atoi(sep->argplus[2]));
+		c->Message(Chat::Yellow,"NPCID %u now has %i Stamina.",  npcTypeID, atoi(sep->argplus[2]));
 		std::string query = StringFormat("UPDATE npc_types SET STA = %i WHERE id = %i",  atoi(sep->argplus[2]), npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "STR") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u now has %i Strength.",  npcTypeID, atoi(sep->argplus[2]));
+		c->Message(Chat::Yellow,"NPCID %u now has %i Strength.",  npcTypeID, atoi(sep->argplus[2]));
 		std::string query = StringFormat("UPDATE npc_types SET STR = %i WHERE id = %i",  atoi(sep->argplus[2]), npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "WIS") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u now has a Magic Resistance of %i.",  npcTypeID, atoi(sep->argplus[2]));
+		c->Message(Chat::Yellow,"NPCID %u now has a Magic Resistance of %i.",  npcTypeID, atoi(sep->argplus[2]));
 		std::string query = StringFormat("UPDATE npc_types SET WIS = %i WHERE id = %i",  atoi(sep->argplus[2]), npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "MR") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u now has a Magic Resistance of %i.",  npcTypeID, atoi(sep->argplus[2]));
+		c->Message(Chat::Yellow,"NPCID %u now has a Magic Resistance of %i.",  npcTypeID, atoi(sep->argplus[2]));
 		std::string query = StringFormat("UPDATE npc_types SET MR = %i WHERE id = %i",  atoi(sep->argplus[2]), npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "DR") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u now has a Disease Resistance of %i.",  npcTypeID, atoi(sep->argplus[2]));
+		c->Message(Chat::Yellow,"NPCID %u now has a Disease Resistance of %i.",  npcTypeID, atoi(sep->argplus[2]));
 		std::string query = StringFormat("UPDATE npc_types SET DR = %i WHERE id = %i",  atoi(sep->argplus[2]), npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "CR") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u now has a Cold Resistance of %i.",  npcTypeID, atoi(sep->argplus[2]));
+		c->Message(Chat::Yellow,"NPCID %u now has a Cold Resistance of %i.",  npcTypeID, atoi(sep->argplus[2]));
 		std::string query = StringFormat("UPDATE npc_types SET CR = %i WHERE id = %i",  atoi(sep->argplus[2]), npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
-    if (strcasecmp(sep->arg[1], "FR") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u now has a Fire Resistance of %i.",  npcTypeID, atoi(sep->argplus[2]));
+	if (strcasecmp(sep->arg[1], "FR") == 0) {
+		c->Message(Chat::Yellow,"NPCID %u now has a Fire Resistance of %i.",  npcTypeID, atoi(sep->argplus[2]));
 		std::string query = StringFormat("UPDATE npc_types SET FR = %i WHERE id = %i",  atoi(sep->argplus[2]), npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
-    if (strcasecmp(sep->arg[1], "PR") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u now has a Poison Resistance of %i.",  npcTypeID, atoi(sep->argplus[2]));
+	if (strcasecmp(sep->arg[1], "PR") == 0) {
+		c->Message(Chat::Yellow,"NPCID %u now has a Poison Resistance of %i.",  npcTypeID, atoi(sep->argplus[2]));
 		std::string query = StringFormat("UPDATE npc_types SET PR = %i WHERE id = %i",  atoi(sep->argplus[2]), npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "Corrup") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u now has a Corruption Resistance of %i.",  npcTypeID, atoi(sep->argplus[2]));
+		c->Message(Chat::Yellow,"NPCID %u now has a Corruption Resistance of %i.",  npcTypeID, atoi(sep->argplus[2]));
 		std::string query = StringFormat("UPDATE npc_types SET corrup = %i WHERE id = %i",  atoi(sep->argplus[2]), npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "PhR") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u now has a Physical Resistance of %i.",  npcTypeID, atoi(sep->argplus[2]));
+		c->Message(Chat::Yellow,"NPCID %u now has a Physical Resistance of %i.",  npcTypeID, atoi(sep->argplus[2]));
 		std::string query = StringFormat("UPDATE npc_types SET PhR = %i WHERE id = %i",  atoi(sep->argplus[2]), npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "seeinvis") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u now has seeinvis set to %i.",  npcTypeID, atoi(sep->argplus[2]));
+		c->Message(Chat::Yellow,"NPCID %u now has seeinvis set to %i.",  npcTypeID, atoi(sep->argplus[2]));
 		std::string query = StringFormat("UPDATE npc_types SET see_invis = %i WHERE id = %i",  atoi(sep->argplus[2]), npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "seeinvisundead") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u now has seeinvisundead set to %i.",  npcTypeID, atoi(sep->argplus[2]));
+		c->Message(Chat::Yellow,"NPCID %u now has seeinvisundead set to %i.",  npcTypeID, atoi(sep->argplus[2]));
 		std::string query = StringFormat("UPDATE npc_types SET see_invis_undead = %i WHERE id = %i",  atoi(sep->argplus[2]), npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "seehide") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u now has seehide set to %i.",  npcTypeID, atoi(sep->argplus[2]));
+		c->Message(Chat::Yellow,"NPCID %u now has seehide set to %i.",  npcTypeID, atoi(sep->argplus[2]));
 		std::string query = StringFormat("UPDATE npc_types SET see_hide = %i WHERE id = %i",  atoi(sep->argplus[2]), npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "seeimprovedhide") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u now has seeimprovedhide set to %i.",  npcTypeID, atoi(sep->argplus[2]));
+		c->Message(Chat::Yellow,"NPCID %u now has seeimprovedhide set to %i.",  npcTypeID, atoi(sep->argplus[2]));
 		std::string query = StringFormat("UPDATE npc_types SET see_improved_hide = %i WHERE id = %i",  atoi(sep->argplus[2]), npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "AC") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u now has %i Armor Class.",  npcTypeID, atoi(sep->argplus[2]));
+		c->Message(Chat::Yellow,"NPCID %u now has %i Armor Class.",  npcTypeID, atoi(sep->argplus[2]));
 		std::string query = StringFormat("UPDATE npc_types SET ac = %i WHERE id = %i",  atoi(sep->argplus[2]), npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "ATK") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u now has %i Attack.",  npcTypeID, atoi(sep->argplus[2]));
+		c->Message(Chat::Yellow,"NPCID %u now has %i Attack.",  npcTypeID, atoi(sep->argplus[2]));
 		std::string query = StringFormat("UPDATE npc_types SET atk = %i WHERE id = %i",  atoi(sep->argplus[2]), npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "Accuracy") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u now has %i Accuracy.",  npcTypeID, atoi(sep->argplus[2]));
+		c->Message(Chat::Yellow,"NPCID %u now has %i Accuracy.",  npcTypeID, atoi(sep->argplus[2]));
 		std::string query = StringFormat("UPDATE npc_types SET accuracy = %i WHERE id = %i",  atoi(sep->argplus[2]), npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "Avoidance") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u now has %i Avoidance.",  npcTypeID, atoi(sep->argplus[2]));
+		c->Message(Chat::Yellow,"NPCID %u now has %i Avoidance.",  npcTypeID, atoi(sep->argplus[2]));
 		std::string query = StringFormat("UPDATE npc_types SET avoidance = %i WHERE id = %i",  atoi(sep->argplus[2]), npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "level") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u is now level %i.",  npcTypeID, atoi(sep->argplus[2]));
+		c->Message(Chat::Yellow,"NPCID %u is now level %i.",  npcTypeID, atoi(sep->argplus[2]));
 		std::string query = StringFormat("UPDATE npc_types SET level = %i WHERE id = %i",  atoi(sep->argplus[2]), npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "maxlevel") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u now has a maximum level of %i.",  npcTypeID, atoi(sep->argplus[2]));
+		c->Message(Chat::Yellow,"NPCID %u now has a maximum level of %i.",  npcTypeID, atoi(sep->argplus[2]));
 		std::string query = StringFormat("UPDATE npc_types SET maxlevel = %i WHERE id = %i",  atoi(sep->argplus[2]), npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "qglobal") == 0) {
-        c->Message(Chat::Yellow,"Quest globals have been %s for NPCID %u",  atoi(sep->arg[2]) == 0 ? "disabled" : "enabled",  npcTypeID);
+		c->Message(Chat::Yellow,"Quest globals have been %s for NPCID %u",  atoi(sep->arg[2]) == 0 ? "disabled" : "enabled",  npcTypeID);
 		std::string query = StringFormat("UPDATE npc_types SET qglobal = %i WHERE id = %i",  atoi(sep->argplus[2]), npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "npcaggro") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u will now %s other NPCs with negative faction npc_value",  npcTypeID, atoi(sep->arg[2]) == 0? "not aggro": "aggro");
+		c->Message(Chat::Yellow,"NPCID %u will now %s other NPCs with negative faction npc_value",  npcTypeID, atoi(sep->arg[2]) == 0? "not aggro": "aggro");
 		std::string query = StringFormat("UPDATE npc_types SET npc_aggro = %i WHERE id = %i",  atoi(sep->argplus[2]) == 0? 0: 1, npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "spawn_limit") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u now has a spawn limit of %i",  npcTypeID, atoi(sep->arg[2]));
+		c->Message(Chat::Yellow,"NPCID %u now has a spawn limit of %i",  npcTypeID, atoi(sep->arg[2]));
 		std::string query = StringFormat("UPDATE npc_types SET spawn_limit = %i WHERE id = %i",  atoi(sep->argplus[2]), npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "Attackspeed") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u now has attack_speed set to %f",  npcTypeID, atof(sep->arg[2]));
+		c->Message(Chat::Yellow,"NPCID %u now has attack_speed set to %f",  npcTypeID, atof(sep->arg[2]));
 		std::string query = StringFormat("UPDATE npc_types SET attack_speed = %f WHERE id = %i",  atof(sep->argplus[2]), npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
@@ -9903,53 +9903,53 @@ void command_npcedit(Client *c, const Seperator *sep)
 	}
 
 	if (strcasecmp(sep->arg[1], "findable") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u is now %s",  npcTypeID, atoi(sep->arg[2]) == 0? "not findable": "findable");
+		c->Message(Chat::Yellow,"NPCID %u is now %s",  npcTypeID, atoi(sep->arg[2]) == 0? "not findable": "findable");
 		std::string query = StringFormat("UPDATE npc_types SET findable = %i WHERE id = %i",  atoi(sep->argplus[2]) == 0? 0: 1, npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "trackable") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u is now %s",  npcTypeID, atoi(sep->arg[2]) == 0? "not trackable": "trackable");
+		c->Message(Chat::Yellow,"NPCID %u is now %s",  npcTypeID, atoi(sep->arg[2]) == 0? "not trackable": "trackable");
 		std::string query = StringFormat("UPDATE npc_types SET trackable = %i WHERE id = %i",  atoi(sep->argplus[2]) == 0? 0: 1, npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "weapon") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u will have item graphic %i set to his primary and item graphic %i set to his secondary on repop.",   npcTypeID, atoi(sep->arg[2]), atoi(sep->arg[3]));
+		c->Message(Chat::Yellow,"NPCID %u will have item graphic %i set to his primary and item graphic %i set to his secondary on repop.",   npcTypeID, atoi(sep->arg[2]), atoi(sep->arg[3]));
 		std::string query = StringFormat("UPDATE npc_types SET d_melee_texture1 = %i, d_melee_texture2 = %i WHERE id = %i",  atoi(sep->arg[2]), atoi(sep->arg[3]), npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "featuresave") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u saved with all current facial feature settings",  npcTypeID);
-        Mob* target = c->GetTarget();
+		c->Message(Chat::Yellow,"NPCID %u saved with all current facial feature settings",  npcTypeID);
+		Mob* target = c->GetTarget();
 		std::string query = StringFormat("UPDATE npc_types "
-                                        "SET luclin_haircolor = %i, luclin_beardcolor = %i, "
-                                        "luclin_hairstyle = %i, luclin_beard = %i, "
-                                        "face = %i, drakkin_heritage = %i, "
-                                        "drakkin_tattoo = %i, drakkin_details = %i "
-                                        "WHERE id = %i",
-                                        target->GetHairColor(), target->GetBeardColor(),
-                                        target->GetHairStyle(), target->GetBeard(),
-                                        target->GetLuclinFace(), target->GetDrakkinHeritage(),
-                                        target->GetDrakkinTattoo(), target->GetDrakkinDetails(),
-                                        npcTypeID);
+										"SET luclin_haircolor = %i, luclin_beardcolor = %i, "
+										"luclin_hairstyle = %i, luclin_beard = %i, "
+										"face = %i, drakkin_heritage = %i, "
+										"drakkin_tattoo = %i, drakkin_details = %i "
+										"WHERE id = %i",
+										target->GetHairColor(), target->GetBeardColor(),
+										target->GetHairStyle(), target->GetBeard(),
+										target->GetLuclinFace(), target->GetDrakkinHeritage(),
+										target->GetDrakkinTattoo(), target->GetDrakkinDetails(),
+										npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "color") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u now has %i red, %i green, and %i blue tinting on their armor.",  npcTypeID, atoi(sep->arg[2]), atoi(sep->arg[3]), atoi(sep->arg[4]));
+		c->Message(Chat::Yellow,"NPCID %u now has %i red, %i green, and %i blue tinting on their armor.",  npcTypeID, atoi(sep->arg[2]), atoi(sep->arg[3]), atoi(sep->arg[4]));
 		std::string query = StringFormat("UPDATE npc_types SET armortint_red = %i, armortint_green = %i, armortint_blue = %i WHERE id = %i",  atoi(sep->arg[2]), atoi(sep->arg[3]), atoi(sep->arg[4]), npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "armortint_id") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u now has field 'armortint_id' set to %s",  npcTypeID, sep->arg[2]);
+		c->Message(Chat::Yellow,"NPCID %u now has field 'armortint_id' set to %s",  npcTypeID, sep->arg[2]);
 		std::string query = StringFormat("UPDATE npc_types SET armortint_id = '%s' WHERE id = %i",  sep->argplus[2], npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
@@ -9986,42 +9986,42 @@ void command_npcedit(Client *c, const Seperator *sep)
 	}
 
 	if (strcasecmp(sep->arg[1], "scalerate") == 0) {
-        c->Message(Chat::Yellow,"NPCID %u now has a scaling rate of %i.",  npcTypeID, atoi(sep->arg[2]));
+		c->Message(Chat::Yellow,"NPCID %u now has a scaling rate of %i.",  npcTypeID, atoi(sep->arg[2]));
 		std::string query = StringFormat("UPDATE npc_types SET scalerate = %i WHERE id = %i",  atoi(sep->argplus[2]), npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "healscale") == 0) {
-        c->Message(Chat::Yellow, "NPCID %u now has a heal scaling rate of %i.",  npcTypeID, atoi(sep->arg[2]));
+		c->Message(Chat::Yellow, "NPCID %u now has a heal scaling rate of %i.",  npcTypeID, atoi(sep->arg[2]));
 		std::string query = StringFormat("UPDATE npc_types SET healscale = %i WHERE id = %i",  atoi(sep->argplus[2]), npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "spellscale") == 0) {
-        c->Message(Chat::Yellow, "NPCID %u now has a spell scaling rate of %i.",  npcTypeID, atoi(sep->arg[2]));
+		c->Message(Chat::Yellow, "NPCID %u now has a spell scaling rate of %i.",  npcTypeID, atoi(sep->arg[2]));
 		std::string query = StringFormat("UPDATE npc_types SET spellscale = %i WHERE id = %i",  atoi(sep->argplus[2]), npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "no_target") == 0) {
-        c->Message(Chat::Yellow, "NPCID %u is now %s.",  npcTypeID, atoi(sep->arg[2]) == 0? "targetable": "untargetable");
+		c->Message(Chat::Yellow, "NPCID %u is now %s.",  npcTypeID, atoi(sep->arg[2]) == 0? "targetable": "untargetable");
 		std::string query = StringFormat("UPDATE npc_types SET no_target_hotkey = %i WHERE id = %i",  atoi(sep->argplus[2]), npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "version") == 0) {
-        c->Message(Chat::Yellow, "NPCID %u is now version %i.",  npcTypeID, atoi(sep->arg[2]));
+		c->Message(Chat::Yellow, "NPCID %u is now version %i.",  npcTypeID, atoi(sep->arg[2]));
 		std::string query = StringFormat("UPDATE npc_types SET version = %i WHERE id = %i",  atoi(sep->argplus[2]), npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "slow_mitigation") == 0) {
-        c->Message(Chat::Yellow, "NPCID %u's slow mitigation limit is now %i.",  npcTypeID, atoi(sep->arg[2]));
+		c->Message(Chat::Yellow, "NPCID %u's slow mitigation limit is now %i.",  npcTypeID, atoi(sep->arg[2]));
 		std::string query = StringFormat("UPDATE npc_types SET slow_mitigation = %i WHERE id = %i",  atoi(sep->argplus[2]), npcTypeID);
 		content_db.QueryDatabase(query);
 		return;
@@ -10101,28 +10101,28 @@ void command_qglobal(Client *c, const Seperator *sep) {
 	}
 
 	if(!strcasecmp(sep->arg[1], "on")) {
-        std::string query = StringFormat("UPDATE npc_types SET qglobal = 1 WHERE id = '%i'",
-                                        target->GetNPCTypeID());
-        auto results = content_db.QueryDatabase(query);
+		std::string query = StringFormat("UPDATE npc_types SET qglobal = 1 WHERE id = '%i'",
+										target->GetNPCTypeID());
+		auto results = content_db.QueryDatabase(query);
 		if(!results.Success()) {
 			c->Message(Chat::Yellow, "Could not update database.");
 			return;
 		}
 
-        c->Message(Chat::Yellow, "Success! Changes take effect on zone reboot.");
+		c->Message(Chat::Yellow, "Success! Changes take effect on zone reboot.");
 		return;
 	}
 
 	if(!strcasecmp(sep->arg[1], "off")) {
-        std::string query = StringFormat("UPDATE npc_types SET qglobal = 0 WHERE id = '%i'",
-                                        target->GetNPCTypeID());
-        auto results = content_db.QueryDatabase(query);
+		std::string query = StringFormat("UPDATE npc_types SET qglobal = 0 WHERE id = '%i'",
+										target->GetNPCTypeID());
+		auto results = content_db.QueryDatabase(query);
 		if(!results.Success()) {
 			c->Message(Chat::Yellow, "Could not update database.");
 			return;
 		}
 
-        c->Message(Chat::Yellow, "Success! Changes take effect on zone reboot.");
+		c->Message(Chat::Yellow, "Success! Changes take effect on zone reboot.");
 		return;
 	}
 
@@ -10137,7 +10137,7 @@ void command_qglobal(Client *c, const Seperator *sep) {
 		return;
 	}
 
-    c->Message(Chat::Yellow, "Invalid action specified.");
+	c->Message(Chat::Yellow, "Invalid action specified.");
 }
 
 void command_path(Client *c, const Seperator *sep)
@@ -10457,17 +10457,17 @@ void command_flagedit(Client *c, const Seperator *sep) {
 		database.DoEscapeString(flag_name, sep->argplus[3], 64);
 		flag_name[127] = '\0';
 
-        std::string query = StringFormat("UPDATE zone SET flag_needed = '%s' "
-                                        "WHERE zoneidnumber = %d AND version = %d",
-                                        flag_name, zoneid, zone->GetInstanceVersion());
-        auto results = content_db.QueryDatabase(query);
+		std::string query = StringFormat("UPDATE zone SET flag_needed = '%s' "
+										"WHERE zoneidnumber = %d AND version = %d",
+										flag_name, zoneid, zone->GetInstanceVersion());
+		auto results = content_db.QueryDatabase(query);
 		if(!results.Success()) {
 			c->Message(Chat::Red, "Error updating zone: %s",  results.ErrorMessage().c_str());
 			return;
 		}
 
-        c->Message(Chat::Yellow, "Success! Zone %s now requires a flag, named %s",  ZoneName(zoneid), flag_name);
-        return;
+		c->Message(Chat::Yellow, "Success! Zone %s now requires a flag, named %s",  ZoneName(zoneid), flag_name);
+		return;
 	}
 
 	if(!strcasecmp(sep->arg[1], "unlockzone")) {
@@ -10484,32 +10484,32 @@ void command_flagedit(Client *c, const Seperator *sep) {
 			return;
 		}
 
-        std::string query = StringFormat("UPDATE zone SET flag_needed = '' "
-                                        "WHERE zoneidnumber = %d AND version = %d",
-                                        zoneid, zone->GetInstanceVersion());
-        auto results = content_db.QueryDatabase(query);
+		std::string query = StringFormat("UPDATE zone SET flag_needed = '' "
+										"WHERE zoneidnumber = %d AND version = %d",
+										zoneid, zone->GetInstanceVersion());
+		auto results = content_db.QueryDatabase(query);
 		if(!results.Success()) {
 			c->Message(Chat::Yellow, "Error updating zone: %s",  results.ErrorMessage().c_str());
 			return;
 		}
 
-        c->Message(Chat::Yellow, "Success! Zone %s no longer requires a flag.",  ZoneName(zoneid));
-        return;
+		c->Message(Chat::Yellow, "Success! Zone %s no longer requires a flag.",  ZoneName(zoneid));
+		return;
 	}
 
 	if(!strcasecmp(sep->arg[1], "listzones")) {
-        std::string query = "SELECT zoneidnumber, short_name, long_name, version, flag_needed "
-                            "FROM zone WHERE flag_needed != ''";
-        auto results = content_db.QueryDatabase(query);
+		std::string query = "SELECT zoneidnumber, short_name, long_name, version, flag_needed "
+							"FROM zone WHERE flag_needed != ''";
+		auto results = content_db.QueryDatabase(query);
 		if (!results.Success()) {
-            return;
-        }
+			return;
+		}
 
-        c->Message(Chat::White, "Zones which require flags:");
-        for (auto row = results.begin(); row != results.end(); ++row)
-            c->Message(Chat::White, "Zone %s (%s,%s) version %s requires key %s",  row[2], row[0], row[1], row[3], row[4]);
+		c->Message(Chat::White, "Zones which require flags:");
+		for (auto row = results.begin(); row != results.end(); ++row)
+			c->Message(Chat::White, "Zone %s (%s,%s) version %s requires key %s",  row[2], row[0], row[1], row[3], row[4]);
 
-        return;
+		return;
 	}
 
 	if(!strcasecmp(sep->arg[1], "give")) {
@@ -10558,7 +10558,7 @@ void command_flagedit(Client *c, const Seperator *sep) {
 		return;
 	}
 
-    c->Message(Chat::Yellow, "Invalid action specified. use '#flagedit help' for help");
+	c->Message(Chat::Yellow, "Invalid action specified. use '#flagedit help' for help");
 }
 
 void command_serverrules(Client *c, const Seperator *sep)
@@ -11189,251 +11189,251 @@ void command_advnpcspawn(Client *c, const Seperator *sep)
 {
 	Mob *target=c->GetTarget();
 
-    if (strcasecmp(sep->arg[1], "maketype") == 0) {
-        if(!target || !target->IsNPC()) {
-            c->Message(Chat::White, "Target Required!");
-            return;
-        }
+	if (strcasecmp(sep->arg[1], "maketype") == 0) {
+		if(!target || !target->IsNPC()) {
+			c->Message(Chat::White, "Target Required!");
+			return;
+		}
 
-        content_db.NPCSpawnDB(6, zone->GetShortName(), zone->GetInstanceVersion(), c, target->CastToNPC());
-        return;
-    }
+		content_db.NPCSpawnDB(6, zone->GetShortName(), zone->GetInstanceVersion(), c, target->CastToNPC());
+		return;
+	}
 
-    if (strcasecmp(sep->arg[1], "makegroup") == 0) {
-        if(!sep->arg[2]) {
-            c->Message(Chat::White, "Format: #advnpdspawn makegroup <name> [spawn limit] [dist] [max x] [min x] [max y] [min y] [delay]");
-            return;
-        }
+	if (strcasecmp(sep->arg[1], "makegroup") == 0) {
+		if(!sep->arg[2]) {
+			c->Message(Chat::White, "Format: #advnpdspawn makegroup <name> [spawn limit] [dist] [max x] [min x] [max y] [min y] [delay]");
+			return;
+		}
 
-        std::string query = StringFormat("INSERT INTO spawngroup "
-                                        "(name, spawn_limit, dist, max_x, min_x, max_y, min_y, delay) "
-                                        "VALUES (\"%s\",  %i, %f, %f, %f, %f, %f, %i)",
-                                        sep->arg[2],
-                                        (sep->arg[3]? atoi(sep->arg[3]): 0),
-                                        (sep->arg[4]? atof(sep->arg[4]): 0),
-                                        (sep->arg[5]? atof(sep->arg[5]): 0),
-                                        (sep->arg[6]? atof(sep->arg[6]): 0),
-                                        (sep->arg[7]? atof(sep->arg[7]): 0),
-                                        (sep->arg[8]? atof(sep->arg[8]): 0),
-                                        (sep->arg[9]? atoi(sep->arg[9]): 0));
-        auto results = content_db.QueryDatabase(query);
-        if (!results.Success()) {
-            c->Message(Chat::White, "Invalid Arguments -- MySQL gave the following error:");
-            c->Message(Chat::Red, results.ErrorMessage().c_str());
-            return;
-        }
+		std::string query = StringFormat("INSERT INTO spawngroup "
+										"(name, spawn_limit, dist, max_x, min_x, max_y, min_y, delay) "
+										"VALUES (\"%s\",  %i, %f, %f, %f, %f, %f, %i)",
+										sep->arg[2],
+										(sep->arg[3]? atoi(sep->arg[3]): 0),
+										(sep->arg[4]? atof(sep->arg[4]): 0),
+										(sep->arg[5]? atof(sep->arg[5]): 0),
+										(sep->arg[6]? atof(sep->arg[6]): 0),
+										(sep->arg[7]? atof(sep->arg[7]): 0),
+										(sep->arg[8]? atof(sep->arg[8]): 0),
+										(sep->arg[9]? atoi(sep->arg[9]): 0));
+		auto results = content_db.QueryDatabase(query);
+		if (!results.Success()) {
+			c->Message(Chat::White, "Invalid Arguments -- MySQL gave the following error:");
+			c->Message(Chat::Red, results.ErrorMessage().c_str());
+			return;
+		}
 
-        c->Message(Chat::White, "Group ID %i created successfully!",  results.LastInsertedID());
-        return;
-    }
+		c->Message(Chat::White, "Group ID %i created successfully!",  results.LastInsertedID());
+		return;
+	}
 
 	if (strcasecmp(sep->arg[1], "addgroupentry") == 0) {
-        if(!atoi(sep->arg[2]) || !atoi(sep->arg[3]) || !atoi(sep->arg[4])) {
-            c->Message(Chat::White, "Format: #advnpdspawn addgroupentry <spawnggroupID> <npcID> <chance>");
-            return;
-        }
+		if(!atoi(sep->arg[2]) || !atoi(sep->arg[3]) || !atoi(sep->arg[4])) {
+			c->Message(Chat::White, "Format: #advnpdspawn addgroupentry <spawnggroupID> <npcID> <chance>");
+			return;
+		}
 
-        std::string query = StringFormat("INSERT INTO spawnentry (spawngroupID, npcID, chance) "
-                                        "VALUES (%i, %i, %i)",
-                                        atoi(sep->arg[2]), atoi(sep->arg[3]), atoi(sep->arg[4]));
-        auto results = content_db.QueryDatabase(query);
-        if (!results.Success()) {
-            c->Message(Chat::White, "Invalid Arguments -- MySQL gave the following error:");
-            c->Message(Chat::Red, results.ErrorMessage().c_str());
-            return;
-        }
+		std::string query = StringFormat("INSERT INTO spawnentry (spawngroupID, npcID, chance) "
+										"VALUES (%i, %i, %i)",
+										atoi(sep->arg[2]), atoi(sep->arg[3]), atoi(sep->arg[4]));
+		auto results = content_db.QueryDatabase(query);
+		if (!results.Success()) {
+			c->Message(Chat::White, "Invalid Arguments -- MySQL gave the following error:");
+			c->Message(Chat::Red, results.ErrorMessage().c_str());
+			return;
+		}
 
-        c->Message(Chat::White, "NPC %i added to group %i with %i chance!",  atoi(sep->arg[3]), atoi(sep->arg[2]), atoi(sep->arg[4]) );
+		c->Message(Chat::White, "NPC %i added to group %i with %i chance!",  atoi(sep->arg[3]), atoi(sep->arg[2]), atoi(sep->arg[4]) );
 
-        return;
-    }
+		return;
+	}
 
-    if (strcasecmp(sep->arg[1], "editgroupbox") == 0) {
-        if(!atof(sep->arg[2]) || !atof(sep->arg[3]) || !atof(sep->arg[4]) || !atof(sep->arg[5]) || !atof(sep->arg[6]) || !atof(sep->arg[7]) || !atof(sep->arg[8])) {
-            c->Message(Chat::White, "Format: #advnpdspawn editgroupbox <spawngroupID> <dist> <max x> <min x> <max y> <min y> <delay>");
-            return;
-        }
+	if (strcasecmp(sep->arg[1], "editgroupbox") == 0) {
+		if(!atof(sep->arg[2]) || !atof(sep->arg[3]) || !atof(sep->arg[4]) || !atof(sep->arg[5]) || !atof(sep->arg[6]) || !atof(sep->arg[7]) || !atof(sep->arg[8])) {
+			c->Message(Chat::White, "Format: #advnpdspawn editgroupbox <spawngroupID> <dist> <max x> <min x> <max y> <min y> <delay>");
+			return;
+		}
 
-        std::string query = StringFormat("UPDATE spawngroup SET dist = '%f', max_x = '%f', min_x = '%f', "
-                                        "max_y = '%f', min_y = '%f', delay = '%i' WHERE id = '%i'",
-                                        atof(sep->arg[3]), atof(sep->arg[4]), atof(sep->arg[5]),
-                                        atof(sep->arg[6]), atof(sep->arg[7]), atoi(sep->arg[8]),
-                                        atoi(sep->arg[2]));
-        auto results = content_db.QueryDatabase(query);
-        if (!results.Success()) {
-            c->Message(Chat::White, "Invalid Arguments -- MySQL gave the following error:");
-            c->Message(Chat::Red, results.ErrorMessage().c_str());
-            return;
-        }
+		std::string query = StringFormat("UPDATE spawngroup SET dist = '%f', max_x = '%f', min_x = '%f', "
+										"max_y = '%f', min_y = '%f', delay = '%i' WHERE id = '%i'",
+										atof(sep->arg[3]), atof(sep->arg[4]), atof(sep->arg[5]),
+										atof(sep->arg[6]), atof(sep->arg[7]), atoi(sep->arg[8]),
+										atoi(sep->arg[2]));
+		auto results = content_db.QueryDatabase(query);
+		if (!results.Success()) {
+			c->Message(Chat::White, "Invalid Arguments -- MySQL gave the following error:");
+			c->Message(Chat::Red, results.ErrorMessage().c_str());
+			return;
+		}
 
-        c->Message(Chat::White, "Group ID %i created successfully!",  results.LastInsertedID());
+		c->Message(Chat::White, "Group ID %i created successfully!",  results.LastInsertedID());
 
-        return;
-    }
+		return;
+	}
 
 	if (strcasecmp(sep->arg[1], "cleargroupbox") == 0) {
-        if(!atoi(sep->arg[2])) {
-            c->Message(Chat::White, "Format: #advnpdspawn cleargroupbox <spawngroupID>");
-            return;
-        }
+		if(!atoi(sep->arg[2])) {
+			c->Message(Chat::White, "Format: #advnpdspawn cleargroupbox <spawngroupID>");
+			return;
+		}
 
-        std::string query = StringFormat("UPDATE spawngroup "
-                                        "SET dist = '0', max_x = '0', min_x = '0', "
-                                        "max_y = '0', min_y = '0', delay = '0' "
-                                        "WHERE id = '%i' ",  atoi(sep->arg[2]));
-        auto results = content_db.QueryDatabase(query);
-        if (!results.Success()) {
-            c->Message(Chat::White, "Invalid Arguments -- MySQL gave the following error:");
-            c->Message(Chat::Red, results.ErrorMessage().c_str());
-            return;
-        }
+		std::string query = StringFormat("UPDATE spawngroup "
+										"SET dist = '0', max_x = '0', min_x = '0', "
+										"max_y = '0', min_y = '0', delay = '0' "
+										"WHERE id = '%i' ",  atoi(sep->arg[2]));
+		auto results = content_db.QueryDatabase(query);
+		if (!results.Success()) {
+			c->Message(Chat::White, "Invalid Arguments -- MySQL gave the following error:");
+			c->Message(Chat::Red, results.ErrorMessage().c_str());
+			return;
+		}
 
-        c->Message(Chat::White, "Group ID %i created successfully!",  results.LastInsertedID());
+		c->Message(Chat::White, "Group ID %i created successfully!",  results.LastInsertedID());
 
-        return;
-    }
+		return;
+	}
 
 	if (strcasecmp(sep->arg[1], "addgroupspawn") == 0 && atoi(sep->arg[2])!=0) {
-        content_db.NPCSpawnDB(5, zone->GetShortName(), zone->GetInstanceVersion(), c, 0, atoi(sep->arg[2]));
-        c->Message(Chat::White, "Mob of group %i added successfully!",  atoi(sep->arg[2]));
-        return;
-    }
+		content_db.NPCSpawnDB(5, zone->GetShortName(), zone->GetInstanceVersion(), c, 0, atoi(sep->arg[2]));
+		c->Message(Chat::White, "Mob of group %i added successfully!",  atoi(sep->arg[2]));
+		return;
+	}
 
 	if (strcasecmp(sep->arg[1], "removegroupspawn") == 0) {
-        if (!target || !target->IsNPC()) {
-            c->Message(Chat::White, "Error: Need an NPC target.");
-            return;
-        }
+		if (!target || !target->IsNPC()) {
+			c->Message(Chat::White, "Error: Need an NPC target.");
+			return;
+		}
 
-        Spawn2* s2 = target->CastToNPC()->respawn2;
+		Spawn2* s2 = target->CastToNPC()->respawn2;
 
-        if(!s2) {
-            c->Message(Chat::White, "removegroupspawn FAILED -- cannot determine which spawn entry in the database this mob came from.");
-            return;
-        }
+		if(!s2) {
+			c->Message(Chat::White, "removegroupspawn FAILED -- cannot determine which spawn entry in the database this mob came from.");
+			return;
+		}
 
-        std::string query = StringFormat("DELETE FROM spawn2 WHERE id = '%i'",  s2->GetID());
-        auto results = content_db.QueryDatabase(query);
-        if(!results.Success()) {
-            c->Message(Chat::Red, "Update failed! MySQL gave the following error:");
-            c->Message(Chat::Red, results.ErrorMessage().c_str());
-            return;
-        }
+		std::string query = StringFormat("DELETE FROM spawn2 WHERE id = '%i'",  s2->GetID());
+		auto results = content_db.QueryDatabase(query);
+		if(!results.Success()) {
+			c->Message(Chat::Red, "Update failed! MySQL gave the following error:");
+			c->Message(Chat::Red, results.ErrorMessage().c_str());
+			return;
+		}
 
-        c->Message(Chat::White, "Spawnpoint Removed successfully.");
-        target->Depop(false);
+		c->Message(Chat::White, "Spawnpoint Removed successfully.");
+		target->Depop(false);
 
-        return;
-    }
+		return;
+	}
 
 	if (strcasecmp(sep->arg[1], "movespawn") == 0) {
-        if (!target || !target->IsNPC()) {
-            c->Message(Chat::White, "Error: Need an NPC target.");
-            return;
-        }
+		if (!target || !target->IsNPC()) {
+			c->Message(Chat::White, "Error: Need an NPC target.");
+			return;
+		}
 
-        Spawn2* s2 = target->CastToNPC()->respawn2;
+		Spawn2* s2 = target->CastToNPC()->respawn2;
 
-        if(!s2) {
-            c->Message(Chat::White, "movespawn FAILED -- cannot determine which spawn entry in the database this mob came from.");
-            return;
-        }
+		if(!s2) {
+			c->Message(Chat::White, "movespawn FAILED -- cannot determine which spawn entry in the database this mob came from.");
+			return;
+		}
 
-        std::string query = StringFormat("UPDATE spawn2 SET x = '%f', y = '%f', z = '%f', heading = '%f' "
-                                        "WHERE id = '%i'",
-                                        c->GetX(), c->GetY(), c->GetZ(), c->GetHeading(),s2->GetID());
-        auto results = content_db.QueryDatabase(query);
-        if (!results.Success()) {
-            c->Message(Chat::Red, "Update failed! MySQL gave the following error:");
-            c->Message(Chat::Red, results.ErrorMessage().c_str());
-            return;
-        }
+		std::string query = StringFormat("UPDATE spawn2 SET x = '%f', y = '%f', z = '%f', heading = '%f' "
+										"WHERE id = '%i'",
+										c->GetX(), c->GetY(), c->GetZ(), c->GetHeading(),s2->GetID());
+		auto results = content_db.QueryDatabase(query);
+		if (!results.Success()) {
+			c->Message(Chat::Red, "Update failed! MySQL gave the following error:");
+			c->Message(Chat::Red, results.ErrorMessage().c_str());
+			return;
+		}
 
-        c->Message(Chat::White, "Updating coordinates successful.");
-        target->GMMove(c->GetX(), c->GetY(), c->GetZ(), c->GetHeading());
+		c->Message(Chat::White, "Updating coordinates successful.");
+		target->GMMove(c->GetX(), c->GetY(), c->GetZ(), c->GetHeading());
 
-        return;
-    }
+		return;
+	}
 
 	if (strcasecmp(sep->arg[1], "editrespawn") == 0) {
-        if (!target || !target->IsNPC()) {
-            c->Message(Chat::White, "Error: Need an NPC target.");
-            return;
-        }
+		if (!target || !target->IsNPC()) {
+			c->Message(Chat::White, "Error: Need an NPC target.");
+			return;
+		}
 
-        Spawn2* s2 = target->CastToNPC()->respawn2;
+		Spawn2* s2 = target->CastToNPC()->respawn2;
 
-        uint32 new_rs = 0;
-        uint32 new_var = s2->GetVariance();
-        if(!sep->IsNumber(2)) {
-            c->Message(Chat::White, "editrespawn FAILED -- cannot set respawn to be 0");
-            return;
-        }
+		uint32 new_rs = 0;
+		uint32 new_var = s2->GetVariance();
+		if(!sep->IsNumber(2)) {
+			c->Message(Chat::White, "editrespawn FAILED -- cannot set respawn to be 0");
+			return;
+		}
 
-        new_rs = atoi(sep->arg[2]);
+		new_rs = atoi(sep->arg[2]);
 
-        if(sep->IsNumber(3))
-            new_var = atoi(sep->arg[3]);
+		if(sep->IsNumber(3))
+			new_var = atoi(sep->arg[3]);
 
-        if(!s2) {
-            c->Message(Chat::White, "editrespawn FAILED -- cannot determine which spawn entry in the database this mob came from.");
-            return;
-        }
+		if(!s2) {
+			c->Message(Chat::White, "editrespawn FAILED -- cannot determine which spawn entry in the database this mob came from.");
+			return;
+		}
 
-        std::string query = StringFormat("UPDATE spawn2 SET respawntime = %u, variance = %u "
-                                        "WHERE id = '%i'",  new_rs, new_var, s2->GetID());
-        auto results = content_db.QueryDatabase(query);
-        if (!results.Success()) {
-            c->Message(Chat::Red, "Update failed! MySQL gave the following error:");
-            c->Message(Chat::Red, results.ErrorMessage().c_str());
-            return;
-        }
+		std::string query = StringFormat("UPDATE spawn2 SET respawntime = %u, variance = %u "
+										"WHERE id = '%i'",  new_rs, new_var, s2->GetID());
+		auto results = content_db.QueryDatabase(query);
+		if (!results.Success()) {
+			c->Message(Chat::Red, "Update failed! MySQL gave the following error:");
+			c->Message(Chat::Red, results.ErrorMessage().c_str());
+			return;
+		}
 
-        c->Message(Chat::White, "Updating respawn timer successful.");
-        s2->SetRespawnTimer(new_rs);
-        s2->SetVariance(new_var);
+		c->Message(Chat::White, "Updating respawn timer successful.");
+		s2->SetRespawnTimer(new_rs);
+		s2->SetVariance(new_var);
 
-        return;
-    }
+		return;
+	}
 
 	if (strcasecmp(sep->arg[1], "setversion") == 0) {
-        if (!target || !target->IsNPC()) {
-            c->Message(Chat::White, "Error: Need an NPC target.");
-            return;
-        }
+		if (!target || !target->IsNPC()) {
+			c->Message(Chat::White, "Error: Need an NPC target.");
+			return;
+		}
 
-        if(!sep->IsNumber(2)) {
-            c->Message(Chat::White, "setversion FAILED -- You must set a version number");
-            return;
-        }
+		if(!sep->IsNumber(2)) {
+			c->Message(Chat::White, "setversion FAILED -- You must set a version number");
+			return;
+		}
 
-        int16 version = atoi(sep->arg[2]);
-        std::string query = StringFormat("UPDATE spawn2 SET version = %i "
-                                        "WHERE spawngroupID = '%i'",
-                                        version, c->GetTarget()->CastToNPC()->GetSpawnGroupId());
-        auto results = content_db.QueryDatabase(query);
-        if (!results.Success()) {
-            c->Message(Chat::Red, "Update failed! MySQL gave the following error:");
-            c->Message(Chat::Red, results.ErrorMessage().c_str());
-            return;
-        }
+		int16 version = atoi(sep->arg[2]);
+		std::string query = StringFormat("UPDATE spawn2 SET version = %i "
+										"WHERE spawngroupID = '%i'",
+										version, c->GetTarget()->CastToNPC()->GetSpawnGroupId());
+		auto results = content_db.QueryDatabase(query);
+		if (!results.Success()) {
+			c->Message(Chat::Red, "Update failed! MySQL gave the following error:");
+			c->Message(Chat::Red, results.ErrorMessage().c_str());
+			return;
+		}
 
-        c->Message(Chat::White, "Version change to %i was successful from SpawnGroupID %i",  version,
+		c->Message(Chat::White, "Version change to %i was successful from SpawnGroupID %i",  version,
 				   c->GetTarget()->CastToNPC()->GetSpawnGroupId());
-        c->GetTarget()->Depop(false);
+		c->GetTarget()->Depop(false);
 
-        return;
-    }
+		return;
+	}
 
 	if (strcasecmp(sep->arg[1], "testload") == 0 && atoi(sep->arg[2])!=0) {
-        content_db.LoadSpawnGroupsByID(atoi(sep->arg[2]),&zone->spawn_group_list);
-        c->Message(Chat::White, "Group %i loaded successfully!",  atoi(sep->arg[2]));
-        return;
-    }
+		content_db.LoadSpawnGroupsByID(atoi(sep->arg[2]),&zone->spawn_group_list);
+		c->Message(Chat::White, "Group %i loaded successfully!",  atoi(sep->arg[2]));
+		return;
+	}
 
-    c->Message(Chat::White, "Error: #advnpcspawn: Invalid command.");
-    c->Message(Chat::White, "Usage: #advnpcspawn [maketype|makegroup|addgroupentry|addgroupspawn|setversion]");
-    c->Message(Chat::White, "Usage: #advnpcspawn [removegroupspawn|movespawn|editrespawn|editgroupbox|cleargroupbox]");
+	c->Message(Chat::White, "Error: #advnpcspawn: Invalid command.");
+	c->Message(Chat::White, "Usage: #advnpcspawn [maketype|makegroup|addgroupentry|addgroupspawn|setversion]");
+	c->Message(Chat::White, "Usage: #advnpcspawn [removegroupspawn|movespawn|editrespawn|editgroupbox|cleargroupbox]");
 }
 
 void command_aggrozone(Client *c, const Seperator *sep) {
@@ -11806,7 +11806,7 @@ void command_object(Client *c, const Seperator *sep)
 	if (strcasecmp(sep->arg[1], "list") == 0) {
 		// Insufficient or invalid args
 		if ((sep->argnum < 2) || (sep->arg[2][0] < '0') ||
-		    ((sep->arg[2][0] > '9') && ((sep->arg[2][0] & 0xDF) != 'A'))) {
+			((sep->arg[2][0] > '9') && ((sep->arg[2][0] & 0xDF) != 'A'))) {
 			c->Message(Chat::White, "Usage: #object List All|(radius)");
 			return;
 		}
@@ -11824,23 +11824,23 @@ void command_object(Client *c, const Seperator *sep)
 		std::string query;
 		if (radius)
 			query = StringFormat(
-			    "SELECT id, xpos, ypos, zpos, heading, itemid, "
-			    "objectname, type, icon, unknown08, unknown10, unknown20 "
-			    "FROM object WHERE zoneid = %u AND version = %u "
-			    "AND (xpos BETWEEN %.1f AND %.1f) "
-			    "AND (ypos BETWEEN %.1f AND %.1f) "
-			    "AND (zpos BETWEEN %.1f AND %.1f) "
-			    "ORDER BY id",
-			    zone->GetZoneID(), zone->GetInstanceVersion(),
-			    c->GetX() - radius, // Yes, we're actually using a bounding box instead of a radius.
-			    c->GetX() + radius, // Much less processing power used this way.
-			    c->GetY() - radius, c->GetY() + radius, c->GetZ() - radius, c->GetZ() + radius);
+				"SELECT id, xpos, ypos, zpos, heading, itemid, "
+				"objectname, type, icon, unknown08, unknown10, unknown20 "
+				"FROM object WHERE zoneid = %u AND version = %u "
+				"AND (xpos BETWEEN %.1f AND %.1f) "
+				"AND (ypos BETWEEN %.1f AND %.1f) "
+				"AND (zpos BETWEEN %.1f AND %.1f) "
+				"ORDER BY id",
+				zone->GetZoneID(), zone->GetInstanceVersion(),
+				c->GetX() - radius, // Yes, we're actually using a bounding box instead of a radius.
+				c->GetX() + radius, // Much less processing power used this way.
+				c->GetY() - radius, c->GetY() + radius, c->GetZ() - radius, c->GetZ() + radius);
 		else
 			query = StringFormat("SELECT id, xpos, ypos, zpos, heading, itemid, "
-					     "objectname, type, icon, unknown08, unknown10, unknown20 "
-					     "FROM object WHERE zoneid = %u AND version = %u "
-					     "ORDER BY id",
-					     zone->GetZoneID(), zone->GetInstanceVersion());
+						 "objectname, type, icon, unknown08, unknown10, unknown20 "
+						 "FROM object WHERE zoneid = %u AND version = %u "
+						 "ORDER BY id",
+						 zone->GetZoneID(), zone->GetInstanceVersion());
 
 		auto results = content_db.QueryDatabase(query);
 		if (!results.Success()) {
@@ -11857,7 +11857,7 @@ void command_object(Client *c, const Seperator *sep)
 			itemid = atoi(row[5]);
 			strn0cpy(od.object_name, row[6], sizeof(od.object_name));
 			od.object_name[sizeof(od.object_name) - 1] =
-			    '\0'; // Required if strlen(row[col++]) exactly == sizeof(object_name)
+				'\0'; // Required if strlen(row[col++]) exactly == sizeof(object_name)
 
 			od.object_type = atoi(row[7]);
 			icon = atoi(row[8]);
@@ -11872,20 +11872,20 @@ void command_object(Client *c, const Seperator *sep)
 					od.size = 100; // Static object default Size is 100%
 
 				c->Message(Chat::White, "- STATIC Object (%s): id %u, x %.1f, y %.1f, z %.1f, h %.1f, model %s, "
-					      "size %u, solidtype %u, incline %u",
+						  "size %u, solidtype %u, incline %u",
 					   (od.object_type == 0) ? "locked" : "unlocked", id, od.x, od.y, od.z,
 					   od.heading, od.object_name, od.size, od.solidtype, od.unknown020);
 				break;
 
 			case OT_DROPPEDITEM: // Ground Spawn
 				c->Message(Chat::White, "- TEMPORARY Object: id %u, x %.1f, y %.1f, z %.1f, h %.1f, itemid %u, "
-					      "model %s, icon %u",
+						  "model %s, icon %u",
 					   id, od.x, od.y, od.z, od.heading, itemid, od.object_name, icon);
 				break;
 
 			default: // All others == Tradeskill Objects
 				c->Message(Chat::White, "- TRADESKILL Object: id %u, x %.1f, y %.1f, z %.1f, h %.1f, model %s, "
-					      "type %u, icon %u",
+						  "type %u, icon %u",
 					   id, od.x, od.y, od.z, od.heading, od.object_name, od.object_type, icon);
 				break;
 			}
@@ -11898,12 +11898,12 @@ void command_object(Client *c, const Seperator *sep)
 	if (strcasecmp(sep->arg[1], "add") == 0) {
 		// Insufficient or invalid arguments
 		if ((sep->argnum < 3) ||
-		    ((sep->arg[3][0] == '\0') && (sep->arg[4][0] < '0') && (sep->arg[4][0] > '9'))) {
+			((sep->arg[3][0] == '\0') && (sep->arg[4][0] < '0') && (sep->arg[4][0] > '9'))) {
 			c->Message(Chat::White, "Usage: (Static Object): #object Add [ObjectID] 0 Model [SizePercent] "
-				      "[SolidType] [Incline]");
+					  "[SolidType] [Incline]");
 			c->Message(Chat::White, "Usage: (Tradeskill Object): #object Add [ObjectID] TypeNum Model Icon");
 			c->Message(Chat::White, "- Notes: Model must start with a letter, max length 16. SolidTypes = 0 (Solid), "
-				      "1 (Sometimes Non-Solid)");
+					  "1 (Sometimes Non-Solid)");
 			return;
 		}
 
@@ -11945,8 +11945,8 @@ void command_object(Client *c, const Seperator *sep)
 
 		case 1: // Ground Spawn
 			c->Message(Chat::White, "ERROR: Object Type 1 is used for temporarily spawned ground spawns and dropped "
-				      "items, which are not supported with #object. See the 'ground_spawns' table in "
-				      "the database.");
+					  "items, which are not supported with #object. See the 'ground_spawns' table in "
+					  "the database.");
 			return;
 
 		default: // Everything else == Tradeskill Object
@@ -11990,14 +11990,14 @@ void command_object(Client *c, const Seperator *sep)
 		int objectsFound = 0;
 		// Verify no other objects already in this spot (accidental double-click of Hotkey?)
 		query = StringFormat(
-		    "SELECT COUNT(*) FROM object WHERE zoneid = %u "
-		    "AND version=%u AND (xpos BETWEEN %.1f AND %.1f) "
-		    "AND (ypos BETWEEN %.1f AND %.1f) "
-		    "AND (zpos BETWEEN %.1f AND %.1f)",
-		    zone->GetZoneID(), zone->GetInstanceVersion(), od.x - 0.2f,
-		    od.x + 0.2f,	       // Yes, we're actually using a bounding box instead of a radius.
-		    od.y - 0.2f, od.y + 0.2f,  // Much less processing power used this way.
-		    od.z - 0.2f, od.z + 0.2f); // It's pretty forgiving, though, allowing for close-proximity objects
+			"SELECT COUNT(*) FROM object WHERE zoneid = %u "
+			"AND version=%u AND (xpos BETWEEN %.1f AND %.1f) "
+			"AND (ypos BETWEEN %.1f AND %.1f) "
+			"AND (zpos BETWEEN %.1f AND %.1f)",
+			zone->GetZoneID(), zone->GetInstanceVersion(), od.x - 0.2f,
+			od.x + 0.2f,	       // Yes, we're actually using a bounding box instead of a radius.
+			od.y - 0.2f, od.y + 0.2f,  // Much less processing power used this way.
+			od.z - 0.2f, od.z + 0.2f); // It's pretty forgiving, though, allowing for close-proximity objects
 
 		auto results = content_db.QueryDatabase(query);
 		if (results.Success() && results.RowCount() != 0) {
@@ -12073,14 +12073,14 @@ void command_object(Client *c, const Seperator *sep)
 		c->MovePC(c->GetX() - x2, c->GetY() - y2, c->GetZ(), c->GetHeading());
 
 		c->Message(Chat::White, "Spawning object with tentative id %u at location (%.1f, %.1f, %.1f heading %.1f). Use "
-			      "'#object Save' to save to database when satisfied with placement.",
+				  "'#object Save' to save to database when satisfied with placement.",
 			   id, od.x, od.y, od.z, od.heading);
 
 		// Temporary Static Object
 		if (od.object_type == staticType)
 			c->Message(Chat::White, "- Note: Static Object will act like a tradeskill container and will not reflect "
-				      "size, solidtype, or incline values until you commit with '#object Save', after "
-				      "which it will be unchangeable until you use '#object Edit' and zone back in.");
+					  "size, solidtype, or incline values until you commit with '#object Save', after "
+					  "which it will be unchangeable until you use '#object Edit' and zone back in.");
 
 		return;
 	}
@@ -12140,24 +12140,24 @@ void command_object(Client *c, const Seperator *sep)
 				content_db.QueryDatabase(query);
 
 				c->Message(Chat::White, "Static Object %u unlocked for editing. You must zone out and back in to "
-					      "make your changes, then commit them with '#object Save'.",
+						  "make your changes, then commit them with '#object Save'.",
 					   id);
 				if (sep->argnum >= 4)
 					c->Message(Chat::White, "NOTE: The change you specified has not been applied, since the "
-						      "static object had not been unlocked for editing yet.");
+							  "static object had not been unlocked for editing yet.");
 				return;
 
 			case OT_DROPPEDITEM:
 				c->Message(Chat::White, "ERROR: Object %u is a temporarily spawned ground spawn or dropped item, "
-					      "which cannot be manipulated with #object. See the 'ground_spawns' table "
-					      "in the database.",
+						  "which cannot be manipulated with #object. See the 'ground_spawns' table "
+						  "in the database.",
 					   id);
 				return;
 
 			case staticType:
 				c->Message(Chat::White, "ERROR: Object %u has been unlocked for editing, but you must zone out "
-					      "and back in for your client to refresh its object table before you can "
-					      "make changes to it.",
+						  "and back in for your client to refresh its object table before you can "
+						  "make changes to it.",
 					   id);
 				return;
 
@@ -12202,15 +12202,15 @@ void command_object(Client *c, const Seperator *sep)
 				// Convert Static Object to temporary changeable type
 				od.object_type = staticType;
 				c->Message(Chat::White, "Note: Static Object will still act like tradeskill object and will not "
-					      "reflect size, solidtype, or incline settings until committed to the "
-					      "database with '#object Save', after which it will be unchangeable until "
-					      "it is unlocked again with '#object Edit'.");
+						  "reflect size, solidtype, or incline settings until committed to the "
+						  "database with '#object Save', after which it will be unchangeable until "
+						  "it is unlocked again with '#object Edit'.");
 				break;
 
 			case OT_DROPPEDITEM:
 				c->Message(Chat::White, "ERROR: Object Type 1 is used for temporarily spawned ground spawns and "
-					      "dropped items, which are not supported with #object. See the "
-					      "'ground_spawns' table in the database.");
+						  "dropped items, which are not supported with #object. See the "
+						  "'ground_spawns' table in the database.");
 				return;
 
 			default:
@@ -12222,8 +12222,8 @@ void command_object(Client *c, const Seperator *sep)
 		} else if (strcmp(sep->arg[3], "size") == 0) {
 			if (od.object_type != staticType) {
 				c->Message(
-				    0, "ERROR: Object %u is not a Static Object and does not support the Size property",
-				    id);
+					0, "ERROR: Object %u is not a Static Object and does not support the Size property",
+					id);
 				return;
 			}
 
@@ -12239,14 +12239,14 @@ void command_object(Client *c, const Seperator *sep)
 				od.size = 100;
 
 			c->Message(Chat::White, "Static Object %u set to %u%% size. Size will take effect when you commit to the "
-				      "database with '#object Save', after which the object will be unchangeable until "
-				      "you unlock it again with '#object Edit' and zone out and back in.",
+					  "database with '#object Save', after which the object will be unchangeable until "
+					  "you unlock it again with '#object Edit' and zone out and back in.",
 				   id, od.size);
 		} else if (strcmp(sep->arg[3], "solidtype") == 0) {
 
 			if (od.object_type != staticType) {
 				c->Message(Chat::White, "ERROR: Object %u is not a Static Object and does not support the "
-					      "SolidType property",
+						  "SolidType property",
 					   id);
 				return;
 			}
@@ -12260,14 +12260,14 @@ void command_object(Client *c, const Seperator *sep)
 			o->SetObjectData(&od);
 
 			c->Message(Chat::White, "Static Object %u set to SolidType %u. Change will take effect when you commit "
-				      "to the database with '#object Save'. Support for this property is on a "
-				      "per-model basis, mostly seen in smaller objects such as chests and tables.",
+					  "to the database with '#object Save'. Support for this property is on a "
+					  "per-model basis, mostly seen in smaller objects such as chests and tables.",
 					  id, od.solidtype);
 		} else if (strcmp(sep->arg[3], "icon") == 0) {
 
 			if ((od.object_type < 2) || (od.object_type == staticType)) {
 				c->Message(Chat::White, "ERROR: Object %u is not a Tradeskill Object and does not support the "
-					      "Icon property",
+						  "Icon property",
 					   id);
 				return;
 			}
@@ -12282,16 +12282,16 @@ void command_object(Client *c, const Seperator *sep)
 		} else if (strcmp(sep->arg[3], "incline") == 0) {
 			if (od.object_type != staticType) {
 				c->Message(
-				    0,
-				    "ERROR: Object %u is not a Static Object and does not support the Incline property",
-				    id);
+					0,
+					"ERROR: Object %u is not a Static Object and does not support the Incline property",
+					id);
 				return;
 			}
 
 			if ((sep->arg[4][0] < '0') || (sep->arg[4][0] > '9')) {
 				c->Message(
-				    0,
-				    "ERROR: Invalid Incline specified. Please enter a number. Normal range is 0-512.");
+					0,
+					"ERROR: Invalid Incline specified. Please enter a number. Normal range is 0-512.");
 				return;
 			}
 
@@ -12299,8 +12299,8 @@ void command_object(Client *c, const Seperator *sep)
 			o->SetObjectData(&od);
 
 			c->Message(Chat::White, "Static Object %u set to %u incline. Incline will take effect when you commit to "
-				      "the database with '#object Save', after which the object will be unchangeable "
-				      "until you unlock it again with '#object Edit' and zone out and back in.",
+					  "the database with '#object Save', after which the object will be unchangeable "
+					  "until you unlock it again with '#object Edit' and zone out and back in.",
 				   id, od.unknown020);
 		} else {
 			c->Message(Chat::White, "ERROR: Unrecognized property name: %s", sep->arg[3]);
@@ -12323,9 +12323,9 @@ void command_object(Client *c, const Seperator *sep)
 	if (strcasecmp(sep->arg[1], "move") == 0) {
 
 		if ((sep->argnum < 2) ||	       // Not enough arguments
-		    ((id = atoi(sep->arg[2])) == 0) || // ID not specified
-		    (((sep->arg[3][0] < '0') || (sep->arg[3][0] > '9')) && ((sep->arg[3][0] & 0xDF) != 'T') &&
-		     (sep->arg[3][0] != '-') && (sep->arg[3][0] != '.'))) { // Location argument not specified correctly
+			((id = atoi(sep->arg[2])) == 0) || // ID not specified
+			(((sep->arg[3][0] < '0') || (sep->arg[3][0] > '9')) && ((sep->arg[3][0] & 0xDF) != 'T') &&
+			 (sep->arg[3][0] != '-') && (sep->arg[3][0] != '.'))) { // Location argument not specified correctly
 			c->Message(Chat::White, "Usage: #object Move (ObjectID) ToMe|(x y z [h])");
 			return;
 		}
@@ -12356,21 +12356,21 @@ void command_object(Client *c, const Seperator *sep)
 			switch (od.object_type) {
 			case 0:
 				c->Message(Chat::White, "ERROR: Object %u is not yet unlocked for editing. Use '#object Edit' "
-					      "then zone out and back in to move it.",
+						  "then zone out and back in to move it.",
 					   id);
 				return;
 
 			case staticType:
 				c->Message(Chat::White, "ERROR: Object %u has been unlocked for editing, but you must zone out "
-					      "and back in before your client sees the change and will allow you to "
-					      "move it.",
+						  "and back in before your client sees the change and will allow you to "
+						  "move it.",
 					   id);
 				return;
 
 			case 1:
 				c->Message(Chat::White, "ERROR: Object %u is a temporary spawned object and cannot be "
-					      "manipulated with #object. See the 'ground_spawns' table in the "
-					      "database.",
+						  "manipulated with #object. See the 'ground_spawns' table in the "
+						  "database.",
 					   id);
 				return;
 
@@ -12385,7 +12385,7 @@ void command_object(Client *c, const Seperator *sep)
 			od.x = c->GetX();
 			od.y = c->GetY();
 			od.z = c->GetZ() -
-			       (c->GetSize() *
+				   (c->GetSize() *
 				0.625f); // Compensate for #loc bumping up Z coordinate by 62.5% of character's size.
 
 			o->SetHeading(c->GetHeading());
@@ -12436,7 +12436,7 @@ void command_object(Client *c, const Seperator *sep)
 
 		if ((o = entity_list.FindObject(id)) == nullptr) {
 			c->Message(Chat::White, "ERROR: Object %u not found in zone, or is a static object not yet unlocked with "
-				      "'#object Edit' for editing.",
+					  "'#object Edit' for editing.",
 				   id);
 			return;
 		}
@@ -12503,15 +12503,15 @@ void command_object(Client *c, const Seperator *sep)
 
 			if (od.object_type == 0) {
 				c->Message(Chat::White, "ERROR: Static Object %u has already been committed. Use '#object Edit "
-					      "%u' and zone out and back in to make changes.",
+						  "%u' and zone out and back in to make changes.",
 					   id, id);
 				return;
 			}
 
 			if (od.object_type == 1) {
 				c->Message(Chat::White, "ERROR: Object %u is a temporarily spawned ground spawn or dropped item, "
-					      "which is not supported with #object. See the 'ground_spawns' table in "
-					      "the database.",
+						  "which is not supported with #object. See the 'ground_spawns' table in "
+						  "the database.",
 					   id);
 				return;
 			}
@@ -12543,29 +12543,29 @@ void command_object(Client *c, const Seperator *sep)
 
 		if (!bNewObject)
 			query = StringFormat("UPDATE object SET zoneid = %u, version = %u, "
-					     "xpos = %.1f, ypos=%.1f, zpos=%.1f, heading=%.1f, "
-					     "objectname = '%s', type = %u, icon = %u, "
-					     "unknown08 = %u, unknown10 = %u, unknown20 = %u "
-					     "WHERE ID = %u",
-					     zone->GetZoneID(), zone->GetInstanceVersion(), od.x, od.y, od.z,
-					     od.heading, od.object_name, od.object_type, icon, od.size,
+						 "xpos = %.1f, ypos=%.1f, zpos=%.1f, heading=%.1f, "
+						 "objectname = '%s', type = %u, icon = %u, "
+						 "unknown08 = %u, unknown10 = %u, unknown20 = %u "
+						 "WHERE ID = %u",
+						 zone->GetZoneID(), zone->GetInstanceVersion(), od.x, od.y, od.z,
+						 od.heading, od.object_name, od.object_type, icon, od.size,
 						 od.solidtype, od.unknown020, id);
 		else if (id == 0)
 			query = StringFormat("INSERT INTO object "
-					     "(zoneid, version, xpos, ypos, zpos, heading, objectname, "
-					     "type, icon, unknown08, unknown10, unknown20) "
-					     "VALUES (%u, %u, %.1f, %.1f, %.1f, %.1f, '%s', %u, %u, %u, %u, %u)",
-					     zone->GetZoneID(), zone->GetInstanceVersion(), od.x, od.y, od.z,
-					     od.heading, od.object_name, od.object_type, icon, od.size,
-					     od.solidtype, od.unknown020);
+						 "(zoneid, version, xpos, ypos, zpos, heading, objectname, "
+						 "type, icon, unknown08, unknown10, unknown20) "
+						 "VALUES (%u, %u, %.1f, %.1f, %.1f, %.1f, '%s', %u, %u, %u, %u, %u)",
+						 zone->GetZoneID(), zone->GetInstanceVersion(), od.x, od.y, od.z,
+						 od.heading, od.object_name, od.object_type, icon, od.size,
+						 od.solidtype, od.unknown020);
 		else
 			query = StringFormat("INSERT INTO object "
-					     "(id, zoneid, version, xpos, ypos, zpos, heading, objectname, "
-					     "type, icon, unknown08, unknown10, unknown20) "
-					     "VALUES (%u, %u, %u, %.1f, %.1f, %.1f, %.1f, '%s', %u, %u, %u, %u, %u)",
-					     id, zone->GetZoneID(), zone->GetInstanceVersion(), od.x, od.y, od.z,
-					     od.heading, od.object_name, od.object_type, icon, od.size,
-					     od.solidtype, od.unknown020);
+						 "(id, zoneid, version, xpos, ypos, zpos, heading, objectname, "
+						 "type, icon, unknown08, unknown10, unknown20) "
+						 "VALUES (%u, %u, %u, %.1f, %.1f, %.1f, %.1f, '%s', %u, %u, %u, %u, %u)",
+						 id, zone->GetZoneID(), zone->GetInstanceVersion(), od.x, od.y, od.z,
+						 od.heading, od.object_name, od.object_type, icon, od.size,
+						 od.solidtype, od.unknown020);
 
 		results = content_db.QueryDatabase(query);
 		if (!results.Success()) {
@@ -12627,7 +12627,7 @@ void command_object(Client *c, const Seperator *sep)
 				door.size = 100;
 
 			switch (
-			    door.opentype =
+				door.opentype =
 				od.solidtype) // unknown10 = optional request_nonsolid (0 or 1 or experimental number)
 			{
 			case 0:
@@ -12665,8 +12665,8 @@ void command_object(Client *c, const Seperator *sep)
 			safe_delete(app);
 
 			c->Message(Chat::White, "NOTE: Object %u is now a static object, and is unchangeable. To make future "
-				      "changes, use '#object Edit' to convert it to a changeable form, then zone out "
-				      "and back in.",
+					  "changes, use '#object Edit' to convert it to a changeable form, then zone out "
+					  "and back in.",
 				   id);
 		}
 		return;
@@ -12675,7 +12675,7 @@ void command_object(Client *c, const Seperator *sep)
 	if (strcasecmp(sep->arg[1], "copy") == 0) {
 		// Insufficient or invalid arguments
 		if ((sep->argnum < 3) ||
-		    (((sep->arg[2][0] & 0xDF) != 'A') && ((sep->arg[2][0] < '0') || (sep->arg[2][0] > '9')))) {
+			(((sep->arg[2][0] & 0xDF) != 'A') && ((sep->arg[2][0] < '0') || (sep->arg[2][0] > '9')))) {
 			c->Message(Chat::White, "Usage: #object Copy All|(ObjectID) (InstanceVersion)");
 			c->Message(Chat::White, "- Note: Only objects saved in the database can be copied to another instance.");
 			return;
@@ -12692,7 +12692,7 @@ void command_object(Client *c, const Seperator *sep)
 			// Copy All
 
 			std::string query =
-			    StringFormat("INSERT INTO object "
+				StringFormat("INSERT INTO object "
 					 "(zoneid, version, xpos, ypos, zpos, heading, itemid, "
 					 "objectname, type, icon, unknown08, unknown10, unknown20) "
 					 "SELECT zoneid, %u, xpos, ypos, zpos, heading, itemid, "
@@ -12768,7 +12768,7 @@ void command_object(Client *c, const Seperator *sep)
 
 		if ((sep->argnum < 2) || ((id = atoi(sep->arg[2])) <= 0)) {
 			c->Message(Chat::White, "Usage: #object Delete (ObjectID) -- NOTE: Object deletions are permanent and "
-				      "cannot be undone!");
+					  "cannot be undone!");
 			return;
 		}
 
@@ -12814,18 +12814,18 @@ void command_object(Client *c, const Seperator *sep)
 		switch (atoi(row[0])) {
 		case 0: // Static Object
 			query = StringFormat("DELETE FROM object WHERE id = %u "
-					     "AND zoneid = %u AND version = %u LIMIT 1",
-					     id, zone->GetZoneID(), zone->GetInstanceVersion());
+						 "AND zoneid = %u AND version = %u LIMIT 1",
+						 id, zone->GetZoneID(), zone->GetInstanceVersion());
 			results = content_db.QueryDatabase(query);
 
 			c->Message(Chat::White, "Object %u deleted. NOTE: This static object will remain for anyone currently in "
-				      "the zone until they next zone out and in.",
+					  "the zone until they next zone out and in.",
 				   id);
 			return;
 
 		case 1: // Temporary Spawn
 			c->Message(Chat::White, "ERROR: Object %u is a temporarily spawned ground spawn or dropped item, which "
-				      "is not supported with #object. See the 'ground_spawns' table in the database.",
+					  "is not supported with #object. See the 'ground_spawns' table in the database.",
 				   id);
 			return;
 		}
@@ -12837,7 +12837,7 @@ void command_object(Client *c, const Seperator *sep)
 		// Insufficient or invalid arguments
 		if ((sep->argnum < 2) || ((id = atoi(sep->arg[2])) == 0)) {
 			c->Message(Chat::White, "Usage: #object Undo (ObjectID) -- Reload object from database, undoing any "
-				      "changes you have made");
+					  "changes you have made");
 			return;
 		}
 
@@ -12851,7 +12851,7 @@ void command_object(Client *c, const Seperator *sep)
 
 		if (o->GetType() == OT_DROPPEDITEM) {
 			c->Message(Chat::White, "ERROR: Object %u is a temporary spawned item and cannot be manipulated with "
-				      "#object. See the 'ground_spawns' table in the database.",
+					  "#object. See the 'ground_spawns' table in the database.",
 				   id);
 			return;
 		}
@@ -13177,7 +13177,7 @@ void command_cvs(Client *c, const Seperator *sep)
 	if(c)
 	{
 		auto pack =
-		    new ServerPacket(ServerOP_ClientVersionSummary, sizeof(ServerRequestClientVersionSummary_Struct));
+			new ServerPacket(ServerOP_ClientVersionSummary, sizeof(ServerRequestClientVersionSummary_Struct));
 
 		ServerRequestClientVersionSummary_Struct *srcvss = (ServerRequestClientVersionSummary_Struct*)pack->pBuffer;
 
@@ -13453,56 +13453,56 @@ void command_mysql(Client *c, const Seperator *sep)
 				case 's': optionS = true; break;
 				case 'h': optionH = true; break;
 				default:
-                    c->Message(Chat::Yellow, "%s, there is no option '%c'",  c->GetName(), sep->arg[argnum][1]);
-                    return;
+					c->Message(Chat::Yellow, "%s, there is no option '%c'",  c->GetName(), sep->arg[argnum][1]);
+					return;
 			}
 			++argnum;
 		}
 
-        int highlightTextIndex = 0;
-        std::string query(sep->arg[2]);
-        //swap # for % so like queries can work
-        std::replace(query.begin(), query.end(), '#', '%');
-        auto results = database.QueryDatabase(query);
-        if (!results.Success()) {
-            return;
-        }
+		int highlightTextIndex = 0;
+		std::string query(sep->arg[2]);
+		//swap # for % so like queries can work
+		std::replace(query.begin(), query.end(), '#', '%');
+		auto results = database.QueryDatabase(query);
+		if (!results.Success()) {
+			return;
+		}
 
-        //Using sep->arg[2] again, replace # with %% so it doesn't screw up when sent through vsnprintf in Message
-        query = sep->arg[2];
-        int pos = query.find('#');
-        while(pos != std::string::npos) {
-            query.erase(pos,1);
-            query.insert(pos, "%%");
-            pos = query.find('#');
-        }
-        c->Message(Chat::Yellow, "---Running query: '%s'",  query.c_str());
+		//Using sep->arg[2] again, replace # with %% so it doesn't screw up when sent through vsnprintf in Message
+		query = sep->arg[2];
+		int pos = query.find('#');
+		while(pos != std::string::npos) {
+			query.erase(pos,1);
+			query.insert(pos, "%%");
+			pos = query.find('#');
+		}
+		c->Message(Chat::Yellow, "---Running query: '%s'",  query.c_str());
 
-        for (auto row = results.begin(); row != results.end(); ++row) {
-            std::stringstream lineText;
-            std::vector<std::string> lineVec;
-            for(int i = 0; i < results.RowCount(); i++) {
-                //split lines that could overflow the buffer in Client::Message and get cut off
-                //This will crash MQ2 @ 4000 since their internal buffer is only 2048.
-                //Reducing it to 2000 fixes that but splits more results from tables with a lot of columns.
-                if(lineText.str().length() > 4000) {
-                    lineVec.push_back(lineText.str());
-                    lineText.str("");
-                }
-                lineText << results.FieldName(i) << ":" << "[" << (row[i] ? row[i] : "nullptr") << "] ";
-            }
+		for (auto row = results.begin(); row != results.end(); ++row) {
+			std::stringstream lineText;
+			std::vector<std::string> lineVec;
+			for(int i = 0; i < results.RowCount(); i++) {
+				//split lines that could overflow the buffer in Client::Message and get cut off
+				//This will crash MQ2 @ 4000 since their internal buffer is only 2048.
+				//Reducing it to 2000 fixes that but splits more results from tables with a lot of columns.
+				if(lineText.str().length() > 4000) {
+					lineVec.push_back(lineText.str());
+					lineText.str("");
+				}
+				lineText << results.FieldName(i) << ":" << "[" << (row[i] ? row[i] : "nullptr") << "] ";
+			}
 
-            lineVec.push_back(lineText.str());
+			lineVec.push_back(lineText.str());
 
-            if(optionS) //This provides spacing for the space switch
-                c->Message(Chat::White, " ");
-            if(optionH) //This option will highlight every other row
-                highlightTextIndex = 1 - highlightTextIndex;
+			if(optionS) //This provides spacing for the space switch
+				c->Message(Chat::White, " ");
+			if(optionH) //This option will highlight every other row
+				highlightTextIndex = 1 - highlightTextIndex;
 
-            for(int lineNum = 0; lineNum < lineVec.size(); ++lineNum)
-                    c->Message(highlightTextIndex, lineVec[lineNum].c_str());
-        }
-    }
+			for(int lineNum = 0; lineNum < lineVec.size(); ++lineNum)
+					c->Message(highlightTextIndex, lineVec[lineNum].c_str());
+		}
+	}
 }
 
 void command_xtargets(Client *c, const Seperator *sep)
@@ -14518,9 +14518,7 @@ void command_who(Client *c, const Seperator *sep)
 				),
 				""
 			  ) as account_ip,
-			  IF(
-				   character_data.pvp_status = 0, 'No', 'Yes'
-			  ) AS trader_mode
+			  character_data.pvp_status AS trader_mode
 			FROM
 			  character_data
 			WHERE
@@ -14566,7 +14564,7 @@ void command_who(Client *c, const Seperator *sep)
 		std::string account_ip          = row[11];
 		std::string base_class_name     = GetClassIDName(static_cast<uint8>(player_class), 1);
 		std::string displayed_race_name = GetRaceIDName(static_cast<uint16>(player_race));
-		std::string trader_mode    		= row[12];
+		auto        trader_mode      	= static_cast<uint32>(atoi(row[12]));
 
 		if (search_string.length() > 0) {
 			bool found_search_term =
@@ -14578,8 +14576,7 @@ void command_who(Client *c, const Seperator *sep)
 						 str_tolower(guild_name).find(search_string) != std::string::npos ||
 						 str_tolower(account_name).find(search_string) != std::string::npos ||
 						 str_tolower(forum_name).find(search_string) != std::string::npos ||
-						 str_tolower(account_ip).find(search_string) != std::string::npos ||
-						 str_tolower(trader_mode).find(search_string) != std::string::npos
+						 str_tolower(account_ip).find(search_string) != std::string::npos
 					 );
 
 			if (!found_search_term) {
@@ -14618,7 +14615,7 @@ void command_who(Client *c, const Seperator *sep)
 			EQ::SayLinkEngine::GenerateQuestSaylink(StringFormat("#who %s", account_name.c_str()), false, account_name).c_str(),
 			EQ::SayLinkEngine::GenerateQuestSaylink(StringFormat("#who %s", forum_name.c_str()), false, forum_name).c_str(),
 			EQ::SayLinkEngine::GenerateQuestSaylink(StringFormat("#who %s", account_ip.c_str()), false, account_ip).c_str(),
-			trader_mode
+			(trader_mode > 0 ? "Yes" : "No")
 		);
 
 		found_count++;
