@@ -2438,8 +2438,16 @@ void NPC::ModifyNPCStat(const char *identifier, const char *new_value)
 		hp_regen = atoi(val.c_str());
 		return;
 	}
+	else if (id == "combat_hp_regen") {
+		combat_hp_regen = atoi(val.c_str());
+		return;
+	}
 	else if (id == "mana_regen") {
 		mana_regen = atoi(val.c_str());
+		return;
+	}
+	else if (id == "combat_mana_regen") {
+		combat_mana_regen = atoi(val.c_str());
 		return;
 	}
 	else if (id == "level") {
