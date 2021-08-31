@@ -1685,7 +1685,7 @@ void Client::Handle_Connect_OP_ZoneEntry(const EQApplicationPacket *app)
 		}
 	}
 	/* Moved here so it's after where we load the pet data. */
-	if (!GetAA(aaPersistentMinion)) {
+	if (!aabonuses.ZoneSuspendMinion && !spellbonuses.ZoneSuspendMinion && !itembonuses.ZoneSuspendMinion) {
 		memset(&m_suspendedminion, 0, sizeof(PetInfo));
 	}
 
