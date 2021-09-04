@@ -171,8 +171,6 @@ Client::Client(EQStreamInterface* ieqs)
   last_region_type(RegionTypeUnsupported),
   m_dirtyautohaters(false),
   mob_close_scan_timer(6000),
-  hp_self_update_throttle_timer(300),
-  hp_other_update_throttle_timer(500),
   position_update_timer(10000),
   consent_throttle_timer(2000)
 {
