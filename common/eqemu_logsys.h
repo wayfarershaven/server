@@ -125,6 +125,9 @@ namespace Logs {
 		Group,
 		NATS,
 		Scheduler, // 75
+		Cheat,
+		ClientList,
+		DiaWind, // 78
 		MaxCategoryID /* Don't Remove this */
 	};
 
@@ -208,6 +211,9 @@ namespace Logs {
 		"Group",
 		"NATS",
 		"Scheduler",
+		"Cheat",
+		"ClientList",
+		"DialogueWindow",
 	};
 }
 

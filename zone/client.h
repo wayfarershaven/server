@@ -191,7 +191,9 @@ struct RespawnOption
 	float heading;
 };
 
-const uint32 POPUPID_UPDATE_SHOWSTATSWINDOW = 1000000;
+const std::string DIAWIND_RESPONSE_KEY           = "diawind_npcresponse";
+const uint32      POPUPID_DIAWIND                = 999;
+const uint32      POPUPID_UPDATE_SHOWSTATSWINDOW = 1000000;
 
 struct ClientReward
 {
