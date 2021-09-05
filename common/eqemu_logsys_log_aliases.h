@@ -1053,6 +1053,24 @@
 #define LogDynamicZonesDetail(message, ...) do {\
 } while (0)
 
+#define LogCheatList(message, ...) do {\
+} while (0)
+
+#define LogCheatDetail(message, ...) do {\
+} while (0)
+
+#define LogClientList(message, ...) do {\
+} while (0)
+
+#define LogClientListDetail(message, ...) do {\
+} while (0)
+
+#define LogDiaWind(message, ...) do {\
+} while (0)
+
+#define LogDiaWindDetail(message, ...) do {\
+} while (0)
+
 #define Log(debug_level, log_category, message, ...) do {\
 } while (0)
 
