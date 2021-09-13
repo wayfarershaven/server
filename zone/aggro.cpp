@@ -910,6 +910,8 @@ float Mob::CombatDistance(Mob* other, float fixed_size_mod)
 		size_mod = size_mod / 7;
 	}
 
+	float _DistNoRoot = DistanceSquaredNoZ(m_Position, other->GetPosition());
+	
 	if (size_mod > 29) {
 		return(size_mod);
 		LogDebug("Size > 29 - combat range - [{}], distance to npc - [{}]", size_mod, _DistNoRoot);
