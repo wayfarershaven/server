@@ -2864,7 +2864,7 @@ bool Mob::HateSummon() {
 			float angle = new_pos.w - target->GetHeading();
 
 			// probably should be like half melee range, but we can't get melee range nicely because reasons :)
-			new_pos = target->TryMoveAlong(new_pos, 2.0f, angle);
+			new_pos = target->TryMoveAlong(new_pos, CombatDistance(target) / 2, angle);
 
 			if (target->IsClient())
 				target->CastToClient()->MovePC(zone->GetZoneID(), zone->GetInstanceID(), new_pos.x, new_pos.y, new_pos.z, new_pos.w, 0, SummonPC);
