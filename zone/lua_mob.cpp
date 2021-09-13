@@ -12,6 +12,7 @@
 #include "lua_client.h"
 #include "lua_stat_bonuses.h"
 #include "questmgr.h"
+#include "dialogue_window.h"
 
 struct SpecialAbilities { };
 
@@ -763,7 +764,11 @@ void Lua_Mob::Message(int type, const char *message) {
 	Lua_Safe_Call_Void();
 
 	// auto inject saylinks
-	if (RuleB(Chat, AutoInjectSaylinksToClientMessage)) {
+	if (RuleB(Chat, QuestDialogueUsesDialogueWindow) && self->IsClient()) {
+		std::string window_markdown = message;
+		DialogueWindow::Render(self->CastToClient(), window_markdown);
+	}
+	else if (RuleB(Chat, AutoInjectSaylinksToClientMessage)) {
 		std::string new_message = EQ::SayLinkEngine::InjectSaylinksIfNotExist(message);
 		self->Message(type, new_message.c_str());
 	}
