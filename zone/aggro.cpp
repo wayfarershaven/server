@@ -892,16 +892,6 @@ float Mob::CombatDistance(Mob* other, float fixed_size_mod)
 		size_mod = other_size_mod;
 	}
 
-	// this could still use some work, but for now it's an improvement....
-
-	if (size_mod > 29) {
-		size_mod *= size_mod;
-	} else if (size_mod > 19) {
-		size_mod *= size_mod * 2;
-	} else {
-		size_mod *= size_mod * 4;
-	}
-
 	if (other->GetRace() == 184)		// Lord Vyemm and other velious dragons
 	{
 		size_mod *= 1.75;
@@ -911,18 +901,25 @@ float Mob::CombatDistance(Mob* other, float fixed_size_mod)
 		size_mod *= 2.25;
 	}
 
+
 	size_mod *= RuleR(Combat,HitBoxMod);		// used for testing sizemods on different races.
 	size_mod *= fixed_size_mod;					// used to extend the size_mod
 
 	// prevention of ridiculously sized hit boxes
-	if (size_mod > 10000) {
+	if (size_mod > 1000) {
 		size_mod = size_mod / 7;
 	}
 
-	float _DistNoRoot = DistanceSquaredNoZ(m_Position, other->GetPosition());
-
-	LogDebug("aggro range - [{}], distance to npc - [{}]", size_mod, _DistNoRoot);
-	return size_mod;
+	if (size_mod > 29) {
+		return(size_mod);
+		LogDebug("Size > 29 - combat range - [{}], distance to npc - [{}]", size_mod, _DistNoRoot);
+	} else if (size_mod > 19) {
+		return(size_mod * 1.5);
+		LogDebug("Size > 19 - combat range - [{}], distance to npc - [{}]", size_mod, _DistNoRoot);
+	} else {
+		return(size_mod * 2);
+		LogDebug("Size else - combat range - [{}], distance to npc - [{}]", size_mod, _DistNoRoot);
+	}
 }
 
 bool Mob::CheckLosFN(Mob *other)
