@@ -960,7 +960,7 @@ glm::vec4 Mob::TryMoveAlong(const glm::vec4 &start, float distance, float angle)
 
 	new_pos.z = GetFixedZ(new_pos);
 
-	return {new_pos.x, new_pos.y, new_pos.z, angle};
+	return {new_pos.x, new_pos.y, new_pos.z, start.w};
 }
 
 int	ZoneDatabase::GetHighestGrid(uint32 zoneid) {

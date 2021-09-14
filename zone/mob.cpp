@@ -2860,8 +2860,8 @@ bool Mob::HateSummon() {
 			entity_list.MessageClose(this, true, 500, Chat::Say, "%s says 'You will not evade me, %s!' ", GetCleanName(), target->GetCleanName() );
 
 			auto new_pos = m_Position;
-			new_pos.w = target->GetHeading();
 			float angle = new_pos.w - target->GetHeading();
+			new_pos.w = target->GetHeading();
 
 			// probably should be like half melee range, but we can't get melee range nicely because reasons :)
 			new_pos = target->TryMoveAlong(new_pos, CombatDistance(target) / 2, angle);
