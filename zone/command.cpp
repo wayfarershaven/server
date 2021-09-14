@@ -2759,6 +2759,8 @@ void command_iplookup(Client *c, const Seperator *sep)
 
 void command_issue(Client *c, const Seperator *sep) {
 
+	c->Message(Chat::White, "#issue has been retired. Please post all bug reports to the Wayfarers Haven Forums. For in-game issues, please use /guide");
+	/*
 	//Get the unclaimed_encounter_rewards
 	if (sep->arg[1] && strcasecmp(sep->arg[1], "delete") == 0) { //Delete an issue
 		if (!sep->arg[2] || atoi(sep->arg[2]) == 0) {
@@ -2869,6 +2871,7 @@ void command_issue(Client *c, const Seperator *sep) {
 	}
 
 	c->Message(Chat::White, "Your issue #%i has been submitted.", results.LastInsertedID());
+	*/
 }
 
 void command_size(Client *c, const Seperator *sep)
