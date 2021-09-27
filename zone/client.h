@@ -191,7 +191,9 @@ struct RespawnOption
 	float heading;
 };
 
-const uint32 POPUPID_UPDATE_SHOWSTATSWINDOW = 1000000;
+const std::string DIAWIND_RESPONSE_KEY           = "diawind_npcresponse";
+const uint32      POPUPID_DIAWIND                = 999;
+const uint32      POPUPID_UPDATE_SHOWSTATSWINDOW = 1000000;
 
 struct ClientReward
 {
@@ -373,6 +375,7 @@ public:
 
 	void Duck();
 	void Stand();
+	void Sit();
 
 	virtual void SetMaxHP();
 	int32 LevelRegen();
@@ -1345,7 +1348,7 @@ public:
 	uint32 GetCorpseCount() { return database.GetCharacterCorpseCount(CharacterID()); }
 	uint32 GetCorpseID(int corpse) { return database.GetCharacterCorpseID(CharacterID(), corpse); }
 	uint32 GetCorpseItemAt(int corpse_id, int slot_id) { return database.GetCharacterCorpseItemAt(corpse_id, slot_id); }
-	void SuspendMinion();
+	void SuspendMinion(int value);
 	void Doppelganger(uint16 spell_id, Mob *target, const char *name_override, int pet_count, int pet_duration);
 	void NotifyNewTitlesAvailable();
 	void Signal(uint32 data);
@@ -1788,8 +1791,6 @@ private:
 	Timer helm_toggle_timer;
 	Timer aggro_meter_timer;
 	Timer mob_close_scan_timer;
-	Timer hp_self_update_throttle_timer; /* This is to prevent excessive packet sending under trains/fast combat */
-	Timer hp_other_update_throttle_timer; /* This is to keep clients from DOSing the server with macros that change client targets constantly */
 	Timer position_update_timer; /* Timer used when client hasn't updated within a 10 second window */
 	Timer consent_throttle_timer;
 	Timer dynamiczone_removal_timer;

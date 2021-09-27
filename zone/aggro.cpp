@@ -869,6 +869,61 @@ bool Mob::CombatRange(Mob* other, float fixed_size_mod, bool aeRampage)
 	return false;
 }
 
+float Mob::CombatDistance(Mob* other, float fixed_size_mod)
+{
+	if(!other)
+		return(0);
+
+	float size_mod = GetSize();
+	float other_size_mod = other->GetSize();
+
+	if(GetRace() == 49 || GetRace() == 158 || GetRace() == 196) //For races with a fixed size
+		size_mod = 60.0f;
+	else if (size_mod < 6.0)
+		size_mod = 8.0f;
+
+	if(other->GetRace() == 49 || other->GetRace() == 158 || other->GetRace() == 196) //For races with a fixed size
+		other_size_mod = 60.0f;
+	else if (other_size_mod < 6.0)
+		other_size_mod = 8.0f;
+
+	if (other_size_mod > size_mod)
+	{
+		size_mod = other_size_mod;
+	}
+
+	if (other->GetRace() == 184)		// Lord Vyemm and other velious dragons
+	{
+		size_mod *= 1.75;
+	}
+	if (other->GetRace() == 122)		// Dracoliche in Fear.  Skeletal Dragon
+	{
+		size_mod *= 2.25;
+	}
+
+
+	size_mod *= RuleR(Combat,HitBoxMod);		// used for testing sizemods on different races.
+	size_mod *= fixed_size_mod;					// used to extend the size_mod
+
+	// prevention of ridiculously sized hit boxes
+	if (size_mod > 1000) {
+		size_mod = size_mod / 7;
+	}
+
+	float _DistNoRoot = DistanceSquaredNoZ(m_Position, other->GetPosition());
+	
+	if (size_mod > 29) {
+		return(size_mod);
+		LogDebug("Size > 29 - combat range - [{}], distance to npc - [{}]", size_mod, _DistNoRoot);
+	} else if (size_mod > 19) {
+		return(size_mod * 1.5);
+		LogDebug("Size > 19 - combat range - [{}], distance to npc - [{}]", size_mod, _DistNoRoot);
+	} else {
+		return(size_mod * 2);
+		LogDebug("Size else - combat range - [{}], distance to npc - [{}]", size_mod, _DistNoRoot);
+	}
+}
+
 bool Mob::CheckLosFN(Mob *other)
 {
 	bool Result = false;

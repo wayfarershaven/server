@@ -171,8 +171,6 @@ Client::Client(EQStreamInterface* ieqs)
   last_region_type(RegionTypeUnsupported),
   m_dirtyautohaters(false),
   mob_close_scan_timer(6000),
-  hp_self_update_throttle_timer(300),
-  hp_other_update_throttle_timer(500),
   position_update_timer(10000),
   consent_throttle_timer(2000)
 {
@@ -1993,6 +1991,10 @@ void Client::Duck() {
 
 void Client::Stand() {
 	SetAppearance(eaStanding, false);
+}
+
+void Client::Sit() {
+    SetAppearance(eaSitting, false);
 }
 
 void Client::ChangeLastName(const char* in_lastname) {
@@ -5649,17 +5651,19 @@ void Client::RemoveLDoNWin(uint32 theme_id)
 	}
 }
 
-void Client::SuspendMinion()
+void Client::SuspendMinion(int value)
 {
+	/*
+		SPA 151 Allows an extra pet to be saved and resummoned later.
+		Casting with a pet but without a suspended pet will suspend the pet
+		Casting without a pet and with a suspended pet will unsuspend the pet
+		effect value 0 = save pet with no buffs or equipment
+		effect value 1 = save pet with buffs and equipment
+		effect value 2 = unknown
+		Note: SPA 308 allows for suspended pets to be resummoned after zoning.
+	*/
+
 	NPC *CurrentPet = GetPet()->CastToNPC();
-
-	int AALevel = GetAA(aaSuspendedMinion);
-
-	if(AALevel == 0)
-		return;
-
-	if(GetLevel() < 62)
-		return;
 
 	if(!CurrentPet)
 	{
@@ -5682,7 +5686,7 @@ void Client::SuspendMinion()
 				return;
 			}
 
-			if(AALevel >= 2)
+			if(value >= 1)
 			{
 				CurrentPet->SetPetState(m_suspendedminion.Buffs, m_suspendedminion.Items);
 
@@ -5751,7 +5755,7 @@ void Client::SuspendMinion()
 				m_suspendedminion.petpower = CurrentPet->GetPetPower();
 				m_suspendedminion.size = CurrentPet->GetSize();
 
-				if(AALevel >= 2)
+				if(value >= 1)
 					CurrentPet->GetPetState(m_suspendedminion.Buffs, m_suspendedminion.Items, m_suspendedminion.Name);
 				else
 					strn0cpy(m_suspendedminion.Name, CurrentPet->GetName(), 64); // Name stays even at rank 1

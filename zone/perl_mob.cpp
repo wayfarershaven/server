@@ -41,6 +41,7 @@ typedef const char Const_char;
 #include "mob.h"
 #include "client.h"
 #include "../common/spdat.h"
+#include "dialogue_window.h"
 
 #ifdef BOTS
 #include "bot.h"
@@ -997,7 +998,7 @@ XS(XS_Mob_GetDetBuffCount) {
 
 		RETVAL = THIS->GetDetBuffCount();
 		XSprePUSH;
-		PUSHu((UV) RETVAL);		
+		PUSHu((UV) RETVAL);
 	}
 	XSRETURN(1);
 }
@@ -2653,7 +2654,18 @@ XS(XS_Mob_Message) {
 		uint32 type = (uint32) SvUV(ST(1));
 		char *message = (char *) SvPV_nolen(ST(2));
 		VALIDATE_THIS_IS_MOB;
-		THIS->Message(type, message);
+
+		if (RuleB(Chat, QuestDialogueUsesDialogueWindow) && THIS->IsClient()) {
+			std::string window_markdown = message;
+			DialogueWindow::Render(THIS->CastToClient(), window_markdown);
+		}
+		else if (RuleB(Chat, AutoInjectSaylinksToClientMessage)) {
+			std::string new_message = EQ::SayLinkEngine::InjectSaylinksIfNotExist(message);
+			THIS->Message(type, new_message.c_str());
+		}
+		else {
+			THIS->Message(type, message);
+		}
 	}
 	XSRETURN_EMPTY;
 }
@@ -6087,7 +6099,7 @@ XS(XS_Mob_GetClassName) {
 		XSprePUSH;
 		PUSHTARG;
 	}
-	XSRETURN(1);	
+	XSRETURN(1);
 }
 
 XS(XS_Mob_GetRaceName);
@@ -6110,7 +6122,7 @@ XS(XS_Mob_GetRaceName) {
 
 XS(XS_Mob_DeleteBucket);
 XS(XS_Mob_DeleteBucket) {
-	dXSARGS;	
+	dXSARGS;
 	if (items != 2)
 		Perl_croak(aTHX_ "Usage: Mob::DeleteBucket(THIS, std::string bucket_name)"); // @categories Script Utility
 	{
@@ -6124,7 +6136,7 @@ XS(XS_Mob_DeleteBucket) {
 
 XS(XS_Mob_GetBucket);
 XS(XS_Mob_GetBucket) {
-	dXSARGS;	
+	dXSARGS;
 	if (items != 2)
 		Perl_croak(aTHX_ "Usage: Mob::GetBucket(THIS, std::string bucket_name)"); // @categories Script Utility
 	{
@@ -6143,7 +6155,7 @@ XS(XS_Mob_GetBucket) {
 
 XS(XS_Mob_GetBucketExpires);
 XS(XS_Mob_GetBucketExpires) {
-	dXSARGS;	
+	dXSARGS;
 	if (items != 2)
 		Perl_croak(aTHX_ "Usage: Mob::GetBucketExpires(THIS, std::string bucket_name)"); // @categories Script Utility
 	{
@@ -6162,7 +6174,7 @@ XS(XS_Mob_GetBucketExpires) {
 
 XS(XS_Mob_GetBucketKey);
 XS(XS_Mob_GetBucketKey) {
-	dXSARGS;	
+	dXSARGS;
 	if (items != 1)
 		Perl_croak(aTHX_ "Usage: Mob::GetBucketKey(THIS)"); // @categories Script Utility
 	{
@@ -6180,7 +6192,7 @@ XS(XS_Mob_GetBucketKey) {
 
 XS(XS_Mob_GetBucketRemaining);
 XS(XS_Mob_GetBucketRemaining) {
-	dXSARGS;	
+	dXSARGS;
 	if (items != 2)
 		Perl_croak(aTHX_ "Usage: Mob::GetBucketRemaining(THIS, std::string bucket_name)"); // @categories Script Utility
 	{
@@ -6199,7 +6211,7 @@ XS(XS_Mob_GetBucketRemaining) {
 
 XS(XS_Mob_SetBucket);
 XS(XS_Mob_SetBucket) {
-	dXSARGS;	
+	dXSARGS;
 	if (items < 3 || items > 4)
 		Perl_croak(aTHX_ "Usage: Mob::SetBucket(THIS, std::string bucket_name, std::string bucket_value, [std::string expiration])"); // @categories Script Utility
 	{
@@ -6217,7 +6229,7 @@ XS(XS_Mob_SetBucket) {
 }
 
 XS(XS_Mob_IsHorse);
-XS(XS_Mob_IsHorse) {	
+XS(XS_Mob_IsHorse) {
 	dXSARGS;
 	if (items != 1)
 		Perl_croak(aTHX_ "Usage: Mob::IsHorse(THIS)"); // @categories Script Utility

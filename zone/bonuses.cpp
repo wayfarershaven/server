@@ -1486,6 +1486,10 @@ void Mob::ApplyAABonuses(const AA::Rank &rank, StatBonuses *newbon)
 			}
 			break;
 
+		case SE_ZoneSuspendMinion:
+			newbon->ZoneSuspendMinion = base1;
+			break;
+			
 		// to do
 		case SE_PetDiscipline:
 			break;
@@ -1640,7 +1644,9 @@ void Mob::ApplySpellsBonuses(uint16 spell_id, uint8 casterlevel, StatBonuses *ne
 
 			case SE_ChangeFrenzyRad:
 			{
-				// redundant to have level check here
+				if (max != 0 && GetLevel() > max)
+					break;
+
 				if(new_bonus->AggroRange == -1 || effect_value < new_bonus->AggroRange)
 				{
 					new_bonus->AggroRange = static_cast<float>(effect_value);
@@ -1650,6 +1656,8 @@ void Mob::ApplySpellsBonuses(uint16 spell_id, uint8 casterlevel, StatBonuses *ne
 
 			case SE_Harmony:
 			{
+				if (max != 0 && GetLevel() > max)
+					break;
 				// Harmony effect as buff - kinda tricky
 				// harmony could stack with a lull spell, which has better aggro range
 				// take the one with less range in any case
@@ -2583,10 +2591,6 @@ void Mob::ApplySpellsBonuses(uint16 spell_id, uint8 casterlevel, StatBonuses *ne
 				break;
 			}
 
-			case SE_BlockNextSpellFocus:
-				new_bonus->BlockNextSpell = true;
-				break;
-
 			case SE_NegateSpellEffect:
 				new_bonus->NegateEffects = true;
 				break;
@@ -3270,6 +3274,10 @@ void Mob::ApplySpellsBonuses(uint16 spell_id, uint8 casterlevel, StatBonuses *ne
 				new_bonus->SeeInvis = spells[spell_id].base[i];
 				break;
 
+			case SE_ZoneSuspendMinion:
+				new_bonus->ZoneSuspendMinion = effect_value;
+				break;
+				
 				//Special custom cases for loading effects on to NPC from 'npc_spels_effects' table
 
 			if (IsAISpellEffect) {
@@ -3592,8 +3600,7 @@ uint8 Mob::IsFocusEffect(uint16 spell_id,int effect_index, bool AA,uint32 aa_eff
 		case SE_FcSpellVulnerability:
 			return focusSpellVulnerability;
 		case SE_BlockNextSpellFocus:
-			//return focusBlockNextSpell;
-			return 0; //This is calculated as an actual bonus
+			return focusBlockNextSpell;
 		case SE_FcTwincast:
 			return focusTwincast;
 		case SE_SympatheticProc:

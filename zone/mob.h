@@ -301,6 +301,7 @@ public:
 	void MeleeMitigation(Mob *attacker, DamageHitInfo &hit, ExtraAttackOptions *opts = nullptr);
 	double RollD20(int offense, int mitigation); // CALL THIS FROM THE DEFENDER
 	bool CombatRange(Mob* other, float fixed_size_mod = 1.0, bool aeRampage = false);
+	float CombatDistance(Mob* other, float fixed_size_mod = 1.0);
 	virtual inline bool IsBerserk() { return false; } // only clients
 	void RogueEvade(Mob *other);
 	void CommonOutgoingHitSuccess(Mob *defender, DamageHitInfo &hit, ExtraAttackOptions *opts = nullptr);
@@ -500,6 +501,7 @@ public:
 	inline float GetTargetRingZ() const { return m_TargetRing.z; }
 	inline bool HasEndurUpkeep() const { return endur_upkeep; }
 	inline void SetEndurUpkeep(bool val) { endur_upkeep = val; }
+	bool HasBuffWithSpellGroup(int spellgroup);
 
 	//Basic Stats/Inventory
 	virtual void SetLevel(uint8 in_level, bool command = false) { level = in_level; }
@@ -703,6 +705,7 @@ public:
 	void Teleport(const glm::vec3 &pos);
 	void Teleport(const glm::vec4 &pos);
 	void TryMoveAlong(float distance, float angle, bool send = true);
+	glm::vec4 TryMoveAlong(const glm::vec4 &start, float distance, float angle);
 	void ProcessForcedMovement();
 	inline void IncDeltaX(float in) { m_Delta.x += in; }
 	inline void IncDeltaY(float in) { m_Delta.y += in; }
@@ -761,7 +764,7 @@ public:
 	static void CreateSpawnPacket(EQApplicationPacket* app, NewSpawn_Struct* ns);
 	virtual void FillSpawnStruct(NewSpawn_Struct* ns, Mob* ForWho);
 	void CreateHPPacket(EQApplicationPacket* app);
-	void SendHPUpdate(bool skip_self = false, bool force_update_all = false);
+	void SendHPUpdate(bool force_update_all = false);
 	virtual void ResetHPUpdateTimer() {}; // does nothing
 
 	//Util
@@ -913,13 +916,13 @@ public:
 	int GetCriticalChanceBonus(uint16 skill);
 	int16 GetSkillDmgAmt(uint16 skill);
 	bool TryReflectSpell(uint32 spell_id);
-	bool CanBlockSpell() const { return(spellbonuses.BlockNextSpell); }
+	inline bool CanBlockSpell() const { return(spellbonuses.FocusEffects[focusBlockNextSpell]); }
 	bool DoHPToManaCovert(uint16 mana_cost = 0);
 	int32 ApplySpellEffectiveness(int16 spell_id, int32 value, bool IsBard = false, uint16 caster_id=0);
 	int8 GetDecayEffectValue(uint16 spell_id, uint16 spelleffect);
 	int32 GetExtraSpellAmt(uint16 spell_id, int32 extra_spell_amt, int32 base_spell_dmg);
 	void MeleeLifeTap(int32 damage);
-	bool PassCastRestriction(bool UseCastRestriction = true, int16 value = 0, bool IsDamage = true);
+	bool PassCastRestriction(int value);
 	bool ImprovedTaunt();
 	bool TryRootFadeByDamage(int buffslot, Mob* attacker);
 	float GetSlowMitigation() const { return slow_mitigation; }
@@ -927,6 +930,11 @@ public:
 	inline int16 GetSpellPowerDistanceMod() const { return SpellPowerDistanceMod; };
 	inline void SetSpellPowerDistanceMod(int16 value) { SpellPowerDistanceMod = value; };
 	int32 GetSpellStat(uint32 spell_id, const char *identifier, uint8 slot = 0);
+	bool HarmonySpellLevelCheck(int32 spell_id, Mob* target = nullptr);
+	
+	void CastSpellOnLand(Mob* caster, uint32 spell_id);
+	void FocusProcLimitProcess();
+	bool ApplyFocusProcLimiter(uint32 spell_id, int buffslot = -1);
 
 	void ModSkillDmgTaken(EQ::skills::SkillType skill_num, int value);
 	int16 GetModSkillDmgTaken(const EQ::skills::SkillType skill_num);

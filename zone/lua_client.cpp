@@ -15,6 +15,7 @@
 #include "lua_group.h"
 #include "lua_raid.h"
 #include "lua_packet.h"
+#include "dialogue_window.h"
 #include "../common/expedition_lockout_timer.h"
 
 struct InventoryWhere { };
@@ -92,6 +93,11 @@ void Lua_Client::SetAnon(uint8 anon_flag) {
 void Lua_Client::Duck() {
 	Lua_Safe_Call_Void();
 	self->Duck();
+}
+
+void Lua_Client::Sit() {
+	Lua_Safe_Call_Void();
+	self->Sit();
 }
 
 void Lua_Client::DyeArmorBySlot(uint8 slot, uint8 red, uint8 green, uint8 blue) {
@@ -1771,6 +1777,11 @@ int Lua_Client::GetClientMaxLevel() {
 	return self->GetClientMaxLevel();
 }
 
+void Lua_Client::DialogueWindow(std::string markdown) {
+	Lua_Safe_Call_Void();
+	DialogueWindow::Render(self, std::move(markdown));
+}
+
 DynamicZoneLocation GetDynamicZoneLocationFromTable(const luabind::object& lua_table)
 {
 	DynamicZoneLocation zone_location;
@@ -2032,7 +2043,7 @@ void Lua_Client::SetAAEXPModifier(uint32 zone_id, double aa_modifier) {
 
 void Lua_Client::SetEXPModifier(uint32 zone_id, double exp_modifier) {
 	Lua_Safe_Call_Void();
-	self->SetEXPModifier(zone_id, exp_modifier);	
+	self->SetEXPModifier(zone_id, exp_modifier);
 }
 
 void Lua_Client::AddLDoNLoss(uint32 theme_id) {
@@ -2138,6 +2149,7 @@ luabind::scope lua_register_client() {
 		.def("SetAFK", (void(Lua_Client::*)(uint8))&Lua_Client::SetAFK)
 		.def("GetAnon", (int(Lua_Client::*)(void))&Lua_Client::GetAnon)
 		.def("SetAnon", (void(Lua_Client::*)(uint8))&Lua_Client::SetAnon)
+		.def("Sit", (void(Lua_Client::*)(void))&Lua_Client::Sit)
 		.def("Duck", (void(Lua_Client::*)(void))&Lua_Client::Duck)
 		.def("DyeArmorBySlot", (void(Lua_Client::*)(uint8,uint8,uint8,uint8))&Lua_Client::DyeArmorBySlot)
 		.def("DyeArmorBySlot", (void(Lua_Client::*)(uint8,uint8,uint8,uint8,uint8))&Lua_Client::DyeArmorBySlot)
@@ -2402,6 +2414,9 @@ luabind::scope lua_register_client() {
 		.def("GetAlternateCurrencyValue", (int(Lua_Client::*)(uint32))&Lua_Client::GetAlternateCurrencyValue)
 		.def("SendWebLink", (void(Lua_Client::*)(const char *))&Lua_Client::SendWebLink)
 		.def("HasSpellScribed", (bool(Lua_Client::*)(int))&Lua_Client::HasSpellScribed)
+		.def("DiaWind", (void(Lua_Client::*)(std::string))&Lua_Client::DialogueWindow)
+		.def("DialogueWindow", (void(Lua_Client::*)(std::string))&Lua_Client::DialogueWindow)
+		.def("SetAccountFlag", (void(Lua_Client::*)(std::string,std::string))&Lua_Client::SetAccountFlag)
 		.def("SetAccountFlag", (void(Lua_Client::*)(std::string,std::string))&Lua_Client::SetAccountFlag)
 		.def("GetAccountFlag", (std::string(Lua_Client::*)(std::string))&Lua_Client::GetAccountFlag)
 		.def("GetGroup", (Lua_Group(Lua_Client::*)(void))&Lua_Client::GetGroup)

@@ -476,8 +476,6 @@ struct StatBonuses {
 	int		HPPercCap[2];						//Spell effect that limits you to being healed/regening beyond a % of your max
 	int		ManaPercCap[2];						// ^^ 0 = % Cap 1 = Flat Amount Cap
 	int		EndPercCap[2];						// ^^
-	bool	BlockNextSpell;						// Indicates whether the client can block a spell or not
-	//uint16	BlockSpellEffect[EFFECT_COUNT];		// Prevents spells with certain effects from landing on you *no longer used
 	bool	ImmuneToFlee;						// Bypass the fleeing flag
 	uint32	VoiceGraft;							// Stores the ID of the mob with which to talk through
 	int32	SpellProcChance;					// chance to proc from sympathetic spell effects
@@ -525,6 +523,8 @@ struct StatBonuses {
 	uint32  SkillProcSuccess[MAX_SKILL_PROCS];	// Max number of spells containing skill_procs_success.
 	uint32  PC_Pet_Rampage[2];					// 0= % chance to rampage, 1=damage modifier
 	uint32  PC_Pet_Flurry;						// Percent chance flurry from double attack
+	
+	bool	ZoneSuspendMinion;					// base 1 allows suspended minions to zone
 
 	// AAs
 	int8	Packrat;							//weight reduction for items, 1 point = 10%

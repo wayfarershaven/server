@@ -31,6 +31,7 @@ public:
 	}
 
 	void SendSound();
+	void Sit();
 	void Save();
 	void Save(int commit_now);
 	void SaveBackup();
@@ -56,7 +57,7 @@ public:
 	bool GetGM();
 	void SetBaseClass(int v);
 	void SetBaseRace(int v);
-	void SetBaseGender(int v);	
+	void SetBaseGender(int v);
 	int GetClassBitmask();
 	int GetRaceBitmask();
 	int GetBaseFace();
@@ -379,6 +380,8 @@ public:
 
 	void SetClientMaxLevel(int value);
 	int GetClientMaxLevel();
+
+	void DialogueWindow(std::string markdown);
 
 	Lua_Expedition  CreateExpedition(luabind::object expedition_info);
 	Lua_Expedition  CreateExpedition(std::string zone_name, uint32 version, uint32 duration, std::string expedition_name, uint32 min_players, uint32 max_players);

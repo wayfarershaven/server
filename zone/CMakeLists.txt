@@ -22,6 +22,7 @@ SET(zone_sources
 	corpse.cpp
 	data_bucket.cpp
 	doors.cpp
+	dialogue_window.cpp
 	dynamic_zone.cpp
 	effects.cpp
 	embparser.cpp
@@ -179,6 +180,7 @@ SET(zone_headers
 	corpse.h
 	data_bucket.h
 	doors.h
+	dialogue_window.h
 	dynamic_zone.h
 	embparser.h
 	embperl.h
