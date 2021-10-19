@@ -5469,17 +5469,14 @@ void command_corpse(Client *c, const Seperator *sep) {
 		} else
 			c->Message(Chat::White, "Insufficient status to delete player corpse.");
 	} else if (strcasecmp(sep->arg[1], "bury") == 0) {
-		if (target == 0 || !target->IsCorpse()) {
-			c->Message(Chat::Red, "Error: Target the corpse you wish to bury");
-			return;
-		}
 		if (target->IsNPCCorpse()) {
 			c->Message(Chat::White, "Depoping %s.", target->GetName());
 			target->CastToCorpse()->Bury();
 		} else if (strlen(sep->arg[2]) > 0 && sep->IsNumber(2)) {
 			database.BuryCharacterCorpse(atoi(sep->arg[2]));
-		} else
+		} else {
 			c->Message(Chat::White, "Insufficient status to bury player corpse.");
+		}
 	} else if (strcasecmp(sep->arg[1], "moveallgraveyard") == 0) {
 		int count = entity_list.MovePlayerCorpsesToGraveyard(true);
 		c->Message(Chat::White, "Moved [%d] player corpse(s) to zone graveyard", count);
