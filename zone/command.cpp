@@ -5469,7 +5469,7 @@ void command_corpse(Client *c, const Seperator *sep) {
 		} else
 			c->Message(Chat::White, "Insufficient status to delete player corpse.");
 	} else if (strcasecmp(sep->arg[1], "bury") == 0) {
-		if (target->IsNPCCorpse()) {
+		if (c->GetTarget() && c->GetTarget()->IsPlayerCorpse() && c->GetGM()) {
 			c->Message(Chat::White, "Depoping %s.", target->GetName());
 			target->CastToCorpse()->Bury();
 		} else if (strlen(sep->arg[2]) > 0 && sep->IsNumber(2)) {
