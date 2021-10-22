@@ -9,13 +9,11 @@ void DialogueWindow::Render(Client *c, std::string markdown)
 	}
 
 	// this is the NPC that the client is interacting with if there is dialogue going on
-	Mob *target;
-	if (c->GetTarget()) {
-		target = c->GetTarget();
-	}
+	Mob* target = c->GetTarget() ? c->GetTarget() : c;
 
 	// zero this out
-	c->SetEntityVariable(DIAWIND_RESPONSE_KEY.c_str(), "");
+	c->SetEntityVariable(DIAWIND_RESPONSE_ONE_KEY.c_str(), "");
+	c->SetEntityVariable(DIAWIND_RESPONSE_TWO_KEY.c_str(), "");
 
 	// simple find and replace for the markdown
 	find_replace(output, "~", "</c>");
@@ -28,7 +26,7 @@ void DialogueWindow::Render(Client *c, std::string markdown)
 	find_replace(output, "{gray}", "<c \"#808080\">");
 	find_replace(output, "{tan}", "<c \"#daa520\">");
 	find_replace(output, "{bullet}", "•");
-	find_replace(output, "{name}", "$name");
+	find_replace(output, "{name}", fmt::format("{}", c->GetCleanName()));
 	find_replace(output, "{linebreak}", "--------------------------------------------------------------------");
 	find_replace(output, "{rowpad}", R"(<tr><td>{tdpad}<"td><td>{tdpad}<"td><"tr>)");
 	find_replace(output, "{tdpad}", "----------------------");
@@ -36,10 +34,10 @@ void DialogueWindow::Render(Client *c, std::string markdown)
 
 	// mysterious voice
 	bool render_mysterious_voice = false;
-	if (markdown.find("mysterious") != std::string::npos) {
+	if (markdown.find("{mysterious}") != std::string::npos) {
 		render_mysterious_voice = true;
 		LogDiaWind("Client [{}] Rendering mysterious voice", c->GetCleanName());
-		find_replace(output, "mysterious", "");
+		find_replace(output, "{mysterious}", "");
 	}
 
 	// noquotes
@@ -56,6 +54,13 @@ void DialogueWindow::Render(Client *c, std::string markdown)
 		render_nobracket = true;
 		LogDiaWind("Client [{}] Rendering nobracket", c->GetCleanName());
 		find_replace(output, "nobracket", "");
+	}
+
+	bool render_hiddenresponse = false;
+	if (markdown.find("hiddenresponse") != std::string::npos) {		
+		render_hiddenresponse = true;
+		LogDiaWind("Client [{}] Rendering hiddenresponse", c->GetCleanName());
+		find_replace(output, "hiddenresponse", "");
 	}
 
 	// animations
@@ -117,15 +122,15 @@ void DialogueWindow::Render(Client *c, std::string markdown)
 		}
 	}
 
-	uint32 popup_id       = POPUPID_DIAWIND;
-	uint32 negative_id    = 0;
-	char   *button_name_0 = nullptr;
-	char   *button_name_1 = nullptr;
+	uint32 popup_id = POPUPID_DIAWIND_ONE;
+	uint32 negative_id = POPUPID_DIAWIND_TWO;
+	std::string button_one_name;
+	std::string button_two_name;
 	uint32 sound_controls = 0;
 
 	// window type
 	std::string wintype;
-	if (markdown.find("wintype") != std::string::npos) {
+	if (markdown.find("wintype:") != std::string::npos) {
 		LogDiaWind("Client [{}] Rendering wintype option", c->GetCleanName());
 
 		auto first_split = split_string(output, "wintype:");
@@ -156,7 +161,7 @@ void DialogueWindow::Render(Client *c, std::string markdown)
 
 	// popupid
 	std::string popupid;
-	if (markdown.find("popupid") != std::string::npos) {
+	if (markdown.find("popupid:") != std::string::npos) {
 		LogDiaWind("Client [{}] Rendering popupid option", c->GetCleanName());
 
 		auto first_split = split_string(output, "popupid:");
@@ -186,6 +191,96 @@ void DialogueWindow::Render(Client *c, std::string markdown)
 			// set the popup id
 			if (!popupid.empty()) {
 				popup_id = (StringIsNumber(popupid) ? std::atoi(popupid.c_str()) : 0);
+			}
+		}
+	}
+
+	// secondresponseid
+	std::string secondresponseid;
+	if (markdown.find("secondresponseid:") != std::string::npos) {
+		LogDiaWind("Client [{}] Rendering secondresponseid option", c->GetCleanName());
+
+		auto first_split = split_string(output, "secondresponseid:");
+		if (!first_split.empty()) {
+			auto second_split = split_string(first_split[1], " ");
+			if (!second_split.empty()) {
+				secondresponseid = second_split[0];
+				LogDiaWindDetail("Client [{}] Rendering secondresponseid option secondresponseid [{}]", c->GetCleanName(), secondresponseid);
+			}
+
+			if (first_split[1].length() == 1) {
+				secondresponseid = first_split[1];
+				LogDiaWindDetail(
+					"Client [{}] Rendering secondresponseid (end) option secondresponseid [{}]",
+					c->GetCleanName(),
+					secondresponseid
+				);
+			}
+
+			find_replace(output, fmt::format("secondresponseid:{}", secondresponseid), "");
+
+			if (!secondresponseid.empty()) {
+				negative_id = (StringIsNumber(secondresponseid) ? std::atoi(secondresponseid.c_str()) : 0);
+			}
+		}
+	}
+
+	// Buttons Text
+	std::string button_one;
+	std::string button_two;
+	if (
+		markdown.find("button_one:") != std::string::npos &&
+		markdown.find("button_two:") != std::string::npos
+	) {
+		LogDiaWind("Client [{}] Rendering button_one option.", c->GetCleanName());
+
+		auto one_first_split = split_string(output, "button_one:");
+		if (!one_first_split.empty()) {
+			auto one_second_split = split_string(one_first_split[1], " ");
+			if (!one_second_split.empty()) {
+				button_one = one_second_split[0];
+				LogDiaWindDetail("Client [{}] Rendering button_one option button_one [{}]", c->GetCleanName(), button_one);
+			}
+
+			if (one_first_split[1].length() == 1) {
+				button_one = one_first_split[1];
+				LogDiaWindDetail(
+					"Client [{}] Rendering button_one (end) option button_one [{}]",
+					c->GetCleanName(),
+					button_one
+				);
+			}
+
+			find_replace(output, fmt::format("button_one:{}", button_one), "");
+
+			if (!button_one.empty()) {
+				button_one_name = button_one.c_str();
+			}
+		}
+
+		LogDiaWind("Client [{}] Rendering button_two option.", c->GetCleanName());
+
+		auto two_first_split = split_string(output, "button_two:");
+		if (!two_first_split.empty()) {
+			auto two_second_split = split_string(two_first_split[1], " ");
+			if (!two_second_split.empty()) {
+				button_two = two_second_split[0];
+				LogDiaWindDetail("Client [{}] Rendering button_two option button_two [{}]", c->GetCleanName(), button_two);
+			}
+
+			if (two_first_split[1].length() == 1) {
+				button_two = two_first_split[1];
+				LogDiaWindDetail(
+					"Client [{}] Rendering button_two (end) option button_two [{}]",
+					c->GetCleanName(),
+					button_two
+				);
+			}
+
+			find_replace(output, fmt::format("button_two:{}", button_two), "");
+
+			if (!button_two.empty()) {
+				button_two_name = button_two.c_str();
 			}
 		}
 	}
@@ -255,13 +350,25 @@ void DialogueWindow::Render(Client *c, std::string markdown)
 		}
 	}
 
+	// Placed here to allow silent message or other message to override default for custom values.
+	if (!button_one_name.empty() && !button_two_name.empty()) {
+		c->SetEntityVariable(
+			DIAWIND_RESPONSE_ONE_KEY.c_str(),
+			button_one_name.c_str()
+		);
+		c->SetEntityVariable(
+			DIAWIND_RESPONSE_TWO_KEY.c_str(),
+			button_two_name.c_str()
+		);
+	}
+
 	// handle silent prompts from the [> silent syntax
 	std::string silent_message;
 	if (responses.empty() && markdown.find('[') != std::string::npos && markdown.find('>') != std::string::npos) {
 		silent_message = get_between(output, "[", ">");
 
 		// temporary and used during the response
-		c->SetEntityVariable(DIAWIND_RESPONSE_KEY.c_str(), silent_message.c_str());
+		c->SetEntityVariable(DIAWIND_RESPONSE_ONE_KEY.c_str(), silent_message.c_str());
 
 		// pop the silent message off
 		find_replace(output, fmt::format("[{}>", silent_message), "");
@@ -271,7 +378,10 @@ void DialogueWindow::Render(Client *c, std::string markdown)
 		silent_message = responses[0];
 
 		// temporary and used during the response
-		c->SetEntityVariable(DIAWIND_RESPONSE_KEY.c_str(), silent_message.c_str());
+		c->SetEntityVariable(DIAWIND_RESPONSE_ONE_KEY.c_str(), silent_message.c_str());
+
+		// pop the silent message off
+		find_replace(output, fmt::format("[{}]", silent_message), "");
 	}
 
 	// strip brackets
@@ -291,7 +401,39 @@ void DialogueWindow::Render(Client *c, std::string markdown)
 		speaking = "A Mysterious Voice says";
 	}
 
-	title = fmt::format("Dialogue [{}]", speaking);
+	// title
+	std::string popup_title;
+	if (markdown.find("title:") != std::string::npos) {
+		LogDiaWind("Client [{}] Rendering title option", c->GetCleanName());
+
+		auto first_split = split_string(output, "title:");
+		if (!first_split.empty()) {
+			auto second_split = split_string(first_split[1], " ");
+			if (!second_split.empty()) {
+				popup_title = second_split[0];
+				LogDiaWindDetail("Client [{}] Rendering title option title [{}]", c->GetCleanName(), popup_title);
+			}
+
+			if (first_split[1].length() == 1) {
+				popup_title = first_split[1];
+				LogDiaWindDetail(
+					"Client [{}] Rendering title (end) option title [{}]",
+					c->GetCleanName(),
+					popup_title
+				);
+			}
+
+			find_replace(output, fmt::format("title:{}", popup_title), "");
+
+			if (!popup_title.empty()) {
+				title = popup_title;
+			}
+		}
+	}
+
+	if (title.empty()) {
+		title = fmt::format("Dialogue [{}]", speaking);
+	}
 
 	// render quotes
 	std::string quote_string = "'";
@@ -322,6 +464,17 @@ void DialogueWindow::Render(Client *c, std::string markdown)
 			"<c \"#F07F00\">Click [{}] to respond with [{}]...</c>",
 			click_response_button,
 			silent_message
+		);
+	}
+
+	if (!button_one_name.empty() && !button_two_name.empty()) {
+		click_response = fmt::format(
+			"<c \"#F07F00\">Click [{}] to respond with [{}]...<br>"
+			"Click [{}] to respond with [{}]...</c>",
+			button_one_name,
+			button_one_name,
+			button_two_name,
+			button_two_name
 		);
 	}
 
@@ -357,8 +510,11 @@ void DialogueWindow::Render(Client *c, std::string markdown)
 
 	// build the final output string
 	std::string final_output;
-	final_output = fmt::format("{}{}{} <br><br> {}", quote_string, output, quote_string, click_response);
-
+	final_output = fmt::format("{}{}{} <br><br> {}", quote_string, trim(output), quote_string, click_response);
+	if (render_hiddenresponse) {
+		final_output = fmt::format("{}{}{}", quote_string, trim(output), quote_string);
+	}
+	
 	// send popup
 	c->SendFullPopup(
 		title.c_str(),
@@ -367,8 +523,8 @@ void DialogueWindow::Render(Client *c, std::string markdown)
 		negative_id,
 		window_type,
 		window_expire_seconds,
-		button_name_0,
-		button_name_1,
+		button_one_name.c_str(),
+		button_two_name.c_str(),
 		sound_controls
 	);
 

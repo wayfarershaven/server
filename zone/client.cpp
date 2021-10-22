@@ -4277,7 +4277,7 @@ bool Client::KeyRingCheck(uint32 item_id)
 const char* Client::GetForumName(uint32 acc_id)
 {
 
-	std::string query = StringFormat("SELECT forum_name FROM account join login_accounts on lsaccount_id = id WHERE id = %i ", acc_id);
+	std::string query = StringFormat("SELECT forum_name FROM account a, login_accounts l WHERE l.id = a.lsaccount_id AND a.id = %i ", acc_id);
 	auto results = database.QueryDatabase(query);
 
 	if (!results.Success()) {
@@ -4289,9 +4289,9 @@ const char* Client::GetForumName(uint32 acc_id)
 	}
 
 	auto row = results.begin();
-	const char* forumName = row[0];
+	const char* forum_name = row[0];
 
-	return forumName;
+	return forum_name;
 }
 
 void Client::KeyRingList()

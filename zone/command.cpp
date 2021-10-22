@@ -5332,6 +5332,12 @@ void command_corpse(Client *c, const Seperator *sep) {
 		} else {
 			c->Message(0, "No corpse to summon with name or ID: %s...", name);
 		}
+	} else if (strcasecmp(sep->arg[1], "summonall") == 0) {
+		if (target == 0) {
+			c->Message(0, "Must have a valid target.");
+		} else {
+			target->CastToClient()->SummonAllCorpses(c->GetPosition());
+		}
 	} else if (strcasecmp(sep->arg[1], "buried") == 0) {
 		if (target == 0 || !target->IsClient())
 			c->Message(Chat::White, "Error: Target must be a player to list or summon their buried corpses.");
@@ -5462,6 +5468,15 @@ void command_corpse(Client *c, const Seperator *sep) {
 			database.DeleteCharacterCorpse(atoi(sep->arg[2]));
 		} else
 			c->Message(Chat::White, "Insufficient status to delete player corpse.");
+	} else if (strcasecmp(sep->arg[1], "bury") == 0) {
+		if (c->GetTarget() && c->GetTarget()->IsPlayerCorpse() && c->GetGM()) {
+			c->Message(Chat::White, "Depoping %s.", target->GetName());
+			target->CastToCorpse()->Bury();
+		} else if (strlen(sep->arg[2]) > 0 && sep->IsNumber(2)) {
+			database.BuryCharacterCorpse(atoi(sep->arg[2]));
+		} else {
+			c->Message(Chat::White, "Insufficient status to bury player corpse.");
+		}
 	} else if (strcasecmp(sep->arg[1], "moveallgraveyard") == 0) {
 		int count = entity_list.MovePlayerCorpsesToGraveyard(true);
 		c->Message(Chat::White, "Moved [%d] player corpse(s) to zone graveyard", count);
@@ -5472,9 +5487,12 @@ void command_corpse(Client *c, const Seperator *sep) {
 		c->Message(Chat::White, "  locate (all) - Find Targeted persons corpses in zone and optional (all) for world.");
 		c->Message(Chat::White, "  listPC - Show all Player corpse locations in zone");
 		c->Message(Chat::White, "  listNPC - Show all NPC corpse locations in zone");
+		c->Message(Chat::White, "  bury (Corpsenumber) - Bury corpse. Corpsenumber optional if no corpse target. NOTE* ONLY USE ON CORPSES THAT ARE NOT OBTAINABLE");
 		c->Message(Chat::White, "  depop (1) - Depop target corpse. Optional (1) will bury corpse.");
 		c->Message(Chat::White,
-				   "  summon - Summon target or name - Example #corpse summon mythsong OR #corpse summon with a target");
+				   "  summon - Summon target or name - Example #corpse summon mythsong OR #corpse summon with a target.");
+		c->Message(Chat::White,
+				   "  summonall - Summon all corpses of target - Example #corpse summonall with a target.");
 		c->Message(Chat::White, "  buried - #corpse buried list, #corpse buried summon");
 		c->Message(Chat::White, "  backup - #corpse backup list, #corpse backup summon");
 		c->Message(Chat::White,
