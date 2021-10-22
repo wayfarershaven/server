@@ -4289,9 +4289,9 @@ const char* Client::GetForumName(uint32 acc_id)
 	}
 
 	auto row = results.begin();
-	const char* forumName = row[0];
+	const char* forum_name = row[0];
 
-	return forumName;
+	return forum_name;
 }
 
 void Client::KeyRingList()
