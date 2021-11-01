@@ -618,6 +618,15 @@ bool Group::DelMemberOOZ(const char *Name, bool checkleader) {
 		}
 	}
 
+	if(GroupCount() < 3)
+	{
+		UnDelegateMarkNPC(NPCMarkerName.c_str());
+		if (GetLeader() && GetLeader()->IsClient() && GetLeader()->CastToClient()->ClientVersion() < EQ::versions::ClientVersion::SoD) {
+			UnDelegateMainAssist(MainAssistName.c_str());
+		}
+		ClearAllNPCMarks();
+	}
+
 	if (GroupCount() < 2) {
 		DisbandGroup();
 		return true;
@@ -741,8 +750,40 @@ bool Group::DelMember(Mob* oldmember, bool ignoresender)
 	oldmember->SetGrouped(false);
 	disbandcheck = true;
 
+	if(HasRole(oldmember, RoleTank))
+	{
+		SetGroupTankTarget(0);
+		UnDelegateMainTank(oldmember->GetCleanName());
+	}
+
+	if(HasRole(oldmember, RoleAssist))
+	{
+		SetGroupAssistTarget(0);
+		UnDelegateMainAssist(oldmember->GetCleanName());
+	}
+
+	if(HasRole(oldmember, RolePuller))
+	{
+		SetGroupPullerTarget(0);
+		UnDelegatePuller(oldmember->GetCleanName());
+	}
+
 	if (oldmember->GetName() == mentoree_name) {
 		ClearGroupMentor();
+	}
+
+	if(oldmember->IsClient()) {
+		SendMarkedNPCsToMember(oldmember->CastToClient(), true);
+		oldmember->CastToClient()->LeaveGroupXTargets(this);
+	}
+
+	if(GroupCount() < 3)
+	{
+		UnDelegateMarkNPC(NPCMarkerName.c_str());
+		if (GetLeader() && GetLeader()->IsClient() && GetLeader()->CastToClient()->ClientVersion() < EQ::versions::ClientVersion::SoD) {
+			UnDelegateMainAssist(MainAssistName.c_str());
+		}
+		ClearAllNPCMarks();
 	}
 
 #ifdef BOTS
