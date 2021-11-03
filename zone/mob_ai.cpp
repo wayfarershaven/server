@@ -1175,9 +1175,6 @@ void Mob::AI_Process() {
 
         ProjectileAttack();
 
-		if (focus_proc_limit_timer.Check())
-			FocusProcLimitProcess();
-
 		if (shield_timer.Check()) {
 			ShieldAbilityFinish();
 		}

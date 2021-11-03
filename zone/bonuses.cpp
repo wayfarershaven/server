@@ -1572,6 +1572,10 @@ void Mob::ApplyAABonuses(const AA::Rank &rank, StatBonuses *newbon)
 			newbon->Pet_Add_Atk += base1;
 			break;
 
+		case SE_Worn_Endurance_Regen_Cap:
+			newbon->ItemEnduranceRegenCap += base1;
+			break;
+
 		// to do
 		case SE_PetDiscipline:
 			break;
@@ -3456,6 +3460,14 @@ void Mob::ApplySpellsBonuses(uint16 spell_id, uint8 casterlevel, StatBonuses *ne
 				new_bonus->Pet_Add_Atk += effect_value;
 				break;
 
+			case SE_Worn_Endurance_Regen_Cap:
+				new_bonus->ItemEnduranceRegenCap += effect_value;
+				break;
+
+			case SE_ItemManaRegenCapIncrease:
+				new_bonus->ItemManaRegenCap += effect_value;
+				break;
+
 			case SE_ZoneSuspendMinion:
 				new_bonus->ZoneSuspendMinion = effect_value;
 				break;
@@ -3772,6 +3784,12 @@ uint8 Mob::IsFocusEffect(uint16 spell_id,int effect_index, bool AA,uint32 aa_eff
 			return focusPetPower;
 		case SE_SpellResistReduction:
 			return focusResistRate;
+		case SE_Fc_ResistIncoming:
+			focusFcResistIncoming;
+		case SE_Fc_Amplify_Mod:
+			focusFcResistIncoming;
+		case SE_Fc_Amplify_Amt:
+			focusFcResistIncoming;			
 		case SE_SpellHateMod:
 			return focusSpellHateMod;
 		case SE_ReduceReuseTimer:
@@ -3814,10 +3832,16 @@ uint8 Mob::IsFocusEffect(uint16 spell_id,int effect_index, bool AA,uint32 aa_eff
 			return focusFcMute;
 		case SE_FcTimerRefresh:
 			return focusFcTimerRefresh;
+		case SE_FcTimerLockout:
+			return focusFcTimerLockout;			
 		case SE_Fc_Cast_Spell_On_Land:
 			return focusFcCastSpellOnLand;			
 		case SE_FcStunTimeMod:
 			return focusFcStunTimeMod;
+		case SE_Fc_CastTimeMod2:
+			return focusFcCastTimeMod2;
+		case SE_Fc_CastTimeAmt:
+			return focusFcCastTimeAmt;			
 		case SE_FcHealPctCritIncoming:
 			return focusFcHealPctCritIncoming;
 		case  SE_FcHealAmt:
@@ -4782,6 +4806,12 @@ void Mob::NegateSpellsBonuses(uint16 spell_id)
 					spellbonuses.ItemHPRegenCap = effect_value;
 					aabonuses.ItemHPRegenCap = effect_value;
 					itembonuses.ItemHPRegenCap = effect_value;
+					break;
+
+				case SE_Worn_Endurance_Regen_Cap:
+					spellbonuses.ItemEnduranceRegenCap = effect_value;
+					aabonuses.ItemEnduranceRegenCap = effect_value;
+					itembonuses.ItemEnduranceRegenCap = effect_value;
 					break;
 
 				case SE_OffhandRiposteFail:
