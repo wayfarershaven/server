@@ -1486,6 +1486,28 @@ void Mob::ApplyAABonuses(const AA::Rank &rank, StatBonuses *newbon)
 			}
 			break;
 
+		case SE_ExtendedShielding: 
+		{
+			if (newbon->ExtendedShielding < base1) {
+				newbon->ExtendedShielding = base1;
+			}
+			break;
+		}
+
+		case SE_ShieldDuration: 
+		{
+			if (newbon->ShieldDuration < base1) {
+				newbon->ShieldDuration = base1;
+			}
+			break;
+		}
+		
+		case SE_SecondaryForte:
+			if (newbon->SecondaryForte < base1) {
+				newbon->SecondaryForte = base1;
+			}
+			break;
+        
 		case SE_ZoneSuspendMinion:
 			newbon->ZoneSuspendMinion = base1;
 			break;
@@ -1496,12 +1518,6 @@ void Mob::ApplyAABonuses(const AA::Rank &rank, StatBonuses *newbon)
 		case SE_PotionBeltSlots:
 			break;
 		case SE_BandolierSlots:
-			break;
-		case SE_SecondaryForte:
-			break;
-		case SE_ExtendedShielding:
-			break;
-		case SE_ShieldDuration:
 			break;
 		case SE_ReduceApplyPoisonTime:
 			break;
@@ -3274,6 +3290,34 @@ void Mob::ApplySpellsBonuses(uint16 spell_id, uint8 casterlevel, StatBonuses *ne
 				new_bonus->SeeInvis = spells[spell_id].base[i];
 				break;
 
+			case SE_ExtendedShielding:
+			{
+				if (AdditiveWornBonus) {
+					new_bonus->ExtendedShielding += effect_value;
+				}
+				else if (effect_value < 0 && new_bonus->ExtendedShielding > effect_value){
+					new_bonus->ExtendedShielding = effect_value;
+				}
+				else if (effect_value > 0 && new_bonus->ExtendedShielding < effect_value){
+					new_bonus->ExtendedShielding = effect_value;
+				}
+				break;
+			}
+
+			case SE_ShieldDuration:
+			{
+				if (AdditiveWornBonus) {
+					new_bonus->ShieldDuration += effect_value;
+				}
+				else if (effect_value < 0 && new_bonus->ShieldDuration > effect_value){
+					new_bonus->ShieldDuration = effect_value;
+				}
+				else if (effect_value > 0 && new_bonus->ShieldDuration < effect_value){
+					new_bonus->ShieldDuration = effect_value;
+				}
+				break;
+			}
+			
 			case SE_ZoneSuspendMinion:
 				new_bonus->ZoneSuspendMinion = effect_value;
 				break;

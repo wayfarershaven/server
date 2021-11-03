@@ -46,7 +46,8 @@ enum : int {	//values for pTimerType
 	pTimerLinkedSpellReuseEnd = 48,
 
 	pTimerPetFeignDeath = 50,
-
+	
+	pTimerShieldAbility = 86,
 	pTimerLayHands = 87,		//these IDs are used by client too
 	pTimerHarmTouch = 89,		//so dont change them
 

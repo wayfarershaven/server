@@ -634,7 +634,6 @@ public:
 	inline virtual int32 GetDelayDeath() const { return 0; }
 	inline int32 GetHP() const { return current_hp; }
 	inline int32 GetMaxHP() const { return max_hp; }
-	inline int32 GetDamage() const { return max_hp - current_hp; }
 	virtual int32 CalcMaxHP();
 	inline int32 GetMaxMana() const { return max_mana; }
 	inline int32 GetMana() const { return current_mana; }
@@ -1176,12 +1175,8 @@ public:
 
 	bool CheckWillAggro(Mob *mob);
 
-	void Shield(Mob* mob, float range_multiplier = 2.0);
-	void ShieldClear();
 	void InstillDoubt(Mob *who);
 	int16 GetResist(uint8 type) const;
-	Mob* GetShieldTarget() const { return shield_target; }
-	void SetShieldTarget(Mob* mob) { shield_target = mob; }
 	bool HasActiveSong() const { return(bardsong != 0); }
 	bool Charmed() const { return typeofpet == petCharmed; }
 	static uint32 GetLevelHP(uint8 tlevel);
@@ -1219,8 +1214,22 @@ public:
 	bool IsMoved() { return moved; }
 	void SetMoved(bool moveflag) { moved = moveflag; }
 
-	Shielders_Struct shielder[MAX_SHIELDERS];
 	Trade* trade;
+
+	bool ShieldAbility(uint32 target_id, int shielder_max_distance = 15, int shield_duration = 12000, int shield_target_mitigation = 50, int shielder_mitigation = 75, bool use_aa = false, bool can_shield_npc = true);
+	void DoShieldDamageOnShielder(Mob *shield_target, int hit_damage_done, EQ::skills::SkillType skillInUse);
+	void ShieldAbilityFinish();
+	void ShieldAbilityClearVariables();
+	inline uint32 GetShielderID() const { return m_shielder_id; }
+	inline void SetShielderID(uint32 val) { m_shielder_id = val; }
+	inline uint32 GetShieldTargetID() const { return m_shield_target_id; }
+	inline void SetShieldTargetID(uint32 val) { m_shield_target_id = val; }
+	inline int GetShieldTargetMitigation() const { return m_shield_target_mitigation; }
+	inline void SetShieldTargetMitigation(int val) { m_shield_target_mitigation = val; }
+	inline int GetShielderMitigation() const { return m_shielder_mitigation; }
+	inline void SetShielderMitigation(int val) { m_shielder_mitigation = val; }
+	inline int GetMaxShielderDistance() const { return m_shielder_max_distance; }
+	inline void SetShielderMaxDistance(int val) { m_shielder_max_distance = val; }
 
 	inline glm::vec4 GetCurrentWayPoint() const { return m_CurrentWayPoint; }
 	inline float GetCWPP() const { return(static_cast<float>(cur_wp_pause)); }
@@ -1520,10 +1529,6 @@ protected:
 	uint8 pRunAnimSpeed;
 	bool m_is_running;
 
-	Timer shield_timer;
-	Timer shield_reuse_timer;
-	Timer shield_duration_timer;
-
 	Timer attack_timer;
 	Timer attack_dw_timer;
 	Timer ranged_timer;
@@ -1533,6 +1538,13 @@ protected:
 	int16 slow_mitigation; // Allows for a slow mitigation (100 = 100%, 50% = 50%)
 	Timer tic_timer;
 	Timer mana_timer;
+
+	Timer shield_timer;
+	uint32 m_shield_target_id;
+	uint32 m_shielder_id;
+	int m_shield_target_mitigation;
+	int m_shielder_mitigation;
+	int m_shielder_max_distance;
 
 	//spell casting vars
 	Timer spellend_timer;
@@ -1579,8 +1591,6 @@ protected:
 	EQ::TintProfile armor_tint;
 
 	uint8 aa_title;
-
-	Mob* shield_target;
 
 	int ExtraHaste; // for the #haste command
 	bool mezzed;

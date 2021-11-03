@@ -639,6 +639,7 @@ bool Group::DelMemberOOZ(const char *Name, bool checkleader) {
 				if (members[nl]) {
 					if (members[nl]->IsClient()) {
 						ChangeLeader(members[nl]);
+						UpdateGroupAAs();
 						break;
 					}
 				}

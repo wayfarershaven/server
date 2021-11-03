@@ -22,8 +22,6 @@
 #define SEE_POSITION 0.5f	//ratio of GetSize() where NPCs try to see for LOS
 #define CHECK_LOS_STEP 1.0f
 
-#define MAX_SHIELDERS 2		//I dont know if this is based on a client limit
-
 #define ARCHETYPE_HYBRID	1
 #define ARCHETYPE_CASTER	2
 #define ARCHETYPE_MELEE		3
@@ -106,6 +104,8 @@
 #define PET_BUTTON_SPELLHOLD	9
 
 #define AURA_HARDCAP		2
+
+#define SHIELD_ABILITY_RECAST_TIME 180
 
 typedef enum {	//focus types
 	focusSpellHaste = 1,
@@ -199,8 +199,7 @@ enum {
 	IMMUNE_DAMAGE_NPC = 48,
 	IMMUNE_AGGRO_CLIENT = 49,
 	IMMUNE_AGGRO_NPC = 50,
-	MAX_SPECIAL_ATTACK = 51,
-	SPECATK_SHIELD = 52
+	MAX_SPECIAL_ATTACK = 51
 };
 
 typedef enum {	//fear states
@@ -527,6 +526,9 @@ struct StatBonuses {
 	bool	ZoneSuspendMinion;					// base 1 allows suspended minions to zone
 
 	// AAs
+	uint16  SecondaryForte;						// allow a second skill to be specialized with a cap of this value.
+	int32	ShieldDuration;						// extends duration of /shield ability
+	int32	ExtendedShielding;					// extends range of /shield ability
 	int8	Packrat;							//weight reduction for items, 1 point = 10%
 	uint8	BuffSlotIncrease;					// Increases number of available buff slots
 	uint32	DelayDeath;							// how far below 0 hp you can go
@@ -603,11 +605,6 @@ typedef struct
 	uint16 base_spellID;
 	int level_override;
 } tProc;
-
-struct Shielders_Struct {
-	uint32 shielder_id;
-	uint16 shielder_bonus;
-};
 
 typedef struct
 {

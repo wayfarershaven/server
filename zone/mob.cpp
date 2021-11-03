@@ -115,9 +115,6 @@ Mob::Mob(
 	bardsong_timer(6000),
 	gravity_timer(1000),
 	viral_timer(0),
-	shield_timer(500),
-	shield_reuse_timer(1000),
-	shield_duration_timer(12000),
 	m_FearWalkTarget(-999999.0f, -999999.0f, -999999.0f),
 	flee_timer(FLEE_CHECK_TIMER),
 	m_Position(position),
@@ -266,7 +263,6 @@ Mob::Mob(
 	MR                = CR = FR = DR = PR = Corrup = PhR = 0;
 	ExtraHaste        = 0;
 	bEnraged          = false;
-	shield_target     = nullptr;
 	current_mana      = 0;
 	max_mana          = 0;
 	hp_regen          = in_hp_regen;
@@ -382,11 +378,13 @@ Mob::Mob(
 	silenced       = false;
 	amnesiad       = false;
 	inWater        = false;
-	int m;
-	for (m = 0; m < MAX_SHIELDERS; m++) {
-		shielder[m].shielder_id    = 0;
-		shielder[m].shielder_bonus = 0;
-	}
+
+	shield_timer.Disable();
+	m_shield_target_id = 0;
+	m_shielder_id = 0;
+	m_shield_target_mitigation = 0;
+	m_shielder_mitigation = 0;
+	m_shielder_max_distance = 0;
 
 	destructibleobject = false;
 	wandertype         = 0;
@@ -6042,116 +6040,120 @@ float Mob::GetDefaultRaceSize() const {
 	return GetRaceGenderDefaultHeight(race, gender);
 }
 
-void Mob::ShieldClear() {
-	if (shield_target) {
-		entity_list.MessageCloseString(this, false, 100, 0,
-										  END_SHIELDING, GetCleanName(), shield_target->GetCleanName());
-		for (int y = 0; y < 2; y++) {
-			if (shield_target->shielder[y].shielder_id == GetID()) {
-				shield_target->shielder[y].shielder_id = 0;
-				shield_target->shielder[y].shielder_bonus = 0;
-			}
-		}
+bool Mob::ShieldAbility(uint32 target_id, int shielder_max_distance, int shield_duration, int shield_target_mitigation, int shielder_mitigation, bool use_aa, bool can_shield_npc)
+{
+	Mob* shield_target = entity_list.GetMob(target_id);
+	if (!shield_target) {
+		return false;
 	}
-	shield_target = 0;
+
+	if (!can_shield_npc && shield_target->IsNPC()) {
+		if (IsClient()) {
+			MessageString(Chat::White, SHIELD_TARGET_NPC);
+		}
+		return false;
+	}
+
+	if (shield_target->GetID() == GetID()) { //Client will give message "You can not shield yourself"
+		return false;
+	}
+
+	//Edge case situations. If 'Shield Target' still has Shielder set but Shielder is not in zone. Catch and fix here.
+	if (shield_target->GetShielderID() && !entity_list.GetMob(shield_target->GetShielderID())) {
+		shield_target->SetShielderID(0);
+	}
+
+	if (GetShielderID() && !entity_list.GetMob(GetShielderID())) {
+		SetShielderID(0);
+	}
+
+	//You have a shielder, or your 'Shield Target' already has a 'Shielder'
+	if (GetShielderID() || shield_target->GetShielderID()) {
+		if (IsClient()) {
+			MessageString(Chat::White, ALREADY_SHIELDED);
+		}
+		return false;
+	}
+
+	//You are being shielded or already have a 'Shield Target'
+	if (GetShieldTargetID() || shield_target->GetShieldTargetID()) {
+		if (IsClient()) {
+			MessageString(Chat::White, ALREADY_SHIELDING);
+		}
+		return false;
+	}
+
+	//AA to increase SPA 230 extended shielding (default live is 15 distance units)
+	if (use_aa) {
+		shielder_max_distance += aabonuses.ExtendedShielding + itembonuses.ExtendedShielding + spellbonuses.ExtendedShielding;
+		shielder_max_distance = std::max(shielder_max_distance, 0);
+	}
+
+	if (shield_target->CalculateDistance(GetX(), GetY(), GetZ()) > static_cast<float>(shielder_max_distance)) {
+		return false; //Live does not give a message when out of range.
+	}
+
+	entity_list.MessageCloseString(this, false, 100, 0, START_SHIELDING, GetCleanName(), shield_target->GetCleanName());
+
+	SetShieldTargetID(shield_target->GetID());
+	SetShielderMitigation(shield_target_mitigation);
+	SetShielderMaxDistance(shielder_max_distance);
+
+	shield_target->SetShielderID(GetID());
+	shield_target->SetShieldTargetMitigation(shield_target_mitigation);
+
+	//Calculate AA for adding time SPA 255 extend shield duration (Baseline ability is 12 seconds)
+	if (use_aa) {
+		shield_duration += (aabonuses.ShieldDuration + itembonuses.ShieldDuration + spellbonuses.ShieldDuration) * 1000;
+		shield_duration = std::max(shield_duration, 1); //Incase of negative modifiers lets just make min duration 1 ms.
+	}
+
+	shield_timer.Start(static_cast<uint32>(shield_duration));
+	return true;
 }
 
-void Mob::Shield(Mob* target, float range_multiplier) {
+void Mob::ShieldAbilityFinish()
+{
+	Mob* shield_target = entity_list.GetMob(GetShieldTargetID());
 
-	if (!target) {
-		if (IsClient()) {
-			Message(13, "You must target a player to use this ability.");
+	if (shield_target) {
+		entity_list.MessageCloseString(this, false, 100, 0, END_SHIELDING, GetCleanName(), shield_target->GetCleanName());
+		shield_target->SetShielderID(0);
+		shield_target->SetShieldTargetMitigation(0);
+	}
+	SetShieldTargetID(0);
+	SetShielderMitigation(0);
+	SetShielderMaxDistance(0);
+	shield_timer.Disable();
+}
+
+void Mob::ShieldAbilityClearVariables()
+{
+	//If 'shield target' dies
+	if (GetShielderID()){
+		Mob* shielder = entity_list.GetMob(GetShielderID());
+		if (shielder) {
+			shielder->SetShieldTargetID(0);
+			shielder->SetShielderMitigation(0);
+			shielder->SetShielderMaxDistance(0);
+			shielder->shield_timer.Disable();
 		}
-		return;
+		SetShielderID(0);
+		SetShieldTargetMitigation(0);
 	}
 
-	if (IsClient() && GetClass() != WARRIOR && GetLevel() < 30) {
-		return;
-	}
-
-	if (IsClient() && !target->IsClient()) {
-		Message(13, "You must target a player to use this ability.");
-		return;
-	}
-
-	if (IsClient() && !CastToClient()->p_timers.Expired(&database, pTimerShield, false)) {
-		Message(13, "Ability recovery time not yet met.");
-		return;
-	}
-
-	// check if target is in range
-	if (!this->CombatRange(target, range_multiplier)) {
-		if (IsClient()) {
-			Message(13, "Your target is out of range.");
+	//If 'shielder' dies
+	if (GetShieldTargetID()) {
+		Mob* shield_target = entity_list.GetMob(GetShieldTargetID());
+		if (shield_target) {
+			shield_target->SetShielderID(0);
+			shield_target->SetShieldTargetMitigation(0);
 		}
-		return;
+		SetShieldTargetID(0);
+		SetShielderMitigation(0);
+		SetShielderMaxDistance(0);
+		shield_timer.Disable();
 	}
-
-	// end current shielding
-	ShieldClear();
-
-	shield_target = target;
-	bool ack = false;
-
-	// calculate shield bonus for shielder (>=50ac = 50% damage)
-	uint16 shieldbonus = 0;
-	uint32 shield_duration_bonus = 0;
-	if (IsClient()) {
-		EQ::ItemInstance* inst = CastToClient()->GetInv().GetItem(EQ::invslot::slotSecondary);
-		if (inst) {
-			const EQ::ItemData* shield = inst->GetItem();
-			if (shield && shield->IsTypeShield()) {
-				shieldbonus = shield->AC / 2;
-			}
-		}
-		// calculate duration bonus (TODO - take values from database)
-		switch (GetAA(197)) {
-			case 1:
-				shield_duration_bonus = 12000;
-				break;
-			case 2:
-				shield_duration_bonus = 24000;
-				break;
-			case 3:
-				shield_duration_bonus = 36000;
-				break;
-		}
-	}
-	else {
-		shieldbonus = 25;
-	}
-
-	for (int x = 0; x < 2; x++)
-	{
-		if (shield_target->shielder[x].shielder_id == 0)
-		{
-			entity_list.MessageCloseString(this, false, 100, 0,
-										   START_SHIELDING, shield_target->GetName(), GetName());
-
-			shield_target->shielder[x].shielder_id = GetID();
-			shield_target->shielder[x].shielder_bonus = shieldbonus;
-
-			// start timers
-			if (IsClient()) {
-				CastToClient()->p_timers.Start(pTimerShield, ShieldReuseTime - 1);
-			}
-
-			shield_timer.Start();
-			if (shield_duration_bonus)
-				shield_duration_timer.SetTimer(12000 + shield_duration_bonus);
-			shield_duration_timer.Start();
-
-			ack = true;
-			break;
-		}
-	}
-
-	if (!ack) {
-		MessageString(0, ALREADY_SHIELDED);
-		shield_target = 0;
-		return;
-	}
-	return;
 }
 
 #ifdef BOTS

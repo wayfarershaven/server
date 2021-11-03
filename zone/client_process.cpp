@@ -470,24 +470,9 @@ bool Client::Process() {
 		}
 
 		if (shield_timer.Check()) {
-			if (shield_target) {
-				if (!CombatRange(shield_target, 2.0)) {
-					ShieldClear();
-				}
-			} else {
-				shield_target = 0;
-			}
+			ShieldAbilityFinish();
 		}
-
-		if (shield_duration_timer.Check()) {
-			ShieldClear();
-		}
-
-		if (!shield_target) {
-			shield_timer.Disable();
-			shield_duration_timer.Disable();
-		}
-
+		
 		SpellProcess();
 		if (endupkeep_timer.Check() && !dead) {
 			DoEnduranceUpkeep();
