@@ -1230,6 +1230,12 @@ bool IsEffectIgnoredInStacking(int spa)
 	case SE_LimitUseType:
 	case SE_GravityEffect:
 	case 425:
+	//Spell effects implemented after ROF2, following same pattern, lets assume these should go here.
+	case SE_Fc_Spell_Damage_Pct_IncomingPC:	
+	case SE_Fc_Spell_Damage_Amt_IncomingPC:
+	case SE_Ff_CasterClass:
+	case SE_Ff_Same_Caster: 
+	case SE_Proc_Timer_Modifier:
 		return true;
 	default:
 		return false;
@@ -1286,6 +1292,18 @@ bool IsSpellUsableThisZoneType(uint16 spell_id, uint8 zone_type)
 const char* GetSpellName(uint16 spell_id)
 {
     return spells[spell_id].name;
+}
+
+bool SpellRequiresTarget(int spell_id)
+{
+	if (spells[spell_id].targettype == ST_AEClientV1 ||
+		spells[spell_id].targettype == ST_Self ||
+		spells[spell_id].targettype == ST_AECaster ||
+		spells[spell_id].targettype == ST_Ring ||
+		spells[spell_id].targettype == ST_Beam) {
+		return false;
+	}
+	return true;
 }
 
 bool IsRacialIllusion(uint16 spell_id)

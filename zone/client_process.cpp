@@ -472,7 +472,7 @@ bool Client::Process() {
 		if (shield_timer.Check()) {
 			ShieldAbilityFinish();
 		}
-		
+
 		SpellProcess();
 		if (endupkeep_timer.Check() && !dead) {
 			DoEnduranceUpkeep();
@@ -522,6 +522,9 @@ bool Client::Process() {
 			}
 		}
 	}
+
+	if (focus_proc_limit_timer.Check() && !dead)
+		FocusProcLimitProcess();
 
 	if (client_state == CLIENT_KICKED) {
 		Save();

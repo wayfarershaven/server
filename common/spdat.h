@@ -62,6 +62,8 @@
 #define SPELL_SHAPECHANGE60 1924
 #define SPELL_COMMAND_OF_DRUZZIL 3355
 #define SPELL_SHAPECHANGE70 6503
+#define SPELL_MANA_BURN 2751
+#define SPELL_LIFE_BURN 2755
 // these have known hardcoded behavior but we don't do anything yet, move them above this comment when fixed
 #define SPELL_THE_DAINS_JUSTICE 1476
 #define SPELL_MODULATION 1502
@@ -152,7 +154,6 @@
 #define SPELL_RESURRECTION_SICKNESS 756
 #define SPELL_RESURRECTION_SICKNESS2 5249
 #define SPELL_REVIVAL_SICKNESS 13087
-#define SPELL_MANA_BURN 2751
 #define SPELL_PACT_OF_HATE_RECOURSE 40375
 #define SPELL_INCENDIARY_OOZE_BUFF 32513
 
@@ -584,7 +585,7 @@ enum RESISTTYPE
 
 //Target Type IDs
 typedef enum {
-/* 01 */	ST_TargetOptional = 0x01,
+/* 01 */	ST_TargetOptional = 0x01, //only used for targeted projectile spells
 /* 02 */	ST_AEClientV1 = 0x02,
 /* 03 */	ST_GroupTeleport = 0x03,
 /* 04 */	ST_AECaster = 0x04,
@@ -687,7 +688,7 @@ typedef enum {
 #define SE_PoisonCounter				36	// implemented
 //#define SE_DetectHostile				37	// not used
 //#define SE_DetectMagic				38	// not used
-//#define SE_DetectPoison				39	// not used
+#define SE_TwinCastBlocker				39	// implemented - If present in spell, then the spell can not be twincast.
 #define SE_DivineAura					40	// implemented
 #define SE_Destroy						41	// implemented - Disintegrate, Banishment of Shadows
 #define SE_ShadowStep					42	// implemented
@@ -770,7 +771,7 @@ typedef enum {
 #define SE_AttackSpeed3					119	// implemented
 #define SE_HealRate						120	// implemented - reduces healing by a %
 #define SE_ReverseDS					121 // implemented
-//#define SE_ReduceSkill				122	// not used
+//#define SE_ReduceSkill				122	// not implemented    TODO: Now used on live, decreases skills by percent
 #define SE_Screech						123	// implemented Spell Blocker(If have buff with value +1 will block any effect with -1)
 #define SE_ImprovedDamage				124 // implemented
 #define SE_ImprovedHeal					125 // implemented
@@ -794,7 +795,7 @@ typedef enum {
 #define SE_LimitCastTimeMin				143 // implemented
 #define SE_LimitCastTimeMax				144	// implemented (*not used in any known live spell)
 #define SE_Teleport2					145	// implemented - Banishment of the Pantheon
-//#define SE_ElectricityResist			146	// *not implemented (Lightning Rod: 23233)
+//#define SE_ElectricityResist			146	// *not implemented TODO: Now used on live, xyz for teleport spells? also in temp pets?
 #define SE_PercentalHeal				147 // implemented
 #define SE_StackingCommand_Block		148 // implemented?
 #define SE_StackingCommand_Overwrite	149 // implemented?
@@ -944,7 +945,7 @@ typedef enum {
 #define SE_FrontalStunResist			293	// implemented[AA] - Reduce chance to be stunned from front. -- live descriptions sounds like this isn't limited to frontal anymore
 #define SE_CriticalSpellChance			294 // implemented - increase chance to critical hit and critical damage modifier.
 //#define SE_ReduceTimerSpecial			295	// not used
-#define SE_FcSpellVulnerability			296	// implemented - increase in incoming spell damage
+#define SE_FcSpellVulnerability			296	// implemented - increase in incoming spell damage [base1= min dmg base2= max dmg]
 #define SE_FcDamageAmtIncoming			297 // implemented - debuff that adds points damage to spells cast on target (focus effect).
 #define SE_ChangeHeight					298	// implemented
 #define SE_WakeTheDead					299	// implemented
@@ -980,7 +981,7 @@ typedef enum {
 #define SE_ManaAbsorbPercentDamage		329 // implemented
 #define SE_CriticalDamageMob			330	// implemented
 #define SE_Salvage						331 // implemented - chance to recover items that would be destroyed in failed tradeskill combine
-#define SE_SummonToCorpse				332 // *not implemented AA - Call of the Wild (Druid/Shaman Res spell with no exp)
+#define SE_SummonToCorpse				332 // *not implemented AA - Call of the Wild (Druid/Shaman Res spell with no exp) TOOD: implement this.
 #define SE_CastOnRuneFadeEffect			333 // implemented
 #define SE_BardAEDot					334	// implemented
 #define SE_BlockNextSpellFocus			335	// implemented - base1 chance to block next spell ie Puratus (8494)
@@ -988,7 +989,7 @@ typedef enum {
 #define SE_PercentXPIncrease			337	// implemented
 #define SE_SummonAndResAllCorpses		338	// implemented
 #define SE_TriggerOnCast				339	// implemented
-#define SE_SpellTrigger					340	// implemented - chance to trigger spell
+#define SE_SpellTrigger					340	// implemented - chance to trigger spell [Share rolls with 469] All base2 spells share roll chance, only 1 cast.
 #define SE_ItemAttackCapIncrease		341	// implemented[AA] - increases the maximum amount of attack you can gain from items.
 #define SE_ImmuneFleeing				342	// implemented - stop mob from fleeing
 #define SE_InterruptCasting				343	// implemented - % chance to interrupt spells being cast every tic. Cacophony (8272)
@@ -1113,28 +1114,28 @@ typedef enum {
 #define SE_FcDamageAmt2					462 // implemented - Increase spell damage by flat amount (SE_Fc_Damage_Amt2)
 //#define SE_Shield_Target				463 //
 #define SE_PC_Pet_Rampage				464 // implemented - Base1 % chance to do rampage for base2 % of damage each melee round
-//#define SE_PC_Pet_AE_Rampage			465 // Would assume as above but need to confirm.
+#define SE_PC_Pet_AE_Rampage			465 // implemented - Base1 % chance to do AE rampage for base2 % of damage each melee round
 #define SE_PC_Pet_Flurry_Chance			466 // implemented - Base1 % chance to do flurry from double attack hit.
-//#define SE_DS_Mitigation_Amount		467 //
-//#define SE_DS_Mitigation_Percentage	468 //
-//#define SE_Chance_Best_in_Spell_Grp   469 //
-//#define SE_Trigger_Best_in_Spell Grp  470 //
+#define SE_DS_Mitigation_Amount			467 // implemented - Modify incoming damage shield damage by a flat amount
+#define SE_DS_Mitigation_Percentage		468 // implemented - Modify incoming damage shield damage by percentage
+#define SE_Chance_Best_in_Spell_Grp     469 // implemented - Chance to cast highest scribed spell within a spell group. All base2 spells share roll chance, only 1 cast.
+#define SE_Trigger_Best_in_Spell_Grp	470 // implemented - Chance to cast highest scribed spell within a spell group. Each spell has own chance.
 //#define SE_Double_Melee_Round			471 //
 //#define SE_Buy_AA_Rank				472 //
-//#define SE_Double_Backstab_Front		473 //
-//#define SE_Pet_Crit_Melee_Damage_Pct_Owner	474 //
-//#define SE_Trigger_Spell_Non_Item		475 //
+#define SE_Double_Backstab_Front		473 // implemented - Chance to double backstab from front
+#define SE_Pet_Crit_Melee_Damage_Pct_Owner	474 // implemenetd - Critical damage mod applied to pets from owner
+#define SE_Trigger_Spell_Non_Item		475 // implemented - Trigger spell on cast only if not from item click.
 //#define SE_Weapon_Stance				476 //
-//#define SE_Hatelist_To_Top_Index		477 //
-//#define SE_Hatelist_To_Tail_Index		478 //
+#define SE_Hatelist_To_Top_Index		477 // Implemented - Chance to be set to top of rampage list
+#define SE_Hatelist_To_Tail_Index		478 // Implemented - Chance to be set to bottom of rampage list
 //#define SE_Ff_Value_Min				479 //
 //#define SE_Ff_Value_Max				480 //
-//#define SE_Fc_Cast_Spell_On_Land		481 //
+#define SE_Fc_Cast_Spell_On_Land		481 // Implemented - [FOCUS] Spells cast on target with this Focus Effect will have chance to cause a Spell to be cast if limits met.
 //#define SE_Skill_Base_Damage_Mod		482 //
-//#define SE_Fc_Spell_Damage_Pct_IncomingPC	483 //
-//#define SE_Fc_Spell_Damage_Amt_IncomingPC	484 //
-//#define SE_Ff_CasterClass				485 //
-//#define SE_Ff_Same_Caster				486 //
+#define SE_Fc_Spell_Damage_Pct_IncomingPC	483 // Implemented - [FOCUS] modifies incoming spell damage by percent
+#define SE_Fc_Spell_Damage_Amt_IncomingPC	484 // Implemented - [FOCUS] modifies incoming spell damage by flat amount. Typically adds damage to incoming spells.
+#define SE_Ff_CasterClass				485 // Implemented - [FOCUS LIMIT] Caster of spell on target with a focus effect that is checked by incoming spells must be specified class.
+#define SE_Ff_Same_Caster				486 // Implemented - [FOCUS LIMIT] Caster of spell on target with a focus effect that is checked by incoming spells 0=Must be different caster 1=Must be same caster
 //#define SE_Extend_Tradeskill_Cap		487 //
 //#define SE_Defender_Melee_Force_Pct_PC	488 //
 //#define SE_Worn_Endurance_Regen_Cap	489 //
@@ -1142,39 +1143,39 @@ typedef enum {
 //#define SE_Ff_ReuseTimeMax			491 //
 //#define SE_Ff_Endurance_Min			492 //
 //#define SE_Ff_Endurance_Max			493 //
-//#define SE_Pet_Add_Atk				494 //
+#define SE_Pet_Add_Atk					494 // implemented - Bonus on pet owner which gives their pet increased attack stat
 //#define SE_Ff_DurationMax				495 //
-//#define SE_Critical_Melee_Damage_Mod_Max	496 //
+#define SE_Critical_Melee_Damage_Mod_Max	496 // implemented - increase or decrease by percent critical damage (not stackable)
 //#define SE_Ff_FocusCastProcNoBypass	497 //
 //#define SE_AddExtraAttackPct_1h_Primary	498 //
 //#define SE_AddExtraAttackPct_1h_Secondary	499 //
 //#define SE_Fc_CastTimeMod2			500 //
 //#define SE_Fc_CastTimeAmt				501 //
-//#define SE_Fearstun					502 //
-//#define SE_Melee_Damage_Position_Mod	503 //
+#define SE_Fearstun						502 // implemented - Stun with a max level limit. Normal stun restrictions don't apply.
+#define SE_Melee_Damage_Position_Mod	503 // implemented - modify melee damage by pct if done from Front or Behind
 //#define SE_Melee_Damage_Position_Amt	504 //
-//#define SE_Damage_Taken_Position_Mod	505 //
+#define SE_Damage_Taken_Position_Mod	505 // implemented - mitigate melee damage by pct if dmg taken from Front or Behind
 //#define SE_Damage_Taken_Position_Amt	506 //
 //#define SE_Fc_Amplify_Mod				507 //
 //#define SE_Fc_Amplify_Amt				508 //
-//#define SE_Health_Transfer			509 //
+#define SE_Health_Transfer				509 // implemented - exchange health for damage or healing on a target. ie Lifeburn/Act of Valor
 //#define SE_Fc_ResistIncoming			510 //
 //#define SE_Ff_FocusTimerMin			511 //
-//#define SE_Proc_Timer_Modifier 		512 //
+#define SE_Proc_Timer_Modifier 			512 // implemented - spell trigger limiter used currently with SPA 481, ie. limit to 1 proc every 1.5 seconds (base=1 base2=1500).
 //#define SE_Mana_Max_Percent			513 //
 //#define SE_Endurance_Max_Percent		514 //
-//#define SE_AC_Avoidance_Max_Percent	515 //
-//#define SE_AC_Mitigation_Max_Percent	516 //
-//#define SE_Attack_Offense_Max_Percent	517 //
-//#define SE_Attack_Accuracy_Max_Percent	518 //
+#define SE_AC_Avoidance_Max_Percent		515 // implemented - stackable avoidance modifier
+#define SE_AC_Mitigation_Max_Percent	516 // implemented - stackable defense modifier
+//#define SE_Attack_Offense_Max_Percent	517 // 
+#define SE_Attack_Accuracy_Max_Percent	518 // implemented - stackable accurary modifer
 //#define SE_Luck_Amount				519 //
 //#define SE_Luck_Percent				520 //
-//#define SE_Endurance_Absorb_Pct_Damage	521 //
-//#define SE_Instant_Mana_Pct			522 //
-//#define SE_Instant_Endurance_Pct		523 //
-//#define SE_Duration_HP_Pct			524 //
-//#define SE_Duration_Mana_Pct			525 //
-//#define SE_Duration_Endurance_Pct		526 //
+#define SE_Endurance_Absorb_Pct_Damage	521 // implemented - Reduces % of Damage using Endurance, drains endurance at a ratio (ie. 0.05 Endurance per Hit Point)
+#define SE_Instant_Mana_Pct				522 // implemented - Increase/Decrease mana by percent of max mana
+#define SE_Instant_Endurance_Pct		523 // implemented - Increase/Decrease mana by percent of max endurance
+#define SE_Duration_HP_Pct				524 // implemented - Decrease Current Hit Points by % of Total Hit Points per Tick, up to a MAX per tick
+#define SE_Duration_Mana_Pct			525 // implemented - Decrease Current Mana by % of Total Mana per Tick, up to a MAX per tick
+#define SE_Duration_Endurance_Pct		526 // implemented - Decrease Current Endurance by % of Total Hit Points per Tick, up to a MAX per tick
 
 
 // LAST
@@ -1462,6 +1463,7 @@ bool IsStackableDot(uint16 spell_id);
 bool IsBardOnlyStackEffect(int effect);
 bool IsCastWhileInvis(uint16 spell_id);
 bool IsEffectIgnoredInStacking(int spa);
+bool SpellRequiresTarget(int targettype);
 
 int CalcPetHp(int levelb, int classb, int STA = 75);
 int GetSpellEffectDescNum(uint16 spell_id);

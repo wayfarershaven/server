@@ -978,6 +978,9 @@ void Mob::ApplyAABonuses(const AA::Rank &rank, StatBonuses *newbon)
 		case SE_FrontalBackstabChance:
 			newbon->FrontalBackstabChance += base1;
 			break;
+		case SE_Double_Backstab_Front:
+			newbon->Double_Backstab_Front += base1;
+			break;
 		case SE_BlockBehind:
 			newbon->BlockBehind += base1;
 			break;
@@ -1066,20 +1069,6 @@ void Mob::ApplyAABonuses(const AA::Rank &rank, StatBonuses *newbon)
 			}
 			break;
 
-		case SE_TriggerOnCast:
-
-			for (int i = 0; i < MAX_SPELL_TRIGGER; i++) {
-				if (newbon->SpellTriggers[i] == rank.id)
-					break;
-
-				if (!newbon->SpellTriggers[i]) {
-					// Save the 'rank.id' of each triggerable effect to an array
-					newbon->SpellTriggers[i] = rank.id;
-					break;
-				}
-			}
-			break;
-
 		case SE_CriticalHitChance: {
 			// Bad data or unsupported new skill
 			if (base2 > EQ::skills::HIGHEST_SKILL)
@@ -1099,6 +1088,19 @@ void Mob::ApplyAABonuses(const AA::Rank &rank, StatBonuses *newbon)
 				newbon->CritDmgMod[EQ::skills::HIGHEST_SKILL + 1] += base1;
 			else
 				newbon->CritDmgMod[base2] += base1;
+			break;
+		}
+
+		case SE_Critical_Melee_Damage_Mod_Max:
+		{
+			// Bad data or unsupported new skill
+			if (base2 > EQ::skills::HIGHEST_SKILL)
+				break;
+			int skill = base2 == ALL_SKILLS ? EQ::skills::HIGHEST_SKILL + 1 : base2;
+			if (base1 < 0 && newbon->CritDmgModNoStack[skill] > base1)
+				newbon->CritDmgModNoStack[skill] = base1;
+			else if (base1 > 0 && newbon->CritDmgModNoStack[skill] < base1)
+				newbon->CritDmgModNoStack[skill] = base1;
 			break;
 		}
 
@@ -1421,6 +1423,13 @@ void Mob::ApplyAABonuses(const AA::Rank &rank, StatBonuses *newbon)
 			break;
 		}
 
+		case SE_PC_Pet_AE_Rampage: {
+			newbon->PC_Pet_AE_Rampage[0] += base1; //Chance to rampage
+			if (newbon->PC_Pet_AE_Rampage[1] < base2)
+				newbon->PC_Pet_AE_Rampage[1] = base2; //Damage modifer - take highest
+			break;
+		}
+
 		case SE_PC_Pet_Flurry_Chance: 
 			newbon->PC_Pet_Flurry += base1; //Chance to Flurry
 			break;
@@ -1511,7 +1520,58 @@ void Mob::ApplyAABonuses(const AA::Rank &rank, StatBonuses *newbon)
 		case SE_ZoneSuspendMinion:
 			newbon->ZoneSuspendMinion = base1;
 			break;
-			
+
+		case SE_Attack_Accuracy_Max_Percent:
+			newbon->Attack_Accuracy_Max_Percent += base1;
+			break;
+
+		case SE_AC_Mitigation_Max_Percent:
+			newbon->AC_Mitigation_Max_Percent += base1;
+			break;
+
+		case SE_AC_Avoidance_Max_Percent:
+			newbon->AC_Avoidance_Max_Percent += base1;
+			break;
+
+		case SE_Damage_Taken_Position_Mod:
+		{
+			//Mitigate if damage taken from behind base2 = 0, from front base2 = 1
+			if (base2 < 0 || base2 > 2)
+				break;
+			else if (base1 < 0 && newbon->Damage_Taken_Position_Mod[base2] > base1)
+				newbon->Damage_Taken_Position_Mod[base2] = base1;
+			else if (base1 > 0 && newbon->Damage_Taken_Position_Mod[base2] < base1)
+				newbon->Damage_Taken_Position_Mod[base2] = base1;
+			break;
+		}
+
+		case SE_Melee_Damage_Position_Mod:
+		{
+			if (base2 < 0 || base2 > 2)
+				break;
+			else if (base1 < 0 && newbon->Melee_Damage_Position_Mod[base2] > base1)
+				newbon->Melee_Damage_Position_Mod[base2] = base1;
+			else if (base1 > 0 && newbon->Melee_Damage_Position_Mod[base2] < base1)
+				newbon->Melee_Damage_Position_Mod[base2] = base1;
+			break;
+		}
+
+		case SE_DS_Mitigation_Amount:
+			newbon->DS_Mitigation_Amount += base1;
+			break;
+
+		case SE_DS_Mitigation_Percentage:
+			newbon->DS_Mitigation_Percentage += base1;
+			break;
+
+		case SE_Pet_Crit_Melee_Damage_Pct_Owner:
+			newbon->Pet_Crit_Melee_Damage_Pct_Owner += base1;
+			break;
+
+		case SE_Pet_Add_Atk:
+			newbon->Pet_Add_Atk += base1;
+			break;
+
 		// to do
 		case SE_PetDiscipline:
 			break;
@@ -2409,19 +2469,6 @@ void Mob::ApplySpellsBonuses(uint16 spell_id, uint8 casterlevel, StatBonuses *ne
 				break;
 			}
 
-			case SE_TriggerOnCast:
-			{
-				for(int e = 0; e < MAX_SPELL_TRIGGER; e++)
-				{
-					if(!new_bonus->SpellTriggers[e])
-					{
-						new_bonus->SpellTriggers[e] = spell_id;
-						break;
-					}
-				}
-				break;
-			}
-
 			case SE_SpellCritChance:
 				new_bonus->CriticalSpellChance += effect_value;
 				break;
@@ -2516,6 +2563,20 @@ void Mob::ApplySpellsBonuses(uint16 spell_id, uint8 casterlevel, StatBonuses *ne
 					new_bonus->CritDmgMod[EQ::skills::HIGHEST_SKILL + 1] += effect_value;
 				else
 					new_bonus->CritDmgMod[base2] += effect_value;
+				break;
+			}
+
+			case SE_Critical_Melee_Damage_Mod_Max:
+			{
+				// Bad data or unsupported new skill
+				if (base2 > EQ::skills::HIGHEST_SKILL)
+					break;
+				int skill = base2 == ALL_SKILLS ? EQ::skills::HIGHEST_SKILL + 1 : base2;
+				if (effect_value < 0 && new_bonus->CritDmgModNoStack[skill] > effect_value)
+					new_bonus->CritDmgModNoStack[skill] = effect_value;
+				else if (effect_value > 0 && new_bonus->CritDmgModNoStack[skill] < effect_value) {
+					new_bonus->CritDmgModNoStack[skill] = effect_value;
+				}
 				break;
 			}
 
@@ -2720,9 +2781,17 @@ void Mob::ApplySpellsBonuses(uint16 spell_id, uint8 casterlevel, StatBonuses *ne
 
 			case SE_ManaAbsorbPercentDamage:
 			{
-				if (new_bonus->ManaAbsorbPercentDamage[0] < effect_value){
-					new_bonus->ManaAbsorbPercentDamage[0] = effect_value;
-					new_bonus->ManaAbsorbPercentDamage[1] = buffslot;
+				if (new_bonus->ManaAbsorbPercentDamage < effect_value){
+					new_bonus->ManaAbsorbPercentDamage = effect_value;
+				}
+				break;
+			}
+
+			case SE_Endurance_Absorb_Pct_Damage:
+			{
+				if (new_bonus->EnduranceAbsorbPercentDamage[0] < effect_value) {
+					new_bonus->EnduranceAbsorbPercentDamage[0] = effect_value;
+					new_bonus->EnduranceAbsorbPercentDamage[1] = base2;
 				}
 				break;
 			}
@@ -2795,6 +2864,10 @@ void Mob::ApplySpellsBonuses(uint16 spell_id, uint8 casterlevel, StatBonuses *ne
 
 			case SE_FrontalBackstabChance:
 				new_bonus->FrontalBackstabChance += effect_value;
+				break;
+
+			case SE_Double_Backstab_Front:
+				new_bonus->Double_Backstab_Front += effect_value;
 				break;
 
 			case SE_ConsumeProjectile:
@@ -3231,6 +3304,13 @@ void Mob::ApplySpellsBonuses(uint16 spell_id, uint8 casterlevel, StatBonuses *ne
 				break;
 			}
 
+			case SE_PC_Pet_AE_Rampage: {
+				new_bonus->PC_Pet_AE_Rampage[0] += effect_value; //Chance to rampage
+				if (new_bonus->PC_Pet_AE_Rampage[1] < base2)
+					new_bonus->PC_Pet_AE_Rampage[1] = base2; //Damage modifer - take highest
+				break;
+			}
+
 			case SE_PC_Pet_Flurry_Chance: 
 				new_bonus->PC_Pet_Flurry += effect_value; //Chance to Flurry
 				break;
@@ -3317,7 +3397,65 @@ void Mob::ApplySpellsBonuses(uint16 spell_id, uint8 casterlevel, StatBonuses *ne
 				}
 				break;
 			}
-			
+
+
+			case SE_Attack_Accuracy_Max_Percent:
+				new_bonus->Attack_Accuracy_Max_Percent += effect_value;
+				break;
+
+
+			case SE_AC_Mitigation_Max_Percent:
+				new_bonus->AC_Mitigation_Max_Percent += effect_value;
+				break;
+
+			case SE_AC_Avoidance_Max_Percent:
+				new_bonus->AC_Avoidance_Max_Percent += effect_value;
+				break;
+
+			case SE_Damage_Taken_Position_Mod:
+			{
+				//Mitigate if damage taken from behind base2 = 0, from front base2 = 1
+				if (base2 < 0 || base2 > 2)
+					break;
+				if (AdditiveWornBonus)
+					new_bonus->Damage_Taken_Position_Mod[base2] += effect_value;
+				else if (effect_value < 0 && new_bonus->Damage_Taken_Position_Mod[base2] > effect_value) 
+					new_bonus->Damage_Taken_Position_Mod[base2] = effect_value;
+				else if (effect_value > 0 && new_bonus->Damage_Taken_Position_Mod[base2] < effect_value)
+					new_bonus->Damage_Taken_Position_Mod[base2] = effect_value;
+				break;
+			}
+
+			case SE_Melee_Damage_Position_Mod:
+			{
+				//Increase damage by percent from behind base2 = 0, from front base2 = 1
+				if (base2 < 0 || base2 > 2)
+					break;
+				if (AdditiveWornBonus)
+					new_bonus->Melee_Damage_Position_Mod[base2] += effect_value;
+				else if (effect_value < 0 && new_bonus->Melee_Damage_Position_Mod[base2] > effect_value)
+					new_bonus->Melee_Damage_Position_Mod[base2] = effect_value;
+				else if (effect_value > 0 && new_bonus->Melee_Damage_Position_Mod[base2] < effect_value)
+					new_bonus->Melee_Damage_Position_Mod[base2] = effect_value;
+				break;
+			}
+
+			case SE_DS_Mitigation_Amount:
+				new_bonus->DS_Mitigation_Amount += effect_value;
+				break;
+
+			case SE_DS_Mitigation_Percentage:
+				new_bonus->DS_Mitigation_Percentage += effect_value;
+				break;
+
+			case SE_Pet_Crit_Melee_Damage_Pct_Owner:
+				new_bonus->Pet_Crit_Melee_Damage_Pct_Owner += effect_value;
+				break;
+
+			case SE_Pet_Add_Atk:
+				new_bonus->Pet_Add_Atk += effect_value;
+				break;
+
 			case SE_ZoneSuspendMinion:
 				new_bonus->ZoneSuspendMinion = effect_value;
 				break;
@@ -3639,10 +3777,11 @@ uint8 Mob::IsFocusEffect(uint16 spell_id,int effect_index, bool AA,uint32 aa_eff
 		case SE_ReduceReuseTimer:
 			return focusReduceRecastTime;
 		case SE_TriggerOnCast:
-			//return focusTriggerOnCast;
-			return 0; //This is calculated as an actual bonus
+			return focusTriggerOnCast;
 		case SE_FcSpellVulnerability:
 			return focusSpellVulnerability;
+		case SE_Fc_Spell_Damage_Pct_IncomingPC:
+			return focusFcSpellDamagePctIncomingPC;
 		case SE_BlockNextSpellFocus:
 			return focusBlockNextSpell;
 		case SE_FcTwincast:
@@ -3659,6 +3798,8 @@ uint8 Mob::IsFocusEffect(uint16 spell_id,int effect_index, bool AA,uint32 aa_eff
 			return focusFcDamagePctCrit;
 		case SE_FcDamageAmtIncoming:
 			return focusFcDamageAmtIncoming;
+		case SE_Fc_Spell_Damage_Amt_IncomingPC:
+			return focusFcSpellDamageAmtIncomingPC;			
 		case SE_FcHealAmtIncoming:
 			return focusFcHealAmtIncoming;
 		case SE_FcHealPctIncoming:
@@ -3673,6 +3814,8 @@ uint8 Mob::IsFocusEffect(uint16 spell_id,int effect_index, bool AA,uint32 aa_eff
 			return focusFcMute;
 		case SE_FcTimerRefresh:
 			return focusFcTimerRefresh;
+		case SE_Fc_Cast_Spell_On_Land:
+			return focusFcCastSpellOnLand;			
 		case SE_FcStunTimeMod:
 			return focusFcStunTimeMod;
 		case SE_FcHealPctCritIncoming:
@@ -4231,17 +4374,6 @@ void Mob::NegateSpellsBonuses(uint16 spell_id)
 					break;
 				}
 
-				case SE_TriggerOnCast:
-				{
-					for(int e = 0; e < MAX_SPELL_TRIGGER; e++)
-					{
-						spellbonuses.SpellTriggers[e] = effect_value;
-						aabonuses.SpellTriggers[e] = effect_value;
-						itembonuses.SpellTriggers[e] = effect_value;
-					}
-					break;
-				}
-
 				case SE_SpellCritChance:
 					spellbonuses.CriticalSpellChance = effect_value;
 					aabonuses.CriticalSpellChance = effect_value;
@@ -4331,6 +4463,17 @@ void Mob::NegateSpellsBonuses(uint16 spell_id)
 						spellbonuses.CritDmgMod[e] = effect_value;
 						aabonuses.CritDmgMod[e] = effect_value;
 						itembonuses.CritDmgMod[e] = effect_value;
+					}
+					break;
+				}
+
+				case SE_Critical_Melee_Damage_Mod_Max:
+				{
+					for (int e = 0; e < EQ::skills::HIGHEST_SKILL + 1; e++)
+					{
+						spellbonuses.CritDmgModNoStack[e] = effect_value;
+						aabonuses.CritDmgModNoStack[e] = effect_value;
+						itembonuses.CritDmgModNoStack[e] = effect_value;
 					}
 					break;
 				}
@@ -4430,8 +4573,12 @@ void Mob::NegateSpellsBonuses(uint16 spell_id)
 					break;
 
 				case SE_ManaAbsorbPercentDamage:
-					spellbonuses.ManaAbsorbPercentDamage[0] = effect_value;
-					spellbonuses.ManaAbsorbPercentDamage[1] = -1;
+					spellbonuses.ManaAbsorbPercentDamage = effect_value;
+					break;
+
+				case SE_Endurance_Absorb_Pct_Damage:
+					spellbonuses.EnduranceAbsorbPercentDamage[0] = effect_value;
+					spellbonuses.EnduranceAbsorbPercentDamage[1] = effect_value;
 					break;
 
 				case SE_ShieldBlock:
@@ -4503,6 +4650,12 @@ void Mob::NegateSpellsBonuses(uint16 spell_id)
 					spellbonuses.FrontalBackstabChance = effect_value;
 					aabonuses.FrontalBackstabChance = effect_value;
 					itembonuses.FrontalBackstabChance = effect_value;
+					break;
+
+				case SE_Double_Backstab_Front:
+					spellbonuses.Double_Backstab_Front = effect_value;
+					aabonuses.Double_Backstab_Front = effect_value;
+					itembonuses.Double_Backstab_Front = effect_value;
 					break;
 
 				case SE_ConsumeProjectile:
@@ -4845,6 +4998,86 @@ void Mob::NegateSpellsBonuses(uint16 spell_id)
 					spellbonuses.IllusionPersistence = false;
 					itembonuses.IllusionPersistence = false;
 					aabonuses.IllusionPersistence = false;
+					break;
+
+				case SE_Attack_Accuracy_Max_Percent:
+					spellbonuses.Attack_Accuracy_Max_Percent = effect_value;
+					itembonuses.Attack_Accuracy_Max_Percent = effect_value;
+					aabonuses.Attack_Accuracy_Max_Percent = effect_value;
+					break;
+
+
+				case SE_AC_Mitigation_Max_Percent:
+					spellbonuses.AC_Mitigation_Max_Percent = effect_value;
+					itembonuses.AC_Mitigation_Max_Percent = effect_value;
+					aabonuses.AC_Mitigation_Max_Percent = effect_value;
+					break;
+
+				case SE_AC_Avoidance_Max_Percent:
+					spellbonuses.AC_Avoidance_Max_Percent = effect_value;
+					itembonuses.AC_Avoidance_Max_Percent = effect_value;
+					aabonuses.AC_Avoidance_Max_Percent = effect_value;
+					break;
+
+				case SE_Melee_Damage_Position_Mod:
+					spellbonuses.Melee_Damage_Position_Mod[0] = effect_value;
+					aabonuses.Melee_Damage_Position_Mod[0] = effect_value;
+					itembonuses.Melee_Damage_Position_Mod[0] = effect_value;
+					spellbonuses.Melee_Damage_Position_Mod[1] = effect_value;
+					aabonuses.Melee_Damage_Position_Mod[1] = effect_value;
+					itembonuses.Melee_Damage_Position_Mod[1] = effect_value;
+					break;
+
+				case SE_Damage_Taken_Position_Mod:
+					spellbonuses.Damage_Taken_Position_Mod[0] = effect_value;
+					aabonuses.Damage_Taken_Position_Mod[0] = effect_value;
+					itembonuses.Damage_Taken_Position_Mod[0] = effect_value;
+					spellbonuses.Damage_Taken_Position_Mod[1] = effect_value;
+					aabonuses.Damage_Taken_Position_Mod[1] = effect_value;
+					itembonuses.Damage_Taken_Position_Mod[1] = effect_value;
+					break;
+
+
+				case SE_DS_Mitigation_Amount:
+					spellbonuses.DS_Mitigation_Amount = effect_value;
+					itembonuses.DS_Mitigation_Amount = effect_value;
+					aabonuses.DS_Mitigation_Amount = effect_value;
+					break;
+
+				case SE_DS_Mitigation_Percentage:
+					spellbonuses.DS_Mitigation_Percentage = effect_value;
+					itembonuses.DS_Mitigation_Percentage = effect_value;
+					aabonuses.DS_Mitigation_Percentage = effect_value;
+					break;
+
+				case SE_Pet_Crit_Melee_Damage_Pct_Owner:
+					spellbonuses.Pet_Crit_Melee_Damage_Pct_Owner = effect_value;
+					itembonuses.Pet_Crit_Melee_Damage_Pct_Owner = effect_value;
+					aabonuses.Pet_Crit_Melee_Damage_Pct_Owner = effect_value;
+					break;
+
+				case SE_Pet_Add_Atk:
+					spellbonuses.Pet_Add_Atk = effect_value;
+					itembonuses.Pet_Add_Atk = effect_value;
+					aabonuses.Pet_Add_Atk = effect_value;
+					break;
+
+				case SE_PC_Pet_Rampage:
+					spellbonuses.PC_Pet_Rampage[0] = effect_value;
+					itembonuses.PC_Pet_Rampage[0] = effect_value;
+					aabonuses.PC_Pet_Rampage[0] = effect_value;
+					spellbonuses.PC_Pet_Rampage[1] = effect_value;
+					itembonuses.PC_Pet_Rampage[1] = effect_value;
+					aabonuses.PC_Pet_Rampage[1] = effect_value;
+					break;
+
+				case SE_PC_Pet_AE_Rampage:
+					spellbonuses.PC_Pet_AE_Rampage[0] = effect_value;
+					itembonuses.PC_Pet_AE_Rampage[0] = effect_value;
+					aabonuses.PC_Pet_AE_Rampage[0] = effect_value;
+					spellbonuses.PC_Pet_AE_Rampage[1] = effect_value;
+					itembonuses.PC_Pet_AE_Rampage[1] = effect_value;
+					aabonuses.PC_Pet_AE_Rampage[1] = effect_value;
 					break;
 
 				case SE_SkillProcSuccess:{
