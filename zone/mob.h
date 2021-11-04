@@ -432,7 +432,6 @@ public:
 	void CalcDestFromHeading(float heading, float distance, float MaxZDiff, float StartX, float StartY, float &dX, float &dY, float &dZ);
 	void BeamDirectional(uint16 spell_id, int16 resist_adjust);
 	void ConeDirectional(uint16 spell_id, int16 resist_adjust);
-	void TryOnSpellFinished(Mob *caster, Mob *target, uint16 spell_id);
 	uint32 SpellRecastMod(uint32 spell_id, uint32 base_recast);
 
 	//Buff
@@ -885,8 +884,8 @@ public:
 	bool TryDeathSave();
 	bool TryDivineSave();
 	void DoBuffWearOffEffect(uint32 index);
-	void TryTriggerOnCastFocusEffect(focusType type, uint16 spell_id);
-	bool TryTriggerOnCastProc(uint16 focusspellid, uint16 spell_id, uint16 proc_spellid);
+	void TryTriggerOnCast(uint32 spell_id, bool aa_trigger);
+	void TriggerOnCast(uint32 focus_spell, uint32 spell_id, bool aa_trigger);
 	bool TrySpellTrigger(Mob *target, uint32 spell_id, int effect);
 	void TryTriggerOnValueAmount(bool IsHP = false, bool IsMana = false, bool IsEndur = false, bool IsPet = false);
 	void TryTwincast(Mob *caster, Mob *target, uint32 spell_id);
@@ -898,8 +897,7 @@ public:
 	int32 GetVulnerability(Mob* caster, uint32 spell_id, uint32 ticsremaining);
 	int32 GetFcDamageAmtIncoming(Mob *caster, uint32 spell_id, bool use_skill = false, uint16 skill=0);
 	int32 GetFocusIncoming(focusType type, int effect, Mob *caster, uint32 spell_id);
-	int32 GetSkillDmgTaken(const EQ::skills::SkillType skill_used, ExtraAttackOptions *opts = nullptr);
-	int32 GetPositionalDmgTaken(Mob *attacker);
+	int16 GetSkillDmgTaken(const EQ::skills::SkillType skill_used, ExtraAttackOptions *opts = nullptr);
 	void DoKnockback(Mob *caster, uint32 pushback, uint32 pushup);
 	int16 CalcResistChanceBonus();
 	int16 CalcFearResistChance();
@@ -909,11 +907,10 @@ public:
 	void CastOnCure(uint32 spell_id);
 	void CastOnNumHitFade(uint32 spell_id);
 	void SlowMitigation(Mob* caster);
-	int16 GetCritDmgMod(uint16 skill, Mob* owner = nullptr);
+	int16 GetCritDmgMod(uint16 skill);
 	int16 GetMeleeDamageMod_SE(uint16 skill);
 	int16 GetMeleeMinDamageMod_SE(uint16 skill);
 	int16 GetCrippBlowChance();
-	int16 GetMeleeDmgPositionMod(Mob* defender);	
 	int16 GetSkillReuseTime(uint16 skill);
 	int GetCriticalChanceBonus(uint16 skill);
 	int16 GetSkillDmgAmt(uint16 skill);
@@ -936,6 +933,7 @@ public:
 	
 	void CastSpellOnLand(Mob* caster, int32 spell_id);
 	void FocusProcLimitProcess();
+	bool ApplyFocusProcLimiter(int32 spell_id, int buffslot = -1);
 
 	void ModSkillDmgTaken(EQ::skills::SkillType skill_num, int value);
 	int16 GetModSkillDmgTaken(const EQ::skills::SkillType skill_num);
@@ -1009,10 +1007,7 @@ public:
 	inline bool IsTempPet() const { return _IsTempPet; }
 	inline void SetTempPet(bool value) { _IsTempPet = value; }
 	inline bool IsHorse() { return is_horse; }
-	int GetPetAvoidanceBonusFromOwner();
-	int GetPetACBonusFromOwner();
-	int GetPetATKBonusFromOwner();
-	
+
 	inline const bodyType GetBodyType() const { return bodytype; }
 	inline const bodyType GetOrigBodyType() const { return orig_bodytype; }
 	void SetBodyType(bodyType new_body, bool overwrite_orig);
@@ -1071,8 +1066,6 @@ public:
 	bool Rampage(ExtraAttackOptions *opts);
 	bool AddRampage(Mob*);
 	void ClearRampage();
-	void SetBottomRampageList();
-	void SetTopRampageList();
 	void AreaRampage(ExtraAttackOptions *opts);
 	inline bool IsSpecialAttack(eSpecialAttacks in) { return m_specialattacks == in; }
 
@@ -1545,7 +1538,6 @@ protected:
 	int16 slow_mitigation; // Allows for a slow mitigation (100 = 100%, 50% = 50%)
 	Timer tic_timer;
 	Timer mana_timer;
-	Timer focus_proc_limit_timer;
 
 	Timer shield_timer;
 	uint32 m_shield_target_id;

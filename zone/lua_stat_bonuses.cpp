@@ -1162,7 +1162,7 @@ uint32 Lua_StatBonuses::GetMitigateDotRune(int idx) const {
 
 uint32 Lua_StatBonuses::GetManaAbsorbPercentDamage(int idx) const {
 	Lua_Safe_Call_Int();
-	return self->ManaAbsorbPercentDamage;
+	return self->ManaAbsorbPercentDamage[idx];
 }
 
 int32 Lua_StatBonuses::GetImprovedTaunt(int idx) const {
