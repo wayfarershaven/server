@@ -345,7 +345,8 @@ RULE_REAL(Watermap, FishingLineStepSize, 1, "Basic step size for fishing calc, t
 RULE_CATEGORY_END()
 
 RULE_CATEGORY(Spells)
-RULE_INT(Spells, NpcFearImmuneLevel, 55,"NPC Fear Max Levl")
+RULE_INT(Spells, DopplegangerInitialHate, 1000,"Doppleganger Initial Hate")
+RULE_INT(Spells, NpcFearImmuneLevel, 55,"NPC Fear Max Level")
 RULE_REAL(Spells, AERainResistChance, 0.22, "AE Rain Resist Chance")
 RULE_REAL(Spells, ResistChance, 2.0, "chance to resist given no resists and same level")
 RULE_INT(Spells, NPCResistMod, 0, "skew total NPC resists, resist += this")
