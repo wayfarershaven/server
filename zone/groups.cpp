@@ -817,6 +817,7 @@ void Group::CastGroupSpell(Mob* caster, uint16 spell_id) {
 		if(members[z] == caster) {
 			caster->SpellOnTarget(spell_id, caster);
 #ifdef GROUP_BUFF_PETS
+			LogSpells("Group spell: ST_GroupNoPets = [{}] -- caster->HasPetAffinity() [{}] -- caster->GetPet()->IsCharmed() [{}]", spells[spell_id].targettype, caster->HasPetAffinity(), caster->GetPet()->IsCharmed());
 			if(spells[spell_id].targettype != ST_GroupNoPets && caster->GetPet() && caster->HasPetAffinity() && !caster->GetPet()->IsCharmed())
 				caster->SpellOnTarget(spell_id, caster->GetPet());
 #endif
