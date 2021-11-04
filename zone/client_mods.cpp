@@ -667,7 +667,7 @@ int32 Client::CalcManaRegen()
 
 int32 Client::CalcManaRegenCap()
 {
-	int32 cap = RuleI(Character, ItemManaRegenCap) + aabonuses.ItemManaRegenCap + itembonuses.ItemManaRegenCap + spellbonuses.ItemManaRegenCap;
+	int32 cap = RuleI(Character, ItemManaRegenCap) + aabonuses.ItemManaRegenCap;
 	switch (GetCasterClass()) {
 		case 'I':
 			cap += (itembonuses.HeroicINT / 25);
@@ -1575,7 +1575,7 @@ int32 Client::CalcEnduranceRegen()
 
 int32 Client::CalcEnduranceRegenCap()
 {
-	int cap = RuleI(Character, ItemEnduranceRegenCap) + aabonuses.ItemEnduranceRegenCap + itembonuses.ItemEnduranceRegenCap + spellbonuses.ItemEnduranceRegenCap;
+	int cap = (RuleI(Character, ItemEnduranceRegenCap) + itembonuses.HeroicSTR / 25 + itembonuses.HeroicDEX / 25 + itembonuses.HeroicAGI / 25 + itembonuses.HeroicSTA / 25);
 	return (cap * RuleI(Character, EnduranceRegenMultiplier) / 100);
 }
 

@@ -3396,6 +3396,8 @@ int Mob::AddBuff(Mob *caster, uint16 spell_id, int duration, int32 level_overrid
 	buffs[emptyslot].dot_rune = 0;
 	buffs[emptyslot].ExtraDIChance = 0;
 	buffs[emptyslot].RootBreakChance = 0;
+	buffs[emptyslot].focusproclimit_time = 0;
+	buffs[emptyslot].focusproclimit_procamt = 0;
 	buffs[emptyslot].instrument_mod = caster ? caster->GetInstrumentMod(spell_id) : 10;
 
 	if (level_override > 0) {
@@ -4725,10 +4727,6 @@ float Mob::ResistSpell(uint8 resist_type, uint16 spell_id, Mob *caster, bool use
 
 	int focus_resist = caster->GetFocusEffect(focusResistRate, spell_id);
 	resist_modifier -= 2 * focus_resist;
-
-	int focus_incoming_resist = GetFocusEffect(focusFcResistIncoming, spell_id);
-
-	resist_modifier -= focus_incoming_resist;
 
 	//Check for fear resist
 	bool IsFear = false;

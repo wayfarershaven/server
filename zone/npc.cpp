@@ -818,6 +818,21 @@ bool NPC::Process()
 		SendHPUpdate();
 	}
 
+	if(HasVirus()) {
+		if(viral_timer.Check()) {
+			viral_timer_counter++;
+			for(int i = 0; i < MAX_SPELL_TRIGGER*2; i+=2) {
+				if(viral_spells[i] && spells[viral_spells[i]].viral_timer > 0)	{
+					if(viral_timer_counter % spells[viral_spells[i]].viral_timer == 0) {
+						SpreadVirus(viral_spells[i], viral_spells[i+1]);
+					}
+				}
+			}
+		}
+		if(viral_timer_counter > 999)
+			viral_timer_counter = 0;
+	}
+
 	if(spellbonuses.GravityEffect == 1) {
 		if(gravity_timer.Check())
 			DoGravityEffect();

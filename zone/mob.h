@@ -377,7 +377,6 @@ public:
 		uint8 WornType = 0, int32 ticsremaining = 0, int buffslot = -1, int instrument_mod = 10,
 		bool IsAISpellEffect = false, uint16 effect_id = 0, int32 se_base = 0, int32 se_limit = 0, int32 se_max = 0);
 	void NegateSpellsBonuses(uint16 spell_id);
-	bool NegateSpellEffect(uint16 spell_id, int effect_id);
 	virtual float GetActSpellRange(uint16 spell_id, float range, bool IsBard = false);
 	virtual int32 GetActSpellDamage(uint16 spell_id, int32 value, Mob* target = nullptr);
 	virtual int32 GetActDoTDamage(uint16 spell_id, int32 value, Mob* target);
@@ -429,6 +428,7 @@ public:
 	bool TrySpellProjectile(Mob* spell_target,  uint16 spell_id, float speed = 1.5f);
 	void ResourceTap(int32 damage, uint16 spell_id);
 	void TryTriggerThreshHold(int32 damage, int effect_id, Mob* attacker);
+	bool CheckSpellCategory(uint16 spell_id, int category_id, int effect_id);
 	void CalcDestFromHeading(float heading, float distance, float MaxZDiff, float StartX, float StartY, float &dX, float &dY, float &dZ);
 	void BeamDirectional(uint16 spell_id, int16 resist_adjust);
 	void ConeDirectional(uint16 spell_id, int16 resist_adjust);
@@ -933,15 +933,9 @@ public:
 	inline void SetSpellPowerDistanceMod(int16 value) { SpellPowerDistanceMod = value; };
 	int32 GetSpellStat(uint32 spell_id, const char *identifier, uint8 slot = 0);
 	bool HarmonySpellLevelCheck(int32 spell_id, Mob* target = nullptr);
-	bool CanFocusUseRandomEffectivenessByType(focusType type);
-	int GetFocusRandomEffectivenessValue(int focus_base, int focus_base2, bool best_focus = 0);
-	int GetMemoryBlurChance(int base_chance);
-
 	
 	void CastSpellOnLand(Mob* caster, int32 spell_id);
-
-	bool IsFocusProcLimitTimerActive(int32 focus_spell_id);
-	void SetFocusProcLimitTimer(int32 focus_spell_id, uint32 focus_reuse_time);
+	void FocusProcLimitProcess();
 
 	void ModSkillDmgTaken(EQ::skills::SkillType skill_num, int value);
 	int16 GetModSkillDmgTaken(const EQ::skills::SkillType skill_num);
@@ -1551,9 +1545,7 @@ protected:
 	int16 slow_mitigation; // Allows for a slow mitigation (100 = 100%, 50% = 50%)
 	Timer tic_timer;
 	Timer mana_timer;
-
-	Timer focusproclimit_timer[MAX_FOCUS_PROC_LIMIT_TIMERS];	//SPA 511
-	int32 focusproclimit_spellid[MAX_FOCUS_PROC_LIMIT_TIMERS];	//SPA 511
+	Timer focus_proc_limit_timer;
 
 	Timer shield_timer;
 	uint32 m_shield_target_id;
@@ -1649,6 +1641,7 @@ protected:
 	Timer bardsong_timer;
 	Timer gravity_timer;
 	Timer viral_timer;
+	uint8 viral_timer_counter;
 
 	// MobAI stuff
 	eStandingPetOrder pStandingPetOrder;

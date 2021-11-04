@@ -107,6 +107,7 @@ Mob::Mob(
 	ranged_timer(2000),
 	tic_timer(6000),
 	mana_timer(2000),
+	focus_proc_limit_timer(250),
 	spellend_timer(0),
 	rewind_timer(30000),
 	bindwound_timer(10000),
@@ -350,11 +351,6 @@ Mob::Mob(
 		ProjectileAtk[i].ammo_slot     = 0;
 		ProjectileAtk[i].skill         = 0;
 		ProjectileAtk[i].speed_mod     = 0.0f;
-	}
-
-	for (int i = 0; i < MAX_FOCUS_PROC_LIMIT_TIMERS; i++) {
-		focusproclimit_spellid[i] = 0;
-		focusproclimit_timer[i].Disable();
 	}
 
 	memset(&itembonuses, 0, sizeof(StatBonuses));
@@ -3221,8 +3217,7 @@ uint32 Mob::GetLevelHP(uint8 tlevel)
 
 int32 Mob::GetActSpellCasttime(uint16 spell_id, int32 casttime) {
 	int32 cast_reducer = GetFocusEffect(focusSpellHaste, spell_id);
-	int32 cast_reducer_amt = GetFocusEffect(focusFcCastTimeAmt, spell_id);
-	int32 cast_reducer_no_limit = GetFocusEffect(focusFcCastTimeMod2, spell_id);
+	auto min_cap = casttime / 2;
 
 	if (level > 50 && casttime >= 3000 && !spells[spell_id].goodEffect &&
 		(GetClass() == RANGER || GetClass() == SHADOWKNIGHT || GetClass() == PALADIN || GetClass() == BEASTLORD)) {
@@ -3230,12 +3225,8 @@ int32 Mob::GetActSpellCasttime(uint16 spell_id, int32 casttime) {
 		cast_reducer += level_mod * 3;
 	}
 
-	cast_reducer = std::min(cast_reducer, 50);  //Max cast time with focusSpellHaste and level reducer is 50% of cast time.
-	cast_reducer += cast_reducer_no_limit;
 	casttime = casttime * (100 - cast_reducer) / 100;
-	casttime -= cast_reducer_amt;
-
-	return std::max(casttime, 0);
+	return std::max(casttime, min_cap);
 }
 
 void Mob::ExecWeaponProc(const EQ::ItemInstance *inst, uint16 spell_id, Mob *on, int level_override) {
