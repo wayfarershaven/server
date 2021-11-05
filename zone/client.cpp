@@ -6378,8 +6378,9 @@ void Client::ConsentCorpses(std::string consent_name, bool deny)
 
 void Client::Doppelganger(uint16 spell_id, Mob *target, const char *name_override, int pet_count, int pet_duration)
 {
-	if(!target || !IsValidSpell(spell_id) || this->GetID() == target->GetID())
+	if(!target || !IsValidSpell(spell_id) || this->GetID() == target->GetID() ||  target->IsCorpse()) {
 		return;
+}
 
 	PetRecord record;
 	if(!database.GetPetEntry(spells[spell_id].teleport_zone, &record))
@@ -6448,8 +6449,9 @@ void Client::Doppelganger(uint16 spell_id, Mob *target, const char *name_overrid
 	int summon_count = 0;
 	summon_count = pet.count;
 
-	if(summon_count > MAX_SWARM_PETS)
+	if (summon_count > MAX_SWARM_PETS) {
 		summon_count = MAX_SWARM_PETS;
+	}
 
 	static const glm::vec2 swarmPetLocations[MAX_SWARM_PETS] = {
 		glm::vec2(5, 5), glm::vec2(-5, 5), glm::vec2(5, -5), glm::vec2(-5, -5),
@@ -6484,18 +6486,29 @@ void Client::Doppelganger(uint16 spell_id, Mob *target, const char *name_overrid
 		swarm_pet_npc->GetSwarmInfo()->owner_id = GetID();
 
 		// Give the pets alittle more agro than the caster and then agro them on the target
-		target->AddToHateList(swarm_pet_npc, (target->GetHateAmount(this) + RuleI(Spells, DopplegangerInitialHate)), (target->GetDamageAmount(this) + 100));
-		swarm_pet_npc->AddToHateList(target, 1000, 1000);
-		swarm_pet_npc->GetSwarmInfo()->target = target->GetID();
+		if (target != nullptr) {
+			swarm_pet_npc->AddToHateList(target, 10000, 10000);
+			target->AddToHateList(swarm_pet_npc, (target->GetHateAmount(this) + RuleI(Spells, DopplegangerInitialHate)), (target->GetDamageAmount(this) + 10000));
+			swarm_pet_npc->GetSwarmInfo()->target = target->GetID();
+		}
 
 		//we allocated a new NPC type object, give the NPC ownership of that memory
-		if(npc_dup != nullptr)
+		if (npc_dup != nullptr) {
 			swarm_pet_npc->GiveNPCTypeData(npc_dup);
+		}
 
-		entity_list.AddNPC(swarm_pet_npc);
+		entity_list.AddNPC(swarm_pet_npc, true, true);
 		summon_count--;
 	}
+
+	//the target of these swarm pets will take offense to being cast on...
+	if (target != nullptr)
+		target->AddToHateList(this, 1, 0);
+
+	// The other pointers we make are handled elsewhere.
+	delete made_npc;
 }
+
 
 void Client::AssignToInstance(uint16 instance_id)
 {
