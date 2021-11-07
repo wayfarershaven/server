@@ -127,7 +127,8 @@ namespace Logs {
 		Scheduler, // 75
 		Cheat,
 		ClientList,
-		DiaWind, // 78
+		DiaWind,
+		Saylink, // 79
 		MaxCategoryID /* Don't Remove this */
 	};
 
@@ -214,6 +215,7 @@ namespace Logs {
 		"Cheat",
 		"ClientList",
 		"DialogueWindow",
+		"Saylink",
 	};
 }
 
