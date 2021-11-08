@@ -2994,7 +2994,12 @@ uint8 Mob::GetWeaponDamageBonus(const EQ::ItemData *weapon, bool offhand)
                 return 4 + ((level - 28) / 3) + ((delay - 40) / 3);
         }
         else {
-            return 1 + ((level - 40) / 3) * (delay / 30); // YOOO shit's useless waste of AAs
+			if (delay <= 19)
+                return 5 + ((level - 40) / 3) * (delay / 30);
+            else if (delay <= 23)
+                return 6 + ((level - 40) / 3) * (delay / 30);
+            else if (delay >= 24)
+                return 7 + ((level - 40) / 3) * (delay / 30);
         }
     }
     else {
