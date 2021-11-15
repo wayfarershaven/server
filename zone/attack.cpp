@@ -313,14 +313,8 @@ int Mob::GetTotalDefense()
     // 172 Evasion aka SE_AvoidMeleeChance
     evasion_bonus += itembonuses.AvoidMeleeChanceEffect + aabonuses.AvoidMeleeChanceEffect; // item bonus here isn't mod2 avoidance
 
-    Mob *owner = nullptr;
-    if (IsPet())
-        owner = GetOwner();
-    else if (IsNPC() && CastToNPC()->GetSwarmOwner())
-        owner = entity_list.GetMobID(CastToNPC()->GetSwarmOwner());
-
-    if (owner) // 215 Pet Avoidance % aka SE_PetAvoidance
-        evasion_bonus += owner->aabonuses.PetAvoidance + owner->spellbonuses.PetAvoidance + owner->itembonuses.PetAvoidance;
+	// 215 Pet Avoidance % aka SE_PetAvoidance
+	evasion_bonus += GetPetAvoidanceBonusFromOwner();
 
     // Evasion is a percentage bonus according to AA descriptions
     if (evasion_bonus)
@@ -862,13 +856,7 @@ int Mob::ACSum(bool skip_caps)
         // According to the guild hall Combat Dummies, a level 50 classic EQ mob it should be ~115
         // For a 60 PoP mob ~120, 70 OoW ~120
         ac += GetAC();
-        Mob *owner = nullptr;
-        if (IsPet())
-            owner = GetOwner();
-        else if (CastToNPC()->GetSwarmOwner())
-            owner = entity_list.GetMobID(CastToNPC()->GetSwarmOwner());
-        if (owner)
-            ac += owner->aabonuses.PetAvoidance + owner->spellbonuses.PetAvoidance + owner->itembonuses.PetAvoidance;
+    	ac += GetPetACBonusFromOwner();
         auto spell_aa_ac = aabonuses.AC + spellbonuses.AC;
         ac += GetSkill(EQ::skills::SkillDefense) / 5;
         if (EQ::ValueWithin(static_cast<int>(GetClass()), NECROMANCER, ENCHANTER))
@@ -968,15 +956,7 @@ int Mob::offense(EQ::skills::SkillType skill)
         offense += (2 * stat_bonus - 150) / 3;
     }
 
-    // GetATK() = ATK + itembonuses.ATK + spellbonuses.ATK.  However, ATK appears to already be itembonuses.ATK + spellbonuses.ATK for PCs, so as is, it is double counting attack
-    // This causes attack to be significantly more important than it should be based on era rule of thumbs.  I do not want to change the GetATK() function in case doing so breaks something,
-    // so instead I am just adding a /2 to remedy the double counting.  NPCs do not have this issue, so they are broken up.
-    // PCAttackPowerScaling is used to help bring attack power further in line with era estimates.
-    if (IsClient()) {
-        offense += (GetATK() / 2) * RuleI(Combat, PCAttackPowerScaling) / 100;
-    } else {
-        offense += GetATK();
-    }
+    offense += GetATK() + GetPetATKBonusFromOwner();
 
     return offense;
 }
@@ -4428,7 +4408,7 @@ void Mob::TryPetCriticalHit(Mob *defender, DamageHitInfo &hit)
 
     if (critChance > 0) {
         if (zone->random.Roll(critChance)) {
-            critMod += GetCritDmgMod(hit.skill);
+            critMod += GetCritDmgMod(hit.skill, owner);
             hit.damage_done += 5;
             hit.damage_done = (hit.damage_done * critMod) / 100;
 
@@ -5637,15 +5617,22 @@ void Mob::CommonOutgoingHitSuccess(Mob* defender, DamageHitInfo &hit, ExtraAttac
         if (mod > 0)
             spec_mod = mod;
         if ((IsPet() || IsTempPet()) && IsPetOwnerClient()) {
-            int spell = spellbonuses.PC_Pet_Rampage[1] + itembonuses.PC_Pet_Rampage[1] + aabonuses.PC_Pet_Rampage[1];
-            if (spell > spec_mod)
-                spec_mod = spell;
+			//SE_PC_Pet_Rampage SPA 464 on pet, damage modifier
+			int spell_mod = spellbonuses.PC_Pet_Rampage[1] + itembonuses.PC_Pet_Rampage[1] + aabonuses.PC_Pet_Rampage[1];
+			if (spell_mod > spec_mod)
+				spec_mod = spell_mod;
         }
     }
     else if (IsSpecialAttack(eSpecialAttacks::AERampage)) {
         int mod = GetSpecialAbilityParam(SPECATK_AREA_RAMPAGE, 2);
         if (mod > 0)
             spec_mod = mod;
+		if ((IsPet() || IsTempPet()) && IsPetOwnerClient()) {
+			//SE_PC_Pet_AE_Rampage SPA 465 on pet, damage modifier
+			int spell_mod = spellbonuses.PC_Pet_AE_Rampage[1] + itembonuses.PC_Pet_AE_Rampage[1] + aabonuses.PC_Pet_AE_Rampage[1];
+			if (spell_mod > spec_mod)
+				spec_mod = spell_mod;
+		}
     }
     if (spec_mod > 0)
         hit.damage_done = (hit.damage_done * spec_mod) / 100;
@@ -6046,6 +6033,46 @@ void Mob::DoOffHandAttackRounds(Mob *target, ExtraAttackOptions *opts)
             }
         }
     }
+}
+
+int Mob::GetPetAvoidanceBonusFromOwner()
+{
+	Mob *owner = nullptr;
+	if (IsPet())
+		owner = GetOwner();
+	else if (IsNPC() && CastToNPC()->GetSwarmOwner())
+		owner = entity_list.GetMobID(CastToNPC()->GetSwarmOwner());
+
+	if (owner)
+		return owner->aabonuses.PetAvoidance + owner->spellbonuses.PetAvoidance + owner->itembonuses.PetAvoidance;
+
+	return 0;
+}
+int Mob::GetPetACBonusFromOwner()
+{
+	Mob *owner = nullptr;
+	if (IsPet())
+		owner = GetOwner();
+	else if (IsNPC() && CastToNPC()->GetSwarmOwner())
+		owner = entity_list.GetMobID(CastToNPC()->GetSwarmOwner());
+
+	if (owner)
+		return owner->aabonuses.PetMeleeMitigation + owner->spellbonuses.PetMeleeMitigation + owner->itembonuses.PetMeleeMitigation;
+
+	return 0;
+}
+int Mob::GetPetATKBonusFromOwner()
+{
+	Mob *owner = nullptr;
+	if (IsPet())
+		owner = GetOwner();
+	else if (IsNPC() && CastToNPC()->GetSwarmOwner())
+		owner = entity_list.GetMobID(CastToNPC()->GetSwarmOwner());
+
+	if (owner)
+		return owner->aabonuses.Pet_Add_Atk + owner->spellbonuses.Pet_Add_Atk + owner->itembonuses.Pet_Add_Atk;
+
+	return 0;
 }
 
 bool Mob::GetWasSpawnedInWater() const {
