@@ -452,6 +452,7 @@ struct StatBonuses {
 	int32	ProcChance;							// ProcChance/10 == % increase i = CombatEffects
 	int32	ProcChanceSPA;						// ProcChance from spell effects
 	int32	ExtraAttackChance;
+	int32	DoubleMeleeRound[2];				// base chance=0, damage mod=1	
 	int32	DoTShielding;
 	int32	DivineSaveChance[2];				// Second Chance (base1 = chance, base2 = spell on trigger)
 	uint32	DeathSave[4];						// Death Pact [0](value = 1 partial 2 = full) [1]=slot [2]=LvLimit [3]=HealAmt
@@ -674,6 +675,8 @@ namespace SBIndex {
 	constexpr uint16 FINISHING_EFFECT_DMG                   = 1; // SPA 278, 439, 217
 	constexpr uint16 FINISHING_EFFECT_LEVEL_MAX             = 0; // SPA 440, 345, 346
 	constexpr uint16 FINISHING_EFFECT_LEVEL_CHANCE_BONUS    = 1; // SPA 440, 345, 346
+	constexpr uint16 DOUBLE_MELEE_ROUND_CHANCE              = 0; // SPA 471
+	constexpr uint16 DOUBLE_MELEE_ROUND_DMG_BONUS			= 1; // SPA 471	
 };
 
 typedef struct

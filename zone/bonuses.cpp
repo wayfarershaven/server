@@ -1627,7 +1627,16 @@ void Mob::ApplyAABonuses(const AA::Rank &rank, StatBonuses *newbon)
 		case SE_ZoneSuspendMinion:
 			newbon->ZoneSuspendMinion = base1;
 			break;
-			
+
+		case SE_Double_Melee_Round:
+		{
+			if (newbon->DoubleMeleeRound[SBIndex::DOUBLE_MELEE_ROUND_CHANCE] < base1) {
+				newbon->DoubleMeleeRound[SBIndex::DOUBLE_MELEE_ROUND_CHANCE] = base1;
+				newbon->DoubleMeleeRound[SBIndex::DOUBLE_MELEE_ROUND_DMG_BONUS] = base2;
+			}
+			break;
+		}
+
 		// to do
 		case SE_PetDiscipline:
 			break;
@@ -2449,6 +2458,20 @@ void Mob::ApplySpellsBonuses(uint16 spell_id, uint8 casterlevel, StatBonuses *ne
 			case SE_ExtraAttackChance:
 				new_bonus->ExtraAttackChance += effect_value;
 				break;
+
+			case SE_Double_Melee_Round:
+			{
+				if (AdditiveWornBonus) {
+					new_bonus->DoubleMeleeRound[SBIndex::DOUBLE_MELEE_ROUND_CHANCE] += effect_value;
+					new_bonus->DoubleMeleeRound[SBIndex::DOUBLE_MELEE_ROUND_DMG_BONUS] += base2;
+				}
+
+				if (new_bonus->DoubleMeleeRound[SBIndex::DOUBLE_MELEE_ROUND_CHANCE] < effect_value) {
+					new_bonus->DoubleMeleeRound[SBIndex::DOUBLE_MELEE_ROUND_CHANCE] = effect_value;
+					new_bonus->DoubleMeleeRound[SBIndex::DOUBLE_MELEE_ROUND_DMG_BONUS] = base2;
+				}
+				break;
+			}
 
 			case SE_PercentXPIncrease:
 			{
@@ -4459,6 +4482,12 @@ void Mob::NegateSpellsBonuses(uint16 spell_id)
 					spellbonuses.ExtraAttackChance = effect_value;
 					aabonuses.ExtraAttackChance = effect_value;
 					itembonuses.ExtraAttackChance = effect_value;
+					break;
+
+				case SE_Double_Melee_Round:
+					spellbonuses.DoubleMeleeRound[SBIndex::DOUBLE_MELEE_ROUND_CHANCE] = effect_value;
+					aabonuses.DoubleMeleeRound[SBIndex::DOUBLE_MELEE_ROUND_CHANCE] = effect_value;
+					itembonuses.DoubleMeleeRound[SBIndex::DOUBLE_MELEE_ROUND_CHANCE] = effect_value;
 					break;
 
 				case SE_PercentXPIncrease:

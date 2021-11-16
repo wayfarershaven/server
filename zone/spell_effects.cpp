@@ -3282,7 +3282,8 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 			case SE_Ff_ReuseTimeMin:
 			case SE_Ff_ReuseTimeMax:
 			case SE_Ff_Value_Min:
-			case SE_Ff_Value_Max:			
+			case SE_Ff_Value_Max:
+			case SE_Double_Melee_Round:			
 			case SE_Skill_Base_Damage_Mod:
 			case SE_Buy_AA_Rank:
 
