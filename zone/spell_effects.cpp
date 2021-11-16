@@ -6262,16 +6262,16 @@ bool Mob::TryDivineSave()
 	-If desired, additional spells can be triggered from the AA/item/spell effect, generally a heal.
 	*/
 
-	int32 SuccessChance = aabonuses.DivineSaveChance[0] + itembonuses.DivineSaveChance[0] + spellbonuses.DivineSaveChance[0];
+	int32 SuccessChance = aabonuses.DivineSaveChance[SBIndex::DIVINE_SAVE_CHANCE] + itembonuses.DivineSaveChance[SBIndex::DIVINE_SAVE_CHANCE] + spellbonuses.DivineSaveChance[SBIndex::DIVINE_SAVE_CHANCE];
 	if (SuccessChance && zone->random.Roll(SuccessChance))
 	{
 		SetHP(1);
 
 		int32 EffectsToTry[] =
 		{
-			aabonuses.DivineSaveChance[1],
-			itembonuses.DivineSaveChance[1],
-			spellbonuses.DivineSaveChance[1]
+			aabonuses.DivineSaveChance[SBIndex::DIVINE_SAVE_SPELL_TRIGGER_ID],
+			itembonuses.DivineSaveChance[SBIndex::DIVINE_SAVE_SPELL_TRIGGER_ID],
+			spellbonuses.DivineSaveChance[SBIndex::DIVINE_SAVE_SPELL_TRIGGER_ID]
 		};
 		//Fade the divine save effect here after saving the old effects off.
 		//That way, if desired, the effect could apply SE_DivineSave again.
@@ -6306,10 +6306,10 @@ bool Mob::TryDeathSave() {
 	-In later expansions this SE_DeathSave was given a level limit and a heal value in its effect data.
 	*/
 
-	if (spellbonuses.DeathSave[0]){
+	if (spellbonuses.DeathSave[SBIndex::DEATH_SAVE_TYPE]){
 
 		int SuccessChance = 0;
-		int buffSlot = spellbonuses.DeathSave[1];
+		int buffSlot = spellbonuses.DeathSave[SBIndex::DEATH_SAVE_BUFFSLOT];
 		int32 UD_HealMod = 0;
 		int HealAmt = 300; //Death Pact max Heal
 
@@ -6324,12 +6324,12 @@ bool Mob::TryDeathSave() {
 
 			if(zone->random.Roll(SuccessChance)) {
 
-				if(spellbonuses.DeathSave[0] == 2)
+				if(spellbonuses.DeathSave[SBIndex::DEATH_SAVE_TYPE] == 2)
 					HealAmt = RuleI(Spells, DivineInterventionHeal); //8000HP is how much LIVE Divine Intervention max heals
 
 				//Check if bonus Heal amount can be applied ([3] Bonus Heal [2] Level limit)
-				if (spellbonuses.DeathSave[3] && (GetLevel() >= spellbonuses.DeathSave[2]))
-					HealAmt += spellbonuses.DeathSave[3];
+				if (spellbonuses.DeathSave[SBIndex::DEATH_SAVE_HEAL_AMT] && (GetLevel() >= spellbonuses.DeathSave[SBIndex::DEATH_SAVE_MIN_LEVEL_FOR_HEAL]))
+					HealAmt += spellbonuses.DeathSave[SBIndex::DEATH_SAVE_HEAL_AMT];
 
 				if ((GetMaxHP() - GetHP()) < HealAmt)
 					HealAmt = GetMaxHP() - GetHP();
@@ -6337,7 +6337,7 @@ bool Mob::TryDeathSave() {
 				SetHP((GetHP()+HealAmt));
 				Message(263, "The gods have healed you for %i points of damage.", HealAmt);
 
-				if(spellbonuses.DeathSave[0] == 2)
+				if(spellbonuses.DeathSave[SBIndex::DEATH_SAVE_TYPE] == 2)
 					entity_list.MessageCloseString(
 						this,
 						false,
@@ -6361,12 +6361,12 @@ bool Mob::TryDeathSave() {
 
 				if(zone->random.Roll(SuccessChance)) {
 
-					if(spellbonuses.DeathSave[0] == 2)
+					if(spellbonuses.DeathSave[SBIndex::DEATH_SAVE_TYPE] == 2)
 						HealAmt = RuleI(Spells, DivineInterventionHeal);
 
 					//Check if bonus Heal amount can be applied ([3] Bonus Heal [2] Level limit)
-					if (spellbonuses.DeathSave[3] && (GetLevel() >= spellbonuses.DeathSave[2]))
-						HealAmt += spellbonuses.DeathSave[3];
+					if (spellbonuses.DeathSave[SBIndex::DEATH_SAVE_HEAL_AMT] && (GetLevel() >= spellbonuses.DeathSave[SBIndex::DEATH_SAVE_MIN_LEVEL_FOR_HEAL]))
+						HealAmt += spellbonuses.DeathSave[SBIndex::DEATH_SAVE_HEAL_AMT];
 
 					HealAmt = HealAmt*UD_HealMod/100;
 
@@ -6376,7 +6376,7 @@ bool Mob::TryDeathSave() {
 					SetHP((GetHP()+HealAmt));
 					Message(263, "The gods have healed you for %i points of damage.", HealAmt);
 
-					if(spellbonuses.DeathSave[0] == 2)
+					if(spellbonuses.DeathSave[SBIndex::DEATH_SAVE_TYPE] == 2)
 						entity_list.MessageCloseString(
 							this,
 							false,
@@ -6734,22 +6734,22 @@ bool Mob::TryDispel(uint8 caster_level, uint8 buff_level, int level_modifier){
 
 bool Mob::ImprovedTaunt(){
 
-	if (spellbonuses.ImprovedTaunt[0]){
+	if (spellbonuses.ImprovedTaunt[SBIndex::IMPROVED_TAUNT_MAX_LVL]){
 
-		if (GetLevel() > spellbonuses.ImprovedTaunt[0])
+		if (GetLevel() > spellbonuses.ImprovedTaunt[SBIndex::IMPROVED_TAUNT_MAX_LVL])
 			return false;
 
-		if (spellbonuses.ImprovedTaunt[2] >= 0){
+		if (spellbonuses.ImprovedTaunt[SBIndex::IMPROVED_TAUNT_BUFFSLOT] >= 0){
 
-			target = entity_list.GetMob(buffs[spellbonuses.ImprovedTaunt[2]].casterid);
+			target = entity_list.GetMob(buffs[spellbonuses.ImprovedTaunt[SBIndex::IMPROVED_TAUNT_BUFFSLOT]].casterid);
 
 			if (target){
 				SetTarget(target);
 				return true;
 			}
 			else {
-				if(!TryFadeEffect(spellbonuses.ImprovedTaunt[2]))
-					BuffFadeBySlot(spellbonuses.ImprovedTaunt[2], true); //If caster killed removed effect.
+				if(!TryFadeEffect(spellbonuses.ImprovedTaunt[SBIndex::IMPROVED_TAUNT_BUFFSLOT]))
+					BuffFadeBySlot(spellbonuses.ImprovedTaunt[SBIndex::IMPROVED_TAUNT_BUFFSLOT], true); //If caster killed removed effect.
 			}
 		}
 	}

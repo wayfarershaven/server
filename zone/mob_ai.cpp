@@ -1277,7 +1277,7 @@ void Mob::AI_Process() {
 
 					//SE_PC_Pet_Rampage SPA 464 on pet, chance modifier
                     if ((IsPet() || IsTempPet()) && IsPetOwnerClient()) {
- 						int chance = spellbonuses.PC_Pet_Rampage[0] + itembonuses.PC_Pet_Rampage[0] + aabonuses.PC_Pet_Rampage[0];
+						int chance = spellbonuses.PC_Pet_Rampage[SBIndex::PET_RAMPAGE_CHANCE] + itembonuses.PC_Pet_Rampage[SBIndex::PET_RAMPAGE_CHANCE] + aabonuses.PC_Pet_Rampage[SBIndex::PET_RAMPAGE_CHANCE];
 						if (chance && zone->random.Roll(chance)) {
 							Rampage(nullptr);
                         }
@@ -1319,7 +1319,7 @@ void Mob::AI_Process() {
 
 					//SE_PC_Pet_Rampage SPA 465 on pet, chance modifier
 					if ((IsPet() || IsTempPet()) && IsPetOwnerClient()) {
-						int chance = spellbonuses.PC_Pet_AE_Rampage[0] + itembonuses.PC_Pet_AE_Rampage[0] + aabonuses.PC_Pet_AE_Rampage[0];
+						int chance = spellbonuses.PC_Pet_AE_Rampage[SBIndex::PET_RAMPAGE_CHANCE] + itembonuses.PC_Pet_AE_Rampage[SBIndex::PET_RAMPAGE_CHANCE] + aabonuses.PC_Pet_AE_Rampage[SBIndex::PET_RAMPAGE_CHANCE];
 						if (chance && zone->random.Roll(chance)) {
 							Rampage(nullptr);
 						}
