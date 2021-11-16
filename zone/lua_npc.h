@@ -146,6 +146,10 @@ public:
 	bool QuestLootCount(int itemid1, int itemid2, int itemid3, int itemid4);
 	void ChangeLastName(const char *lastname);
 	void ClearLastName();
+	bool HasItem(uint32 item_id);
+	uint16 CountItem(uint32 item_id);
+	uint32 GetItemIDBySlot(uint16 slot_id);
+	uint16 GetFirstSlotByItemID(uint32 item_id);
 };
 
 #endif
