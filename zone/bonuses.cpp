@@ -154,6 +154,7 @@ void Client::CalcItemBonuses(StatBonuses* newbon) {
 	SetShieldEquiped(false);
 	SetTwoHandBluntEquiped(false);
 	SetTwoHanderEquipped(false);
+	SetDuelWeaponsEquiped(false);
 
 	unsigned int i;
 	// Update: MainAmmo should only calc skill mods (TODO: Check for other cases)
@@ -171,8 +172,13 @@ void Client::CalcItemBonuses(StatBonuses* newbon) {
 			SetTwoHandBluntEquiped(true);
 			SetTwoHanderEquipped(true);
 		}
-		else if (i == EQ::invslot::slotPrimary && (item && (item->ItemType == EQ::item::ItemType2HSlash || item->ItemType == EQ::item::ItemType2HPiercing)))
+		else if (i == EQ::invslot::slotPrimary && (item && (item->ItemType == EQ::item::ItemType2HSlash || item->ItemType == EQ::item::ItemType2HPiercing))) {
 			SetTwoHanderEquipped(true);
+		}
+	}
+
+	if (CanThisClassDualWield()) {
+		SetDuelWeaponsEquiped(true);
 	}
 
 	//tribute items
@@ -903,7 +909,7 @@ void Mob::ApplyAABonuses(const AA::Rank &rank, StatBonuses *newbon)
 			newbon->GivePetGroupTarget = true;
 			break;
 		case SE_ItemHPRegenCapIncrease:
-			newbon->ItemHPRegenCap = +base1;
+			newbon->ItemHPRegenCap += base1;
 			break;
 		case SE_Ambidexterity:
 			newbon->Ambidexterity += base1;
@@ -1091,15 +1097,6 @@ void Mob::ApplyAABonuses(const AA::Rank &rank, StatBonuses *newbon)
 			break;
 		}
 
-		case SE_CriticalSpellChance: {
-			newbon->CriticalSpellChance += base1;
-
-			if (base2 > newbon->SpellCritDmgIncNoStack)
-				newbon->SpellCritDmgIncNoStack = base2;
-
-			break;
-		}
-
 		case SE_Critical_Melee_Damage_Mod_Max:
 		{
 			// Bad data or unsupported new skill
@@ -1110,6 +1107,15 @@ void Mob::ApplyAABonuses(const AA::Rank &rank, StatBonuses *newbon)
 				newbon->CritDmgModNoStack[skill] = base1;
 			else if (base1 > 0 && newbon->CritDmgModNoStack[skill] < base1)
 				newbon->CritDmgModNoStack[skill] = base1;
+			break;
+		}
+
+		case SE_CriticalSpellChance: {
+			newbon->CriticalSpellChance += base1;
+
+			if (base2 > newbon->SpellCritDmgIncNoStack)
+				newbon->SpellCritDmgIncNoStack = base2;
+
 			break;
 		}
 
@@ -1556,6 +1562,25 @@ void Mob::ApplyAABonuses(const AA::Rank &rank, StatBonuses *newbon)
 		case SE_Pet_Add_Atk:
 			newbon->Pet_Add_Atk += base1;
 			break;
+
+		case SE_Weapon_Stance:
+		{
+			if (IsValidSpell(base1)) { //base1 is the spell_id of buff
+				if (base2 <= WEAPON_STANCE_TYPE_MAX) { //0=2H, 1=Shield, 2=DW
+					if (IsValidSpell(newbon->WeaponStance[base2])) { //Check if we already a spell_id saved for this effect
+						if (spells[newbon->WeaponStance[base2]].rank < spells[base1].rank) { //If so, check if any new spellids with higher rank exist (live spells for this are ranked).
+							newbon->WeaponStance[base2] = base1; //Overwrite with new effect
+							SetWeaponStanceEnabled(true);
+						}
+					}
+					else {
+						newbon->WeaponStance[base2] = base1; //If no prior effect exists, then apply
+						SetWeaponStanceEnabled(true);
+					}
+				}
+			}
+			break;
+		}
 
 		case SE_ExtendedShielding: 
 		{
@@ -3482,8 +3507,40 @@ void Mob::ApplySpellsBonuses(uint16 spell_id, uint8 casterlevel, StatBonuses *ne
 			case SE_ZoneSuspendMinion:
 				new_bonus->ZoneSuspendMinion = effect_value;
 				break;
-				
-				//Special custom cases for loading effects on to NPC from 'npc_spels_effects' table
+
+			case SE_Weapon_Stance: {
+				if (IsValidSpell(effect_value)) { //base1 is the spell_id of buff
+					if (base2 <= WEAPON_STANCE_TYPE_MAX) { //0=2H, 1=Shield, 2=DW
+						if (IsValidSpell(new_bonus->WeaponStance[base2])) { //Check if we already a spell_id saved for this effect
+							if (spells[new_bonus->WeaponStance[base2]].rank < spells[effect_value].rank) { //If so, check if any new spellids with higher rank exist (live spells for this are ranked).
+								new_bonus->WeaponStance[base2] = effect_value; //Overwrite with new effect
+								SetWeaponStanceEnabled(true);
+
+								if (WornType) {
+									weaponstance.itembonus_enabled = true;
+								}
+								else {
+									weaponstance.spellbonus_enabled = true;
+								}
+							}
+						}
+						else {
+							new_bonus->WeaponStance[base2] = effect_value; //If no prior effect exists, then apply
+							SetWeaponStanceEnabled(true);
+
+							if (WornType) {
+								weaponstance.itembonus_enabled = true;
+							}
+							else {
+								weaponstance.spellbonus_enabled = true;
+							}
+						}
+					}
+				}
+				break;
+			}
+
+			//Special custom cases for loading effects on to NPC from 'npc_spels_effects' table
 
 			if (IsAISpellEffect) {
 

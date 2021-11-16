@@ -104,6 +104,7 @@
 #define PET_BUTTON_SPELLHOLD	9
 
 #define AURA_HARDCAP		2
+#define WEAPON_STANCE_TYPE_MAX 2
 
 #define SHIELD_ABILITY_RECAST_TIME 180
 
@@ -545,6 +546,8 @@ struct StatBonuses {
 	int32   Pet_Crit_Melee_Damage_Pct_Owner;	// base = percent mod for pet critcal damage from owner
 	int32	Pet_Add_Atk;		
 
+	int32   WeaponStance[WEAPON_STANCE_TYPE_MAX +1];// base = trigger spell id, base2 = 0 is 2h, 1 is shield, 2 is dual wield, [0]spid 2h, [1]spid shield, [2]spid DW
+
 	bool	ZoneSuspendMinion;					// base 1 allows suspended minions to zone
 
 	// AAs
@@ -678,6 +681,20 @@ typedef struct
 	uint16 base_spellID;
 	int level_override;
 } tProc;
+
+struct WeaponStance_Struct {
+	bool enabled;
+	bool spellbonus_enabled;
+	bool itembonus_enabled;
+	bool aabonus_enabled;
+	int spellbonus_buff_spell_id;
+	int itembonus_buff_spell_id;
+	int aabonus_buff_spell_id;
+};
+
+constexpr uint16 WEAPON_STANCE_TYPE_2H = 0;
+constexpr uint16 WEAPON_STANCE_TYPE_SHIELD = 1;
+constexpr uint16 WEAPON_STANCE_TYPE_DUAL_WIELD = 2;
 
 typedef struct
 {
