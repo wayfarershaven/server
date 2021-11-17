@@ -1498,4 +1498,6 @@ const char *GetSpellName(uint16 spell_id);
 
 bool IsRacialIllusion(uint16 spell_id);
 
+int GetSpellStatValue(uint32 spell_id, const char* stat_identifier, uint8 slot = 0);
+
 #endif
