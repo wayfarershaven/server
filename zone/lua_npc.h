@@ -150,6 +150,8 @@ public:
 	uint16 CountItem(uint32 item_id);
 	uint32 GetItemIDBySlot(uint16 slot_id);
 	uint16 GetFirstSlotByItemID(uint32 item_id);
+	float GetHealScale();
+	float GetSpellScale();
 };
 
 #endif
