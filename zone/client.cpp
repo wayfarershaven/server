@@ -63,6 +63,7 @@ extern volatile bool RunLoops;
 #include "nats_manager.h"
 #include "../common/content/world_content_service.h"
 #include "../common/expedition_lockout_timer.h"
+#include "cheat_manager.h"
 
 extern NatsManager nats;
 extern QueryServ* QServ;
@@ -178,6 +179,7 @@ Client::Client(EQStreamInterface* ieqs)
 	for (int client_filter = 0; client_filter < _FilterCount; client_filter++)
 		ClientFilters[client_filter] = FilterShow;
 
+	cheat_manager.SetClient(this);
 	mMovementManager->AddClient(this);
 	character_id = 0;
 	conn_state = NoPacketsReceived;

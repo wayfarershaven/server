@@ -211,7 +211,7 @@ void MapOpcodes()
 	ConnectedOpcodes[OP_FeignDeath] = &Client::Handle_OP_FeignDeath;
 	ConnectedOpcodes[OP_FindPersonRequest] = &Client::Handle_OP_FindPersonRequest;
 	ConnectedOpcodes[OP_Fishing] = &Client::Handle_OP_Fishing;
-	ConnectedOpcodes[OP_FloatListThing] = &Client::Handle_OP_Ignore;
+	ConnectedOpcodes[OP_FloatListThing] = &Client::Handle_OP_MovementHistoryList;
 	ConnectedOpcodes[OP_Forage] = &Client::Handle_OP_Forage;
 	ConnectedOpcodes[OP_FriendsWho] = &Client::Handle_OP_FriendsWho;
 	ConnectedOpcodes[OP_GetGuildMOTD] = &Client::Handle_OP_GetGuildMOTD;
@@ -415,6 +415,7 @@ void MapOpcodes()
 	ConnectedOpcodes[OP_YellForHelp] = &Client::Handle_OP_YellForHelp;
 	ConnectedOpcodes[OP_ZoneChange] = &Client::Handle_OP_ZoneChange;
 	ConnectedOpcodes[OP_ResetAA] = &Client::Handle_OP_ResetAA;
+	ConnectedOpcodes[OP_UnderWorld] = &Client::Handle_OP_UnderWorld;
 }
 
 void ClearMappedOpcode(EmuOpcode op)
@@ -2950,6 +2951,7 @@ void Client::Handle_OP_Assist(const EQApplicationPacket *app)
 			Mob *new_target = assistee->GetTarget();
 			if (new_target && (GetGM() ||
 				Distance(m_Position, assistee->GetPosition()) <= TARGETING_RANGE)) {
+				cheat_manager.SetExemptStatus(Assist, true);
 				eid->entity_id = new_target->GetID();
 			} else {
 				eid->entity_id = 0;
@@ -4546,6 +4548,8 @@ void Client::Handle_OP_ClientUpdate(const EQApplicationPacket *app) {
 			new_heading += boat->GetHeading();
 		}
 	}
+
+	cheat_manager.MovementCheck(glm::vec3(cx, cy, cz));
 
 	if (IsDraggingCorpse())
 		DragCorpses();
@@ -8844,6 +8848,7 @@ void Client::Handle_OP_ItemVerifyRequest(const EQApplicationPacket *app)
 	slot_id = request->slot;
 	target_id = request->target;
 
+	cheat_manager.ProcessItemVerifyRequest(request->slot, request->target);
 
 	EQApplicationPacket *outapp = nullptr;
 	outapp = new EQApplicationPacket(OP_ItemVerifyReply, sizeof(ItemVerifyReply_Struct));
@@ -9694,6 +9699,7 @@ return;
 
 void Client::Handle_OP_MemorizeSpell(const EQApplicationPacket *app)
 {
+	cheat_manager.CheckMemTimer();
 	OPMemorizeSpell(app);
 	return;
 }
@@ -13664,6 +13670,8 @@ void Client::Handle_OP_SpawnAppearance(const EQApplicationPacket *app)
 	}
 	SpawnAppearance_Struct* sa = (SpawnAppearance_Struct*)app->pBuffer;
 
+	cheat_manager.ProcessSpawnApperance(sa->spawn_id, sa->type, sa->parameter);
+
 	if (sa->spawn_id != GetID())
 		return;
 
@@ -14111,6 +14119,11 @@ void Client::Handle_OP_TargetCommand(const EQApplicationPacket *app)
 				GetTarget()->IsTargeted(1);
 				return;
 			}
+			else if (cheat_manager.GetExemptStatus(Assist)) {
+				GetTarget()->IsTargeted(1);
+				cheat_manager.SetExemptStatus(Assist, false);
+				return;
+			}			
 			else if (GetTarget()->IsClient())
 			{
 				//make sure this client is in our raid/group
@@ -14124,6 +14137,15 @@ void Client::Handle_OP_TargetCommand(const EQApplicationPacket *app)
 					GetName(), GetTarget()->GetName(), (int)GetTarget()->GetBodyType());
 				database.SetMQDetectionFlag(AccountName(), GetName(), hacker_str, zone->GetShortName());
 				SetTarget((Mob*)nullptr);
+				return;
+			}
+			else if (cheat_manager.GetExemptStatus(Port)) {
+				GetTarget()->IsTargeted(1);
+				return;
+			}
+			else if (cheat_manager.GetExemptStatus(Sense)) {
+				GetTarget()->IsTargeted(1);
+				cheat_manager.SetExemptStatus(Sense, false);
 				return;
 			}
 			else if (GetTarget()->IsPetOwnerClient())
@@ -15160,4 +15182,22 @@ void Client::Handle_OP_ResetAA(const EQApplicationPacket *app)
 		ResetAA();
 	}
 	return;
+}
+
+void Client::Handle_OP_MovementHistoryList(const EQApplicationPacket* app) {
+	cheat_manager.ProcessMovementHistory(app);
+}
+
+void Client::Handle_OP_UnderWorld(const EQApplicationPacket* app) {
+	UnderWorld* m_UnderWorld = (UnderWorld*)app->pBuffer;
+	if (app->size != sizeof(UnderWorld))
+	{
+		LogDebug("Size mismatch in OP_UnderWorld, expected {}, got [{}]", sizeof(UnderWorld), app->size);
+		DumpPacket(app);
+		return;
+	}
+	auto dist = Distance(glm::vec3(m_UnderWorld->x, m_UnderWorld->y, zone->newzone_data.underworld), glm::vec3(m_UnderWorld->x, m_UnderWorld->y, m_UnderWorld->z));
+	cheat_manager.MovementCheck(glm::vec3(m_UnderWorld->x, m_UnderWorld->y, m_UnderWorld->z));
+	if (m_UnderWorld->spawn_id == GetID() && dist <= 5.0f && zone->newzone_data.underworld_teleport_index != 0)
+		cheat_manager.SetExemptStatus(Port, true);
 }

@@ -66,6 +66,7 @@ namespace EQ
 #include "zone_store.h"
 #include "task_manager.h"
 #include "task_client_state.h"
+#include "cheat_manager.h"
 
 #ifdef _WINDOWS
 	// since windows defines these within windef.h (which windows.h include)
@@ -120,17 +121,6 @@ typedef enum {
 	Rewind, // Summon to /rewind location.
 	EvacToSafeCoords
 } ZoneMode;
-
-typedef enum {
-	MQWarp,
-	MQWarpShadowStep,
-	MQWarpKnockBack,
-	MQWarpLight,
-	MQZone,
-	MQZoneUnknownDest,
-	MQGate,
-	MQGhost
-} CheatTypes;
 
 enum {
 	HideCorpseNone = 0,
@@ -1568,6 +1558,7 @@ public:
 	Raid *p_raid_instance;
 
 	void ShowDevToolsMenu();
+	CheatManager cheat_manager;	
 
     // exp.cpp
     uint32 GetEXPForLevel(uint16 level, bool aa = false);

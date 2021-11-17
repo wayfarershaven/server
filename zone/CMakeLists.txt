@@ -14,6 +14,7 @@ SET(zone_sources
 	bot_command.cpp
 	bot_database.cpp
 	botspellsai.cpp
+	cheat_manager.cpp
 	client.cpp
 	client_mods.cpp
 	client_packet.cpp
@@ -159,7 +160,8 @@ SET(zone_sources
 	zone_event_scheduler.cpp
 	zone_reload.cpp
 	zone_store.cpp
-	zoning.cpp)
+	zoning.cpp
+)
 
 SET(zone_headers
 	aa.h
@@ -173,6 +175,7 @@ SET(zone_headers
 	bot_command.h
 	bot_database.h
 	bot_structs.h
+	cheat_manager.h
 	client.h
 	client_packet.h
 	command.h
@@ -278,7 +281,8 @@ SET(zone_headers
 	zonedb.h
 	zonedump.h
 	zone_reload.h
-	zone_store.h)
+	zone_store.h
+)
 
 ADD_EXECUTABLE(zone ${zone_sources} ${zone_headers})
 
