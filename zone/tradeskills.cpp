@@ -535,14 +535,6 @@ void Object::HandleAutoCombine(Client* user, const RecipeAutoCombine_Struct* rac
 		return;
 	}
 
-    // Character does not have the required skill.
-    if(spec.skill_needed > 0 && user->GetSkill(spec.tradeskill) < spec.skill_needed ) {
-        // Notify client.
-        user->Message(4, "You are not skilled enough.");
-        user->QueuePacket(outapp);
-        safe_delete(outapp);
-        return;
-    }
 	
     //pull the list of components
 	std::string query = StringFormat("SELECT tre.item_id, tre.componentcount "
@@ -783,7 +775,7 @@ void Client::SendTradeskillSearchResults(
 
 	for (auto row = results.begin(); row != results.end(); ++row) {
 		if (row == nullptr || row[0] == nullptr || row[1] == nullptr || row[2] == nullptr || row[3] == nullptr ||
-			row[5] == nullptr) {
+			row[4] == nullptr || row[5] == nullptr) {
 			continue;
 		}
 
@@ -791,26 +783,35 @@ void Client::SendTradeskillSearchResults(
 		const char *name      = row[1];
 		uint32     trivial    = (uint32) atoi(row[2]);
 		uint32     comp_count = (uint32) atoi(row[3]);
-		uint32     tradeskill = (uint16) atoi(row[5]);
+		uint32     tradeskill = (uint16) atoi(row[4]);
+		uint32     must_learn = (uint16) atoi(row[5]);
+
 
 		// Skip the recipes that exceed the threshold in skill difference
 		// Recipes that have either been made before or were
 		// explicitly learned are excempt from that limit
+
+		auto character_learned_recipe = CharacterRecipeListRepository::GetRecipe(
+			character_learned_recipe_list,
+			recipe_id
+		);
+
 		if (RuleB(Skills, UseLimitTradeskillSearchSkillDiff) &&
 			((int32) trivial - (int32) GetSkill((EQ::skills::SkillType) tradeskill)) >
 			RuleI(Skills, MaxTradeskillSearchSkillDiff)) {
 
 			LogTradeskills("Checking limit recipe_id [{}] name [{}]", recipe_id, name);
 
-			auto character_learned_recipe = CharacterRecipeListRepository::GetRecipe(
-				character_learned_recipe_list,
-				recipe_id
-			);
-
 			if (character_learned_recipe.made_count == 0) {
 				continue;
 			}
 		}
+
+		//Skip recipes that must be learned
+		if ((must_learn & 0xf) && !character_learned_recipe.recipe_id) {
+			continue; 
+		}
+
 
 		auto               outapp = new EQApplicationPacket(OP_RecipeReply, sizeof(RecipeReply_Struct));
 		RecipeReply_Struct *reply = (RecipeReply_Struct *) outapp->pBuffer;
@@ -1496,7 +1497,7 @@ bool ZoneDatabase::GetTradeRecipe(
 		recipe_id
 	);
 
-	if (character_learned_recipe.made_count > 0) {
+	if (character_learned_recipe.recipe_id) { //If this exists we learned it
 		LogTradeskills("[GetTradeRecipe] made_count [{}]", character_learned_recipe.made_count);
 
 		spec->has_learnt = true;
