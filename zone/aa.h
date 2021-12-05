@@ -64,11 +64,11 @@ enum {	//leadership AA indexes
 #define MAX_LEADERSHIP_TIERS 6
 //each progression should be 0 terminated to mark it as the end.
 static const uint8 LeadershipAACosts[_maxLeaderAA][MAX_LEADERSHIP_TIERS] = {
-{ 0, 0, 0, 0, 0, 0 },	//groupAAMarkNPC
-{ 0, 0, 0, 0, 0, 0 },	//groupAANPCHealth
-{ 0, 0, 0, 0, 0, 0 },	//groupAADelegateMainAssist - Have seen DelegateMainAssist come in with two different codes.
-{ 0, 0, 0, 0, 0, 0 },	//groupAADelegateMainAssist
-{ 0, 0, 0, 0, 0, 0 },	//groupAADelegateMarkNPC
+{ 1, 2, 3, 0, 0, 0 },	//groupAAMarkNPC
+{ 2, 0, 0, 0, 0, 0 },	//groupAANPCHealth
+{ 4, 0, 0, 0, 0, 0 },	//groupAADelegateMainAssist - Have seen DelegateMainAssist come in with two different codes.
+{ 4, 0, 0, 0, 0, 0 },	//groupAADelegateMainAssist
+{ 4, 0, 0, 0, 0, 0 },	//groupAADelegateMarkNPC
 { 0, 0, 0, 0, 0, 0 },	//groupAA5
 { 4, 6, 0, 0, 0, 0 },	//groupAAInspectBuffs
 { 0, 0, 0, 0, 0, 0 },	//groupAA7
@@ -81,20 +81,20 @@ static const uint8 LeadershipAACosts[_maxLeaderAA][MAX_LEADERSHIP_TIERS] = {
 { 7, 0, 0, 0, 0, 0 },	//groupAAHealthOfTargetsTarget
 { 0, 0, 0, 0, 0, 0 },	//groupAA15
 
-{ 0, 0, 0, 0, 0, 0 },	//raidAAMarkNPC	//0x10
-{ 0, 0, 0, 0, 0, 0 },	//raidAANPCHealth
-{ 0, 0, 0, 0, 0, 0 },	//raidAADelegateMainAssist
-{ 0, 0, 0, 0, 0, 0 },	//raidAADelegateMarkNPC
-{ 0, 0, 0, 0, 0, 0 },	//raidAADelegateMarkNPC (works for SoD and Titanium)
+{ 5, 6, 7, 0, 0, 0 },	//raidAAMarkNPC	//0x10
+{ 4, 0, 0, 0, 0, 0 },	//raidAANPCHealth
+{ 6, 7, 8, 0, 0, 0 },	//raidAADelegateMainAssist
+{ 6, 6, 6, 0, 0, 0 },	//raidAADelegateMarkNPC
+{ 6, 6, 6, 0, 0, 0 },	//raidAADelegateMarkNPC (works for SoD and Titanium)
 { 0, 0, 0, 0, 0, 0 },	//raidAA5
 { 0, 0, 0, 0, 0, 0 },	//raidAA6
-{ 0, 0, 0, 0, 0, 0 },	//raidAASpellAwareness
-{ 0, 0, 0, 0, 0, 0 },	//raidAAOffenseEnhancement
-{ 0, 0, 0, 0, 0, 0 },	//raidAAManaEnhancement
-{ 0, 0, 0, 0, 0, 0 },	//raidAAHealthEnhancement
-{ 0, 0, 0, 0, 0, 0 },	//raidAAHealthRegeneration
-{ 0, 0, 0, 0, 0, 0 },	//raidAAFindPathToPC
-{ 0, 0, 0, 0, 0, 0 },	//raidAAHealthOfTargetsTarget
+{ 8, 0, 0, 0, 0, 0 },	//raidAASpellAwareness
+{ 6, 7, 8, 9, 10, 0 },	//raidAAOffenseEnhancement
+{ 6, 8, 10, 0, 0, 0 },	//raidAAManaEnhancement
+{ 6, 8, 10, 0, 0, 0 },	//raidAAHealthEnhancement
+{ 6, 8, 10, 0, 0, 0 },	//raidAAHealthRegeneration
+{ 5, 0, 0, 0, 0, 0 },	//raidAAFindPathToPC
+{ 9, 0, 0, 0, 0, 0 },	//raidAAHealthOfTargetsTarget
 { 0, 0, 0, 0, 0, 0 },	//raidAA14
 { 0, 0, 0, 0, 0, 0 },	//raidAA15
 };
