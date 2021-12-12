@@ -784,28 +784,11 @@ void Client::CompleteConnect()
 
 	entity_list.SendUntargetable(this);
 
-	int x;
-	for (x = EQ::textures::textureBegin; x <= EQ::textures::LastTexture; x++) {
-		SendWearChange(x);
-	}
-	// added due to wear change above
-	UpdateActiveLight();
-	SendAppearancePacket(AT_Light, GetActiveLightType());
-
-	Mob *pet = GetPet();
-	if (pet != nullptr) {
-		for (x = EQ::textures::textureBegin; x <= EQ::textures::LastTexture; x++) {
-			pet->SendWearChange(x);
-		}
-		// added due to wear change above
-		pet->UpdateActiveLight();
-		pet->SendAppearancePacket(AT_Light, pet->GetActiveLightType());
-	}
-
 	entity_list.SendTraders(this);
 
-	if (GetPet()) {
-		GetPet()->SendPetBuffsToClient();
+	Mob *pet = GetPet();
+	if (pet) {
+		pet->SendPetBuffsToClient();
 	}
 
 	if (GetGroup())
@@ -955,6 +938,7 @@ void Client::CompleteConnect()
 		ShowDevToolsMenu();
 	}
 
+	heroforge_wearchange_timer.Start(250);
 }
 
 // connecting opcode handlers

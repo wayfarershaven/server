@@ -1797,6 +1797,8 @@ private:
 	Timer consent_throttle_timer;
 	Timer dynamiczone_removal_timer;
 
+	Timer heroforge_wearchange_timer;
+	
 	glm::vec3 m_Proximity;
 	glm::vec4 last_position_before_bulk_update;
 

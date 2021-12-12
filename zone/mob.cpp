@@ -484,6 +484,8 @@ Mob::Mob(
 
 	use_double_melee_round_dmg_bonus = false;	
 
+	queue_wearchange_slot = -1;
+
 #ifdef BOTS
 	m_manual_follow = false;
 #endif
@@ -2467,6 +2469,16 @@ bool Mob::UpdateActiveLight()
 	m_Light.Level[EQ::lightsource::LightActive] = EQ::lightsource::TypeToLevel(m_Light.Type[EQ::lightsource::LightActive]);
 
 	return (m_Light.Level[EQ::lightsource::LightActive] != old_light_level);
+}
+
+void Mob::SendWearChangeAndLighting(int8 last_texture) {
+
+	for (int i = EQ::textures::textureBegin; i <= last_texture; i++) {
+		SendWearChange(i);
+	}
+	UpdateActiveLight();
+	SendAppearancePacket(AT_Light, GetActiveLightType());
+
 }
 
 void Mob::ChangeSize(float in_size = 0, bool bNoRestriction) {
