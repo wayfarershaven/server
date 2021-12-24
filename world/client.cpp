@@ -2058,11 +2058,6 @@ void Client::SetRaceStartingSkills( PlayerProfile_Struct *pp )
 			// No Race Specific Skills
 			break;
 		}
-	case DWARF:
-		{
-			pp->skills[EQ::skills::SkillSenseHeading] = 50;
-			break;
-		}
 	case DARK_ELF:
 		{
 			pp->skills[EQ::skills::SkillHide] = 50;
