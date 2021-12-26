@@ -211,7 +211,7 @@ void MapOpcodes()
 	ConnectedOpcodes[OP_FeignDeath] = &Client::Handle_OP_FeignDeath;
 	ConnectedOpcodes[OP_FindPersonRequest] = &Client::Handle_OP_FindPersonRequest;
 	ConnectedOpcodes[OP_Fishing] = &Client::Handle_OP_Fishing;
-	ConnectedOpcodes[OP_FloatListThing] = &Client::Handle_OP_Ignore;
+	ConnectedOpcodes[OP_FloatListThing] = &Client::Handle_OP_MovementHistoryList;
 	ConnectedOpcodes[OP_Forage] = &Client::Handle_OP_Forage;
 	ConnectedOpcodes[OP_FriendsWho] = &Client::Handle_OP_FriendsWho;
 	ConnectedOpcodes[OP_GetGuildMOTD] = &Client::Handle_OP_GetGuildMOTD;
@@ -415,6 +415,7 @@ void MapOpcodes()
 	ConnectedOpcodes[OP_YellForHelp] = &Client::Handle_OP_YellForHelp;
 	ConnectedOpcodes[OP_ZoneChange] = &Client::Handle_OP_ZoneChange;
 	ConnectedOpcodes[OP_ResetAA] = &Client::Handle_OP_ResetAA;
+	ConnectedOpcodes[OP_UnderWorld] = &Client::Handle_OP_UnderWorld;
 }
 
 void ClearMappedOpcode(EmuOpcode op)
@@ -783,28 +784,11 @@ void Client::CompleteConnect()
 
 	entity_list.SendUntargetable(this);
 
-	int x;
-	for (x = EQ::textures::textureBegin; x <= EQ::textures::LastTexture; x++) {
-		SendWearChange(x);
-	}
-	// added due to wear change above
-	UpdateActiveLight();
-	SendAppearancePacket(AT_Light, GetActiveLightType());
-
-	Mob *pet = GetPet();
-	if (pet != nullptr) {
-		for (x = EQ::textures::textureBegin; x <= EQ::textures::LastTexture; x++) {
-			pet->SendWearChange(x);
-		}
-		// added due to wear change above
-		pet->UpdateActiveLight();
-		pet->SendAppearancePacket(AT_Light, pet->GetActiveLightType());
-	}
-
 	entity_list.SendTraders(this);
 
-	if (GetPet()) {
-		GetPet()->SendPetBuffsToClient();
+	Mob *pet = GetPet();
+	if (pet) {
+		pet->SendPetBuffsToClient();
 	}
 
 	if (GetGroup())
@@ -954,6 +938,7 @@ void Client::CompleteConnect()
 		ShowDevToolsMenu();
 	}
 
+	heroforge_wearchange_timer.Start(250);
 }
 
 // connecting opcode handlers
@@ -1743,6 +1728,8 @@ void Client::Handle_Connect_OP_ZoneEntry(const EQApplicationPacket *app)
 
 	/* Task Packets */
 	LoadClientTaskState();
+
+	ApplyWeaponsStance();
 
 	m_expedition_id = ExpeditionsRepository::GetIDByMemberID(database, CharacterID());
 
@@ -2948,6 +2935,7 @@ void Client::Handle_OP_Assist(const EQApplicationPacket *app)
 			Mob *new_target = assistee->GetTarget();
 			if (new_target && (GetGM() ||
 				Distance(m_Position, assistee->GetPosition()) <= TARGETING_RANGE)) {
+				cheat_manager.SetExemptStatus(Assist, true);
 				eid->entity_id = new_target->GetID();
 			} else {
 				eid->entity_id = 0;
@@ -3365,6 +3353,13 @@ void Client::Handle_OP_AutoFire(const EQApplicationPacket *app)
 		DumpPacket(app);
 		return;
 	}
+
+	if (GetTarget() == this) {
+		MessageString(Chat::TooFarAway, TRY_ATTACKING_SOMEONE);
+		auto_fire = false;
+		return;
+	}
+
 	bool *af = (bool*)app->pBuffer;
 	auto_fire = *af;
 	auto_attack = false;
@@ -4544,6 +4539,8 @@ void Client::Handle_OP_ClientUpdate(const EQApplicationPacket *app) {
 			new_heading += boat->GetHeading();
 		}
 	}
+
+	cheat_manager.MovementCheck(glm::vec3(cx, cy, cz));
 
 	if (IsDraggingCorpse())
 		DragCorpses();
@@ -8842,6 +8839,7 @@ void Client::Handle_OP_ItemVerifyRequest(const EQApplicationPacket *app)
 	slot_id = request->slot;
 	target_id = request->target;
 
+	cheat_manager.ProcessItemVerifyRequest(request->slot, request->target);
 
 	EQApplicationPacket *outapp = nullptr;
 	outapp = new EQApplicationPacket(OP_ItemVerifyReply, sizeof(ItemVerifyReply_Struct));
@@ -9692,6 +9690,7 @@ return;
 
 void Client::Handle_OP_MemorizeSpell(const EQApplicationPacket *app)
 {
+	cheat_manager.CheckMemTimer();
 	OPMemorizeSpell(app);
 	return;
 }
@@ -12265,7 +12264,8 @@ void Client::Handle_OP_RecipesFavorite(const EQApplicationPacket *app)
 			tr.name,
 			tr.trivial,
 			SUM(tre.componentcount),
-			tr.tradeskill
+			tr.tradeskill,
+			tr.must_learn
 				FROM
 				tradeskill_recipe AS tr
 				LEFT JOIN tradeskill_recipe_entries AS tre ON tr.id = tre.recipe_id
@@ -12365,7 +12365,8 @@ void Client::Handle_OP_RecipesSearch(const EQApplicationPacket *app)
 			tr.name,
 			tr.trivial,
 			SUM(tre.componentcount),
-			tr.tradeskill
+			tr.tradeskill,
+			tr.must_learn
 				FROM
 				tradeskill_recipe AS tr
 				LEFT JOIN tradeskill_recipe_entries AS tre ON tr.id = tre.recipe_id
@@ -12981,14 +12982,51 @@ void Client::Handle_OP_SetTitle(const EQApplicationPacket *app)
 
 void Client::Handle_OP_Shielding(const EQApplicationPacket *app)
 {
+	/*
+		/shield command mechanics
+		Warriors get this skill at level 30
+		Used by typing /shield while targeting a player
+		While active for the duration of 12 seconds baseline. The 'shield target' will take 50 pct less damage and
+		the 'shielder' will be hit with the damage taken by the 'shield target' after all applicable mitigiont is calculated,
+		the damage on the 'shielder' will be reduced by 25 percent, this reduction can be increased to 50 pct if equiping a shield.
+		You receive a 1% increase in mitigation for every 2 AC on the shield.
+		Shielder must stay with in a close distance (15 units) to your 'shield target'. If either move out of range, shield ends, no message given.
+		Both duration and shield range can be modified by AA.
+		Recast is 3 minutes.
+
+		For custom use cases, Mob::ShieldAbility can be used in quests with all parameters being altered. This functional
+		is also used for SPA 201 SE_PetShield, which functions in a simalar manner with pet shielding owner.
+
+		Note: If either the shielder or the shield target die all variables are reset on both.
+
+	*/
+
 	if (app->size != sizeof(Shielding_Struct)) {
 		LogError("OP size error: OP_Shielding expected:[{}] got:[{}]", sizeof(Shielding_Struct), app->size);
 		return;
 	}
 
-	// set new shield target
+	if (GetLevel() < 30) { //Client gives message
+		return;
+	}
+
+	if (GetClass() != WARRIOR){
+		return;
+	}
+
+	pTimerType timer = pTimerShieldAbility;
+
+	if (!p_timers.Expired(&database, timer, false)) {
+		uint32 remain = p_timers.GetRemainingTime(timer);
+		Message(Chat::White, "You can use the ability /shield in %d minutes %d seconds.", ((remain) / 60), (remain % 60));
+		return;
+	}
+
 	Shielding_Struct* shield = (Shielding_Struct*)app->pBuffer;
-	Shield(entity_list.GetMob(shield->target_id));
+
+	if (ShieldAbility(shield->target_id, 15, 12000, 50, 25, true, false)) {
+		p_timers.Start(timer, SHIELD_ABILITY_RECAST_TIME);
+	}
 
 	return;
 }
@@ -13625,6 +13663,8 @@ void Client::Handle_OP_SpawnAppearance(const EQApplicationPacket *app)
 	}
 	SpawnAppearance_Struct* sa = (SpawnAppearance_Struct*)app->pBuffer;
 
+	cheat_manager.ProcessSpawnApperance(sa->spawn_id, sa->type, sa->parameter);
+
 	if (sa->spawn_id != GetID())
 		return;
 
@@ -14072,6 +14112,11 @@ void Client::Handle_OP_TargetCommand(const EQApplicationPacket *app)
 				GetTarget()->IsTargeted(1);
 				return;
 			}
+			else if (cheat_manager.GetExemptStatus(Assist)) {
+				GetTarget()->IsTargeted(1);
+				cheat_manager.SetExemptStatus(Assist, false);
+				return;
+			}			
 			else if (GetTarget()->IsClient())
 			{
 				//make sure this client is in our raid/group
@@ -14085,6 +14130,15 @@ void Client::Handle_OP_TargetCommand(const EQApplicationPacket *app)
 					GetName(), GetTarget()->GetName(), (int)GetTarget()->GetBodyType());
 				database.SetMQDetectionFlag(AccountName(), GetName(), hacker_str, zone->GetShortName());
 				SetTarget((Mob*)nullptr);
+				return;
+			}
+			else if (cheat_manager.GetExemptStatus(Port)) {
+				GetTarget()->IsTargeted(1);
+				return;
+			}
+			else if (cheat_manager.GetExemptStatus(Sense)) {
+				GetTarget()->IsTargeted(1);
+				cheat_manager.SetExemptStatus(Sense, false);
 				return;
 			}
 			else if (GetTarget()->IsPetOwnerClient())
@@ -15121,4 +15175,22 @@ void Client::Handle_OP_ResetAA(const EQApplicationPacket *app)
 		ResetAA();
 	}
 	return;
+}
+
+void Client::Handle_OP_MovementHistoryList(const EQApplicationPacket* app) {
+	cheat_manager.ProcessMovementHistory(app);
+}
+
+void Client::Handle_OP_UnderWorld(const EQApplicationPacket* app) {
+	UnderWorld* m_UnderWorld = (UnderWorld*)app->pBuffer;
+	if (app->size != sizeof(UnderWorld))
+	{
+		LogDebug("Size mismatch in OP_UnderWorld, expected {}, got [{}]", sizeof(UnderWorld), app->size);
+		DumpPacket(app);
+		return;
+	}
+	auto dist = Distance(glm::vec3(m_UnderWorld->x, m_UnderWorld->y, zone->newzone_data.underworld), glm::vec3(m_UnderWorld->x, m_UnderWorld->y, m_UnderWorld->z));
+	cheat_manager.MovementCheck(glm::vec3(m_UnderWorld->x, m_UnderWorld->y, m_UnderWorld->z));
+	if (m_UnderWorld->spawn_id == GetID() && dist <= 5.0f && zone->newzone_data.underworld_teleport_index != 0)
+		cheat_manager.SetExemptStatus(Port, true);
 }

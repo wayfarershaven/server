@@ -422,8 +422,7 @@ bool Mob::DoCastSpell(uint16 spell_id, uint16 target_id, CastingSlot slot,
 		spell.targettype == ST_Self ||
 		spell.targettype == ST_AECaster ||
 		spell.targettype == ST_Ring ||
-		spell.targettype == ST_Beam ||
-		spell.targettype == ST_TargetOptional) && target_id == 0)
+		spell.targettype == ST_Beam) && target_id == 0)
 	{
 		LogSpells("Spell [{}] auto-targeted the caster. Group? [{}], target type [{}]", spell_id, IsGroupSpell(spell_id), spell.targettype);
 		target_id = GetID();
@@ -1430,9 +1429,11 @@ void Mob::CastedSpellFinished(uint16 spell_id, uint32 target_id, CastingSlot slo
 		TrySympatheticProc(target, spell_id);
 	}
 
+	TryOnSpellFinished(this, target, spell_id); //Use for effects that should be checked after SpellFinished is completed.
+
 	TryTwincast(this, target, spell_id);
 
-	TryTriggerOnCast(spell_id, 0);
+	TryTriggerOnCastFocusEffect(focusTriggerOnCast, spell_id);
 
 	if(DeleteChargeFromSlot >= 0)
 		CastToClient()->DeleteItemInInventory(DeleteChargeFromSlot, 1, true);
@@ -1627,8 +1628,12 @@ bool Mob::DetermineSpellTargets(uint16 spell_id, Mob *&spell_target, Mob *&ae_ce
 
 		case ST_TargetOptional:
 		{
-			if(!spell_target)
-				spell_target = this;
+			if (!spell_target)
+			{
+				LogSpells("Spell [{}] canceled: invalid target (normal)", spell_id);
+				MessageString(Chat::Red, SPELL_NEED_TAR);
+				return false;	// can't cast these unless we have a target
+			}
 			CastAction = SingleTarget;
 			break;
 		}
@@ -2737,6 +2742,22 @@ void Mob::BardPulse(uint16 spell_id, Mob *caster) {
 
 			action->effect_flag = 4;
 
+			if (spells[spell_id].pushback != 0.0f || spells[spell_id].pushup != 0.0f)
+			{
+				if (IsClient())
+				{
+					if (!IsBuffSpell(spell_id))
+					{
+						CastToClient()->cheat_manager.SetExemptStatus(KnockBack, true);
+					}
+				}
+			}
+
+			if (IsClient() && IsEffectInSpell(spell_id, SE_ShadowStep))
+			{
+				CastToClient()->cheat_manager.SetExemptStatus(ShadowStep, true);
+			}
+
 			if(!IsEffectInSpell(spell_id, SE_BindAffinity))
 			{
 				CastToClient()->QueuePacket(packet);
@@ -2971,31 +2992,33 @@ int Mob::CheckStackConflict(uint16 spellid1, int caster_level1, uint16 spellid2,
 				}
 			}
 
-			/*Buff stacking prevention spell effects (446 - 449) works as follows... If B prevent A, if C prevent B, if D prevent C.
-			If checking same type ie A vs A, which ever effect base value is higher will take hold.
-			Special check is added to make sure the buffs stack properly when applied from fade on duration effect, since the buff
-			is not fully removed at the time of the trgger*/
-			if (spellbonuses.AStacker[0]) {
-				if ((effect2 == SE_AStacker) && (sp2.effectid[i] <= spellbonuses.AStacker[1]))
+			/*
+				Buff stacking prevention spell effects (446 - 449) works as follows... If B prevent A, if C prevent B, if D prevent C.
+				If checking same type ie A vs A, which ever effect base value is higher will take hold.
+				Special check is added to make sure the buffs stack properly when applied from fade on duration effect, since the buff
+				is not fully removed at the time of the trigger
+			*/
+			if (spellbonuses.AStacker[SBIndex::BUFFSTACKER_EXISTS]) {
+				if ((effect2 == SE_AStacker) && (sp2.effectid[i] <= spellbonuses.AStacker[SBIndex::BUFFSTACKER_VALUE]))
 					return -1;
 			}
 
-			if (spellbonuses.BStacker[0]) {
-				if ((effect2 == SE_BStacker) && (sp2.effectid[i] <= spellbonuses.BStacker[1]))
+			if (spellbonuses.BStacker[SBIndex::BUFFSTACKER_EXISTS]) {
+				if ((effect2 == SE_BStacker) && (sp2.effectid[i] <= spellbonuses.BStacker[SBIndex::BUFFSTACKER_VALUE]))
 					return -1;
 				if ((effect2 == SE_AStacker) && (!IsCastonFadeDurationSpell(spellid1) && buffs[buffslot].ticsremaining != 1 && IsEffectInSpell(spellid1, SE_BStacker)))
 					return -1;
 			}
 
-			if (spellbonuses.CStacker[0]) {
-				if ((effect2 == SE_CStacker) && (sp2.effectid[i] <= spellbonuses.CStacker[1]))
+			if (spellbonuses.CStacker[SBIndex::BUFFSTACKER_EXISTS]) {
+				if ((effect2 == SE_CStacker) && (sp2.effectid[i] <= spellbonuses.CStacker[SBIndex::BUFFSTACKER_VALUE]))
 					return -1;
 				if ((effect2 == SE_BStacker) && (!IsCastonFadeDurationSpell(spellid1) && buffs[buffslot].ticsremaining != 1 && IsEffectInSpell(spellid1, SE_CStacker)))
 					return -1;
 			}
 
-			if (spellbonuses.DStacker[0]) {
-				if ((effect2 == SE_DStacker) && (sp2.effectid[i] <= spellbonuses.DStacker[1]))
+			if (spellbonuses.DStacker[SBIndex::BUFFSTACKER_EXISTS]) {
+				if ((effect2 == SE_DStacker) && (sp2.effectid[i] <= spellbonuses.DStacker[SBIndex::BUFFSTACKER_VALUE]))
 					return -1;
 				if ((effect2 == SE_CStacker) && (!IsCastonFadeDurationSpell(spellid1) && buffs[buffslot].ticsremaining != 1 && IsEffectInSpell(spellid1, SE_DStacker)))
 					return -1;
@@ -3391,6 +3414,8 @@ int Mob::AddBuff(Mob *caster, uint16 spell_id, int duration, int32 level_overrid
 	buffs[emptyslot].dot_rune = 0;
 	buffs[emptyslot].ExtraDIChance = 0;
 	buffs[emptyslot].RootBreakChance = 0;
+	buffs[emptyslot].focusproclimit_time = 0;
+	buffs[emptyslot].focusproclimit_procamt = 0;
 	buffs[emptyslot].instrument_mod = caster ? caster->GetInstrumentMod(spell_id) : 10;
 
 	if (level_override > 0) {
@@ -4030,53 +4055,8 @@ bool Mob::SpellOnTarget(uint16 spell_id, Mob *spelltar, bool reflect, bool use_r
 		}
 	}
 	else if (IsBeneficialSpell(spell_id) && !IsSummonPCSpell(spell_id)) {
-		int32 aggro_amount = CheckHealAggroAmount(spell_id, spelltar, (spelltar->GetMaxHP() - spelltar->GetHP()));
-
-		if(!isproc) {
-			// if the spell is not a proc it should attempt to generate aggro
-			// This is what is refered to as the witness check
-			// the witness check as far as P2002 knows is 40-50% change based on some articles and research
-			// An old cleric thread from early 2004 has some clerics running tests, and they also came up with the 50% chance for heals to aggro, testing on low level NPCs: http://www.eqclerics.org/forums/show...t=17872&page=3
-			// however their sample sizes are small. The data does indicate that rates are not the same for every spell. Endure Fire for example was witnessed at a lower rate (about 40-45%) than most other spells I had tested-- those were around 50
-
-			int chance = 30;
-
-			if(IsBuffSpell(spell_id)) {
-				chance = 20;
-				Log(Logs::Detail, Logs::Aggro, "Buff Spell setting base witness chance to 20%");
-			}
-
-			if (IsHealOverTimeSpell(spell_id) || IsCompleteHealSpell(spell_id) || IsFastHealSpell(spell_id) || IsVeryFastHealSpell(spell_id)) {
-				chance += 10;
-				Log(Logs::Detail, Logs::Aggro, "Heal Spell increating witness chance by 10");
-			}
-
-			// Its indicated that it maybe skill based and not level based so lets use specialization to add more chance.
-			float skill = GetSpecializeSkillValue(spell_id);
-			if (skill > 200 and skill < 235) {
-				Log(Logs::Detail, Logs::Aggro, "Spell skill between 200 and 235 increating witness chance by 5");
-				chance += 5;
-			} else if (skill > 235) {
-				Log(Logs::Detail, Logs::Aggro, "Spell skill over 235 increating witness chance by 10");
-				chance += 10;
-			} else {
-				Log(Logs::Detail, Logs::Aggro, "No Specialization in this Spell Skill no chance increase");
-			}
-
-			Log(Logs::Detail, Logs::Aggro, "Witness Chance: %d", chance);
-			// Roll the witness check if we are a client
-			if (IsClient() && zone->random.Roll(chance)) {
-				Log(Logs::Detail, Logs::Aggro, "Witness Check passed no aggro given");
-				entity_list.AddHealAggro(spelltar, this, aggro_amount);
-			}
-		} else {
-			// Aggro from procs is capped at 400
-			if (aggro_amount > RuleI(Aggro, MaxScalingProcAggro)) {
-				aggro_amount = RuleI(Aggro, MaxScalingProcAggro);
-			}
-			Log(Logs::Detail, Logs::Aggro, "Adding benefical spell aggro amount %d to %s", aggro_amount, spelltar->GetCleanName());
-			entity_list.AddHealAggro(spelltar, this, aggro_amount);
-		}
+		entity_list.AddHealAggro(spelltar, this,
+								 CheckHealAggroAmount(spell_id, spelltar, (spelltar->GetMaxHP() - spelltar->GetHP())));
 	}
 
 	// make sure spelltar is high enough level for the buff
@@ -4108,6 +4088,10 @@ bool Mob::SpellOnTarget(uint16 spell_id, Mob *spelltar, bool reflect, bool use_r
 		return false;
 	}
 
+	//Check SE_Fc_Cast_Spell_On_Land SPA 481 on target, if hit by this spell and Conditions are Met then target will cast the specified spell.
+	if (spelltar)
+		spelltar->CastSpellOnLand(this, spell_id);
+
 	if (IsValidSpell(spells[spell_id].RecourseLink) && spells[spell_id].RecourseLink != spell_id)
 		SpellFinished(spells[spell_id].RecourseLink, this, CastingSlot::Item, 0, -1, spells[spells[spell_id].RecourseLink].ResistDiff);
 
@@ -4127,7 +4111,14 @@ bool Mob::SpellOnTarget(uint16 spell_id, Mob *spelltar, bool reflect, bool use_r
 
 	if(spells[spell_id].pushback != 0.0f || spells[spell_id].pushup != 0.0f)
 	{
-		if (RuleB(Spells, NPCSpellPush) && !spelltar->IsRooted() && spelltar->ForcedMovement == 0) {
+		if (spelltar->IsClient())
+		{
+			if (!IsBuffSpell(spell_id))
+			{
+				spelltar->CastToClient()->cheat_manager.SetExemptStatus(KnockBack, true);
+			}
+		}
+		else if (RuleB(Spells, NPCSpellPush) && !spelltar->IsRooted() && spelltar->ForcedMovement == 0) {
 			if ((!resisted) && (!spelltar->IsImmuneToSpell(spell_id, this))) {
 				spelltar->m_Delta.x += action->force * g_Math.FastSin(action->hit_heading);
 				spelltar->m_Delta.y += action->force * g_Math.FastCos(action->hit_heading);
@@ -4137,6 +4128,11 @@ bool Mob::SpellOnTarget(uint16 spell_id, Mob *spelltar, bool reflect, bool use_r
 		}
 	}
 
+	if (spelltar->IsClient() && IsEffectInSpell(spell_id, SE_ShadowStep))
+	{
+		spelltar->CastToClient()->cheat_manager.SetExemptStatus(ShadowStep, true);
+	}
+	
 	if(!IsEffectInSpell(spell_id, SE_BindAffinity))
 	{
 		if(spelltar != this && spelltar->IsClient())	// send to target
@@ -4715,8 +4711,13 @@ float Mob::ResistSpell(uint8 resist_type, uint16 spell_id, Mob *caster, bool use
 		resist_modifier += caster->GetSpecialAbilityParam(CASTING_RESIST_DIFF, 0);
 
 	int focus_resist = caster->GetFocusEffect(focusResistRate, spell_id);
+
 	resist_modifier -= 2 * focus_resist;
 
+	int focus_incoming_resist = GetFocusEffect(focusFcResistIncoming, spell_id);
+
+	resist_modifier -= focus_incoming_resist;
+	
 	//Check for fear resist
 	bool IsFear = false;
 	if(IsFearSpell(spell_id))
@@ -5543,6 +5544,27 @@ int Client::FindSpellBookSlotBySpellID(uint16 spellid) {
 	}
 
 	return -1;	//default
+}
+
+uint32 Client::GetHighestScribedSpellinSpellGroup(uint32 spell_group)
+{
+	//Typical live spells follow 1/5/10 rank value for actual ranks 1/2/3, but this can technically be set as anything.
+
+	int highest_rank = 0; //highest ranked found in spellgroup
+	uint32 highest_spell_id = 0;  //spell_id of the highest ranked spell you have scribed in that spell rank.
+
+	for (int i = 0; i < EQ::spells::SPELLBOOK_SIZE; i++) {
+
+		if (IsValidSpell(m_pp.spell_book[i])) {
+			if (spells[m_pp.spell_book[i]].spellgroup == spell_group) {
+				if (highest_rank < spells[m_pp.spell_book[i]].rank) {
+					highest_rank = spells[m_pp.spell_book[i]].rank;
+					highest_spell_id = m_pp.spell_book[i];
+				}
+			}
+		}
+	}
+	return highest_spell_id;
 }
 
 bool Client::SpellGlobalCheck(uint16 spell_id, uint32 char_id) {

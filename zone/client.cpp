@@ -63,6 +63,7 @@ extern volatile bool RunLoops;
 #include "nats_manager.h"
 #include "../common/content/world_content_service.h"
 #include "../common/expedition_lockout_timer.h"
+#include "cheat_manager.h"
 
 extern NatsManager nats;
 extern QueryServ* QServ;
@@ -178,6 +179,7 @@ Client::Client(EQStreamInterface* ieqs)
 	for (int client_filter = 0; client_filter < _FilterCount; client_filter++)
 		ClientFilters[client_filter] = FilterShow;
 
+	cheat_manager.SetClient(this);
 	mMovementManager->AddClient(this);
 	character_id = 0;
 	conn_state = NoPacketsReceived;
@@ -199,7 +201,6 @@ Client::Client(EQStreamInterface* ieqs)
 	account_id = 0;
 	admin = 0;
 	lsaccountid = 0;
-	shield_target = nullptr;
 	guild_id = GUILD_NONE;
 	guildrank = 0;
 	GuildBanker = false;
@@ -236,8 +237,6 @@ Client::Client(EQStreamInterface* ieqs)
 	pQueuedSaveWorkID = 0;
 	position_update_same_count = 0;
 	fishing_timer.Disable();
-	shield_timer.Disable();
-	shield_duration_timer.Disable();
 	dead_timer.Disable();
 	camp_timer.Disable();
 	autosave_timer.Disable();
@@ -270,6 +269,8 @@ Client::Client(EQStreamInterface* ieqs)
 	SetMerc(0);
 	if (RuleI(World, PVPMinLevel) > 0 && level >= RuleI(World, PVPMinLevel) && m_pp.pvp == 0) SetPVP(true, false);
 	dynamiczone_removal_timer.Disable();
+
+	heroforge_wearchange_timer.Disable();
 
 	//for good measure:
 	memset(&m_pp, 0, sizeof(m_pp));
@@ -406,10 +407,6 @@ Client::~Client() {
 			entity->CastToClient()->SetDuelTarget(0);
 			entity_list.DuelMessage(entity->CastToClient(),this,true);
 		}
-	}
-
-	if (shield_target) {
-		ShieldClear();
 	}
 
 	if(GetTarget())
@@ -6385,8 +6382,9 @@ void Client::ConsentCorpses(std::string consent_name, bool deny)
 
 void Client::Doppelganger(uint16 spell_id, Mob *target, const char *name_override, int pet_count, int pet_duration)
 {
-	if(!target || !IsValidSpell(spell_id) || this->GetID() == target->GetID())
+	if(!target || !IsValidSpell(spell_id) || this->GetID() == target->GetID() ||  target->IsCorpse()) {
 		return;
+}
 
 	PetRecord record;
 	if(!database.GetPetEntry(spells[spell_id].teleport_zone, &record))
@@ -6455,8 +6453,9 @@ void Client::Doppelganger(uint16 spell_id, Mob *target, const char *name_overrid
 	int summon_count = 0;
 	summon_count = pet.count;
 
-	if(summon_count > MAX_SWARM_PETS)
+	if (summon_count > MAX_SWARM_PETS) {
 		summon_count = MAX_SWARM_PETS;
+	}
 
 	static const glm::vec2 swarmPetLocations[MAX_SWARM_PETS] = {
 		glm::vec2(5, 5), glm::vec2(-5, 5), glm::vec2(5, -5), glm::vec2(-5, -5),
@@ -6491,18 +6490,29 @@ void Client::Doppelganger(uint16 spell_id, Mob *target, const char *name_overrid
 		swarm_pet_npc->GetSwarmInfo()->owner_id = GetID();
 
 		// Give the pets alittle more agro than the caster and then agro them on the target
-		target->AddToHateList(swarm_pet_npc, (target->GetHateAmount(this) + 100), (target->GetDamageAmount(this) + 100));
-		swarm_pet_npc->AddToHateList(target, 1000, 1000);
-		swarm_pet_npc->GetSwarmInfo()->target = target->GetID();
+		if (target != nullptr) {
+			swarm_pet_npc->AddToHateList(target, 10000, 10000);
+			target->AddToHateList(swarm_pet_npc, (target->GetHateAmount(this) + RuleI(Spells, DopplegangerInitialHate)), (target->GetDamageAmount(this) + 10000));
+			swarm_pet_npc->GetSwarmInfo()->target = target->GetID();
+		}
 
 		//we allocated a new NPC type object, give the NPC ownership of that memory
-		if(npc_dup != nullptr)
+		if (npc_dup != nullptr) {
 			swarm_pet_npc->GiveNPCTypeData(npc_dup);
+		}
 
-		entity_list.AddNPC(swarm_pet_npc);
+		entity_list.AddNPC(swarm_pet_npc, true, true);
 		summon_count--;
 	}
+
+	//the target of these swarm pets will take offense to being cast on...
+	if (target != nullptr)
+		target->AddToHateList(this, 1, 0);
+
+	// The other pointers we make are handled elsewhere.
+	delete made_npc;
 }
+
 
 void Client::AssignToInstance(uint16 instance_id)
 {
@@ -9808,5 +9818,221 @@ void Client::RemoveItem(uint32 item_id, uint32 quantity)
 				}
 			}
 		}
+	}
+}
+
+void Client::SetGMStatus(int newStatus) {
+	if (this->Admin() != newStatus)
+		database.UpdateGMStatus(this->AccountID(), newStatus);
+}
+
+void Client::ApplyWeaponsStance()
+{
+	/*
+		If you have a weapons stance bonus from at least one bonus type, each time you change weapons this function will ensure the correct
+		associated buffs are applied, and previous buff is removed. If your weapon stance bonus is completely removed it will, ensure buff is
+		also removed (ie, removing an item that has worn effect with weapon stance, or clicking off a buff). If client no longer has/never had
+		any spells/item/aa bonuses with weapon stance effect this function will only do a simple bool check.
+		Note: Live like behavior is once you have the triggered buff you can manually click it off to remove it. Swaping any items in inventory will
+		reapply it automatically.
+	 	Only buff spells should be used as triggered spell effect. IsBuffSpell function also checks spell id validity.
+		WeaponStance bonus arrary: 0=2H Weapon 1=Shield 2=Dualweild
+		Toggling ON or OFF
+			- From spells, just remove the Primary buff that contains the WeaponStance effect in it.
+			- For items with worn effect, unequip the item.
+			- For AA abilities, a hotkey is used to Enable and Disable the effect. See. Client::TogglePassiveAlternativeAdvancement in aa.cpp for extensive details.
+			
+		Rank
+			- Most important for AA, but if you have more than one of WeaponStance effect for a given type, the spell trigger buff will apply whatever has the highest
+		'rank' value from the spells table. AA's on live for this effect naturally do this. Be awere of this if making custom spells/worn effects/AA.
+		When creating weapon stance effects, you do not need to use all three types. For example, can make an effect where you only get a buff from equiping shield.
+	*/
+
+	if (!IsWeaponStanceEnabled()) {
+		return;
+	}
+
+	bool enabled           = false;
+	bool item_bonus_exists = false;
+	bool aa_bonus_exists   = false;
+
+	if (weaponstance.spellbonus_enabled) {
+
+		if (spellbonuses.WeaponStance[WEAPON_STANCE_TYPE_2H] || spellbonuses.WeaponStance[WEAPON_STANCE_TYPE_SHIELD] ||
+			spellbonuses.WeaponStance[WEAPON_STANCE_TYPE_DUAL_WIELD]) {
+
+			enabled = true;
+
+			// Check if no longer has correct combination of weapon type and buff, if so remove buff.
+			if (!HasTwoHanderEquipped() && IsBuffSpell(spellbonuses.WeaponStance[WEAPON_STANCE_TYPE_2H]) &&
+				FindBuff(spellbonuses.WeaponStance[WEAPON_STANCE_TYPE_2H])) {
+				BuffFadeBySpellID(spellbonuses.WeaponStance[WEAPON_STANCE_TYPE_2H]);
+			}
+			else if (!HasShieldEquiped() && IsBuffSpell(spellbonuses.WeaponStance[WEAPON_STANCE_TYPE_SHIELD]) &&
+					 FindBuff(spellbonuses.WeaponStance[WEAPON_STANCE_TYPE_SHIELD])) {
+				BuffFadeBySpellID(spellbonuses.WeaponStance[WEAPON_STANCE_TYPE_SHIELD]);
+			}
+			else if (!HasDualWeaponsEquiped() &&
+					 IsBuffSpell(spellbonuses.WeaponStance[WEAPON_STANCE_TYPE_DUAL_WIELD]) &&
+					 FindBuff(spellbonuses.WeaponStance[WEAPON_STANCE_TYPE_DUAL_WIELD])) {
+				BuffFadeBySpellID(spellbonuses.WeaponStance[WEAPON_STANCE_TYPE_DUAL_WIELD]);
+			}
+			// If you have correct combination of weapon type and bonus, and do not already have buff, then apply buff.
+			if (HasTwoHanderEquipped() && IsBuffSpell(spellbonuses.WeaponStance[WEAPON_STANCE_TYPE_2H])) {
+				if (!FindBuff(spellbonuses.WeaponStance[WEAPON_STANCE_TYPE_2H])) {
+					SpellOnTarget(spellbonuses.WeaponStance[WEAPON_STANCE_TYPE_2H], this);
+				}
+				weaponstance.spellbonus_buff_spell_id = spellbonuses.WeaponStance[WEAPON_STANCE_TYPE_2H];
+			}
+			else if (HasShieldEquiped() && IsBuffSpell(spellbonuses.WeaponStance[WEAPON_STANCE_TYPE_SHIELD])) {
+
+				if (!FindBuff(spellbonuses.WeaponStance[WEAPON_STANCE_TYPE_SHIELD])) {
+					SpellOnTarget(spellbonuses.WeaponStance[WEAPON_STANCE_TYPE_SHIELD], this);
+				}
+				weaponstance.spellbonus_buff_spell_id = spellbonuses.WeaponStance[WEAPON_STANCE_TYPE_SHIELD];
+			}
+			else if (HasDualWeaponsEquiped() && IsBuffSpell(spellbonuses.WeaponStance[WEAPON_STANCE_TYPE_DUAL_WIELD])) {
+
+				if (!FindBuff(spellbonuses.WeaponStance[WEAPON_STANCE_TYPE_DUAL_WIELD])) {
+					SpellOnTarget(spellbonuses.WeaponStance[WEAPON_STANCE_TYPE_DUAL_WIELD], this);
+				}
+				weaponstance.spellbonus_buff_spell_id = spellbonuses.WeaponStance[WEAPON_STANCE_TYPE_DUAL_WIELD];
+			}
+		}
+	}
+
+	// Spellbonus effect removal is checked in BuffFadeBySlot(int slot, bool iRecalcBonuses) in spell_effects.cpp when the buff is clicked off or fades.
+
+	if (weaponstance.itembonus_enabled) {
+
+		if (itembonuses.WeaponStance[WEAPON_STANCE_TYPE_2H] || itembonuses.WeaponStance[WEAPON_STANCE_TYPE_SHIELD] ||
+			itembonuses.WeaponStance[WEAPON_STANCE_TYPE_DUAL_WIELD]) {
+
+			enabled           = true;
+			item_bonus_exists = true;
+
+
+			// Edge case check if have multiple items with WeaponStance worn effect. Make sure correct buffs are applied if items are removed but others left on.
+			if (weaponstance.itembonus_buff_spell_id) {
+
+				bool buff_desync = true;
+				if (weaponstance.itembonus_buff_spell_id == itembonuses.WeaponStance[WEAPON_STANCE_TYPE_2H] ||
+					weaponstance.itembonus_buff_spell_id == itembonuses.WeaponStance[WEAPON_STANCE_TYPE_SHIELD] ||
+					(weaponstance.itembonus_buff_spell_id == itembonuses.WeaponStance[WEAPON_STANCE_TYPE_DUAL_WIELD])) {
+					buff_desync = false;
+				}
+
+				if (buff_desync) {
+					int fade_spell = weaponstance.itembonus_buff_spell_id;
+					weaponstance.itembonus_buff_spell_id = 0; //Need to zero this before we fade to prevent any recursive loops.
+					BuffFadeBySpellID(fade_spell);
+				}
+			}
+
+			// Check if no longer has correct combination of weapon type and buff, if so remove buff.
+			if (!HasTwoHanderEquipped() && IsBuffSpell(itembonuses.WeaponStance[WEAPON_STANCE_TYPE_2H]) &&
+				FindBuff(itembonuses.WeaponStance[WEAPON_STANCE_TYPE_2H])) {
+				BuffFadeBySpellID(itembonuses.WeaponStance[WEAPON_STANCE_TYPE_2H]);
+			}
+			else if (!HasShieldEquiped() && IsBuffSpell(itembonuses.WeaponStance[WEAPON_STANCE_TYPE_SHIELD]) &&
+					 FindBuff(itembonuses.WeaponStance[WEAPON_STANCE_TYPE_SHIELD])) {
+				BuffFadeBySpellID(itembonuses.WeaponStance[WEAPON_STANCE_TYPE_SHIELD]);
+			}
+			else if (!HasDualWeaponsEquiped() && IsBuffSpell(itembonuses.WeaponStance[WEAPON_STANCE_TYPE_DUAL_WIELD]) &&
+					 FindBuff(itembonuses.WeaponStance[WEAPON_STANCE_TYPE_DUAL_WIELD])) {
+				BuffFadeBySpellID(itembonuses.WeaponStance[WEAPON_STANCE_TYPE_DUAL_WIELD]);
+			}
+
+			// If you have correct combination of weapon type and bonus, and do not already have buff, then apply buff.
+			if (HasTwoHanderEquipped() && IsBuffSpell(itembonuses.WeaponStance[WEAPON_STANCE_TYPE_2H])) {
+
+				if (!FindBuff(itembonuses.WeaponStance[WEAPON_STANCE_TYPE_2H])) {
+					SpellOnTarget(itembonuses.WeaponStance[WEAPON_STANCE_TYPE_2H], this);
+				}
+				weaponstance.itembonus_buff_spell_id = itembonuses.WeaponStance[WEAPON_STANCE_TYPE_2H];
+			}
+			else if (HasShieldEquiped() && IsBuffSpell(itembonuses.WeaponStance[WEAPON_STANCE_TYPE_SHIELD])) {
+
+				if (!FindBuff(itembonuses.WeaponStance[WEAPON_STANCE_TYPE_SHIELD])) {
+					SpellOnTarget(itembonuses.WeaponStance[WEAPON_STANCE_TYPE_SHIELD], this);
+				}
+				weaponstance.itembonus_buff_spell_id = itembonuses.WeaponStance[WEAPON_STANCE_TYPE_SHIELD];
+			}
+			else if (HasDualWeaponsEquiped() && IsBuffSpell(itembonuses.WeaponStance[WEAPON_STANCE_TYPE_DUAL_WIELD])) {
+				if (!FindBuff(itembonuses.WeaponStance[WEAPON_STANCE_TYPE_DUAL_WIELD])) {
+					SpellOnTarget(itembonuses.WeaponStance[WEAPON_STANCE_TYPE_DUAL_WIELD], this);
+				}
+				weaponstance.itembonus_buff_spell_id = itembonuses.WeaponStance[WEAPON_STANCE_TYPE_DUAL_WIELD];
+			}
+		}
+	}
+
+	// Itembonus effect removal when item is removed
+	if (!item_bonus_exists && weaponstance.itembonus_enabled) {
+		weaponstance.itembonus_enabled = false;
+
+		if (weaponstance.itembonus_buff_spell_id) {
+			BuffFadeBySpellID(weaponstance.itembonus_buff_spell_id);
+			weaponstance.itembonus_buff_spell_id = 0;
+		}
+	}
+
+	if (weaponstance.aabonus_enabled) {
+
+		if (aabonuses.WeaponStance[WEAPON_STANCE_TYPE_2H] || aabonuses.WeaponStance[WEAPON_STANCE_TYPE_SHIELD] ||
+			aabonuses.WeaponStance[WEAPON_STANCE_TYPE_DUAL_WIELD]) {
+
+			enabled         = true;
+			aa_bonus_exists = true;
+
+			//Check if no longer has correct combination of weapon type and buff, if so remove buff.
+			if (!HasTwoHanderEquipped() && IsBuffSpell(aabonuses.WeaponStance[WEAPON_STANCE_TYPE_2H]) &&
+				FindBuff(aabonuses.WeaponStance[WEAPON_STANCE_TYPE_2H])) {
+				BuffFadeBySpellID(aabonuses.WeaponStance[WEAPON_STANCE_TYPE_2H]);
+			}
+
+			else if (!HasShieldEquiped() && IsBuffSpell(aabonuses.WeaponStance[WEAPON_STANCE_TYPE_SHIELD]) &&
+					 FindBuff(aabonuses.WeaponStance[WEAPON_STANCE_TYPE_SHIELD])) {
+				BuffFadeBySpellID(aabonuses.WeaponStance[WEAPON_STANCE_TYPE_SHIELD]);
+			}
+
+			else if (!HasDualWeaponsEquiped() && IsBuffSpell(aabonuses.WeaponStance[WEAPON_STANCE_TYPE_DUAL_WIELD]) &&
+					 FindBuff(aabonuses.WeaponStance[WEAPON_STANCE_TYPE_DUAL_WIELD])) {
+				BuffFadeBySpellID(aabonuses.WeaponStance[WEAPON_STANCE_TYPE_DUAL_WIELD]);
+			}
+
+			//If you have correct combination of weapon type and bonus, and do not already have buff, then apply buff.
+			if (HasTwoHanderEquipped() && IsBuffSpell(aabonuses.WeaponStance[WEAPON_STANCE_TYPE_2H])) {
+				if (!FindBuff(aabonuses.WeaponStance[WEAPON_STANCE_TYPE_2H])) {
+					SpellOnTarget(aabonuses.WeaponStance[WEAPON_STANCE_TYPE_2H], this);
+				}
+				weaponstance.aabonus_buff_spell_id = aabonuses.WeaponStance[WEAPON_STANCE_TYPE_2H];
+			}
+
+			else if (HasShieldEquiped() && IsBuffSpell(aabonuses.WeaponStance[WEAPON_STANCE_TYPE_SHIELD])) {
+				if (!FindBuff(aabonuses.WeaponStance[WEAPON_STANCE_TYPE_SHIELD])) {
+					SpellOnTarget(aabonuses.WeaponStance[WEAPON_STANCE_TYPE_SHIELD], this);
+				}
+				weaponstance.aabonus_buff_spell_id = aabonuses.WeaponStance[WEAPON_STANCE_TYPE_SHIELD];
+			}
+
+			else if (HasDualWeaponsEquiped() && IsBuffSpell(aabonuses.WeaponStance[WEAPON_STANCE_TYPE_DUAL_WIELD])) {
+
+				if (!FindBuff(aabonuses.WeaponStance[WEAPON_STANCE_TYPE_DUAL_WIELD])) {
+					SpellOnTarget(aabonuses.WeaponStance[WEAPON_STANCE_TYPE_DUAL_WIELD], this);
+				}
+				weaponstance.aabonus_buff_spell_id = aabonuses.WeaponStance[WEAPON_STANCE_TYPE_DUAL_WIELD];
+			}
+		}
+	}
+
+	// AA bonus removal is checked in TogglePassiveAA in aa.cpp. when the hot key is toggled.
+
+	// If no bonuses remain present, prevent additional future checks until new bonus is applied.
+	if (!enabled) {
+		SetWeaponStanceEnabled(false);
+		weaponstance.aabonus_enabled = false;
+		weaponstance.itembonus_enabled = false;
+		weaponstance.spellbonus_enabled = false;
 	}
 }

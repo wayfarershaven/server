@@ -459,6 +459,7 @@ void ZoneServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p) {
 						break;
 					scm->noreply = true;
 					scm->queued = 3; // offline
+					scm->chan_num = ChatChannel_TellEcho;
 					strcpy(scm->deliverto, scm->from);
 					// ideally this would be trimming off the message too, oh well
 					sender->Server()->SendPacket(pack);
@@ -472,6 +473,7 @@ void ZoneServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p) {
 							break;
 						scm->noreply = true;
 						scm->queued = 2; // queue full
+						scm->chan_num = ChatChannel_TellEcho;
 						strcpy(scm->deliverto, scm->from);
 						sender->Server()->SendPacket(pack);
 					}
@@ -487,6 +489,7 @@ void ZoneServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p) {
 							break;
 						scm->noreply = true;
 						scm->queued = 1; // queued
+						scm->chan_num = ChatChannel_TellEcho;
 						strcpy(scm->deliverto, scm->from);
 						sender->Server()->SendPacket(pack);
 					}

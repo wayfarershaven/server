@@ -371,35 +371,6 @@ bool NPC::AIDoSpellCast(uint8 i, Mob* tar, int32 mana_cost, uint32* oDontDoAgain
     return CastSpell(AIspells[i].spellid, tar->GetID(), EQ::spells::CastingSlot::Gem2, AIspells[i].manacost == -2 ? 0 : -1, mana_cost, oDontDoAgainBefore, -1, -1, 0, &(AIspells[i].resist_adjust));
 }
 
-NPC* EntityList::GetTargetToShield(NPC* shielder) {
-    //Only iterate through NPCs
-    NPC* toShield = nullptr;
-    for (auto it = npc_list.begin(); it != npc_list.end(); ++it) {
-        NPC* mob = it->second;
-
-        if (mob == shielder) {
-            continue;
-        }
-
-        if (mob->GetReverseFactionCon(shielder) >= FACTION_KINDLY) {
-            continue;
-        }
-
-        if (!shielder->CombatRange(mob, 2.0)) {
-            continue;
-        }
-
-        if (mob->GetHPRatio() > RuleR(NPC, ShieldStartHPRatio)) {
-            continue;
-        }
-
-        if (!toShield || mob->GetDamage() > toShield->GetDamage()) {
-            toShield = mob;
-        }
-    }
-    return toShield;
-}
-
 /**
  * @param caster
  * @param chance
@@ -1204,6 +1175,13 @@ void Mob::AI_Process() {
 
         ProjectileAttack();
 
+		if (focus_proc_limit_timer.Check())
+			FocusProcLimitProcess();
+
+		if (shield_timer.Check()) {
+			ShieldAbilityFinish();
+		}
+
         auto npcSpawnPoint = CastToNPC()->GetSpawnPoint();
         if (GetSpecialAbility(TETHER)) {
             float tether_range = static_cast<float>(GetSpecialAbilityParam(TETHER, 0));
@@ -1227,40 +1205,6 @@ void Mob::AI_Process() {
         }
 
         StartEnrage();
-
-        if (GetSpecialAbility(SPECATK_SHIELD)) {
-
-            if (shield_timer.Check()) {
-                if (shield_target) {
-                    if (!CombatRange(shield_target, 2.0)) {
-                        ShieldClear();
-                    }
-                }
-                else {
-                    shield_target = 0;
-                }
-            }
-
-            if (shield_duration_timer.Check()) {
-                ShieldClear();
-            }
-
-            if (!shield_target) {
-                shield_timer.Disable();
-                shield_duration_timer.Disable();
-                if (shield_reuse_timer.Check()) {
-                    Mob* target = entity_list.GetTargetToShield(this->CastToNPC())->CastToMob();
-                    if (target) {
-                        float range = (float) GetSpecialAbilityParam(SPECATK_SHIELD, 1);
-                        Shield(target, range ? range : 2.0);
-                        shield_reuse_timer.Disable();
-                        int	timer = GetSpecialAbilityParam(SPECATK_SHIELD, 0);
-                        shield_reuse_timer.SetTimer((timer ? timer : RuleI(NPC, DefaultShieldReuseTimer)) * 1000);
-                        shield_reuse_timer.Start();
-                    }
-                }
-            }
-        }
 
         bool is_combat_range = CombatRange(target);
 
@@ -1331,14 +1275,11 @@ void Mob::AI_Process() {
                         }
                     }
 
+					//SE_PC_Pet_Rampage SPA 464 on pet, chance modifier
                     if ((IsPet() || IsTempPet()) && IsPetOwnerClient()) {
-                        if (spellbonuses.PC_Pet_Rampage[0] || itembonuses.PC_Pet_Rampage[0] ||
-                            aabonuses.PC_Pet_Rampage[0]) {
-                            int chance = spellbonuses.PC_Pet_Rampage[0] + itembonuses.PC_Pet_Rampage[0] +
-                                         aabonuses.PC_Pet_Rampage[0];
-                            if (zone->random.Roll(chance)) {
-                                Rampage(nullptr);
-                            }
+						int chance = spellbonuses.PC_Pet_Rampage[SBIndex::PET_RAMPAGE_CHANCE] + itembonuses.PC_Pet_Rampage[SBIndex::PET_RAMPAGE_CHANCE] + aabonuses.PC_Pet_Rampage[SBIndex::PET_RAMPAGE_CHANCE];
+						if (chance && zone->random.Roll(chance)) {
+							Rampage(nullptr);
                         }
                     }
 
@@ -1375,6 +1316,14 @@ void Mob::AI_Process() {
                             specialed = true;
                         }
                     }
+
+					//SE_PC_Pet_Rampage SPA 465 on pet, chance modifier
+					if ((IsPet() || IsTempPet()) && IsPetOwnerClient()) {
+						int chance = spellbonuses.PC_Pet_AE_Rampage[SBIndex::PET_RAMPAGE_CHANCE] + itembonuses.PC_Pet_AE_Rampage[SBIndex::PET_RAMPAGE_CHANCE] + aabonuses.PC_Pet_AE_Rampage[SBIndex::PET_RAMPAGE_CHANCE];
+						if (chance && zone->random.Roll(chance)) {
+							Rampage(nullptr);
+						}
+					}
 
                     if (GetSpecialAbility(SPECATK_AREA_RAMPAGE) && !specialed) {
                         int rampage_chance = GetSpecialAbilityParam(SPECATK_AREA_RAMPAGE, 0);

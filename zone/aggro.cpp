@@ -1038,6 +1038,7 @@ int32 Mob::CheckAggroAmount(uint16 spell_id, Mob *target, bool isproc)
 			case SE_Mez:
 			case SE_Charm:
 			case SE_Fear:
+			case SE_Fearstun:
 				AggroAmount += default_aggro;
 				break;
 			case SE_Root:
@@ -1124,6 +1125,7 @@ int32 Mob::CheckAggroAmount(uint16 spell_id, Mob *target, bool isproc)
 			}
 			case SE_CancelMagic:
 			case SE_DispelDetrimental:
+			case SE_DispelBeneficial:
 				dispel = true;
 				break;
 			case SE_ReduceHate:

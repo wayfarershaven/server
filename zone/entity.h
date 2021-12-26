@@ -479,7 +479,6 @@ public:
 	Mob*	GetTargetForMez(Mob* caster);
 	bool AICheckCloseBeneficialSpells(NPC* caster, uint8 chance, float cast_range, uint32 spell_types);
 	uint32	CheckNPCsClose(Mob *center);
-	NPC*	GetTargetToShield(NPC* shielder);
 
 	Corpse* GetClosestCorpse(Mob* sender, const char *Name);
 	NPC* GetClosestBanker(Mob* sender, uint32 &distance);

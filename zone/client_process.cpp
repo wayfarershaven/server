@@ -209,8 +209,29 @@ bool Client::Process() {
 			instalog = true;
 		}
 
+		if (heroforge_wearchange_timer.Check()) {
+			/*
+				This addresses bug where on zone in heroforge models would not be sent to other clients when this was
+				in Client::CompleteConnect(). Sending after a small 250 ms delay after that function resolves the issue. 
+				Unclear the underlying reason for this, if a better solution can be found then can move this back.
+			*/
+			if (queue_wearchange_slot >= 0) { //Resend slot from Client::SwapItem if heroforge item is swapped.
+				SendWearChange(static_cast<uint8>(queue_wearchange_slot));
+			}
+			else { //Send from Client::CompleteConnect()
+				SendWearChangeAndLighting(EQ::textures::LastTexture);
+				Mob *pet = GetPet();
+				if (pet) {
+					pet->SendWearChangeAndLighting(EQ::textures::LastTexture);
+				}
+			}
+			heroforge_wearchange_timer.Disable();
+		}
+
 		if (IsStunned() && stunned_timer.Check())
 			Mob::UnStun();
+
+		cheat_manager.ClientProcess();
 
 		if (bardsong_timer.Check() && bardsong != 0) {
 			//NOTE: this is kinda a heavy-handed check to make sure the mob still exists before
@@ -310,6 +331,10 @@ bool Client::Process() {
 		}
 
 		if (AutoFireEnabled()) {
+			if (GetTarget() == this) {
+				MessageString(Chat::TooFarAway, TRY_ATTACKING_SOMEONE);
+				auto_fire = false;
+			}
 			EQ::ItemInstance *ranged = GetInv().GetItem(EQ::invslot::slotRange);
 			if (ranged)
 			{
@@ -403,6 +428,11 @@ bool Client::Process() {
 				TriggerDefensiveProcs(auto_attack_target, EQ::invslot::slotPrimary, false);
 
 				DoAttackRounds(auto_attack_target, EQ::invslot::slotPrimary);
+
+				if (TryDoubleMeleeRoundEffect()) {
+					DoAttackRounds(auto_attack_target, EQ::invslot::slotPrimary);
+				}
+				
 				if (CheckAATimer(aaTimerRampage)) {
 					entity_list.AEAttack(this, 30);
 				}
@@ -470,24 +500,9 @@ bool Client::Process() {
 		}
 
 		if (shield_timer.Check()) {
-			if (shield_target) {
-				if (!CombatRange(shield_target, 2.0)) {
-					ShieldClear();
-				}
-			} else {
-				shield_target = 0;
-			}
+			ShieldAbilityFinish();
 		}
-
-		if (shield_duration_timer.Check()) {
-			ShieldClear();
-		}
-
-		if (!shield_target) {
-			shield_timer.Disable();
-			shield_duration_timer.Disable();
-		}
-
+		
 		SpellProcess();
 		if (endupkeep_timer.Check() && !dead) {
 			DoEnduranceUpkeep();
@@ -537,6 +552,9 @@ bool Client::Process() {
 			}
 		}
 	}
+
+	if (focus_proc_limit_timer.Check() && !dead)
+		FocusProcLimitProcess();
 
 	if (client_state == CLIENT_KICKED) {
 		Save();

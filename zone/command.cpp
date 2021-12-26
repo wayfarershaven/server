@@ -367,6 +367,7 @@ int command_init(void)
 		command_add("repop", "[delay] - Repop the zone with optional delay", 100, command_repop) ||
 		command_add("resetaa", "- Resets a Player's AA in their profile and refunds spent AA's to unspent, may disconnect player.", 200, command_resetaa) ||
 		command_add("resetaa_timer", "Command to reset AA cooldown timers.", 200, command_resetaa_timer) ||
+		command_add("resetdisc_timer", "Command to reset all discipline cooldown timers.", 200, command_resetdisc_timer) ||
 		command_add("revoke", "[charname] [1/0] - Makes charname unable to talk on OOC", 200, command_revoke) ||
 		command_add("roambox", "Manages roambox settings for an NPC", 200, command_roambox) ||
 		command_add("rules", "(subcommand) - Manage server rules", 250, command_rules) ||
@@ -441,6 +442,7 @@ int command_init(void)
 		command_add("unscribespells", "- Clear out your or your player target's spell book.", 180, command_unscribespells) ||
 		command_add("untraindisc", "[spellid] - Untrain specified discipline from your target.", 180, command_untraindisc) ||
 		command_add("untraindiscs", "- Untrains all disciplines from your target.", 180, command_untraindiscs) ||
+		command_add("updatechecksum", "gm only", 250, command_updatechecksum) ||
 		command_add("uptime", "[zone server id] - Get uptime of worldserver, or zone server if argument provided", 10, command_uptime) ||
 		command_add("version", "- Display current version of EQEmu server", 0, command_version) ||
 		command_add("viewnpctype", "[npctype id] - Show info about an npctype", 100, command_viewnpctype) ||
@@ -8623,11 +8625,46 @@ void command_itemsearch(Client *c, const Seperator *sep)
 			item = database.GetItem(atoi(search_criteria));
 			if (item) {
 				linker.SetItemData(item);
+				std::string item_id = std::to_string(item->ID);
+				std::string saylink_commands =
+				"[" +
+					EQ::SayLinkEngine::GenerateQuestSaylink(
+						"#si " + item_id,
+						false,
+						"X"
+					) +
+				"] ";
 
-				c->Message(Chat::White, "%u: %s",  item->ID, linker.GenerateLink().c_str());
+				if (item->Stackable && item->StackSize > 1) {
+					std::string stack_size = std::to_string(item->StackSize);
+					saylink_commands +=
+					"[" +
+						EQ::SayLinkEngine::GenerateQuestSaylink(
+							"#si " + item_id + " " + stack_size,
+							false,
+							stack_size
+						) +
+					"]";
+				}
+
+				c->Message(
+					Chat::White,
+					fmt::format(
+						" Summon {} [{}] [{}]",
+						saylink_commands,
+						linker.GenerateLink(),
+						item->ID
+					).c_str()
+				);
 			}
 			else {
-				c->Message(Chat::White, "Item #%s not found",  search_criteria);
+				c->Message(
+					Chat::White,
+					fmt::format(
+						"Item {} not found",
+						search_criteria
+					).c_str()
+				);
 			}
 
 			return;
@@ -8649,21 +8686,21 @@ void command_itemsearch(Client *c, const Seperator *sep)
 				std::string item_id = std::to_string(item->ID);
 				std::string saylink_commands =
 					"[" +
-					EQ::SayLinkEngine::GenerateQuestSaylink(
-						"#si " + item_id,
-						false,
-						"X"
-					) +
+						EQ::SayLinkEngine::GenerateQuestSaylink(
+							"#si " + item_id,
+							false,
+							"X"
+						) +
 					"] ";
 				if (item->Stackable && item->StackSize > 1) {
 					std::string stack_size = std::to_string(item->StackSize);
 					saylink_commands +=
 					"[" +
-					EQ::SayLinkEngine::GenerateQuestSaylink(
-						"#si " + item_id + " " + stack_size,
-						false,
-						stack_size
-					) +
+						EQ::SayLinkEngine::GenerateQuestSaylink(
+							"#si " + item_id + " " + stack_size,
+							false,
+							stack_size
+						) +
 					"]";
 				}
 
@@ -10110,6 +10147,23 @@ void command_opcode(Client *c, const Seperator *sep) {
 	if(!strcasecmp(sep->arg[1], "reload" )) {
 		ReloadAllPatches();
 		c->Message(Chat::White, "Opcodes for all patches have been reloaded");
+	}
+}
+
+void command_updatechecksum(Client* c, const Seperator* sep) {
+	if (c)
+	{
+		database.SetVariable("checksum_crc1_eqgame", std::to_string(database.GetAccountCRC1EQGame(c->AccountID())));
+		database.SetVariable("checksum_crc2_skillcaps", std::to_string(database.GetAccountCRC2SkillCaps(c->AccountID())));
+		database.SetVariable("checksum_crc3_basedata", std::to_string(database.GetAccountCRC3BaseData(c->AccountID())));
+
+		if (c)
+		{
+			auto pack = new ServerPacket(ServerOP_ReloadRulesWorld, 0);
+			worldserver.SendPacket(pack);
+			c->Message(Chat::Red, "Successfully sent the packet to world to reload rules. (only world)");
+			safe_delete(pack);
+		}
 	}
 }
 
@@ -14105,6 +14159,27 @@ void command_resetaa_timer(Client *c, const Seperator *sep) {
 		c->Message(Chat::White, "usage: #resetaa_timer [all | timer_id]");
 	}
 }
+
+void command_resetdisc_timer(Client *c, const Seperator *sep)
+{
+	Client *target = c->GetTarget()->CastToClient();
+	if (!c->GetTarget() || !c->GetTarget()->IsClient()) {
+		target = c;
+	}
+
+	if (sep->IsNumber(1)) {
+		int timer_id = atoi(sep->arg[1]);
+		c->Message(Chat::White, "Reset of disc timer %i for %s", timer_id, c->GetName());
+		c->ResetDisciplineTimer(timer_id);
+	}
+	else if (!strcasecmp(sep->arg[1], "all")) {
+		c->Message(Chat::White, "Reset all disc timers for %s", c->GetName());
+		c->ResetAllDisciplineTimers();
+	}
+	else {
+		c->Message(Chat::White, "usage: #resetdisc_timer [all | timer_id]");
+	}
+}		
 
 void command_reloadaa(Client *c, const Seperator *sep) {
 	c->Message(Chat::White, "Reloading Alternate Advancement Data...");
