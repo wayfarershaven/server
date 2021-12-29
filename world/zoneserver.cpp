@@ -1243,6 +1243,11 @@ void ZoneServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p) {
 	case ServerOP_QSSendQuery:
 	case ServerOP_QueryServGeneric:
 	case ServerOP_Speech:
+	case ServerOP_QSPlayerAARateHourly:
+	case ServerOP_QSPlayerAAPurchase:
+	case ServerOP_QSPlayerDeathBy:
+	case ServerOP_QSPlayerTSEvents:
+	case ServerOP_QSPlayerQGlobalUpdates:
 	case ServerOP_QSPlayerLogTrades:
 	case ServerOP_QSPlayerLogHandins:
 	case ServerOP_QSPlayerLogNPCKills:
@@ -1250,6 +1255,7 @@ void ZoneServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p) {
 	case ServerOP_QSPlayerLogMoves:
 	case ServerOP_QSPlayerLogMerchantTransactions:
 	case ServerOP_QSPlayerDropItem:
+	case ServerOP_QSPlayerLootRecords:
 	{
 		QSLink.SendPacket(pack);
 		break;

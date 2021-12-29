@@ -44,7 +44,13 @@ public:
 	~Database();
 
 	void AddSpeech(const char* from, const char* to, const char* message, uint16 minstatus, uint32 guilddbid, uint8 type);
+	void LogPlayerAARateHourly(QSPlayerAARateHourly_Struct* QS, uint32 items);
+	void LogPlayerAAPurchase(QSPlayerAAPurchase_Struct* QS, uint32 items);
+	void LogPlayerDeathBy(QSPlayerDeathBy_Struct* QS, uint32 items);
+	void LogPlayerLootRecords(QSPlayerLootRecords_struct* QS, uint32 Items);
+	void LogPlayerQGlobalUpdates(QSPlayerQGlobalUpdate_Struct* QS, uint32 items);
 	void LogPlayerTrade(QSPlayerLogTrade_Struct* QS, uint32 DetailCount);
+	void LogPlayerTSEvents(QSPlayerTSEvents_Struct* QS, uint32 items);
 	void LogPlayerDropItem(QSPlayerDropItem_Struct* QS);
 	void LogPlayerHandin(QSPlayerLogHandin_Struct* QS, uint32 DetailCount);
 	void LogPlayerNPCKill(QSPlayerLogNPCKill_Struct* QS, uint32 Members);

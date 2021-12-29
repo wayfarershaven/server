@@ -651,10 +651,23 @@ bool Group::DelMemberOOZ(const char *Name, bool checkleader) {
 
 bool Group::DelMember(Mob* oldmember, bool ignoresender)
 {
-	if (oldmember == nullptr)
-	{
+	if (oldmember == nullptr) {
 		return false;
 	}
+
+	if (this == nullptr) {
+		return false;
+	}
+
+	// Rule to break all groups on any disband
+	if (RuleB(Zone, DisbandGroups)) {
+		if (oldmember == GetLeader()) {
+			DisbandGroup();
+			return true;
+		}
+	}
+
+	int8 MemberCount = GroupCount();
 
 	/* let's try to fix it
 	// Temporary fix for zone crashing. causing groups to fully break as they did before.
@@ -664,10 +677,8 @@ bool Group::DelMember(Mob* oldmember, bool ignoresender)
 	}
 	*/
 
-	for (uint32 i = 0; i < MAX_GROUP_MEMBERS; i++)
-	{
-		if (members[i] == oldmember)
-		{
+	for (uint32 i = 0; i < MAX_GROUP_MEMBERS; i++) {
+		if (members[i] == oldmember) {
 			members[i] = nullptr;
 			membername[i][0] = '\0';
 			memset(membername[i],0,64);
@@ -677,8 +688,7 @@ bool Group::DelMember(Mob* oldmember, bool ignoresender)
 		}
 	}
 
-	if(GroupCount() < 2)
-	{
+	if(MemberCount < 2) {
 		DisbandGroup();
 		return true;
 	}
@@ -687,14 +697,11 @@ bool Group::DelMember(Mob* oldmember, bool ignoresender)
 	// If a suitable replacement cannot be found, we need to go out of zone. If checkleader remains true after this method completes, another
 	// loop will be run in DelMemberOOZ.
 	bool checkleader = true;
-	if (strcmp(GetOldLeaderName(),oldmember->GetCleanName()) == 0 && GroupCount() >= 2)
-	{
-		for(uint32 nl = 0; nl < MAX_GROUP_MEMBERS; nl++)
-		{
-			if(members[nl])
-			{
-				if (members[nl]->IsClient())
-				{
+
+	if (strcmp(GetOldLeaderName(),oldmember->GetCleanName()) == 0 && MemberCount >= 2) {
+		for(uint32 nl = 0; nl < MAX_GROUP_MEMBERS; nl++) {
+			if(members[nl]) {
+				if (members[nl]->IsClient()) {
 					ChangeLeader(members[nl]);
 					checkleader = false;
 					break;
@@ -723,48 +730,45 @@ bool Group::DelMember(Mob* oldmember, bool ignoresender)
 
 	for (uint32 i = 0; i < MAX_GROUP_MEMBERS; i++) {
 		if (members[i] == nullptr) {
-			//if (DEBUG>=5) LogFile->write(EQEMuLog::Debug, "Group::DelMember() null member at slot %i", i);
 			continue;
 		}
+
 		if (members[i] != oldmember) {
 			strcpy(gu->yourname, members[i]->GetCleanName());
-			if(members[i]->IsClient())
+			if(members[i]->IsClient()) {
 				members[i]->CastToClient()->QueuePacket(outapp);
+			}
 		}
 	}
 
-	if (!ignoresender)
-	{
+	if (!ignoresender) {
 		strcpy(gu->yourname,oldmember->GetCleanName());
 		strcpy(gu->membername,oldmember->GetCleanName());
 		gu->action = groupActLeave;
 
-		if(oldmember->IsClient())
+		if(oldmember->IsClient()) {
 			oldmember->CastToClient()->QueuePacket(outapp);
+		}
 	}
 
-	if(oldmember->IsClient())
-	{
+	if(oldmember->IsClient()) {
 		database.SetGroupID(oldmember->GetCleanName(), 0, oldmember->CastToClient()->CharacterID(), false);
 	}
 
 	oldmember->SetGrouped(false);
 	disbandcheck = true;
 
-	if(HasRole(oldmember, RoleTank))
-	{
+	if(HasRole(oldmember, RoleTank)) {
 		SetGroupTankTarget(0);
 		UnDelegateMainTank(oldmember->GetCleanName());
 	}
 
-	if(HasRole(oldmember, RoleAssist))
-	{
+	if(HasRole(oldmember, RoleAssist)) {
 		SetGroupAssistTarget(0);
 		UnDelegateMainAssist(oldmember->GetCleanName());
 	}
 
-	if(HasRole(oldmember, RolePuller))
-	{
+	if(HasRole(oldmember, RolePuller)) {
 		SetGroupPullerTarget(0);
 		UnDelegatePuller(oldmember->GetCleanName());
 	}
@@ -778,21 +782,15 @@ bool Group::DelMember(Mob* oldmember, bool ignoresender)
 		oldmember->CastToClient()->LeaveGroupXTargets(this);
 	}
 
-	if(GroupCount() < 3)
-	{
+	if(MemberCount < 3) {
 		UnDelegateMarkNPC(NPCMarkerName.c_str());
-		if (GetLeader() && GetLeader()->IsClient() && GetLeader()->CastToClient()->ClientVersion() < EQ::versions::ClientVersion::SoD) {
+		if (GetLeader() != nullptr && GetLeader() && GetLeader()->IsClient()) {
 			UnDelegateMainAssist(MainAssistName.c_str());
 		}
 		ClearAllNPCMarks();
 	}
 
-#ifdef BOTS
-	Bot::UpdateGroupCastingRoles(this);
-#endif
-
 	safe_delete(outapp);
-
 	return true;
 }
 
@@ -1258,33 +1256,19 @@ void Client::LeaveGroup() {
 	if(g)
 	{
 		int32 MemberCount = g->GroupCount();
-		// Account for both client and merc leaving the group
-		if (GetMerc() && g == GetMerc()->GetGroup())
-		{
-			MemberCount -= 1;
-		}
 		
-		if(MemberCount < 3)
-		{
+		if(MemberCount < 3) {
 			g->DisbandGroup();
-		}
-		else
-		{
-			g->DelMember(this);
-			if (GetMerc() != nullptr && g == GetMerc()->GetGroup() )
-			{
-				GetMerc()->RemoveMercFromGroup(GetMerc(), GetMerc()->GetGroup());
+		} else {
+			if(this != nullptr) {
+				g->DelMember(this);
+			} else {
+				g->DisbandGroup();
 			}
 		}
-	}
-	else
-	{
+	} else {
 		//force things a little
 		database.SetGroupID(GetCleanName(), 0, CharacterID(), false);
-		if (GetMerc())
-		{
-			database.SetGroupID(GetMerc()->GetCleanName(), 0, CharacterID(), true);
-		}
 	}
 
 	isgrouped = false;

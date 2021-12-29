@@ -1518,6 +1518,11 @@ void QuestManager::setglobal(const char *varname, const char *newvalue, int opti
 		std::string event_desc = StringFormat("Update :: qglobal:%s to qvalue:%s zoneid:%i instid:%i", varname, newvalue, initiator->GetZoneID(), initiator->GetInstanceID());
 		QServ->PlayerLogEvent(Player_Log_QGlobal_Update, qgCharid, event_desc);
 	}
+
+	/* QS: PlayerLogQGlobalUpdate */
+	if (RuleB(QueryServ, PlayerLogQGlobalUpdate) && qgCharid && qgCharid > 0 && initiator && initiator->IsClient()) {
+		QServ->QSQGlobalUpdate(qgCharid, initiator->GetZoneID(), initiator->GetInstanceID(), varname, newvalue);
+	}
 }
 
 /* Inserts global variable into quest_globals table */
@@ -1608,6 +1613,11 @@ void QuestManager::delglobal(const char *varname) {
 	if (RuleB(QueryServ, PlayerLogQGlobalUpdate) && qgCharid && qgCharid > 0 && initiator && initiator->IsClient()){
 		std::string event_desc = StringFormat("Deleted :: qglobal:%s zoneid:%i instid:%i", varname, initiator->GetZoneID(), initiator->GetInstanceID());
 		QServ->PlayerLogEvent(Player_Log_QGlobal_Update, qgCharid, event_desc);
+	}
+
+	/* QS: PlayerLogQGlobalUpdate */
+	if (RuleB(QueryServ, PlayerLogQGlobalUpdate) && qgCharid && qgCharid > 0 && initiator && initiator->IsClient()) {
+		QServ->QSQGlobalUpdate(qgCharid, initiator->GetZoneID(), initiator->GetInstanceID(), varname, "deleted");
 	}
 
     std::string query = StringFormat("DELETE FROM quest_globals "

@@ -1108,6 +1108,11 @@ bool Client::TradeskillExecute(DBTradeskillRecipe_Struct *spec) {
 				QServ->PlayerLogEvent(Player_Log_Trade_Skill_Events, this->CharacterID(), event_desc);
 			}
 
+			/* QS: Player_Log_Trade_Skill_Events */
+			if (RuleB(QueryServ, PlayerLogTradeSkillEvents)) {
+				QServ->QSTSEvents(this->CharacterID(), this->GetZoneID(), this->GetInstanceID(), "Success", spec->recipe_id, spec->tradeskill, spec->trivial, chance);
+			}
+
 			if (RuleB(TaskSystem, EnableTaskSystem)) {
 				UpdateTasksForItem(ActivityTradeSkill, itr->first, itr->second);
 			}
@@ -1136,6 +1141,11 @@ bool Client::TradeskillExecute(DBTradeskillRecipe_Struct *spec) {
 		if (RuleB(QueryServ, PlayerLogTradeSkillEvents)){
 			std::string event_desc = StringFormat("Failed :: recipe_id:%i tskillid:%i trivial:%i chance:%4.2f  in zoneid:%i instid:%i", spec->recipe_id, spec->tradeskill, spec->trivial, chance, this->GetZoneID(), this->GetInstanceID());
 			QServ->PlayerLogEvent(Player_Log_Trade_Skill_Events, this->CharacterID(), event_desc);
+		}
+
+		/* QS: Player_Log_Trade_Skill_Events */
+		if (RuleB(QueryServ, PlayerLogTradeSkillEvents)) {
+			QServ->QSTSEvents(this->CharacterID(), this->GetZoneID(), this->GetInstanceID(), "Failed", spec->recipe_id, spec->tradeskill, spec->trivial, chance);
 		}
 
 		itr = spec->onfail.begin();
