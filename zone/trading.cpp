@@ -1584,7 +1584,7 @@ static void BazaarAuditTrail(const char *seller, const char *buyer, const char *
 	std::string query = StringFormat("INSERT INTO `trader_audit` "
                                     "(`time`, `seller`, `buyer`, `itemname`, `quantity`, `totalcost`, `trantype`) "
                                     "VALUES (NOW(), '%s', '%s', '%s', %i, %i, %i)",
-                                    seller, buyer, itemName, quantity, totalCost, tranType);
+                                    seller, buyer, EscapeString(itemName).c_str(), quantity, totalCost, tranType);
 	database.QueryDatabase(query);
 }
 
