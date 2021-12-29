@@ -377,9 +377,6 @@ void Client::AddQuestEXP(uint32 in_add_exp) {
         aaexp = had_aaexp;    //watch for wrap
     }
 
-    // Check for Unused AA Cap.  If at or above cap, set AAs to cap, set aaexp to 0 and set aa percentage to 0.
-    // Doing this here means potentially one kill wasted worth of experience, but easiest to put it here than to rewrite this function.
-    /*
     if (m_pp.aapoints >= RuleI(Character, UnusedAAPointCap)) {
         if (aaexp > 0) {
             Message(15, "You have reached the Unused AA Point Cap (%d).  Please spend some AA Points before continuing.  Setting AA percentage to 0.", RuleI(Character, UnusedAAPointCap));
@@ -391,7 +388,6 @@ void Client::AddQuestEXP(uint32 in_add_exp) {
             m_pp.aapoints = RuleI(Character, UnusedAAPointCap);
         }
     }
-    */
 
     SetEXP(exp, aaexp, false);
 }
