@@ -513,8 +513,6 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 							if (HasPet()) {
 								if (GetPet()->IsCharmed()) {
 									GetPet()->BuffFadeByEffect(SE_Charm);
-								} else {
-									GetPet()->Depop();
 								}
 							}
 							CastToClient()->MovePC(zone->GetZoneID(), zone->GetInstanceID(), x, y, z, heading, 0,
