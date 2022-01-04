@@ -354,6 +354,7 @@ int command_init(void)
 		command_add("reimburse", "- Adds items or plat to the Reimbursement table for a character.",  100, command_reimburse) ||
 		command_add("reloadaa", "Reloads AA data", 200, command_reloadaa) ||
 		command_add("reloadallrules", "Executes a reload of all rules.", 80, command_reloadallrules) ||
+		command_add("reloadcontentflags", "Executes a reload of all expansion and content flags", 90, command_reloadcontentflags) ||
 		command_add("reloademote", "Reloads NPC Emotes", 80, command_reloademote) ||
 		command_add("reloadlevelmods", nullptr, 255, command_reloadlevelmods) ||
 		command_add("reloadmerchants", nullptr, 255, command_reloadmerchants) ||
@@ -13377,6 +13378,16 @@ void command_reloadallrules(Client *c, const Seperator *sep)
 		c->Message(Chat::Red, "Successfully sent the packet to world to reload rules globally. (including world)");
 		safe_delete(pack);
 
+	}
+}
+
+void command_reloadcontentflags(Client *c, const Seperator *sep)
+{
+	if (c) {
+		auto pack = new ServerPacket(ServerOP_ReloadContentFlags, 0);
+		worldserver.SendPacket(pack);
+		c->Message(Chat::Red, "Successfully sent the packet to world to reload content flags globally.");
+		safe_delete(pack);
 	}
 }
 

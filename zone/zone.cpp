@@ -1260,10 +1260,8 @@ void Zone::ReloadStaticData() {
 		);
 	} // if that fails, try the file name, then load defaults
 
-	content_service.SetExpansionContext();
-
-	ZoneStore::LoadContentFlags();
-
+	content_service.SetExpansionContext()->ReloadContentFlags();
+	
 	LogInfo("Zone Static Data Reloaded");
 }
 

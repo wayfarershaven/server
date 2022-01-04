@@ -486,6 +486,11 @@ int main(int argc, char** argv) {
 
 	event_scheduler.SetDatabase(&database)->LoadScheduledEvents();
 
+	LogInfo("Initializing [WorldContentService]");
+	content_service.SetDatabase(&database)
+		->SetExpansionContext()
+		->ReloadContentFlags();
+
 	std::unique_ptr<EQ::Net::ConsoleServer> console;
 	if (Config->TelnetEnabled) {
 		LogInfo("Console (TCP) listener started");

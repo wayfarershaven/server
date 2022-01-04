@@ -247,6 +247,7 @@ void command_refundaa(Client *c, const Seperator *sep);
 void command_reimburse(Client *c, const Seperator *sep);
 void command_reloadaa(Client *c, const Seperator *sep);
 void command_reloadallrules(Client *c, const Seperator *sep);
+void command_reloadcontentflags(Client *c, const Seperator *sep);
 void command_reloademote(Client* c, const Seperator *sep);
 void command_reloadlevelmods(Client *c, const Seperator *sep);
 void command_reloadmerchants(Client *c, const Seperator *sep);

@@ -1835,6 +1835,34 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 		RuleManager::Instance()->LoadRules(&database, RuleManager::Instance()->GetActiveRuleset(), true);
 		break;
 	}
+	case ServerOP_ReloadContentFlags: {
+		if (zone) {
+			worldserver.SendEmoteMessage(
+				0,
+				0,
+				90,
+				Chat::Yellow,
+				fmt::format(
+					"Content flags (and expansion) reloaded for {}.",
+					fmt::format(
+						"{} ({})",
+						zone->GetLongName(),
+						zone->GetZoneID()
+					),
+					(
+						zone->GetInstanceID() ?
+						fmt::format(
+							"Instance ID: {}",
+							zone->GetInstanceID()
+						) :
+						""
+					)
+				).c_str()
+			);
+		}
+		content_service.SetExpansionContext()->ReloadContentFlags();
+		break;
+	}
 	case ServerOP_ReloadLogs: {
 		LogSys.LoadLogDatabaseSettings();
 		break;
