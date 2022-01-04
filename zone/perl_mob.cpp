@@ -4924,8 +4924,8 @@ XS(XS_Mob_CameraEffect) {
 XS(XS_Mob_SpellEffect); /* prototype to pass -Wmissing-prototypes */
 XS(XS_Mob_SpellEffect) {
 	dXSARGS;
-	if (items < 2 || items > 8)
-		Perl_croak(aTHX_ "Usage: Mob::SpellEffect(THIS, uint32 effect, [uint32 duration = 5000], [uint32 finish_delay = 0], [bool zone_wide = false], [uint32 unk20 = 3000], [bool perm_effect = false], [Client* single_client])"); // @categories Spells and Disciplines
+	if (items < 2 || items > 10)
+		Perl_croak(aTHX_ "Usage: Mob::SpellEffect(THIS, uint32 effect, [uint32 duration = 5000], [uint32 finish_delay = 0], [bool zone_wide = false], [uint32 unk20 = 3000], [bool perm_effect = false], [Client* single_client]), [caster_id = 0], [target_id = 0]"); // @categories Spells and Disciplines
 	{
 		Mob *THIS;
 		uint32 effect       = (uint32) SvUV(ST(1));
@@ -4935,6 +4935,8 @@ XS(XS_Mob_SpellEffect) {
 		uint32 unk20        = 3000;
 		bool   perm_effect  = false;
 		Client *client = nullptr;
+		uint32 caster_id = 0;
+		uint32 target_id = 0;
 		VALIDATE_THIS_IS_MOB;
 		if (items > 2) { duration = (uint32) SvUV(ST(2)); }
 		if (items > 3) { finish_delay = (uint32) SvUV(ST(3)); }
@@ -4950,9 +4952,11 @@ XS(XS_Mob_SpellEffect) {
 			if (client == nullptr)
 				Perl_croak(aTHX_ "client is nullptr, avoiding crash.");
 		}
+		if (items > 8) { caster_id = (uint32)SvUV(ST(8)); }
+		if (items > 9) { target_id = (uint32)SvUV(ST(9)); }
 
 
-		THIS->SendSpellEffect(effect, duration, finish_delay, zone_wide, unk20, perm_effect, client);
+		THIS->SendSpellEffect(effect, duration, finish_delay, zone_wide, unk20, perm_effect, client, caster_id, target_id);
 	}
 	XSRETURN_EMPTY;
 }
@@ -6648,7 +6652,7 @@ XS(boot_Mob) {
 	newXSproto(strcpy(buf, "MakeTempPet"), XS_Mob_MakeTempPet, file, "$$;$$$$");
 	newXSproto(strcpy(buf, "TypesTempPet"), XS_Mob_TypesTempPet, file, "$$;$$$$$");
 	newXSproto(strcpy(buf, "CameraEffect"), XS_Mob_CameraEffect, file, "$$;$$$");
-	newXSproto(strcpy(buf, "SpellEffect"), XS_Mob_SpellEffect, file, "$$;$$$$$$");
+	newXSproto(strcpy(buf, "SpellEffect"), XS_Mob_SpellEffect, file, "$$;$$$$$$$$");
 	newXSproto(strcpy(buf, "TempName"), XS_Mob_TempName, file, "$:$");
 	newXSproto(strcpy(buf, "GetItemStat"), XS_Mob_GetItemStat, file, "$$$");
 	newXSproto(strcpy(buf, "GetGlobal"), XS_Mob_GetGlobal, file, "$$");
