@@ -2075,7 +2075,7 @@ void Mob::Taunt(NPC *who, bool always_succeed, int chance_bonus, bool FromSpell,
 
 		if (Success) {
 			if (hate_top && hate_top != this) {
-				int newhate = (who->GetNPCHate(hate_top) - who->GetNPCHate(this)) + 1 + bonus_hate;
+				int newhate = (who->GetNPCHate(hate_top) - who->GetNPCHate(this)) + RuleI(Combat, TauntOverAggro) + bonus_hate;
 				who->CastToNPC()->AddToHateList(this, newhate);
 				Success = true;
 			} else {
