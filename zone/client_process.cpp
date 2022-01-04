@@ -434,7 +434,7 @@ bool Client::Process() {
 				}
 				
 				if (CheckAATimer(aaTimerRampage)) {
-					entity_list.AEAttack(this, 30);
+					entity_list.AEAttack(this, 40);
 				}
 			}
 		}
