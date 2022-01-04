@@ -1173,6 +1173,17 @@ void Mob::AI_Process() {
 
         if (target->IsCorpse()) {
             RemoveFromHateList(this);
+			return;
+		}
+
+		if (target->IsMezzed() && IsPet()) {
+
+			auto pet_owner = GetOwner();
+			if (pet_owner && pet_owner->IsClient()) {
+				pet_owner->MessageString(Chat::NPCQuestSay, CANNOT_WAKE, GetCleanName(), target->GetCleanName());
+			}
+
+			RemoveFromHateList(target);
             return;
         }
 
@@ -1716,10 +1727,12 @@ void NPC::AI_DoMovement() {
             }
             else { // Mob was in water, make sure new spot is in water also
                 roambox_destination_z = m_Position.z;
-                auto position = glm::vec3( roambox_destination_x,
+				auto position = glm::vec3(
+					roambox_destination_x,
                                            roambox_destination_y,
-                                           m_Position.z + 15);
-                if (!zone->watermap->InLiquid(position)) {
+					m_Position.z + 15
+				);
+				if (zone->HasWaterMap() && !zone->watermap->InLiquid(position)) {
                     roambox_destination_x = m_SpawnPoint.x;
                     roambox_destination_y = m_SpawnPoint.y;
                     roambox_destination_z = m_SpawnPoint.z;
@@ -1805,7 +1818,9 @@ void NPC::AI_DoMovement() {
                             // reached our randomly selected destination; force a pause
                             if (cur_wp_pause == 0)
                             {
-                                if (Waypoints.size() > 0 && Waypoints[0].pause)
+								if (Waypoints.size() >= cur_wp && Waypoints[cur_wp].pause)
+									cur_wp_pause = Waypoints[cur_wp].pause;
+								else if (Waypoints.size() > 0 && Waypoints[0].pause)
                                     cur_wp_pause = Waypoints[0].pause;
                                 else
                                     cur_wp_pause = 38;
@@ -1825,9 +1840,8 @@ void NPC::AI_DoMovement() {
                     }
 
                     //kick off event_waypoint arrive
-                    char temp[16];
-                    sprintf(temp, "%d", cur_wp);
-                    parse->EventNPC(EVENT_WAYPOINT_ARRIVE, CastToNPC(), nullptr, temp, 0);
+					std::string buf = fmt::format("{}", cur_wp);
+					parse->EventNPC(EVENT_WAYPOINT_ARRIVE, CastToNPC(), nullptr, buf.c_str(), 0);
                     // No need to move as we are there.  Next loop will
                     // take care of normal grids, even at pause 0.
                     // We do need to call and setup a wp if we're cur_wp=-2
@@ -1944,9 +1958,8 @@ void NPC::AI_SetupNextWaypoint() {
 
         if (!DistractedFromGrid) {
             //kick off event_waypoint depart
-            char temp[16];
-            sprintf(temp, "%d", cur_wp);
-            parse->EventNPC(EVENT_WAYPOINT_DEPART, CastToNPC(), nullptr, temp, 0);
+			std::string buf = fmt::format("{}", cur_wp);
+			parse->EventNPC(EVENT_WAYPOINT_DEPART, CastToNPC(), nullptr, buf.c_str(), 0);
 
             //setup our next waypoint, if we are still on our normal grid
             //remember that the quest event above could have done anything it wanted with our grid
@@ -2266,8 +2279,27 @@ bool Mob::Rampage(ExtraAttackOptions *opts)
         }
     }
 
-    if (RuleB(Combat, RampageHitsTarget) && index_hit < rampage_targets)
-        ProcessAttackRounds(GetTarget(), opts);
+	if (RuleB(Combat, RampageHitsTarget)) {
+		if (index_hit < rampage_targets)
+			ProcessAttackRounds(GetTarget(), opts);
+	} else { // let's do correct behavior here, if they set above rule we can assume they want non-live like behavior
+		if (index_hit < rampage_targets) {
+			// so we go over in reverse order and skip range check
+			// lets do it this way to still support non-live-like >1 rampage targets
+			// likely live is just a fall through of the last valid mob
+			for (auto i = RampageArray.crbegin(); i != RampageArray.crend(); ++i) {
+				if (index_hit >= rampage_targets)
+					break;
+				auto m_target = entity_list.GetMob(*i);
+				if (m_target) {
+					if (m_target == GetTarget())
+						continue;
+					ProcessAttackRounds(m_target, opts);
+					index_hit++;
+				}
+			}
+		}
+	}
 
     m_specialattacks = eSpecialAttacks::None;
 
@@ -2278,9 +2310,9 @@ void Mob::AreaRampage(ExtraAttackOptions *opts)
 {
     int index_hit = 0;
     if (!IsPet()) { // do not know every pet AA so thought it safer to add this
-        entity_list.MessageCloseString(this, true, 200, Chat::NPCRampage, NPC_RAMPAGE, GetCleanName());
+		entity_list.MessageCloseString(this, true, 200, Chat::NPCRampage, AE_RAMPAGE, GetCleanName());
     } else {
-        entity_list.MessageCloseString(this, true, 200, Chat::PetFlurry, NPC_RAMPAGE, GetCleanName());
+		entity_list.MessageCloseString(this, true, 200, Chat::PetFlurry, AE_RAMPAGE, GetCleanName());
     }
 
     int rampage_targets = GetSpecialAbilityParam(SPECATK_AREA_RAMPAGE, 1);
@@ -2311,6 +2343,7 @@ uint8 Mob::GetLevelForClientCon(uint8 mylevel, uint8 iOtherLevel) {
 }
 
 uint32 Mob::GetLevelCon(uint8 mylevel, uint8 iOtherLevel) {
+
     uint32 conlevel = 0;
 
     if (RuleB(Character, UseOldConSystem))
@@ -2484,10 +2517,8 @@ void NPC::CheckSignal() {
     if (!signal_q.empty()) {
         int signal_id = signal_q.front();
         signal_q.pop_front();
-        char buf[32];
-        snprintf(buf, 31, "%d", signal_id);
-        buf[31] = '\0';
-        parse->EventNPC(EVENT_SIGNAL, this, nullptr, buf, 0);
+		std::string buf = fmt::format("{}", signal_id);
+		parse->EventNPC(EVENT_SIGNAL, this, nullptr, buf.c_str(), 0);
     }
 }
 
