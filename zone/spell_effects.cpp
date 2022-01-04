@@ -1427,107 +1427,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 #ifdef SPELL_EFFECT_SPAM
 				snprintf(effect_desc, _EDLEN, "Illusion: race %d", effect_value);
 #endif
-				// Gender Illusions
-				if(spell.base[i] == -1) {
-					// Specific Gender Illusions
-					if(spell_id == 1732 || spell_id == 1731) {
-						int specific_gender = -1;
-						// Male
-						if(spell_id == 1732)
-							specific_gender = 0;
-						// Female
-						else if (spell_id == 1731)
-							specific_gender = 1;
-						if(specific_gender > -1) {
-							if(caster && caster->GetTarget()) {
-								SendIllusionPacket
-								(
-									caster->GetTarget()->GetBaseRace(),
-									specific_gender,
-									caster->GetTarget()->GetTexture()
-								);
-							}
-						}
-					}
-					/* Might need to re-enable this - TEST
-					// Change Gender Illusions
-					else {
-						if(caster && caster->GetTarget()) {
-							int opposite_gender = 0;
-							if(caster->GetTarget()->GetGender() == 0)
-								opposite_gender = 1;
-
-							SendIllusionPacket
-							(
-								caster->GetTarget()->GetRace(),
-								opposite_gender,
-								caster->GetTarget()->GetTexture()
-							);
-						}
-					}
-					*/
-				}
-				// Racial Illusions
-				else {
-					auto gender_id = (
-						spell.max[i] > 0 &&
-						(
-							spell.max[i] != 3 ||
-							spell.base2[i] == 0
-						) ?
-						(spell.max[i] - 1) :
-						Mob::GetDefaultGender(spell.base[i], GetGender())
-					);
-
-					auto race_size = GetRaceGenderDefaultHeight(
-						spell.base[i],
-						gender_id
-					);
-					
-					if (spell.max[i] > 0) {
-						if (spell.base2[i] == 0) {
-							SendIllusionPacket(
-								spell.base[i],
-								gender_id
-							);
-						} else {
-							if (spell.max[i] != 3) {
-								SendIllusionPacket(
-									spell.base[i],
-									gender_id,
-									spell.base2[i],
-									spell.max[i]
-								);
-							} else {
-								SendIllusionPacket(
-									spell.base[i],
-									gender_id,
-									spell.base2[i],
-									spell.base2[i]
-								);
-							}
-						}
-					} else {
-						SendIllusionPacket(
-							spell.base[i],
-							gender_id,
-							spell.base2[i],
-							spell.max[i]
-						);
-					}
-					SendAppearancePacket(AT_Size, race_size);					
-				}
-
-				for (int x = EQ::textures::textureBegin; x <= EQ::textures::LastTintableTexture; x++) {
-					SendWearChange(x);
-				}
-
-				if (caster == this && spell.id != 287 && spell.id != 601 &&
-				    (spellbonuses.IllusionPersistence || aabonuses.IllusionPersistence ||
-				     itembonuses.IllusionPersistence))
-					buffs[buffslot].persistant_buff = 1;
-				else
-					buffs[buffslot].persistant_buff = 0;
+				ApplySpellEffectIllusion(spell_id, caster, buffslot, spells[spell_id].base[i], spells[spell_id].base2[i], spells[spell_id].max[i]);
 				break;
 			}
 
@@ -8593,4 +8493,121 @@ int Mob::GetFocusRandomEffectivenessValue(int focus_base, int focus_base2, bool 
 	}
 
 	return zone->random.Int(focus_base, focus_base2);
+}
+
+void Mob::ApplySpellEffectIllusion(int32 spell_id, Mob *caster, int buffslot, int base, int limit, int max)
+{
+	// Gender Illusions
+	if (base == -1) {
+		// Specific Gender Illusions
+		if (spell_id == SPELL_ILLUSION_MALE || spell_id == SPELL_ILLUSION_FEMALE) {
+			int specific_gender = -1;
+			// Male
+			if (spell_id == SPELL_ILLUSION_MALE)
+				specific_gender = 0;
+			// Female
+			else if (spell_id == SPELL_ILLUSION_FEMALE)
+				specific_gender = 1;
+			if (specific_gender > -1) {
+				if (caster && caster->GetTarget()) {
+					SendIllusionPacket
+					(
+						caster->GetTarget()->GetBaseRace(),
+						specific_gender,
+						caster->GetTarget()->GetTexture()
+					);
+				}
+			}
+		}
+		// Change Gender Illusions
+		else {
+			if (caster && caster->GetTarget()) {
+				int opposite_gender = 0;
+				if (caster->GetTarget()->GetGender() == 0)
+					opposite_gender = 1;
+
+				SendIllusionPacket
+				(
+					caster->GetTarget()->GetRace(),
+					opposite_gender,
+					caster->GetTarget()->GetTexture()
+				);
+			}
+		}
+	}
+	// Racial Illusions
+	else {
+				auto gender_id = (
+			max > 0 &&
+			(
+				max != 3 ||
+				limit == 0
+				) ?
+				(max - 1) :
+			Mob::GetDefaultGender(base, GetGender())
+		);
+
+		auto race_size = GetRaceGenderDefaultHeight(
+			base,
+			gender_id
+		);
+
+		if (base != RACE_ELEMENTAL_75) {
+			if (max > 0) {
+				if (limit == 0) {
+					SendIllusionPacket(
+						base,
+						gender_id
+					);
+				}
+				else {
+					if (max != 3) {
+						SendIllusionPacket(
+							base,
+							gender_id,
+							limit,
+							max
+						);
+					}
+					else {
+						SendIllusionPacket(
+							base,
+							gender_id,
+							limit,
+							limit
+						);
+					}
+				}
+			}
+			else {
+				SendIllusionPacket(
+					base,
+					gender_id,
+					limit,
+					max
+				);
+			}
+
+		}
+		else {
+			SendIllusionPacket(
+				base,
+				gender_id,
+				limit
+			);
+		}
+		SendAppearancePacket(AT_Size, race_size);
+	}
+
+	for (int x = EQ::textures::textureBegin; x <= EQ::textures::LastTintableTexture; x++) {
+		SendWearChange(x);
+	}
+
+	if (caster == this && spell_id != SPELL_MINOR_ILLUSION && spell_id != SPELL_ILLUSION_TREE &&
+		(spellbonuses.IllusionPersistence || aabonuses.IllusionPersistence || itembonuses.IllusionPersistence)) {
+		buffs[buffslot].persistant_buff = 1;
+	}
+	else {
+		buffs[buffslot].persistant_buff = 0;
+	}
 }

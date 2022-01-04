@@ -433,6 +433,7 @@ public:
 	void BeamDirectional(uint16 spell_id, int16 resist_adjust);
 	void ConeDirectional(uint16 spell_id, int16 resist_adjust);
 	void TryOnSpellFinished(Mob *caster, Mob *target, uint16 spell_id);
+	void ApplySpellEffectIllusion(int32 spell_id, Mob* caster, int buffslot, int base, int limit, int max);
 	uint32 SpellRecastMod(uint32 spell_id, uint32 base_recast);
 
 	//Buff
