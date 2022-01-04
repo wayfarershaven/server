@@ -2948,6 +2948,12 @@ int Mob::CheckStackConflict(uint16 spellid1, int caster_level1, uint16 spellid2,
 	}
 
 	if (spellid1 == spellid2 ) {
+
+		if (spellid1 == SPELL_EYE_OF_ZOMM && spellid2 == SPELL_EYE_OF_ZOMM) { //only the original Eye of Zomm spell will not take hold if affect is already on you, other versions client fades the buff as soon as cast.
+			MessageString(Chat::Red, SPELL_NO_HOLD);
+			return -1;
+		}
+
 		if (!IsStackableDot(spellid1) && !(spellid1 == 2751)) { // Manaburn cannot land on a target with the debuff
 			if (caster_level1 > caster_level2) { // cur buff higher level than new
 				if (IsEffectInSpell(spellid1, SE_ImprovedTaunt)) {
