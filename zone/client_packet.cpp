@@ -14231,6 +14231,10 @@ void Client::Handle_OP_Taunt(const EQApplicationPacket *app)
 		return;
 	}
 
+	if (!HasSkill(EQ::skills::SkillTaunt)) {
+		return;
+	}
+
 	if (!p_timers.Expired(&database, pTimerTaunt, false)) {
 		Message(Chat::Red, "Ability recovery time not yet met.");
 		return;
