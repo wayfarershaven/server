@@ -3978,8 +3978,9 @@ void Client::Handle_OP_BuffRemoveRequest(const EQApplicationPacket *app)
 
 	uint16 SpellID = m->GetSpellIDFromSlot(brrs->SlotID);
 
-	if (SpellID && IsBeneficialSpell(SpellID) && !spells[SpellID].no_remove)
+	if (SpellID && (IsBeneficialSpell(SpellID) || IsEffectInSpell(SpellID, SE_BindSight)) && !spells[SpellID].no_remove) {
 		m->BuffFadeBySlot(brrs->SlotID, true);
+	}
 }
 
 void Client::Handle_OP_Bug(const EQApplicationPacket *app)
