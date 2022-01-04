@@ -739,6 +739,8 @@ void Client::CompleteConnect()
 
 	entity_list.SendUntargetable(this);
 
+	entity_list.SendAppearanceEffects(this);
+
 	entity_list.SendTraders(this);
 
 	Mob *pet = GetPet();
