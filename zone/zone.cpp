@@ -2183,6 +2183,11 @@ void Zone::weatherSend(Client *client)
 }
 
 bool Zone::HasGraveyard() {
+
+	if(this == nullptr) {
+		return false;
+	}
+
 	bool Result = false;
 
 	if(graveyard_zoneid() > 0)
