@@ -6183,7 +6183,8 @@ XS(XS__SetContentFlag)
 
 	std::string flag_name = (std::string) SvPV_nolen(ST(0));
 	bool        enabled   = (int) SvIV(ST(1)) != 0;
-	ZoneStore::SetContentFlag(flag_name, enabled);
+	
+	content_service.SetContentFlag(flag_name, enabled);
 	XSRETURN_EMPTY;
 }
 

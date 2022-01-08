@@ -1435,8 +1435,27 @@ void Mob::CastedSpellFinished(uint16 spell_id, uint32 target_id, CastingSlot slo
 
 	TryTriggerOnCastFocusEffect(focusTriggerOnCast, spell_id);
 
-	if(DeleteChargeFromSlot >= 0)
+	if(DeleteChargeFromSlot >= 0) {
 		CastToClient()->DeleteItemInInventory(DeleteChargeFromSlot, 1, true);
+	}
+
+	if (IsClient() && IsEffectInSpell(spell_id, SE_BindSight)) {
+		for (int i = 0; i < GetMaxTotalSlots(); i++) {
+			if (buffs[i].spellid == spell_id) {
+				CastToClient()->SendBuffNumHitPacket(buffs[i], i);//its hack, it works.
+			}
+		}
+	}
+	
+	//Check if buffs has numhits, then resend packet so it displays the hit count.
+	if (IsClient() && (spells[spell_id].buffduration > 0 || spells[spell_id].short_buff_box)) {
+		for (int i = 0; i < GetMaxTotalSlots(); i++) {
+			if (buffs[i].spellid == spell_id && buffs[i].numhits > 0) {
+				CastToClient()->SendBuffNumHitPacket(buffs[i], i);
+				break;
+			}
+		}
+	}
 
 	//
 	// at this point the spell has successfully been cast
@@ -2826,7 +2845,7 @@ int Mob::CalcBuffDuration(Mob *caster, Mob *target, uint16 spell_id, int32 caste
 	int res = CalcBuffDuration_formula(castlevel, formula, duration);
 	if (caster == target && (target->aabonuses.IllusionPersistence || target->spellbonuses.IllusionPersistence ||
 				 target->itembonuses.IllusionPersistence) &&
-	    spell_id != 287 && spell_id != 601 && IsEffectInSpell(spell_id, SE_Illusion))
+	    spell_id != SPELL_MINOR_ILLUSION && spell_id != SPELL_ILLUSION_TREE && IsEffectInSpell(spell_id, SE_Illusion))
 		res = 10000; // ~16h override
 
 	res = mod_buff_duration(res, caster, target, spell_id);
@@ -2929,6 +2948,12 @@ int Mob::CheckStackConflict(uint16 spellid1, int caster_level1, uint16 spellid2,
 	}
 
 	if (spellid1 == spellid2 ) {
+
+		if (spellid1 == SPELL_EYE_OF_ZOMM && spellid2 == SPELL_EYE_OF_ZOMM) { //only the original Eye of Zomm spell will not take hold if affect is already on you, other versions client fades the buff as soon as cast.
+			MessageString(Chat::Red, SPELL_NO_HOLD);
+			return -1;
+		}
+
 		if (!IsStackableDot(spellid1) && !(spellid1 == 2751)) { // Manaburn cannot land on a target with the debuff
 			if (caster_level1 > caster_level2) { // cur buff higher level than new
 				if (IsEffectInSpell(spellid1, SE_ImprovedTaunt)) {
@@ -3609,7 +3634,7 @@ bool Mob::SpellOnTarget(uint16 spell_id, Mob *spelltar, bool reflect, bool use_r
 	}
 
 	// select target
-	if(IsBindSightSpell(spell_id))	// Bind Sight line of spells
+	if (IsEffectInSpell(spell_id, SE_BindSight))
 	{
 		action->target = GetID();
 	}

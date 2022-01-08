@@ -191,8 +191,8 @@ void MapOpcodes()
 	ConnectedOpcodes[OP_Disarm] = &Client::Handle_OP_Disarm;
 	ConnectedOpcodes[OP_DisarmTraps] = &Client::Handle_OP_DisarmTraps;
 	ConnectedOpcodes[OP_DoGroupLeadershipAbility] = &Client::Handle_OP_DoGroupLeadershipAbility;
-	ConnectedOpcodes[OP_DuelResponse] = &Client::Handle_OP_DuelResponse;
-	ConnectedOpcodes[OP_DuelResponse2] = &Client::Handle_OP_DuelResponse2;
+	ConnectedOpcodes[OP_DuelDecline] = &Client::Handle_OP_DuelDecline;
+	ConnectedOpcodes[OP_DuelAccept] = &Client::Handle_OP_DuelAccept;
 	ConnectedOpcodes[OP_DumpName] = &Client::Handle_OP_DumpName;
 	ConnectedOpcodes[OP_Dye] = &Client::Handle_OP_Dye;
 	ConnectedOpcodes[OP_DzAddPlayer] = &Client::Handle_OP_DzAddPlayer;
@@ -652,55 +652,10 @@ void Client::CompleteConnect()
 
 		for (int x1 = 0; x1 < EFFECT_COUNT; x1++) {
 			switch (spell.effectid[x1]) {
-			case SE_IllusionCopy:
 			case SE_Illusion: {
-				if (spell.base[x1] == -1) {
-					if (gender == 1)
-						gender = 0;
-					else if (gender == 0)
-						gender = 1;
-					SendIllusionPacket(GetRace(), gender, 0xFF, 0xFF);
-				}
-				else if (spell.base[x1] == -2) // WTF IS THIS
-				{
-					if (GetRace() == 128 || GetRace() == 130 || GetRace() <= 12)
-						SendIllusionPacket(GetRace(), GetGender(), spell.base2[x1], spell.max[x1]);
-				}
-				else if (spell.max[x1] > 0)
-				{
-					SendIllusionPacket(spell.base[x1], 0xFF, spell.base2[x1], spell.max[x1]);
-				}
-				else
-				{
-					SendIllusionPacket(spell.base[x1], 0xFF, 0xFF, 0xFF);
-				}
-				switch (spell.base[x1]) {
-				case OGRE:
-					SendAppearancePacket(AT_Size, 9);
-					break;
-				case TROLL:
-					SendAppearancePacket(AT_Size, 8);
-					break;
-				case VAHSHIR:
-				case BARBARIAN:
-					SendAppearancePacket(AT_Size, 7);
-					break;
-				case HALF_ELF:
-				case WOOD_ELF:
-				case DARK_ELF:
-				case FROGLOK:
-					SendAppearancePacket(AT_Size, 5);
-					break;
-				case DWARF:
-					SendAppearancePacket(AT_Size, 4);
-					break;
-				case HALFLING:
-				case GNOME:
-					SendAppearancePacket(AT_Size, 3);
-					break;
-				default:
-					SendAppearancePacket(AT_Size, 6);
-					break;
+				if (buffs[j1].persistant_buff) {
+					Mob *caster = entity_list.GetMobID(buffs[j1].casterid);
+					ApplySpellEffectIllusion(spell.id, caster, j1, spell.base[x1], spell.base2[x1], spell.max[x1]);
 				}
 				break;
 			}
@@ -783,6 +738,8 @@ void Client::CompleteConnect()
 	entity_list.SendNimbusEffects(this);
 
 	entity_list.SendUntargetable(this);
+
+	entity_list.SendAppearanceEffects(this);
 
 	entity_list.SendTraders(this);
 
@@ -3978,8 +3935,9 @@ void Client::Handle_OP_BuffRemoveRequest(const EQApplicationPacket *app)
 
 	uint16 SpellID = m->GetSpellIDFromSlot(brrs->SlotID);
 
-	if (SpellID && IsBeneficialSpell(SpellID) && !spells[SpellID].no_remove)
+	if (SpellID && (IsBeneficialSpell(SpellID) || IsEffectInSpell(SpellID, SE_BindSight)) && !spells[SpellID].no_remove) {
 		m->BuffFadeBySlot(brrs->SlotID, true);
+	}
 }
 
 void Client::Handle_OP_Bug(const EQApplicationPacket *app)
@@ -5528,8 +5486,11 @@ void Client::Handle_OP_DisarmTraps(const EQApplicationPacket *app)
 			}
 			else
 			{
+				int fail_rate = 25;
+				int trap_circumvention = spellbonuses.TrapCircumvention + itembonuses.TrapCircumvention + aabonuses.TrapCircumvention;
+				fail_rate -= fail_rate * trap_circumvention / 100;
 				MessageString(Chat::Skills, FAIL_DISARM_DETECTED_TRAP);
-				if (zone->random.Int(0, 99) < 25) {
+				if (zone->random.Int(0, 99) < fail_rate) {
 					trap->Trigger(this);
 				}
 			}
@@ -5610,37 +5571,57 @@ void Client::Handle_OP_DoGroupLeadershipAbility(const EQApplicationPacket *app)
 	}
 }
 
-void Client::Handle_OP_DuelResponse(const EQApplicationPacket *app)
+void Client::Handle_OP_DuelDecline(const EQApplicationPacket *app)
 {
-	if (app->size != sizeof(DuelResponse_Struct))
+	if (app->size != sizeof(DuelResponse_Struct)) {
 		return;
+	}
+
 	DuelResponse_Struct* ds = (DuelResponse_Struct*)app->pBuffer;
+	if (!ds->target_id || !ds->entity_id) {
+		return;
+	}
 	Entity* entity = entity_list.GetID(ds->target_id);
 	Entity* initiator = entity_list.GetID(ds->entity_id);
-	if (!entity->IsClient() || !initiator->IsClient())
+	if (!entity->IsClient() || !initiator->IsClient()) {
 		return;
+	}
 
 	entity->CastToClient()->SetDuelTarget(0);
 	entity->CastToClient()->SetDueling(false);
 	initiator->CastToClient()->SetDuelTarget(0);
 	initiator->CastToClient()->SetDueling(false);
-	if (GetID() == initiator->GetID())
+	if (GetID() == initiator->GetID()) {
 		entity->CastToClient()->MessageString(Chat::NPCQuestSay, DUEL_DECLINE, initiator->GetName());
-	else
+	} else {
 		initiator->CastToClient()->MessageString(Chat::NPCQuestSay, DUEL_DECLINE, entity->GetName());
+	}
 	return;
 }
 
-void Client::Handle_OP_DuelResponse2(const EQApplicationPacket *app)
+void Client::Handle_OP_DuelAccept(const EQApplicationPacket *app)
 {
-	if (app->size != sizeof(Duel_Struct))
+	if (app->size != sizeof(Duel_Struct)) {
 		return;
+	}
 
 	Duel_Struct* ds = (Duel_Struct*)app->pBuffer;
+	if (!ds->duel_initiator || !ds->duel_target) {
+		return;
+	}
+
 	Entity* entity = entity_list.GetID(ds->duel_target);
 	Entity* initiator = entity_list.GetID(ds->duel_initiator);
 
-	if (entity && initiator && entity == this && initiator->IsClient()) {
+	if (!entity || !initiator) {
+		return;
+	}
+
+	if (GetDuelTarget() != ds->duel_initiator || IsDueling()) {
+		return;
+	}
+
+	if (entity == this && initiator->IsClient()) {
 		auto outapp = new EQApplicationPacket(OP_RequestDuel, sizeof(Duel_Struct));
 		Duel_Struct* ds2 = (Duel_Struct*)outapp->pBuffer;
 
@@ -5648,7 +5629,7 @@ void Client::Handle_OP_DuelResponse2(const EQApplicationPacket *app)
 		ds2->duel_target = entity->GetID();
 		initiator->CastToClient()->QueuePacket(outapp);
 
-		outapp->SetOpcode(OP_DuelResponse2);
+		outapp->SetOpcode(OP_DuelAccept);
 		ds2->duel_initiator = initiator->GetID();
 
 		initiator->CastToClient()->QueuePacket(outapp);
@@ -5659,10 +5640,13 @@ void Client::Handle_OP_DuelResponse2(const EQApplicationPacket *app)
 		SetDuelTarget(ds->duel_initiator);
 		safe_delete(outapp);
 
-		if (IsCasting())
+		if (IsCasting()) {
 			InterruptSpell();
-		if (initiator->CastToClient()->IsCasting())
+		}
+
+		if (initiator->CastToClient()->IsCasting()) {
 			initiator->CastToClient()->InterruptSpell();
+		}
 	}
 	return;
 }
@@ -11154,48 +11138,34 @@ void Client::Handle_OP_PickPocket(const EQApplicationPacket *app)
 		return;
 
 	p_timers.Start(pTimerBeggingPickPocket, 8);
+	auto outapp = new EQApplicationPacket(OP_PickPocket, sizeof(sPickPocket_Struct));
+	sPickPocket_Struct* pick_out = (sPickPocket_Struct*)outapp->pBuffer;
+	pick_out->coin = 0;
+	pick_out->from = victim->GetID();
+	pick_out->to = GetID();
+	pick_out->myskill = GetSkill(EQ::skills::SkillPickPockets);
+	pick_out->type = 0;
+	//if we do not send this packet the client will lock up and require the player to relog.
 	if (victim == this) {
 		Message(0, "You catch yourself red-handed.");
-		auto outapp = new EQApplicationPacket(OP_PickPocket, sizeof(sPickPocket_Struct));
-		sPickPocket_Struct* pick_out = (sPickPocket_Struct*)outapp->pBuffer;
-		pick_out->coin = 0;
-		pick_out->from = victim->GetID();
-		pick_out->to = GetID();
-		pick_out->myskill = GetSkill(EQ::skills::SkillPickPockets);
-		pick_out->type = 0;
-		//if we do not send this packet the client will lock up and require the player to relog.
-		QueuePacket(outapp);
-		safe_delete(outapp);
 	}
 	else if (victim->GetOwnerID()) {
 		Message(0, "You cannot steal from pets!");
-		auto outapp = new EQApplicationPacket(OP_PickPocket, sizeof(sPickPocket_Struct));
-		sPickPocket_Struct* pick_out = (sPickPocket_Struct*)outapp->pBuffer;
-		pick_out->coin = 0;
-		pick_out->from = victim->GetID();
-		pick_out->to = GetID();
-		pick_out->myskill = GetSkill(EQ::skills::SkillPickPockets);
-		pick_out->type = 0;
-		//if we do not send this packet the client will lock up and require the player to relog.
-		QueuePacket(outapp);
-		safe_delete(outapp);
+	}
+	else if (Distance(GetPosition(), victim->GetPosition()) > 20) {
+		Message(Chat::Red, "Attempt to pickpocket out of range detected.");
+		database.SetMQDetectionFlag(this->AccountName(), this->GetName(), "OP_PickPocket was sent from outside combat range.", zone->GetShortName());
 	}
 	else if (victim->IsNPC()) {
+		safe_delete(outapp);
 		victim->CastToNPC()->PickPocket(this);
+		return;
 	}
 	else {
 		Message(0, "Stealing from clients not yet supported.");
-		auto outapp = new EQApplicationPacket(OP_PickPocket, sizeof(sPickPocket_Struct));
-		sPickPocket_Struct* pick_out = (sPickPocket_Struct*)outapp->pBuffer;
-		pick_out->coin = 0;
-		pick_out->from = victim->GetID();
-		pick_out->to = GetID();
-		pick_out->myskill = GetSkill(EQ::skills::SkillPickPockets);
-		pick_out->type = 0;
-		//if we do not send this packet the client will lock up and require the player to relog.
-		QueuePacket(outapp);
-		safe_delete(outapp);
 	}
+	QueuePacket(outapp);
+	safe_delete(outapp);
 }
 
 void Client::Handle_OP_PopupResponse(const EQApplicationPacket *app)
@@ -12563,34 +12533,52 @@ void Client::Handle_OP_Report(const EQApplicationPacket *app)
 
 void Client::Handle_OP_RequestDuel(const EQApplicationPacket *app)
 {
-	if (app->size != sizeof(Duel_Struct))
+	if (app->size != sizeof(Duel_Struct)) {
 		return;
+	}
 
 	EQApplicationPacket* outapp = app->Copy();
 	Duel_Struct* ds = (Duel_Struct*)outapp->pBuffer;
+	if (!ds->duel_initiator || !ds->duel_target) {
+		return;
+	}
+
 	uint32 duel = ds->duel_initiator;
 	ds->duel_initiator = ds->duel_target;
 	ds->duel_target = duel;
 	Entity* entity = entity_list.GetID(ds->duel_target);
-	if (GetID() != ds->duel_target && entity->IsClient() && (entity->CastToClient()->IsDueling() && entity->CastToClient()->GetDuelTarget() != 0)) {
+	if (
+		GetID() != ds->duel_target &&
+		entity->IsClient() &&
+		entity->CastToClient()->IsDueling() &&
+		entity->CastToClient()->GetDuelTarget()
+	) {
 		MessageString(Chat::NPCQuestSay, DUEL_CONSIDERING, entity->GetName());
 		return;
 	}
+
 	if (IsDueling()) {
 		MessageString(Chat::NPCQuestSay, DUEL_INPROGRESS);
 		return;
 	}
 
-	if (GetID() != ds->duel_target && entity->IsClient() && GetDuelTarget() == 0 && !IsDueling() && !entity->CastToClient()->IsDueling() && entity->CastToClient()->GetDuelTarget() == 0) {
+	if (
+		GetID() != ds->duel_target &&
+		entity->IsClient() &&
+		!GetDuelTarget() &&
+		!IsDueling() &&
+		!entity->CastToClient()->IsDueling() &&
+		!entity->CastToClient()->GetDuelTarget()
+	) {
 		SetDuelTarget(ds->duel_target);
 		entity->CastToClient()->SetDuelTarget(GetID());
 		ds->duel_target = ds->duel_initiator;
 		entity->CastToClient()->FastQueuePacket(&outapp);
 		entity->CastToClient()->SetDueling(false);
 		SetDueling(false);
-	}
-	else
+	} else {
 		safe_delete(outapp);
+	}
 	return;
 }
 
@@ -14226,6 +14214,10 @@ void Client::Handle_OP_Taunt(const EQApplicationPacket *app)
 {
 	if (app->size != sizeof(ClientTarget_Struct)) {
 		std::cout << "Wrong size on OP_Taunt. Got: " << app->size << ", Expected: " << sizeof(ClientTarget_Struct) << std::endl;
+		return;
+	}
+
+	if (!HasSkill(EQ::skills::SkillTaunt)) {
 		return;
 	}
 

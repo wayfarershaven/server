@@ -157,6 +157,11 @@
 #define SPELL_REVIVAL_SICKNESS 13087
 #define SPELL_PACT_OF_HATE_RECOURSE 40375
 #define SPELL_INCENDIARY_OOZE_BUFF 32513
+#define SPELL_EYE_OF_ZOMM 323
+#define SPELL_MINOR_ILLUSION 287
+#define SPELL_ILLUSION_TREE 601
+#define SPELL_ILLUSION_FEMALE 1731
+#define SPELL_ILLUSION_MALE 1732
 
 //spellgroup ids
 #define SPELLGROUP_FRENZIED_BURNOUT 2754
@@ -178,6 +183,7 @@
 #define MAX_SKILL_PROCS 4 //Number of spells to check skill procs from. (This is arbitrary) [Single spell can have multiple proc checks]
 #define MAX_SYMPATHETIC_PROCS 10 // Number of sympathetic procs a client can have (This is arbitrary)
 
+#define MAX_APPEARANCE_EFFECTS 20 //Up to 20 Appearance Effects can be saved to a mobs appearance effect array, these will be sent to other clients when they enter a zone (This is arbitrary)
 
 const int Z_AGGRO=10;
 
@@ -753,7 +759,7 @@ typedef enum {
 //#define SE_CorpseBomb					70	// not used
 #define SE_NecPet						71	// implemented
 //#define SE_PreserveCorpse				72	// not used
-#define SE_BindSight					73	// implemented
+#define SE_BindSight					73	// implemented, @Vision, see through the eyes of your target, click off buff to end effect, base: 1, limit: none, max: none
 #define SE_FeignDeath					74	// implemented
 #define SE_VoiceGraft					75	// implemented
 #define SE_Sentinel						76	// *not implemented?(just seems to send a message)
@@ -885,7 +891,7 @@ typedef enum {
 #define SE_IllusionOther				202	// implemented - Project Illusion
 #define SE_MassGroupBuff				203	// implemented
 #define SE_GroupFearImmunity			204	// implemented - (Does not use bonus)
-#define SE_Rampage						205	// implemented
+#define SE_Rampage						205	// implemented, @Combat Instant, Perform a primary slot combat rounds on all creatures within a 40 foot radius, base: number of attack rounds, limit: max entities hit per round, max: none, Note: AE range is 40 by default. Custom: Set field 'aoe_range' to override default. Adding additional attacks and hit count limit.
 #define SE_AETaunt						206	// implemented
 #define SE_FleshToBone					207	// implemented
 //#define SE_PurgePoison				208	// not used
@@ -925,7 +931,7 @@ typedef enum {
 #define SE_IncreaseChanceMemwipe		242	// implemented - increases the chance to wipe hate with memory blurr
 #define SE_CharmBreakChance				243	// implemented - Total Domination
 #define	SE_RootBreakChance				244	// implemented[AA] reduce the chance that your root will break.
-#define SE_TrapCircumvention			245	// *not implemented[AA] - decreases the chance that you will set off a trap when opening a chest
+#define SE_TrapCircumvention			245	// implemented, @Traps, decreases the chance that you will set off a trap when opening a chest or other similar container by percentage, base: chance modifer, limit: none, max: none
 #define SE_SetBreathLevel				246 // *not implemented as bonus
 #define SE_RaiseSkillCap				247	// implemented[AA] - adds skill over the skill cap.
 #define SE_SecondaryForte				248 // not implemented as bonus(gives you a 2nd specialize skill that can go past 50 to 100)

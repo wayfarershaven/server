@@ -555,6 +555,7 @@ struct StatBonuses {
 	bool	ZoneSuspendMinion;					// base 1 allows suspended minions to zone
 
 	// AAs
+	int32	TrapCircumvention;					// reduce chance to trigger a trap.
 	uint16  SecondaryForte;						// allow a second skill to be specialized with a cap of this value.
 	int32	ShieldDuration;						// extends duration of /shield ability
 	int32	ExtendedShielding;					// extends range of /shield ability

@@ -169,6 +169,7 @@ int command_init(void)
 		command_add("aggrozone", "[aggro] - Aggro every mob in the zone with X aggro. Default is 0. Not recommend if you're not invulnerable.", 100, command_aggrozone) ||
 		command_add("ai", "[factionid/spellslist/con/guard/roambox/stop/start] - Modify AI on NPC target", 100, command_ai) ||
 		command_add("appearance", "[type] [value] - Send an appearance packet for you or your target", 150, command_appearance) ||
+		command_add("appearanceeffects", "- [view] [set] [remove] appearance effects.", 150, command_appearanceeffects) ||
 		command_add("apply_shared_memory", "[shared_memory_name] - Tells every zone and world to apply a specific shared memory segment by name.", 250, command_apply_shared_memory) ||
 		command_add("attack", "[targetname] - Make your NPC target attack targetname", 150, command_attack) ||
 		command_add("augmentitem",  "Force augments an item. Must have the augment item window open.",  250, command_augmentitem) ||
@@ -353,6 +354,7 @@ int command_init(void)
 		command_add("reimburse", "- Adds items or plat to the Reimbursement table for a character.",  100, command_reimburse) ||
 		command_add("reloadaa", "Reloads AA data", 200, command_reloadaa) ||
 		command_add("reloadallrules", "Executes a reload of all rules.", 80, command_reloadallrules) ||
+		command_add("reloadcontentflags", "Executes a reload of all expansion and content flags", 90, command_reloadcontentflags) ||
 		command_add("reloademote", "Reloads NPC Emotes", 80, command_reloademote) ||
 		command_add("reloadlevelmods", nullptr, 255, command_reloadlevelmods) ||
 		command_add("reloadmerchants", nullptr, 255, command_reloadmerchants) ||
@@ -3909,6 +3911,48 @@ void command_appearance(Client *c, const Seperator *sep)
 			t=c->GetTarget();
 		t->SendAppearancePacket(atoi(sep->arg[1]), atoi(sep->arg[2]));
 		c->Message(Chat::White, "Sending appearance packet: target=%s, type=%s, value=%s",  t->GetName(), sep->arg[1], sep->arg[2]);
+	}
+}
+
+void command_appearanceeffects(Client *c, const Seperator *sep)
+{
+	if (sep->arg[1][0] == '\0' || !strcasecmp(sep->arg[1], "help")) {
+		c->Message(Chat::White, "Syntax: #appearanceeffects [subcommand].");
+		c->Message(Chat::White, "[view] Display all appearance effects saved to your target. #appearanceffects view");
+		c->Message(Chat::White, "[set] Set an appearance effects saved to your target. #appearanceffects set [app_effectid] [slotid]");
+		c->Message(Chat::White, "[remove] Remove all appearance effects saved to your target. #appearanceffects remove");
+	}
+	if (!strcasecmp(sep->arg[1], "view")) {
+		Mob* m_target = c->GetTarget();
+		if (m_target) {
+			m_target->GetAppearenceEffects();
+		}
+		return;
+	}
+
+
+	if (!strcasecmp(sep->arg[1], "set")) {
+		int32 app_effectid = atof(sep->arg[2]);
+		int32 slot = atoi(sep->arg[3]);
+
+		Mob* m_target = c->GetTarget();
+		if (m_target) {
+			m_target->SendAppearanceEffect(app_effectid, 0, 0, 0, 0, nullptr, slot, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+			c->Message(Chat::White, "Appearance Effect ID %i for slot %i has been set.", app_effectid, slot);
+		}
+	}
+
+	if (!strcasecmp(sep->arg[1], "remove")) {
+		Mob* m_target = c->GetTarget();
+		if (m_target) {
+			m_target->SendIllusionPacket(m_target->GetRace(), m_target->GetGender(), m_target->GetTexture(), m_target->GetHelmTexture(),
+				m_target->GetHairColor(), m_target->GetBeardColor(), m_target->GetEyeColor1(), m_target->GetEyeColor2(),
+				m_target->GetHairStyle(), m_target->GetLuclinFace(), m_target->GetBeard(), 0xFF,
+				m_target->GetDrakkinHeritage(), m_target->GetDrakkinTattoo(), m_target->GetDrakkinDetails(), m_target->GetSize(), false);
+			m_target->ClearAppearenceEffects();
+			c->Message(Chat::White, "All Appearance Effects have been removed.");
+		}
+		return;
 	}
 }
 
@@ -13334,6 +13378,16 @@ void command_reloadallrules(Client *c, const Seperator *sep)
 		c->Message(Chat::Red, "Successfully sent the packet to world to reload rules globally. (including world)");
 		safe_delete(pack);
 
+	}
+}
+
+void command_reloadcontentflags(Client *c, const Seperator *sep)
+{
+	if (c) {
+		auto pack = new ServerPacket(ServerOP_ReloadContentFlags, 0);
+		worldserver.SendPacket(pack);
+		c->Message(Chat::Red, "Successfully sent the packet to world to reload content flags globally.");
+		safe_delete(pack);
 	}
 }
 

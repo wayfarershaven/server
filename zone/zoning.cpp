@@ -914,8 +914,9 @@ void Client::GoToSafeCoords(uint16 zone_id, uint16 instance_id) {
 
 void Mob::Gate(uint8 bind_number) {
 	GoToBind(bind_number);
-	if (this->GetHPRatio() <= 20) {
-		SetHP(int(this->GetMaxHP() * 0.25));
+	if (RuleB(NPC, NPCHealOnGate) && this->IsNPC() && this->GetHPRatio() <= RuleR(NPC, NPCHealOnGateAmount)) {
+		auto HealAmount = (RuleR(NPC, NPCHealOnGateAmount) / 100);
+		SetHP(int(this->GetMaxHP() * HealAmount));
 	}
 }
 

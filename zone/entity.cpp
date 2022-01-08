@@ -689,6 +689,15 @@ void EntityList::AddNPC(NPC *npc, bool SendSpawnPacket, bool dontqueue)
 {
 	npc->SetID(GetFreeID());
 
+	//If this is not set here we will despawn pets from new AC changes
+	auto owner_id = npc->GetOwnerID();
+	if(owner_id) {
+		auto owner = entity_list.GetMob(owner_id);
+		if (owner) {
+			owner->SetPetID(npc->GetID());
+		}
+	}
+
 	parse->EventNPC(EVENT_SPAWN, npc, nullptr, "", 0);
 
 	uint16 emoteid = npc->GetEmoteID();
@@ -4532,6 +4541,27 @@ void EntityList::SendUntargetable(Client *c)
 			}
 			if (!cur->IsTargetable())
 				cur->SendTargetable(false, c);
+		}
+		++it;
+	}
+}
+
+void EntityList::SendAppearanceEffects(Client *c)
+{
+	if (!c) {
+		return;
+	}
+
+	auto it = mob_list.begin();
+	while (it != mob_list.end()) {
+		Mob *cur = it->second;
+
+		if (cur) {
+			if (cur == c) {
+				++it;
+				continue;
+			}
+			cur->SendSavedAppearenceEffects(c);
 		}
 		++it;
 	}

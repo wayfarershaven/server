@@ -1260,10 +1260,8 @@ void Zone::ReloadStaticData() {
 		);
 	} // if that fails, try the file name, then load defaults
 
-	content_service.SetExpansionContext();
-
-	ZoneStore::LoadContentFlags();
-
+	content_service.SetExpansionContext()->ReloadContentFlags();
+	
 	LogInfo("Zone Static Data Reloaded");
 }
 
@@ -2185,6 +2183,11 @@ void Zone::weatherSend(Client *client)
 }
 
 bool Zone::HasGraveyard() {
+
+	if(this == nullptr) {
+		return false;
+	}
+
 	bool Result = false;
 
 	if(graveyard_zoneid() > 0)

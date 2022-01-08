@@ -742,9 +742,9 @@ public:
 
 	void GMKill();
 	inline bool IsMedding() const {return medding;}
-	inline uint16 GetDuelTarget() const { return duel_target; }
+	inline uint32 GetDuelTarget() const { return duel_target; }
 	inline bool IsDueling() const { return duelaccepted; }
-	inline void SetDuelTarget(uint16 set_id) { duel_target=set_id; }
+	inline void SetDuelTarget(uint32 set_id) { duel_target = set_id; }
 	inline void SetDueling(bool duel) { duelaccepted = duel; }
 	// use this one instead
 	void MemSpell(uint16 spell_id, int slot, bool update_client = true);
@@ -796,6 +796,7 @@ public:
 	void SummonHorse(uint16 spell_id);
 	void SetHorseId(uint16 horseid_in);
 	inline void SetControlledMobId(uint16 mob_id_in) { controlled_mob_id = mob_id_in; }
+	uint16 GetControlledMobId() const{ return controlled_mob_id; }
 	uint16 GetHorseId() const { return horseId; }
 
 	void NPCSpawn(NPC *target_npc, const char *identifier, uint32 extra = 0);

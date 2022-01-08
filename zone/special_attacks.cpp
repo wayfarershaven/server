@@ -465,10 +465,16 @@ void Client::OPCombatAbility(const CombatAbility_Struct *ca_atk)
 				}
 				wuchance /= 4;
 			}
-			// They didn't add a string ID for this.
-			std::string msg = StringFormat("The spirit of Master Wu fills you!  You gain %d additional attack(s).", extra);
-			// live uses 400 here -- not sure if it's the best for all clients though
-			SendColoredText(400, msg);
+			if (extra) {
+				SendColoredText(
+					400,
+					fmt::format(
+						"The spirit of Master Wu fills you! You gain {} additional attack{}.",
+						extra,
+						extra != 1 ? "s" : ""
+					)
+				);
+			}
 			auto classic = RuleB(Combat, ClassicMasterWu);
 			while (extra) {
 				MonkSpecialAttack(GetTarget(), (classic ? MonkSPA[zone->random.Int(0, 4)] : ca_atk->m_skill));
@@ -1650,6 +1656,8 @@ void NPC::DoClassAttacks(Mob *target) {
 	bool ca_time = classattack_timer.Check(false);
 	bool ka_time = knightattack_timer.Check(false);
 
+	const EQ::ItemData* boots = database.GetItem(equipment[EQ::invslot::slotFeet]);
+
 	//only check attack allowed if we are going to do something
 	if((taunt_time || ca_time || ka_time) && !IsAttackAllowed(target))
 		return;
@@ -1721,8 +1729,9 @@ void NPC::DoClassAttacks(Mob *target) {
 					DoAnim(animKick, 0, false);
 					int32 dmg = GetBaseSkillDamage(EQ::skills::SkillKick);
 
-					if (GetWeaponDamage(target, (const EQ::ItemData*)nullptr) <= 0)
+					if (GetWeaponDamage(target, boots) <= 0) {
 						dmg = DMG_INVULNERABLE;
+					}
 
 					reuse = (KickReuseTime + 3) * 1000;
 					DoSpecialAttackDamage(target, EQ::skills::SkillKick, dmg, GetMinDamage(), -1, reuse);
@@ -1771,8 +1780,9 @@ void NPC::DoClassAttacks(Mob *target) {
 				DoAnim(animKick, 0, false);
 				int32 dmg = GetBaseSkillDamage(EQ::skills::SkillKick);
 
-				if (GetWeaponDamage(target, (const EQ::ItemData*)nullptr) <= 0)
+				if (GetWeaponDamage(target, boots) <= 0) {
 					dmg = DMG_INVULNERABLE;
+				}
 
 				reuse = (KickReuseTime + 3) * 1000;
 				DoSpecialAttackDamage(target, EQ::skills::SkillKick, dmg, GetMinDamage(), -1, reuse);
@@ -2065,7 +2075,7 @@ void Mob::Taunt(NPC *who, bool always_succeed, int chance_bonus, bool FromSpell,
 
 		if (Success) {
 			if (hate_top && hate_top != this) {
-				int newhate = (who->GetNPCHate(hate_top) - who->GetNPCHate(this)) + 1 + bonus_hate;
+				int newhate = (who->GetNPCHate(hate_top) - who->GetNPCHate(this)) + RuleI(Combat, TauntOverAggro) + bonus_hate;
 				who->CastToNPC()->AddToHateList(this, newhate);
 				Success = true;
 			} else {

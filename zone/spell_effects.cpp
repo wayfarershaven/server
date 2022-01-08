@@ -513,8 +513,6 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 							if (HasPet()) {
 								if (GetPet()->IsCharmed()) {
 									GetPet()->BuffFadeByEffect(SE_Charm);
-								} else {
-									GetPet()->Depop();
 								}
 							}
 							CastToClient()->MovePC(zone->GetZoneID(), zone->GetInstanceID(), x, y, z, heading, 0,
@@ -1429,107 +1427,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 #ifdef SPELL_EFFECT_SPAM
 				snprintf(effect_desc, _EDLEN, "Illusion: race %d", effect_value);
 #endif
-				// Gender Illusions
-				if(spell.base[i] == -1) {
-					// Specific Gender Illusions
-					if(spell_id == 1732 || spell_id == 1731) {
-						int specific_gender = -1;
-						// Male
-						if(spell_id == 1732)
-							specific_gender = 0;
-						// Female
-						else if (spell_id == 1731)
-							specific_gender = 1;
-						if(specific_gender > -1) {
-							if(caster && caster->GetTarget()) {
-								SendIllusionPacket
-								(
-									caster->GetTarget()->GetBaseRace(),
-									specific_gender,
-									caster->GetTarget()->GetTexture()
-								);
-							}
-						}
-					}
-					/* Might need to re-enable this - TEST
-					// Change Gender Illusions
-					else {
-						if(caster && caster->GetTarget()) {
-							int opposite_gender = 0;
-							if(caster->GetTarget()->GetGender() == 0)
-								opposite_gender = 1;
-
-							SendIllusionPacket
-							(
-								caster->GetTarget()->GetRace(),
-								opposite_gender,
-								caster->GetTarget()->GetTexture()
-							);
-						}
-					}
-					*/
-				}
-				// Racial Illusions
-				else {
-					auto gender_id = (
-						spell.max[i] > 0 &&
-						(
-							spell.max[i] != 3 ||
-							spell.base2[i] == 0
-						) ?
-						(spell.max[i] - 1) :
-						Mob::GetDefaultGender(spell.base[i], GetGender())
-					);
-
-					auto race_size = GetRaceGenderDefaultHeight(
-						spell.base[i],
-						gender_id
-					);
-					
-					if (spell.max[i] > 0) {
-						if (spell.base2[i] == 0) {
-							SendIllusionPacket(
-								spell.base[i],
-								gender_id
-							);
-						} else {
-							if (spell.max[i] != 3) {
-								SendIllusionPacket(
-									spell.base[i],
-									gender_id,
-									spell.base2[i],
-									spell.max[i]
-								);
-							} else {
-								SendIllusionPacket(
-									spell.base[i],
-									gender_id,
-									spell.base2[i],
-									spell.base2[i]
-								);
-							}
-						}
-					} else {
-						SendIllusionPacket(
-							spell.base[i],
-							gender_id,
-							spell.base2[i],
-							spell.max[i]
-						);
-					}
-					SendAppearancePacket(AT_Size, race_size);					
-				}
-
-				for (int x = EQ::textures::textureBegin; x <= EQ::textures::LastTintableTexture; x++) {
-					SendWearChange(x);
-				}
-
-				if (caster == this && spell.id != 287 && spell.id != 601 &&
-				    (spellbonuses.IllusionPersistence || aabonuses.IllusionPersistence ||
-				     itembonuses.IllusionPersistence))
-					buffs[buffslot].persistant_buff = 1;
-				else
-					buffs[buffslot].persistant_buff = 0;
+				ApplySpellEffectIllusion(spell_id, caster, buffslot, spells[spell_id].base[i], spells[spell_id].base2[i], spells[spell_id].max[i]);
 				break;
 			}
 
@@ -1758,15 +1656,21 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 #ifdef SPELL_EFFECT_SPAM
 				snprintf(effect_desc, _EDLEN, "Model Size: %d%%", effect_value);
 #endif
-				// Only allow 2 size changes from Base Size
-				float modifyAmount = (static_cast<float>(effect_value) / 100.0f);
-				float maxModAmount = GetBaseSize() * modifyAmount * modifyAmount;
-				if ((GetSize() <= GetBaseSize() && GetSize() > maxModAmount) ||
-					(GetSize() >= GetBaseSize() && GetSize() < maxModAmount) ||
-					(GetSize() <= GetBaseSize() && maxModAmount > 1.0f) ||
-					(GetSize() >= GetBaseSize() && maxModAmount < 1.0f))
-				{
-					ChangeSize(GetSize() * modifyAmount);
+				if (effect_value && effect_value != 100) {
+					// Only allow 2 size changes from Base Size
+					float modifyAmount = (static_cast<float>(effect_value) / 100.0f);
+					float maxModAmount = GetBaseSize() * modifyAmount * modifyAmount;
+					if ((GetSize() <= GetBaseSize() && GetSize() > maxModAmount) ||
+						(GetSize() >= GetBaseSize() && GetSize() < maxModAmount) ||
+						(GetSize() <= GetBaseSize() && maxModAmount > 1.0f) ||
+						(GetSize() >= GetBaseSize() && maxModAmount < 1.0f))
+					{
+						ChangeSize(GetSize() * modifyAmount);
+					}
+				}
+				//Only applies to SPA 89, max value also likely does something, but unknown.
+				else if (effect == SE_ModelSize && spells[spell_id].base2[i]) {
+					ChangeSize(spells[spell_id].base2[i]);
 				}
 				break;
 			}
@@ -2328,8 +2232,16 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 #ifdef SPELL_EFFECT_SPAM
 				snprintf(effect_desc, _EDLEN, "Rampage");
 #endif
-				if(caster)
-					entity_list.AEAttack(caster, 30, EQ::invslot::slotPrimary, 0, true); // on live wars dont get a duration ramp, its a one shot deal
+				//defulat live range is 40, with 1 attack per round, no hit count limit
+				float rampage_range = 40;
+				if (spells[spell_id].aoerange) {
+					rampage_range = spells[spell_id].aoerange; //added for expanded functionality
+				}
+				int attack_count = spells[spell_id].base[i]; //added for expanded functionality
+				int hit_count = spells[spell_id].base2[i]; //added for expanded functionality
+				if (caster) {
+					entity_list.AEAttack(caster, rampage_range, EQ::invslot::slotPrimary, hit_count, true, attack_count); // on live wars dont get a duration ramp, its a one shot deal
+				}
 
 				break;
 			}
@@ -4465,10 +4377,17 @@ void Mob::BuffFadeBySlot(int slot, bool iRecalcBonuses)
 
 			case SE_EyeOfZomm:
 			{
-				if (IsClient())
-					{
-					CastToClient()->SetControlledMobId(0);
+				if (IsClient())	{
+					NPC* tmp_eye_of_zomm = entity_list.GetNPCByID(CastToClient()->GetControlledMobId());
+					//On live there is about a 6 second delay before it despawns once new one spawns. 
+					if (tmp_eye_of_zomm) {
+						tmp_eye_of_zomm->GetSwarmInfo()->duration->Disable();
+						tmp_eye_of_zomm->GetSwarmInfo()->duration->Start(6000);
+						tmp_eye_of_zomm->DisableSwarmTimer();
+						tmp_eye_of_zomm->StartSwarmTimer(6000);
 					}
+					CastToClient()->SetControlledMobId(0);
+				}
 			}
 			case SE_Weapon_Stance:
 			{
@@ -8588,4 +8507,121 @@ int Mob::GetFocusRandomEffectivenessValue(int focus_base, int focus_base2, bool 
 	}
 
 	return zone->random.Int(focus_base, focus_base2);
+}
+
+void Mob::ApplySpellEffectIllusion(int32 spell_id, Mob *caster, int buffslot, int base, int limit, int max)
+{
+	// Gender Illusions
+	if (base == -1) {
+		// Specific Gender Illusions
+		if (spell_id == SPELL_ILLUSION_MALE || spell_id == SPELL_ILLUSION_FEMALE) {
+			int specific_gender = -1;
+			// Male
+			if (spell_id == SPELL_ILLUSION_MALE)
+				specific_gender = 0;
+			// Female
+			else if (spell_id == SPELL_ILLUSION_FEMALE)
+				specific_gender = 1;
+			if (specific_gender > -1) {
+				if (caster && caster->GetTarget()) {
+					SendIllusionPacket
+					(
+						caster->GetTarget()->GetBaseRace(),
+						specific_gender,
+						caster->GetTarget()->GetTexture()
+					);
+				}
+			}
+		}
+		// Change Gender Illusions
+		else {
+			if (caster && caster->GetTarget()) {
+				int opposite_gender = 0;
+				if (caster->GetTarget()->GetGender() == 0)
+					opposite_gender = 1;
+
+				SendIllusionPacket
+				(
+					caster->GetTarget()->GetRace(),
+					opposite_gender,
+					caster->GetTarget()->GetTexture()
+				);
+			}
+		}
+	}
+	// Racial Illusions
+	else {
+				auto gender_id = (
+			max > 0 &&
+			(
+				max != 3 ||
+				limit == 0
+				) ?
+				(max - 1) :
+			Mob::GetDefaultGender(base, GetGender())
+		);
+
+		auto race_size = GetRaceGenderDefaultHeight(
+			base,
+			gender_id
+		);
+
+		if (base != RACE_ELEMENTAL_75) {
+			if (max > 0) {
+				if (limit == 0) {
+					SendIllusionPacket(
+						base,
+						gender_id
+					);
+				}
+				else {
+					if (max != 3) {
+						SendIllusionPacket(
+							base,
+							gender_id,
+							limit,
+							max
+						);
+					}
+					else {
+						SendIllusionPacket(
+							base,
+							gender_id,
+							limit,
+							limit
+						);
+					}
+				}
+			}
+			else {
+				SendIllusionPacket(
+					base,
+					gender_id,
+					limit,
+					max
+				);
+			}
+
+		}
+		else {
+			SendIllusionPacket(
+				base,
+				gender_id,
+				limit
+			);
+		}
+		SendAppearancePacket(AT_Size, race_size);
+	}
+
+	for (int x = EQ::textures::textureBegin; x <= EQ::textures::LastTintableTexture; x++) {
+		SendWearChange(x);
+	}
+
+	if (caster == this && spell_id != SPELL_MINOR_ILLUSION && spell_id != SPELL_ILLUSION_TREE &&
+		(spellbonuses.IllusionPersistence || aabonuses.IllusionPersistence || itembonuses.IllusionPersistence)) {
+		buffs[buffslot].persistant_buff = 1;
+	}
+	else {
+		buffs[buffslot].persistant_buff = 0;
+	}
 }

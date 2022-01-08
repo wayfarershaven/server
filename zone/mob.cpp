@@ -471,6 +471,11 @@ Mob::Mob(
 		Vulnerability_Mod[i] = 0;
 	}
 
+	for (int i = 0; i < MAX_APPEARANCE_EFFECTS; i++) {
+		appearance_effects_id[i] = 0;
+		appearance_effects_slot[i] = 0;
+	}
+
 	emoteid              = 0;
 	endur_upkeep         = false;
 	degenerating_effects = false;
@@ -1795,7 +1800,8 @@ void Mob::SendIllusionPacket(
 	uint32 in_drakkin_heritage,
 	uint32 in_drakkin_tattoo,
 	uint32 in_drakkin_details,
-	float in_size
+	float in_size,
+	bool send_appearance_effects
 )
 {
 	uint8  new_texture     = in_texture;
@@ -1904,6 +1910,10 @@ void Mob::SendIllusionPacket(
 
 	/* Refresh armor and tints after send illusion packet */
 	SendArmorAppearance();
+
+	if (send_appearance_effects) {
+		SendSavedAppearenceEffects(nullptr);
+	}
 
 	LogSpells(
 		"Illusion: Race [{}] Gender [{}] Texture [{}] HelmTexture [{}] HairColor [{}] BeardColor [{}] EyeColor1 [{}] EyeColor2 [{}] HairStyle [{}] Face [{}] DrakkinHeritage [{}] DrakkinTattoo [{}] DrakkinDetails [{}] Size [{}]",
@@ -2286,8 +2296,60 @@ void Mob::SendStunAppearance()
 	safe_delete(outapp);
 }
 
-void Mob::SendAppearanceEffect(uint32 parm1, uint32 parm2, uint32 parm3, uint32 parm4, uint32 parm5, Client *specific_target){
+void Mob::SendAppearanceEffect(uint32 parm1, uint32 parm2, uint32 parm3, uint32 parm4, uint32 parm5, Client *specific_target, 
+	uint32 value1slot, uint32 value1ground, uint32 value2slot, uint32 value2ground, uint32 value3slot, uint32 value3ground, 
+	uint32 value4slot, uint32 value4ground, uint32 value5slot, uint32 value5ground){
+
 	auto outapp = new EQApplicationPacket(OP_LevelAppearance, sizeof(LevelAppearance_Struct));
+
+		/* Location of the effect from value#slot, this is removed upon mob death/despawn.
+		0 = pelvis1
+		1 = pelvis2
+		2 = helm
+		3 = Offhand
+		4 = Mainhand
+		5 = left foot
+		6 = right foot
+		9 = Face
+		value#ground = 1, will place the effect on ground, this is permanenant
+	*/
+
+	//higher values can crash client
+	if (value1slot > 9) {
+		value1slot = 1;
+	}
+	if (value2slot > 9) {
+		value2slot = 1;
+	}
+	if (value2slot > 9) {
+		value2slot = 1;
+	}
+	if (value3slot > 9) {
+		value3slot = 1;
+	}
+	if (value4slot > 9) {
+		value4slot = 1;
+	}
+	if (value5slot > 9) {
+		value5slot = 1;
+	}
+
+	if (!value1ground && parm1) {
+		SetAppearenceEffects(value1slot, parm1);
+	}
+	if (!value2ground && parm2) {
+		SetAppearenceEffects(value2slot, parm2);
+	}
+	if (!value3ground && parm3) {
+		SetAppearenceEffects(value3slot, parm3);
+	}
+	if (!value4ground && parm4) {
+		SetAppearenceEffects(value4slot, parm4);
+	}
+	if (!value5ground && parm5) {
+		SetAppearenceEffects(value5slot, parm5);
+	}
+
 	LevelAppearance_Struct* la = (LevelAppearance_Struct*)outapp->pBuffer;
 	la->spawn_id = GetID();
 	la->parm1 = parm1;
@@ -2297,16 +2359,16 @@ void Mob::SendAppearanceEffect(uint32 parm1, uint32 parm2, uint32 parm3, uint32 
 	la->parm5 = parm5;
 	// Note that setting the b values to 0 will disable the related effect from the corresponding parameter.
 	// Setting the a value appears to have no affect at all.s
-	la->value1a = 1;
-	la->value1b = 1;
-	la->value2a = 1;
-	la->value2b = 1;
-	la->value3a = 1;
-	la->value3b = 1;
-	la->value4a = 1;
-	la->value4b = 1;
-	la->value5a = 1;
-	la->value5b = 1;
+	la->value1a = value1slot;
+	la->value1b = value1ground;
+	la->value2a = value2slot;
+	la->value2b = value2ground;
+	la->value3a = value3slot;
+	la->value3b = value3ground;
+	la->value4a = value4slot;
+	la->value4b = value4ground;
+	la->value5a = value5slot;
+	la->value5b = value5ground;
 	if(specific_target == nullptr) {
 		entity_list.QueueClients(this,outapp);
 	}
@@ -2314,6 +2376,62 @@ void Mob::SendAppearanceEffect(uint32 parm1, uint32 parm2, uint32 parm3, uint32 
 		specific_target->CastToClient()->QueuePacket(outapp, false);
 	}
 	safe_delete(outapp);
+}
+
+void Mob::SetAppearenceEffects(int32 slot, int32 value) 
+{
+	for (int i = 0; i < MAX_APPEARANCE_EFFECTS; i++) {
+		if (!appearance_effects_id[i]) {
+			appearance_effects_id[i] = value;
+			appearance_effects_slot[i] = slot;
+			return;
+		}
+	}
+}
+
+void Mob::GetAppearenceEffects()
+{
+	//used with GM command
+	if (!appearance_effects_id[0]) {
+		Message(Chat::Red, "No Appearance Effects exist on this mob");
+		return;
+	}
+
+	for (int i = 0; i < MAX_APPEARANCE_EFFECTS; i++) {
+		Message(Chat::Red, "ID: %i :: App Effect ID %i :: Slot %i", i, appearance_effects_id[i], appearance_effects_slot[i]);
+	}
+}
+
+void Mob::ClearAppearenceEffects()
+{
+	for (int i = 0; i < MAX_APPEARANCE_EFFECTS; i++) {
+		appearance_effects_id[i] = 0;
+		appearance_effects_slot[i] = 0;
+	}
+}
+
+void Mob::SendSavedAppearenceEffects(Client *receiver = nullptr)
+{
+	if (!appearance_effects_id[0]) {
+		return;
+	}
+
+	if (appearance_effects_id[0]) {
+		SendAppearanceEffect(appearance_effects_id[0], appearance_effects_id[1], appearance_effects_id[2], appearance_effects_id[3], appearance_effects_id[4], receiver,
+			appearance_effects_slot[0], 0, appearance_effects_slot[1], 0, appearance_effects_slot[2], 0, appearance_effects_slot[3], 0, appearance_effects_slot[4], 0);
+	}
+	if (appearance_effects_id[5]) {
+		SendAppearanceEffect(appearance_effects_id[5], appearance_effects_id[6], appearance_effects_id[7], appearance_effects_id[8], appearance_effects_id[9], receiver,
+			appearance_effects_slot[5], 0, appearance_effects_slot[6], 0, appearance_effects_slot[7], 0, appearance_effects_slot[8], 0, appearance_effects_slot[9], 0);
+	}
+	if (appearance_effects_id[10]) {
+		SendAppearanceEffect(appearance_effects_id[10], appearance_effects_id[11], appearance_effects_id[12], appearance_effects_id[13], appearance_effects_id[14], receiver,
+			appearance_effects_slot[10], 0, appearance_effects_slot[11], 0, appearance_effects_slot[12], 0, appearance_effects_slot[13], 0, appearance_effects_slot[14], 0);
+	}
+	if (appearance_effects_id[15]) {
+		SendAppearanceEffect(appearance_effects_id[15], appearance_effects_id[16], appearance_effects_id[17], appearance_effects_id[18], appearance_effects_id[19], receiver,
+			appearance_effects_slot[15], 0, appearance_effects_slot[16], 0, appearance_effects_slot[17], 0, appearance_effects_slot[18], 0, appearance_effects_slot[19], 0);
+	}
 }
 
 void Mob::SendTargetable(bool on, Client *specific_target) {
@@ -2358,13 +2476,21 @@ void Mob::CameraEffect(uint32 duration, uint32 intensity, Client *c, bool global
 	safe_delete(outapp);
 }
 
-void Mob::SendSpellEffect(uint32 effectid, uint32 duration, uint32 finish_delay, bool zone_wide, uint32 unk020, bool perm_effect, Client *c) {
+void Mob::SendSpellEffect(uint32 effectid, uint32 duration, uint32 finish_delay, bool zone_wide, uint32 unk020, bool perm_effect, Client *c, uint32 caster_id, uint32 target_id) {
+
+	if (!caster_id) {
+		caster_id = GetID();
+	}
+
+	if (!target_id) {
+		target_id = GetID();
+	}
 
 	auto outapp = new EQApplicationPacket(OP_SpellEffect, sizeof(SpellEffect_Struct));
 	SpellEffect_Struct* se = (SpellEffect_Struct*) outapp->pBuffer;
 	se->EffectID = effectid;	// ID of the Particle Effect
-	se->EntityID = GetID();
-	se->EntityID2 = GetID();	// EntityID again
+	se->EntityID = caster_id; //casting graphic animation
+	se->EntityID2 = target_id;	// //target graphic animation
 	se->Duration = duration;	// In Milliseconds
 	se->FinishDelay = finish_delay;	// Seen 0
 	se->Unknown020 = unk020;	// Seen 3000
@@ -4728,18 +4854,20 @@ int16 Mob::GetPositionalDmgAmt(Mob* defender)
 void Mob::MeleeLifeTap(int32 damage) {
 
 	int32 lifetap_amt = 0;
-	lifetap_amt = spellbonuses.MeleeLifetap + itembonuses.MeleeLifetap + aabonuses.MeleeLifetap
-				+ spellbonuses.Vampirism + itembonuses.Vampirism + aabonuses.Vampirism;
+	int32 melee_lifetap_mod = spellbonuses.MeleeLifetap + itembonuses.MeleeLifetap + aabonuses.MeleeLifetap
+					+ spellbonuses.Vampirism + itembonuses.Vampirism + aabonuses.Vampirism;
 
-	if(lifetap_amt && damage > 0){
+	if(melee_lifetap_mod && damage > 0){
 
-		lifetap_amt = damage * lifetap_amt / 100;
-		LogCombat("Melee lifetap healing for [{}] damage", damage);
+		lifetap_amt = damage * (static_cast<float>(melee_lifetap_mod) / 100.0f);
+		LogCombat("Melee lifetap healing [{}] points of damage with modifier of [{}] ", lifetap_amt, melee_lifetap_mod);
 
-		if (lifetap_amt > 0)
+		if (lifetap_amt >= 0) {
 			HealDamage(lifetap_amt); //Heal self for modified damage amount.
-		else
+		}
+		else {
 			Damage(this, -lifetap_amt, 0, EQ::skills::SkillEvocation, false); //Dmg self for modified damage amount.
+		}
 	}
 }
 

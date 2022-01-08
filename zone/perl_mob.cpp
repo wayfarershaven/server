@@ -4761,8 +4761,8 @@ XS(XS_Mob_HasNPCSpecialAtk) {
 XS(XS_Mob_SendAppearanceEffect); /* prototype to pass -Wmissing-prototypes */
 XS(XS_Mob_SendAppearanceEffect) {
 	dXSARGS;
-	if (items < 2 || items > 7)
-		Perl_croak(aTHX_ "Usage: Mob::SendAppearanceEffect(THIS, int32 param_1, [int32 param_2 = 0], [int32 param_3 = 0], [int32 param_4 = 0], [int32 param_5 = 0], [Client* single_client_to_send_to = null])"); // @categories Script Utility
+	if (items < 2 || items > 17)
+		Perl_croak(aTHX_ "Usage: Mob::SendAppearanceEffect(THIS, int32 effect1, [int32 effect2 = 0], [int32 effect3 = 0], [int32 effect4 = 0], [int32 effect5 = 0], [Client* single_client_to_send_to = null]), [uint32 slot1 = 1], [uint32 ground1 = 1], [uint32 slot2 = 1], [uint32 ground2 = 1], [uint32 slot3 = 1], [uint32 ground2 = 1], [uint32 slot4 = 1], [uint32 ground4 = 1], [uint32 slot5 = 1], [uint32 ground5 = 1]"); // @categories Script Utility
 	{
 		Mob *THIS;
 		int32 parm1 = (int32) SvIV(ST(1));
@@ -4770,7 +4770,18 @@ XS(XS_Mob_SendAppearanceEffect) {
 		int32 parm3 = 0;
 		int32 parm4 = 0;
 		int32 parm5 = 0;
+		uint32 value1slot = 1;
+		uint32 value1ground = 1;
+		uint32 value2slot = 1;
+		uint32 value2ground = 1;
+		uint32 value3slot = 1;
+		uint32 value3ground = 1;
+		uint32 value4slot = 1;
+		uint32 value4ground = 1;
+		uint32 value5slot = 1;
+		uint32 value5ground = 1;
 		Client *client = nullptr;
+		bool nullclient = false;
 		VALIDATE_THIS_IS_MOB;
 		if (items > 2) { parm2 = (int32) SvIV(ST(2)); }
 		if (items > 3) { parm3 = (int32) SvIV(ST(3)); }
@@ -4778,15 +4789,131 @@ XS(XS_Mob_SendAppearanceEffect) {
 		if (items > 5) { parm5 = (int32) SvIV(ST(5)); }
 		if (items > 6) {
 			if (sv_derived_from(ST(6), "Client")) {
-				IV tmp = SvIV((SV *) SvRV(ST(6)));
+				IV tmp = SvIV((SV *)SvRV(ST(6)));
 				client = INT2PTR(Client *, tmp);
-			} else
+			}
+			else {
+				nullclient = true;
+			}
+			if (client == nullptr) {
+				nullclient = true;
+			}
+		}
+		if (items > 7) { value1slot = (uint32)SvIV(ST(7)); }
+		if (items > 8) { value1ground = (uint32)SvIV(ST(8)); }
+		if (items > 9) { value2slot = (uint32)SvIV(ST(9)); }
+		if (items > 10) { value2ground = (uint32)SvIV(ST(10)); }
+		if (items > 11) { value3slot = (uint32)SvIV(ST(11)); }
+		if (items > 12) { value3ground = (uint32)SvIV(ST(12)); }
+		if (items > 13) { value4slot = (uint32)SvIV(ST(13)); }
+		if (items > 14) { value4ground = (uint32)SvIV(ST(14)); }
+		if (items > 15) { value5slot = (uint32)SvIV(ST(15)); }
+		if (items > 16) { value5ground = (uint32)SvIV(ST(16)); }
+
+		if (nullclient) {
+			THIS->SendAppearanceEffect(parm1, parm2, parm3, parm4, parm5, 0, value1slot, value1ground, value2slot, value2ground, value3slot, value3ground,
+				value4slot, value4ground, value5slot, value5ground);
+		}
+		else {
+			THIS->SendAppearanceEffect(parm1, parm2, parm3, parm4, parm5, client, value1slot, value1ground, value2slot, value2ground, value3slot, value3ground,
+				value4slot, value4ground, value5slot, value5ground);
+		}
+	}
+	XSRETURN_EMPTY;
+}
+
+XS(XS_Mob_SendAppearanceEffectActor); /* prototype to pass -Wmissing-prototypes */
+XS(XS_Mob_SendAppearanceEffectActor) {
+	dXSARGS;
+	if (items < 3 || items > 12)
+		Perl_croak(aTHX_ "Usage: Mob::SendAppearanceEffectActor(THIS, int32 effect1, uint32 slot1 = 0, [int32 effect2 = 0], [uint32 slot2 = 0], [int32 effect3 = 0], [uint32 slot3 = 0], [int32 effect4 = 0], [uint32 slot4 = 0], [int32 effect5 = 0], [uint32 slot5 = 0], [Client* single_client_to_send_to = null])"); // @categories Script Utility
+	{
+		Mob *THIS;
+		int32 parm1 = (int32)SvIV(ST(1));
+		uint32 value1slot = (uint32)SvIV(ST(2));
+		int32 parm2 = 0;
+		uint32 value2slot = 0;
+		int32 parm3 = 0;
+		uint32 value3slot = 0;
+		int32 parm4 = 0;
+		uint32 value4slot = 0;
+		int32 parm5 = 0;
+		uint32 value5slot = 0;
+		Client *client = nullptr;
+		VALIDATE_THIS_IS_MOB;
+		if (items > 3) { parm2 = (int32)SvIV(ST(3)); }
+		if (items > 4) { value2slot = (uint32)SvIV(ST(4)); }
+		if (items > 5) { parm3 = (int32)SvIV(ST(5)); }
+		if (items > 6) { value3slot = (uint32)SvIV(ST(6)); }
+		if (items > 7) { parm4 = (int32)SvIV(ST(7)); }
+		if (items > 8) { value4slot = (uint32)SvIV(ST(8)); }
+		if (items > 9) { parm5 = (int32)SvIV(ST(9)); }
+		if (items > 10) { value5slot = (uint32)SvIV(ST(10)); }
+		if (items > 11) {
+			if (sv_derived_from(ST(11), "Client")) {
+				IV tmp = SvIV((SV *)SvRV(ST(11)));
+				client = INT2PTR(Client *, tmp);
+			}
+			else
 				Perl_croak(aTHX_ "client is not of type Client");
 			if (client == nullptr)
 				Perl_croak(aTHX_ "client is nullptr, avoiding crash.");
 		}
 
-		THIS->SendAppearanceEffect(parm1, parm2, parm3, parm4, parm5, client);
+		THIS->SendAppearanceEffect(parm1, parm2, parm3, parm4, parm5, client, value1slot, 0, value2slot, 0, value3slot, 0,
+			value4slot, 0, value5slot, 0);
+	}
+	XSRETURN_EMPTY;
+}
+
+XS(XS_Mob_SendAppearanceEffectGround); /* prototype to pass -Wmissing-prototypes */
+XS(XS_Mob_SendAppearanceEffectGround) {
+	dXSARGS;
+	if (items < 3 || items > 8)
+		Perl_croak(aTHX_ "Usage: Mob::SendAppearanceEffectGround(THIS, int32 effect1, [int32 effect2 = 0], [int32 effect3 = 0], [int32 effect4 = 0], [int32 effect5 = 0], [Client* single_client_to_send_to = null])"); // @categories Script Utility
+	{
+		Mob *THIS;
+		int32 parm1 = (int32)SvIV(ST(1));
+		int32 parm2 = 0;
+		int32 parm3 = 0;
+		int32 parm4 = 0;
+		int32 parm5 = 0;
+		Client *client = nullptr;
+		VALIDATE_THIS_IS_MOB;
+		if (items > 3) { parm2 = (int32)SvIV(ST(2)); }
+		if (items > 4) { parm3 = (int32)SvIV(ST(3)); }
+		if (items > 5) { parm4 = (int32)SvIV(ST(4)); }
+		if (items > 6) { parm5 = (int32)SvIV(ST(5)); }
+		if (items > 7) {
+			if (sv_derived_from(ST(6), "Client")) {
+				IV tmp = SvIV((SV *)SvRV(ST(11)));
+				client = INT2PTR(Client *, tmp);
+			}
+			else
+				Perl_croak(aTHX_ "client is not of type Client");
+			if (client == nullptr)
+				Perl_croak(aTHX_ "client is nullptr, avoiding crash.");
+		}
+
+		THIS->SendAppearanceEffect(parm1, parm2, parm3, parm4, parm5, client, 1, 1, 1, 1, 1, 1,
+			1, 1, 1, 1);
+	}
+	XSRETURN_EMPTY;
+}
+
+XS(XS_Mob_RemoveAllAppearanceEffects); /* prototype to pass -Wmissing-prototypes */
+XS(XS_Mob_RemoveAllAppearanceEffects) {
+	dXSARGS;
+	if (items != 1)
+		Perl_croak(aTHX_ "Usage: Mob::RemoveAllAppearanceEffects(THIS)"); // @categories Script Utility
+	{
+		Mob *THIS;
+		VALIDATE_THIS_IS_MOB;
+		THIS->SendIllusionPacket(THIS->GetRace(), THIS->GetGender(), THIS->GetTexture(), THIS->GetHelmTexture(),
+			THIS->GetHairColor(), THIS->GetBeardColor(), THIS->GetEyeColor1(), THIS->GetEyeColor2(),
+			THIS->GetHairStyle(), THIS->GetLuclinFace(), THIS->GetBeard(), 0xFF,
+			THIS->GetDrakkinHeritage(), THIS->GetDrakkinTattoo(), THIS->GetDrakkinDetails(), THIS->GetSize(), false);
+		THIS->ClearAppearenceEffects();
 	}
 	XSRETURN_EMPTY;
 }
@@ -4924,8 +5051,8 @@ XS(XS_Mob_CameraEffect) {
 XS(XS_Mob_SpellEffect); /* prototype to pass -Wmissing-prototypes */
 XS(XS_Mob_SpellEffect) {
 	dXSARGS;
-	if (items < 2 || items > 8)
-		Perl_croak(aTHX_ "Usage: Mob::SpellEffect(THIS, uint32 effect, [uint32 duration = 5000], [uint32 finish_delay = 0], [bool zone_wide = false], [uint32 unk20 = 3000], [bool perm_effect = false], [Client* single_client])"); // @categories Spells and Disciplines
+	if (items < 2 || items > 10)
+		Perl_croak(aTHX_ "Usage: Mob::SpellEffect(THIS, uint32 effect, [uint32 duration = 5000], [uint32 finish_delay = 0], [bool zone_wide = false], [uint32 unk20 = 3000], [bool perm_effect = false], [Client* single_client]), [caster_id = 0], [target_id = 0]"); // @categories Spells and Disciplines
 	{
 		Mob *THIS;
 		uint32 effect       = (uint32) SvUV(ST(1));
@@ -4935,6 +5062,8 @@ XS(XS_Mob_SpellEffect) {
 		uint32 unk20        = 3000;
 		bool   perm_effect  = false;
 		Client *client = nullptr;
+		uint32 caster_id = 0;
+		uint32 target_id = 0;
 		VALIDATE_THIS_IS_MOB;
 		if (items > 2) { duration = (uint32) SvUV(ST(2)); }
 		if (items > 3) { finish_delay = (uint32) SvUV(ST(3)); }
@@ -4950,9 +5079,11 @@ XS(XS_Mob_SpellEffect) {
 			if (client == nullptr)
 				Perl_croak(aTHX_ "client is nullptr, avoiding crash.");
 		}
+		if (items > 8) { caster_id = (uint32)SvUV(ST(8)); }
+		if (items > 9) { target_id = (uint32)SvUV(ST(9)); }
 
 
-		THIS->SendSpellEffect(effect, duration, finish_delay, zone_wide, unk20, perm_effect, client);
+		THIS->SendSpellEffect(effect, duration, finish_delay, zone_wide, unk20, perm_effect, client, caster_id, target_id);
 	}
 	XSRETURN_EMPTY;
 }
@@ -6424,6 +6555,7 @@ XS(boot_Mob) {
 	newXSproto(strcpy(buf, "Attack"), XS_Mob_Attack, file, "$$;$$");
 	newXSproto(strcpy(buf, "Damage"), XS_Mob_Damage, file, "$$$$$;$$$");
 	newXSproto(strcpy(buf, "RangedAttack"), XS_Mob_RangedAttack, file, "$$");
+	newXSproto(strcpy(buf, "RemoveAllAppearanceEffects"), XS_Mob_RemoveAllAppearanceEffects, file, "$");
 	newXSproto(strcpy(buf, "ThrowingAttack"), XS_Mob_ThrowingAttack, file, "$$");
 	newXSproto(strcpy(buf, "Heal"), XS_Mob_Heal, file, "$");
 	newXSproto(strcpy(buf, "HealDamage"), XS_Mob_HealDamage, file, "$$;$");
@@ -6639,7 +6771,9 @@ XS(boot_Mob) {
 	newXSproto(strcpy(buf, "FindGroundZ"), XS_Mob_FindGroundZ, file, "$$$;$");
 	newXSproto(strcpy(buf, "ProjectileAnim"), XS_Mob_ProjectileAnim, file, "$$$;$$$$$$");
 	newXSproto(strcpy(buf, "HasNPCSpecialAtk"), XS_Mob_HasNPCSpecialAtk, file, "$$");
-	newXSproto(strcpy(buf, "SendAppearanceEffect"), XS_Mob_SendAppearanceEffect, file, "$$;$$$$");
+	newXSproto(strcpy(buf, "SendAppearanceEffect"), XS_Mob_SendAppearanceEffect, file, "$$;$$$$$$$$$$$$$$");
+	newXSproto(strcpy(buf, "SendAppearanceEffectActor"), XS_Mob_SendAppearanceEffectActor, file, "$$$;$$$$$$$$$");
+	newXSproto(strcpy(buf, "SendAppearanceEffectGround"), XS_Mob_SendAppearanceEffectGround, file, "$$$;$$$$$$$$$");
 	newXSproto(strcpy(buf, "SetFlyMode"), XS_Mob_SetFlyMode, file, "$$");
 	newXSproto(strcpy(buf, "SetTexture"), XS_Mob_SetTexture, file, "$$");
 	newXSproto(strcpy(buf, "SetRace"), XS_Mob_SetRace, file, "$$");
@@ -6648,7 +6782,7 @@ XS(boot_Mob) {
 	newXSproto(strcpy(buf, "MakeTempPet"), XS_Mob_MakeTempPet, file, "$$;$$$$");
 	newXSproto(strcpy(buf, "TypesTempPet"), XS_Mob_TypesTempPet, file, "$$;$$$$$");
 	newXSproto(strcpy(buf, "CameraEffect"), XS_Mob_CameraEffect, file, "$$;$$$");
-	newXSproto(strcpy(buf, "SpellEffect"), XS_Mob_SpellEffect, file, "$$;$$$$$$");
+	newXSproto(strcpy(buf, "SpellEffect"), XS_Mob_SpellEffect, file, "$$;$$$$$$$$");
 	newXSproto(strcpy(buf, "TempName"), XS_Mob_TempName, file, "$:$");
 	newXSproto(strcpy(buf, "GetItemStat"), XS_Mob_GetItemStat, file, "$$$");
 	newXSproto(strcpy(buf, "GetGlobal"), XS_Mob_GetGlobal, file, "$$");
