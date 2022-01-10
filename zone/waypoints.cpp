@@ -945,7 +945,6 @@ glm::vec4 Mob::TryMoveAlong(const glm::vec4 &start, float distance, float angle)
 	glm::vec3 new_pos = start;
 	new_pos.x += distance * g_Math.FastSin(angle);
 	new_pos.y += distance * g_Math.FastCos(angle);
-	new_pos.z += GetZOffset();
 
 	if (zone->HasMap()) {
 		if (zone->zonemap->LineIntersectsZone(start, new_pos, 0.0f, &tmp_pos)) {
