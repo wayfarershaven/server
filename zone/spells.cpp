@@ -1439,14 +1439,6 @@ void Mob::CastedSpellFinished(uint16 spell_id, uint32 target_id, CastingSlot slo
 		CastToClient()->DeleteItemInInventory(DeleteChargeFromSlot, 1, true);
 	}
 
-	if (IsClient() && IsEffectInSpell(spell_id, SE_BindSight)) {
-		for (int i = 0; i < GetMaxTotalSlots(); i++) {
-			if (buffs[i].spellid == spell_id) {
-				CastToClient()->SendBuffNumHitPacket(buffs[i], i);//its hack, it works.
-			}
-		}
-	}
-	
 	//Check if buffs has numhits, then resend packet so it displays the hit count.
 	if (IsClient() && (spells[spell_id].buffduration > 0 || spells[spell_id].short_buff_box)) {
 		for (int i = 0; i < GetMaxTotalSlots(); i++) {
@@ -3634,7 +3626,7 @@ bool Mob::SpellOnTarget(uint16 spell_id, Mob *spelltar, bool reflect, bool use_r
 	}
 
 	// select target
-	if (IsEffectInSpell(spell_id, SE_BindSight))
+	if(IsBindSightSpell(spell_id))	// Bind Sight line of spells
 	{
 		action->target = GetID();
 	}
