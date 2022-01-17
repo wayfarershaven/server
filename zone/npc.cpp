@@ -3057,8 +3057,9 @@ void NPC::DepopSwarmPets()
 	if (GetSwarmInfo()) {
 		if (GetSwarmInfo()->duration->Check(false)){
 			Mob* owner = entity_list.GetMobID(GetSwarmInfo()->owner_id);
-			if (owner)
+			if (owner) {
 				owner->SetTempPetCount(owner->GetTempPetCount() - 1);
+			}
 
 			Depop();
 			return;
@@ -3069,8 +3070,9 @@ void NPC::DepopSwarmPets()
 			Mob *targMob = entity_list.GetMob(GetSwarmInfo()->target);
 			if(!targMob || (targMob && targMob->IsCorpse())){
 				Mob* owner = entity_list.GetMobID(GetSwarmInfo()->owner_id);
-				if (owner)
+				if (owner) {
 					owner->SetTempPetCount(owner->GetTempPetCount() - 1);
+				}
 
 				Depop();
 				return;
