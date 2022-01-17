@@ -864,6 +864,8 @@ void Zone::Shutdown(bool quiet)
 		return;
 	}
 
+	entity_list.MovePlayerCorpsesToGraveyard(true);
+	
 	entity_list.StopMobAI();
 
 	std::map<uint32, NPCType *>::iterator itr;
