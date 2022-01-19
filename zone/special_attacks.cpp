@@ -286,8 +286,8 @@ void Client::OPCombatAbility(const CombatAbility_Struct *ca_atk)
 {
 	if (!GetTarget())
 		return;
-	// make sure were actually able to use such an attack.
-	if (spellend_timer.Enabled() || IsFeared() || IsStunned() || IsMezzed() || DivineAura() || dead)
+	// make sure were actually able to use such an attack. (Bards can throw while casting. ~Kayen confirmed on live 1/22)
+	if ((spellend_timer.Enabled() && GetClass() != BARD)|| IsFeared() || IsStunned() || IsMezzed() || DivineAura() || dead)
 		return;
 
 	pTimerType timer = pTimerCombatAbility;
@@ -815,7 +815,7 @@ void Client::RangedAttack(Mob* other, bool CanDoubleAttack) {
 	}
 
 	if(!IsAttackAllowed(other) ||
-		IsCasting() ||
+		(IsCasting() && GetClass() != BARD) ||
 		IsSitting() ||
 		(DivineAura() && !GetGM()) ||
 		IsStunned() ||
