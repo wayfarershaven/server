@@ -684,6 +684,9 @@ bool Client::UseDiscipline(uint32 spell_id, uint32 target) {
 	// Dont let client waste a reuse timer if they can't use the disc
 	if (IsStunned() || IsFeared() || IsMezzed() || IsAmnesiad() || IsPet())
 	{
+		if (IsAmnesiad()) {
+			MessageString(Chat::Red, MELEE_SILENCE);
+		}
 		return(false);
 	}
 
@@ -702,6 +705,9 @@ bool Client::UseDiscipline(uint32 spell_id, uint32 target) {
 		return(false);
 	}
 
+	if (DivineAura() && !spells[spell_id].cast_not_standing) {
+		return false;
+	}
 	//can we use the spell?
 	const SPDat_Spell_Struct &spell = spells[spell_id];
 	uint8 level_to_use = spell.classes[GetClass() - 1];
@@ -743,8 +749,9 @@ bool Client::UseDiscipline(uint32 spell_id, uint32 target) {
 		return(false);
 	}
 
-	if(spell.recast_time > 0)
-	{
+	bool instant_recast = true;
+
+	if(spell.recast_time > 0) {
 		uint32 reduced_recast = spell.recast_time / 1000;
 		auto focus = GetFocusEffect(focusReduceRecastTime, spell_id);
 		// do stupid stuff because custom servers.
@@ -762,19 +769,31 @@ bool Client::UseDiscipline(uint32 spell_id, uint32 target) {
 
 		reduced_recast = SpellRecastMod(spell_id, reduced_recast);
 
-		if (reduced_recast > 0) {
-			CastSpell(spell_id, target, EQ::spells::CastingSlot::Discipline, -1, -1, 0, -1, (uint32) DiscTimer,
-					  reduced_recast);
-		} else {
-			CastSpell(spell_id, target, EQ::spells::CastingSlot::Discipline);
-			return true;
-		}
+		if (reduced_recast > 0){
+			instant_recast = false;
 
-		SendDisciplineTimer(spells[spell_id].EndurTimerIndex, reduced_recast);
+			if (GetClass() == BARD && IsCasting() && spells[spell_id].cast_time == 0) {
+				if (DoCastingChecks(spell_id, target)) {
+					SpellFinished(spell_id, entity_list.GetMob(target), EQ::spells::CastingSlot::Discipline, 0, -1, spells[spell_id].ResistDiff, false, -1, (uint32)DiscTimer, reduced_recast);
+				}
+			}
+			else {
+				CastSpell(spell_id, target, EQ::spells::CastingSlot::Discipline, -1, -1, 0, -1, (uint32)DiscTimer, reduced_recast);
+			}
+
+			SendDisciplineTimer(spells[spell_id].EndurTimerIndex, reduced_recast);
+		}
 	}
-	else
-	{
-		CastSpell(spell_id, target, EQ::spells::CastingSlot::Discipline);
+
+	if (instant_recast)	{ 
+		if (GetClass() == BARD && IsCasting() && spells[spell_id].cast_time == 0) {
+			if (DoCastingChecks(spell_id, target)) {
+				SpellFinished(spell_id, entity_list.GetMob(target), EQ::spells::CastingSlot::Discipline);
+			}
+		}
+		else {
+			CastSpell(spell_id, target, EQ::spells::CastingSlot::Discipline);
+		}
 	}
 	return(true);
 }
