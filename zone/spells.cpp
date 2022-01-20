@@ -2527,7 +2527,7 @@ bool Mob::SpellFinished(uint16 spell_id, Mob *spell_target, CastingSlot slot, ui
 			CastToClient()->GetPTimers().Start(timer, timer_duration);
 			LogSpells("Spell [{}]: Setting bard custom disciple reuse timer [{}] to [{}]", spell_id, timer, timer_duration);
 		}
-		
+
 		if(casting_spell_aa_id) {
 			AA::Rank *rank = zone->GetAlternateAdvancementRank(casting_spell_aa_id);
 
@@ -3730,8 +3730,10 @@ bool Mob::SpellOnTarget(uint16 spell_id, Mob *spelltar, bool reflect, bool use_r
 		}
 	}
 
-	// invuln mobs can't be affected by any spells, good or bad
-	if(spelltar->GetInvul() || spelltar->DivineAura()) {
+	// invuln mobs can't be affected by any spells, good or bad, except if caster is casting a spell with 'cast_not_standing' on self.
+	if ((spelltar->GetInvul() && !spelltar->DivineAura()) ||
+		(spelltar != this && spelltar->DivineAura()) ||
+		(spelltar == this && spelltar->DivineAura() && !spells[spell_id].cast_not_standing)) {
 		LogSpells("Casting spell [{}] on [{}] aborted: they are invulnerable", spell_id, spelltar->GetName());
 		safe_delete(action_packet);
 		return false;
