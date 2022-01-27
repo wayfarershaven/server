@@ -163,7 +163,7 @@ bool Mob::CastSpell(uint16 spell_id, uint16 target_id, CastingSlot slot,
 {
 	uint16 final_target_id = target_id;
 
-	if(item_slot && IsClient() && !IsNPC() && (slot == CastingSlot::Item || slot == CastingSlot::PotionBelt)) {
+	if(item_slot && IsClient() && (slot == CastingSlot::Item || slot == CastingSlot::PotionBelt)) {
 		EQ::ItemInstance *itm = CastToClient()->GetInv().GetItem(item_slot);
 		if(itm->GetItem()->ItemType == EQ::item::ItemTypePotion) {
 			final_target_id = this->GetID();
