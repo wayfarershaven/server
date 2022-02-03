@@ -197,6 +197,11 @@ bool IsHasteSpell(uint16 spell_id)
 	return false;
 }
 
+bool IsBindSightSpell(uint16 spell_id)
+{
+	return IsEffectInSpell(spell_id, SE_BindSight);
+}
+
 bool IsHarmonySpell(uint16 spell_id)
 {
 	// IsEffectInSpell(spell_id, SE_Lull) - Lull is not calculated anywhere atm
