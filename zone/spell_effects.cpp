@@ -9604,8 +9604,7 @@ void Mob::BreakInvisibleSpells()
 	}
 }
 
-void Client::BreakSneakWhenCastOn(Mob *caster, bool IsResisted)
-{
+void Client::BreakSneakWhenCastOn(Mob *caster, bool IsResisted) {
 	bool IsCastersTarget = false; // Chance to avoid only applies to AOE spells when not targeted.
 	if (hidden || improved_hidden) {
 		if (caster) {
@@ -9615,10 +9614,13 @@ void Client::BreakSneakWhenCastOn(Mob *caster, bool IsResisted)
 			}
 		}
 		if (!IsCastersTarget) {
-			int chance = spellbonuses.NoBreakAESneak + itembonuses.NoBreakAESneak + aabonuses.NoBreakAESneak;
+			int chance =
+			    spellbonuses.NoBreakAESneak + itembonuses.NoBreakAESneak + aabonuses.NoBreakAESneak;
+
 			if (IsResisted) {
-				chance *= 2;
+				chance *= RuleR(Spells, BreakSneakWhenCastOn);
 			}
+
 			if (chance && zone->random.Roll(chance)) {
 				return; // Do not drop Sneak/Hide
 			}
@@ -9627,14 +9629,13 @@ void Client::BreakSneakWhenCastOn(Mob *caster, bool IsResisted)
 	}
 }
 
-void Client::BreakFeignDeathWhenCastOn(bool IsResisted)
-{
-	if(GetFeigned()){
-
+void Client::BreakFeignDeathWhenCastOn(bool IsResisted) {
+	if(GetFeigned()) {
 		int chance = spellbonuses.FeignedCastOnChance + itembonuses.FeignedCastOnChance + aabonuses.FeignedCastOnChance;
 
-		if (IsResisted)
-			chance *= 2;
+		if (IsResisted) {
+			chance *= RuleR(Spells, BreakFeignDeathWhenCastOn);
+		}
 
 		if(chance && (zone->random.Roll(chance))){
 			MessageString(Chat::SpellFailure,FD_CAST_ON_NO_BREAK);
