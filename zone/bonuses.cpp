@@ -3828,6 +3828,10 @@ void Mob::ApplySpellsBonuses(uint16 spell_id, uint8 casterlevel, StatBonuses *ne
 				new_bonus->TrapCircumvention += effect_value;
 				break;
 
+			case SE_SeeInvis:
+				new_bonus->SeeInvis = spells[spell_id].base_value[i];
+				break;
+
 			//Special custom cases for loading effects on to NPC from 'npc_spels_effects' table
 			if (IsAISpellEffect) {
 
