@@ -516,6 +516,7 @@ RULE_BOOL(NPC, LiveLikeEnrage, false, "If set to true then only player controlle
 RULE_BOOL(NPC, EnableMeritBasedFaction, false, "If set to true, faction will be given in the same way as experience (solo/group/raid)")
 RULE_INT(NPC, NPCToNPCAggroTimerMin, 500, "Minimum time span after which one NPC aggro another NPC (milliseconds)")
 RULE_INT(NPC, NPCToNPCAggroTimerMax, 6000, "Maximum time span after which one NPC aggro another NPC (milliseconds)")
+RULE_BOOL(NPC, IgnoreQuestLoot, false, "")
 RULE_BOOL(NPC, UseClassAsLastName, true, "Uses class archetype as LastName for NPC with none")
 RULE_BOOL(NPC, NewLevelScaling, true, "Better level scaling, use old if new formulas would break your server")
 RULE_INT(NPC, NPCGatePercent, 20, " Percentage at which the NPC Will attempt to gate at")

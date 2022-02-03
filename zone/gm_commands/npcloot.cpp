@@ -22,6 +22,7 @@ void command_npcloot(Client *c, const Seperator *sep)
 	bool is_money = !strcasecmp(sep->arg[1], "money");
 	bool is_remove = !strcasecmp(sep->arg[1], "remove");
 	bool is_show = !strcasecmp(sep->arg[1], "show");
+	bool quest = false;
 
 	if (
 		!is_add &&
@@ -71,6 +72,7 @@ void command_npcloot(Client *c, const Seperator *sep)
 			item_id,
 			item_charges,
 			equip_item,
+			quest,
 			augment_one_id,
 			augment_two_id,
 			augment_three_id,
