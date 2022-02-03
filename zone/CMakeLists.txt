@@ -540,6 +540,7 @@ SET(gm_commands
     gm_commands/trapinfo.cpp
     gm_commands/tune.cpp
     gm_commands/ucs.cpp
+    gm_commands/undeletechar.cpp
     gm_commands/undye.cpp
     gm_commands/undyeme.cpp
     gm_commands/unfreeze.cpp

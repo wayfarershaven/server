@@ -113,6 +113,8 @@ public:
 	bool SetMQDetectionFlag(const char *accountname, const char *charactername, const char *hacked, const char *zone);
 	bool SetMQDetectionFlag(const char *accountname, const char *charactername, const std::string &hacked, const char *zone);
 	bool UpdateName(const char *oldname, const char *newname);
+	bool MarkCharacterDeleted(char* name);
+	bool UnDeleteCharacter(const char* name);
 	bool CopyCharacter(
 		std::string source_character_name,
 		std::string destination_character_name,
@@ -136,6 +138,7 @@ public:
 	uint32	GetGuildIDByCharID(uint32 char_id);
 	uint32  GetGroupIDByCharID(uint32 char_id);
 	uint32  GetRaidIDByCharID(uint32 char_id);
+	uint32	GetLevelByChar(const char* charname);
 
 	void	GetAccountName(uint32 accountid, char* name, uint32* oLSAccountID = 0);
 	void	GetCharName(uint32 char_id, char* name);
