@@ -584,22 +584,34 @@ uint32 Mob::GetAppearanceValue(EmuAppearance iAppearance) {
 	return(ANIM_STAND);
 }
 
-void Mob::SetInvisible(uint8 state)
+// Generalized SetInvis function, handles ITU/IVA/Hide along with regular invis
+// type 0 = normal invis
+// type 1 = Invis to undead
+// type 2 = Invis vs Animals
+// type 3 = hide
+// type 4 = improved hide
+void Mob::SetInvisible(uint8 state /* = 0*/, uint8 type /*= 0*/)
 {
-	if (state != Invisibility::Special) {
+	if (type == 0) {
 		invisible = state;
 		SendAppearancePacket(AT_Invis, invisible);
 	}
-
-	// Invis and hide breaks charms
-	auto pet = GetPet();
-	if (pet && pet->GetPetType() == petCharmed && (invisible || hidden || improved_hidden || invisible_animals || invisible_undead)) {
-		if (RuleB(Pets, LivelikeBreakCharmOnInvis) || IsInvisible(pet)) {
-			pet->BuffFadeByEffect(SE_Charm);
-		}
-
-		LogRules("Pets:LivelikeBreakCharmOnInvis for [{}] | Invis [{}] - Hidden [{}] - Shroud of Stealth [{}] - IVA [{}] - IVU [{}]", GetCleanName(), invisible, hidden, improved_hidden, invisible_animals, invisible_undead);
+	else if (type == 1) {
+		invisible_undead = true;
 	}
+	else if (type == 2) {
+		invisible_animals = true;
+	}
+	else if (type == 3) {
+		hidden = true;
+	}
+	else if (type == 4) {
+		improved_hidden = true;
+		hidden = true;
+	}
+
+	// All types of invis and hide depops summoned pets and breaks charms
+	CastToMob()->RemovePet();
 }
 
 //check to see if `this` is invisible to `other`
