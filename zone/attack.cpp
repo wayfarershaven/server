@@ -2278,6 +2278,14 @@ void NPC::Damage(Mob* other, int32 damage, uint16 spell_id, EQ::skills::SkillTyp
 
 bool NPC::Death(Mob* killer_mob, int32 damage, uint16 spell, EQ::skills::SkillType attack_skill)
 {
+	bool charmedNoXp = false;	// using if charmed pet dies, shouldn't give player experience.
+	if (HasOwner()) {
+		Mob *clientOwner = GetOwnerOrSelf();
+		if (clientOwner->IsClient()) {
+			charmedNoXp = true;
+		}
+	}
+
 	LogCombat("Fatal blow dealt by [{}] with [{}] damage, spell [{}], skill [{}]",
 		((killer_mob) ? (killer_mob->GetName()) : ("[nullptr]")), damage, spell, attack_skill);
 
@@ -2376,8 +2384,9 @@ bool NPC::Death(Mob* killer_mob, int32 damage, uint16 spell, EQ::skills::SkillTy
 
 	Mob *give_exp = hate_list.GetDamageTopOnHateList(this);
 
-	if (give_exp == nullptr)
+	if (give_exp == nullptr) {
 		give_exp = killer;
+	}
 
 	if (give_exp && give_exp->HasOwner()) {
 
@@ -2399,24 +2408,27 @@ bool NPC::Death(Mob* killer_mob, int32 damage, uint16 spell, EQ::skills::SkillTy
 	if (give_exp && give_exp->IsTempPet() && give_exp->IsPetOwnerClient()) {
 		if (give_exp->IsNPC() && give_exp->CastToNPC()->GetSwarmOwner()) {
 			Mob* temp_owner = entity_list.GetMobID(give_exp->CastToNPC()->GetSwarmOwner());
-			if (temp_owner)
+			if (temp_owner) {
 				give_exp = temp_owner;
+			}
 		}
 	}
 
 	int PlayerCount = 0; // QueryServ Player Counting
 
 	Client *give_exp_client = nullptr;
-	if (give_exp && give_exp->IsClient())
+	if (give_exp && give_exp->IsClient()) {
 		give_exp_client = give_exp->CastToClient();
+	}
 
 	//do faction hits even if we are a merchant, so long as a player killed us
-	if (!IsCharmed() && give_exp_client && !RuleB(NPC, EnableMeritBasedFaction))
+	if (give_exp_client && !RuleB(NPC, EnableMeritBasedFaction) && !charmedNoXp) {
 		hate_list.DoFactionHits(GetNPCFactionID());
+	}
 
 	bool IsLdonTreasure = (this->GetClass() == LDON_TREASURE);
 
-	if (give_exp_client && !IsCorpse()) {
+	if (give_exp_client && !IsCorpse() && !charmedNoXp) {
 		Group *kg = entity_list.GetGroupByClient(give_exp_client);
 		Raid *kr = entity_list.GetRaidByClient(give_exp_client);
 
