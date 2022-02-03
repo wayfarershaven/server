@@ -15,6 +15,8 @@ void command_invul(Client *c, const Seperator *sep)
 	}
 
 	target->SetInvul(invul_flag);
+	uint32 account = target->AccountID();
+	database.SetGMInvul(account, invul_flag);
 	c->Message(
 		Chat::White,
 		fmt::format(

@@ -366,6 +366,7 @@ SET(gm_commands
     gm_commands/gm.cpp
     gm_commands/gmspeed.cpp
     gm_commands/gmzone.cpp
+    gm_commands/godmode.cpp
     gm_commands/goto.cpp
     gm_commands/grid.cpp
     gm_commands/guild.cpp
