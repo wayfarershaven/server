@@ -855,11 +855,13 @@ void Lua_Mob::QuestSay(Lua_Client client, const char *message, luabind::adl::obj
 }
 
 void Lua_Mob::SetTimer(const char *timer, int time_ms) {
-	quest_manager.settimerMS(timer, time_ms);
+	Lua_Safe_Call_Void();
+	quest_manager.settimerMS(timer, time_ms, self);
 }
 
 void Lua_Mob::StopTimer(const char *timer) {
-	quest_manager.stoptimer(timer);
+	Lua_Safe_Call_Void();
+	quest_manager.stoptimer(timer, self);
 }
 
 void Lua_Mob::Shout(const char *message) {

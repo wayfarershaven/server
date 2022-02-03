@@ -180,6 +180,8 @@ public:
 	void Say(const char* message, int language);
 	void QuestSay(Lua_Client client, const char *message);
 	void QuestSay(Lua_Client client, const char *message, luabind::adl::object opts);
+	void SetTimer(const char *timer, int time_ms);
+	void StopTimer(const char *timer);
 	void Shout(const char *message);
 	void Shout(const char* message, int language);
 	void Emote(const char *message);
@@ -427,8 +429,6 @@ public:
 	bool IsSilenced();
 	bool IsAmnesiad();
 	int32 GetMeleeMitigation();
-	void SetTimer(const char *timer, int time_ms);
-	void StopTimer(const char *timer);
 	int GetWeaponDamageBonus(Lua_Item weapon, bool offhand);
 	int GetItemStat(uint32 itemid, const char* identifier);
 	Lua_StatBonuses GetItemBonuses();
