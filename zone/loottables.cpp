@@ -331,6 +331,7 @@ void NPC::AddLootDrop(
 	ItemList *itemlist,
 	LootDropEntries_Struct loot_drop,
 	bool wear_change,
+	bool quest,
 	uint32 aug1,
 	uint32 aug2,
 	uint32 aug3,
@@ -356,10 +357,11 @@ void NPC::AddLootDrop(
 		linker.SetItemData(item2);
 
 		LogLoot(
-			"[NPC::AddLootDrop] NPC [{}] Item ({}) [{}] charges [{}] chance [{}] trivial min/max [{}/{}] npc min/max [{}/{}]",
+			"[NPC::AddLootDrop] NPC [{}] Item ({}) [{}] Multiquest [{}] charges [{}] chance [{}] trivial min/max [{}/{}] npc min/max [{}/{}]",
 			GetName(),
 			item2->ID,
 			linker.GenerateLink(),
+			quest,
 			loot_drop.item_charges,
 			loot_drop.chance,
 			loot_drop.trivial_min_level,
@@ -389,6 +391,7 @@ void NPC::AddLootDrop(
 	item->attuned           = 0;
 	item->trivial_min_level = loot_drop.trivial_min_level;
 	item->trivial_max_level = loot_drop.trivial_max_level;
+	item->quest 			= quest;
 	item->equip_slot        = EQ::invslot::SLOT_INVALID;
 
 	if (loot_drop.equip_item > 0) {
@@ -555,20 +558,21 @@ void NPC::AddLootDrop(
 	}
 }
 
-void NPC::AddItem(const EQ::ItemData *item, uint16 charges, bool equipitem)
+void NPC::AddItem(const EQ::ItemData *item, uint16 charges, bool equipitem, bool quest)
 {
 	//slot isnt needed, its determined from the item.
 	auto loot_drop_entry = NPC::NewLootDropEntry();
 	loot_drop_entry.equip_item   = static_cast<uint8>(equipitem ? 1 : 0);
 	loot_drop_entry.item_charges = charges;
 
-	AddLootDrop(item, &itemlist, loot_drop_entry, true);
+	AddLootDrop(item, &itemlist, loot_drop_entry, true, quest);
 }
 
 void NPC::AddItem(
 	uint32 itemid,
 	uint16 charges,
 	bool equipitem,
+	bool quest,
 	uint32 aug1,
 	uint32 aug2,
 	uint32 aug3,
@@ -587,7 +591,7 @@ void NPC::AddItem(
 	loot_drop_entry.equip_item   = static_cast<uint8>(equipitem ? 1 : 0);
 	loot_drop_entry.item_charges = charges;
 
-	AddLootDrop(i, &itemlist, loot_drop_entry, true, aug1, aug2, aug3, aug4, aug5, aug6);
+	AddLootDrop(i, &itemlist, loot_drop_entry, true, quest, aug1, aug2, aug3, aug4, aug5, aug6);
 }
 
 void NPC::AddLootTable() {
@@ -608,6 +612,177 @@ void NPC::CheckGlobalLootTables()
 
 	for (auto &id : tables)
 		database.AddLootTableToNPC(this, id, &itemlist, nullptr, nullptr, nullptr, nullptr);
+}
+
+bool NPC::GetQuestLootItem(int16 itemid)
+{
+	ItemList::iterator cur, end;
+	cur = itemlist.begin();
+	end = itemlist.end();
+	for(; cur != end; ++cur) {
+		ServerLootItem_Struct* sitem = *cur;
+		if(sitem && sitem->quest == 1 && sitem->item_id == itemid)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool NPC::QuestLootCount(uint16 itemid1, uint16 itemid2, uint16 itemid3, uint16 itemid4)
+{
+	if(itemid2 == 0 && itemid3 == 0 && itemid4 == 0)
+		return true;
+
+	uint8 item2count = 0, item3count = 0, item4count = 0, item1npc = 0, item2npc = 0, item3npc = 0, item4npc = 0;
+	uint8 item1count = 1;
+	if(itemid2 > 0) {
+		item2count = 1;
+	}
+	if(itemid3 > 0) {
+		item3count = 1;
+	}
+	if(itemid4 > 0) {
+		item4count = 1;
+	}
+
+	if(itemid1 == itemid2 && itemid2 > 0)
+	{
+		item2count = item1count;
+		++item1count;
+		++item2count;
+	}
+	if(itemid1 == itemid3 && itemid3 > 0)
+	{
+		item3count = item1count;
+		++item1count;
+		++item3count;
+	}
+	if(itemid1 == itemid4 && itemid4 > 0)
+	{
+		item4count = item1count;
+		++item1count;
+		++item4count;
+	}
+
+	if(itemid2 == itemid3  && itemid2 > 0 && itemid3 > 0)
+	{
+		item3count = item2count;
+		++item2count;
+		++item3count;
+	}
+	if(itemid2 == itemid4  && itemid2 > 0 && itemid4 > 0)
+	{
+		item4count = item2count;
+		++item2count;
+		++item4count;
+	}
+
+	if(itemid3 == itemid4 && itemid3 > 0 && itemid4 > 0)
+	{
+		item4count = item3count;
+		++item3count;
+		++item4count;
+	}
+
+	ItemList::iterator cur, end;
+	cur = itemlist.begin();
+	end = itemlist.end();
+	for(; cur != end; ++cur) {
+		ServerLootItem_Struct* sitem = *cur;
+		if(sitem && sitem->quest == 1)
+		{
+			if(sitem->item_id == itemid1)
+				++item1npc;
+
+			if(sitem->item_id == itemid2 && itemid2 > 0)
+				++item2npc;
+
+			if(sitem->item_id == itemid3 && itemid3 > 0)
+				++item3npc;
+
+			if(sitem->item_id == itemid4 && itemid4 > 0)
+				++item4npc;
+		}
+	}
+
+	if(item1npc < item1count)
+	{
+		return false;
+	}
+
+	if(itemid2 > 0 && item2npc < item2count)
+		return false;
+
+	if(itemid3 > 0 && item3npc < item3count)
+		return false;
+
+	if(itemid4 > 0 && item4npc < item4count)
+		return false;
+
+	return true;
+}
+
+bool NPC::HasQuestLootItem()
+{
+	ItemList::iterator cur, end;
+	cur = itemlist.begin();
+	end = itemlist.end();
+	for(; cur != end; ++cur) {
+		ServerLootItem_Struct* sitem = *cur;
+		if(sitem && sitem->quest == 1)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool NPC::RemoveQuestLootItems(int16 itemid)
+{
+	ItemList::iterator cur, end;
+	cur = itemlist.begin();
+	end = itemlist.end();
+	for (; cur != end; ++cur) {
+		ServerLootItem_Struct* sitem = *cur;
+		if (sitem && sitem->quest == 1) {
+			if(itemid == 0)
+			{
+				RemoveItem(sitem);
+				return true;
+			}
+			else if(itemid == sitem->item_id)
+			{
+				RemoveItem(sitem);
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
+void NPC::RemoveItem(ServerLootItem_Struct* item_data)
+{
+	for (auto iter = itemlist.begin(); iter != itemlist.end(); ++iter) {
+		auto sitem = *iter;
+		if (sitem != item_data) { continue; }
+
+		itemlist.erase(iter);
+
+		uint8 material = EQ::InventoryProfile::CalcMaterialFromSlot(sitem->equip_slot); // autos to unsigned char
+		if (material != EQ::textures::materialInvalid)
+			SendWearChange(material);
+
+		UpdateEquipmentLight();
+		if (UpdateActiveLight())
+			SendAppearancePacket(AT_Light, GetActiveLightType());
+
+		safe_delete(sitem);
+		return;
+	}
 }
 
 void ZoneDatabase::LoadGlobalLoot()

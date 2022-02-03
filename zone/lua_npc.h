@@ -149,6 +149,12 @@ public:
 	float GetHealScale();
 	float GetSpellScale();
 	Lua_NPC_Loot_List GetLootList(lua_State* L);
+	void AddQuestLoot(int itemid);
+	bool GetQuestLoot(int itemid);
+	bool HasQuestLoot();
+	void DeleteQuestLoot();
+	void DeleteQuestLoot(int itemid1, int itemid2, int itemid3, int itemid4);
+	bool QuestLootCount(int itemid1, int itemid2, int itemid3, int itemid4);
 };
 
 #endif
