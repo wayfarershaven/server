@@ -427,6 +427,8 @@ public:
 	bool IsSilenced();
 	bool IsAmnesiad();
 	int32 GetMeleeMitigation();
+	void SetTimer(const char *timer, int time_ms);
+	void StopTimer(const char *timer);
 	int GetWeaponDamageBonus(Lua_Item weapon, bool offhand);
 	int GetItemStat(uint32 itemid, const char* identifier);
 	Lua_StatBonuses GetItemBonuses();
