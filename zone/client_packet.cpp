@@ -6978,7 +6978,8 @@ void Client::Handle_OP_GroupInvite2(const EQApplicationPacket *app)
 
 	GroupInvite_Struct* gis = (GroupInvite_Struct*)app->pBuffer;
 
-	Mob *Invitee = entity_list.GetMob(gis->invitee_name);
+	// We can only invite the current target.
+	Mob* Invitee = GetTarget();
 
 	if (Invitee == this)
 	{
@@ -6990,6 +6991,9 @@ void Client::Handle_OP_GroupInvite2(const EQApplicationPacket *app)
 	{
 		if (Invitee->IsClient())
 		{
+			// If the Invitee is correct (it is a valid client target), we set it as the person
+			// to invite.
+			strn0cpy(gis->invitee_name, Invitee->GetName(), 64);
 			if (Invitee->CastToClient()->MercOnlyOrNoGroup() && !Invitee->IsRaidGrouped())
 			{
 				if (app->GetOpcode() == OP_GroupInvite2)
@@ -7018,10 +7022,7 @@ void Client::Handle_OP_GroupInvite2(const EQApplicationPacket *app)
 	}
 	else
 	{
-		auto pack = new ServerPacket(ServerOP_GroupInvite, sizeof(GroupInvite_Struct));
-		memcpy(pack->pBuffer, gis, sizeof(GroupInvite_Struct));
-		worldserver.SendPacket(pack);
-		safe_delete(pack);
+		Message(0, "Invalid target!");
 	}
 	return;
 }
