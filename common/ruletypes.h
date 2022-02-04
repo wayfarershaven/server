@@ -329,6 +329,11 @@ RULE_REAL(Watermap, FishingLineStepSize, 1, "Basic step size for fishing calc, t
 RULE_CATEGORY_END()
 
 RULE_CATEGORY(Spells)
+RULE_REAL(Spells, ResistChance, 2.0, "chance to resist given no resists and same level")
+RULE_REAL(Spells, NPCResistMod, 0.00, "Skew NPC resists, resist += ResistAmount * this")
+RULE_REAL(Spells, ResistMod, 0.40, "Multiplier, chance to resist = this * ResistAmount")
+RULE_REAL(Spells, PartialHitChance, 0.7, "The chance when a spell is resisted that it will partial hit")
+RULE_REAL(Spells, PartialHitChanceFear, 0.25, "The chance when a fear spell is resisted that it will partial hit")
 RULE_INT(Spells, BaseCritChance, 0, "Base percentage chance that everyone has to crit a spell")
 RULE_INT(Spells, BaseCritRatio, 100, "Base percentage bonus to damage on a successful spell crit. 100=2xdamage")
 RULE_INT(Spells, WizCritLevel, 12, "Level wizards first get spell crits")
