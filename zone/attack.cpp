@@ -213,8 +213,13 @@ int Mob::GetTotalToHit(EQ::skills::SkillType skill, int chance_mod)
 	// unsure on the stacking order of these effects, rather hard to parse
 	// item mod2 accuracy isn't applied to range? Theory crafting and parses back it up I guess
 	// mod2 accuracy -- flat bonus
-	if (skill != EQ::skills::SkillArchery && skill != EQ::skills::SkillThrowing)
-		accuracy += itembonuses.HitChance;
+	// NOTE: Removing the Ranged/Thrown check as I could find the occasional source that says Accuracy SHOULD affect ranged/thrown in era,
+	// and the only stuff I could find that said otherwise was from Omens Expansion or later when Sharpshooting (accuracy for Ranged/Thrown) was added.
+	// Also applying a scale factor as sources suggest Accuracy should reduce number of missing by 0.1% per point, so 150 = 15% reduction in misses.
+	// Based on my calculator 150 Accuracy was reducing misses by too much (closer to 20%)
+	// NOTE: This doesn't mean if you have a 30% miss chance you now miss 15%.  It means if you have a 30% miss chance you now have a 30% * (100% - 15%) = 30% * 85% = 25.5% miss chance
+	// Using same scale factor for Avoidance and Accuracy since they impact the formula about the same.
+	accuracy += itembonuses.HitChance * RuleI(Combat, PCAccAvoidMod2ScaleFactor) / 100;
 
 	//518 Increase ATK accuracy by percentage, stackable
 	auto atkhit_bonus = itembonuses.Attack_Accuracy_Max_Percent + aabonuses.Attack_Accuracy_Max_Percent + spellbonuses.Attack_Accuracy_Max_Percent;
@@ -289,7 +294,11 @@ int Mob::compute_defense()
 		defense += round(static_cast<double>(defense) * static_cast<double>(ac_bonus) * 0.0001);
 	}
 
-	defense += itembonuses.AvoidMeleeChance; // item mod2
+	// Based on my calculator 150 Avoidance was reducing misses by too much (closer to 20%)
+	// NOTE: This doesn't mean if you have a 30% miss chance you now miss 15%.  It means if you have a 30% miss chance you now have a 30% * (100% - 15%) = 30% * 85% = 25.5% miss chance
+	// Using same scale factor for Avoidance and Accuracy since they impact the formula about the same.
+	defense += itembonuses.AvoidMeleeChance * RuleI(Combat, PCAccAvoidMod2ScaleFactor) / 100; // item mod2
+
 	if (IsNPC()) {
 		defense += CastToNPC()->GetAvoidanceRating();
 	}
@@ -5815,8 +5824,8 @@ void Mob::CommonOutgoingHitSuccess(Mob* defender, DamageHitInfo &hit, ExtraAttac
 		int headshot = TryHeadShot(defender, hit.skill);
 		if (headshot > 0) {
 			hit.damage_done = headshot;
-		}
-		else if (GetClass() == RANGER && GetLevel() > 50) { // no double dmg on headshot
+			return;
+		} else if (GetClass() == RANGER && GetLevel() > 50) { // no double dmg on headshot
 			// Double Damage Bonus should apply to Permarooted mobs
 			if (defender->IsNPC() && !defender->IsMoving() && !(defender->IsRooted() && !defender->permarooted)) {
 				hit.damage_done *= 2;
@@ -5832,20 +5841,22 @@ void Mob::CommonOutgoingHitSuccess(Mob* defender, DamageHitInfo &hit, ExtraAttac
 	int min_mod = hit.base_damage * GetMeleeMinDamageMod_SE(hit.skill) / 100;
 	if (hit.skill == EQ::skills::SkillBackstab) {
 		extra_mincap = GetLevel() < 7 ? 7 : GetLevel();
-		if (GetLevel() >= 60)
+
+		if (GetLevel() >= 60) {
 			extra_mincap = GetLevel() * 2;
-		else if (GetLevel() > 50)
+		} else if (GetLevel() > 50) {
 			extra_mincap = GetLevel() * 3 / 2;
+		}
+
 		if (IsSpecialAttack(eSpecialAttacks::ChaoticStab)) {
 			hit.damage_done = extra_mincap;
-		}
-		else {
+		} else {
 			int ass = TryAssassinate(defender, hit.skill);
-			if (ass > 0)
+			if (ass > 0) {
 				hit.damage_done = ass;
+			}
 		}
-	}
-	else if (hit.skill == EQ::skills::SkillFrenzy && GetClass() == BERSERKER && GetLevel() > 50) {
+	} else if (hit.skill == EQ::skills::SkillFrenzy && GetClass() == BERSERKER && GetLevel() > 50) {
 		extra_mincap = 4 * GetLevel() / 5;
 	}
 
@@ -5856,13 +5867,15 @@ void Mob::CommonOutgoingHitSuccess(Mob* defender, DamageHitInfo &hit, ExtraAttac
 	hit.min_damage += GetSkillDmgAmt(hit.skill) + GetPositionalDmgAmt(defender);
 
 	// shielding mod2
-	if (defender->itembonuses.MeleeMitigation)
+	if (defender->itembonuses.MeleeMitigation) {
 		hit.min_damage -= hit.min_damage * defender->itembonuses.MeleeMitigation / 100;
+	}
 
 	ApplyMeleeDamageMods(hit.skill, hit.damage_done, defender, opts);
 	min_mod = std::max(min_mod, extra_mincap);
-	if (min_mod && hit.damage_done < min_mod) // SPA 186
+	if (min_mod && hit.damage_done < min_mod) { // SPA 186
 		hit.damage_done = min_mod;
+	}
 
 	TryCriticalHit(defender, hit, opts);
 
@@ -5885,28 +5898,34 @@ void Mob::CommonOutgoingHitSuccess(Mob* defender, DamageHitInfo &hit, ExtraAttac
 	int spec_mod = 0;
 	if (IsSpecialAttack(eSpecialAttacks::Rampage)) {
 		int mod = GetSpecialAbilityParam(SPECATK_RAMPAGE, 2);
-		if (mod > 0)
+		if (mod > 0) {
 			spec_mod = mod;
+		}
 		if ((IsPet() || IsTempPet()) && IsPetOwnerClient()) {
 			//SE_PC_Pet_Rampage SPA 464 on pet, damage modifier
 			int spell_mod = spellbonuses.PC_Pet_Rampage[SBIndex::PET_RAMPAGE_DMG_MOD] + itembonuses.PC_Pet_Rampage[SBIndex::PET_RAMPAGE_DMG_MOD] + aabonuses.PC_Pet_Rampage[SBIndex::PET_RAMPAGE_DMG_MOD];
-			if (spell_mod > spec_mod)
+			if (spell_mod > spec_mod) {
 				spec_mod = spell_mod;
+			}
 		}
 	}
 	else if (IsSpecialAttack(eSpecialAttacks::AERampage)) {
 		int mod = GetSpecialAbilityParam(SPECATK_AREA_RAMPAGE, 2);
-		if (mod > 0)
+		if (mod > 0) {
 			spec_mod = mod;
+		}
+
 		if ((IsPet() || IsTempPet()) && IsPetOwnerClient()) {
 			//SE_PC_Pet_AE_Rampage SPA 465 on pet, damage modifier
 			int spell_mod = spellbonuses.PC_Pet_AE_Rampage[SBIndex::PET_RAMPAGE_DMG_MOD] + itembonuses.PC_Pet_AE_Rampage[SBIndex::PET_RAMPAGE_DMG_MOD] + aabonuses.PC_Pet_AE_Rampage[SBIndex::PET_RAMPAGE_DMG_MOD];
-			if (spell_mod > spec_mod)
+			if (spell_mod > spec_mod) {
 				spec_mod = spell_mod;
+			}
 		}
 	}
-	if (spec_mod > 0)
+	if (spec_mod > 0) {
 		hit.damage_done = (hit.damage_done * spec_mod) / 100;
+	}
 
 	int pct_damage_reduction = defender->GetSkillDmgTaken(hit.skill, opts) + defender->GetPositionalDmgTaken(this);
 
