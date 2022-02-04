@@ -519,6 +519,7 @@ RULE_BOOL(Combat, ThrowingConsumesAmmo, true, "Set to false to disable Throwing 
 RULE_BOOL(Combat, UseLiveRiposteMechanics, false, "Set to true to disable SPA 173 SE_RiposteChance from making those with the effect on them immune to enrage, can longer riposte from a riposte.")
 RULE_INT(Combat, TripleAttackChanceWarrior, 125, "Innate Chance for Warrior to Triple Attack after a Double Attack (125 = 12.5%). DEFAULT: 125")
 RULE_INT(Combat, TripleAttackChanceMonk, 200, "Innate Chance for Monk to Triple Attack after a Double Attack (200 = 20%). DEFAULT: 200")
+RULE_BOOL(Combat, RogueBackstabHasteCorrection, true, "Toggle to enable correction for Haste impacting Backstab DPS too much.  DEFAULT: true")
 RULE_REAL(Combat, SlayDamageAdjustment, 1.0, "Slay Damage Adjustment")
 RULE_CATEGORY_END()
 
