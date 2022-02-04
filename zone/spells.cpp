@@ -4713,7 +4713,7 @@ bool Mob::IsImmuneToSpell(uint16 spell_id, Mob *caster)
 
 	if(IsCharmSpell(spell_id))
 	{
-		if(GetSpecialAbility(UNCHARMABLE))
+		if (GetSpecialAbility(UNCHARMABLE) || IsPet())
 		{
 			LogSpells("We are immune to Charm spells");
 			caster->MessageString(Chat::Red, CANNOT_CHARM);	// need to verify message type, not in MQ2Cast for easy look up
@@ -4834,35 +4834,34 @@ int Mob::GetResist(uint8 resist_type)
 // pvp_resist_cap
 float Mob::ResistSpell(uint8 resist_type, uint16 spell_id, Mob *caster, bool use_resist_override, int resist_override, bool CharismaCheck, bool CharmTick, bool IsRoot, int level_override)
 {
+	// Pets use owner's resistances
+	if (IsPet()) {
+		return GetOwner()->ResistSpell(resist_type, spell_id, caster, use_resist_override, resist_override, CharismaCheck, CharmTick, IsRoot, level_override);
+	}
 
-	if(!caster)
-	{
+	if(!caster)	{
 		return 100;
 	}
 
-	if(spell_id != 0 && !IsValidSpell(spell_id))
-	{
+	if(spell_id != 0 && !IsValidSpell(spell_id)) {
 		return 0;
 	}
 
-	if(GetSpecialAbility(IMMUNE_CASTING_FROM_RANGE))
-	{
+	if(GetSpecialAbility(IMMUNE_CASTING_FROM_RANGE)) {
 		if(!caster->CombatRange(this))
 		{
 			return(0);
 		}
 	}
 
-	if(GetSpecialAbility(IMMUNE_MAGIC))
-	{
+	if(GetSpecialAbility(IMMUNE_MAGIC))	{
 		LogSpells("We are immune to magic, so we fully resist the spell [{}]", spell_id);
 		return(0);
 	}
 
 	// Special case. If the caster has the Unholy Aura Discipline activated and the spell is HT,
 	// or improved HT then the resist type is disease.
-	if ((spell_id == SPELL_HARM_TOUCH || spell_id == SPELL_HARM_TOUCH2) && caster->IsClient() && caster->CastToClient()->FindBuff(DISC_UNHOLY_AURA))
-	{
+	if ((spell_id == SPELL_HARM_TOUCH || spell_id == SPELL_HARM_TOUCH2) && caster->IsClient() && caster->CastToClient()->FindBuff(DISC_UNHOLY_AURA)) {
 		resist_type = RESIST_DISEASE;
 	}
 
@@ -4880,8 +4879,9 @@ float Mob::ResistSpell(uint8 resist_type, uint16 spell_id, Mob *caster, bool use
 		}
 	}
 
-	if(caster->GetSpecialAbility(CASTING_RESIST_DIFF))
+	if(caster->GetSpecialAbility(CASTING_RESIST_DIFF)) {
 		resist_modifier += caster->GetSpecialAbilityParam(CASTING_RESIST_DIFF, 0);
+	}
 
 	int focus_resist = caster->GetFocusEffect(focusResistRate, spell_id);
 
@@ -4893,38 +4893,32 @@ float Mob::ResistSpell(uint8 resist_type, uint16 spell_id, Mob *caster, bool use
 
 	//Check for fear resist
 	bool IsFear = false;
-	if(IsFearSpell(spell_id))
-	{
+	if(IsFearSpell(spell_id)) {
 		IsFear = true;
 		int fear_resist_bonuses = CalcFearResistChance();
-		if(zone->random.Roll(fear_resist_bonuses))
-		{
+		if(zone->random.Roll(fear_resist_bonuses)) {
 			LogSpells("Resisted spell in fear resistance, had [{}] chance to resist", fear_resist_bonuses);
 			return 0;
 		}
 	}
 
-	if (!CharmTick){
-
+	if (!CharmTick) {
 		//Check for Spell Effect specific resistance chances (ie AA Mental Fortitude)
 		int se_resist_bonuses = GetSpellEffectResistChance(spell_id);
-		if(se_resist_bonuses && zone->random.Roll(se_resist_bonuses))
-		{
+		if(se_resist_bonuses && zone->random.Roll(se_resist_bonuses)) {
 			return 0;
 		}
 
 		// Check for Chance to Resist Spell bonuses (ie Sanctification Discipline)
 		int resist_bonuses = CalcResistChanceBonus();
-		if(resist_bonuses && zone->random.Roll(resist_bonuses))
-		{
+		if(resist_bonuses && zone->random.Roll(resist_bonuses)) {
 			LogSpells("Resisted spell in sanctification, had [{}] chance to resist", resist_bonuses);
 			return 0;
 		}
 	}
 
 	//Get the resist chance for the target
-	if(resist_type == RESIST_NONE || spells[spell_id].no_resist)
-	{
+	if(resist_type == RESIST_NONE || spells[spell_id].no_resist) {
 		LogSpells("Spell was unresistable");
 		return 100;
 	}
@@ -4952,66 +4946,49 @@ float Mob::ResistSpell(uint8 resist_type, uint16 spell_id, Mob *caster, bool use
 	//Physical Resists are calclated using their own formula derived from extensive parsing.
 	if (resist_type == RESIST_PHYSICAL) {
 		level_mod = ResistPhysical(temp_level_diff, caster_level);
-	}
-
-	else {
-
-		if(IsNPC() && level >= RuleI(Casting,ResistFalloff))
-		{
+	} else {
+		if(IsNPC() && level >= RuleI(Casting,ResistFalloff)) {
 			int a = (RuleI(Casting,ResistFalloff)-1) - caster_level;
-			if(a > 0)
-			{
+			if(a > 0) {
 				temp_level_diff = a;
-			}
-			else
-			{
+			} else {
 				temp_level_diff = 0;
 			}
 		}
 
-		if(IsClient() && level >= 21 && temp_level_diff > 15)
-		{
+		if(IsClient() && level >= 21 && temp_level_diff > 15) {
 			temp_level_diff = 15;
 		}
 
-		if(IsNPC() && temp_level_diff < -9)
-		{
+		if(IsNPC() && temp_level_diff < -9) {
 			temp_level_diff = -9;
 		}
 
 		level_mod = temp_level_diff * temp_level_diff / 2;
-		if(temp_level_diff < 0)
-		{
+		if(temp_level_diff < 0) {
 			level_mod = -level_mod;
 		}
 
-		if(IsNPC() && (caster_level - level) < -20)
-		{
+		if(IsNPC() && (caster_level - level) < -20) {
 			level_mod = 1000;
 		}
 
 		//Even more level stuff this time dealing with damage spells
-		if(IsNPC() && IsDamageSpell(spell_id) && level >= 17)
-		{
+		if(IsNPC() && IsDamageSpell(spell_id) && level >= 17) {
 			int level_diff;
-			if(level >= RuleI(Casting,ResistFalloff))
-			{
+			if(level >= RuleI(Casting,ResistFalloff)) {
 				level_diff = (RuleI(Casting,ResistFalloff)-1) - caster_level;
-				if(level_diff < 0)
-				{
+				if(level_diff < 0) {
 					level_diff = 0;
 				}
-			}
-			else
-			{
+			} else {
 				level_diff = level - caster_level;
 			}
 			level_mod += (2 * level_diff);
 		}
 	}
 
-	if (CharismaCheck)
-	{
+	if (CharismaCheck) {
 		/*
 		Charisma ONLY effects the initial resist check when charm is cast with 10 CHA = -1 Resist mod up to 255 CHA (min ~ 75 cha)
 		Charisma less than ~ 75 gives a postive modifier to resist checks at approximate ratio of -10 CHA = +6 Resist.
@@ -5024,25 +5001,20 @@ float Mob::ResistSpell(uint8 resist_type, uint16 spell_id, Mob *caster, bool use
 		int16 charisma = caster->GetCHA();
 
 		if (IsFear && (spells[spell_id].target_type != ST_Undead)){
-
-			if (charisma < 100)
+			if (charisma < 100) {
 				resist_modifier -= 20;
-
-			else if (charisma <= 255)
+			} else if (charisma <= 255) {
 				resist_modifier += (charisma - 100)/8;
-		}
-
-		else {
-
-			if (charisma >= 75){
-
-				if (charisma > RuleI(Spells, CharismaEffectivenessCap))
-					charisma = RuleI(Spells, CharismaEffectivenessCap);
-
-				resist_modifier -= (charisma - 75)/RuleI(Spells, CharismaEffectiveness);
 			}
-			else
+		} else {
+			if (charisma >= 75){
+				if (charisma > RuleI(Spells, CharismaEffectivenessCap)) {
+					charisma = RuleI(Spells, CharismaEffectivenessCap);
+				}
+				resist_modifier -= (charisma - 75)/RuleI(Spells, CharismaEffectiveness);
+			} else {
 				resist_modifier += ((75 - charisma)/10) * 6; //Increase Resist Chance
+			}
 		}
 
 	}
@@ -5050,8 +5022,9 @@ float Mob::ResistSpell(uint8 resist_type, uint16 spell_id, Mob *caster, bool use
 
 	//Lull spells DO NOT use regular resists on initial cast, instead they use a flat +15 modifier. Live parses confirm this.
 	//Regular resists are used when checking if mob will aggro off of a lull resist.
-	if(!CharismaCheck && IsHarmonySpell(spell_id))
+	if(!CharismaCheck && IsHarmonySpell(spell_id)) {
 		target_resist = 15;
+	}
 
 	//Add our level, resist and -spell resist modifier to our roll chance
 	resist_chance += level_mod;
@@ -5061,90 +5034,72 @@ float Mob::ResistSpell(uint8 resist_type, uint16 spell_id, Mob *caster, bool use
 	resist_chance = mod_spell_resist(resist_chance, level_mod, resist_modifier, target_resist, resist_type, spell_id, caster);
 
 	//Do our min and max resist checks.
-	if(resist_chance > spells[spell_id].max_resist && spells[spell_id].max_resist != 0)
-	{
+	if(resist_chance > spells[spell_id].max_resist && spells[spell_id].max_resist != 0) {
 		resist_chance = spells[spell_id].max_resist;
 	}
 
-	if(resist_chance < spells[spell_id].min_resist && spells[spell_id].min_resist != 0)
-	{
+	if(resist_chance < spells[spell_id].min_resist && spells[spell_id].min_resist != 0) {
 		resist_chance = spells[spell_id].min_resist;
 	}
 
 	//Average charm duration agianst mobs with 0% chance to resist on LIVE is ~ 68 ticks.
 	//Minimum resist chance should be caclulated factoring in the RuleI(Spells, CharmBreakCheckChance)
 	if (CharmTick) {
-
 		float min_charmbreakchance = ((100.0f/static_cast<float>(RuleI(Spells, CharmBreakCheckChance)))/66.0f * 100.0f)*2.0f;
-		if (resist_chance < static_cast<int>(min_charmbreakchance))
+		if (resist_chance < static_cast<int>(min_charmbreakchance)) {
 			resist_chance = min_charmbreakchance;
+		}
 	}
 
 	//Average root duration agianst mobs with 0% chance to resist on LIVE is ~ 22 ticks (6% resist chance).
 	//Minimum resist chance should be caclulated factoring in the RuleI(Spells, RootBreakCheckChance)
 	if (IsRoot) {
-
 		float min_rootbreakchance = ((100.0f/static_cast<float>(RuleI(Spells, RootBreakCheckChance)))/22.0f * 100.0f)*2.0f;
 
-		if (resist_chance < static_cast<int>(min_rootbreakchance))
+		if (resist_chance < static_cast<int>(min_rootbreakchance)) {
 			resist_chance = min_rootbreakchance;
+		}
 	}
 
 	//Finally our roll
 	int roll = zone->random.Int(0, 200);
-	if(roll > resist_chance)
-	{
+	if(roll > resist_chance) {
 		return 100;
-	}
-	else
-	{
+	} else {
 		//This is confusing but it's basically right
 		//It skews partial resists up over 100 more often than not
-		if(!IsPartialCapableSpell(spell_id))
-		{
+		if(!IsPartialCapableSpell(spell_id)) {
 			return 0;
-		}
-		else
-		{
-			if(resist_chance < 1)
-			{
+		} else {
+			if(resist_chance < 1) {
 				resist_chance = 1;
 			}
 
 			int partial_modifier = ((150 * (resist_chance - roll)) / resist_chance);
 
-			if(IsNPC())
-			{
-				if(level > caster_level && level >= 17 && caster_level <= 50)
-				{
+			if(IsNPC()) {
+				if(level > caster_level && level >= 17 && caster_level <= 50) {
 					partial_modifier += 5;
 				}
 
-				if(level >= 30 && caster_level < 50)
-				{
+				if(level >= 30 && caster_level < 50) {
 					partial_modifier += (caster_level - 25);
 				}
 
-				if(level < 15)
-				{
+				if(level < 15) {
 					partial_modifier -= 5;
 				}
 			}
 
-			if(caster->IsNPC())
-			{
-				if((level - caster_level) >= 20)
-				{
+			if(caster->IsNPC()) {
+				if((level - caster_level) >= 20) {
 					partial_modifier += (level - caster_level) * 1.5;
 				}
 			}
 
-			if(partial_modifier <= 0)
-			{
+			if(partial_modifier <= 0) {
 				return 100;
-			}
-			else if(partial_modifier >= 100)
-			{
+			} else if(partial_modifier >= 100) {
 				return 0;
 			}
 
