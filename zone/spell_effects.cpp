@@ -503,7 +503,12 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 						LogDebug("Succor/Evacuation Spell In Same Zone");
 #endif
 						if (IsClient()) {
-						CastToClient()->MovePC(zone->GetZoneID(), zone->GetInstanceID(), x, y, z, heading, 0,
+							// break charmed pets before moving to not poof pet (exploitable otherwise)
+							if (HasPet() && GetPet()->IsCharmed()) {
+								GetPet()->BuffFadeByEffect(SE_Charm);
+							}
+
+							CastToClient()->MovePC(zone->GetZoneID(), zone->GetInstanceID(), x, y, z, heading, 0,
 												EvacToSafeCoords);
 						} else {
 							GMMove(x, y, z, heading);
@@ -2148,19 +2153,23 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 
 			case SE_SummonPC:
 			{
-				if (!caster)
+				if (!caster) {
 					break;
+				}
+
 				if (IsClient()) {
+					// clear aggro when summoned in zone
+					if (caster->CalculateDistance(GetX(), GetY(), GetZ()) >= RuleR(Spells, CallOfTheHeroAggroClearDist)) {
+						entity_list.ClearAggro(this);
+					}
+
 					CastToClient()->MovePC(zone->GetZoneID(), zone->GetInstanceID(), caster->GetX(),
 							       caster->GetY(), caster->GetZ(), caster->GetHeading(), 2,
 							       SummonPC);
 					Message(Chat::Yellow, "You have been summoned!");
-					// only for beneficial spells like Call of the Hero
-					// This clear probably isn't actually needed, but need to investigate more
-					if (IsBeneficialSpell(spell_id))
-						entity_list.ClearAggro(this);
-				} else
+				} else {
 					caster->Message(Chat::Red, "This spell can only be cast on players.");
+				}
 
 				break;
 			}
