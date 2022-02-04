@@ -1836,6 +1836,12 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 #ifdef SPELL_EFFECT_SPAM
 				snprintf(effect_desc, _EDLEN, "Weapon Proc: %s (id %d)", spells[effect_value].name, procid);
 #endif
+				// Special case for Vampiric Embrace. If this is a Shadow Knight, the proc is different.
+				if (procid == PI_VampEmbraceNecro && GetClass() == SHADOWKNIGHT)
+				{
+					procid = PI_VampEmbraceShadow;
+				}
+
 				AddProcToWeapon(procid, false, 100 + spells[spell_id].limit_value[i], spell_id, caster_level, GetProcLimitTimer(spell_id, ProcType::MELEE_PROC));
 				break;
 			}
@@ -3602,7 +3608,7 @@ snare has both of them negative, yet their range should work the same:
 		case 144:	// Level 40+ Harm Touch
 			result = ubase + (caster_level * 10) + (caster_level - 40) * 20;
 			break;
-			
+
 		//these are used in stacking effects... formula unknown
 		case 201:
 		case 203:
@@ -4091,6 +4097,12 @@ void Mob::BuffFadeBySlot(int slot, bool iRecalcBonuses)
 			case SE_WeaponProc:
 			{
 				uint16 procid = GetProcID(buffs[slot].spellid, i);
+
+				// Special case for Vampiric Embrace. If this is a Shadow Knight, the proc is different.
+				if (procid == PI_VampEmbraceNecro && GetClass() == SHADOWKNIGHT)
+				{
+					procid = PI_VampEmbraceShadow;
+				}
 				RemoveProcFromWeapon(procid, false);
 				break;
 			}
