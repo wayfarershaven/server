@@ -1005,8 +1005,10 @@ void EntityList::AESpell(
 	else if (spells[spell_id].aoe_max_targets) {
 		max_targets_allowed = spells[spell_id].aoe_max_targets;
 	}
-	else if (IsTargetableAESpell(spell_id) && is_detrimental_spell && !is_npc && !IsEffectInSpell(spell_id, SE_Lull) && !IsEffectInSpell(spell_id, SE_Mez)) {
-		max_targets_allowed = 4;
+	else if (IsTargetableAESpell(spell_id) && is_detrimental_spell && !is_npc) {
+		// targeted AoE will hit target mob and three other mobs
+		caster_mob->SpellOnTarget(spell_id, center_mob, false, true, resist_adjust);
+		max_targets_allowed = 3;
 	}
 
 	int   target_hit_counter = 0;
