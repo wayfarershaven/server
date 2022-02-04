@@ -33,76 +33,110 @@ int Mob::GetBaseSkillDamage(EQ::skills::SkillType skill, Mob *target)
 {
 	int base = EQ::skills::GetBaseDamage(skill);
 	auto skill_level = GetSkill(skill);
+	float ac_bonus = 0.0f;
 	switch (skill) {
 	case EQ::skills::SkillDragonPunch:
 	case EQ::skills::SkillEagleStrike:
-	case EQ::skills::SkillTigerClaw:
-	case EQ::skills::SkillRoundKick:
-		if (skill_level >= 25)
+	case EQ::skills::SkillTigerClaw: {
+		if (IsClient()) {
+			auto inst = CastToClient()->GetInv().GetItem(EQ::invslot::slotHands);
+			if (inst) {
+				ac_bonus = inst->GetItemArmorClass(true) / 25.0f;
+			}
+		}
+		if (skill_level >= 25) {
 			base++;
-		if (skill_level >= 75)
+		}
+		if (skill_level >= 75) {
 			base++;
-		if (skill_level >= 125)
+		}
+		if (skill_level >= 125) {
 			base++;
-		if (skill_level >= 175)
+		}
+		if (skill_level >= 175) {
 			base++;
-		return base;
+		}
+		return (base + static_cast<int>(ac_bonus));
+	}
 	case EQ::skills::SkillFrenzy:
 		if (IsClient() && CastToClient()->GetInv().GetItem(EQ::invslot::slotPrimary)) {
-			if (GetLevel() > 15)
+			if (GetLevel() > 15) {
 				base += GetLevel() - 15;
-			if (base > 23)
+			}
+			if (base > 23) {
 				base = 23;
-			if (GetLevel() > 50)
+			}
+			if (GetLevel() > 50) {
 				base += 2;
-			if (GetLevel() > 54)
+			}
+			if (GetLevel() > 54) {
 				base++;
-			if (GetLevel() > 59)
+			}
+			if (GetLevel() > 59) {
 				base++;
+			}
 		}
 		return base;
 	case EQ::skills::SkillFlyingKick: {
-		float skill_bonus = skill_level / 9.0f;
-		float ac_bonus = 0.0f;
 		if (IsClient()) {
 			auto inst = CastToClient()->GetInv().GetItem(EQ::invslot::slotFeet);
-			if (inst)
+			if (inst) {
 				ac_bonus = inst->GetItemArmorClass(true) / 25.0f;
+			}
 		}
-		if (ac_bonus > skill_bonus)
-			ac_bonus = skill_bonus;
-		return static_cast<int>(ac_bonus + skill_bonus);
+		if (skill_level >= 20) {
+			base++;
+		}
+		if (skill_level >= 60) {
+			base++;
+		}
+		if (skill_level >= 100) {
+			base++;
+		}
+		if (skill_level >= 140) {
+			base++;
+		}
+		if (skill_level >= 180) {
+			base++;
+		}
+		// return static_cast<int>(ac_bonus + skill_bonus);
+		return (base + static_cast<int>(ac_bonus));
 	}
-	case EQ::skills::SkillKick: {
+	case EQ::skills::SkillKick:
+	case EQ::skills::SkillRoundKick: {
 		// there is some base *= 4 case in here?
-		float skill_bonus = skill_level / 10.0f;
-		float ac_bonus = 0.0f;
 		if (IsClient()) {
 			auto inst = CastToClient()->GetInv().GetItem(EQ::invslot::slotFeet);
 			if (inst)
 				ac_bonus = inst->GetItemArmorClass(true) / 25.0f;
 		}
-		if (ac_bonus > skill_bonus)
-			ac_bonus = skill_bonus;
-		return static_cast<int>(ac_bonus + skill_bonus);
+		if (skill_level >= 75) {
+			base++;
+		}
+		if (skill_level >= 175) {
+			base++;
+		}
+		return (base + static_cast<int>(ac_bonus));
 	}
 	case EQ::skills::SkillBash: {
-		float skill_bonus = skill_level / 10.0f;
-		float ac_bonus = 0.0f;
 		const EQ::ItemInstance *inst = nullptr;
 		if (IsClient()) {
-			if (HasShieldEquiped())
+			if (HasShieldEquiped()) {
 				inst = CastToClient()->GetInv().GetItem(EQ::invslot::slotSecondary);
-			else if (HasTwoHanderEquipped())
-				inst = CastToClient()->GetInv().GetItem(EQ::invslot::slotPrimary);
+			}
 		}
-		if (inst)
+		if (inst) {
 			ac_bonus = inst->GetItemArmorClass(true) / 25.0f;
-		else
+		} else {
 			return 0; // return 0 in cases where we don't have an item
-		if (ac_bonus > skill_bonus)
-			ac_bonus = skill_bonus;
-		return static_cast<int>(ac_bonus + skill_bonus);
+		}
+		if (skill_level >= 75) {
+			base++;
+		}
+		if (skill_level >= 175) {
+			base++;
+		}
+		return (base + static_cast<int>(ac_bonus));
 	}
 	case EQ::skills::SkillBackstab: {
 		float skill_bonus = static_cast<float>(skill_level) * 0.02f;
@@ -211,6 +245,11 @@ void Mob::DoSpecialAttackDamage(Mob *who, EQ::skills::SkillType skill, int32 bas
 		// auto orig_accuracy = my_hit.tohit;
 		auto adjusted_accuracy = my_hit.tohit * backstab_accuracy_adjust / 1000;
 		my_hit.tohit = adjusted_accuracy;
+	}
+
+	// Adjust min damage for Monk Flying Kick based on level.  This should be for a 40 damage min cap at level 60.
+	if (skill == EQ::skills::SkillFlyingKick) {
+		my_hit.min_damage = GetLevel() - 22;
 	}
 	
 	my_hit.hand = EQ::invslot::slotPrimary; // Avoid checks hand for throwing/archery exclusion, primary should
