@@ -504,8 +504,9 @@ void Client::AddEXP(uint32 in_add_exp, uint8 conlevel, bool resexp) {
 	uint32 exp = 0;
 	uint32 aaexp = 0;
 
-	if (m_epp.perAA<0 || m_epp.perAA>100)
-		m_epp.perAA=0;	// stop exploit with sanity check
+	if (m_epp.perAA<0 || m_epp.perAA>100) {
+		m_epp.perAA = 0;    // stop exploit with sanity check
+	}
 
 	// Calculate regular XP
 	CalculateExp(in_add_exp, exp, aaexp, conlevel, resexp);
@@ -546,6 +547,22 @@ void Client::AddEXP(uint32 in_add_exp, uint8 conlevel, bool resexp) {
 		aaexp = 0;
 		m_epp.perAA = 0;
 	}
+
+	// Check for Unused AA Cap.  If at or above cap, set AAs to cap, set aaexp to 0 and set aa percentage to 0.
+	// Doing this here means potentially one kill wasted worth of experience, but easiest to put it here than to rewrite this function.
+	/* Disabled Until Next Expansion due to AA Reimbursement
+	if (m_pp.aapoints >= RuleI(Character, UnusedAAPointCap)) {
+		if (aaexp > 0) {
+			Message(15, "You have reached the Unused AA Point Cap (%d).  Please spend some AA Points before continuing.  Setting AA percentage to 0.", RuleI(Character, UnusedAAPointCap));
+			aaexp = 0;
+			m_epp.perAA = 0;
+		}
+		if (m_pp.aapoints > RuleI(Character, UnusedAAPointCap)) {
+			Message(15, "You have exceeded the Unused AA Point Cap (%d).  Unused AA Points reduced to %d.", RuleI(Character, UnusedAAPointCap), RuleI(Character, UnusedAAPointCap));
+			m_pp.aapoints = RuleI(Character, UnusedAAPointCap);
+		}
+	}
+	*/
 
 	// Now update our character's normal and AA xp
 	SetEXP(exp, aaexp, resexp);
