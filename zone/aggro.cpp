@@ -551,7 +551,8 @@ bool Mob::CheckWillAggro(Mob *mob) {
 					mob->IsClient() &&
 					mob->CastToClient()->IsSitting()
 				) ||
-				mob->GetLevelCon(GetLevel()) != CON_GRAY
+				mob->GetLevelCon(GetLevel()) != CON_GREEN
+				|| ( GetLevel() >= RuleB(Aggro, GrayAggroLevel))
 			) &&
 			(
 				faction_value == FACTION_SCOWLS	||
