@@ -1119,7 +1119,7 @@ void Mob::AI_Process() {
 		if (target->IsMezzed() && IsPet()) {
 
 			auto pet_owner = GetOwner();
-			if (pet_owner && pet_owner->IsClient()) {
+			if (pet_owner && pet_owner->IsClient() && (!pet_owner->CastToClient()->ClientFinishedLoading() || !RuleB(Aggro, PetsTriggerAggro))) {
 				pet_owner->MessageString(Chat::NPCQuestSay, CANNOT_WAKE, GetCleanName(), target->GetCleanName());
 			}
 
