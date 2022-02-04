@@ -234,6 +234,11 @@ int Mob::GetTotalToHit(EQ::skills::SkillType skill, int chance_mod)
 		aabonuses.HitChanceEffect[skill] +
 		spellbonuses.HitChanceEffect[skill];
 
+	if(skill == EQ::skills::SkillArchery) 	{
+		hit_bonus += spellbonuses.increasearchery + aabonuses.increasearchery + itembonuses.increasearchery;
+		hit_bonus -= hit_bonus*RuleR(Combat, ArcheryHitPenalty);
+	}
+
 	accuracy = (accuracy * (100 + hit_bonus)) / 100;
 
 	// TODO: April 2003 added an archery/throwing PVP accuracy penalty while moving, should be in here some where,
@@ -1103,7 +1108,6 @@ int Mob::GetWeaponDamage(Mob *against, const EQ::ItemData *weapon_item) {
 		if (weapon_item && weapon_item->ElemDmgAmt) {
 			//we don't check resist for npcs here
 			eledmg = weapon_item->ElemDmgAmt;
-			dmg += eledmg;
 		}
 	}
 
@@ -1119,13 +1123,15 @@ int Mob::GetWeaponDamage(Mob *against, const EQ::ItemData *weapon_item) {
 		}
 
 		if (!banedmg) {
-			if (!GetSpecialAbility(SPECATK_BANE))
+			if (!GetSpecialAbility(SPECATK_BANE)) {
 				return 0;
-			else
+			} else {
 				return 1;
+			}
 		}
-		else
-			dmg += banedmg;
+		else {
+			dmg += (banedmg + eledmg);
+		}
 	}
 	else {
 		if (weapon_item) {
@@ -1144,8 +1150,9 @@ int Mob::GetWeaponDamage(Mob *against, const EQ::ItemData *weapon_item) {
 	if (dmg <= 0) {
 		return 0;
 	}
-	else
+	else {
 		return dmg;
+	}
 }
 
 int Mob::GetWeaponDamage(Mob *against, const EQ::ItemInstance *weapon_item, uint32 *hate)
@@ -2766,7 +2773,7 @@ void Mob::AddToHateList(Mob* other, uint32 hate /*= 0*/, int32 damage /*= 0*/, b
 			hate = ((hate * (hatemod)) / 100);
 		}
 		else {
-			hate += 100; // 100 bonus initial aggro
+			hate += RuleI(Aggro, InitialAggroBonus); // Bonus Initial Aggro
 		}
 	}
 
@@ -3554,15 +3561,26 @@ bool Client::CheckDoubleAttack()
 // with varying triple attack skill (1-3% error at least)
 bool Client::CheckTripleAttack()
 {
-	int chance = GetSkill(EQ::skills::SkillTripleAttack);
-	if (chance < 1)
+	// In era, Triple Attack was an innate skill.  Don't have exact data, but found one post suggesting when
+	// they implemented Triple Attack as a skill, that 200 may have been the cap for some classes (~20% in this code).
+	// Only Level 60 Warriors and Monks get it, and making their percentage (fixed) separate as a tuning variable.
+	int chance = 0;
+
+	if (IsClient() && (GetLevel() == 60) && (GetClass() == WARRIOR)) {
+		chance = RuleI(Combat, TripleAttackChanceWarrior);
+	}
+
+	if (IsClient() && (GetLevel() == 60) && (GetClass() == MONK)) {
+		chance = RuleI(Combat, TripleAttackChanceMonk);
+	}
+
+	if (chance < 1) {
 		return false;
+	}
 
 	int inc = aabonuses.TripleAttackChance + spellbonuses.TripleAttackChance + itembonuses.TripleAttackChance;
 	chance = static_cast<int>(chance * (1 + inc / 100.0f));
-	chance = (chance * 100) / (chance + 800);
-
-	return zone->random.Int(1, 100) <= chance;
+	return zone->random.Int(1, 1000) <= chance;
 }
 
 bool Client::CheckDoubleRangedAttack() {
@@ -4898,8 +4916,10 @@ void Mob::ApplyMeleeDamageMods(uint16 skill, int &damage, Mob *defender, ExtraAt
 		dmgbonusmod += opts->melee_damage_bonus_flat;
 
 	if (defender) {
-		if (defender->IsClient() && defender->GetClass() == WARRIOR)
+		if (defender->IsClient() && defender->GetClass() == WARRIOR) {
 			dmgbonusmod -= 5;
+		}
+
 		// 168 defensive
 		dmgbonusmod += (defender->spellbonuses.MeleeMitigationEffect +
 		                defender->itembonuses.MeleeMitigationEffect +
@@ -5093,8 +5113,6 @@ void Mob::ApplyDamageTable(DamageHitInfo &hit)
 	int percent = std::min(100 + extrapercent, damage_table.max_extra);
 	hit.damage_done = (hit.damage_done * percent) / 100;
 
-	if (IsWarriorClass() && GetLevel() > 54)
-		hit.damage_done++;
 	Log(Logs::Detail, Logs::Attack, "Damage table applied %d (max %d)", percent, damage_table.max_extra);
 }
 
@@ -5489,11 +5507,16 @@ void Mob::CommonOutgoingHitSuccess(Mob* defender, DamageHitInfo &hit, ExtraAttac
 			hit.damage_done = headshot;
 		}
 		else if (GetClass() == RANGER && GetLevel() > 50) { // no double dmg on headshot
-			if ((defender->IsNPC() && !defender->IsMoving() && !defender->IsRooted()) || !RuleB(Combat, ArcheryBonusRequiresStationary)) {
+			// Double Damage Bonus should apply to Permarooted mobs
+			if (defender->IsNPC() && !defender->IsMoving() && !(defender->IsRooted() && !defender->permarooted)) {
 				hit.damage_done *= 2;
 				MessageString(Chat::MeleeCrit, BOW_DOUBLE_DAMAGE);
 			}
 		}
+
+		//Scale Factor for Archery Damage Tuning
+		LogAttack("ArcheryBaseDamageBonus [{}]", RuleR(Combat, ArcheryBaseDamageBonus));
+		hit.damage_done *= RuleR(Combat, ArcheryBaseDamageBonus);
 	}
 
 	int extra_mincap = 0;
@@ -5885,7 +5908,6 @@ void Client::DoAttackRounds(Mob *target, int hand, bool IsFromSpell)
 
 			// you can only triple from the main hand
 			if (hand == EQ::invslot::slotPrimary && CanThisClassTripleAttack()) {
-				CheckIncreaseSkill(EQ::skills::SkillTripleAttack, target, -10);
 				if (CheckTripleAttack()) {
 					Attack(target, hand, false, false, IsFromSpell);
 					auto flurrychance = aabonuses.FlurryChance + spellbonuses.FlurryChance +

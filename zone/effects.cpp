@@ -51,6 +51,7 @@ int32 Mob::GetActSpellDamage(uint16 spell_id, int32 value, Mob* target) {
 	bool Critical = false;
 	int32 base_value = value;
 	int chance = 0;
+	int32 MBCap = 9492;  //Manaburn Damage Cap, same cap whether critical or normal
 
 	// Need to scale HT damage differently after level 40! It no longer scales by the constant value in the spell file. It scales differently, instead of 10 more damage per level, it does 30 more damage per level. So we multiply the level minus 40 times 20 if they are over level 40.
 	if ((spell_id == SPELL_HARM_TOUCH || spell_id == SPELL_HARM_TOUCH2 || spell_id == SPELL_IMP_HARM_TOUCH ) && GetLevel() > 40)
@@ -114,21 +115,27 @@ int32 Mob::GetActSpellDamage(uint16 spell_id, int32 value, Mob* target) {
 			value -= GetFocusEffect(focusFcDamageAmt2, spell_id);
 			value -= GetFocusEffect(focusFcAmplifyAmt, spell_id);
 
-			if (RuleB(Spells, IgnoreSpellDmgLvlRestriction) && !spells[spell_id].no_heal_damage_item_mod && itembonuses.SpellDmg)
+			if (RuleB(Spells, IgnoreSpellDmgLvlRestriction) && !spells[spell_id].no_heal_damage_item_mod && itembonuses.SpellDmg) {
 				value -= GetExtraSpellAmt(spell_id, itembonuses.SpellDmg, base_value)*ratio / 100;
-
-			else if(!spells[spell_id].no_heal_damage_item_mod && itembonuses.SpellDmg && spells[spell_id].classes[(GetClass() % 17) - 1] >= GetLevel() - 5)
+			} else if(!spells[spell_id].no_heal_damage_item_mod && itembonuses.SpellDmg && spells[spell_id].classes[(GetClass() % 17) - 1] >= GetLevel() - 5) {
 				value -= GetExtraSpellAmt(spell_id, itembonuses.SpellDmg, base_value)*ratio/100;
-
-			else if (IsNPC() && CastToNPC()->GetSpellScale())
+			} else if (IsNPC() && CastToNPC()->GetSpellScale()) {
 				value = int(static_cast<float>(value) * CastToNPC()->GetSpellScale() / 100.0f);
+			}
+
+			// Manaburn can crit, but is still held to the same cap
+			if (spell_id == 2751) {
+				if (value < -MBCap)
+					value = -MBCap;
+			}
 
 			entity_list.MessageCloseString(
 				this, true, 100, Chat::SpellCrit,
 				OTHER_CRIT_BLAST, GetName(), itoa(-value));
 
-			if (IsClient())
+			if (IsClient()) {
 				MessageString(Chat::SpellCrit, YOU_CRIT_BLAST, itoa(-value));
+			}
 
 			return value;
 		}
@@ -153,14 +160,21 @@ int32 Mob::GetActSpellDamage(uint16 spell_id, int32 value, Mob* target) {
 	value -= GetFocusEffect(focusFcDamageAmt2, spell_id);
 	value -= GetFocusEffect(focusFcAmplifyAmt, spell_id);
 
-	if (RuleB(Spells, IgnoreSpellDmgLvlRestriction) && !spells[spell_id].no_heal_damage_item_mod && itembonuses.SpellDmg)
+	if (RuleB(Spells, IgnoreSpellDmgLvlRestriction) && !spells[spell_id].no_heal_damage_item_mod && itembonuses.SpellDmg) {
 		value -= GetExtraSpellAmt(spell_id, itembonuses.SpellDmg, base_value);
-
-	else if (!spells[spell_id].no_heal_damage_item_mod && itembonuses.SpellDmg && spells[spell_id].classes[(GetClass() % 17) - 1] >= GetLevel() - 5)
+	} else if (!spells[spell_id].no_heal_damage_item_mod && itembonuses.SpellDmg && spells[spell_id].classes[(GetClass() % 17) - 1] >= GetLevel() - 5) {
 		 value -= GetExtraSpellAmt(spell_id, itembonuses.SpellDmg, base_value);
+	}
 
-	if (IsNPC() && CastToNPC()->GetSpellScale())
+	if (IsNPC() && CastToNPC()->GetSpellScale()) {
 		value = int(static_cast<float>(value) * CastToNPC()->GetSpellScale() / 100.0f);
+	}
+
+	// Apply Manaburn damage cap
+	if (spell_id == 2751) {
+		if (value < -MBCap)
+			value = -MBCap;
+	}
 
 	return value;
 }

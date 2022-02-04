@@ -3073,7 +3073,7 @@ int Mob::CheckStackConflict(uint16 spellid1, int caster_level1, uint16 spellid2,
 			return -1;
 		}
 
-		if (!IsStackableDot(spellid1) && !IsEffectInSpell(spellid1, SE_ManaBurn)) { // mana burn spells we need to use the stacking command blocks live actually checks those first, we should probably rework to that too
+		if (!IsStackableDot(spellid1) && !(spellid1 == 2751)) { // Manaburn cannot land on a target with the debuff
 			if (caster_level1 > caster_level2) { // cur buff higher level than new
 				if (IsEffectInSpell(spellid1, SE_ImprovedTaunt)) {
 					LogSpells("SE_ImprovedTaunt level exception, overwriting");
@@ -3111,12 +3111,12 @@ int Mob::CheckStackConflict(uint16 spellid1, int caster_level1, uint16 spellid2,
 	if (spellid1 != spellid2) {
 		for (i = 0; i < EFFECT_COUNT; i++) {
 			// we don't want this optimization for mana burns
-			if (sp1.effect_id[i] != sp2.effect_id[i] || sp1.effect_id[i] == SE_ManaBurn) {
+			if (sp1.effect_id[i] != sp2.effect_id[i] || spellid1 == 2751) {	
 				effect_match = false;
 				break;
 			}
 		}
-	} else if (IsEffectInSpell(spellid1, SE_ManaBurn)) {
+	} else if (spellid1 == 2751) {
 		LogSpells("We have a Mana Burn spell that is the same, they won't stack");
 		return -1;
 	}
@@ -4845,7 +4845,7 @@ float Mob::ResistSpell(uint8 resist_type, uint16 spell_id, Mob *caster, bool use
 	{
 		resist_type = RESIST_DISEASE;
 	}
-	
+
 	//Get resist modifier and adjust it based on focus 2 resist about eq to 1% resist chance
 	int resist_modifier = 0;
 	if (use_resist_override) {
