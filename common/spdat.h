@@ -37,6 +37,7 @@
 
 // Some discipline IDs.
 #define DISC_UNHOLY_AURA 4520
+#define DISC_HOLYFORGE 4500
 
 #define SPELL_CAZIC_TOUCH 982
 #define SPELL_TOUCH_OF_VINITRAS 2859
