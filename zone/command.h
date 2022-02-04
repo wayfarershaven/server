@@ -294,6 +294,7 @@ void command_petname(Client *c, const Seperator *sep);
 void command_texture(Client *c, const Seperator *sep);
 void command_time(Client *c, const Seperator *sep);
 void command_timers(Client *c, const Seperator *sep);
+void command_timers_clear(Client *c, const Seperator *sep);
 void command_timezone(Client *c, const Seperator *sep);
 void command_title(Client *c, const Seperator *sep);
 void command_titlesuffix(Client *c, const Seperator *sep);

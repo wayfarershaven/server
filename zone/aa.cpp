@@ -1327,6 +1327,12 @@ void Client::ActivateAlternateAdvancementAbility(int rank_id, int target_id) {
 
 	CastToClient()->GetPTimers().Start(rank->spell_type + pTimerAAStart, cooldown);
 	SendAlternateAdvancementTimer(rank->spell_type, 0, 0);
+
+	// If the AA is Improved Harm Touch or Leech Touch, we need to
+	// synchronize the normal Harm Touch timer also.
+	if (rank_id == aaImprovedHarmTouch || rank_id == aaLeechTouch) {
+		p_timers.Start(pTimerHarmTouch, cooldown);
+	}
 }
 
 int Mob::GetAlternateAdvancementCooldownReduction(AA::Rank *rank_in) {

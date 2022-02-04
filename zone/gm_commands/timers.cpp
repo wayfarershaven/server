@@ -20,3 +20,14 @@ void command_timers(Client *c, const Seperator *sep)
 	}
 }
 
+void command_timers_clear(Client* c, const Seperator* sep)
+{
+	if (!c->GetTarget() || !c->GetTarget()->IsClient())
+	{
+		c->Message(0, "Need a player target for timers_clear.");
+	}
+	Client* target = c->GetTarget()->CastToClient();
+	c->GetPTimers().Clear(&database);
+
+	c->Message(0, "Timers cleared for %s.", c->GetName());
+}
