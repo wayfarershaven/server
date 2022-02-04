@@ -295,15 +295,23 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 #endif
 
 				int32 dmg = effect_value;
-				if (spell_id == SPELL_MANA_BURN && caster) //Manaburn
-				{
-					dmg = caster->GetMana()*-3;
+				if (spell_id == SPELL_MANA_BURN && caster) { //Manaburn
+					int MBMult = zone->random.Int(150, 200); //Manaburn deals 150-200% of mana
+					int32 MBCap = 9492;  //Manaburn Damage Cap
+					dmg = caster->GetMana()*MBMult / 100;
+					if (dmg > MBCap) {
+						dmg = MBCap;
+					}
+					dmg *= -1;	//Damage should be negative
+					LogSpells("MBMult [{}], Mana [{}], Damage [{}]", MBMult, caster->GetMana(), dmg);
 					caster->SetMana(0);
-				} else if (spell_id == SPELL_LIFE_BURN && caster) //Lifeburn
-				{
-					dmg = caster->GetHP(); // just your current HP
-					caster->SetHP(dmg / 4); // 2003 patch notes say ~ 1/4 HP. Should this be 1/4 your current HP or do 3/4 max HP dmg? Can it kill you?
-					dmg = -dmg;
+				} else if (spell_id == SPELL_LIFE_BURN && caster) { //Lifeburn
+					dmg = caster->GetHP()*(-1);
+					caster->SetHP(1);
+					if(caster->IsClient()){
+						caster->CastToClient()->SetFeigned(true);
+						caster->SendAppearancePacket(AT_Anim, 115);
+					}
 				}
 
 				// hack fix for client health not reflecting server value

@@ -4197,8 +4197,14 @@ bool Mob::SpellOnTarget(uint16 spell_id, Mob *spelltar, int reflect_effectivenes
 		// if SpellEffect returned false there's a problem applying the
 		// spell. It's most likely a buff that can't stack.
 		LogSpells("Spell [{}] could not apply its effects [{}] -> [{}]\n", spell_id, GetName(), spelltar->GetName());
-		if(casting_spell_aa_id)
+		if(casting_spell_aa_id) {
 			MessageString(Chat::SpellFailure, SPELL_NO_HOLD);
+			// I could just call StopCasting(), but I am not sure whether or not we could
+			// have some problem with other AA's? So I am making a specific Manaburn thing.
+			if (IsClient() && casting_spell_aa_id == aaManaBurn) {
+				StopCasting();
+			}
+		}
 		safe_delete(action_packet);
 		return false;
 	}
