@@ -3626,8 +3626,9 @@ void EntityList::MessageGroup(Mob *sender, bool skipclose, uint32 type, const ch
 
 	float dist2 = 100;
 
-	if (skipclose)
+	if (skipclose) {
 		dist2 = 0;
+	}
 
 	auto it = client_list.begin();
 	while (it != client_list.end()) {
@@ -3643,8 +3644,9 @@ bool EntityList::Fighting(Mob *targ)
 {
 	auto it = npc_list.begin();
 	while (it != npc_list.end()) {
-		if (it->second->CheckAggro(targ))
+		if (it->second->CheckAggro(targ)) {
 			return true;
+		}
 		++it;
 	}
 	return false;
@@ -3652,22 +3654,26 @@ bool EntityList::Fighting(Mob *targ)
 
 void EntityList::AddHealAggro(Mob *target, Mob *caster, uint16 hate)
 {
-	if (hate == 0)
+	if (hate == 0) {
 		return;
+	}
 
 	for (auto &e : npc_list) {
 		auto &npc = e.second;
-		if (!npc->CheckAggro(target) || npc->IsFeared() || npc->IsPet())
+		if (!npc->CheckAggro(target) || npc->IsFeared() || npc->IsPet()) {
 			continue;
+		}
 
-		if (zone->random.Roll(50)) // witness check -- place holder
+		if (zone->random.Roll(50)) { // witness check -- place holder
 			// This is either a level check (con color check?) or a stat roll
 			continue;
+		}
 
-		if ((npc->IsMezzed() || npc->IsStunned()) && hate > 4) // patch notes say stunned/mezzed NPCs get a fraction of the hate
+		if ((npc->IsMezzed() || npc->IsStunned()) && hate > 4) { // patch notes say stunned/mezzed NPCs get a fraction of the hate
 			npc->AddToHateList(caster, hate / 4); // made up number
-		else
+		} else {
 			npc->AddToHateList(caster, hate);
+		}
 	}
 }
 
