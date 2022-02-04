@@ -41,6 +41,7 @@ public:
 	uint32 GetEntityID() { return entity_id; }
 	uint32 GetGuildID() { return guild_id; }
 	uint32 GetKeyItem() { return key_item_id; }
+	uint32 GetAltKeyItem() { return alt_key_id; }
 	void CreateDatabaseEntry();
 	void ForceClose(Mob *sender, bool alt_mode = false);
 	void ForceOpen(Mob *sender, bool alt_mode = false);
@@ -77,6 +78,7 @@ private:
 	uint32    guild_id;
 	uint16    lockpick;
 	uint32    key_item_id;
+	uint32 	  alt_key_id;
 	uint8     no_key_ring;
 	uint8     trigger_door;
 	uint8     trigger_type;

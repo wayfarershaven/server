@@ -58,6 +58,7 @@ Doors::Doors(const DoorsRepository::Doors& door) :
 	guild_id                = door.guild;
 	lockpick                = door.lockpick;
 	key_item_id             = door.keyitem;
+	alt_key_id              = door.altkeyitem;
 	no_key_ring             = door.nokeyring;
 	trigger_door            = door.triggerdoor;
 	trigger_type            = door.triggertype;
@@ -94,6 +95,7 @@ Doors::Doors(const char *model, const glm::vec4 &position, uint8 open_type, uint
 	this->guild_id                = 0;
 	this->lockpick                = 0;
 	this->key_item_id             = 0;
+	this->alt_key_id              = 0;
 	this->no_key_ring             = 0;
 	this->trigger_door            = 0;
 	this->trigger_type            = 0;
@@ -144,11 +146,12 @@ void Doors::HandleClick(Client* sender, uint8 trigger) {
 	);
 
 	Log(Logs::Detail, Logs::Doors,
-	    "incline %d, open_type %d, lockpick %d, key %d, nokeyring %d, trigger %d type %d, param %d",
+	    "incline %d, open_type %d, lockpick %d, keys %d %d, nokeyring %d, trigger %d type %d, param %d",
 	    this->incline,
 	    this->open_type,
 	    this->lockpick,
 	    this->key_item_id,
+		this->alt_key_id,
 	    this->no_key_ring,
 	    this->trigger_door,
 	    this->trigger_type,
@@ -210,8 +213,10 @@ void Doors::HandleClick(Client* sender, uint8 trigger) {
 	// todo: if IsDzDoor() call Client::MovePCDynamicZone(target_zone_id) (for systems that use dzs)
 
 	uint32 required_key_item       = GetKeyItem();
+	uint32 alt_key_item            = GetAltKeyItem();
 	uint8  disable_add_to_key_ring = GetNoKeyring();
 	bool player_has_key            = false;
+	bool player_has_alt_key        = false;
 	uint32 player_key              = 0;
 
 	const EQ::ItemInstance *lock_pick_item = sender->GetInv().GetItem(EQ::invslot::slotCursor);
@@ -223,11 +228,17 @@ void Doors::HandleClick(Client* sender, uint8 trigger) {
 			player_has_key = true;
 		}
 	}
-	else if (sender->GetInv().HasItem(required_key_item, 1) != INVALID_INDEX) {
-		player_has_key = true;
+	else {
+		if (sender->GetInv().HasItem(required_key_item, 1) != INVALID_INDEX) {
+			player_has_key = true;
+		} else if (sender->GetInv().HasItem(alt_key_item, 1) != INVALID_INDEX) {
+			player_has_alt_key = true;
+		}
 	}
 
-	if (player_has_key) {
+
+
+	if (player_has_key || player_has_alt_key) {
 		player_key = required_key_item;
 	}
 
@@ -317,7 +328,7 @@ void Doors::HandleClick(Client* sender, uint8 trigger) {
 			 * Key required and client is using the right key
 			 */
 			if (required_key_item &&
-			    (required_key_item == player_key)) {
+			    (required_key_item == player_key) || (alt_key_item && (alt_key_item == player_key))) {
 
 				if (!disable_add_to_key_ring) {
 					sender->KeyRingAdd(player_key);
@@ -475,7 +486,7 @@ void Doors::HandleClick(Client* sender, uint8 trigger) {
 		 */
 		else if (
 				(!IsDoorOpen() || open_type == 58) &&
-				(required_key_item && ((required_key_item == player_key) || sender->GetGM()))
+				(required_key_item && ((required_key_item == player_key) || (alt_key_item && (alt_key_item == player_key)) || sender->GetGM()))
 		) {
 
 			if (!disable_add_to_key_ring) {
