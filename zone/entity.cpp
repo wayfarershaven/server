@@ -1868,15 +1868,29 @@ Corpse *EntityList::GetCorpseByOwner(Client *client)
 	return nullptr;
 }
 
+Corpse *EntityList::GetCorpseByOwnerName(const char *name)
+{
+	auto it = corpse_list.begin();
+	while (it != corpse_list.end()) {
+		if (strcasecmp(it->second->GetOwnerName(), name) == 0) {
+			return it->second;
+		}
+		++it;
+	}
+	return nullptr;
+}
+
 Corpse *EntityList::GetCorpseByOwnerWithinRange(Client *client, Mob *center, int range)
 {
 	auto it = corpse_list.begin();
 	while (it != corpse_list.end()) {
-		if (it->second->IsPlayerCorpse())
+		if (it->second->IsPlayerCorpse()) {
 			if (DistanceSquaredNoZ(center->GetPosition(), it->second->GetPosition()) < range &&
-					strcasecmp(it->second->GetOwnerName(), client->GetName()) == 0)
+					strcasecmp(it->second->GetOwnerName(), client->GetName()) == 0) {
 				return it->second;
+			}
 		++it;
+		}
 	}
 	return nullptr;
 }
@@ -1885,8 +1899,9 @@ Corpse *EntityList::GetCorpseByDBID(uint32 dbid)
 {
 	auto it = corpse_list.begin();
 	while (it != corpse_list.end()) {
-		if (it->second->GetCorpseDBID() == dbid)
+		if (it->second->GetCorpseDBID() == dbid) {
 			return it->second;
+		}
 		++it;
 	}
 	return nullptr;
@@ -1896,8 +1911,9 @@ Corpse *EntityList::GetCorpseByName(const char *name)
 {
 	auto it = corpse_list.begin();
 	while (it != corpse_list.end()) {
-		if (strcmp(it->second->GetName(), name) == 0)
+		if (strcmp(it->second->GetName(), name) == 0) {
 			return it->second;
+		}
 		++it;
 	}
 	return nullptr;
@@ -1905,8 +1921,9 @@ Corpse *EntityList::GetCorpseByName(const char *name)
 
 Spawn2 *EntityList::GetSpawnByID(uint32 id)
 {
-	if (!zone || !zone->IsLoaded())
+	if (!zone || !zone->IsLoaded()) {
 		return nullptr;
+	}
 
 	LinkedListIterator<Spawn2 *> iterator(zone->spawn2_list);
 	iterator.Reset();
@@ -3196,34 +3213,36 @@ void EntityList::ListNPCCorpses(Client *client)
 	}
 }
 
-void EntityList::ListPlayerCorpses(Client *client)
+void EntityList::ListPlayerCorpses(Client *client, Client *target)
 {
-	uint32 corpse_count = 0;
-	for (const auto& corpse : corpse_list) {
-		uint32 corpse_number = (corpse_count + 1);
-		if (corpse.second->IsPlayerCorpse()) {
-			client->Message(
-				Chat::White,
-				fmt::format(
-					"Corpse {} | Name: {} ({})",
-					corpse_number,
-					corpse.second->GetName(),
-					corpse.second->GetID()
-				).c_str()
-			);
-			corpse_count++;
-		}
-	}
+	uint32 x = 0;
 
-	if (corpse_count > 0) {
-		client->Message(
-			Chat::White,
-			fmt::format(
-				"{} Player corpses listed.",
-				corpse_count
-			).c_str()
-		);
+	auto it = corpse_list.begin();
+	client->Message(Chat::White, "Player Corpses in the zone:");
+	while (it != corpse_list.end()) {
+		if (it->second->IsPlayerCorpse() && (!target || strcasecmp(it->second->GetOwnerName(), target->GetName()) == 0)) {
+			client->Message(0, "  %5d: %s - %f, %f, %f, corpse_db_id: %u", it->first, it->second->GetName(), it->second->GetX(), it->second->GetY(), it->second->GetZ(), it->second->GetCorpseDBID());
+			x++;
+		}
+		++it;
 	}
+	client->Message(Chat::White, "%d player corpses listed.", x);
+}
+
+void EntityList::ListAllCorpses(Client *client, Mob *target)
+{
+	uint32 x = 0;
+
+	auto it = corpse_list.begin();
+	client->Message(0, "Corpses in the zone:");
+	while (it != corpse_list.end()) {
+		if (!target || strcasecmp(it->second->GetOwnerName(), target->GetName()) == 0) {
+			client->Message(0, "  %5d: %s - %f, %f, %f, corpse_db_id: %u", it->first, it->second->GetName(), it->second->GetX(), it->second->GetY(), it->second->GetZ(), it->second->GetCorpseDBID());
+			x++;
+		}
+		++it;
+	}
+	client->Message(0, "%d corpses listed.", x);
 }
 
 // returns the number of corpses deleted. A negative number indicates an error code.
