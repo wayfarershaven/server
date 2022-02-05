@@ -126,26 +126,6 @@ void Raid::AddMember(Client *c, uint32 group, bool rleader, bool groupleader, bo
 	c->SetRaidGrouped(true);
 	SendRaidMOTD(c);
 
-	// xtarget shit ..........
-	if (group == RAID_GROUPLESS) {
-		if (rleader) {
-			GetXTargetAutoMgr()->merge(*c->GetXTargetAutoMgr());
-			c->GetXTargetAutoMgr()->clear();
-			c->SetXTargetAutoMgr(GetXTargetAutoMgr());
-		} else {
-			if (!c->GetXTargetAutoMgr()->empty()) {
-				GetXTargetAutoMgr()->merge(*c->GetXTargetAutoMgr());
-				c->GetXTargetAutoMgr()->clear();
-				c->RemoveAutoXTargets();
-			}
-
-			c->SetXTargetAutoMgr(GetXTargetAutoMgr());
-
-			if (!c->GetXTargetAutoMgr()->empty())
-				c->SetDirtyAutoHaters();
-		}
-	}
-
 	Raid *raid_update = nullptr;
 	raid_update = c->GetRaid();
 	if (raid_update) {
@@ -177,7 +157,6 @@ void Raid::RemoveMember(const char *characterName)
 
 	if(client) {
 		client->SetRaidGrouped(false);
-		client->LeaveRaidXTargets(this);
 		client->p_raid_instance = nullptr;
 	}
 

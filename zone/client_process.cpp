@@ -668,8 +668,6 @@ bool Client::Process() {
 	}
 
 	if (client_state == CLIENT_CONNECTED) {
-		if (m_dirtyautohaters)
-			ProcessXTargetAutoHaters();
 		if (aggro_meter_timer.Check())
 			ProcessAggroMeter();
 	}
@@ -1039,7 +1037,6 @@ void Client::OPRezzAnswer(uint32 Action, uint32 SpellID, uint16 ZoneID, uint16 I
 		//Was sending the packet back to initiate client zone...
 		//but that could be abusable, so lets go through proper channels
 		MovePC(ZoneID, InstanceID, x, y, z, GetHeading(), 0, ZoneSolicited);
-		entity_list.RefreshClientXTargets(this);
 	}
 	PendingRezzXP = -1;
 	PendingRezzSpellID = 0;
@@ -2103,7 +2100,6 @@ void Client::HandleRespawnFromHover(uint32 Option)
 			m_Position.w = chosen->heading;
 
 			ClearHover();
-			entity_list.RefreshClientXTargets(this);
 			SendHPUpdate();
 		}
 

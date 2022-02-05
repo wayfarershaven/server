@@ -114,9 +114,6 @@ void Client::CalcBonuses()
 
 	XPRate = 100 + spellbonuses.XPRateMod;
 
-	if (GetMaxXTargets() != 5 + aabonuses.extra_xtargets)
-		SetMaxXTargets(5 + aabonuses.extra_xtargets);
-
 	// hmm maybe a better way to do this
 	int metabolism = spellbonuses.Metabolism + itembonuses.Metabolism + aabonuses.Metabolism;
 	int timer = GetClass() == MONK ? CONSUMPTION_MNK_TIMER : CONSUMPTION_TIMER;
@@ -1512,7 +1509,6 @@ void Mob::ApplyAABonuses(const AA::Rank &rank, StatBonuses *newbon)
 			newbon->ATK += base_value;
 			break;
 		case SE_IncreaseExtTargetWindow:
-			newbon->extra_xtargets += base_value;
 			break;
 
 		case SE_PC_Pet_Rampage: {

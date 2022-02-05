@@ -1863,7 +1863,6 @@ bool Client::Death(Mob* killerMob, int32 damage, uint16 spell, EQ::skills::Skill
 
 	entity_list.RemoveFromTargets(this, true);
 	hate_list.RemoveEntFromHateList(this);
-	RemoveAutoXTargets();
 
 	//remove ourself from all proximities
 	ClearAllProximities();
@@ -2079,8 +2078,6 @@ bool NPC::Attack(Mob* other, int Hand, bool bRiposte, bool IsStrikethrough, bool
 		if (this->GetOwnerID())
 			this->SayString(NOT_LEGAL_TARGET);
 		if (other) {
-			if (other->IsClient())
-				other->CastToClient()->RemoveXTarget(this, false);
 			RemoveFromHateList(other);
 			LogCombat("I am not allowed to attack [{}]", other->GetName());
 		}
@@ -2645,8 +2642,6 @@ bool NPC::Death(Mob* killer_mob, int32 damage, uint16 spell, EQ::skills::SkillTy
 				this->CheckTrivialMinMaxLevelDrop(killer);
 		}
 
-		entity_list.RemoveFromAutoXTargets(this);
-
 		uint16 emoteid = this->GetEmoteID();
 		auto corpse = new Corpse(this, &itemlist, GetNPCTypeID(), &NPCTypedata,
 			level > 54 ? RuleI(NPC, MajorNPCCorpseDecayTimeMS)
@@ -2736,9 +2731,6 @@ bool NPC::Death(Mob* killer_mob, int32 damage, uint16 spell, EQ::skills::SkillTy
 				}
 			}
 		}
-	}
-	else {
-		entity_list.RemoveFromXTargets(this);
 	}
 
 	// Parse quests even if we're killed by an NPC
@@ -2891,9 +2883,6 @@ void Mob::AddToHateList(Mob* other, uint32 hate /*= 0*/, int32 damage /*= 0*/, b
 
 	hate_list.AddEntToHateList(other, hate, damage, bFrenzy, !iBuffTic);
 
-	if (other->IsClient() && !on_hatelist && !IsOnFeignMemory(other))
-		other->CastToClient()->AddAutoXTarget(this);
-
 #ifdef BOTS
 	// if other is a bot, add the bots client to the hate list
 	while (other->IsBot()) {
@@ -2912,9 +2901,7 @@ void Mob::AddToHateList(Mob* other, uint32 hate /*= 0*/, int32 damage /*= 0*/, b
 			AddFeignMemory(owner_);
 		}
 		else if (!hate_list.IsEntOnHateList(owner_)) {
-
 			hate_list.AddEntToHateList(owner_, 0, 0, false, true);
-			owner_->AddAutoXTarget(this); // this was being called on dead/out-of-zone clients
 		}
 
 		break;
@@ -2948,8 +2935,6 @@ void Mob::AddToHateList(Mob* other, uint32 hate /*= 0*/, int32 damage /*= 0*/, b
 				!(this->GetSpecialAbility(IMMUNE_AGGRO_CLIENT) && owner->IsClient()) &&
 				!(this->GetSpecialAbility(IMMUNE_AGGRO_NPC) && owner->IsNPC())
 			) {
-				if (owner->IsClient() && !CheckAggro(owner))
-					owner->CastToClient()->AddAutoXTarget(this);
 				hate_list.AddEntToHateList(owner, 0, 0, false, !iBuffTic);
 			}
 		}

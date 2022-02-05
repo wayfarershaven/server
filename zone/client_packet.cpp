@@ -632,12 +632,9 @@ void Client::CompleteConnect()
 			}
 			raid->SendGroupLeadershipAA(this, grpID); // this may get sent an extra time ...
 
-			SetXTargetAutoMgr(raid->GetXTargetAutoMgr());
-			if (!GetXTargetAutoMgr()->empty())
-				SetDirtyAutoHaters();
-
-			if (raid->IsLocked())
+			if (raid->IsLocked()) {
 				raid->SendRaidLockTo(this);
+			}
 
 			raid->SendHPManaEndPacketsTo(this);
 		}
@@ -645,8 +642,9 @@ void Client::CompleteConnect()
 	else {
 		Group *group = nullptr;
 		group = this->GetGroup();
-		if (group)
+		if (group) {
 			group->SendHPManaEndPacketsTo(this);
+		}
 	}
 
 
@@ -886,8 +884,6 @@ void Client::CompleteConnect()
 	}
 
 	database.LoadAuras(this); // this ends up spawning them so probably safer to load this later (here)
-
-	entity_list.RefreshClientXTargets(this);
 
 	worldserver.RequestTellQueue(GetName());
 
@@ -1535,7 +1531,6 @@ void Client::Handle_Connect_OP_ZoneEntry(const EQApplicationPacket *app)
 			if (group->IsLeader(this))
 				group->SendLeadershipAAUpdate();
 		}
-		JoinGroupXTargets(group);
 		group->UpdatePlayer(this);
 		LFG = false;
 	}
@@ -1739,13 +1734,6 @@ void Client::Handle_Connect_OP_ZoneEntry(const EQApplicationPacket *app)
 		if (DataBucket::GetData(dev_tools_window_key) == "true") {
 			dev_tools_enabled = false;
 		}
-	}
-
-	if (m_ClientVersionBit & EQ::versions::maskUFAndLater) {
-		outapp = new EQApplicationPacket(OP_XTargetResponse, 8);
-		outapp->WriteUInt32(GetMaxXTargets());
-		outapp->WriteUInt32(0);
-		FastQueuePacket(&outapp);
 	}
 
 	/*
@@ -11527,7 +11515,6 @@ void Client::Handle_OP_RaidCommand(const EQApplicationPacket *app)
 								}
 							}
 						}
-						group->JoinRaidXTarget(raid);
 						group->DisbandGroup(true);
 						raid->GroupUpdate(free_group_id);
 					}
@@ -11600,7 +11587,6 @@ void Client::Handle_OP_RaidCommand(const EQApplicationPacket *app)
 									}
 								}
 							}
-							player_invited_group->JoinRaidXTarget(raid, true);
 							player_invited_group->DisbandGroup(true);
 							raid->GroupUpdate(raid_free_group_id);
 							raid_free_group_id = raid->GetFreeGroup();
@@ -11657,7 +11643,6 @@ void Client::Handle_OP_RaidCommand(const EQApplicationPacket *app)
 								}
 							}
 						}
-						group->JoinRaidXTarget(raid);
 						group->DisbandGroup(true);
 
 						raid->GroupUpdate(raid_free_group_id);
@@ -11717,7 +11702,6 @@ void Client::Handle_OP_RaidCommand(const EQApplicationPacket *app)
 							raid->SendRaidCreate(this);
 							raid->SendMakeLeaderPacketTo(raid->leadername, this);
 							raid->SendBulkRaid(this);
-							player_invited_group->JoinRaidXTarget(raid, true);
 							raid->AddMember(this);
 							player_invited_group->DisbandGroup(true);
 							raid->GroupUpdate(0);
@@ -13920,18 +13904,20 @@ void Client::Handle_OP_TargetCommand(const EQApplicationPacket *app)
 		{
 			SetTarget(nullptr);
 			SetHoTT(0);
-			UpdateXTargetType(TargetsTarget, nullptr);
 
 			Group *g = GetGroup();
 
-			if (g && g->HasRole(this, RoleAssist))
+			if (g && g->HasRole(this, RoleAssist)) {
 				g->SetGroupAssistTarget(0);
+			}
 
-			if (g && g->HasRole(this, RoleTank))
+			if (g && g->HasRole(this, RoleTank)) {
 				g->SetGroupTankTarget(0);
+			}
 
-			if (g && g->HasRole(this, RolePuller))
+			if (g && g->HasRole(this, RolePuller)) {
 				g->SetGroupPullerTarget(0);
+			}
 
 			return;
 		}
@@ -13940,7 +13926,6 @@ void Client::Handle_OP_TargetCommand(const EQApplicationPacket *app)
 	{
 		SetTarget(nullptr);
 		SetHoTT(0);
-		UpdateXTargetType(TargetsTarget, nullptr);
 		return;
 	}
 
@@ -13948,12 +13933,10 @@ void Client::Handle_OP_TargetCommand(const EQApplicationPacket *app)
 	if (GetTarget() && GetTarget()->GetTarget())
 	{
 		SetHoTT(GetTarget()->GetTarget()->GetID());
-		UpdateXTargetType(TargetsTarget, GetTarget()->GetTarget());
 	}
 	else
 	{
 		SetHoTT(0);
-		UpdateXTargetType(TargetsTarget, nullptr);
 	}
 
 	Group *g = GetGroup();
@@ -14048,11 +14031,6 @@ void Client::Handle_OP_TargetCommand(const EQApplicationPacket *app)
 			else if (cheat_manager.GetExemptStatus(Sense)) {
 				GetTarget()->IsTargeted(1);
 				cheat_manager.SetExemptStatus(Sense, false);
-				return;
-			}
-			else if (IsXTarget(GetTarget()))
-			{
-				GetTarget()->IsTargeted(1);
 				return;
 			}
 			else if (GetTarget()->IsPetOwnerClient())
@@ -15034,263 +15012,11 @@ void Client::Handle_OP_WhoAllRequest(const EQApplicationPacket *app)
 	return;
 }
 
-void Client::Handle_OP_XTargetAutoAddHaters(const EQApplicationPacket *app)
-{
-	if (app->size != 1)
-	{
-		LogDebug("Size mismatch in OP_XTargetAutoAddHaters, expected 1, got [{}]", app->size);
-		DumpPacket(app);
-		return;
-	}
+void Client::Handle_OP_XTargetAutoAddHaters(const EQApplicationPacket *app) {}
 
-	XTargetAutoAddHaters = app->ReadUInt8(0);
-	SetDirtyAutoHaters();
-}
+void Client::Handle_OP_XTargetOpen(const EQApplicationPacket *app) {}
 
-void Client::Handle_OP_XTargetOpen(const EQApplicationPacket *app)
-{
-	if (app->size != 4) {
-		LogDebug("Size mismatch in OP_XTargetOpen, expected 1, got [{}]", app->size);
-		DumpPacket(app);
-		return;
-	}
-
-	auto outapp = new EQApplicationPacket(OP_XTargetOpenResponse, 0);
-	FastQueuePacket(&outapp);
-}
-
-void Client::Handle_OP_XTargetRequest(const EQApplicationPacket *app)
-{
-	if (app->size < 12)
-	{
-		LogDebug("Size mismatch in OP_XTargetRequest, expected at least 12, got [{}]", app->size);
-		DumpPacket(app);
-		return;
-	}
-
-	uint32 Unknown000 = app->ReadUInt32(0);
-
-	if (Unknown000 != 1)
-		return;
-
-	uint32 Slot = app->ReadUInt32(4);
-
-	if (Slot >= XTARGET_HARDCAP)
-		return;
-
-	XTargetType Type = (XTargetType)app->ReadUInt32(8);
-
-	XTargets[Slot].Type = Type;
-	XTargets[Slot].ID = 0;
-	XTargets[Slot].Name[0] = 0;
-
-	switch (Type)
-	{
-	case Empty:
-	case Auto:
-	{
-		break;
-	}
-
-	case CurrentTargetPC:
-	{
-		char Name[65];
-
-		app->ReadString(Name, 12, 64);
-		Client *c = entity_list.GetClientByName(Name);
-		if (c)
-		{
-			XTargets[Slot].ID = c->GetID();
-			strncpy(XTargets[Slot].Name, c->GetName(), 64);
-		}
-		else
-		{
-			strncpy(XTargets[Slot].Name, Name, 64);
-		}
-		SendXTargetPacket(Slot, c);
-
-		break;
-	}
-
-	case CurrentTargetNPC:
-	{
-		char Name[65];
-		app->ReadString(Name, 12, 64);
-		Mob *m = entity_list.GetMob(Name);
-		if (m)
-		{
-			XTargets[Slot].ID = m->GetID();
-			SendXTargetPacket(Slot, m);
-			break;
-		}
-	}
-
-	case TargetsTarget:
-	{
-		if (GetTarget())
-			UpdateXTargetType(TargetsTarget, GetTarget()->GetTarget());
-		else
-			UpdateXTargetType(TargetsTarget, nullptr);
-
-		break;
-	}
-
-	case GroupTank:
-	{
-		Group *g = GetGroup();
-
-		if (g)
-		{
-			Client *c = entity_list.GetClientByName(g->GetMainTankName());
-
-			if (c)
-			{
-				XTargets[Slot].ID = c->GetID();
-				strncpy(XTargets[Slot].Name, c->GetName(), 64);
-			}
-			else
-			{
-				strncpy(XTargets[Slot].Name, g->GetMainTankName(), 64);
-			}
-			SendXTargetPacket(Slot, c);
-		}
-		break;
-	}
-	case GroupTankTarget:
-	{
-		Group *g = GetGroup();
-
-		if (g)
-			g->NotifyTankTarget(this);
-
-		break;
-	}
-
-	case GroupAssist:
-	{
-		Group *g = GetGroup();
-
-		if (g)
-		{
-			Client *c = entity_list.GetClientByName(g->GetMainAssistName());
-
-			if (c)
-			{
-				XTargets[Slot].ID = c->GetID();
-				strncpy(XTargets[Slot].Name, c->GetName(), 64);
-			}
-			else
-			{
-				strncpy(XTargets[Slot].Name, g->GetMainAssistName(), 64);
-			}
-			SendXTargetPacket(Slot, c);
-		}
-		break;
-	}
-
-	case GroupAssistTarget:
-	{
-
-		Group *g = GetGroup();
-
-		if (g)
-			g->NotifyAssistTarget(this);
-
-		break;
-	}
-
-	case Puller:
-	{
-		Group *g = GetGroup();
-
-		if (g)
-		{
-			Client *c = entity_list.GetClientByName(g->GetPullerName());
-
-			if (c)
-			{
-				XTargets[Slot].ID = c->GetID();
-				strncpy(XTargets[Slot].Name, c->GetName(), 64);
-			}
-			else
-			{
-				strncpy(XTargets[Slot].Name, g->GetPullerName(), 64);
-			}
-			SendXTargetPacket(Slot, c);
-		}
-		break;
-	}
-
-	case PullerTarget:
-	{
-
-		Group *g = GetGroup();
-
-		if (g)
-			g->NotifyPullerTarget(this);
-
-		break;
-	}
-
-	case GroupMarkTarget1:
-	case GroupMarkTarget2:
-	case GroupMarkTarget3:
-	{
-		Group *g = GetGroup();
-
-		if (g)
-			g->SendMarkedNPCsToMember(this);
-
-		break;
-	}
-
-	case RaidAssist1:
-	case RaidAssist2:
-	case RaidAssist3:
-	case RaidAssist1Target:
-	case RaidAssist2Target:
-	case RaidAssist3Target:
-	case RaidMarkTarget1:
-	case RaidMarkTarget2:
-	case RaidMarkTarget3:
-	{
-		// Not implemented yet.
-		break;
-	}
-
-	case MyPet:
-	{
-		Mob *m = GetPet();
-		if (m)
-		{
-			XTargets[Slot].ID = m->GetID();
-			SendXTargetPacket(Slot, m);
-
-		}
-		break;
-	}
-	case MyPetTarget:
-	{
-		Mob *m = GetPet();
-
-		if (m)
-			m = m->GetTarget();
-
-		if (m)
-		{
-			XTargets[Slot].ID = m->GetID();
-			SendXTargetPacket(Slot, m);
-
-		}
-		break;
-	}
-
-	default:
-		LogDebug("Unhandled XTarget Type [{}]", Type);
-		break;
-	}
-
-}
+void Client::Handle_OP_XTargetRequest(const EQApplicationPacket *app) {}
 
 void Client::Handle_OP_YellForHelp(const EQApplicationPacket *app)
 {

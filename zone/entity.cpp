@@ -1511,77 +1511,21 @@ void EntityList::RemoveFromTargets(Mob *mob, bool RemoveFromXTargets)
 		Mob *m = it->second;
 		++it;
 
-		if (!m)
+		if (!m) {
 			continue;
-
-		if (RemoveFromXTargets) {
-			if (m->IsClient() && (mob->CheckAggro(m) || mob->IsOnFeignMemory(m)))
-				m->CastToClient()->RemoveXTarget(mob, false);
-			// FadingMemories calls this function passing the client.
-			else if (mob->IsClient() && (m->CheckAggro(mob) || m->IsOnFeignMemory(mob)))
-				mob->CastToClient()->RemoveXTarget(m, false);
 		}
 
 		m->RemoveFromHateList(mob);
 	}
 }
 
-void EntityList::RemoveFromXTargets(Mob *mob)
-{
-	auto it = client_list.begin();
-	while (it != client_list.end()) {
-		it->second->RemoveXTarget(mob, false);
-		++it;
-	}
-}
+void EntityList::RemoveFromXTargets(Mob *mob) {}
 
-void EntityList::RemoveFromAutoXTargets(Mob *mob)
-{
-	auto it = client_list.begin();
-	while (it != client_list.end()) {
-		it->second->RemoveXTarget(mob, true);
-		++it;
-	}
-}
+void EntityList::RemoveFromAutoXTargets(Mob *mob) {}
 
-void EntityList::RefreshAutoXTargets(Client *c)
-{
-	if (!c)
-		return;
+void EntityList::RefreshAutoXTargets(Client *c) {}
 
-	auto it = mob_list.begin();
-	while (it != mob_list.end()) {
-		Mob *m = it->second;
-		++it;
-
-		if (!m || m->GetHP() <= 0)
-			continue;
-
-		if ((m->CheckAggro(c) || m->IsOnFeignMemory(c)) && !c->IsXTarget(m)) {
-			c->AddAutoXTarget(m, false); // we only call this before a bulk, so lets not send right away
-			break;
-		}
-
-	}
-}
-
-void EntityList::RefreshClientXTargets(Client *c)
-{
-	if (!c)
-		return;
-
-	auto it = client_list.begin();
-	while (it != client_list.end()) {
-		Client *c2 = it->second;
-		++it;
-
-		if (!c2)
-			continue;
-
-		if (c2->IsClientXTarget(c))
-			c2->UpdateClientXTarget(c);
-	}
-}
+void EntityList::RefreshClientXTargets(Client *c) {}
 
 void EntityList::QueueClientsByTarget(Mob *sender, const EQApplicationPacket *app,
 		bool iSendToSender, Mob *SkipThisMob, bool ackreq, bool HoTT, uint32 ClientVersionBits, bool inspect_buffs)
@@ -1643,25 +1587,7 @@ void EntityList::QueueClientsByTarget(Mob *sender, const EQApplicationPacket *ap
 	}
 }
 
-void EntityList::QueueClientsByXTarget(Mob *sender, const EQApplicationPacket *app, bool iSendToSender, EQ::versions::ClientVersionBitmask client_version_bits)
-{
-	auto it = client_list.begin();
-	while (it != client_list.end()) {
-		Client *c = it->second;
-		++it;
-
-		if (!c || ((c == sender) && !iSendToSender))
-			continue;
-
-		if ((c->ClientVersionBit() & client_version_bits) == 0)
-			continue;
-
-		if (!c->IsXTarget(sender))
-			continue;
-
-		c->QueuePacket(app);
-	}
-}
+void EntityList::QueueClientsByXTarget(Mob *sender, const EQApplicationPacket *app, bool iSendToSender, EQ::versions::ClientVersionBitmask client_version_bits) {}
 
 /**
  * @param sender
@@ -3111,8 +3037,6 @@ void EntityList::RemoveFromHateLists(Mob *mob, bool settoone)
 		if (it->second->CheckAggro(mob)) {
 			if (!settoone) {
 				it->second->RemoveFromHateList(mob);
-				if (mob->IsClient())
-					mob->CastToClient()->RemoveXTarget(it->second, false); // gotta do book keeping
 			} else {
 				it->second->SetHateAmountOnEnt(mob, 1);
 			}
@@ -3471,14 +3395,10 @@ void EntityList::ClearAggro(Mob* targ)
 	auto it = npc_list.begin();
 	while (it != npc_list.end()) {
 		if (it->second->CheckAggro(targ)) {
-			if (c) {
-				c->RemoveXTarget(it->second, false);
-			}
 			it->second->RemoveFromHateList(targ);
 		}
 		if (c && it->second->IsOnFeignMemory(c)) {
 			it->second->RemoveFromFeignMemory(c); //just in case we feigned
-			c->RemoveXTarget(it->second, false);
 		}
 		++it;
 	}
@@ -3495,14 +3415,10 @@ void EntityList::ClearWaterAggro(Mob* targ)
 	while (it != npc_list.end()) {
 		if (it->second->IsUnderwaterOnly()) {
 			if (it->second->CheckAggro(targ)) {
-				if (c) {
-					c->RemoveXTarget(it->second, false);
-				}
 				it->second->RemoveFromHateList(targ);
 			}
 			if (c && it->second->IsOnFeignMemory(c)) {
 				it->second->RemoveFromFeignMemory(c); //just in case we feigned
-				c->RemoveXTarget(it->second, false);
 			}
 		}
 	++it;
@@ -3544,9 +3460,6 @@ void EntityList::ClearFeignAggro(Mob *targ)
 				if (it->second->GetLevel() >= 35 && zone->random.Roll(60)) {
 					it->second->AddFeignMemory(targ);
 				}
-				else {
-					targ->CastToClient()->RemoveXTarget(it->second, false);
-				}
 			}
 			else if (targ->IsPet()){
 				if (it->second->GetLevel() >= 35 && zone->random.Roll(60)) {
@@ -3563,9 +3476,6 @@ void EntityList::ClearZoneFeignAggro(Mob *targ)
 	auto it = npc_list.begin();
 	while (it != npc_list.end()) {
 		it->second->RemoveFromFeignMemory(targ);
-		if (targ && targ->IsClient()) {
-			targ->CastToClient()->RemoveXTarget(it->second, false);
-		}
 		++it;
 	}
 }
@@ -4189,12 +4099,11 @@ void EntityList::UpdateHoTT(Mob *target)
 	while (it != client_list.end()) {
 		Client *c = it->second;
 		if (c->GetTarget() == target) {
-			if (target->GetTarget())
+			if (target->GetTarget()) {
 				c->SetHoTT(target->GetTarget()->GetID());
-			else
+			} else {
 				c->SetHoTT(0);
-
-			c->UpdateXTargetType(TargetsTarget, target->GetTarget());
+			}
 		}
 		++it;
 	}
