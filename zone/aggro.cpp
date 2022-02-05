@@ -1315,17 +1315,21 @@ int32 Mob::CheckAggroAmount(uint16 spell_id, Mob *target, bool isproc)
 		}
 	}
 
-	if (IsBardSong(spell_id) && AggroAmount > 40)
+	if (IsBardSong(spell_id) && AggroAmount > 40) {
 		AggroAmount = 40; // bard songs seem to cap to 40 for most of their spells?
+	}
 
-	if (dispel && target && target->GetHateAmount(this) < 100)
+	if (dispel && target && target->GetHateAmount(this) < 100) {
 		AggroAmount += 50;
+	}
 
-	if (spells[spell_id].hate_added != 0) // overrides the hate (ex. tash), can be negative.
+	if (spells[spell_id].hate_added != 0) { // overrides the hate (ex. tash), can be negative.
 		AggroAmount = spells[spell_id].hate_added;
+	}
 
-	if (GetOwner() && IsPet() && AggroAmount > 0)
-		AggroAmount = AggroAmount * RuleI(Aggro, PetSpellAggroMod) / 100;
+	if (GetOwner() && IsPet()) {
+		AggroAmount = 0;
+	}
 
 	// hate focus ignored on first action for some reason
 	if (!on_hatelist && AggroAmount > 0) {
@@ -1337,8 +1341,9 @@ int32 Mob::CheckAggroAmount(uint16 spell_id, Mob *target, bool isproc)
 
 	// initial aggro gets a bonus 100 besides for dispel or hate override
 	// We add this 100 in AddToHateList so we need to account for the oddities here
-	if (dispel && spells[spell_id].hate_added > 0 && !on_hatelist)
+	if (dispel && spells[spell_id].hate_added > 0 && !on_hatelist) {
 		AggroAmount -= 100;
+	}
 
 	return AggroAmount + spells[spell_id].bonus_hate + nonModifiedAggro;
 }
@@ -1394,7 +1399,7 @@ int32 Mob::CheckHealAggroAmount(uint16 spell_id, Mob *target, uint32 heal_possib
 	}
 
 	if (GetOwner() && IsPet()) {
-		AggroAmount = AggroAmount * RuleI(Aggro, PetSpellAggroMod) / 100;
+		AggroAmount = 0;
 	}
 
 	if (AggroAmount > 0) {
