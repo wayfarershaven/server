@@ -473,7 +473,8 @@ bool Mob::CheckWillAggro(Mob *mob) {
 	}
 
 	// Don't aggro new clients if we are already engaged unless PROX_AGGRO is set
-	if (IsEngaged() && (!GetSpecialAbility(PROX_AGGRO) || (GetSpecialAbility(PROX_AGGRO) && !CombatRange(mob)))) {
+	if ((IsEngaged() && (!GetSpecialAbility(PROX_AGGRO) && GetBodyType() != BT_Undead)) ||
+		((GetSpecialAbility(PROX_AGGRO) || GetBodyType() == BT_Undead) && !CombatRange(mob))) {
 		LogAggro(
 			"[{}] is in combat, and does not have prox_aggro, or does and is out of combat range with [{}]",
 			GetName(),
