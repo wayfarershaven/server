@@ -4224,32 +4224,22 @@ bool Mob::SpellOnTarget(uint16 spell_id, Mob *spelltar, int reflect_effectivenes
 		spelltar->DamageShield(this, true);
 	}
 
-	if (spelltar->IsAIControlled() && IsDetrimentalSpell(spell_id) && !IsHarmonySpell(spell_id)) {
-		int32 aggro_amount = CheckAggroAmount(spell_id, spelltar, isproc);
-		LogSpells("Spell [{}] cast on [{}] generated [{}] hate", spell_id,
-			spelltar->GetName(), aggro_amount);
-		if (aggro_amount > 0) {
-			spelltar->AddToHateList(this, aggro_amount);
-		} else {
-			int32 newhate = spelltar->GetHateAmount(this) + aggro_amount;
-			spelltar->SetHateAmountOnEnt(this, std::max(newhate, 1));
-		}
-	} else if (IsBeneficialSpell(spell_id) && !IsSummonPCSpell(spell_id)) {
-		if (this != spelltar && IsClient()){
-			if (spelltar->IsClient()) {
-				CastToClient()->UpdateRestTimer(spelltar->CastToClient()->GetRestTimer());
+	if (!(spelltar->IsNPC() && IsNPC() && !(IsPet() && GetOwner()->IsClient()))) {
+		if (spelltar->IsAIControlled() && IsDetrimentalSpell(spell_id) && !IsHarmonySpell(spell_id)) {
+			int32 aggro_amount = CheckAggroAmount(spell_id, spelltar, isproc);
+			Log(Logs::Detail, Logs::Spells, "Spell %d cast on %s generated %d hate", spell_id,
+				spelltar->GetName(), aggro_amount);
+			if (aggro_amount > 0) {
+				spelltar->AddToHateList(this, aggro_amount);
+			} else {
+				int32 newhate = spelltar->GetHateAmount(this) + aggro_amount;
+				spelltar->SetHateAmountOnEnt(this, std::max(newhate, 1));
 			}
-			else if (spelltar->IsPet()) {
-				Mob *owner = spelltar->GetOwner();
-				if (owner && owner != this && owner->IsClient()) {
-					CastToClient()->UpdateRestTimer(owner->CastToClient()->GetRestTimer());
-				}
-			}
+		} else if (IsBeneficialSpell(spell_id) && !IsSummonPCSpell(spell_id)) {
+			entity_list.AddHealAggro(
+					spelltar, this,
+					CheckHealAggroAmount(spell_id, spelltar, (spelltar->GetMaxHP() - spelltar->GetHP())));
 		}
-
-		entity_list.AddHealAggro(
-			spelltar, this,
-			CheckHealAggroAmount(spell_id, spelltar, (spelltar->GetMaxHP() - spelltar->GetHP())));
 	}
 
 	// make sure spelltar is high enough level for the buff
