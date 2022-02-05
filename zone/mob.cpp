@@ -3688,6 +3688,9 @@ bool Mob::RemoveFromHateList(Mob* mob)
 	}
 	if(GetTarget() == mob)
 	{
+		if (IsPet() && GetPetTargetLockID()) {
+			SetPetTargetLockID(0);
+		}
 		SetTarget(hate_list.GetEntWithMostHateOnList(this));
 	}
 

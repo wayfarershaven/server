@@ -2271,8 +2271,10 @@ bool Mob::SpellFinished(uint16 spell_id, Mob *spell_target, CastingSlot slot, ui
 
 	//determine the type of spell target we have
 	CastAction_type CastAction;
-	if(!DetermineSpellTargets(spell_id, spell_target, ae_center, CastAction, slot, isproc))
-		return(false);
+	// This method modifies spell_target, ae_center, and CastAction.
+	if(!DetermineSpellTargets(spell_id, spell_target, ae_center, CastAction, slot, isproc)) {
+		return (false);
+	}
 
 	LogSpells("Spell [{}]: target type [{}], target [{}], AE center [{}]", spell_id, CastAction, spell_target?spell_target->GetName():"NONE", ae_center?ae_center->GetName():"NONE");
 
