@@ -598,6 +598,7 @@ bool BeneficialSpell(uint16 spell_id)
 
 	switch (spells[spell_id].good_effect) {
 		case 1:
+		case 2:
 		case 3:
 			return true;
 	}

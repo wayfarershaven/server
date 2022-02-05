@@ -3854,30 +3854,59 @@ bool Mob::SpellOnTarget(uint16 spell_id, Mob *spelltar, int reflect_effectivenes
 	// Not sure if all 3 should be stacking
 
 	if (!RuleB(Spells, AllowDoubleInvis)) {
-		if (IsEffectInSpell(spell_id, SE_Invisibility))
-		{
-			if (spelltar->invisible)
-			{
+		if (IsEffectInSpell(spell_id, SE_Invisibility)) {
+			if (spelltar->IsClient()) {
+				if (IsClient()) {
+					if (spelltar != this && !entity_list.IsInSameGroupOrRaidGroup(spelltar->CastToClient(), this->CastToClient())) {
+						Message(Chat::Red, "Your target must be a group member for this spell.");
+						return false;
+					}
+				}
+			} else {
+				Message(Chat::Red, "This spell can only be cast on players.");
+			}
+		}
+
+		if (IsEffectInSpell(spell_id, SE_InvisVsUndead)) {
+			if (spelltar->IsClient()) {
+				if (IsClient()) {
+					if (spelltar != this && !entity_list.IsInSameGroupOrRaidGroup(spelltar->CastToClient(), this->CastToClient())) {
+						Message(Chat::Red, "Your target must be a group member for this spell.");
+						return false;
+					}
+				}
+			} else {
+				Message(Chat::Red, "This spell can only be cast on players.");
+			}
+
+			if (spelltar->invisible_undead) {
+				spelltar->MessageString(Chat::SpellFailure, ALREADY_INVIS, GetCleanName());
+				safe_delete(action_packet);
+				return false;
+			}
+		}
+		
+		if (IsEffectInSpell(spell_id, SE_InvisVsAnimals)) {
+			if (spelltar->IsClient()) {
+				if (IsClient()) {
+					if (spelltar != this && !entity_list.IsInSameGroupOrRaidGroup(spelltar->CastToClient(), this->CastToClient())) {
+						Message(Chat::Red, "Your target must be a group member for this spell.");
+						return false;
+					}
+				}
+			} else {
+				Message(Chat::Red, "This spell can only be cast on players.");
+			}
+
+			if (spelltar->invisible_animals) {
 				spelltar->MessageString(Chat::SpellFailure, ALREADY_INVIS, GetCleanName());
 				safe_delete(action_packet);
 				return false;
 			}
 		}
 
-		if (IsEffectInSpell(spell_id, SE_InvisVsUndead))
-		{
-			if (spelltar->invisible_undead)
-			{
-				spelltar->MessageString(Chat::SpellFailure, ALREADY_INVIS, GetCleanName());
-				safe_delete(action_packet);
-				return false;
-			}
-		}
-
-		if (IsEffectInSpell(spell_id, SE_InvisVsAnimals))
-		{
-			if (spelltar->invisible_animals)
-			{
+		if (IsEffectInSpell(spell_id, SE_InvisVsAnimals)) {
+			if (spelltar->invisible_animals) {
 				spelltar->MessageString(Chat::SpellFailure, ALREADY_INVIS, GetCleanName());
 				safe_delete(action_packet);
 				return false;
@@ -3888,11 +3917,9 @@ bool Mob::SpellOnTarget(uint16 spell_id, Mob *spelltar, int reflect_effectivenes
 	if(!(IsClient() && CastToClient()->GetGM()) && !IsHarmonySpell(spell_id))	// GMs can cast on anything
 	{
 		// Beneficial spells check
-		if(IsBeneficialSpell(spell_id))
-		{
+		if(IsBeneficialSpell(spell_id)) {
 			if(IsClient() &&	//let NPCs do beneficial spells on anybody if they want, should be the job of the AI, not the spell code to prevent this from going wrong
-				spelltar != this)
-			{
+				spelltar != this) {
 
 				Client* pClient = nullptr;
 				Raid* pRaid = nullptr;
@@ -3915,31 +3942,30 @@ bool Mob::SpellOnTarget(uint16 spell_id, Mob *spelltar, int reflect_effectivenes
 				pClient = this->CastToClient();
 				pRaid = entity_list.GetRaidByClient(pClient);
 				pBasicGroup = entity_list.GetGroupByMob(this);
-				if(pRaid)
+				if(pRaid) {
 					nGroup = pRaid->GetGroup(pClient) + 1;
+				}
 
 				//Target client pointers
-				if(spelltar->IsClient())
-				{
+				if(spelltar->IsClient()) {
 					pClientTarget = spelltar->CastToClient();
 					pRaidTarget = entity_list.GetRaidByClient(pClientTarget);
 					pBasicGroupTarget = entity_list.GetGroupByMob(spelltar);
-					if(pRaidTarget)
+					if(pRaidTarget) {
 						nGroupTarget = pRaidTarget->GetGroup(pClientTarget) + 1;
+					}
 				}
 
-				if(spelltar->IsPet())
-				{
+				if(spelltar->IsPet()) {
 					Mob *owner = spelltar->GetOwner();
-					if(owner->IsClient())
-					{
+					if(owner->IsClient()) {
 						pClientTargetPet = owner->CastToClient();
 						pRaidTargetPet = entity_list.GetRaidByClient(pClientTargetPet);
 						pBasicGroupTargetPet = entity_list.GetGroupByMob(owner);
-						if(pRaidTargetPet)
+						if(pRaidTargetPet) {
 							nGroupTargetPet = pRaidTargetPet->GetGroup(pClientTargetPet) + 1;
+						}
 					}
-
 				}
 
 				if((!IsAllianceSpellLine(spell_id) && !IsBeneficialAllowed(spelltar)) ||
@@ -4337,8 +4363,7 @@ bool Mob::SpellOnTarget(uint16 spell_id, Mob *spelltar, int reflect_effectivenes
 	return true;
 }
 
-void Corpse::CastRezz(uint16 spellid, Mob* Caster)
-{
+void Corpse::CastRezz(uint16 spellid, Mob* Caster) {
 	LogSpells("Corpse::CastRezz spellid [{}], Rezzed() is [{}], rezzexp is [{}]", spellid,IsRezzed(),rez_experience);
 
 	if(IsRezzed()){
