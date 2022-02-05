@@ -517,7 +517,7 @@ public:
 	inline Mob* GetTarget() const { return target; }
 	virtual void SetTarget(Mob* mob);
 	inline bool HasTargetReflection() const { return (target && target != this && target->target == this); }
-	virtual inline float GetHPRatio() const { return max_hp == 0 ? 0 : ((float) current_hp / max_hp * 100); }
+	virtual inline float GetHPRatio() const { return max_hp == 0 ? 0 : (float(current_hp)/float(max_hp)*100.00); }
 	virtual inline int GetIntHPRatio() const { return max_hp == 0 ? 0 : static_cast<int>(GetHPRatio()); }
 	inline int32 GetAC() const { return AC; }
 	inline virtual int32 GetATK() const { return ATK + itembonuses.ATK + spellbonuses.ATK; }
