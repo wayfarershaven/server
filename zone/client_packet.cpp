@@ -3989,7 +3989,7 @@ void Client::Handle_OP_CastSpell(const EQApplicationPacket *app)
 	if (feigned) {
 		SetFeigned(false);
 	}
-	
+
 	using EQ::spells::CastingSlot;
 	if (app->size != sizeof(CastSpell_Struct)) {
 		std::cout << "Wrong size: OP_CastSpell, size=" << app->size << ", expected " << sizeof(CastSpell_Struct) << std::endl;
@@ -10237,27 +10237,28 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
 
 	if (!mypet || pet->command == PET_LEADER) {
 		if (pet->command == PET_LEADER) {
-			// we either send the ID of an NPC we're interested in or no ID for our own pet
-			if (target) {
-				auto owner = target->GetOwner();
-				if (owner)
-					target->SayString(PET_LEADERIS, owner->GetCleanName());
-				else
-					target->SayString(I_FOLLOW_NOONE);
-			} else if (mypet) {
+			if (mypet && (!GetTarget() || GetTarget() == mypet)) {
 				mypet->SayString(PET_LEADERIS, GetName());
+			} else if ((mypet = GetTarget())) {
+				Mob *Owner = mypet->GetOwner();
+				if (Owner) {
+					mypet->SayString(PET_LEADERIS, Owner->GetCleanName());
+				} else if (mypet->IsNPC()) {
+					mypet->SayString(I_FOLLOW_NOONE);
+				}
 			}
 		}
-
 		return;
 	}
 
-	if (mypet->GetPetType() == petTargetLock && (pet->command != PET_HEALTHREPORT && pet->command != PET_GETLOST))
+	if (mypet->GetPetType() == petTargetLock && (pet->command != PET_HEALTHREPORT && pet->command != PET_GETLOST)) {
 		return;
+	}
 
 	// just let the command "/pet get lost" work for familiars
-	if (mypet->GetPetType() == petFamiliar && pet->command != PET_GETLOST)
+	if (mypet->GetPetType() == petFamiliar && pet->command != PET_GETLOST) {
 		return;
+	}
 
 	uint32 PetCommand = pet->command;
 
@@ -10271,17 +10272,20 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
 	}
 	*/
 
-	switch (PetCommand)
-	{
+	switch (PetCommand) {
 	case PET_ATTACK: {
-		if (!target)
+		if (!target) {
 			break;
+		}
+
 		if (target->IsMezzed()) {
 			MessageString(Chat::NPCQuestSay, CANNOT_WAKE, mypet->GetCleanName(), target->GetCleanName());
 			break;
 		}
-		if (mypet->IsFeared())
+
+		if (mypet->IsFeared()) {
 			break; //prevent pet from attacking stuff while feared
+		}
 
 		if (!mypet->IsAttackAllowed(target)) {
 			mypet->SayString(this, NOT_LEGAL_TARGET);
@@ -10303,6 +10307,7 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
 					mypet->SetPetStop(false);
 					SetPetCommandState(PET_BUTTON_STOP, 0);
 				}
+
 				if (mypet->IsPetRegroup()) {
 					mypet->SetPetRegroup(false);
 					SetPetCommandState(PET_BUTTON_REGROUP, 0);
@@ -10329,8 +10334,10 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
 		if (mypet->IsFeared())
 			break; //prevent pet from attacking stuff while feared
 
-		if (!GetTarget())
+		if (!GetTarget()) {
 			break;
+		}
+
 		if (GetTarget()->IsMezzed()) {
 			MessageString(Chat::NPCQuestSay, CANNOT_WAKE, mypet->GetCleanName(), GetTarget()->GetCleanName());
 			break;
@@ -10348,6 +10355,7 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
 					mypet->SetPetStop(false);
 					SetPetCommandState(PET_BUTTON_STOP, 0);
 				}
+				
 				if (mypet->IsPetRegroup()) {
 					mypet->SetPetRegroup(false);
 					SetPetCommandState(PET_BUTTON_REGROUP, 0);
