@@ -2232,7 +2232,9 @@ void Mob::ApplySpellsBonuses(uint16 spell_id, uint8 casterlevel, StatBonuses *ne
 				if (effect_value < 0) {
 					new_bonus->movementspeed = effect_value;
 				} else {
-					new_bonus->movementspeed += effect_value;
+					if (new_bonus->movementspeed >= 0) {
+						new_bonus->movementspeed += effect_value;
+					}
 				}
 				break;
 			}
