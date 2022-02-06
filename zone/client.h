@@ -698,6 +698,7 @@ public:
 	inline uint32 AccountID() const { return account_id; }
 
 	inline const char* AccountName()const { return account_name; }
+	const char* GetForumName(uint32 acc_id);
 	inline int GetAccountCreation() const { return account_creation; }
 	inline int16 Admin() const { return admin; }
 	inline uint32 CharacterID() const { return character_id; }
