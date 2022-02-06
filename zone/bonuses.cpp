@@ -3555,9 +3555,9 @@ void Mob::ApplySpellsBonuses(uint16 spell_id, uint8 casterlevel, StatBonuses *ne
 			}
 
 			case SE_Illusion:
-				new_bonus->Illusion = true;
+				new_bonus->Illusion = spell_id;
 				break;
-				
+
 			case SE_IllusionPersistence:
 				new_bonus->IllusionPersistence = effect_value;
 				break;

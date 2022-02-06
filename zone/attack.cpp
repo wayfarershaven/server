@@ -1957,6 +1957,8 @@ bool Client::Death(Mob* killerMob, int32 damage, uint16 spell, EQ::skills::Skill
 			//m_epp.perAA = 0;	//reset to no AA exp on death.
 		}
 
+		int32 illusion_spell_id = spellbonuses.Illusion;
+
 		//this generates a lot of 'updates' to the client that the client does not need
 		BuffFadeNonPersistDeath();
 		if (RuleB(Character, UnmemSpellsOnDeath)) {
@@ -2008,7 +2010,7 @@ bool Client::Death(Mob* killerMob, int32 damage, uint16 spell, EQ::skills::Skill
 
 			//send the become corpse packet to everybody else in the zone.
 			entity_list.QueueClients(this, &app2, true);
-
+			ApplyIllusionToCorpse(illusion_spell_id, new_corpse);
 			LeftCorpse = true;
 		}
 	}
@@ -2410,8 +2412,11 @@ bool NPC::Death(Mob* killer_mob, int32 damage, uint16 spell, EQ::skills::SkillTy
 	entity_list.DepopTargetLockedPets(this); // like unswerving hammer pets
 	entity_list.RemoveFromTargets(this, p_depop);
 
-	if (p_depop == true)
+	if (p_depop == true) {
 		return false;
+	}
+
+	int32 illusion_spell_id = spellbonuses.Illusion;
 
 	HasAISpellEffects = false;
 	BuffFadeAll();
@@ -2673,7 +2678,8 @@ bool NPC::Death(Mob* killer_mob, int32 damage, uint16 spell, EQ::skills::SkillTy
 		close_mobs.clear();
 
 		this->SetID(0);
-
+		ApplyIllusionToCorpse(illusion_spell_id, corpse);
+		
 		if (killer != 0 && emoteid != 0)
 			corpse->CastToNPC()->DoNPCEmote(AFTERDEATH, emoteid);
 		if (killer != 0 && killer->IsClient()) {
@@ -3803,7 +3809,7 @@ void Mob::CommonDamage(Mob* attacker, int &damage, const uint16 spell_id, const 
 		if (GetTempPetCount()) {
 			entity_list.AddTempPetsToHateListOnOwnerDamage(this, attacker, spell_id);
 		}
-		
+
 		//see if any runes want to reduce this damage
 		if (spell_id == SPELL_UNKNOWN) {
 			if (IsClient()) {
