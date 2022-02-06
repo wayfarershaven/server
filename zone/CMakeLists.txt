@@ -457,6 +457,7 @@ SET(gm_commands
     gm_commands/questerrors.cpp
     gm_commands/race.cpp
     gm_commands/raidloot.cpp
+    gm_commands/reimburse.cpp
     gm_commands/randomfeatures.cpp
     gm_commands/refreshgroup.cpp
     gm_commands/reloadaa.cpp
