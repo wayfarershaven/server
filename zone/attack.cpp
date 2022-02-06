@@ -2407,6 +2407,7 @@ bool NPC::Death(Mob* killer_mob, int32 damage, uint16 spell, EQ::skills::SkillTy
 
 	Mob* killer = GetHateDamageTop(this);
 
+	entity_list.DepopTargetLockedPets(this); // like unswerving hammer pets
 	entity_list.RemoveFromTargets(this, p_depop);
 
 	if (p_depop == true)
@@ -3685,8 +3686,9 @@ void Mob::CommonDamage(Mob* attacker, int &damage, const uint16 spell_id, const 
 		damage = DMG_INVULNERABLE;
 	}
 
-	if (spell_id != SPELL_UNKNOWN || attacker == nullptr)
+	if (spell_id != SPELL_UNKNOWN || attacker == nullptr) {
 		avoidable = false;
+	}
 
 	// only apply DS if physical damage (no spell damage)
 	// damage shield calls this function with spell_id set, so its unavoidable
@@ -3697,24 +3699,26 @@ void Mob::CommonDamage(Mob* attacker, int &damage, const uint16 spell_id, const 
 	if (spell_id == SPELL_UNKNOWN && skill_used) {
 		CheckNumHitsRemaining(NumHit::IncomingHitAttempts);
 
-		if (attacker)
+		if (attacker) {
 			attacker->CheckNumHitsRemaining(NumHit::OutgoingHitAttempts);
+		}
 	}
 
 	if (attacker) {
 		if (attacker->IsClient()) {
 			if (!RuleB(Combat, EXPFromDmgShield)) {
 				// Damage shield damage shouldn't count towards who gets EXP
-				if (!attacker->CastToClient()->GetFeigned() && !FromDamageShield)
+				if (!attacker->CastToClient()->GetFeigned() && !FromDamageShield) {
 					AddToHateList(attacker, 0, damage, true, false, iBuffTic, spell_id);
-			}
-			else {
-				if (!attacker->CastToClient()->GetFeigned())
+				}
+			} else {
+				if (!attacker->CastToClient()->GetFeigned()) {
 					AddToHateList(attacker, 0, damage, true, false, iBuffTic, spell_id);
+				}
 			}
-		}
-		else
+		} else {
 			AddToHateList(attacker, 0, damage, true, false, iBuffTic, spell_id);
+		}
 	}
 
 	if (damage > 0) {
@@ -3790,22 +3794,26 @@ void Mob::CommonDamage(Mob* attacker, int &damage, const uint16 spell_id, const 
 
 		//see if any runes want to reduce this damage
 		if (spell_id == SPELL_UNKNOWN) {
+			if (IsClient()) {
+				CommonBreakInvisible();
+			}
 			damage = ReduceDamage(damage);
 			LogCombat("Melee Damage reduced to [{}]", damage);
 			damage = ReduceAllDamage(damage);
 			TryTriggerThreshHold(damage, SE_TriggerMeleeThreshold, attacker);
 
-			if (skill_used)
+			if (skill_used) {
 				CheckNumHitsRemaining(NumHit::IncomingHitSuccess);
-
-		}
-		else {
+			}
+		} else {
 			int32 origdmg = damage;
 			damage = AffectMagicalDamage(damage, spell_id, iBuffTic, attacker);
 			if (origdmg != damage && attacker && attacker->IsClient()) {
-				if (attacker->CastToClient()->GetFilter(FilterDamageShields) != FilterHide)
+				if (attacker->CastToClient()->GetFilter(FilterDamageShields) != FilterHide) {
 					attacker->Message(Chat::Yellow, "The Spellshield absorbed %d of %d points of damage", origdmg - damage, origdmg);
+				}
 			}
+
 			if (damage == 0 && attacker && origdmg != damage && IsClient()) {
 				//Kayen: Probably need to add a filter for this - Not sure if this msg is correct but there should be a message for spell negate/runes.
 				Message(263, "%s tries to cast on YOU, but YOUR magical skin absorbs the spell.", attacker->GetCleanName());
@@ -3814,10 +3822,6 @@ void Mob::CommonDamage(Mob* attacker, int &damage, const uint16 spell_id, const 
 			TryTriggerThreshHold(damage, SE_TriggerSpellThreshold, attacker);
 		}
 
-		if (IsClient()) {
-			CommonBreakInvisible();
-		}
-		
 		if (attacker && attacker->IsClient() && attacker->CastToClient()->sneaking) {
 			attacker->CastToClient()->sneaking = false;
 			attacker->SendAppearancePacket(AT_Sneak, 0);
@@ -3831,8 +3835,9 @@ void Mob::CommonDamage(Mob* attacker, int &damage, const uint16 spell_id, const 
 		if (HasDied()) {
 			bool IsSaved = false;
 
-			if (TryDivineSave())
+			if (TryDivineSave()) {
 				IsSaved = true;
+			}
 
 			if (!IsSaved && !TrySpellOnDeath()) {
 				SetHP(-500);
@@ -3841,8 +3846,7 @@ void Mob::CommonDamage(Mob* attacker, int &damage, const uint16 spell_id, const 
 					return;
 				}
 			}
-		}
-		else {
+		} else {
 			if(GetHPRatio() < 16 && previousHPRatio >= 16) {
 				TryDeathSave();
 			}
@@ -3874,21 +3878,24 @@ void Mob::CommonDamage(Mob* attacker, int &damage, const uint16 spell_id, const 
 		if (attacker) {
 			if (skill_used == EQ::skills::SkillBash) {
 				can_stun = true;
-				if (attacker->IsClient())
+				if (attacker->IsClient()) {
 					stunbash_chance = attacker->spellbonuses.StunBashChance +
 					attacker->itembonuses.StunBashChance +
 					attacker->aabonuses.StunBashChance;
-			}
-			else if (skill_used == EQ::skills::SkillKick &&
+				}
+			} else if (skill_used == EQ::skills::SkillKick &&
 				(attacker->GetLevel() > 55 || attacker->IsNPC()) && GetClass() == WARRIOR) {
 				can_stun = true;
 			}
 
 			if ((GetBaseRace() == OGRE || GetBaseRace() == OGGOK_CITIZEN) &&
-				!attacker->BehindMob(this, attacker->GetX(), attacker->GetY()))
+				!attacker->BehindMob(this, attacker->GetX(), attacker->GetY())) {
 				can_stun = false;
-			if (GetSpecialAbility(UNSTUNABLE))
+			}
+			
+			if (GetSpecialAbility(UNSTUNABLE)) {
 				can_stun = false;
+			}
 		}
 		if (can_stun) {
 			int bashsave_roll = zone->random.Int(0, 100);
@@ -3906,36 +3913,36 @@ void Mob::CommonDamage(Mob* attacker, int &damage, const uint16 spell_id, const 
 						// did stun
 						// nothing else to check!
 						Stun(2000); // straight 2 seconds every time
-					}
-					else {
+					} else {
 						// stun resist passed!
-						if (IsClient())
+						if (IsClient()) {
 							MessageString(Chat::Stun, SHAKE_OFF_STUN);
+						}
+					}
+				} else {
+					// stun resist 2 passed!
+					if (IsClient()) {
+						MessageString(Chat::Stun, AVOID_STUNNING_BLOW);
 					}
 				}
-				else {
-					// stun resist 2 passed!
-					if (IsClient())
-						MessageString(Chat::Stun, AVOID_STUNNING_BLOW);
-				}
-			}
-			else {
+			} else {
 				// main stun failed -- extra interrupt roll
 				if (IsCasting() &&
-					!EQ::ValueWithin(casting_spell_id, 859, 1023)) // these spells are excluded
+					!EQ::ValueWithin(casting_spell_id, 859, 1023)) { // these spells are excluded
 																	  // 90% chance >< -- stun immune won't reach this branch though :(
-					if (zone->random.Int(0, 9) > 1)
+					if (zone->random.Int(0, 9) > 1) {
 						InterruptSpell();
+					}
+				}
 			}
 		}
 
 		if (spell_id != SPELL_UNKNOWN && !iBuffTic) {
 			//see if root will break
-			if (IsRooted() && !FromDamageShield)  // neotoyko: only spells cancel root
+			if (IsRooted() && !FromDamageShield) { // neotoyko: only spells cancel root
 				TryRootFadeByDamage(buffslot, attacker);
-		}
-		else if (spell_id == SPELL_UNKNOWN)
-		{
+			}
+		} else if (spell_id == SPELL_UNKNOWN) {
 			//increment chances of interrupting
 			if (IsCasting()) { //shouldnt interrupt on regular spell damage
 				attacked_count++;
@@ -3949,7 +3956,7 @@ void Mob::CommonDamage(Mob* attacker, int &damage, const uint16 spell_id, const 
 		}
 	}	//end `if damage was done`
 
-		//send damage packet...
+	//send damage packet...
 	if (!iBuffTic) { //buff ticks do not send damage, instead they just call SendHPUpdate(), which is done above
 		auto outapp = new EQApplicationPacket(OP_Damage, sizeof(CombatDamage_Struct));
 		CombatDamage_Struct* a = (CombatDamage_Struct*)outapp->pBuffer;
