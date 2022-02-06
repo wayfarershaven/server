@@ -2616,7 +2616,7 @@ bool NPC::Death(Mob* killer_mob, int32 damage, uint16 spell, EQ::skills::SkillTy
 				int conlevel = give_exp->GetLevelCon(GetLevel());
 				if (conlevel != CON_GRAY) {
 					if (!GetOwner() || (GetOwner() && !GetOwner()->IsClient())) {
-						give_exp_client->AddEXP((finalxp), conlevel);
+						give_exp_client->AddEXP((finalxp), conlevel, GetLevel());
 						if (killer_mob && (killer_mob->GetID() == give_exp_client->GetID() || killer_mob->GetUltimateOwner()->GetID() == give_exp_client->GetID()))
 							killer_mob->TrySpellOnKill(killed_level, spell);
 					}
