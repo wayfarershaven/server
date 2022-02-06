@@ -3407,6 +3407,9 @@ void EntityList::ClearAggro(Mob* targ, bool clear_caster_id)
 	while (it != npc_list.end()) {
 		if (clear_caster_id) {
 			it->second->BuffDetachCaster(targ);
+			if (it->second->GetTarget() == c) {
+				it->second->StopCasting();
+			}
 		}
 		if (it->second->CheckAggro(targ)) {
 			it->second->RemoveFromHateList(targ);
