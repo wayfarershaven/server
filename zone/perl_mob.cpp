@@ -951,17 +951,50 @@ XS(XS_Mob_FindBuffBySlot) {
 	XSRETURN(1);
 }
 
-XS(XS_Mob_BuffCount); /* prototype to pass -Wmissing-prototypes */
-XS(XS_Mob_BuffCount) {
+XS(XS_Mob_GetDetBuffCount); /* prototype to pass -Wmissing-prototypes */
+XS(XS_Mob_GetDetBuffCount) {
 	dXSARGS;
 	if (items != 1)
-		Perl_croak(aTHX_ "Usage: Mob::BuffCount(THIS)"); // @categories Script Utility, Spells and Disciplines
+		Perl_croak(aTHX_ "Usage: Mob::GetDetBuffCount(THIS)");
 	{
 		Mob *THIS;
 		uint32  RETVAL;
 		dXSTARG;
-		VALIDATE_THIS_IS_MOB;
-		RETVAL = THIS->BuffCount();
+
+		if (sv_derived_from(ST(0), "Mob")) {
+			IV tmp = SvIV((SV *) SvRV(ST(0)));
+			THIS = INT2PTR(Mob *, tmp);
+		} else
+			Perl_croak(aTHX_ "THIS is not of type Mob");
+		if (THIS == nullptr)
+			Perl_croak(aTHX_ "THIS is nullptr, avoiding crash.");
+
+		RETVAL = THIS->GetDetBuffCount();
+		XSprePUSH;
+		PUSHu((UV) RETVAL);
+	}
+	XSRETURN(1);
+}
+
+XS(XS_Mob_GetBeneBuffCount); /* prototype to pass -Wmissing-prototypes */
+XS(XS_Mob_GetBeneBuffCount) {
+	dXSARGS;
+	if (items != 1)
+		Perl_croak(aTHX_ "Usage: Mob::GetBeneBuffCount(THIS)");
+	{
+		Mob *THIS;
+		uint32  RETVAL;
+		dXSTARG;
+
+		if (sv_derived_from(ST(0), "Mob")) {
+			IV tmp = SvIV((SV *) SvRV(ST(0)));
+			THIS = INT2PTR(Mob *, tmp);
+		} else
+			Perl_croak(aTHX_ "THIS is not of type Mob");
+		if (THIS == nullptr)
+			Perl_croak(aTHX_ "THIS is nullptr, avoiding crash.");
+
+		RETVAL = THIS->GetBeneBuffCount();
 		XSprePUSH;
 		PUSHu((UV) RETVAL);
 	}
@@ -6559,7 +6592,8 @@ XS(boot_Mob) {
 	newXSproto(strcpy(buf, "AddToHateList"), XS_Mob_AddToHateList, file, "$$;$$$$$");
 	newXSproto(strcpy(buf, "Attack"), XS_Mob_Attack, file, "$$;$$");
 	newXSproto(strcpy(buf, "BehindMob"), XS_Mob_BehindMob, file, "$;$$$");
-	newXSproto(strcpy(buf, "BuffCount"), XS_Mob_BuffCount, file, "$");
+	newXSproto(strcpy(buf, "GetDetBuffCount"), XS_Mob_GetDetBuffCount, file, "$");
+	newXSproto(strcpy(buf, "GetBeneBuffCount"), XS_Mob_GetBeneBuffCount, file, "$");
 	newXSproto(strcpy(buf, "BuffFadeAll"), XS_Mob_BuffFadeAll, file, "$");
 	newXSproto(strcpy(buf, "BuffFadeByEffect"), XS_Mob_BuffFadeByEffect, file, "$$;$");
 	newXSproto(strcpy(buf, "BuffFadeBySlot"), XS_Mob_BuffFadeBySlot, file, "$$;$");
