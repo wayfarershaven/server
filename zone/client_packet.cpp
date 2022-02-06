@@ -6963,6 +6963,11 @@ void Client::Handle_OP_GroupInvite2(const EQApplicationPacket *app)
 	{
 		if (Invitee->IsClient())
 		{
+			if (Invitee->HasGroup()) {
+				MessageString(Chat::LightGray, TARGET_IN_GROUP, Invitee->GetCleanName());
+				return;
+			}
+			
 			// If the Invitee is correct (it is a valid client target), we set it as the person
 			// to invite.
 			strn0cpy(gis->invitee_name, Invitee->GetName(), 64);
