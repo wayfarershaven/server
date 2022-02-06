@@ -983,7 +983,11 @@ void Mob::AI_Process() {
 	bool engaged  = IsEngaged();
 	bool doranged = false;
 
-	if (!zone->CanDoCombat() || IsPetStop() || IsPetRegroup()) {
+	if (!zone->CanDoCombat() || IsPetRegroup()) {
+		engaged = false;
+	}
+
+	if (IsPet() && IsPetStop()) {
 		engaged = false;
 	}
 

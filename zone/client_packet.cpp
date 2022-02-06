@@ -10337,8 +10337,12 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
 				zone->AddAggroMob();
 				// classic acts like qattack
 				int hate = 1;
-				if (!mypet->IsEngaged()) {
-					mypet->SetPetTargetLockID(target->GetID());
+				if (mypet->IsEngaged()) {
+					auto top = mypet->GetHateMost();
+					if (top && top != target) {
+						hate += mypet->GetHateAmount(top) - mypet->GetHateAmount(target) +
+								100; // should be enough to cause target change
+					}
 				}
 				mypet->AddToHateList(target, hate, 0, true, false, false, SPELL_UNKNOWN, true);
 				MessageString(Chat::PetResponse, PET_ATTACKING, mypet->GetCleanName(), target->GetCleanName());
