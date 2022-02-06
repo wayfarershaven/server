@@ -560,8 +560,8 @@ bool WorldDatabase::GetStartZone(
 	if (is_titanium) {
 		// Titanium sends player choice (starting city) instead of a zone id
 		query = StringFormat(
-			"SELECT x, y, z, heading, start_zone, bind_id, bind_x, bind_y, bind_z FROM start_zones WHERE player_choice = %i "
-			"AND player_class = %i AND player_deity = %i AND player_race = %i %s",
+			"SELECT x, y, z, heading, start_zone, bind_id, bind_x, bind_y, bind_z FROM start_zones WHERE player_choice = %u "
+			"AND player_class = %u AND player_deity = %u AND player_race = %u %s",
 			p_char_create_struct->start_zone,
 			p_char_create_struct->class_,
 			p_char_create_struct->deity,
