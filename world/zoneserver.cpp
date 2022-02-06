@@ -456,11 +456,12 @@ void ZoneServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p) {
 
 			ClientListEntry* cle = client_list.FindCharacter(scm->deliverto);
 			if (cle == 0 || cle->Online() < CLE_Status::Zoning ||
-				(cle->TellsOff() && ((cle->Anon() == 1 && scm->fromadmin < cle->Admin()) || scm->fromadmin < AccountStatus::QuestTroupe))) {
+				(cle->TellsOff() && (scm->fromadmin < cle->Admin() || scm->fromadmin < AccountStatus::QuestTroupe))) {	
 				if (!scm->noreply) {
-					ClientListEntry* sender = client_list.FindCharacter(scm->from);
-					if (!sender || !sender->Server())
+					ClientListEntry *sender = client_list.FindCharacter(scm->from);
+					if (!sender || !sender->Server()) {
 						break;
+					}
 					scm->noreply = true;
 					scm->queued = 3; // offline
 					scm->chan_num = ChatChannel_TellEcho;
