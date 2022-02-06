@@ -3381,10 +3381,12 @@ bool Mob::CanThisClassDoubleAttack(void) const
 
 bool Mob::CanThisClassTripleAttack() const
 {
-	if (!IsClient())
+	if (!IsClient()) {
 		return false; // When they added the real triple attack skill, mobs lost the ability to triple
-	else
-		return CastToClient()->HasSkill(EQ::skills::SkillTripleAttack);
+	} else {
+		// Innate Triple Attack only for Level 60 Monks, Warriors and Berserker in our era
+		return (GetLevel() >= 60 && (GetClass() == WARRIOR || GetClass() == MONK || GetClass() == BERSERKER));
+	}
 }
 
 bool Mob::IsWarriorClass(void) const
