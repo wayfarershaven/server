@@ -35,6 +35,21 @@ void command_who(Client *c, const Seperator *sep)
 		) AS account_name,
 		COALESCE(
 			(
+				select
+					tblLoginServerAccounts.ForumName
+				from
+					tblLoginServerAccounts,
+					account
+				where
+					tblLoginServerAccounts.LoginServerID = account.lsaccount_id
+				and
+					account.id = character_data.account_id
+				LIMIT 1
+			),
+			""
+			) as forum_name,
+		COALESCE(
+			(
 				SELECT account_ip.ip FROM account_ip WHERE account_ip.accid = character_data.account_id ORDER BY account_ip.lastused DESC LIMIT 1
 			),
 			""
@@ -76,7 +91,8 @@ void command_who(Client *c, const Seperator *sep)
 		auto player_class = std::stoul(row[7]);
 		auto account_status = std::stoul(row[8]);
 		std::string account_name = row[9];
-		std::string account_ip = row[10];
+		std::string forum_name    		= row[10];
+		std::string account_ip          = row[11];
 		std::string base_class_name = GetClassIDName(static_cast<uint8>(player_class));
 		std::string displayed_race_name = GetRaceIDName(static_cast<uint16>(player_race));
 
@@ -88,6 +104,7 @@ void command_who(Client *c, const Seperator *sep)
 				str_tolower(base_class_name).find(search_string) != std::string::npos ||
 				str_tolower(guild_name).find(search_string) != std::string::npos ||
 				str_tolower(account_name).find(search_string) != std::string::npos ||
+				str_tolower(forum_name).find(search_string) != std::string::npos ||
 				str_tolower(account_ip).find(search_string) != std::string::npos
 			);
 
@@ -170,6 +187,15 @@ void command_who(Client *c, const Seperator *sep)
 			account_name
 		);
 
+		auto forum_saylink = EQ::SayLinkEngine::GenerateQuestSaylink(
+			fmt::format(
+				"#who {}",
+				forum_name
+			),
+			false,
+			forum_name
+		);
+
 		auto account_ip_saylink = EQ::SayLinkEngine::GenerateQuestSaylink(
 			fmt::format(
 				"#who {}",
@@ -200,7 +226,7 @@ void command_who(Client *c, const Seperator *sep)
 		c->Message(
 			Chat::Who,
 			fmt::format(
-				"{}[{} {} ({})] {} ({}) ({}) ({}) {} ZONE: {}{} ({} | {})",
+				"{}[{} {} ({})] {} ({}) ({}) ({}) {} ZONE: {}{} F: ({}) ({} | {})",
 				status_level,
 				player_level,
 				class_saylink,
@@ -212,6 +238,7 @@ void command_who(Client *c, const Seperator *sep)
 				displayed_guild_name,
 				zone_saylink,
 				version_string,
+				forum_saylink,
 				goto_saylink,
 				summon_saylink
 			).c_str()
