@@ -3614,16 +3614,25 @@ bool Client::CheckDoubleAttack()
 	int skill = GetSkill(EQ::skills::SkillDoubleAttack);
 	//Check for bonuses that give you a double attack chance regardless of skill (ie Bestial Frenzy/Harmonious Attack AA)
 	int bonusGiveDA = aabonuses.GiveDoubleAttack + spellbonuses.GiveDoubleAttack + itembonuses.GiveDoubleAttack;
-	if (skill > 0)
+	if (skill > 0) {
 		chance = skill + GetLevel();
-	else if (!bonusGiveDA)
+	} else if (!bonusGiveDA) {
 		return false;
+	}
 
-	if (bonusGiveDA)
+	if (bonusGiveDA) {
 		chance += bonusGiveDA / 100.0f * 500; // convert to skill value
-	int per_inc = aabonuses.DoubleAttackChance + spellbonuses.DoubleAttackChance + itembonuses.DoubleAttackChance;
-	if (per_inc)
+	}
+	int per_inc = 0;
+	if (GetClass() == PALADIN || GetClass() == SHADOWKNIGHT && !HasTwoHanderEquipped() ) {
+		per_inc = 0;
+		Log(Logs::General, Logs::Combat, "Knight class without a 2 hand weapon equiped = No DA Bonus!");
+	} else {
+		per_inc = aabonuses.DoubleAttackChance + spellbonuses.DoubleAttackChance + itembonuses.DoubleAttackChance;
+	}
+	if (per_inc > 0) {
 		chance += chance * per_inc / 100;
+	}
 
 	return zone->random.Int(1, 500) <= chance;
 }
@@ -6222,50 +6231,20 @@ void Client::DoAttackRounds(Mob *target, int hand, bool IsFromSpell)
 	if (candouble) {
 		CheckIncreaseSkill(EQ::skills::SkillDoubleAttack, target, -10);
 		if (CheckDoubleAttack()) {
+			Log(Logs::General, Logs::Combat, "Double Attack Passed");
 			Attack(target, hand, false, false, IsFromSpell);
 
-			if (hand == EQ::invslot::slotPrimary) {
-
-				if (HasTwoHanderEquipped()) {
-					auto extraattackchance = aabonuses.ExtraAttackChance[SBIndex::EXTRA_ATTACK_CHANCE] + spellbonuses.ExtraAttackChance[SBIndex::EXTRA_ATTACK_CHANCE] +
-											 itembonuses.ExtraAttackChance[SBIndex::EXTRA_ATTACK_CHANCE];
-					if (extraattackchance && zone->random.Roll(extraattackchance)) {
-						auto extraattackamt = std::max({aabonuses.ExtraAttackChance[SBIndex::EXTRA_ATTACK_NUM_ATKS], spellbonuses.ExtraAttackChance[SBIndex::EXTRA_ATTACK_NUM_ATKS], itembonuses.ExtraAttackChance[SBIndex::EXTRA_ATTACK_NUM_ATKS] });
-						for (int i = 0; i < extraattackamt; i++) {
-							Attack(target, hand, false, false, IsFromSpell);
-						}
-					}
-				}
-				else {
-					auto extraattackchance_primary = aabonuses.ExtraAttackChancePrimary[SBIndex::EXTRA_ATTACK_CHANCE] + spellbonuses.ExtraAttackChancePrimary[SBIndex::EXTRA_ATTACK_CHANCE] +
-													 itembonuses.ExtraAttackChancePrimary[SBIndex::EXTRA_ATTACK_CHANCE];
-					if (extraattackchance_primary && zone->random.Roll(extraattackchance_primary)) {
-						auto extraattackamt_primary = std::max({aabonuses.ExtraAttackChancePrimary[SBIndex::EXTRA_ATTACK_NUM_ATKS], spellbonuses.ExtraAttackChancePrimary[SBIndex::EXTRA_ATTACK_NUM_ATKS], itembonuses.ExtraAttackChancePrimary[SBIndex::EXTRA_ATTACK_NUM_ATKS] });
-						for (int i = 0; i < extraattackamt_primary; i++) {
-							Attack(target, hand, false, false, IsFromSpell);
-						}
-					}
-				}
-			}
-
-			if (hand == EQ::invslot::slotSecondary) {
-				auto extraattackchance_secondary = aabonuses.ExtraAttackChanceSecondary[SBIndex::EXTRA_ATTACK_CHANCE] + spellbonuses.ExtraAttackChanceSecondary[SBIndex::EXTRA_ATTACK_CHANCE] +
-												   itembonuses.ExtraAttackChanceSecondary[SBIndex::EXTRA_ATTACK_CHANCE];
-				if (extraattackchance_secondary && zone->random.Roll(extraattackchance_secondary)) {
-					auto extraattackamt_secondary = std::max({aabonuses.ExtraAttackChanceSecondary[SBIndex::EXTRA_ATTACK_NUM_ATKS], spellbonuses.ExtraAttackChanceSecondary[SBIndex::EXTRA_ATTACK_NUM_ATKS], itembonuses.ExtraAttackChanceSecondary[SBIndex::EXTRA_ATTACK_NUM_ATKS] });
-					for (int i = 0; i < extraattackamt_secondary; i++) {
-						Attack(target, hand, false, false, IsFromSpell);
-					}
-				}
-			}
 
 			// you can only triple from the main hand
 			if (hand == EQ::invslot::slotPrimary && CanThisClassTripleAttack()) {
 				if (CheckTripleAttack()) {
+					Log(Logs::General, Logs::Combat, "Triple Attack Passed");
 					Attack(target, hand, false, false, IsFromSpell);
 					auto flurrychance = aabonuses.FlurryChance + spellbonuses.FlurryChance +
 							    itembonuses.FlurryChance;
+					Log(Logs::General, Logs::Combat, "Flurry Chance = %i", flurrychance);			
 					if (flurrychance && zone->random.Roll(flurrychance)) {
+						Log(Logs::General, Logs::Combat, "Flurry Attack Passed");
 						Attack(target, hand, false, false, IsFromSpell);
 						if (zone->random.Roll(flurrychance))
 							Attack(target, hand, false, false, IsFromSpell);
@@ -6273,6 +6252,18 @@ void Client::DoAttackRounds(Mob *target, int hand, bool IsFromSpell)
 					}
 				}
 			}
+		}
+	}
+
+	if (hand == EQ::invslot::slotPrimary) {
+		auto extraattackchance = aabonuses.ExtraAttackChance[SBIndex::EXTRA_ATTACK_CHANCE] + spellbonuses.ExtraAttackChance[SBIndex::EXTRA_ATTACK_CHANCE] +
+											 itembonuses.ExtraAttackChance[SBIndex::EXTRA_ATTACK_CHANCE];
+		Log(Logs::General, Logs::Combat, "Extra Attack Roll - Extra Attack Chance = %i of 100", extraattackchance);
+		if (extraattackchance && HasTwoHanderEquipped() && zone->random.Roll(extraattackchance)) {
+			Log(Logs::General, Logs::Combat, "Extra Attack Passed ");
+			Attack(target, hand, false, false, IsFromSpell);
+		} else if (extraattackchance && !HasTwoHanderEquipped()){
+			Log(Logs::General, Logs::Combat, "Extra Attack not attempted - Missing 2 Hand Weapon! ");
 		}
 	}
 }
