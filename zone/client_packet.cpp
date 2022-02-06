@@ -760,6 +760,8 @@ void Client::CompleteConnect()
 
 	entity_list.SendAppearanceEffects(this);
 
+	entity_list.SendIllusionWearChange(this);
+	
 	entity_list.SendTraders(this);
 
 	Mob *pet = GetPet();
