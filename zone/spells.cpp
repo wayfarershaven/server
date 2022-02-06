@@ -4224,30 +4224,28 @@ bool Mob::SpellOnTarget(uint16 spell_id, Mob *spelltar, int reflect_effectivenes
 		spelltar->DamageShield(this, true);
 	}
 
-	if (!(spelltar->IsNPC() && IsNPC() && !(IsPet() && GetOwner()->IsClient()))) {
-		if (spelltar->IsAIControlled() && IsDetrimentalSpell(spell_id) && !IsHarmonySpell(spell_id)) {
-			int32 aggro_amount = CheckAggroAmount(spell_id, spelltar, isproc);
-			Log(Logs::Detail, Logs::Spells, "Spell %d cast on %s generated %d hate", spell_id,
-				spelltar->GetName(), aggro_amount);
-			if (aggro_amount > 0) {
-				spelltar->AddToHateList(this, aggro_amount);
-			} else {
-				int32 newhate = spelltar->GetHateAmount(this) + aggro_amount;
-				spelltar->SetHateAmountOnEnt(this, std::max(newhate, 1));
-			}
-		} else if (IsBeneficialSpell(spell_id) && !IsSummonPCSpell(spell_id)) {
-			entity_list.AddHealAggro(
-					spelltar, this,
-					CheckHealAggroAmount(spell_id, spelltar, (spelltar->GetMaxHP() - spelltar->GetHP())));
+	if (spelltar->IsAIControlled() && IsDetrimentalSpell(spell_id) && !IsHarmonySpell(spell_id)) {
+		int32 aggro_amount = CheckAggroAmount(spell_id, spelltar, isproc);
+		LogSpells("Spell %d cast on [{}] generated [{}] hate", spell_id,
+			spelltar->GetName(), aggro_amount);
+		if (aggro_amount > 0) {
+			spelltar->AddToHateList(this, aggro_amount);
+		} else {
+			int32 newhate = spelltar->GetHateAmount(this) + aggro_amount;
+			spelltar->SetHateAmountOnEnt(this, std::max(newhate, 1));
 		}
+	} else if (IsBeneficialSpell(spell_id) && !IsSummonPCSpell(spell_id)) {
+		entity_list.AddHealAggro(spelltar, this,
+								 CheckHealAggroAmount(spell_id, spelltar, (spelltar->GetMaxHP() - spelltar->GetHP())));
 	}
 
 	// make sure spelltar is high enough level for the buff
 	if(RuleB(Spells, BuffLevelRestrictions) && !spelltar->CheckSpellLevelRestriction(spell_id))
 	{
 		LogSpells("Spell [{}] failed: recipient did not meet the level restrictions", spell_id);
-		if(!IsBardSong(spell_id))
+		if(!IsBardSong(spell_id)) {
 			MessageString(Chat::SpellFailure, SPELL_TOO_POWERFUL);
+		}
 		safe_delete(action_packet);
 		return false;
 	}
@@ -4645,6 +4643,26 @@ bool Mob::IsAffectedByBuffByGlobalGroup(GlobalGroup group)
 	}
 
 	return false;
+}
+
+void Mob::BuffDetachCaster(Mob *caster)
+{
+	if (!caster)
+		return;
+
+	int buff_count = GetMaxTotalSlots();
+	for (int j = 0; j < buff_count; j++) {
+		if (buffs[j].spellid != SPELL_UNKNOWN) {
+			if (IsDetrimentalSpell(buffs[j].spellid))
+			{
+				//this is a pretty terrible way to do this but
+				//there really isn't another way till I rewrite the basics
+				Mob* c = entity_list.GetMob(buffs[j].casterid);
+				if (c && c == caster)
+					buffs[j].casterid = 0;
+			}
+		}
+	}
 }
 
 // checks if 'this' can be affected by spell_id from caster
