@@ -107,22 +107,19 @@ bool NPC::AICastSpell(Mob* tar, uint8 iChance, uint32 iSpellTypes, bool bInnates
 		if (iSpellTypes & AIspells[i].type) {
 			// manacost has special values, -1 is no mana cost, -2 is instant cast (no mana)
 			int32 mana_cost = AIspells[i].manacost;
-			if (mana_cost == -1)
+			if (mana_cost == -1) {
 				mana_cost = spells[AIspells[i].spellid].mana;
-			else if (mana_cost == -2)
+			} else if (mana_cost == -2) {
 				mana_cost = 0;
-			// this is ugly -- ignore distance for hatelist spells, looks like the client is only checking distance for some targettypes in CastSpell,
-			// should probably match that eventually. This should be good enough for now I guess ....
+			}
+
 			if (
-				(
-				 (spells[AIspells[i].spellid].target_type == ST_HateList || spells[AIspells[i].spellid].target_type == ST_AETargetHateList) ||
-				 (
-				  // note: I think this check is actually wrong and we should be checking range instead in all cases, BUT if range is 0, range check is skipped? Works for now
-				  (spells[AIspells[i].spellid].target_type==ST_AECaster || spells[AIspells[i].spellid].target_type==ST_AEBard || spells[AIspells[i].spellid].target_type==ST_AEClientV1)
-				  && dist2 <= spells[AIspells[i].spellid].aoe_range*spells[AIspells[i].spellid].aoe_range
-				 ) ||
-				 dist2 <= spells[AIspells[i].spellid].range*spells[AIspells[i].spellid].range
-				 )
+				((
+							 (spells[AIspells[i].spellid].target_type==ST_AECaster || spells[AIspells[i].spellid].target_type==ST_AEBard)
+							 && dist2 <= spells[AIspells[i].spellid].aoe_range*spells[AIspells[i].spellid].aoe_range
+					 ) ||
+					 dist2 <= spells[AIspells[i].spellid].range*spells[AIspells[i].spellid].range
+					)
 				&& (mana_cost <= GetMana() || GetMana() == GetMaxMana())
 				&& (AIspells[i].time_cancast + (zone->random.Int(0, 4) * 500)) <= Timer::GetCurrentTime() //break up the spelling casting over a period of time.
 				) {
