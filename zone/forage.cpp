@@ -439,7 +439,7 @@ void Client::ForageItem(bool guarantee) {
 		uint32 foragedfood = 0;
 		uint32 stringid = FORAGE_NOEAT;
 
-		if (zone->random.Roll(25)) {
+		if (zone->random.Roll(RuleI(Skills, ForageChance))) {
 			foragedfood = content_db.GetZoneForage(m_pp.zone_id, skill_level);
 		}
 

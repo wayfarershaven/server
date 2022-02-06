@@ -250,7 +250,8 @@ RULE_INT(Skills, MaxTrainSpecializations, 50, "Maximum level a GM trainer will t
 RULE_INT(Skills, SwimmingStartValue, 100, "Start value of swimming skill")
 RULE_BOOL(Skills, TrainSenseHeading, false, "Switch whether SenseHeading is trained by use")
 RULE_INT(Skills, SenseHeadingStartValue, 200, "Start value of sense heading skill")
-RULE_BOOL(Skills, SelfLanguageLearning, true, "Enabling self-learning of languages")
+RULE_INT(Skills, ForageChance, 50, "Chance of foraging from zone table")
+RULE_BOOL(Skills, SelfLanguageLearning, true, "Enabling self learning of languages")
 RULE_BOOL(Skills, RequireTomeHandin, false, "Disable click-to-learn and force hand in to Guild Master")
 RULE_CATEGORY_END()
 
