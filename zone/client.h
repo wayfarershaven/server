@@ -616,7 +616,7 @@ public:
 	void SendCrystalCounts();
 
 	uint32 GetExperienceForKill(Mob *against);
-	void AddEXP(uint32 in_add_exp, uint8 conlevel = 0xFF, bool resexp = false);
+	void AddEXP(uint32 in_add_exp, uint8 conlevel = 0xFF, bool resexp = false, uint32 mob_level = 0);
 	uint32 CalcEXP(uint8 conlevel = 0xFF);
 	void CalculateNormalizedAAExp(uint32 &add_aaxp, uint8 conlevel, bool resexp);
 	void CalculateStandardAAExp(uint32 &add_aaxp, uint8 conlevel, bool resexp);
