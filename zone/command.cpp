@@ -148,6 +148,7 @@ int command_init(void)
 		command_add("date", "[yyyy] [mm] [dd] [HH] [MM] - Set EQ time", AccountStatus::EQSupport, command_date) ||
 		command_add("dbspawn2", "[spawngroup] [respawn] [variance] - Spawn an NPC from a predefined row in the spawn2 table", AccountStatus::GMAdmin, command_dbspawn2) ||
 		command_add("delacct", "[accountname] - Delete an account", AccountStatus::GMLeadAdmin, command_delacct) ||
+		command_add("deletechar", "- Delete a character. WARNING THIS BYPASSES THE UNDELETE FUNCTION", 100, command_deletechar) ||
 		command_add("deletegraveyard", "[zone name] - Deletes the graveyard for the specified zone.", AccountStatus::GMMgmt, command_deletegraveyard) ||
 		command_add("delpetition", "[petition number] - Delete a petition", AccountStatus::ApprenticeGuide, command_delpetition) ||
 		command_add("depop", "- Depop your NPC target", AccountStatus::Guide, command_depop) ||

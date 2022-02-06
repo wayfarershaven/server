@@ -316,6 +316,7 @@ SET(gm_commands
     gm_commands/date.cpp
     gm_commands/dbspawn2.cpp
     gm_commands/delacct.cpp
+    gm_commands/deletechar.cpp
     gm_commands/deletegraveyard.cpp
     gm_commands/delpetition.cpp
     gm_commands/depop.cpp
