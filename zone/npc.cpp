@@ -3048,11 +3048,13 @@ uint32 NPC::GetSpawnKillCount()
 void NPC::DoQuestPause(Mob *other) {
 	if(IsMoving() && !IsOnHatelist(other)) {
 		PauseWandering(RuleI(NPC, SayPauseTimeInSec));
-		if (other && !other->sneaking)
+		if (other && !other->sneaking) {
 			FaceTarget(other);
+		}
 	} else if(!IsMoving()) {
-		if (other && !other->sneaking && GetAppearance() != eaSitting && GetAppearance() != eaDead)
+		if (other && !other->sneaking && GetAppearance() != eaSitting && GetAppearance() != eaDead) {
 			FaceTarget(other);
+		}
 	}
 
 }

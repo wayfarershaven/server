@@ -1738,8 +1738,6 @@ void Client::Handle_Connect_OP_ZoneEntry(const EQApplicationPacket *app)
 		}
 	}
 
-	client->SendAlternateAdvancementTimers();
-	
 	/*
 	Weather Packet
 	This shouldn't be moved, this seems to be what the client
