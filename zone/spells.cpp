@@ -3721,12 +3721,12 @@ bool Mob::SpellOnTarget(uint16 spell_id, Mob *spelltar, int reflect_effectivenes
 
 	LogSpells("Casting spell [{}] on [{}] with effective caster level [{}]", spell_id, spelltar->GetName(), caster_level);
 
-	if (IsClient() && (IsDiscipline(spell_id) || IsDisciplineBuff(spell_id))) {
+	if (IsClient() && (IsDiscipline(spell_id) || spells[spell_id].is_discipline)) {
 		std::string msg = "%s";
 		msg += spells[spell_id].cast_on_other;
-		entity_list.MessageClose(this, true, 200, 0, msg.c_str(), this->GetCleanName());
+		entity_list.MessageClose(this, false, 200, 0, msg.c_str(), this->GetCleanName());
 	}
-	
+
 	// Actual cast action - this causes the caster animation and the particles
 	// around the target
 	// we do this first, that way we get the particles even if the spell
