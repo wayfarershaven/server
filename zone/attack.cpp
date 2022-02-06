@@ -2789,23 +2789,27 @@ bool NPC::Death(Mob* killer_mob, int32 damage, uint16 spell, EQ::skills::SkillTy
 
 void Mob::AddToHateList(Mob* other, uint32 hate /*= 0*/, int32 damage /*= 0*/, bool iYellForHelp /*= true*/, bool bFrenzy /*= false*/, bool iBuffTic /*= false*/, uint16 spell_id, bool pet_command)
 {
-	if (!other)
+	if (!other) {
 		return;
+	}
 
-	if (other == this)
+	if (other == this) {
 		return;
+	}
 
-	if (other->IsTrap())
+	if (other->IsTrap()) {
 		return;
+	}
 
-	if (damage < 0) {
+	if (damage < 0 && !iYellForHelp) {
 		hate = 1;
 	}
 
-	if (iYellForHelp)
+	if (iYellForHelp) {
 		SetPrimaryAggro(true);
-	else
+	} else {
 		SetAssistAggro(true);
+	}
 
 	bool wasengaged = IsEngaged();
 	Mob* owner = other->GetOwner();
@@ -2820,15 +2824,13 @@ void Mob::AddToHateList(Mob* other, uint32 hate /*= 0*/, int32 damage /*= 0*/, b
 						   // Spell Casting Subtlety etc
 			int hatemod = 100 + other->spellbonuses.hatemod + other->itembonuses.hatemod + other->aabonuses.hatemod;
 
-			if (hatemod < 1)
+			if (hatemod < 1) {
 				hatemod = 1;
-			hate = ((hate * (hatemod)) / 100);
-		}
-		else {
-			hate += RuleI(Aggro, InitialAggroBonus); // Bonus Initial Aggro
-			if (other->IsNPC() && other->IsPet() && other->IsPetOwnerClient() && other->IsCharmed()) { // charmed mobs get double initial aggro
-				hate += RuleI(Aggro, InitialAggroBonus);
 			}
+			hate = ((hate * (hatemod)) / 100);
+		} else {
+			hate += RuleI(Aggro, InitialAggroBonus); // Bonus Initial Aggro
+			LogCombat("InitialAggroBonus: [{}]", RuleI(Aggro, InitialAggroBonus));
 		}
 	}
 
@@ -2839,10 +2841,13 @@ void Mob::AddToHateList(Mob* other, uint32 hate /*= 0*/, int32 damage /*= 0*/, b
 	// we skip these checks if it's forced through a pet command
 	if (!pet_command) {
 		if (IsPet()) {
-			if ((IsGHeld() || (IsHeld() && IsFocused())) && !on_hatelist) // we want them to be able to climb the hate list
+			if ((IsGHeld() || (IsHeld() && IsFocused())) && !on_hatelist) { // we want them to be able to climb the hate list
 				return;
-			if ((IsHeld() || IsPetStop() || IsPetRegroup()) && !wasengaged) // not 100% sure on stop/regroup kind of hard to test, but regroup is like "classic hold"
+			}
+
+			if ((IsHeld() || IsPetStop() || IsPetRegroup()) && !wasengaged) { // not 100% sure on stop/regroup kind of hard to test, but regroup is like "classic hold"
 				return;
+			}
 		}
 	}
 
@@ -2850,26 +2855,33 @@ void Mob::AddToHateList(Mob* other, uint32 hate /*= 0*/, int32 damage /*= 0*/, b
 		TryTriggerOnCastRequirement();
 	}
 
-	if (IsClient() && !IsAIControlled())
+	if (IsClient() && !IsAIControlled()) {
 		return;
+	}
 
-	if (IsFamiliar() || GetSpecialAbility(IMMUNE_AGGRO))
+	if (IsFamiliar() || GetSpecialAbility(IMMUNE_AGGRO)) {
 		return;
+	}
 
-	if (GetSpecialAbility(IMMUNE_AGGRO_NPC) && other->IsNPC())
+	if (GetSpecialAbility(IMMUNE_AGGRO_NPC) && other->IsNPC()) {
 		return;
+	}
 
-	if (GetSpecialAbility(IMMUNE_AGGRO_CLIENT) && other->IsClient())
+	if (GetSpecialAbility(IMMUNE_AGGRO_CLIENT) && other->IsClient()) {
 		return;
+	}
 
-	if (spell_id != SPELL_UNKNOWN && NoDetrimentalSpellAggro(spell_id))
+	if (spell_id != SPELL_UNKNOWN && NoDetrimentalSpellAggro(spell_id)) {
 		return;
+	}
 
-	if (other == myowner)
+	if (other == myowner) {
 		return;
+	}
 
-	if (other->GetSpecialAbility(IMMUNE_AGGRO_ON))
+	if (other->GetSpecialAbility(IMMUNE_AGGRO_ON)) {
 		return;
+	}
 
 	if (GetSpecialAbility(NPC_TUNNELVISION)) {
 		int tv_mod = GetSpecialAbilityParam(NPC_TUNNELVISION, 0);
@@ -2879,8 +2891,7 @@ void Mob::AddToHateList(Mob* other, uint32 hate /*= 0*/, int32 damage /*= 0*/, b
 			if (tv_mod) {
 				float tv = tv_mod / 100.0f;
 				hate *= tv;
-			}
-			else {
+			} else {
 				hate *= RuleR(Aggro, TunnelVisionAggroMod);
 			}
 		}
@@ -2892,12 +2903,14 @@ void Mob::AddToHateList(Mob* other, uint32 hate /*= 0*/, int32 damage /*= 0*/, b
 	// If we add 10000 damage, Player B would get the kill credit, so we only award damage credit to player B of the
 	// amount of HP the mob had left.
 	//
-	if (damage > GetHP())
+	if (damage > GetHP()) {
 		damage = GetHP();
+	}
 
 	if (spellbonuses.ImprovedTaunt[SBIndex::IMPROVED_TAUNT_AGGRO_MOD] && (GetLevel() < spellbonuses.ImprovedTaunt[SBIndex::IMPROVED_TAUNT_MAX_LVL])
-		&& other && (buffs[spellbonuses.ImprovedTaunt[SBIndex::IMPROVED_TAUNT_BUFFSLOT]].casterid != other->GetID()))
+		&& other && (buffs[spellbonuses.ImprovedTaunt[SBIndex::IMPROVED_TAUNT_BUFFSLOT]].casterid != other->GetID())) {
 		hate = (hate*spellbonuses.ImprovedTaunt[SBIndex::IMPROVED_TAUNT_AGGRO_MOD]) / 100;
+	}
 
 	hate_list.AddEntToHateList(other, hate, damage, bFrenzy, !iBuffTic);
 
@@ -2930,10 +2943,10 @@ void Mob::AddToHateList(Mob* other, uint32 hate /*= 0*/, int32 damage /*= 0*/, b
 	if (other->IsMerc()) {
 		if (other->CastToMerc()->GetMercOwner() && other->CastToMerc()->GetMercOwner()->CastToClient()->GetFeigned()) {
 			AddFeignMemory(other->CastToMerc()->GetMercOwner()->CastToClient());
-		}
-		else {
-			if (!hate_list.IsEntOnHateList(other->CastToMerc()->GetMercOwner()))
+		} else {
+			if (!hate_list.IsEntOnHateList(other->CastToMerc()->GetMercOwner())) {
 				hate_list.AddEntToHateList(other->CastToMerc()->GetMercOwner(), 0, 0, false, true);
+			}
 			// if mercs are reworked to include adding 'this' to owner's xtarget list, this should reflect bots code above
 		}
 	} //MERC
@@ -2944,8 +2957,7 @@ void Mob::AddToHateList(Mob* other, uint32 hate /*= 0*/, int32 damage /*= 0*/, b
 				 // Can't add a feigned owner to hate list
 		if (owner->IsClient() && owner->CastToClient()->GetFeigned()) {
 			//they avoid hate due to feign death...
-		}
-		else {
+		} else {
 			// cb:2007-08-17
 			// owner must get on list, but he's not actually gained any hate yet
 			if (
