@@ -537,6 +537,7 @@ RULE_BOOL(Combat, ThrowingConsumesAmmo, true, "Set to false to disable Throwing 
 RULE_BOOL(Combat, UseLiveRiposteMechanics, false, "Set to true to disable SPA 173 SE_RiposteChance from making those with the effect on them immune to enrage, can longer riposte from a riposte.")
 RULE_INT(Combat, TripleAttackChanceWarrior, 100, "Innate Chance for Warrior to Triple Attack after a Double Attack (125 = 12.5%). DEFAULT: 100")
 RULE_INT(Combat, TripleAttackChanceMonk, 100, "Innate Chance for Monk to Triple Attack after a Double Attack (200 = 20%). DEFAULT: 100")
+RULE_INT(Combat, TripleAttackChanceBerserker, 100, "Innate Chance for Berserker to Triple Attack after a Double Attack (200 = 20%). DEFAULT: 100")
 RULE_BOOL(Combat, RogueBackstabHasteCorrection, false, "Toggle to enable correction for Haste impacting Backstab DPS too much.  DEFAULT: false")
 RULE_BOOL(Combat, UseMobFixedOffenseSkill, true, "Toggle to enabled the use of a fixed offense skill for Mobs.  DEFAULT: true")
 RULE_BOOL(Combat, UseEnhancedMobFixedWeaponSkill, true, "Toggle to enabled the use of an enhanced (slightly higher hit rate) fixed weapon skill for Mobs.  DEFAULT: true")

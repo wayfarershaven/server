@@ -3628,12 +3628,16 @@ bool Client::CheckTripleAttack()
 	// Only Level 60 Warriors and Monks get it, and making their percentage (fixed) separate as a tuning variable.
 	int chance = 0;
 
-	if (IsClient() && (GetLevel() == 60) && (GetClass() == WARRIOR)) {
+	if (IsClient() && (GetLevel() >= 60) && (GetClass() == WARRIOR)) {
 		chance = RuleI(Combat, TripleAttackChanceWarrior);
 	}
 
-	if (IsClient() && (GetLevel() == 60) && (GetClass() == MONK)) {
+	if (IsClient() && (GetLevel() >= 60) && (GetClass() == MONK)) {
 		chance = RuleI(Combat, TripleAttackChanceMonk);
+	}
+
+	if (IsClient() && (GetLevel() >= 60) && (GetClass() == BERSERKER)) {
+		chance = RuleI(Combat, TripleAttackChanceBerserker);
 	}
 
 	if (chance < 1) {
