@@ -699,9 +699,14 @@ void EntityList::AddNPC(NPC *npc, bool SendSpawnPacket, bool dontqueue)
 	}
 	parse->EventNPC(EVENT_SPAWN, npc, nullptr, "", 0);
 
+	if(npc->GetRace() != 72 && npc->GetRace() != 73 && npc->GetRace() != 141 ) {
+		npc->FixZ(1);
+	}
+
 	uint16 emoteid = npc->GetEmoteID();
-	if (emoteid != 0)
+	if (emoteid != 0) {
 		npc->DoNPCEmote(ONSPAWN, emoteid);
+	}
 	npc->SetSpawned();
 	if (SendSpawnPacket) {
 		if (dontqueue) { // aka, SEND IT NOW BITCH!
@@ -710,8 +715,9 @@ void EntityList::AddNPC(NPC *npc, bool SendSpawnPacket, bool dontqueue)
 			QueueClients(npc, app);
 			npc->SendArmorAppearance();
 			npc->SetAppearance(npc->GetGuardPointAnim(),false);
-			if (!npc->IsTargetable())
+			if (!npc->IsTargetable()) {
 				npc->SendTargetable(false);
+			}
 			safe_delete(app);
 		} else {
 			auto ns = new NewSpawn_Struct;
@@ -720,8 +726,9 @@ void EntityList::AddNPC(NPC *npc, bool SendSpawnPacket, bool dontqueue)
 			AddToSpawnQueue(npc->GetID(), &ns);
 			safe_delete(ns);
 		}
-		if (npc->IsFindable())
+		if (npc->IsFindable()) {
 			UpdateFindableNPCState(npc, false);
+		}
 	}
 
 	npc_list.insert(std::pair<uint16, NPC *>(npc->GetID(), npc));
