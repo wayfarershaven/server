@@ -4062,10 +4062,12 @@ bool Mob::SpellOnTarget(uint16 spell_id, Mob *spelltar, int reflect_effectivenes
 				if (spells[spell_id].resist_type == RESIST_PHYSICAL){
 					MessageString(Chat::SpellFailure, PHYSICAL_RESIST_FAIL,spells[spell_id].name);
 					spelltar->MessageString(Chat::SpellFailure, YOU_RESIST, spells[spell_id].name);
+					resisted = 1;
 				}
 				else {
 					MessageString(Chat::SpellFailure, TARGET_RESISTED, spells[spell_id].name);
 					spelltar->MessageString(Chat::SpellFailure, YOU_RESIST, spells[spell_id].name);
+					resisted = 1;
 				}
 
 				if (spelltar->IsAIControlled()) {
@@ -4183,10 +4185,12 @@ bool Mob::SpellOnTarget(uint16 spell_id, Mob *spelltar, int reflect_effectivenes
 			}
 		}
 		else if (RuleB(Spells, NPCSpellPush) && !spelltar->IsPermaRooted() && !spelltar->IsPseudoRooted() && spelltar->ForcedMovement == 0) {
-			spelltar->m_Delta.x += action->force * g_Math.FastSin(action->hit_heading);
-			spelltar->m_Delta.y += action->force * g_Math.FastCos(action->hit_heading);
-			spelltar->m_Delta.z += action->hit_pitch;
-			spelltar->ForcedMovement = 6;
+			if ((!resisted) && (!spelltar->IsImmuneToSpell(spell_id, this))) {
+				spelltar->m_Delta.x += action->force * g_Math.FastSin(action->hit_heading);
+				spelltar->m_Delta.y += action->force * g_Math.FastCos(action->hit_heading);
+				spelltar->m_Delta.z += action->hit_pitch;
+				spelltar->ForcedMovement = 6;
+			}
 		}
 	}
 
