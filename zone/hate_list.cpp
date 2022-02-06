@@ -190,14 +190,17 @@ Mob* HateList::GetClosestEntOnHateList(Mob *hater, bool skip_mezzed, bool client
 
 void HateList::AddEntToHateList(Mob *in_entity, int32 in_hate, int32 in_damage, bool in_is_entity_frenzied, bool iAddIfNotExist)
 {
-	if (!in_entity)
+	if (!in_entity) {
 		return;
+	}
 
-	if (in_entity->IsCorpse())
+	if (in_entity->IsCorpse()) {
 		return;
+	}
 
-	if (in_entity->IsClient() && in_entity->CastToClient()->IsDead())
+	if (in_entity->IsClient() && in_entity->CastToClient()->IsDead()) {
 		return;
+	}
 
 	struct_HateList *entity = Find(in_entity);
 	if (entity)
