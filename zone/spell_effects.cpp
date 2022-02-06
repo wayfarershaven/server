@@ -8522,7 +8522,7 @@ void Client::BreakFeignDeathWhenCastOn(bool IsResisted) {
 		int chance = spellbonuses.FeignedCastOnChance + itembonuses.FeignedCastOnChance + aabonuses.FeignedCastOnChance;
 
 		if (IsResisted) {
-			chance *= RuleR(Spells, BreakFeignDeathWhenCastOn);
+			chance += RuleR(Spells, BreakFeignDeathWhenCastOn);
 		}
 
 		if(chance && (zone->random.Roll(chance))){
