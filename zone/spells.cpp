@@ -5212,13 +5212,22 @@ int16 Mob::CalcResistChanceBonus()
 int16 Mob::CalcFearResistChance()
 {
 	int resistchance = spellbonuses.ResistFearChance + itembonuses.ResistFearChance;
-	if(this->IsClient()) {
+	if(IsClient()) {
 		resistchance += aabonuses.ResistFearChance;
-		if(aabonuses.Fearless == true)
+		if(aabonuses.Fearless == true) {
 			resistchance = 100;
+		}
 	}
-	if(spellbonuses.Fearless == true || itembonuses.Fearless == true)
+	if(spellbonuses.Fearless == true || itembonuses.Fearless == true) {
 		resistchance = 100;
+	}
+
+	// Npc's over level 55 are immune to fear
+	// https://forums.daybreakgames.com/eq/index.php?threads/new-fear-storm.245782/
+	// http://everquest.allakhazam.com/db/spell.html?spell=59#m106884133414434
+	if(IsNPC() && GetLevel() >= RuleI(Spells, NpcFearImmuneLevel)) {
+		resistchance = 100;
+	}
 
 	return resistchance;
 }
