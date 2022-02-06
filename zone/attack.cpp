@@ -6038,9 +6038,11 @@ void Mob::CommonBreakInvisibleFromCombat()
 	}
 
 	CancelSneakHide();
+	SetInvisible(0);
 
-	if (spellbonuses.NegateIfCombat)
+	if (spellbonuses.NegateIfCombat) {
 		BuffFadeByEffect(SE_NegateIfCombat);
+	}
 
 	hidden = false;
 	improved_hidden = false;
