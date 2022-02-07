@@ -2464,6 +2464,8 @@ const NPCType *ZoneDatabase::LoadNPCTypesData(uint32 npc_type_id, bool bulk_load
 		"npc_types.handtexture, "
 		"npc_types.legtexture, "
 		"npc_types.feettexture, "
+		"npc_types.combat_hp_regen, "
+		"npc_types.combat_mana_regen, "
 		"npc_types.ignore_despawn, "
 		"npc_types.show_name, "
 		"npc_types.untargetable, "
@@ -2665,25 +2667,27 @@ const NPCType *ZoneDatabase::LoadNPCTypesData(uint32 npc_type_id, bool bulk_load
 		temp_npctype_data->handtexture    = atoi(row[94]);
 		temp_npctype_data->legtexture     = atoi(row[95]);
 		temp_npctype_data->feettexture    = atoi(row[96]);
-		temp_npctype_data->ignore_despawn = atoi(row[97]) == 1 ? true : false;
-		temp_npctype_data->show_name      = atoi(row[98]) != 0 ? true : false;
-		temp_npctype_data->untargetable   = atoi(row[99]) != 0 ? true : false;
+		temp_npctype_data->combat_hp_regen = atoi(row[97]);
+		temp_npctype_data->combat_mana_regen = atoi(row[98]);
+		temp_npctype_data->ignore_despawn = atoi(row[99]) == 1 ? true : false;
+		temp_npctype_data->show_name      = atoi(row[100]) != 0 ? true : false;
+		temp_npctype_data->untargetable   = atoi(row[101]) != 0 ? true : false;
 
-		temp_npctype_data->charm_ac               = atoi(row[100]);
-		temp_npctype_data->charm_min_dmg          = atoi(row[101]);
-		temp_npctype_data->charm_max_dmg          = atoi(row[102]);
-		temp_npctype_data->charm_attack_delay     = atoi(row[103]) * 100; // TODO: fix DB
-		temp_npctype_data->charm_accuracy_rating  = atoi(row[104]);
-		temp_npctype_data->charm_avoidance_rating = atoi(row[105]);
-		temp_npctype_data->charm_atk              = atoi(row[106]);
+		temp_npctype_data->charm_ac               = atoi(row[102]);
+		temp_npctype_data->charm_min_dmg          = atoi(row[103]);
+		temp_npctype_data->charm_max_dmg          = atoi(row[104]);
+		temp_npctype_data->charm_attack_delay     = atoi(row[105]) * 100; // TODO: fix DB
+		temp_npctype_data->charm_accuracy_rating  = atoi(row[106]);
+		temp_npctype_data->charm_avoidance_rating = atoi(row[107]);
+		temp_npctype_data->charm_atk              = atoi(row[108]);
 
-		temp_npctype_data->skip_global_loot 	= atoi(row[107]) != 0;
-		temp_npctype_data->rare_spawn       	= atoi(row[108]) != 0;
-		temp_npctype_data->stuck_behavior   	= atoi(row[109]);
-		temp_npctype_data->use_model        	= atoi(row[110]);
-		temp_npctype_data->flymode          	= atoi(row[111]);
-		temp_npctype_data->always_aggro	        = atoi(row[112]);
-		temp_npctype_data->exp_mod              = atoi(row[113]);
+		temp_npctype_data->skip_global_loot 	= atoi(row[109]) != 0;
+		temp_npctype_data->rare_spawn       	= atoi(row[110]) != 0;
+		temp_npctype_data->stuck_behavior   	= atoi(row[111]);
+		temp_npctype_data->use_model        	= atoi(row[112]);
+		temp_npctype_data->flymode          	= atoi(row[113]);
+		temp_npctype_data->always_aggro	        = atoi(row[114]);
+		temp_npctype_data->exp_mod              = atoi(row[115]);
 
 		temp_npctype_data->skip_auto_scale = false; // hardcoded here for now
 

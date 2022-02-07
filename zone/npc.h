@@ -151,6 +151,10 @@ public:
 
 	void LevelScale();
 
+	int32 GetNPCManaRegen() const { return mana_regen + itembonuses.ManaRegen + spellbonuses.ManaRegen; }
+	int32 GetHPRegen();
+	int32 GetManaRegen();
+
 	virtual void SetTarget(Mob* mob);
 	virtual uint16 GetSkill(EQ::skills::SkillType skill_num) const { if (skill_num <= EQ::skills::HIGHEST_SKILL) { return skills[skill_num]; } return 0; }
 
