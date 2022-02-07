@@ -157,10 +157,9 @@ bool NPC::AICastSpell(Mob* tar, uint8 iChance, uint32 iSpellTypes, bool bInnates
 							&& rootee->DontRootMeBefore() < Timer::GetCurrentTime()
 							&& rootee->CanBuffStack(AIspells[i].spellid, GetLevel(), true) >= 0
 							) {
-							if(spells[AIspells[i].spellid].target_type != ST_AECaster && !checked_los) {
-								if(!CheckLosFN(rootee)) {
+							if(!checked_los) {
+								if(!CheckLosFN(rootee))
 									return(false);	//cannot see target... we assume that no spell is going to work since we will only be casting detrimental spells in this call
-								}
 								checked_los = true;
 							}
 							uint32 tempTime = 0;
@@ -179,10 +178,9 @@ bool NPC::AICastSpell(Mob* tar, uint8 iChance, uint32 iSpellTypes, bool bInnates
 							&& !(tar->IsPet() && tar->GetOwner()->IsClient() && this != tar)	//no buffing PC's pets, but they can buff themself
 							)
 						{
-							if(spells[AIspells[i].spellid].target_type != ST_AECaster && !checked_los) {
-								if(!CheckLosFN(tar)) {
+							if(!checked_los) {
+								if(!CheckLosFN(tar))
 									return(false);
-								}
 								checked_los = true;
 							}
 							uint32 tempTime = 0;
@@ -222,10 +220,9 @@ bool NPC::AICastSpell(Mob* tar, uint8 iChance, uint32 iSpellTypes, bool bInnates
 						Mob * debuffee = GetHateRandom();
 						if (debuffee && manaR >= 10 && (bInnates || zone->random.Roll(75)) &&
 								debuffee->CanBuffStack(AIspells[i].spellid, GetLevel(), true) >= 0) {
-							if (spells[AIspells[i].spellid].target_type != ST_AECaster && !checked_los) {
-								if (!CheckLosFN(debuffee)) {
+							if (!checked_los) {
+								if (!CheckLosFN(debuffee))
 									return false;
-								}
 								checked_los = true;
 							}
 							AIDoSpellCast(i, debuffee, mana_cost);
@@ -251,10 +248,9 @@ bool NPC::AICastSpell(Mob* tar, uint8 iChance, uint32 iSpellTypes, bool bInnates
 					case SpellType_Dispel: {
 						if(bInnates || zone->random.Roll(5))
 						{
-							if(spells[AIspells[i].spellid].target_type != ST_AECaster && !checked_los) {
-								if(!CheckLosFN(tar)) {
+							if(!checked_los) {
+								if(!CheckLosFN(tar))
 									return(false);	//cannot see target... we assume that no spell is going to work since we will only be casting detrimental spells in this call
-								}
 								checked_los = true;
 							}
 							if(tar->CountDispellableBuffs() > 0)
@@ -307,10 +303,9 @@ bool NPC::AICastSpell(Mob* tar, uint8 iChance, uint32 iSpellTypes, bool bInnates
 							&& (bInnates || zone->random.Roll(50))
 							&& tar->CanBuffStack(AIspells[i].spellid, GetLevel(), true) >= 0
 							) {
-							if(spells[AIspells[i].spellid].target_type != ST_AECaster && !checked_los) {
-								if(!CheckLosFN(tar)) {
+							if(!checked_los) {
+								if(!CheckLosFN(tar))
 									return(false);	//cannot see target... we assume that no spell is going to work since we will only be casting detrimental spells in this call
-								}
 								checked_los = true;
 							}
 							AIDoSpellCast(i, tar, mana_cost);
@@ -325,10 +320,9 @@ bool NPC::AICastSpell(Mob* tar, uint8 iChance, uint32 iSpellTypes, bool bInnates
 							&& tar->DontSnareMeBefore() < Timer::GetCurrentTime()
 							&& tar->CanBuffStack(AIspells[i].spellid, GetLevel(), true) >= 0
 							) {
-							if(spells[AIspells[i].spellid].target_type != ST_AECaster && !checked_los) {
-								if(!CheckLosFN(tar)) {
+							if(!checked_los) {
+								if(!CheckLosFN(tar))
 									return(false);	//cannot see target... we assume that no spell is going to work since we will only be casting detrimental spells in this call
-								}
 								checked_los = true;
 							}
 							uint32 tempTime = 0;
@@ -344,10 +338,9 @@ bool NPC::AICastSpell(Mob* tar, uint8 iChance, uint32 iSpellTypes, bool bInnates
 							&& tar->DontDotMeBefore() < Timer::GetCurrentTime()
 							&& tar->CanBuffStack(AIspells[i].spellid, GetLevel(), true) >= 0
 							) {
-							if(spells[AIspells[i].spellid].target_type != ST_AECaster && !checked_los) {
-								if(!CheckLosFN(tar)) {
+							if(!checked_los) {
+								if(!CheckLosFN(tar))
 									return(false);	//cannot see target... we assume that no spell is going to work since we will only be casting detrimental spells in this call
-								}
 								checked_los = true;
 							}
 							uint32 tempTime = 0;

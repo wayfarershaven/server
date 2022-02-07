@@ -200,7 +200,7 @@ bool Mob::CastSpell(uint16 spell_id, uint16 target_id, CastingSlot slot,
 	}
 
 	// check line of sight to target if it's a detrimental spell
-	if (!spells[spell_id].npc_no_los && GetTarget() && IsDetrimentalSpell(spell_id) && !CheckLosFN(GetTarget()) && !IsHarmonySpell(spell_id) && spells[spell_id].target_type != ST_TargetOptional && spells[spell_id].target_type != ST_AECaster && !IsBindSightSpell(spell_id))
+	if (!spells[spell_id].npc_no_los && GetTarget() && IsDetrimentalSpell(spell_id) && !CheckLosFN(GetTarget()) && !IsHarmonySpell(spell_id) && spells[spell_id].target_type != ST_TargetOptional && !IsBindSightSpell(spell_id))
 	{
 		LogSpells("Spell [{}]: cannot see target [{}]", spell_id, GetTarget()->GetName());
 		MessageString(Chat::Red, CANT_SEE_TARGET);
