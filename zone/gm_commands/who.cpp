@@ -53,7 +53,10 @@ void command_who(Client *c, const Seperator *sep)
 				SELECT account_ip.ip FROM account_ip WHERE account_ip.accid = character_data.account_id ORDER BY account_ip.lastused DESC LIMIT 1
 			),
 			""
-		) AS account_ip
+		) as account_ip,
+		IF(
+			character_data.pvp_status = 0, 'No', 'Yes'
+		) AS trader_mode
 		FROM
 		character_data
 		WHERE
@@ -95,6 +98,7 @@ void command_who(Client *c, const Seperator *sep)
 		std::string account_ip          = row[11];
 		std::string base_class_name = GetClassIDName(static_cast<uint8>(player_class));
 		std::string displayed_race_name = GetRaceIDName(static_cast<uint16>(player_race));
+		std::string trader_mode    		= row[12];
 
 		if (search_string.length()) {
 			bool found_search_term = (
@@ -105,7 +109,8 @@ void command_who(Client *c, const Seperator *sep)
 				str_tolower(guild_name).find(search_string) != std::string::npos ||
 				str_tolower(account_name).find(search_string) != std::string::npos ||
 				str_tolower(forum_name).find(search_string) != std::string::npos ||
-				str_tolower(account_ip).find(search_string) != std::string::npos
+				str_tolower(account_ip).find(search_string) != std::string::npos ||
+				str_tolower(trader_mode).find(search_string) != std::string::npos
 			);
 
 			if (!found_search_term) {
@@ -226,7 +231,7 @@ void command_who(Client *c, const Seperator *sep)
 		c->Message(
 			Chat::Who,
 			fmt::format(
-				"{}[{} {} ({})] {} ({}) ({}) ({}) {} ZONE: {}{} F: ({}) ({} | {})",
+				"{}[{} {} ({})] {} ({}) ({}) ({}) {} ZONE: {}{} F: ({}) ({} | {}) Trader: {}",
 				status_level,
 				player_level,
 				class_saylink,
@@ -240,7 +245,8 @@ void command_who(Client *c, const Seperator *sep)
 				version_string,
 				forum_saylink,
 				goto_saylink,
-				summon_saylink
+				summon_saylink,
+				trader_mode
 			).c_str()
 		);
 
