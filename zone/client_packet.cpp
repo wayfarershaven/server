@@ -1792,7 +1792,7 @@ void Client::Handle_OP_AAAction(const EQApplicationPacket *app)
 	if (feigned) {
 		SetFeigned(false);
 	}
-	
+
 	if (action->action == aaActionActivate) {//AA Hotkey
 		LogAA("Activating AA [{}]", action->ability);
 		ActivateAlternateAdvancementAbility(action->ability, action->target_id);
@@ -14504,6 +14504,12 @@ void Client::Handle_OP_Trader(const EQApplicationPacket *app)
 
 				if (Item->NoDrop == 0) {
 					Message(Chat::Red, "NODROP Item in Trader Satchel. Unable to start trader mode");
+					TradeItemsValid = false;
+					break;
+				}
+
+				if(Item->IsClassBag()) {
+					Message(Chat::Red, "Not allowed to sell bags, please convert to a token. Unable to start trader mode.");
 					TradeItemsValid = false;
 					break;
 				}
