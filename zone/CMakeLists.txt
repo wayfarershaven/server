@@ -557,6 +557,7 @@ SET(gm_commands
     gm_commands/untraindisc.cpp
     gm_commands/untraindiscs.cpp
     gm_commands/uptime.cpp
+    gm_commands/updatechecksum.cpp
     gm_commands/version.cpp
     gm_commands/viewcurrencies.cpp
     gm_commands/viewnpctype.cpp
