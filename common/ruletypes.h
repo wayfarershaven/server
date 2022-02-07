@@ -651,6 +651,7 @@ RULE_REAL(Aggro, CharmedPetAggroRadiusMod, 5.0, "5x combat distance check for ch
 RULE_REAL(Aggro, PetAttackRange, 40000.0, "Maximum squared range /pet attack works at default is 200")
 RULE_BOOL(Aggro, NPCAggroMaxDistanceEnabled, true, "If enabled, NPC's will drop aggro beyond 600 units or what is defined at the zone level")
 RULE_INT(Aggro, BardAggroCap, 100, "bards generate less aggro, rule setup to set it to whatever is best.")
+RULE_INT(Aggro, InitialPetAggroBonus, 135, "")
 RULE_BOOL(Aggro, AggroPlayerPets, false, "If enabled, NPCs will aggro player pets")
 RULE_CATEGORY_END()
 
