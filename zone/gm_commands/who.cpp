@@ -36,12 +36,12 @@ void command_who(Client *c, const Seperator *sep)
 		COALESCE(
 			(
 				select
-					tblLoginServerAccounts.ForumName
+					login_accounts.forum_name
 				from
-					tblLoginServerAccounts,
+					login_accounts,
 					account
 				where
-					tblLoginServerAccounts.LoginServerID = account.lsaccount_id
+					login_accounts.id = account.lsaccount_id
 				and
 					account.id = character_data.account_id
 				LIMIT 1
