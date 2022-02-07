@@ -26,10 +26,12 @@
 #include "world_config.h"
 #include "../common/guilds.h"
 #include "../common/string_util.h"
+#include "nats_manager.h"
 
 extern uint32          numplayers;
 extern LoginServerList loginserverlist;
 extern ClientList      client_list;
+extern NatsManager nats;
 extern volatile bool   RunLoops;
 extern SharedTaskManager shared_task_manager;
 
@@ -360,6 +362,7 @@ bool ClientListEntry::CheckAuth(uint32 loginserver_account_id, const char *key_p
 				);
 				return false;
 			}
+			nats.SendAdminMessage(StringFormat("New account was created for %s:%s, accountid: %u", source_loginserver, loginserver_account_name, paccountid));
 			strn0cpy(paccountname, loginserver_account_name, sizeof(paccountname));
 			padmin = default_account_status;
 		}

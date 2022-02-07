@@ -59,6 +59,7 @@ extern volatile bool RunLoops;
 #include "quest_parser_collection.h"
 #include "queryserv.h"
 #include "mob_movement_manager.h"
+#include "nats_manager.h"
 #include "../common/content/world_content_service.h"
 #include "../common/expedition_lockout_timer.h"
 #include "cheat_manager.h"
@@ -66,7 +67,7 @@ extern volatile bool RunLoops;
 #include "../common/repositories/character_spells_repository.h"
 #include "../common/repositories/character_disciplines_repository.h"
 
-
+extern NatsManager nats;
 extern QueryServ* QServ;
 extern EntityList entity_list;
 extern Zone* zone;
@@ -3944,6 +3945,8 @@ void Client::Sacrifice(Client *caster)
 			d->damage = 0;
 			app.priority = 6;
 			entity_list.QueueClients(this, &app);
+
+			nats.OnDeathEvent(d);
 
 			BuffFadeAll();
 			UnmemSpellAll();

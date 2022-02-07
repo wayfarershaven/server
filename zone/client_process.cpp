@@ -47,6 +47,7 @@
 #include "expedition.h"
 #include "guild_mgr.h"
 #include "map.h"
+#include "nats_manager.h"
 #include "petitions.h"
 #include "queryserv.h"
 #include "quest_parser_collection.h"
@@ -62,6 +63,7 @@ extern volatile bool is_zone_loaded;
 extern WorldServer worldserver;
 extern PetitionList petition_list;
 extern EntityList entity_list;
+extern NatsManager nats;
 
 bool Client::Process() {
 	bool ret = true;
@@ -2160,6 +2162,8 @@ void Client::ClearHover()
 		CastToClient()->FastQueuePacket(&outapp);
 	}
 
+	nats.OnSpawnEvent(OP_ZoneEntry, this->GetID(), &sze->player.spawn);
+	
 	dead = false;
 }
 

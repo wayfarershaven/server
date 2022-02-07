@@ -33,6 +33,7 @@
 #include "titles.h"
 #include "water_map.h"
 #include "worldserver.h"
+#include "nats_manager.h"
 #include "fastmath.h"
 #include "mob_movement_manager.h"
 #include "npc_scale_manager.h"
@@ -41,6 +42,7 @@ extern QueryServ* QServ;
 extern WorldServer worldserver;
 extern TaskManager *task_manager;
 extern FastMath g_Math;
+extern NatsManager nats;
 void CatchSignal(int sig_num);
 
 
@@ -614,6 +616,8 @@ int command_realdispatch(Client *c, const char *message)
 		return(-1);
 	}
 
+	nats.SendAdminMessage(StringFormat("%s in %s issued command: %s", c->GetCleanName(), database.GetZoneName(zone->GetZoneID()), message));
+	
 	if(cur->access >= COMMANDS_LOGGING_MIN_STATUS) {
 				const char *targetType = "notarget";
 		if (c->GetTarget()) {

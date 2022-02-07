@@ -128,6 +128,7 @@ namespace Logs {
 		DiaWind,
 		HTTP,
 		Saylink,
+		NATS,
 		MaxCategoryID /* Don't Remove this */
 	};
 
@@ -214,6 +215,7 @@ namespace Logs {
 		"DialogueWindow",
 		"HTTP",
 		"Saylink",
+		"NATS",
 	};
 }
 

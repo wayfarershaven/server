@@ -117,6 +117,10 @@ class EQEmuConfig
 		uint16 ZonePortHigh;
 		uint8 DefaultStatus;
 
+		// From <nats/>
+		std::string NATSHost;
+		uint16 NATSPort;
+
 //	uint16 DynamicCount;
 
 //	map<string,uint16> StaticZones;

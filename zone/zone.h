@@ -84,7 +84,7 @@ struct item_tick_struct {
 
 class Client;
 class Expedition;
-class Map;
+//class Map; //Unused? Needed to uncomment for NATS
 class Mob;
 class WaterMap;
 extern EntityList entity_list;

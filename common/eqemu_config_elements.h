@@ -7,5 +7,6 @@ ELEMENT(qsdatabase)
 ELEMENT(files)
 ELEMENT(directories)
 ELEMENT(launcher)
+ELEMENT(NATS)
 
 #undef ELEMENT

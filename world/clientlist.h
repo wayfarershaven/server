@@ -72,6 +72,8 @@ public:
 
 	void GetClientList(Json::Value &response);
 
+	std::string GetWhoAll();
+
 	void SendCharacterMessage(uint32_t character_id, int chat_type, const std::string& message);
 	void SendCharacterMessage(const std::string& character_name, int chat_type, const std::string& message);
 	void SendCharacterMessage(ClientListEntry* character, int chat_type, const std::string& message);

@@ -23,8 +23,52 @@ IF(MSVC)
 	
 	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
 ELSE(MSVC)
+	SET(NATS_LIBRARY "${NATS_ROOT}/lib_x64/libnats.so")
 	ADD_DEFINITIONS(-DHAS_UNION_SEMUN)
 ENDIF(MSVC)
+
+# include dirs are universal
+SET(NATS_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/dependencies/nats")
+
+#Try to find protobuf automatically
+FIND_PACKAGE(Protobuf QUIET)
+IF(NOT PROTOBUF_FOUND)
+	SET(Protobuf_DIR "${CMAKE_CURRENT_SOURCE_DIR}/dependencies/protobuf" CACHE PATH "Root protobuf directory" FORCE)
+	SET(Protobuf_PROTOC_EXECUTABLE  "${Protobuf_DIR}/bin/protoc.exe" CACHE PATH "Executable path" FORCE)
+	SET(Protobuf_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/dependencies/protobuf/include" CACHE PATH "Include dir" FORCE)
+	SET(Protobuf_SRC_ROOT_FOLDER "${CMAKE_CURRENT_SOURCE_DIR}/dependencies/protobuf/include" CACHE PATH "Include dir" FORCE)
+	SET(PROTOBUF_FOUND TRUE CACHE BOOL "" FORCE)
+
+	IF(NOT MSVC)
+		MESSAGE(STATUS "Could not find protobuf library, setting to ${Protobuf_DIR}")
+	ENDIF()
+
+	IF(MSVC)
+		IF(CMAKE_CL_64)
+			SET(Protobuf_LIBRARY_DEBUG "${Protobuf_DIR}/lib_x64/libprotobufd.lib" CACHE PATH "Root protobuf directory" FORCE)
+			SET(Protobuf_LIBRARY_RELEASE "${Protobuf_DIR}/lib_x64/libprotobufd.lib" CACHE PATH "Root protobuf directory" FORCE)
+			SET(NATS_LIBRARY "${NATS_ROOT}/lib_x64/nats.lib")
+		ELSE(CMAKE_CL_64)
+			SET(Protobuf_LIBRARY_DEBUG "${Protobuf_DIR}/lib_x86/libprotobufd.lib" CACHE PATH "Root protobuf directory" FORCE)
+			SET(Protobuf_LIBRARY_RELEASE "${Protobuf_DIR}/lib_x86/libprotobufd.lib" CACHE PATH "Root protobuf directory" FORCE)
+			SET(NATS_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/dependencies/nats_x86")
+		ENDIF()
+	ELSE(MSVC)
+		SET(Protobuf_LIBRARY_DEBUG "${Protobuf_DIR}/lib_x64/libprotobuf.so.15" CACHE PATH "Root protobuf directory" FORCE)
+		SET(Protobuf_LIBRARY_RELEASE "${Protobuf_DIR}/lib_x64/libprotobuf.so.15" CACHE PATH "Root protobuf directory" FORCE)
+		SET(NATS_LIBRARY "${NATS_ROOT}/lib_x86/nats.lib")
+	ENDIF()
+
+	#SET(Protobuf_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/dependencies/protobuf/include" CACHE PATH "Include dir")
+	#SET(Protobuf_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/dependencies/protobuf/include")
+	#SET(Protobuf_PROTOC_EXECUTABLE "${Protobuf_DIR}/bin/protoc.exe")
+
+ENDIF()
+
+INCLUDE_DIRECTORIES(SYSTEM "${Protobuf_INCLUDE_DIR}")
+
+SET(NATS_LIBRARY "${NATS_ROOT}/lib_x64/libnats.so")
+SET(NATS_INCLUDE_DIR "${NATS_ROOT}/include")
 
 #FreeBSD support
 IF(UNIX)
@@ -324,11 +368,12 @@ MESSAGE(STATUS "* zlib:                                  ${ZLIB_LIBRARY_TYPE} *"
 MESSAGE(STATUS "**************************************************")
 
 #setup server libs and headers
-SET(SERVER_LIBS common ${DATABASE_LIBRARY_LIBS} ${ZLIB_LIBRARY_LIBS} ${Boost_LIBRARIES} uv_a fmt RecastNavigation::Detour)
+SET(SERVER_LIBS common ${DATABASE_LIBRARY_LIBS} ${ZLIB_LIBRARY_LIBS} ${Boost_LIBRARIES} uv_a fmt RecastNavigation::Detour ${NATS_LIBRARY} ${PROTOBUF_LIBRARY_DEBUG})
 
 INCLUDE_DIRECTORIES(SYSTEM "${DATABASE_LIBRARY_INCLUDE}")
 INCLUDE_DIRECTORIES(SYSTEM "${ZLIB_LIBRARY_INCLUDE}")
 INCLUDE_DIRECTORIES(SYSTEM "${Boost_INCLUDE_DIRS}")
+INCLUDE_DIRECTORIES(SYSTEM "${NATS_INCLUDE_DIR}")
 INCLUDE_DIRECTORIES(SYSTEM "${CMAKE_CURRENT_SOURCE_DIR}/submodules/glm")
 INCLUDE_DIRECTORIES(SYSTEM "${CMAKE_CURRENT_SOURCE_DIR}/submodules/cereal/include")
 INCLUDE_DIRECTORIES(SYSTEM "${CMAKE_CURRENT_SOURCE_DIR}/submodules/fmt/include")

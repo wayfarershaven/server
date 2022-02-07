@@ -145,6 +145,11 @@ EQEmuLogSys *EQEmuLogSys::LoadLogSettingsDefaults()
 	log_settings[Logs::Info].log_to_console      = static_cast<uint8>(Logs::General);
 
 	/**
+	 * NATS
+	 */
+	log_settings[Logs::NATS].log_to_console 	 = static_cast<uint8>(Logs::General);
+
+	/**
 	 * Set Category enabled status on defaults
 	 */
 	for (int log_category_id = Logs::AA; log_category_id != Logs::MaxCategoryID; log_category_id++) {
@@ -180,6 +185,9 @@ EQEmuLogSys *EQEmuLogSys::LoadLogSettingsDefaults()
 	}
 	else if (EQEmuLogSys::log_platform == EQEmuExePlatform::ExePlatformHC) {
 		platform_file_name = "hc";
+	}
+	else if (EQEmuLogSys::log_platform == EQEmuExePlatform::ExePlatformNATS) {
+		platform_file_name = "nats";
 	}
 
 	return this;

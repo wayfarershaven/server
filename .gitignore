@@ -61,7 +61,6 @@ libs/format/fmt/libfmt.a
 *.vcxproj
 *.vcxproj.filters
 *.vcxproj.user
-*.cmake
 *.ilk
 *.pdb
 *.sln

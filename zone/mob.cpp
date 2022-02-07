@@ -26,6 +26,7 @@
 #include "worldserver.h"
 #include "mob_movement_manager.h"
 #include "water_map.h"
+#include "nats_manager.h"
 #include "dialogue_window.h"
 
 #include <limits.h>
@@ -42,6 +43,7 @@ extern EntityList entity_list;
 
 extern Zone* zone;
 extern WorldServer worldserver;
+extern NatsManager nats;
 
 Mob::Mob(
 	const char *in_name,
@@ -1039,6 +1041,8 @@ void Mob::CreateSpawnPacket(EQApplicationPacket *app, Mob *ForWho)
 	NewSpawn_Struct *ns = (NewSpawn_Struct *) app->pBuffer;
 	FillSpawnStruct(ns, ForWho);
 
+	nats.OnSpawnEvent(OP_NewSpawn, ns->spawn.spawnId, &ns->spawn);
+
 	if (RuleB(NPC, UseClassAsLastName) && strlen(ns->spawn.lastName) == 0) {
 		switch (ns->spawn.class_) {
 			case TRIBUTE_MASTER:
@@ -1366,6 +1370,7 @@ void Mob::CreateDespawnPacket(EQApplicationPacket* app, bool Decay)
 	ds->spawn_id = GetID();
 	// The next field only applies to corpses. If 0, they vanish instantly, otherwise they 'decay'
 	ds->Decay = Decay ? 1 : 0;
+	nats.OnDeleteSpawnEvent(this->GetID(), ds);
 }
 
 void Mob::CreateHPPacket(EQApplicationPacket* app)
@@ -1377,6 +1382,7 @@ void Mob::CreateHPPacket(EQApplicationPacket* app)
 	memset(app->pBuffer, 0, sizeof(SpawnHPUpdate_Struct2));
 	SpawnHPUpdate_Struct2* ds = (SpawnHPUpdate_Struct2*)app->pBuffer;
 
+	nats.OnHPEvent(OP_MobHealth, this->GetID(), current_hp, max_hp);
 	ds->spawn_id = GetID();
 	// they don't need to know the real hp
 	ds->hp = (int)GetHPRatio();
@@ -1406,6 +1412,7 @@ void Mob::CreateHPPacket(EQApplicationPacket* app)
 void Mob::SendHPUpdate(bool force_update_all)
 {
 
+	nats.OnHPEvent(OP_HPUpdate, this->GetID(), current_hp, max_hp);
 	// If our HP is different from last HP update call - let's update selves
 	if (IsClient()) {
 		if (current_hp != last_hp || force_update_all) {
@@ -2334,6 +2341,7 @@ void Mob::DoAnim(const int animnum, int type, bool ackreq, eqFilterType filter)
 		filter /* eqFilterType filter */
 	);
 
+	nats.OnAnimationEvent(this->GetID(), anim);
 	safe_delete(outapp);
 }
 
@@ -5076,6 +5084,7 @@ void Mob::DoKnockback(Mob *caster, uint32 push_back, uint32 push_up)
 		outapp_push->priority = 6;
 		entity_list.QueueClients(this, outapp_push, true);
 		CastToClient()->FastQueuePacket(&outapp_push);
+		nats.OnClientUpdateEvent(this->GetID(), spu);
 	}
 }
 

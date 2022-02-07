@@ -27,6 +27,7 @@
 #include "lua_encounter.h"
 #include "data_bucket.h"
 #include "expedition.h"
+#include "nats_manager.h"
 
 struct Events { };
 struct Factions { };
@@ -52,6 +53,7 @@ struct lua_registered_event {
 extern std::map<std::string, std::list<lua_registered_event>> lua_encounter_events_registered;
 extern std::map<std::string, bool> lua_encounters_loaded;
 extern std::map<std::string, Encounter *> lua_encounters;
+extern NatsManager nats;
 
 extern void MapOpcodes();
 extern void ClearMappedOpcode(EmuOpcode op);
@@ -1512,6 +1514,10 @@ void lua_debug(std::string message, int level) {
 
 void lua_log_combat(std::string message) {
 	Log(Logs::General, Logs::Combat, message.c_str());
+}
+
+void lua_adminmessage(std::string message) {
+	nats.SendAdminMessage(message);
 }
 
 void lua_update_zone_header(std::string type, std::string value) {
@@ -3814,6 +3820,7 @@ luabind::scope lua_register_general() {
 		luabind::def("get_faction_name", &lua_get_faction_name),
 		luabind::def("get_language_name", &lua_get_language_name),
 		luabind::def("get_body_type_name", &lua_get_body_type_name),
+		luabind::def("adminmessage", &lua_adminmessage),
 
 		/*
 			Cross Zone

@@ -19,6 +19,7 @@ SET(world_sources
 	login_server.cpp
 	login_server_list.cpp
 	main.cpp
+	nats_manager.cpp
 	queryserv.cpp
 	shared_task_manager.cpp
 	shared_task_world_messaging.cpp
@@ -55,6 +56,7 @@ SET(world_headers
 	lfplist.h
 	login_server.h
 	login_server_list.h
+	nats_manager.h
 	queryserv.h
 	shared_task_manager.h
 	shared_task_world_messaging.h

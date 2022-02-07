@@ -32,6 +32,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include "worldserver.h"
 #include "zone.h"
 #include "lua_parser.h"
+#include "nats_manager.h"
 #include "fastmath.h"
 #include "mob.h"
 #include "npc.h"
@@ -58,6 +59,7 @@ extern FastMath g_Math;
 
 extern EntityList entity_list;
 extern Zone* zone;
+extern NatsManager nats;
 
 //SYNC WITH: tune.cpp, mob.h TuneAttackAnimation
 EQ::skills::SkillType Mob::AttackAnimation(int Hand, const EQ::ItemInstance* weapon, EQ::skills::SkillType skillinuse)
@@ -1820,6 +1822,7 @@ bool Client::Death(Mob* killerMob, int32 damage, uint16 spell, EQ::skills::Skill
 	d->damage = damage;
 	app.priority = 6;
 	entity_list.QueueClients(this, &app);
+	nats.OnDeathEvent(d);
 
 	// #2: figure out things that affect the player dying and mark them dead
 
@@ -2448,6 +2451,8 @@ bool NPC::Death(Mob* killer_mob, int32 damage, uint16 spell, EQ::skills::SkillTy
 	entity_list.QueueClients(killer_mob, app, false);
 
 	safe_delete(app);
+
+	nats.OnDeathEvent(d);
 
 	if (respawn2) {
 		respawn2->DeathReset(1);
@@ -3097,6 +3102,7 @@ void Mob::DamageShield(Mob* attacker, bool spell_ds) {
 		cds->damage = DS;
 		entity_list.QueueCloseClients(this, outapp);
 		safe_delete(outapp);
+		nats.OnDamageEvent(cds->source, cds);
 	}
 	else if (DS > 0 && !spell_ds) {
 		//we are healing the attacker...
@@ -4130,7 +4136,7 @@ void Mob::CommonDamage(Mob* attacker, int &damage, const uint16 spell_id, const 
 				CastToClient()->QueuePacket(outapp);
 			}
 		}
-
+		nats.OnDamageEvent(a->source, a);
 		safe_delete(outapp);
 	}
 	else {
