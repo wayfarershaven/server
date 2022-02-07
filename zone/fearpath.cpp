@@ -43,6 +43,11 @@ void Mob::CheckFlee()
 		return;
 	}
 
+	// Undead do not flee
+	if(GetBodyType() == BT_Undead) {
+		return;
+	}
+	
 	//dont bother if we are immune to fleeing
 	if (GetSpecialAbility(IMMUNE_FLEEING) || spellbonuses.ImmuneToFlee) {
 		LogFlee("Mob [{}] is immune to fleeing via special ability or spell bonus", GetCleanName());
