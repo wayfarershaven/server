@@ -97,11 +97,10 @@ bool NPC::AICastSpell(Mob* tar, uint8 iChance, uint32 iSpellTypes, bool bInnates
 			continue;
 		}
 
-		// we reuse these fields for heal overrides
-		if (AIspells[i].type != SpellType_Heal && AIspells[i].min_hp != 0 && GetIntHPRatio() < AIspells[i].min_hp)
+		if (AIspells[i].min_hp != 0 && GetIntHPRatio() < AIspells[i].min_hp)
 			continue;
 
-		if (AIspells[i].type != SpellType_Heal && AIspells[i].max_hp != 0 && GetIntHPRatio() > AIspells[i].max_hp)
+		if (AIspells[i].max_hp != 0 && GetIntHPRatio() > AIspells[i].max_hp)
 			continue;
 
 		if (iSpellTypes & AIspells[i].type) {
@@ -114,7 +113,9 @@ bool NPC::AICastSpell(Mob* tar, uint8 iChance, uint32 iSpellTypes, bool bInnates
 			}
 
 			if (
-				((
+				(
+                            (spells[AIspells[i].spellid].target_type == ST_HateList || spells[AIspells[i].spellid].target_type == ST_AETargetHateList) ||
+                            (
 							 (spells[AIspells[i].spellid].target_type==ST_AECaster || spells[AIspells[i].spellid].target_type==ST_AEBard)
 							 && dist2 <= spells[AIspells[i].spellid].aoe_range*spells[AIspells[i].spellid].aoe_range
 					 ) ||
@@ -137,12 +138,9 @@ bool NPC::AICastSpell(Mob* tar, uint8 iChance, uint32 iSpellTypes, bool bInnates
 							&& !(tar->IsPet() && tar->GetOwner()->IsClient())	//no buffing PC's pets
 							) {
 
-							auto hp_ratio = tar->GetIntHPRatio();
+                            uint8 hpr = (uint8)tar->GetHPRatio();
 
-							int min_hp = AIspells[i].min_hp; // well 0 is default, so no special case here
-							int max_hp = AIspells[i].max_hp ? AIspells[i].max_hp : RuleI(Spells, AI_HealHPPct);
-
-							if (EQ::ValueWithin(hp_ratio, min_hp, max_hp) || (tar->IsClient() && hp_ratio <= 99)) { // not sure about client bit, leaving it
+							if(hpr <= 35 || (!IsEngaged() && hpr <= 50) || (tar->IsClient() && hpr <= 99)) {
 								uint32 tempTime = 0;
 								AIDoSpellCast(i, tar, mana_cost, &tempTime);
 								tar->SetDontHealMeBefore(tempTime);
@@ -201,24 +199,17 @@ bool NPC::AICastSpell(Mob* tar, uint8 iChance, uint32 iSpellTypes, bool bInnates
 					}
 
 					case SpellType_Escape: {
-						// If min_hp !=0 then the spell list has specified
-						// custom range and we're inside that range if we
-						// made it here.
-						if (AIspells[i].min_hp != 0 || GetHPRatio() <= (RuleI(NPC, NPCGatePercent))) {
-							auto npcSpawnPoint = CastToNPC()->GetSpawnPoint();
-							if (!RuleB(NPC, NPCGateNearBind) && DistanceNoZ(m_Position, npcSpawnPoint) < RuleI(NPC, NPCGateDistanceBind)) {
-								break;
-							} else {
+                        if (GetHPRatio() <= 5 )
+                        {
 								AIDoSpellCast(i, tar, mana_cost);
 								return true;
-							}
 						}
 						break;
 					}
 					case SpellType_Slow:
 					case SpellType_Debuff: {
 						Mob * debuffee = GetHateRandom();
-						if (debuffee && manaR >= 10 && (bInnates || zone->random.Roll(75)) &&
+                        if (debuffee && manaR >= 10 && (bInnates || zone->random.Roll(70)) &&
 								debuffee->CanBuffStack(AIspells[i].spellid, GetLevel(), true) >= 0) {
 							if (!checked_los) {
 								if (!CheckLosFN(debuffee))
@@ -232,7 +223,7 @@ bool NPC::AICastSpell(Mob* tar, uint8 iChance, uint32 iSpellTypes, bool bInnates
 					}
 					case SpellType_Nuke: {
 						if (
-							manaR >= 10 && (bInnates || (zone->random.Roll(75)
+                                manaR >= 10 && (bInnates || (zone->random.Roll(70)
 							&& tar->CanBuffStack(AIspells[i].spellid, GetLevel(), false) >= 0)) // saying it's a nuke here, AI shouldn't care too much if overwriting
 							) {
 							if(!checked_los) {
@@ -246,7 +237,7 @@ bool NPC::AICastSpell(Mob* tar, uint8 iChance, uint32 iSpellTypes, bool bInnates
 						break;
 					}
 					case SpellType_Dispel: {
-						if(bInnates || zone->random.Roll(5))
+                        if(bInnates || zone->random.Roll(15))
 						{
 							if(!checked_los) {
 								if(!CheckLosFN(tar))
@@ -373,6 +364,11 @@ bool NPC::AIDoSpellCast(uint8 i, Mob* tar, int32 mana_cost, uint32* oDontDoAgain
 #endif
 	casting_spell_AIindex = i;
 
+	//stop moving if were casting a spell and were not a bard...
+    if(!IsBardSong(AIspells[i].spellid)) {
+        StopNavigation();
+    }
+
 	return CastSpell(AIspells[i].spellid, tar->GetID(), EQ::spells::CastingSlot::Gem2, AIspells[i].manacost == -2 ? 0 : -1, mana_cost, oDontDoAgainBefore, -1, -1, 0, &(AIspells[i].resist_adjust));
 }
 
@@ -392,7 +388,7 @@ void Mob::AI_Init()
 	maxLastFightingDelayMoving = RuleI(NPC, LastFightingDelayMovingMax);
 
 	pDontHealMeBefore = 0;
-	pDontBuffMeBefore = Timer::GetCurrentTime() + 400;
+    pDontBuffMeBefore = 0;
 	pDontDotMeBefore = 0;
 	pDontRootMeBefore = 0;
 	pDontSnareMeBefore = 0;
@@ -432,28 +428,24 @@ void Mob::AI_Start(uint32 iMoveDelay) {
 		time_until_can_move = 0;
 
 	pAIControlled  = true;
-	AI_think_timer = std::make_unique<Timer>(AIthink_duration);
+    AI_think_timer = std::unique_ptr<Timer>(new Timer(AIthink_duration));
 	AI_think_timer->Trigger();
 
-	AI_walking_timer        = std::make_unique<Timer>(0);
-	AI_movement_timer       = std::make_unique<Timer>(AImovement_duration);
-	AI_target_check_timer   = std::make_unique<Timer>(AItarget_check_duration);
-	AI_feign_remember_timer = std::make_unique<Timer>(AIfeignremember_delay);
-	AI_scan_door_open_timer = std::make_unique<Timer>(AI_scan_door_open_interval);
-
-	if (GetBodyType() == BT_Animal && !RuleB(NPC, AnimalsOpenDoors)) {
-		SetCanOpenDoors(false);
-	}
+    AI_walking_timer        = std::unique_ptr<Timer>(new Timer(0));
+    AI_movement_timer       = std::unique_ptr<Timer>(new Timer(AImovement_duration));
+    AI_target_check_timer   = std::unique_ptr<Timer>(new Timer(AItarget_check_duration));
+    AI_feign_remember_timer = std::unique_ptr<Timer>(new Timer(AIfeignremember_delay));
+    AI_scan_door_open_timer = std::unique_ptr<Timer>(new Timer(AI_scan_door_open_interval));
 
 	if(!RuleB(Aggro, NPCAggroMaxDistanceEnabled)) {
 		hate_list_cleanup_timer.Disable();
 	}
 
-	if (CastToNPC()->WillAggroNPCs())
-		AI_scan_area_timer = std::make_unique<Timer>(RandomTimer(RuleI(NPC, NPCToNPCAggroTimerMin), RuleI(NPC, NPCToNPCAggroTimerMax)));
+	if (CastToNPC()->WillAggroNPCs()) {
+		AI_scan_area_timer = std::unique_ptr<Timer>(new Timer(RandomTimer(RuleI(NPC, NPCToNPCAggroTimerMin), RuleI(NPC, NPCToNPCAggroTimerMax))));
+	}
 
-	AI_check_signal_timer = std::make_unique<Timer>(AI_check_signal_timer_delay);
-
+	AI_check_signal_timer = std::unique_ptr<Timer>(new Timer(AI_check_signal_timer_delay));
 
 	if (GetAggroRange() == 0)
 		pAggroRange = 70;
@@ -485,10 +477,10 @@ void NPC::AI_Start(uint32 iMoveDelay) {
 		return;
 
 	if (AIspells.empty()) {
-		AIautocastspell_timer = std::make_unique<Timer>(1000);
+		AIautocastspell_timer = std::unique_ptr<Timer>(new Timer(1000));
 		AIautocastspell_timer->Disable();
 	} else {
-		AIautocastspell_timer = std::make_unique<Timer>(500);
+		AIautocastspell_timer = std::unique_ptr<Timer>(new Timer(500));
 		AIautocastspell_timer->Start(RandomTimer(0, 300), false);
 	}
 
@@ -984,7 +976,7 @@ void Mob::AI_Process() {
 		engaged = false;
 	}
 
-	if (moving && CanOpenDoors()) {
+    if (moving) {
 		if (AI_scan_door_open_timer->Check()) {
 			auto      &door_list = entity_list.GetDoorsList();
 			for (auto itr : door_list) {
@@ -1010,7 +1002,7 @@ void Mob::AI_Process() {
 					continue;
 				}
 
-				float distance                = DistanceSquared(m_Position, door->GetPosition());
+                float distance                = DistanceSquared(this->m_Position, door->GetPosition());
 				float distance_scan_door_open = 20;
 
 				if (distance <= (distance_scan_door_open * distance_scan_door_open)) {
@@ -1117,17 +1109,6 @@ void Mob::AI_Process() {
 
 		if (target->IsCorpse()) {
 			RemoveFromHateList(this);
-			return;
-		}
-
-		if (target->IsMezzed() && IsPet()) {
-
-			auto pet_owner = GetOwner();
-			if (pet_owner && pet_owner->IsClient() && (!pet_owner->CastToClient()->ClientFinishedLoading() || !RuleB(Aggro, PetsTriggerAggro))) {
-				pet_owner->MessageString(Chat::NPCQuestSay, CANNOT_WAKE, GetCleanName(), target->GetCleanName());
-			}
-
-			RemoveFromHateList(target);
 			return;
 		}
 
@@ -1679,12 +1660,10 @@ void NPC::AI_DoMovement() {
 			}
 			else { // Mob was in water, make sure new spot is in water also
 				roambox_destination_z = m_Position.z;
-				auto position = glm::vec3(
-					roambox_destination_x,
+				auto position = glm::vec3( roambox_destination_x,
 					roambox_destination_y,
-					m_Position.z + 15
-				);
-				if (zone->HasWaterMap() && !zone->watermap->InLiquid(position)) {
+					m_Position.z + 15);
+                if (!zone->watermap->InLiquid(position)) {
 					roambox_destination_x = m_SpawnPoint.x;
 					roambox_destination_y = m_SpawnPoint.y;
 					roambox_destination_z = m_SpawnPoint.z;
@@ -1770,9 +1749,7 @@ void NPC::AI_DoMovement() {
 							// reached our randomly selected destination; force a pause
 							if (cur_wp_pause == 0)
 							{
-								if (Waypoints.size() >= cur_wp && Waypoints[cur_wp].pause)
-									cur_wp_pause = Waypoints[cur_wp].pause;
-								else if (Waypoints.size() > 0 && Waypoints[0].pause)
+								if (Waypoints.size() > 0 && Waypoints[0].pause)
 									cur_wp_pause = Waypoints[0].pause;
 								else
 									cur_wp_pause = 38;
@@ -2234,27 +2211,8 @@ bool Mob::Rampage(ExtraAttackOptions *opts)
 		}
 	}
 
-	if (RuleB(Combat, RampageHitsTarget)) {
-		if (index_hit < rampage_targets)
+	if (RuleB(Combat, RampageHitsTarget) && index_hit < rampage_targets)
 			ProcessAttackRounds(GetTarget(), opts);
-	} else { // let's do correct behavior here, if they set above rule we can assume they want non-live like behavior
-		if (index_hit < rampage_targets) {
-			// so we go over in reverse order and skip range check
-			// lets do it this way to still support non-live-like >1 rampage targets
-			// likely live is just a fall through of the last valid mob
-			for (auto i = RampageArray.crbegin(); i != RampageArray.crend(); ++i) {
-				if (index_hit >= rampage_targets)
-					break;
-				auto m_target = entity_list.GetMob(*i);
-				if (m_target) {
-					if (m_target == GetTarget())
-						continue;
-					ProcessAttackRounds(m_target, opts);
-					index_hit++;
-				}
-			}
-		}
-	}
 
 	m_specialattacks = eSpecialAttacks::None;
 
@@ -2274,6 +2232,9 @@ void Mob::AreaRampage(ExtraAttackOptions *opts)
 	rampage_targets = rampage_targets > 0 ? rampage_targets : -1;
 	m_specialattacks = eSpecialAttacks::AERampage;
 	index_hit = hate_list.AreaRampage(this, GetTarget(), rampage_targets, opts);
+
+	if(index_hit == 0)
+        ProcessAttackRounds(GetTarget(), opts);
 
 	m_specialattacks = eSpecialAttacks::None;
 }
@@ -2528,7 +2489,7 @@ create table npc_spells_entries (
 	);
 */
 
-bool IsSpellInList(DBnpcspells_Struct* spell_list, uint16 iSpellID);
+bool IsSpellInList(DBnpcspells_Struct* spell_list, int16 iSpellID);
 bool IsSpellEffectInList(DBnpcspellseffects_Struct* spelleffect_list, uint16 iSpellEffectID, int32 base_value, int32 limit, int32 max_value);
 
 bool NPC::AI_AddNPCSpells(uint32 iDBSpellsID) {
@@ -2800,14 +2761,14 @@ bool IsSpellEffectInList(DBnpcspellseffects_Struct* spelleffect_list, uint16 iSp
 	return false;
 }
 
-bool IsSpellInList(DBnpcspells_Struct* spell_list, uint16 iSpellID) {
+bool IsSpellInList(DBnpcspells_Struct* spell_list, int16 iSpellID) {
 	auto it = std::find_if(spell_list->entries.begin(), spell_list->entries.end(),
 			       [iSpellID](const DBnpcspells_entries_Struct &a) { return a.spellid == iSpellID; });
 	return it != spell_list->entries.end();
 }
 
 // adds a spell to the list, taking into account priority and resorting list as needed.
-void NPC::AddSpellToNPCList(int16 iPriority, uint16 iSpellID, uint32 iType,
+void NPC::AddSpellToNPCList(int16 iPriority, int16 iSpellID, uint32 iType,
 							int16 iManaCost, int32 iRecastDelay, int16 iResistAdjust, int8 min_hp, int8 max_hp)
 {
 
