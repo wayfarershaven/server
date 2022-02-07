@@ -521,7 +521,7 @@ void Client::SetEXP(uint32 set_exp, uint32 set_aaxp, bool isrezzexp) {
         /* QS: PlayerLogAARate */
         if (RuleB(QueryServ, PlayerLogAARate))
         {
-            //QServ->QSAARate(this->CharacterID(), m_pp.aapoints, last_unspentAA);
+            QServ->QSAARate(this->CharacterID(), m_pp.aapoints, last_unspentAA);
         }
     }
 

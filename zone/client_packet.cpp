@@ -13287,6 +13287,12 @@ void Client::Handle_OP_ShopPlayerBuy(const EQApplicationPacket *app)
 		if (worldserver.Connected()) { worldserver.SendPacket(qspack); }
 		safe_delete(qspack);
 	}
+
+	if (RuleB(QueryServ, PlayerLogMerchantTransactions)) {
+		QServ->QSMerchantTransactions(character_id, zone->GetZoneID(), freeslotid == INVALID_INDEX ? 0 : freeslotid,
+			item->ID, mpo->quantity, tmp->CastToNPC()->MerchantType, 0, 0, 0, 0, 1,
+			mpo->price / 1000, (mpo->price / 100) % 10, (mpo->price / 10) % 10, mpo->price % 10, 0);
+	}
 	// end QS code
 
 	if (RuleB(EventLog, RecordBuyFromMerchant))

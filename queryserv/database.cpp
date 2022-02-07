@@ -431,6 +431,199 @@ void Database::LogMerchantTransaction(QSMerchantLogTransaction_Struct *QS, uint3
 
 }
 
+void Database::LogPlayerAARateHourly(QSPlayerAARateHourly_Struct* QS, uint32 items)
+{
+	if (items == 0)
+	{
+		return;
+	}
+
+	std::string query = StringFormat(
+		"INSERT INTO `qs_player_aa_rate_hourly` (char_id, aa_count, hour_time) "
+			"VALUES "
+			"(%i, %i, UNIX_TIMESTAMP() - MOD(UNIX_TIMESTAMP(), 3600)) "
+			"ON DUPLICATE KEY UPDATE "
+			"`aa_count` = `aa_count` + %i",
+			QS->charid,
+			QS->add_points,
+			QS->add_points);
+
+	auto results = QueryDatabase(query);
+	if (!results.Success())
+	{
+		Log(Logs::Detail, Logs::QSServer, "Failed AA Rate Log Record Insert: %s\n%s", results.ErrorMessage().c_str(), query.c_str());
+	}
+}
+
+void Database::LogPlayerAAPurchase(QSPlayerAAPurchase_Struct* QS, uint32 items)
+{
+	if (items == 0)
+	{
+		return;
+	}
+
+	std::string query = StringFormat(
+		"INSERT INTO `qs_player_aa_purchase_log` SET "
+			"`char_id` = '%i', "
+			"`aa_type` = '%s', "
+			"`aa_name` = '%s', "
+			"`aa_id` = '%i', "
+			"`aa_cost` = '%i', "
+			"`zone_id` = '%i', "
+			"`instance_id` = '%i', "
+			"`time` = now()",
+			QS->charid,
+			QS->aatype,
+			QS->aaname,
+			QS->aaid,
+			QS->cost,
+			QS->zone_id,
+			QS->instance_id);
+
+	auto results = QueryDatabase(query);
+	if (!results.Success())
+	{
+		Log(Logs::Detail, Logs::QSServer, "Failed AA Purchase Log Record Insert: %s\n%s", results.ErrorMessage().c_str(), query.c_str());
+	}
+}
+
+void Database::LogPlayerDeathBy(QSPlayerDeathBy_Struct* QS, uint32 items)
+{
+	if (items == 0)
+	{
+		return;
+	}
+
+	std::string query = StringFormat(
+		"INSERT INTO `qs_player_killed_by_log` SET "
+		"`char_id` = '%i', "
+		"`zone_id` = '%i', "
+		"`instance_id` = '%i', "
+		"`killed_by` = '%s', "
+		"`spell` = '%i', "
+		"`damage` = '%i', "
+		"`time` = now()",
+		QS->charid,
+		QS->zone_id,
+		QS->instance_id,
+		QS->killed_by,
+		QS->spell,
+		QS->damage);
+
+	auto results = QueryDatabase(query);
+	if (!results.Success())
+	{
+		Log(Logs::Detail, Logs::QSServer, "Failed Death Log Record Insert: %s\n%s", results.ErrorMessage().c_str(), query.c_str());
+	}
+}
+
+void Database::LogPlayerTSEvents(QSPlayerTSEvents_Struct* QS, uint32 items)
+{
+	if (items == 0)
+	{
+		return;
+	}
+
+	std::string query = StringFormat(
+		"INSERT INTO `qs_player_ts_event_log` SET "
+			"`char_id` = '%i', "
+			"`zone_id` = '%i', "
+			"`instance_id` = '%i', "
+			"`results` = '%s', "
+			"`recipe_id` = '%i', "
+			"`tradeskill` = '%i', "
+			"`trivial` = '%i', "
+			"`chance` = '%f', "
+			"`time` = now()",
+			QS->charid,
+			QS->zone_id,
+			QS->instance_id,
+			QS->results,
+			QS->recipe_id,
+			QS->tradeskill,
+			QS->trivial,
+			QS->chance);
+
+	auto results = QueryDatabase(query);
+	if (!results.Success())
+	{
+		Log(Logs::Detail, Logs::QSServer, "Failed TS Event Log Record Insert: %s\n%s", results.ErrorMessage().c_str(), query.c_str());
+	}
+}
+
+void Database::LogPlayerQGlobalUpdates(QSPlayerQGlobalUpdate_Struct* QS, uint32 items)
+{
+	if (items == 0)
+	{
+		return;
+	}
+
+	std::string query = StringFormat(
+		"INSERT INTO `qs_player_qglobal_updates_log` SET "
+			"`char_id` = '%i', "
+			"`action` = '%s', "
+			"`zone_id` = '%i', "
+			"`instance_id` = '%i', "
+			"`varname` = '%s', "
+			"`newvalue` = '%s', "
+			"`time` = now()",
+			QS->charid,
+			QS->action,
+			QS->zone_id,
+			QS->instance_id,
+			QS->varname,
+			QS->newvalue);
+
+	auto results = QueryDatabase(query);
+	if (!results.Success())
+	{
+		Log(Logs::Detail, Logs::QSServer, "Failed QGlobal Update Record Insert: %s\n%s", results.ErrorMessage().c_str(), query.c_str());
+	}
+}
+
+void Database::LogPlayerLootRecords(QSPlayerLootRecords_struct* QS, uint32 items)
+{
+	if (items == 0)
+	{
+		return;
+	}
+    std::string item_name = EscapeString(QS->item_name);
+    std::string corpse_name = EscapeString(QS->corpse_name);
+
+	Log(Logs::General, Logs::QSServer, "Inserting loot record");
+	std::string query = StringFormat(
+		"INSERT INTO `qs_player_loot_records_log` SET "
+		"`char_id` = '%i', "
+		"`corpse_name` = '%s', "
+		"`type` = '%s', "
+		"`zone_id` = '%i', "
+		"`item_id` = '%i', "
+		"`item_name` = '%s', "
+		"`charges` = '%i', "
+		"`platinum` = '%i', "
+		"`gold` = '%i', "
+		"`silver` = '%i', "
+		"`copper` = '%i', "
+		"`time` = now()",
+		QS->charid,
+		corpse_name.c_str(),
+		QS->type,
+		QS->zone_id,
+		QS->item_id,
+		item_name.c_str(),
+		QS->charges,
+		QS->money.platinum,
+		QS->money.gold,
+		QS->money.silver,
+		QS->money.copper);
+
+	auto results = QueryDatabase(query);
+	if (!results.Success())
+	{
+		Log(Logs::General, Logs::QSServer, "Failed Loot Record Insert: %s\n%s", results.ErrorMessage().c_str(), query.c_str());
+	}
+}
+
 // this function does not delete the ServerPacket, so it must be handled at call site
 void Database::GeneralQueryReceive(ServerPacket *pack)
 {
