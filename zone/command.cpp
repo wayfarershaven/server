@@ -617,7 +617,7 @@ int command_realdispatch(Client *c, const char *message)
 		return(-1);
 	}
 
-	nats.SendAdminMessage(StringFormat("%s in %s issued command: %s", c->GetCleanName(), database.GetZoneName(zone->GetZoneID()), message));
+	nats.SendAdminMessage(StringFormat("%s in %s issued command: %s", c->GetCleanName(), zone->GetShortName(), message));
 	
 	if(cur->access >= COMMANDS_LOGGING_MIN_STATUS) {
 				const char *targetType = "notarget";
