@@ -384,6 +384,7 @@ int command_init(void)
 		command_add("trapinfo", "- Gets infomation about the traps currently spawned in the zone.", AccountStatus::QuestTroupe, command_trapinfo) ||
 		command_add("tune",  "Calculate statistical values related to combat.", AccountStatus::GMAdmin, command_tune) ||
 		command_add("ucs", "- Attempts to reconnect to the UCS server", AccountStatus::Player, command_ucs) ||
+		command_add("undye", "- Remove dye from all of your or your target's armor slots", AccountStatus::GMAdmin, command_undye) ||
 		command_add("undeletechar", "- Undelete a character that was previously deleted.", AccountStatus::GMAdmin, command_undeletechar) ||
 		command_add("undyeme", "- Remove dye from all of your armor slots", AccountStatus::Player, command_undyeme) ||
 		command_add("unfreeze", "- Unfreeze your target", AccountStatus::QuestTroupe, command_unfreeze) ||
