@@ -396,6 +396,7 @@ public:
 	void	RemoveFromAutoXTargets(Mob* mob);
 	void	ReplaceWithTarget(Mob* pOldMob, Mob*pNewTarget);
 	void	QueueCloseClients(Mob* sender, const EQApplicationPacket* app, bool ignore_sender=false, float distance=200, Mob* skipped_mob = 0, bool is_ack_required = true, eqFilterType filter=FilterNone);
+	void	UpdateConLevels(Client *specific_target);
 	void	QueueClients(Mob* sender, const EQApplicationPacket* app, bool ignore_sender=false, bool ackreq = true);
 	void	QueueClientsStatus(Mob* sender, const EQApplicationPacket* app, bool ignore_sender = false, uint8 minstatus = AccountStatus::Player, uint8 maxstatus = AccountStatus::Player);
 	void	QueueClientsGuild(Mob* sender, const EQApplicationPacket* app, bool ignore_sender = false, uint32 guildeqid = 0);

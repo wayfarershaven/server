@@ -2312,6 +2312,9 @@ bool NPC::Death(Mob* killer_mob, int32 damage, uint16 spell, EQ::skills::SkillTy
 	LogCombat("Fatal blow dealt by [{}] with [{}] damage, spell [{}], skill [{}]",
 		((killer_mob) ? (killer_mob->GetName()) : ("[nullptr]")), damage, spell, attack_skill);
 
+	//Shin: On death, see if anyone is on hate list that causes a trigger on death
+	hate_list.OnDeathTrigger();
+
 	Mob *oos = nullptr;
 	if (killer_mob) {
 		oos = killer_mob->GetOwnerOrSelf();
@@ -2407,6 +2410,13 @@ bool NPC::Death(Mob* killer_mob, int32 damage, uint16 spell, EQ::skills::SkillTy
 	if (respawn2) {
 		respawn2->DeathReset(1);
 	}
+
+	/* std::string adminMessage = "";
+	adminMessage.append(StringFormat("Raidmob: %s has died", GetName()));
+	if (IsRaidTarget() && IsNPC()) {
+		nats.SendAdminMessage(adminMessage);
+	}
+	*/
 
 	if (killer_mob && GetClass() != LDON_TREASURE)
 		hate_list.AddEntToHateList(killer_mob, damage);
@@ -3809,15 +3819,14 @@ void Mob::CommonDamage(Mob* attacker, int &damage, const uint16 spell_id, const 
 
 		//final damage has been determined.
 
-		int32 pre_hit_hp;
+		 int32 pre_hit_hp;
 
-		if(attacker->IsClient()) {
+        if (attacker->IsClient()) {
             player_damage += damage;
         }
 
-		pre_hit_hp = GetHP();
-
-		SetHP(GetHP() - damage);
+        pre_hit_hp = GetHP();
+        SetHP(GetHP() - damage);
 
 
 		if (HasDied() && pre_hit_hp > 0) {  // Don't make the mob die over and over if it was at 0 hp
@@ -4900,9 +4909,9 @@ bool Mob::TryFinishingBlow(Mob *defender, int &damage)
 		else if (FB_Level < itembonuses.FinishingBlowLvl[SBIndex::FINISHING_EFFECT_LEVEL_MAX])
 			FB_Level = itembonuses.FinishingBlowLvl[SBIndex::FINISHING_EFFECT_LEVEL_MAX];
 
-		// modern AA description says rank 1 (500) is 50% chance
+		// With our code, 500 = 5%.
 		int ProcChance =
-				aabonuses.FinishingBlow[SBIndex::FINISHING_EFFECT_PROC_CHANCE] + spellbonuses.FinishingBlow[SBIndex::FINISHING_EFFECT_PROC_CHANCE] + spellbonuses.FinishingBlow[SBIndex::FINISHING_EFFECT_PROC_CHANCE];
+				(aabonuses.FinishingBlow[SBIndex::FINISHING_EFFECT_PROC_CHANCE] + spellbonuses.FinishingBlow[SBIndex::FINISHING_EFFECT_PROC_CHANCE] + spellbonuses.FinishingBlow[SBIndex::FINISHING_EFFECT_PROC_CHANCE])/10;
 
 		if (FB_Level && FB_Dmg && (defender->GetLevel() <= FB_Level) && defender->currently_fleeing &&
 			(ProcChance >= zone->random.Int(1, 1000))) {
