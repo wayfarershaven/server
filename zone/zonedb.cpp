@@ -5205,7 +5205,7 @@ bool ZoneDatabase::CopyCorpseToBackup(uint32 corpse_id) {
 		return false;
 	}
 
-	query = StringFormat("UPDATE `character_corpse_items_backup` SELECT * from `character_corpse_items` WHERE `corpse_id` = %d", corpse_id);
+	query = StringFormat("REPLACE `character_corpse_items_backup` SELECT * from `character_corpse_items` WHERE `corpse_id` = %d", corpse_id);
 	results = QueryDatabase(query);
 	if (!results.Success()) {
 		return false;
