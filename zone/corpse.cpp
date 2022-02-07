@@ -1609,7 +1609,7 @@ bool Corpse::Summon(Client* client, bool spell, bool CheckDistance) {
 				client->Message(Chat::Red, "That corpse is locked by a GM.");
 				return false;
 			}
-			if (!CheckDistance || (DistanceSquared(m_Position, client->GetPosition()) <= dist2)) {
+			if (!CheckDistance || (DistanceSquaredNoZ(m_Position, client->GetPosition()) <= dist2)) {
 				GMMove(client->GetX(), client->GetY(), client->GetZ());
 				is_corpse_changed = true;
 			}
@@ -1647,7 +1647,7 @@ bool Corpse::Summon(Client* client, bool spell, bool CheckDistance) {
 			}
 
 			if (consented) {
-				if (!CheckDistance || (DistanceSquared(m_Position, client->GetPosition()) <= dist2)) {
+				if (!CheckDistance || (DistanceSquaredNoZ(m_Position, client->GetPosition()) <= dist2)) {
 					GMMove(client->GetX(), client->GetY(), client->GetZ());
 					is_corpse_changed = true;
 				}
