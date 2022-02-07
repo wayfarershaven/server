@@ -1788,6 +1788,11 @@ void Client::Handle_OP_AAAction(const EQApplicationPacket *app)
 	}
 	AA_Action* action = (AA_Action*)app->pBuffer;
 
+	//break feign if casting
+	if (feigned) {
+		SetFeigned(false);
+	}
+	
 	if (action->action == aaActionActivate) {//AA Hotkey
 		LogAA("Activating AA [{}]", action->ability);
 		ActivateAlternateAdvancementAbility(action->ability, action->target_id);
