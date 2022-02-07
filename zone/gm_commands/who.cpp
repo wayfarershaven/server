@@ -54,9 +54,7 @@ void command_who(Client *c, const Seperator *sep)
 			),
 			""
 		) as account_ip,
-		IF(
-			character_data.pvp_status = 0, 'No', 'Yes'
-		) AS trader_mode
+		character_data.pvp_status AS trader_mode
 		FROM
 		character_data
 		WHERE
@@ -98,7 +96,7 @@ void command_who(Client *c, const Seperator *sep)
 		std::string account_ip          = row[11];
 		std::string base_class_name = GetClassIDName(static_cast<uint8>(player_class));
 		std::string displayed_race_name = GetRaceIDName(static_cast<uint16>(player_race));
-		std::string trader_mode    		= row[12];
+		auto trader_mode      	= static_cast<uint32>(atoi(row[12]));
 
 		if (search_string.length()) {
 			bool found_search_term = (
@@ -109,8 +107,7 @@ void command_who(Client *c, const Seperator *sep)
 				str_tolower(guild_name).find(search_string) != std::string::npos ||
 				str_tolower(account_name).find(search_string) != std::string::npos ||
 				str_tolower(forum_name).find(search_string) != std::string::npos ||
-				str_tolower(account_ip).find(search_string) != std::string::npos ||
-				str_tolower(trader_mode).find(search_string) != std::string::npos
+				str_tolower(account_ip).find(search_string) != std::string::npos
 			);
 
 			if (!found_search_term) {
@@ -246,7 +243,7 @@ void command_who(Client *c, const Seperator *sep)
 				forum_saylink,
 				goto_saylink,
 				summon_saylink,
-				trader_mode
+				(trader_mode > 0 ? "Yes" : "No")
 			).c_str()
 		);
 
