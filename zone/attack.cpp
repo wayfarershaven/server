@@ -4961,8 +4961,9 @@ void Mob::DoRiposte(Mob *defender)
 	if (DoubleRipChance && zone->random.Roll(DoubleRipChance)) {
 		LogCombat("Preforming a double riposted from SE_GiveDoubleRiposte base1 == 0 ([{}] percent chance)", DoubleRipChance);
 		defender->Attack(this, EQ::invslot::slotPrimary, true);
-		if (HasDied())
+		if (HasDied()) {
 			return;
+		}
 	}
 
 	// Double Riposte effect, allows for a chance to do RIPOSTE with a skill specific special attack (ie Return Kick).
@@ -4973,10 +4974,11 @@ void Mob::DoRiposte(Mob *defender)
 	if (DoubleRipChance && zone->random.Roll(DoubleRipChance)) {
 		LogCombat("Preforming a return SPECIAL ATTACK ([{}] percent chance)", DoubleRipChance);
 
-		if (defender->GetClass() == MONK)
+		if (defender->GetClass() == MONK) {
 			defender->MonkSpecialAttack(this, defender->aabonuses.GiveDoubleRiposte[SBIndex::DOUBLE_RIPOSTE_SKILL]);
-		else if (defender->IsClient()) // so yeah, even if you don't have the skill you can still do the attack :P (and we don't crash anymore)
+		} else if (defender->IsClient()) { // so yeah, even if you don't have the skill you can still do the attack :P (and we don't crash anymore)
 			defender->CastToClient()->DoClassAttacks(this, defender->aabonuses.GiveDoubleRiposte[SBIndex::DOUBLE_RIPOSTE_SKILL], true);
+		}
 	}
 }
 
@@ -4986,20 +4988,21 @@ void Mob::ApplyMeleeDamageMods(uint16 skill, int &damage, Mob *defender, ExtraAt
 
 	dmgbonusmod += GetMeleeDamageMod_SE(skill);
 	dmgbonusmod += GetMeleeDmgPositionMod(defender);
-	if (opts)
+	if (opts) {
 		dmgbonusmod += opts->melee_damage_bonus_flat;
+	}
 
+	// Innate Warrior Mitigation, implemented 2004
 	if (defender) {
 		if (defender->IsClient() && defender->GetClass() == WARRIOR) {
 			dmgbonusmod -= 5;
 		}
 
-		// 168 defensive
-		dmgbonusmod += (defender->spellbonuses.MeleeMitigationEffect +
-		                defender->itembonuses.MeleeMitigationEffect +
-		                defender->aabonuses.MeleeMitigationEffect);
+		if (defender->IsClient()) {
+			dmgbonusmod -= (defender->spellbonuses.MeleeMitigationEffect + itembonuses.MeleeMitigationEffect +
+							aabonuses.MeleeMitigationEffect);
+		}
 	}
-
 	damage += damage * dmgbonusmod / 100;
 }
 
@@ -5009,8 +5012,9 @@ bool Mob::HasDied() {
 
 	hp_below = (GetDelayDeath() * -1);
 
-	if ((GetHP()) <= (hp_below))
+	if ((GetHP()) <= (hp_below)) {
 		Result = true;
+	}
 
 	return Result;
 }
