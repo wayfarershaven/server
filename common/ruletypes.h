@@ -576,6 +576,7 @@ RULE_REAL(Combat, SlayDamageAdjustment, 1.0, "Slay Damage Adjustment")
 RULE_CATEGORY_END()
 
 RULE_CATEGORY(NPC)
+RULE_BOOL(NPC, PetZoneWithOwner, false, "Should Pets Zone with Owner")
 RULE_INT(NPC, MinorNPCCorpseDecayTimeMS, 450000, "NPC corpse decay time, if NPC below level 55 (milliseconds)")
 RULE_INT(NPC, MajorNPCCorpseDecayTimeMS, 1500000, "NPC corpse decay time, if NPC equal or greater than level 55 (milliseconds)")
 RULE_INT(NPC, CorpseUnlockTimer, 150000, "Time after which corpses are unlocked for everyone to loot (milliseconds)")
