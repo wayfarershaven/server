@@ -1661,7 +1661,6 @@ void Client::OPGMTrainSkill(const EQApplicationPacket *app)
 			case EQ::skills::SkillBrewing:
 			case EQ::skills::SkillMakePoison:
 			case EQ::skills::SkillTinkering:
-			case EQ::skills::SkillResearch:
 			case EQ::skills::SkillAlchemy:
 			case EQ::skills::SkillBaking:
 			case EQ::skills::SkillTailoring:
@@ -1675,6 +1674,13 @@ void Client::OPGMTrainSkill(const EQApplicationPacket *app)
 					return;
 				}
 				break;
+            case EQ::skills::SkillResearch:
+                if(skilllevel >= RuleI(Skills, MaxTrainResearch)) {
+                    MessageString(Chat::Red, MORE_SKILLED_THAN_I, pTrainer->GetCleanName());
+                    SetSkill(skill, skilllevel);
+                    return;
+                }
+                break;
 			case EQ::skills::SkillSpecializeAbjure:
 			case EQ::skills::SkillSpecializeAlteration:
 			case EQ::skills::SkillSpecializeConjuration:
