@@ -3636,6 +3636,7 @@ struct TempMerchantList {
 	uint32	slot;
 	uint32	item;
 	uint32	charges; //charges/quantity
+	uint32 itemcharges;
 	uint32	origslot;
 };
 
