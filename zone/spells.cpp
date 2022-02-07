@@ -1063,9 +1063,11 @@ bool Client::CheckFizzle(uint16 spell_id)
 	int spellDifficulty = (minLvl * 5 < 255) ? minLvl * 5 : 255;
 
 	// CALCULATE EFFECTIVE CASTING SKILL WITH BONUSES
-	int bonusCastingLevel = itembonuses.effective_casting_level + spellbonuses.effective_casting_level + aabonuses.effective_casting_level;
+	int bonusCastingLevel = itembonuses.adjusted_casting_skill + spellbonuses.adjusted_casting_skill + aabonuses.adjusted_casting_skill;
 	int casterSkill = GetSkill(spells[spell_id].skill) + bonusCastingLevel * 5;
 	casterSkill = (casterSkill < 255) ? casterSkill : 255;
+
+	Log(Logs::Detail, Logs::Spells, "Caster Skill - itembonus.ACS(112) [%d] + spellbonus.ACS(112) [%d] + aabonus.ACS(112) [%d] = TotalBonusCastingLevel [%d] | casterSkill [%d] (Max 255)", itembonuses.adjusted_casting_skill, spellbonuses.adjusted_casting_skill, aabonuses.adjusted_casting_skill, bonusCastingLevel, casterSkill);
 
 	// CALCULATE EFFECTIVE SPECIALIZATION SKILL VALUE
 	float specializeSkill = GetSpecializeSkillValue(spell_id);
@@ -6090,7 +6092,7 @@ int Mob::GetCasterLevel(uint16 spell_id) {
 	if (GetClass() == BARD) {
 		level += itembonuses.effective_casting_level + aabonuses.effective_casting_level;
 	}
-	LogSpells("Determined effective casting level [{}]+[{}]+[{}]=[{}]", GetLevel(), spellbonuses.effective_casting_level, itembonuses.effective_casting_level, level);
+	Log(Logs::Detail, Logs::Spells, "Determined effective casting level(72) %d+%d+%d=%d", GetLevel(), spellbonuses.effective_casting_level, itembonuses.effective_casting_level, level);
 	return std::max(1, level);
 }
 
