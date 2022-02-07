@@ -622,9 +622,11 @@ void Mob::SetInvisible(uint8 state /* = 0*/, uint8 type /*= 0*/)
 		SendAppearancePacket(AT_Invis, invisible);
 	}
 
-	// All types of invis and hide depops summoned pets and breaks charms
-	if(state != 0) {
-		CastToMob()->RemovePet();
+	// Invis and hide breaks charms
+	auto pet = GetPet();
+	if (pet && pet->GetPetType() == petCharmed && (invisible || hidden || improved_hidden || invisible_animals || invisible_undead)) {
+		pet->BuffFadeByEffect(SE_Charm);
+		LogRules("Pets:LivelikeBreakCharmOnInvis for [{}] | Invis [{}] - Hidden [{}] - Shroud of Stealth [{}] - IVA [{}] - IVU [{}]", GetCleanName(), invisible, hidden, improved_hidden, invisible_animals, invisible_undead);
 	}
 }
 
