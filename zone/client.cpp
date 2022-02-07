@@ -3447,7 +3447,11 @@ uint8 Client::SlotConvert2(uint8 slot){
 void Client::Escape()
 {
 	entity_list.RemoveFromTargets(this, true);
-	SetInvisible(1, 3);
+	if (spellbonuses.ShroudofStealth || aabonuses.ShroudofStealth || itembonuses.ShroudofStealth) {
+		SetInvisible(1, 4);
+	} else {
+		SetInvisible(1, 3);
+	}
 
 	MessageString(Chat::Skills, ESCAPE);
 }
