@@ -2349,8 +2349,7 @@ void NPC::Damage(Mob* other, int32 damage, uint16 spell_id, EQ::skills::SkillTyp
 	}
 }
 
-bool NPC::Death(Mob* killer_mob, int32 damage, uint16 spell, EQ::skills::SkillType attack_skill)
-{
+bool NPC::Death(Mob* killer_mob, int32 damage, uint16 spell, EQ::skills::SkillType attack_skill) {
 	bool charmedNoXp = false;	// using if charmed pet dies, shouldn't give player experience.
 	if (HasOwner()) {
 		Mob *clientOwner = GetOwnerOrSelf();
@@ -2472,7 +2471,9 @@ bool NPC::Death(Mob* killer_mob, int32 damage, uint16 spell, EQ::skills::SkillTy
 		bool ownerInGroup = false;
 		if ((give_exp->HasGroup() && give_exp->GetGroup()->IsGroupMember(give_exp->GetUltimateOwner()))
 			|| (give_exp->IsPet() && (give_exp->GetOwner()->IsClient()
-				|| (give_exp->GetOwner()->HasGroup() && give_exp->GetOwner()->GetGroup()->IsGroupMember(give_exp->GetOwner()->GetUltimateOwner())))))
+                                      || (give_exp->GetOwner()->HasGroup() &&
+                                          give_exp->GetOwner()->GetGroup()->IsGroupMember(
+                                                  give_exp->GetOwner()->GetUltimateOwner())))))
 			ownerInGroup = true;
 
 		give_exp = give_exp->GetUltimateOwner();
@@ -2511,8 +2512,7 @@ bool NPC::Death(Mob* killer_mob, int32 damage, uint16 spell, EQ::skills::SkillTy
 		Group *kg = entity_list.GetGroupByClient(give_exp_client);
 		Raid *kr = entity_list.GetRaidByClient(give_exp_client);
 
-		int32 finalxp = give_exp_client->GetExperienceForKill(this);
-		finalxp = give_exp_client->mod_client_xp(finalxp, this);
+		uint32 finalxp = GetBaseEXP();
 
 		// handle task credit on behalf of the killer
 		if (RuleB(TaskSystem, EnableTaskSystem)) {
@@ -2526,19 +2526,22 @@ bool NPC::Death(Mob* killer_mob, int32 damage, uint16 spell, EQ::skills::SkillTy
 
 		if (kr) {
 			if (!IsLdonTreasure && MerchantType == 0) {
-				kr->SplitExp((finalxp), this);
-				if (killer_mob && (kr->IsRaidMember(killer_mob->GetName()) || kr->IsRaidMember(killer_mob->GetUltimateOwner()->GetName())))
+                kr->SplitExp(finalxp, this);
+                if (killer_mob && (kr->IsRaidMember(killer_mob->GetName()) ||
+                                   kr->IsRaidMember(killer_mob->GetUltimateOwner()->GetName())))
 					killer_mob->TrySpellOnKill(killed_level, spell);
 			}
 
 			/* Send the EVENT_KILLED_MERIT event for all raid members */
 			for (int i = 0; i < MAX_RAID_MEMBERS; i++) {
-				if (kr->members[i].member != nullptr && kr->members[i].member->IsClient()) { // If Group Member is Client
+                if (kr->members[i].member != nullptr &&
+                    kr->members[i].member->IsClient()) { // If Group Member is Client
 					Client *c = kr->members[i].member;
 					parse->EventNPC(EVENT_KILLED_MERIT, this, c, "killed", 0);
 
 					if (RuleB(NPC, EnableMeritBasedFaction))
-						c->SetFactionLevel(c->CharacterID(), GetNPCFactionID(), c->GetBaseClass(), c->GetBaseRace(), c->GetDeity());
+                        c->SetFactionLevel(c->CharacterID(), GetNPCFactionID(), c->GetBaseClass(), c->GetBaseRace(),
+                                           c->GetDeity());
 
 					mod_npc_killed_merit(kr->members[i].member);
 
@@ -2559,7 +2562,8 @@ bool NPC::Death(Mob* killer_mob, int32 damage, uint16 spell, EQ::skills::SkillTy
 				QS->s1.Type = 2; // Raid Fight
 				QS->s1.InstanceID = zone->GetInstanceID();
 				for (int i = 0; i < MAX_RAID_MEMBERS; i++) {
-					if (kr->members[i].member != nullptr && kr->members[i].member->IsClient()) { // If Group Member is Client
+                    if (kr->members[i].member != nullptr &&
+                        kr->members[i].member->IsClient()) { // If Group Member is Client
 						Client *c = kr->members[i].member;
 						QS->Chars[PlayerCount].char_id = c->CharacterID();
 						PlayerCount++;
@@ -2573,8 +2577,9 @@ bool NPC::Death(Mob* killer_mob, int32 damage, uint16 spell, EQ::skills::SkillTy
 		}
 		else if (give_exp_client->IsGrouped() && kg != nullptr) {
 			if (!IsLdonTreasure && MerchantType == 0) {
-				kg->SplitExp((finalxp), this);
-				if (killer_mob && (kg->IsGroupMember(killer_mob->GetName()) || kg->IsGroupMember(killer_mob->GetUltimateOwner()->GetName())))
+                kg->SplitExp(finalxp, this);
+                if (killer_mob && (kg->IsGroupMember(killer_mob->GetName()) ||
+                                   kg->IsGroupMember(killer_mob->GetUltimateOwner()->GetName())))
 					killer_mob->TrySpellOnKill(killed_level, spell);
 			}
 
@@ -2586,7 +2591,8 @@ bool NPC::Death(Mob* killer_mob, int32 damage, uint16 spell, EQ::skills::SkillTy
 					parse->EventNPC(EVENT_KILLED_MERIT, this, c, "killed", 0);
 
 					if (RuleB(NPC, EnableMeritBasedFaction))
-						c->SetFactionLevel(c->CharacterID(), GetNPCFactionID(), c->GetBaseClass(), c->GetBaseRace(), c->GetDeity());
+                        c->SetFactionLevel(c->CharacterID(), GetNPCFactionID(), c->GetBaseClass(), c->GetBaseRace(),
+                                           c->GetDeity());
 
 					mod_npc_killed_merit(c);
 
@@ -2619,13 +2625,12 @@ bool NPC::Death(Mob* killer_mob, int32 damage, uint16 spell, EQ::skills::SkillTy
 		}
 		else {
 			if (!IsLdonTreasure && MerchantType == 0) {
-				int conlevel = give_exp->GetLevelCon(GetLevel());
+                int conlevel = give_exp_client->GetLevelCon(GetLevel());
 				if (conlevel != CON_GRAY) {
-					if (!GetOwner() || (GetOwner() && !GetOwner()->IsClient())) {
-						give_exp_client->AddEXP((finalxp), conlevel, false, GetLevel());
-						if (killer_mob && (killer_mob->GetID() == give_exp_client->GetID() || killer_mob->GetUltimateOwner()->GetID() == give_exp_client->GetID()))
+                    give_exp_client->AddEXP(finalxp, conlevel, false, GetLevel());
+                    if (killer_mob && (killer_mob->GetID() == give_exp_client->GetID() ||
+                                       killer_mob->GetUltimateOwner()->GetID() == give_exp_client->GetID()))
 							killer_mob->TrySpellOnKill(killed_level, spell);
-					}
 				}
 			}
 
@@ -2633,7 +2638,8 @@ bool NPC::Death(Mob* killer_mob, int32 damage, uint16 spell, EQ::skills::SkillTy
 			parse->EventNPC(EVENT_KILLED_MERIT, this, give_exp_client, "killed", 0);
 
 			if (RuleB(NPC, EnableMeritBasedFaction))
-				give_exp_client->SetFactionLevel(give_exp_client->CharacterID(), GetNPCFactionID(), give_exp_client->GetBaseClass(),
+                give_exp_client->SetFactionLevel(give_exp_client->CharacterID(), GetNPCFactionID(),
+                                                 give_exp_client->GetBaseClass(),
 					give_exp_client->GetBaseRace(), give_exp_client->GetDeity());
 
 			mod_npc_killed_merit(give_exp_client);
@@ -2662,9 +2668,10 @@ bool NPC::Death(Mob* killer_mob, int32 damage, uint16 spell, EQ::skills::SkillTy
 
 	if (!HasOwner() && !IsMerc() && !GetSwarmInfo() && (!is_merchant || allow_merchant_corpse) &&
 		((killer && (killer->IsClient() || (killer->HasOwner() && killer->GetUltimateOwner()->IsClient()) ||
-		(killer->IsNPC() && killer->CastToNPC()->GetSwarmInfo() && killer->CastToNPC()->GetSwarmInfo()->GetOwner() && killer->CastToNPC()->GetSwarmInfo()->GetOwner()->IsClient())))
-		|| (killer_mob && IsLdonTreasure)))
-	{
+                     (killer->IsNPC() && killer->CastToNPC()->GetSwarmInfo() &&
+                      killer->CastToNPC()->GetSwarmInfo()->GetOwner() &&
+                      killer->CastToNPC()->GetSwarmInfo()->GetOwner()->IsClient())))
+         || (killer_mob && IsLdonTreasure))) {
 		if (killer != 0) {
 			if (killer->GetOwner() != 0 && killer->GetOwner()->IsClient())
 				killer = killer->GetOwner();
@@ -2677,6 +2684,7 @@ bool NPC::Death(Mob* killer_mob, int32 damage, uint16 spell, EQ::skills::SkillTy
 		auto corpse = new Corpse(this, &itemlist, GetNPCTypeID(), &NPCTypedata,
 			level > 54 ? RuleI(NPC, MajorNPCCorpseDecayTimeMS)
 			: RuleI(NPC, MinorNPCCorpseDecayTimeMS));
+	if (corpse) {	
 		entity_list.LimitRemoveNPC(this);
 		entity_list.AddCorpse(corpse, GetID());
 
@@ -2689,8 +2697,9 @@ bool NPC::Death(Mob* killer_mob, int32 damage, uint16 spell, EQ::skills::SkillTy
 		this->SetID(0);
 		ApplyIllusionToCorpse(illusion_spell_id, corpse);
 		
-		if (killer != 0 && emoteid != 0)
+		if (killer != 0 && emoteid != 0) {
 			corpse->CastToNPC()->DoNPCEmote(AFTERDEATH, emoteid);
+		}
 		if (killer != 0 && killer->IsClient()) {
 			corpse->AllowPlayerLoot(killer, 0);
 			if (killer->IsGrouped()) {
@@ -2703,7 +2712,7 @@ bool NPC::Death(Mob* killer_mob, int32 damage, uint16 spell, EQ::skills::SkillTy
 					}
 				}
 			}
-			else if (killer->IsRaidGrouped()) {
+        } else if (killer->IsRaidGrouped()) {
 				Raid* r = entity_list.GetRaidByClient(killer->CastToClient());
 				if (r) {
 					int i = 0;
@@ -2720,8 +2729,7 @@ bool NPC::Death(Mob* killer_mob, int32 damage, uint16 spell, EQ::skills::SkillTy
 							if (r->members[x].member && r->members[x].IsRaidLeader) {
 								corpse->AllowPlayerLoot(r->members[x].member, i);
 								i++;
-							}
-							else if (r->members[x].member && r->members[x].IsGroupLeader) {
+							} else if (r->members[x].member && r->members[x].IsGroupLeader) {
 								corpse->AllowPlayerLoot(r->members[x].member, i);
 								i++;
 							}
@@ -3865,6 +3873,10 @@ void Mob::CommonDamage(Mob* attacker, int &damage, const uint16 spell_id, const 
 		}
 
 		//final damage has been determined.
+
+		if(attacker->IsClient()) {
+            player_damage += damage;
+        }
 
 		SetHP(GetHP() - damage);
 

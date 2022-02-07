@@ -129,6 +129,7 @@ namespace Logs {
 		HTTP,
 		Saylink,
 		NATS,
+		Group,
 		MaxCategoryID /* Don't Remove this */
 	};
 
@@ -216,6 +217,7 @@ namespace Logs {
 		"HTTP",
 		"Saylink",
 		"NATS",
+		"Group",
 	};
 }
 

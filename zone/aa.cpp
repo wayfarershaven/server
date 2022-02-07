@@ -990,14 +990,14 @@ void Client::SendAlternateAdvancementRank(int aa_id, int level) {
 }
 
 void Client::SendAlternateAdvancementStats() {
-	auto outapp = new EQApplicationPacket(OP_AAExpUpdate, sizeof(AltAdvStats_Struct));
-	AltAdvStats_Struct *aps = (AltAdvStats_Struct *)outapp->pBuffer;
-	aps->experience = (uint32)(((float)330.0f * (float)m_pp.expAA) / (float)GetRequiredAAExperience());
-	aps->unspent = m_pp.aapoints;
-	aps->percentage = m_epp.perAA;
-	QueuePacket(outapp);
-	safe_delete(outapp);
-	nats.OnAlternateAdvancementStats(GetID(), aps);
+    auto outapp = new EQApplicationPacket(OP_AAExpUpdate, sizeof(AltAdvStats_Struct));
+    AltAdvStats_Struct *aps = (AltAdvStats_Struct *)outapp->pBuffer;
+    aps->experience = (uint32)(((float)330.0f * (float)m_pp.expAA) / (float)max_AAXP);
+    aps->unspent = m_pp.aapoints;
+    aps->percentage = m_epp.perAA;
+    QueuePacket(outapp);
+    safe_delete(outapp);
+    nats.OnAlternateAdvancementStats(GetID(), aps);
 }
 
 void Client::SendAlternateAdvancementPoints() {

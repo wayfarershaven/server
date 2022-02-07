@@ -570,6 +570,7 @@ SET(gm_commands
     gm_commands/wp.cpp
     gm_commands/wpadd.cpp
     gm_commands/wpinfo.cpp
+    gm_commands/xpinfo.cpp
     gm_commands/xtargets.cpp
     gm_commands/zclip.cpp
     gm_commands/zcolor.cpp

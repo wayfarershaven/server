@@ -759,6 +759,10 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 					break;
 				}
 
+				if(IsDireCharmSpell(spell_id)) {
+                    dire_charmed = true;
+                }
+
 				if (IsNPC()) {
 					CastToNPC()->SaveGuardSpotCharm();
 				}
@@ -4247,6 +4251,7 @@ void Mob::BuffFadeBySlot(int slot, bool iRecalcBonuses)
 
 			case SE_Charm:
 			{
+				dire_charmed = false;
 				if(IsNPC())
 				{
 					CastToNPC()->RestoreGuardSpotCharm();

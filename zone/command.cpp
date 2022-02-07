@@ -408,6 +408,7 @@ int command_init(void)
 		command_add("wpadd", "[pause] [-h] - Add your current location as a waypoint to your NPC target's AI path. (-h to use current heading)", AccountStatus::GMAreas, command_wpadd) ||
 		command_add("wpinfo", "- Show waypoint info about your NPC target", AccountStatus::GMAreas, command_wpinfo) ||
 		command_add("worldwide", "Performs world-wide GM functions such as cast (can be extended for other commands). Use caution", AccountStatus::GMImpossible, command_worldwide) ||
+		command_add("xpinfo", "- Show XP info about your current target", 250, command_xpinfo) ||
 		command_add("xtargets",  "Show your targets Extended Targets and optionally set how many xtargets they can have.", AccountStatus::GMImpossible, command_xtargets) ||
 		command_add("zclip", "[Minimum Clip] [Maximum Clip] [Fog Minimum Clip] [Fog Maximum Clip] [Permanent (0 = False, 1 = True)] - Change zone clipping", AccountStatus::QuestTroupe, command_zclip) ||
 		command_add("zcolor", "[Red] [Green] [Blue] [Permanent (0 = False, 1 = True)] - Change sky color", AccountStatus::QuestTroupe, command_zcolor) ||

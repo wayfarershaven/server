@@ -556,11 +556,7 @@ bool Mob::CheckWillAggro(Mob *mob) {
 			) &&
 			(
 				faction_value == FACTION_SCOWLS	||
-				(
-					mob->GetPrimaryFaction() != GetPrimaryFaction() &&
-					mob->GetPrimaryFaction() == -4 &&
-					!GetOwner()
-				) ||
+				(mob->GetPrimaryFaction() != GetPrimaryFaction() && mob->GetPrimaryFaction() == -4 && GetOwner() == nullptr) ||
 				(
 					faction_value == FACTION_THREATENINGLY
 					&& zone->random.Roll(THREATENINGLY_AGGRO_CHANCE - heroic_cha_mod)
