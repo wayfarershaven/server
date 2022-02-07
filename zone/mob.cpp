@@ -605,11 +605,15 @@ void Mob::SetInvisible(uint8 state /* = 0*/, uint8 type /*= 0*/)
 		invisible_animals = true;
 	}
 	else if (type == 3) {
+		invisible = state;
 		hidden = true;
+		SendAppearancePacket(AT_Invis, invisible);
 	}
 	else if (type == 4) {
+		invisible = state;
 		improved_hidden = true;
 		hidden = true;
+		SendAppearancePacket(AT_Invis, invisible);
 	}
 
 	// All types of invis and hide depops summoned pets and breaks charms
@@ -1222,7 +1226,7 @@ void Mob::FillSpawnStruct(NewSpawn_Struct* ns, Mob* ForWho)
 	} else {
 		ns->spawn.showhelm = (helmtexture && helmtexture != 0xFF) ? 1 : 0;
 	}
-	
+
 	ns->spawn.invis		= (invisible || hidden) ? 1 : 0;	// TODO: load this before spawning players
 	ns->spawn.NPC		= IsClient() ? 0 : 1;
 	ns->spawn.IsMercenary = IsMerc() ? 1 : 0;
