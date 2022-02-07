@@ -2481,8 +2481,7 @@ const NPCType *ZoneDatabase::LoadNPCTypesData(uint32 npc_type_id, bool bulk_load
 		"npc_types.stuck_behavior, "
 		"npc_types.model, "
 		"npc_types.flymode, "
-		"npc_types.always_aggro, "
-		"npc_types.exp_mod "
+		"npc_types.always_aggro "
 		"FROM npc_types %s",
 		where_condition.c_str()
 	);
@@ -2687,7 +2686,6 @@ const NPCType *ZoneDatabase::LoadNPCTypesData(uint32 npc_type_id, bool bulk_load
 		temp_npctype_data->use_model        	= atoi(row[112]);
 		temp_npctype_data->flymode          	= atoi(row[113]);
 		temp_npctype_data->always_aggro	        = atoi(row[114]);
-		temp_npctype_data->exp_mod              = atoi(row[115]);
 
 		temp_npctype_data->skip_auto_scale = false; // hardcoded here for now
 

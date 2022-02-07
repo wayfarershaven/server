@@ -150,7 +150,6 @@ struct NPCType
 	uint16	use_model;
 	int8	flymode;
 	bool	always_aggro;
-	int     exp_mod;
 };
 
 namespace player_lootitem {
