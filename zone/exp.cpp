@@ -316,7 +316,6 @@ void Client::AddEXP(uint32 in_add_exp, uint8 conlevel, bool resexp, uint32 mob_l
 
 	// Check for Unused AA Cap.  If at or above cap, set AAs to cap, set aaexp to 0 and set aa percentage to 0.
 	// Doing this here means potentially one kill wasted worth of experience, but easiest to put it here than to rewrite this function.
-	/* Disabled Until Next Expansion due to AA Reimbursement
 	if (m_pp.aapoints >= RuleI(Character, UnusedAAPointCap)) {
 		if (aaexp > 0) {
 			Message(15, "You have reached the Unused AA Point Cap (%d).  Please spend some AA Points before continuing.  Setting AA percentage to 0.", RuleI(Character, UnusedAAPointCap));
@@ -328,7 +327,6 @@ void Client::AddEXP(uint32 in_add_exp, uint8 conlevel, bool resexp, uint32 mob_l
 			m_pp.aapoints = RuleI(Character, UnusedAAPointCap);
 		}
 	}
-	*/
 
 	if (GetLevel() <= 50 and m_epp.perAA > 0) {
 		Message(Chat::Red, "You are below the level allowed to gain AA Experience. AA Experience set to 0%");
@@ -383,7 +381,6 @@ void Client::AddQuestEXP(uint32 in_add_exp) {
 
     // Check for Unused AA Cap.  If at or above cap, set AAs to cap, set aaexp to 0 and set aa percentage to 0.
     // Doing this here means potentially one kill wasted worth of experience, but easiest to put it here than to rewrite this function.
-    /*
     if (m_pp.aapoints >= RuleI(Character, UnusedAAPointCap)) {
         if (aaexp > 0) {
             Message(15, "You have reached the Unused AA Point Cap (%d).  Please spend some AA Points before continuing.  Setting AA percentage to 0.", RuleI(Character, UnusedAAPointCap));
@@ -395,7 +392,6 @@ void Client::AddQuestEXP(uint32 in_add_exp) {
             m_pp.aapoints = RuleI(Character, UnusedAAPointCap);
         }
     }
-    */
 
     SetEXP(exp, aaexp, false);
 }
