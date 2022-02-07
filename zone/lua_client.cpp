@@ -1767,54 +1767,6 @@ void Lua_Client::FilteredMessage(Mob *sender, uint32 type, int filter, const cha
 	self->FilteredMessage(sender, type, (eqFilterType)filter, message);
 }
 
-void Lua_Client::EnableAreaHPRegen(int value)
-{
-	Lua_Safe_Call_Void();
-	self->EnableAreaHPRegen(value);
-}
-
-void Lua_Client::DisableAreaHPRegen()
-{
-	Lua_Safe_Call_Void();
-	self->DisableAreaHPRegen();
-}
-
-void Lua_Client::EnableAreaManaRegen(int value)
-{
-	Lua_Safe_Call_Void();
-	self->EnableAreaManaRegen(value);
-}
-
-void Lua_Client::DisableAreaManaRegen()
-{
-	Lua_Safe_Call_Void();
-	self->DisableAreaManaRegen();
-}
-
-void Lua_Client::EnableAreaEndRegen(int value)
-{
-	Lua_Safe_Call_Void();
-	self->EnableAreaEndRegen(value);
-}
-
-void Lua_Client::DisableAreaEndRegen()
-{
-	Lua_Safe_Call_Void();
-	self->DisableAreaEndRegen();
-}
-
-void Lua_Client::EnableAreaRegens(int value)
-{
-	Lua_Safe_Call_Void();
-	self->EnableAreaRegens(value);
-}
-
-void Lua_Client::DisableAreaRegens()
-{
-	Lua_Safe_Call_Void();
-	self->DisableAreaRegens();
-}
-
 void Lua_Client::SetPrimaryWeaponOrnamentation(uint32 model_id) {
 	Lua_Safe_Call_Void();
 	self->SetPrimaryWeaponOrnamentation(model_id);
@@ -2386,19 +2338,11 @@ luabind::scope lua_register_client() {
 	.def("DeleteItemInInventory", (void(Lua_Client::*)(int,int,bool))&Lua_Client::DeleteItemInInventory)
 	.def("DiaWind", (void(Lua_Client::*)(std::string))&Lua_Client::DialogueWindow)
 	.def("DialogueWindow", (void(Lua_Client::*)(std::string))&Lua_Client::DialogueWindow)
-	.def("DisableAreaEndRegen", &Lua_Client::DisableAreaEndRegen)
-	.def("DisableAreaHPRegen", &Lua_Client::DisableAreaHPRegen)
-	.def("DisableAreaManaRegen", &Lua_Client::DisableAreaManaRegen)
-	.def("DisableAreaRegens", &Lua_Client::DisableAreaRegens)
 	.def("Disconnect", (void(Lua_Client::*)(void))&Lua_Client::Disconnect)
 	.def("DropItem", (void(Lua_Client::*)(int))&Lua_Client::DropItem)
 	.def("Duck", (void(Lua_Client::*)(void))&Lua_Client::Duck)
 	.def("DyeArmorBySlot", (void(Lua_Client::*)(uint8,uint8,uint8,uint8))&Lua_Client::DyeArmorBySlot)
 	.def("DyeArmorBySlot", (void(Lua_Client::*)(uint8,uint8,uint8,uint8,uint8))&Lua_Client::DyeArmorBySlot)
-	.def("EnableAreaEndRegen", &Lua_Client::EnableAreaEndRegen)
-	.def("EnableAreaHPRegen", &Lua_Client::EnableAreaHPRegen)
-	.def("EnableAreaManaRegen", &Lua_Client::EnableAreaManaRegen)
-	.def("EnableAreaRegens", &Lua_Client::EnableAreaRegens)
 	.def("Escape", (void(Lua_Client::*)(void))&Lua_Client::Escape)
 	.def("FailTask", (void(Lua_Client::*)(int))&Lua_Client::FailTask)
 	.def("FilteredMessage", &Lua_Client::FilteredMessage)
