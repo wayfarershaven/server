@@ -1251,10 +1251,6 @@ void Client::ActivateAlternateAdvancementAbility(int rank_id, int target_id) {
 	if (!IsValidSpell(rank->spell)) {
 		return;
 	}
-	//do not allow AA to cast if your actively casting another AA.
-	if (rank->spell == casting_spell_id && rank->id == casting_spell_aa_id) {
-		return;
-	}
 
 	if(!CanUseAlternateAdvancementRank(rank)) {
 		return;
@@ -1297,6 +1293,12 @@ void Client::ActivateAlternateAdvancementAbility(int rank_id, int target_id) {
 		return;
 	}
 
+	//calculate cooldown
+	int cooldown = rank->recast_time - GetAlternateAdvancementCooldownReduction(rank);
+	if (cooldown < 0) {
+		cooldown = 0;
+	}
+
 	if (!IsCastWhileInvis(rank->spell)) {
 		CommonBreakInvisible();
 	}
@@ -1332,32 +1334,18 @@ void Client::ActivateAlternateAdvancementAbility(int rank_id, int target_id) {
 				return;
 			}
 
-			SpellFinished(rank->spell, entity_list.GetMob(target_id), EQ::spells::CastingSlot::AltAbility, spells[rank->spell].mana, -1, spells[rank->spell].resist_difficulty, false, -1, false, rank->id);
+			if (!SpellFinished(rank->spell, entity_list.GetMob(target_id), EQ::spells::CastingSlot::AltAbility, spells[rank->spell].mana, -1, spells[rank->spell].resist_difficulty, false)) {
+				return;
+			}
+			ExpendAlternateAdvancementCharge(ability->id);
 		} else { // Known issue: If you attempt to give a Bard an AA with a cast time, the cast timer will not display on the client (no live bard AA have cast time).
-			CastSpell(rank->spell, target_id, EQ::spells::CastingSlot::AltAbility, -1, -1, 0, -1, 0xFFFFFFFF, 0, nullptr, rank->id);
+			if (!CastSpell(rank->spell, target_id, EQ::spells::CastingSlot::AltAbility, -1, -1, 0, -1, rank->spell_type + pTimerAAStart, cooldown, nullptr, rank->id)) {
+				return;
+			}
 		}
 	}
-}
-
-void Client::SetAARecastTimer(AA::Rank *rank_in, int32 spell_id) {
-
-	if (!rank_in) {
-		return;
-	}
-
-	int timer_duration = rank_in->recast_time;
-
-	if (timer_duration) {
-		timer_duration = rank_in->recast_time - GetAlternateAdvancementCooldownReduction(rank_in);
-	}
-
-	if (timer_duration <= 0) {
-		return;
-	}
-
-	CastToClient()->GetPTimers().Start(rank_in->spell_type + pTimerAAStart, timer_duration);
-	CastToClient()->SendAlternateAdvancementTimer(rank_in->spell_type, 0, 0);
-	LogSpells("Spell [{}]: Setting AA reuse timer [{}] to [{}]", spell_id, rank_in->spell_type + pTimerAAStart, timer_duration);
+	CastToClient()->GetPTimers().Start(rank->spell_type + pTimerAAStart, cooldown);
+	SendAlternateAdvancementTimer(rank->spell_type, 0, 0);
 }
 
 int Mob::GetAlternateAdvancementCooldownReduction(AA::Rank *rank_in) {
