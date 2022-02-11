@@ -844,8 +844,12 @@ bool Client::UseDiscipline(uint32 spell_id, uint32 target) {
 		if (DoCastingChecksOnCaster(spell_id)) {
 			SpellFinished(spell_id, entity_list.GetMob(target), EQ::spells::CastingSlot::Discipline);
 		}
-	} else {
-		CastSpell(spell_id, target, EQ::spells::CastingSlot::Discipline);
+	}
+	else {
+		if (!CastSpell(spell_id, target, EQ::spells::CastingSlot::Discipline)) {
+			LogSpells("Discipline [{}] failed at cast spell.", spell_id);
+			return false;
+		}
 	}
 	
 	return(true);
