@@ -228,6 +228,7 @@ bool Mob::CastSpell(uint16 spell_id, uint16 target_id, CastingSlot slot,
 	if (item_slot && IsClient() && (slot == CastingSlot::Item || slot == CastingSlot::PotionBelt))
 	{
 		if (!CheckItemRaceClassDietyRestrictionsOnCast(item_slot)) {
+			StopCastSpell(spell_id, send_spellbar_enable);
 			return false;
 		}
 	}
@@ -6826,6 +6827,7 @@ bool Mob::CheckItemRaceClassDietyRestrictionsOnCast(uint32 inventory_slot) {
 		}
 		return(false);
 	}
+	return true;
 }
 
 void Client::ResetAllCastbarCooldowns() {
