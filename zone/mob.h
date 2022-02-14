@@ -437,6 +437,7 @@ public:
 	void SendIllusionWearChange(Client* c);
 	int16 GetItemSlotToConsumeCharge(int32 spell_id, uint32 inventory_slot);
 	bool CheckItemRaceClassDietyRestrictionsOnCast(uint32 inventory_slot);
+	bool IsFromTriggeredSpell(EQ::spells::CastingSlot slot, uint32 item_slot = 0xFFFFFFFF);
 
 	//Bard 
 	bool ApplyBardPulse(int32 spell_id, Mob *spell_target, EQ::spells::CastingSlot slot);
@@ -462,6 +463,7 @@ public:
 	void BuffFadeBySitModifier();
 	void BuffDetachCaster(Mob *caster);
 	bool IsAffectedByBuff(uint16 spell_id);
+	bool IsAffectedByBuffByGlobalGroup(GlobalGroup group);
 	void BuffModifyDurationBySpellID(uint16 spell_id, int32 newDuration);
 	int AddBuff(Mob *caster, const uint16 spell_id, int duration = 0, int32 level_override = -1);
 	int CanBuffStack(uint16 spellid, uint8 caster_level, bool iFailIfOverwrite = false);

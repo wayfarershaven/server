@@ -186,7 +186,8 @@ bool Mob::CastSpell(uint16 spell_id, uint16 target_id, CastingSlot slot,
 		!DoCastingChecksOnTarget(true, spell_id, entity_list.GetMobID(target_id))) {
 		StopCastSpell(spell_id, send_spellbar_enable);
 		return false;
-	} else {
+	}
+	else {
 		casting_spell_checks = true;
 	}
 
@@ -707,11 +708,11 @@ bool Mob::DoCastingChecksOnTarget(bool check_on_casting, int32 spell_id, Mob *sp
 		- can not cast sacrifice on self (cast initiates) [cancel before begin cast message]
 		- charm restrictions (cast initiates) [cancel before begin cast message]
 		- pcnpc_only_flag - (client blocks] [cancel before being cast message]
+
 		If the spell is a casted spell, check on CastSpell and ignore on SpellFinished.
 		If the spell is a initiated from SpellFinished, then check at start of SpellFinished.
 		Always check again on SpellOnTarget to account for AE checks.
 	*/
-
 
 	bool ignore_on_casting = false;
 	bool ignore_if_npc_or_gm = false;
@@ -720,6 +721,7 @@ bool Mob::DoCastingChecksOnTarget(bool check_on_casting, int32 spell_id, Mob *sp
 	}
 
 	if (check_on_casting) {
+
 		if (!spell_target) {
 			if (IsGroupSpell(spell_id) ||
 				spells[spell_id].target_type == ST_AEClientV1 ||
@@ -731,7 +733,6 @@ bool Mob::DoCastingChecksOnTarget(bool check_on_casting, int32 spell_id, Mob *sp
 			else if (spells[spell_id].target_type == ST_Self) {
 				spell_target = this;
 			}
-			return true;
 		}
 		else {
 			if (IsGroupSpell(spell_id) && spell_target != this) {
@@ -2246,7 +2247,6 @@ bool Mob::SpellFinished(uint16 spell_id, Mob *spell_target, CastingSlot slot, ui
 						uint32 inventory_slot, int16 resist_adjust, bool isproc, int level_override,
 						uint32 timer, uint32 timer_duration, bool from_casted_spell, uint32 aa_id)
 {
-	//EQApplicationPacket *outapp = nullptr;
 	Mob *ae_center = nullptr;
 
 	if(!IsValidSpell(spell_id))
@@ -2275,7 +2275,6 @@ bool Mob::SpellFinished(uint16 spell_id, Mob *spell_target, CastingSlot slot, ui
 
 	//determine the type of spell target we have
 	CastAction_type CastAction;
-	// This method modifies spell_target, ae_center, and CastAction.
 	if (!DetermineSpellTargets(spell_id, spell_target, ae_center, CastAction, slot, isproc)) {
 		LogSpells("Spell [{}]: Determine spell targets failure.", spell_id);
 		return (false);
@@ -2385,9 +2384,6 @@ bool Mob::SpellFinished(uint16 spell_id, Mob *spell_target, CastingSlot slot, ui
 
 				else if(!SpellOnTarget(spell_id, spell_target, 0, true, resist_adjust, false, level_override)) {
 					if(IsBuffSpell(spell_id) && IsBeneficialSpell(spell_id)) {
-						// Prevent mana usage/timers being set for beneficial buffs
-						if(casting_spell_aa_id)
-							InterruptSpell();
 						return false;
 					}
 				}
@@ -2408,16 +2404,6 @@ bool Mob::SpellFinished(uint16 spell_id, Mob *spell_target, CastingSlot slot, ui
         case AECaster:
         case AETarget:
         {
-#ifdef BOTS
-			if(IsBot()) {
-				bool StopLogic = false;
-				if(!this->CastToBot()->DoFinishedSpellAETarget(spell_id, spell_target, slot, StopLogic))
-					return false;
-				if(StopLogic)
-					break;
-			}
-#endif //BOTS
-
 			// we can't cast an AE spell without something to center it on
 			assert(ae_center != nullptr);
 
@@ -2588,11 +2574,11 @@ bool Mob::SpellFinished(uint16 spell_id, Mob *spell_target, CastingSlot slot, ui
 	if (mgb) {
 		SetMGB(false);
 	}
-
 	/*
 		Set Recast Timer on spells.
 	*/
-	if(IsClient() && !isproc)
+
+	if(IsClient() && !isproc && !IsFromTriggeredSpell(slot, inventory_slot))
 	{
 		if (slot == CastingSlot::AltAbility) {
 			if (!aa_id) {
@@ -2614,12 +2600,6 @@ bool Mob::SpellFinished(uint16 spell_id, Mob *spell_target, CastingSlot slot, ui
 			LogSpells("Spell [{}]: Setting BARD custom reuse timer [{}] to [{}]", spell_id, casting_spell_timer, casting_spell_timer_duration);
 		}
 		//handles AA and Discipline recast timers
-		else if (spell_id == casting_spell_id && casting_spell_timer != 0xFFFFFFFF)
-		{
-			CastToClient()->GetPTimers().Start(casting_spell_timer, casting_spell_timer_duration);
-			LogSpells("Spell [{}]: Setting custom reuse timer [{}] to [{}]", spell_id, casting_spell_timer, casting_spell_timer_duration);
-		}
-		//Set Custom Recast Timer
 		else if (spell_id == casting_spell_id && casting_spell_timer != 0xFFFFFFFF)
 		{
 			CastToClient()->GetPTimers().Start(casting_spell_timer, casting_spell_timer_duration);
@@ -2654,7 +2634,6 @@ bool Mob::SpellFinished(uint16 spell_id, Mob *spell_target, CastingSlot slot, ui
 			}
 		}
 	}
-
 	/*
 		Set Recast Timer on item clicks, including augmenets.	
 	*/
@@ -2685,6 +2664,8 @@ bool Mob::SpellFinished(uint16 spell_id, Mob *spell_target, CastingSlot slot, ui
 			}
 		}
 	}
+
+	return true;
 }
 
 bool Mob::ApplyBardPulse(int32 spell_id, Mob *spell_target, CastingSlot slot) {
@@ -3988,12 +3969,10 @@ bool Mob::SpellOnTarget(uint16 spell_id, Mob *spelltar, int reflect_effectivenes
 				if (spells[spell_id].resist_type == RESIST_PHYSICAL){
 					MessageString(Chat::SpellFailure, PHYSICAL_RESIST_FAIL,spells[spell_id].name);
 					spelltar->MessageString(Chat::SpellFailure, YOU_RESIST, spells[spell_id].name);
-					resisted = 1;
 				}
 				else {
 					MessageString(Chat::SpellFailure, TARGET_RESISTED, spells[spell_id].name);
 					spelltar->MessageString(Chat::SpellFailure, YOU_RESIST, spells[spell_id].name);
-					resisted = 1;
 				}
 
 				if (spelltar->IsAIControlled()) {
@@ -4111,12 +4090,10 @@ bool Mob::SpellOnTarget(uint16 spell_id, Mob *spelltar, int reflect_effectivenes
 			}
 		}
 		else if (RuleB(Spells, NPCSpellPush) && !spelltar->IsPermaRooted() && !spelltar->IsPseudoRooted() && spelltar->ForcedMovement == 0) {
-			if ((!resisted) && (!spelltar->IsImmuneToSpell(spell_id, this))) {
 				spelltar->m_Delta.x += action->force * g_Math.FastSin(action->hit_heading);
 				spelltar->m_Delta.y += action->force * g_Math.FastCos(action->hit_heading);
 				spelltar->m_Delta.z += action->hit_pitch;
 				spelltar->ForcedMovement = 6;
-			}
 		}
 	}
 
@@ -4174,7 +4151,8 @@ bool Mob::SpellOnTarget(uint16 spell_id, Mob *spelltar, int reflect_effectivenes
 	return true;
 }
 
-void Corpse::CastRezz(uint16 spellid, Mob* Caster) {
+void Corpse::CastRezz(uint16 spellid, Mob* Caster)
+{
 	LogSpells("Corpse::CastRezz spellid [{}], Rezzed() is [{}], rezzexp is [{}]", spellid,IsRezzed(),rez_experience);
 
 	if(IsRezzed()){
@@ -4454,6 +4432,22 @@ void Mob::BuffFadeByEffect(int effect_id, int slot_to_skip)
 bool Mob::IsAffectedByBuff(uint16 spell_id)
 {
 	return FindBuff(spell_id);
+}
+
+bool Mob::IsAffectedByBuffByGlobalGroup(GlobalGroup group)
+{
+	int buff_count = GetMaxTotalSlots();
+	for (int buff_slot = 0; buff_slot < buff_count; buff_slot++) {
+		auto current_spell_id = buffs[buff_slot].spellid;
+		if (
+			IsValidSpell(current_spell_id) &&
+			spells[current_spell_id].spell_category == static_cast<int>(group)
+		) {
+			return true;
+		}
+	}
+
+	return false;
 }
 
 void Mob::BuffDetachCaster(Mob *caster)
@@ -6632,6 +6626,39 @@ void Client::ResetCastbarCooldownBySlot(int slot) {
 	}
 }
 
+void Client::ResetAllCastbarCooldowns() {
+	for (unsigned int i = 0; i < EQ::spells::SPELL_GEM_COUNT; ++i) {
+		if(IsValidSpell(m_pp.mem_spells[i])) {
+			m_pp.spellSlotRefresh[i] = 1;
+			GetPTimers().Clear(&database, (pTimerSpellStart + m_pp.mem_spells[i]));
+			if (!IsLinkedSpellReuseTimerReady(spells[m_pp.mem_spells[i]].timer_id)) {
+				GetPTimers().Clear(&database, (pTimerLinkedSpellReuseStart + spells[m_pp.mem_spells[i]].timer_id));	
+			}
+			if (spells[m_pp.mem_spells[i]].timer_id > 0 && spells[m_pp.mem_spells[i]].timer_id < MAX_DISCIPLINE_TIMERS) {
+				SetLinkedSpellReuseTimer(spells[m_pp.mem_spells[i]].timer_id, 0);
+			}
+			SendSpellBarEnable(m_pp.mem_spells[i]);
+		}
+	}
+}
+
+void Client::ResetCastbarCooldownBySpellID(uint32 spell_id) {
+	for (unsigned int i = 0; i < EQ::spells::SPELL_GEM_COUNT; ++i) {
+		if(IsValidSpell(m_pp.mem_spells[i]) && m_pp.mem_spells[i] == spell_id) {
+			m_pp.spellSlotRefresh[i] = 1;
+			GetPTimers().Clear(&database, (pTimerSpellStart + m_pp.mem_spells[i]));
+			if (!IsLinkedSpellReuseTimerReady(spells[m_pp.mem_spells[i]].timer_id)) {
+				GetPTimers().Clear(&database, (pTimerLinkedSpellReuseStart + spells[m_pp.mem_spells[i]].timer_id));	
+			}
+			if (spells[m_pp.mem_spells[i]].timer_id > 0 && spells[m_pp.mem_spells[i]].timer_id < MAX_DISCIPLINE_TIMERS) {
+				SetLinkedSpellReuseTimer(spells[m_pp.mem_spells[i]].timer_id, 0);
+			}
+			SendSpellBarEnable(m_pp.mem_spells[i]);
+			break;
+		}
+	}
+}
+
 bool Mob::IsActiveBardSong(int32 spell_id) {
 
 	if (spell_id == bardsong) {
@@ -6791,38 +6818,14 @@ bool Mob::CheckItemRaceClassDietyRestrictionsOnCast(uint32 inventory_slot) {
 		}
 		return(false);
 	}
+
 	return true;
 }
 
-void Client::ResetAllCastbarCooldowns() {
-	for (unsigned int i = 0; i < EQ::spells::SPELL_GEM_COUNT; ++i) {
-		if(IsValidSpell(m_pp.mem_spells[i])) {
-			m_pp.spellSlotRefresh[i] = 1;
-			GetPTimers().Clear(&database, (pTimerSpellStart + m_pp.mem_spells[i]));
-			if (!IsLinkedSpellReuseTimerReady(spells[m_pp.mem_spells[i]].timer_id)) {
-				GetPTimers().Clear(&database, (pTimerLinkedSpellReuseStart + spells[m_pp.mem_spells[i]].timer_id));	
-			}
-			if (spells[m_pp.mem_spells[i]].timer_id > 0 && spells[m_pp.mem_spells[i]].timer_id < MAX_DISCIPLINE_TIMERS) {
-				SetLinkedSpellReuseTimer(spells[m_pp.mem_spells[i]].timer_id, 0);
-			}
-			SendSpellBarEnable(m_pp.mem_spells[i]);
-		}
+bool Mob::IsFromTriggeredSpell(CastingSlot slot, uint32 item_slot) {
+	//spells triggered using spells finished use item slot, but there is no item set.
+	if ((slot == CastingSlot::Item) && (item_slot == 0xFFFFFFFF)) {
+		return true;
 	}
-}
-
-void Client::ResetCastbarCooldownBySpellID(uint32 spell_id) {
-	for (unsigned int i = 0; i < EQ::spells::SPELL_GEM_COUNT; ++i) {
-		if(IsValidSpell(m_pp.mem_spells[i]) && m_pp.mem_spells[i] == spell_id) {
-			m_pp.spellSlotRefresh[i] = 1;
-			GetPTimers().Clear(&database, (pTimerSpellStart + m_pp.mem_spells[i]));
-			if (!IsLinkedSpellReuseTimerReady(spells[m_pp.mem_spells[i]].timer_id)) {
-				GetPTimers().Clear(&database, (pTimerLinkedSpellReuseStart + spells[m_pp.mem_spells[i]].timer_id));	
-			}
-			if (spells[m_pp.mem_spells[i]].timer_id > 0 && spells[m_pp.mem_spells[i]].timer_id < MAX_DISCIPLINE_TIMERS) {
-				SetLinkedSpellReuseTimer(spells[m_pp.mem_spells[i]].timer_id, 0);
-			}
-			SendSpellBarEnable(m_pp.mem_spells[i]);
-			break;
-		}
-	}
+	return false;
 }
