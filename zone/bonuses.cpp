@@ -1473,7 +1473,7 @@ void Mob::ApplyAABonuses(const AA::Rank &rank, StatBonuses *newbon)
 			}
 			if (base_value <= EQ::skills::HIGHEST_SKILL) {
 				newbon->LimitToSkill[base_value] = true;
-				newbon->LimitToSkill[EQ::skills::HIGHEST_SKILL + 3] = true; //Used as a general exists check
+				newbon->LimitToSkill[EQ::skills::HIGHEST_SKILL + 2] = true; //Used as a general exists check
 			}
 			break;
 		}
@@ -3571,7 +3571,7 @@ void Mob::ApplySpellsBonuses(uint16 spell_id, uint8 casterlevel, StatBonuses *ne
 				}
 				if (effect_value <= EQ::skills::HIGHEST_SKILL){
 					new_bonus->LimitToSkill[effect_value] = true;
-					new_bonus->LimitToSkill[EQ::skills::HIGHEST_SKILL + 3] = true; //Used as a general exists check
+					new_bonus->LimitToSkill[EQ::skills::HIGHEST_SKILL + 2] = true; //Used as a general exists check
 				}
 				break;
 			}
@@ -3580,11 +3580,11 @@ void Mob::ApplySpellsBonuses(uint16 spell_id, uint8 casterlevel, StatBonuses *ne
 
 				for(int e = 0; e < MAX_SKILL_PROCS; e++)
 				{
-					if(new_bonus->SkillProc[e] && new_bonus->SkillProc[e] == spell_id)
+					if(new_bonus->SkillProc[e] && new_bonus->SkillProc[e] == spell_id) {
 						break; //Do not use the same spell id more than once.
-
-					else if(!new_bonus->SkillProc[e]){
+					} else if(!new_bonus->SkillProc[e]) {
 						new_bonus->SkillProc[e] = spell_id;
+						HasSkillProcs();//This returns it correctly as debug
 						break;
 					}
 				}

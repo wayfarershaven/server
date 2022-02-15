@@ -4292,7 +4292,7 @@ void Mob::TriggerDefensiveProcs(Mob *on, uint16 hand, bool FromSkillProc, int da
 
 		TryCastOnSkillUse(on, skillinuse);
 
-		if (on->HasSkillProcs()) {
+		if (on && on->HasSkillProcs()) {
 			on->TrySkillProc(this, skillinuse, 0, false, hand, true);
 		}
 

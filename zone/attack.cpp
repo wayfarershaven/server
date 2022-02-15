@@ -5434,10 +5434,11 @@ void Mob::TrySkillProc(Mob *on, EQ::skills::SkillType skill, uint16 ReuseTime, b
 	float ProcMod = 0;
 	float chance = 0;
 
-	if (IsDefensive)
+	if (IsDefensive) {
 		chance = on->GetSkillProcChances(ReuseTime, hand);
-	else
+	} else {
 		chance = GetSkillProcChances(ReuseTime, hand);
+	}
 
 	if (spellbonuses.LimitToSkill[skill]) {
 
