@@ -6684,7 +6684,6 @@ void Mob::DoBardCastingFromItemClick(bool is_casting_bard_song, uint32 cast_time
 			CastToClient()->QueuePacket(outapp);
 			safe_delete(outapp);
 
-			SendSpellBarDisable();
 			ZeroCastingVars();
 			ZeroBardPulseVars();
 		}
