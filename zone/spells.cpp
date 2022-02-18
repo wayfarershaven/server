@@ -1493,28 +1493,12 @@ void Mob::CastedSpellFinished(uint16 spell_id, uint32 target_id, CastingSlot slo
 					bool HasInstrument = true;
 					int InstComponent = spells[spell_id].no_expend_reagent[0];
 
-					// Lyssa's Solidarity of Vision has Instrument compoents
-					if (InstComponent == -1)
-					{
-						for(int t_count = 0; t_count < 4; t_count++) {
-							int32 component = spells[spell_id].component[t_count];
-							if (component == -1)
-							{
-								continue;
-							}
-							else
-							{
-								InstComponent = component;
-								break;
-							}
-						}
-					}
 					switch (InstComponent) {
 						case -1:
 							continue;		// no instrument required, go to next component
 
 						// percussion songs (13000 = hand drum)
-						case 13000:
+						case INSTRUMENT_HAND_DRUM:
 							if(itembonuses.percussionMod == 0) {			// check for the appropriate instrument type
 								HasInstrument = false;
 								c->MessageString(Chat::Red, SONG_NEEDS_DRUM);	// send an error message if missing
@@ -1522,7 +1506,7 @@ void Mob::CastedSpellFinished(uint16 spell_id, uint32 target_id, CastingSlot slo
 							break;
 
 						// wind songs (13001 = wooden flute)
-						case 13001:
+						case INSTRUMENT_WOODEN_FLUTE:
 							if(itembonuses.windMod == 0) {
 								HasInstrument = false;
 								c->MessageString(Chat::Red, SONG_NEEDS_WIND);
@@ -1530,7 +1514,7 @@ void Mob::CastedSpellFinished(uint16 spell_id, uint32 target_id, CastingSlot slo
 							break;
 
 						// string songs (13011 = lute)
-						case 13011:
+						case INSTRUMENT_LUTE:
 							if(itembonuses.stringedMod == 0) {
 								HasInstrument = false;
 								c->MessageString(Chat::Red, SONG_NEEDS_STRINGS);
@@ -1538,7 +1522,7 @@ void Mob::CastedSpellFinished(uint16 spell_id, uint32 target_id, CastingSlot slo
 							break;
 
 						// brass songs (13012 = horn)
-						case 13012:
+						case INSTRUMENT_HORN:
 							if(itembonuses.brassMod == 0) {
 								HasInstrument = false;
 								c->MessageString(Chat::Red, SONG_NEEDS_BRASS);
@@ -1562,7 +1546,8 @@ void Mob::CastedSpellFinished(uint16 spell_id, uint32 target_id, CastingSlot slo
 
 				// handle the components for traditional casters
 				else {
-					if (!RuleB(Character, PetsUseReagents) && (IsEffectInSpell(spell_id, SE_SummonPet) || IsEffectInSpell(spell_id, SE_NecPet))) {
+					if (!RuleB(Character, PetsUseReagents) && (IsEffectInSpell(spell_id, SE_SummonPet) || IsEffectInSpell(spell_id, SE_NecPet)) ||
+						(IsBardSong(spell_id) && (slot == CastingSlot::Item|| slot == CastingSlot::PotionBelt))) {
 						//bypass reagent cost
 					}
 					else if(c->GetInv().HasItem(component, component_count, invWhereWorn|invWherePersonal) == -1) // item not found
