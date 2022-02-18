@@ -1493,12 +1493,28 @@ void Mob::CastedSpellFinished(uint16 spell_id, uint32 target_id, CastingSlot slo
 					bool HasInstrument = true;
 					int InstComponent = spells[spell_id].no_expend_reagent[0];
 
+					// Lyssa's Solidarity of Vision has Instrument compoents
+					if (InstComponent == -1)
+					{
+						for(int t_count = 0; t_count < 4; t_count++) {
+							int32 component = spells[spell_id].component[t_count];
+							if (component == -1)
+							{
+								continue;
+							}
+							else
+							{
+								InstComponent = component;
+								break;
+							}
+						}
+					}
 					switch (InstComponent) {
 						case -1:
 							continue;		// no instrument required, go to next component
 
 						// percussion songs (13000 = hand drum)
-						case INSTRUMENT_HAND_DRUM:
+						case 13000:
 							if(itembonuses.percussionMod == 0) {			// check for the appropriate instrument type
 								HasInstrument = false;
 								c->MessageString(Chat::Red, SONG_NEEDS_DRUM);	// send an error message if missing
@@ -1506,7 +1522,7 @@ void Mob::CastedSpellFinished(uint16 spell_id, uint32 target_id, CastingSlot slo
 							break;
 
 						// wind songs (13001 = wooden flute)
-						case INSTRUMENT_WOODEN_FLUTE:
+						case 13001:
 							if(itembonuses.windMod == 0) {
 								HasInstrument = false;
 								c->MessageString(Chat::Red, SONG_NEEDS_WIND);
@@ -1514,7 +1530,7 @@ void Mob::CastedSpellFinished(uint16 spell_id, uint32 target_id, CastingSlot slo
 							break;
 
 						// string songs (13011 = lute)
-						case INSTRUMENT_LUTE:
+						case 13011:
 							if(itembonuses.stringedMod == 0) {
 								HasInstrument = false;
 								c->MessageString(Chat::Red, SONG_NEEDS_STRINGS);
@@ -1522,7 +1538,7 @@ void Mob::CastedSpellFinished(uint16 spell_id, uint32 target_id, CastingSlot slo
 							break;
 
 						// brass songs (13012 = horn)
-						case INSTRUMENT_HORN:
+						case 13012:
 							if(itembonuses.brassMod == 0) {
 								HasInstrument = false;
 								c->MessageString(Chat::Red, SONG_NEEDS_BRASS);
