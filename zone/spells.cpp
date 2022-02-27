@@ -181,7 +181,7 @@ bool Mob::CastSpell(uint16 spell_id, uint16 target_id, CastingSlot slot,
 		return false;
 	}
 
-	if (!DoCastingChecksOnCaster(spell_id) ||
+	if (!DoCastingChecksOnCaster(spell_id, slot) ||
 		!DoCastingChecksZoneRestrictions(true, spell_id) ||
 		!DoCastingChecksOnTarget(true, spell_id, entity_list.GetMobID(target_id))) {
 		StopCastSpell(spell_id, send_spellbar_enable);
@@ -497,7 +497,7 @@ void Mob::SendBeginCast(uint16 spell_id, uint32 casttime)
 	safe_delete(outapp);
 }
 
-bool Mob::DoCastingChecksOnCaster(int32 spell_id) {
+bool Mob::DoCastingChecksOnCaster(int32 spell_id, CastingSlot slot) {
 	/*
 		These are casting requirements on the CASTER that will cancel a spell before spell finishes casting or prevent spell from casting.
 		- caster_requirmement_id : checks specific requirements on caster (cast initiates)
@@ -549,7 +549,7 @@ bool Mob::DoCastingChecksOnCaster(int32 spell_id) {
 	/*
 		Linked Reused Timers that are not ready
 	*/
-	if (IsClient() && spells[spell_id].timer_id > 0 && casting_spell_slot < CastingSlot::MaxGems) {
+	if (IsClient() && spells[spell_id].timer_id > 0 && slot < CastingSlot::MaxGems) {
 		if (!CastToClient()->IsLinkedSpellReuseTimerReady(spells[spell_id].timer_id)) {
 			LogSpells("Spell casting canceled [{}] : linked reuse timer not ready.", spell_id);
 			return false;
@@ -6694,7 +6694,7 @@ void Mob::DoBardCastingFromItemClick(bool is_casting_bard_song, uint32 cast_time
 		CastSpell(spell_id, target_id, CastingSlot::Item, cast_time, 0, 0, item_slot);
 	}
 	//Instant cast items do not stop bard songs or interrupt casting.
-	else if (CheckItemRaceClassDietyRestrictionsOnCast(item_slot) && DoCastingChecksOnCaster(spell_id)) {
+	else if (CheckItemRaceClassDietyRestrictionsOnCast(item_slot) && DoCastingChecksOnCaster(spell_id, CastingSlot::Item)) {
 		int16 DeleteChargeFromSlot = GetItemSlotToConsumeCharge(spell_id, item_slot);
 		if (SpellFinished(spell_id, entity_list.GetMob(target_id), CastingSlot::Item, 0, item_slot)) {
 			if (IsClient() && DeleteChargeFromSlot >= 0) {
