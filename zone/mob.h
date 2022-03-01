@@ -600,6 +600,8 @@ public:
 	virtual void SetName(const char *new_name = nullptr) { new_name ? strn0cpy(name, new_name, 64) :
 		strn0cpy(name, GetName(), 64); return; };
 	inline Mob* GetTarget() const { return target; }
+	inline bool IsTargetClient() const { return target && target->IsClient(); }
+	inline bool IsTargetNPC() const { return target && target->IsNPC(); }
 	virtual void SetTarget(Mob* mob);
 	virtual bool UseOwnersResistances(uint16 spell_id);
 	inline bool HasTargetReflection() const { return (target && target != this && target->target == this); }

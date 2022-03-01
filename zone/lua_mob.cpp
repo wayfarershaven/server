@@ -2439,6 +2439,16 @@ Lua_NPC Lua_Mob::GetHateRandomNPC() {
 	return Lua_NPC(self->GetHateRandomNPC());
 }
 
+bool Lua_Mob::IsTargetClient() {
+	Lua_Safe_Call_Bool();
+	return self->IsTargetClient();
+}
+
+bool Lua_Mob::IsTargetNPC() {
+	Lua_Safe_Call_Bool();
+	return self->IsTargetNPC();
+}
+
 luabind::scope lua_register_mob() {
 	return luabind::class_<Lua_Mob, Lua_Entity>("Mob")
 	.def(luabind::constructor<>())
@@ -2744,6 +2754,8 @@ luabind::scope lua_register_mob() {
 	.def("IsStunned", (bool(Lua_Mob::*)(void))&Lua_Mob::IsStunned)
 	.def("IsTargetable", (bool(Lua_Mob::*)(void))&Lua_Mob::IsTargetable)
 	.def("IsTargeted", &Lua_Mob::IsTargeted)
+	.def("IsTargetClient", (bool(Lua_Mob::*)(void))&Lua_Mob::IsTargetClient)
+	.def("IsTargetNPC", (bool(Lua_Mob::*)(void))&Lua_Mob::IsTargetNPC)
 	.def("IsWarriorClass", &Lua_Mob::IsWarriorClass)
 	.def("Kill", (void(Lua_Mob::*)(void))&Lua_Mob::Kill)
 	.def("Mesmerize", (void(Lua_Mob::*)(void))&Lua_Mob::Mesmerize)
