@@ -125,7 +125,9 @@ const char *QuestEventSubroutines[_LargestEventID] = {
 	"EVENT_COMBINE",
 	"EVENT_CONSIDER",
 	"EVENT_CONSIDER_CORPSE",
-	"EVENT_LOOT_ZONE"
+	"EVENT_LOOT_ZONE",
+	"EVENT_EQUIP_ITEM_CLIENT",
+	"EVENT_UNEQUIP_ITEM_CLIENT"
 };
 
 PerlembParser::PerlembParser() : perl(nullptr)
@@ -1689,6 +1691,15 @@ void PerlembParser::ExportEventVariables(
 			break;
 		}
 
+		case EVENT_EQUIP_ITEM_CLIENT:
+		case EVENT_UNEQUIP_ITEM_CLIENT: {
+			Seperator sep(data);
+			ExportVar(package_name.c_str(), "item_id", extradata);
+			ExportVar(package_name.c_str(), "item_quantity", sep.arg[0]);
+			ExportVar(package_name.c_str(), "slot_id", sep.arg[1]);
+			break;
+		}
+		
 		default: {
 			break;
 		}
