@@ -2558,12 +2558,12 @@ const NPCType *ZoneDatabase::LoadNPCTypesData(uint32 npc_type_id, bool bulk_load
 
 		// set default value for aggroradius
 		temp_npctype_data->aggroradius = (int32) atoi(row[49]);
-		if (temp_npctype_data->aggroradius <= 0) {
+		if (temp_npctype_data->aggroradius <= -1) {
 			temp_npctype_data->aggroradius = 70;
 		}
 
 		temp_npctype_data->assistradius = (int32) atoi(row[50]);
-		if (temp_npctype_data->assistradius <= 0) {
+		if (temp_npctype_data->assistradius <= -1) {
 			temp_npctype_data->assistradius = temp_npctype_data->aggroradius;
 		}
 
