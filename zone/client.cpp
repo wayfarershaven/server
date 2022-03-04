@@ -2409,7 +2409,7 @@ bool Client::CheckIncreaseSkill(EQ::skills::SkillType skillid, Mob *against_who,
 		return false;
 	if (IsAIControlled()) // no skillups while chamred =p
 		return false;
-	if (against_who->IsCorpse()) // no skillups on corpses
+	if (against_who != nullptr && against_who->IsCorpse()) // no skillups on corpses
 		return false;
 	if (skillid > EQ::skills::HIGHEST_SKILL)
 		return false;
