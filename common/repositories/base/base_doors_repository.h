@@ -32,7 +32,6 @@ public:
 		int         lockpick;
 		int         keyitem;
 		int         nokeyring;
-		int         altkeyitem;
 		int         triggerdoor;
 		int         triggertype;
 		int         disable_timer;
@@ -78,7 +77,6 @@ public:
 			"lockpick",
 			"keyitem",
 			"nokeyring",
-			"altkeyitem",
 			"triggerdoor",
 			"triggertype",
 			"disable_timer",
@@ -149,7 +147,6 @@ public:
 		entry.lockpick               = 0;
 		entry.keyitem                = 0;
 		entry.nokeyring              = 0;
-		entry.altkeyitem             = 0;
 		entry.triggerdoor            = 0;
 		entry.triggertype            = 0;
 		entry.disable_timer          = 0;
@@ -220,28 +217,27 @@ public:
 			entry.lockpick               = atoi(row[11]);
 			entry.keyitem                = atoi(row[12]);
 			entry.nokeyring              = atoi(row[13]);
-			entry.altkeyitem             = atoi(row[14]);
-			entry.triggerdoor            = atoi(row[15]);
-			entry.triggertype            = atoi(row[16]);
-			entry.disable_timer          = atoi(row[17]);
-			entry.doorisopen             = atoi(row[18]);
-			entry.door_param             = atoi(row[19]);
-			entry.dest_zone              = row[20] ? row[20] : "";
-			entry.dest_instance          = atoi(row[21]);
-			entry.dest_x                 = static_cast<float>(atof(row[22]));
-			entry.dest_y                 = static_cast<float>(atof(row[23]));
-			entry.dest_z                 = static_cast<float>(atof(row[24]));
-			entry.dest_heading           = static_cast<float>(atof(row[25]));
-			entry.invert_state           = atoi(row[26]);
-			entry.incline                = atoi(row[27]);
-			entry.size                   = atoi(row[28]);
-			entry.buffer                 = static_cast<float>(atof(row[29]));
-			entry.client_version_mask    = atoi(row[30]);
-			entry.is_ldon_door           = atoi(row[31]);
-			entry.min_expansion          = atoi(row[32]);
-			entry.max_expansion          = atoi(row[33]);
-			entry.content_flags          = row[34] ? row[34] : "";
-			entry.content_flags_disabled = row[35] ? row[35] : "";
+			entry.triggerdoor            = atoi(row[14]);
+			entry.triggertype            = atoi(row[15]);
+			entry.disable_timer          = atoi(row[16]);
+			entry.doorisopen             = atoi(row[17]);
+			entry.door_param             = atoi(row[18]);
+			entry.dest_zone              = row[19] ? row[19] : "";
+			entry.dest_instance          = atoi(row[20]);
+			entry.dest_x                 = static_cast<float>(atof(row[21]));
+			entry.dest_y                 = static_cast<float>(atof(row[22]));
+			entry.dest_z                 = static_cast<float>(atof(row[23]));
+			entry.dest_heading           = static_cast<float>(atof(row[24]));
+			entry.invert_state           = atoi(row[25]);
+			entry.incline                = atoi(row[26]);
+			entry.size                   = atoi(row[27]);
+			entry.buffer                 = static_cast<float>(atof(row[28]));
+			entry.client_version_mask    = atoi(row[29]);
+			entry.is_ldon_door           = atoi(row[30]);
+			entry.min_expansion          = atoi(row[31]);
+			entry.max_expansion          = atoi(row[32]);
+			entry.content_flags          = row[33] ? row[33] : "";
+			entry.content_flags_disabled = row[34] ? row[34] : "";
 
 			return entry;
 		}
@@ -288,28 +284,27 @@ public:
 		update_values.push_back(columns[11] + " = " + std::to_string(doors_entry.lockpick));
 		update_values.push_back(columns[12] + " = " + std::to_string(doors_entry.keyitem));
 		update_values.push_back(columns[13] + " = " + std::to_string(doors_entry.nokeyring));
-		update_values.push_back(columns[14] + " = " + std::to_string(doors_entry.altkeyitem));
-		update_values.push_back(columns[15] + " = " + std::to_string(doors_entry.triggerdoor));
-		update_values.push_back(columns[16] + " = " + std::to_string(doors_entry.triggertype));
-		update_values.push_back(columns[17] + " = " + std::to_string(doors_entry.disable_timer));
-		update_values.push_back(columns[18] + " = " + std::to_string(doors_entry.doorisopen));
-		update_values.push_back(columns[19] + " = " + std::to_string(doors_entry.door_param));
-		update_values.push_back(columns[20] + " = '" + EscapeString(doors_entry.dest_zone) + "'");
-		update_values.push_back(columns[21] + " = " + std::to_string(doors_entry.dest_instance));
-		update_values.push_back(columns[22] + " = " + std::to_string(doors_entry.dest_x));
-		update_values.push_back(columns[23] + " = " + std::to_string(doors_entry.dest_y));
-		update_values.push_back(columns[24] + " = " + std::to_string(doors_entry.dest_z));
-		update_values.push_back(columns[25] + " = " + std::to_string(doors_entry.dest_heading));
-		update_values.push_back(columns[26] + " = " + std::to_string(doors_entry.invert_state));
-		update_values.push_back(columns[27] + " = " + std::to_string(doors_entry.incline));
-		update_values.push_back(columns[28] + " = " + std::to_string(doors_entry.size));
-		update_values.push_back(columns[29] + " = " + std::to_string(doors_entry.buffer));
-		update_values.push_back(columns[30] + " = " + std::to_string(doors_entry.client_version_mask));
-		update_values.push_back(columns[31] + " = " + std::to_string(doors_entry.is_ldon_door));
-		update_values.push_back(columns[32] + " = " + std::to_string(doors_entry.min_expansion));
-		update_values.push_back(columns[33] + " = " + std::to_string(doors_entry.max_expansion));
-		update_values.push_back(columns[34] + " = '" + EscapeString(doors_entry.content_flags) + "'");
-		update_values.push_back(columns[35] + " = '" + EscapeString(doors_entry.content_flags_disabled) + "'");
+		update_values.push_back(columns[14] + " = " + std::to_string(doors_entry.triggerdoor));
+		update_values.push_back(columns[15] + " = " + std::to_string(doors_entry.triggertype));
+		update_values.push_back(columns[16] + " = " + std::to_string(doors_entry.disable_timer));
+		update_values.push_back(columns[17] + " = " + std::to_string(doors_entry.doorisopen));
+		update_values.push_back(columns[18] + " = " + std::to_string(doors_entry.door_param));
+		update_values.push_back(columns[19] + " = '" + EscapeString(doors_entry.dest_zone) + "'");
+		update_values.push_back(columns[20] + " = " + std::to_string(doors_entry.dest_instance));
+		update_values.push_back(columns[21] + " = " + std::to_string(doors_entry.dest_x));
+		update_values.push_back(columns[22] + " = " + std::to_string(doors_entry.dest_y));
+		update_values.push_back(columns[23] + " = " + std::to_string(doors_entry.dest_z));
+		update_values.push_back(columns[24] + " = " + std::to_string(doors_entry.dest_heading));
+		update_values.push_back(columns[25] + " = " + std::to_string(doors_entry.invert_state));
+		update_values.push_back(columns[26] + " = " + std::to_string(doors_entry.incline));
+		update_values.push_back(columns[27] + " = " + std::to_string(doors_entry.size));
+		update_values.push_back(columns[28] + " = " + std::to_string(doors_entry.buffer));
+		update_values.push_back(columns[29] + " = " + std::to_string(doors_entry.client_version_mask));
+		update_values.push_back(columns[30] + " = " + std::to_string(doors_entry.is_ldon_door));
+		update_values.push_back(columns[31] + " = " + std::to_string(doors_entry.min_expansion));
+		update_values.push_back(columns[32] + " = " + std::to_string(doors_entry.max_expansion));
+		update_values.push_back(columns[33] + " = '" + EscapeString(doors_entry.content_flags) + "'");
+		update_values.push_back(columns[34] + " = '" + EscapeString(doors_entry.content_flags_disabled) + "'");
 
 		auto results = db.QueryDatabase(
 			fmt::format(
@@ -345,7 +340,6 @@ public:
 		insert_values.push_back(std::to_string(doors_entry.lockpick));
 		insert_values.push_back(std::to_string(doors_entry.keyitem));
 		insert_values.push_back(std::to_string(doors_entry.nokeyring));
-		insert_values.push_back(std::to_string(doors_entry.altkeyitem));
 		insert_values.push_back(std::to_string(doors_entry.triggerdoor));
 		insert_values.push_back(std::to_string(doors_entry.triggertype));
 		insert_values.push_back(std::to_string(doors_entry.disable_timer));
@@ -410,7 +404,6 @@ public:
 			insert_values.push_back(std::to_string(doors_entry.lockpick));
 			insert_values.push_back(std::to_string(doors_entry.keyitem));
 			insert_values.push_back(std::to_string(doors_entry.nokeyring));
-			insert_values.push_back(std::to_string(doors_entry.altkeyitem));
 			insert_values.push_back(std::to_string(doors_entry.triggerdoor));
 			insert_values.push_back(std::to_string(doors_entry.triggertype));
 			insert_values.push_back(std::to_string(doors_entry.disable_timer));
@@ -479,28 +472,27 @@ public:
 			entry.lockpick               = atoi(row[11]);
 			entry.keyitem                = atoi(row[12]);
 			entry.nokeyring              = atoi(row[13]);
-			entry.altkeyitem             = atoi(row[14]);
-			entry.triggerdoor            = atoi(row[15]);
-			entry.triggertype            = atoi(row[16]);
-			entry.disable_timer          = atoi(row[17]);
-			entry.doorisopen             = atoi(row[18]);
-			entry.door_param             = atoi(row[19]);
-			entry.dest_zone              = row[20] ? row[20] : "";
-			entry.dest_instance          = atoi(row[21]);
-			entry.dest_x                 = static_cast<float>(atof(row[22]));
-			entry.dest_y                 = static_cast<float>(atof(row[23]));
-			entry.dest_z                 = static_cast<float>(atof(row[24]));
-			entry.dest_heading           = static_cast<float>(atof(row[25]));
-			entry.invert_state           = atoi(row[26]);
-			entry.incline                = atoi(row[27]);
-			entry.size                   = atoi(row[28]);
-			entry.buffer                 = static_cast<float>(atof(row[29]));
-			entry.client_version_mask    = atoi(row[30]);
-			entry.is_ldon_door           = atoi(row[31]);
-			entry.min_expansion          = atoi(row[32]);
-			entry.max_expansion          = atoi(row[33]);
-			entry.content_flags          = row[34] ? row[34] : "";
-			entry.content_flags_disabled = row[35] ? row[35] : "";
+			entry.triggerdoor            = atoi(row[14]);
+			entry.triggertype            = atoi(row[15]);
+			entry.disable_timer          = atoi(row[16]);
+			entry.doorisopen             = atoi(row[17]);
+			entry.door_param             = atoi(row[18]);
+			entry.dest_zone              = row[19] ? row[19] : "";
+			entry.dest_instance          = atoi(row[20]);
+			entry.dest_x                 = static_cast<float>(atof(row[21]));
+			entry.dest_y                 = static_cast<float>(atof(row[22]));
+			entry.dest_z                 = static_cast<float>(atof(row[23]));
+			entry.dest_heading           = static_cast<float>(atof(row[24]));
+			entry.invert_state           = atoi(row[25]);
+			entry.incline                = atoi(row[26]);
+			entry.size                   = atoi(row[27]);
+			entry.buffer                 = static_cast<float>(atof(row[28]));
+			entry.client_version_mask    = atoi(row[29]);
+			entry.is_ldon_door           = atoi(row[30]);
+			entry.min_expansion          = atoi(row[31]);
+			entry.max_expansion          = atoi(row[32]);
+			entry.content_flags          = row[33] ? row[33] : "";
+			entry.content_flags_disabled = row[34] ? row[34] : "";
 
 			all_entries.push_back(entry);
 		}
