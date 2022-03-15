@@ -5870,7 +5870,7 @@ void Client::Handle_OP_EnvDamage(const EQApplicationPacket *app)
 			Chat::Red,
 			fmt::format(
 				"Your GM status protects you from {} points of {} (Type {}) damage.",
-				ed->damage,
+				damage,
 				EQ::constants::GetEnvironmentalDamageName(ed->dmgtype),
 				ed->dmgtype
 			).c_str()
@@ -5882,7 +5882,7 @@ void Client::Handle_OP_EnvDamage(const EQApplicationPacket *app)
 			Chat::Red,
 			fmt::format(
 				"Your invulnerability protects you from {} points of {} (Type {}) damage.",
-				ed->damage,
+				damage,
 				EQ::constants::GetEnvironmentalDamageName(ed->dmgtype),
 				ed->dmgtype
 			).c_str()
