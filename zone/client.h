@@ -1549,6 +1549,11 @@ public:
 	int mod_food_value(const EQ::ItemData *item, int change);
 	int mod_drink_value(const EQ::ItemData *item, int change);
 
+	inline int32 GetEnvironmentDamageModifier() const { return environment_damage_modifier; }
+	void SetEnvironmentDamageModifier(int32 val) { environment_damage_modifier = val; }
+	inline bool GetInvulnerableEnvironmentDamage() const { return invulnerable_environment_damage; }
+	void SetInvulnerableEnvironmentDamage(bool val) { invulnerable_environment_damage = val; }
+
 	void ShowNumHits(); // work around function for numhits not showing on buffs
 
 	void ApplyWeaponsStance();
@@ -1755,6 +1760,9 @@ private:
 	bool AbilityTimer;
 	int Haste; //precalced value
 
+	int32 environment_damage_modifier;
+	bool invulnerable_environment_damage;
+	
 	// dev tools
 	bool display_mob_info_window;
 	bool dev_tools_enabled;
