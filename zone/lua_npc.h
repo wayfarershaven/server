@@ -155,6 +155,7 @@ public:
 	void DeleteQuestLoot();
 	void DeleteQuestLoot(int itemid1, int itemid2, int itemid3, int itemid4);
 	bool QuestLootCount(int itemid1, int itemid2, int itemid3, int itemid4);
+	float GetNPCStat(const char* identifier);
 };
 
 #endif
