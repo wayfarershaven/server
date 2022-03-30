@@ -97,11 +97,14 @@ bool NPC::AICastSpell(Mob* tar, uint8 iChance, uint32 iSpellTypes, bool bInnates
 			continue;
 		}
 
-		if (AIspells[i].min_hp != 0 && GetIntHPRatio() < AIspells[i].min_hp)
+		// we reuse these fields for heal overrides
+		if (AIspells[i].type != SpellType_Heal && AIspells[i].min_hp != 0 && GetIntHPRatio() < AIspells[i].min_hp) {
 			continue;
+		}
 
-		if (AIspells[i].max_hp != 0 && GetIntHPRatio() > AIspells[i].max_hp)
+		if (AIspells[i].type != SpellType_Heal && AIspells[i].max_hp != 0 && GetIntHPRatio() > AIspells[i].max_hp) {
 			continue;
+		}
 
 		if (iSpellTypes & AIspells[i].type) {
 			// manacost has special values, -1 is no mana cost, -2 is instant cast (no mana)
@@ -138,9 +141,12 @@ bool NPC::AICastSpell(Mob* tar, uint8 iChance, uint32 iSpellTypes, bool bInnates
 							&& !(tar->IsPet() && tar->GetOwner()->IsClient())	//no buffing PC's pets
 							) {
 
-                            uint8 hpr = (uint8)tar->GetHPRatio();
+                            auto hp_ratio = tar->GetIntHPRatio();
 
-							if(hpr <= 35 || (!IsEngaged() && hpr <= 50) || (tar->IsClient() && hpr <= 99)) {
+							int min_hp = AIspells[i].min_hp; // well 0 is default, so no special case here
+							int max_hp = AIspells[i].max_hp ? AIspells[i].max_hp : RuleI(Spells, AI_HealHPPct);
+
+							if (EQ::ValueWithin(hp_ratio, min_hp, max_hp) || (tar->IsClient() && hp_ratio <= 99)) { // not sure about client bit, leaving it
 								uint32 tempTime = 0;
 								AIDoSpellCast(i, tar, mana_cost, &tempTime);
 								tar->SetDontHealMeBefore(tempTime);
