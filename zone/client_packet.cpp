@@ -13145,6 +13145,7 @@ void Client::Handle_OP_ShopPlayerBuy(const EQApplicationPacket *app)
 		Message(Chat::Yellow, "You can only have one of a lore item.");
 		return;
 	}
+
 	if (item->Stackable) {
 		if (prevcharges && mp->quantity > prevcharges) {
 			mp->quantity = prevcharges;
@@ -13406,7 +13407,7 @@ void Client::Handle_OP_ShopPlayerSell(const EQApplicationPacket *app)
 
 	AddMoneyToPP(price, false);
 
-	if (inst->IsStackable() || inst->IsCharged()) {
+	if (inst->IsStackable() && !inst->IsCharged()) {
 		unsigned int i_quan = inst->GetCharges();
 		if (mp->quantity > i_quan) {
 			mp->quantity = i_quan;
