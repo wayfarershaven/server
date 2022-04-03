@@ -13643,8 +13643,8 @@ void Client::Handle_OP_Sneak(const EQApplicationPacket *app) {
 			return;
 		}
 	}
-	float hidechance = ((GetSkill(EQ::skills::SkillSneak) / 300.0f) + .25) * 100;
-	float random = zone->random.Real(0, 99);
+	int hidechance = GetSkill(EQ::skills::SkillSneak);
+	int random = zone->random.Real(0, 99);
 	// If we are underwater, we cannot start sneaking.
 	if (!is_underwater && !was && random < hidechance) {
 		sneaking = true;
