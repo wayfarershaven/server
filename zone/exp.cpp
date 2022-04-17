@@ -809,7 +809,7 @@ uint32 Client::GetEXPForLevel(uint16 check_level, bool aa)
     else if (check_level == 64)
         mod = 3.5;
 	else if (check_level == 65)
-        mod = 3.8;
+        mod = 3.6;
 	else if (check_level == 66)
         mod = 4.2;
 	else if (check_level == 67)
