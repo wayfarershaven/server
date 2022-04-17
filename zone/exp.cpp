@@ -809,17 +809,17 @@ uint32 Client::GetEXPForLevel(uint16 check_level, bool aa)
     else if (check_level == 64)
         mod = 3.5;
 	else if (check_level == 65)
-        mod = 3.6;
-	else if (check_level == 66)
         mod = 3.8;
+	else if (check_level == 66)
+        mod = 4.2;
 	else if (check_level == 67)
-        mod = 3.9;
+        mod = 4.6;
 	else if (check_level == 68)
-        mod = 4.1;			
+        mod = 5.0;			
 	else if (check_level == 69)
-        mod = 4.2;	
+        mod = 5.4;	
     else
-        mod = 4.4;
+        mod = 5.8;
 
     uint32 finalxp = uint32(base * playermod * mod);
     if(aa) {
