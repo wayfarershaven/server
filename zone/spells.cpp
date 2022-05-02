@@ -103,7 +103,7 @@ Copyright (C) 2001-2002 EQEMu Development Team (http://eqemu.org)
 
 #include "mob_movement_manager.h"
 #include "client.h"
-
+#include "mob.h"
 
 extern Zone* zone;
 extern volatile bool is_zone_loaded;
@@ -6619,7 +6619,7 @@ void Mob::ConeDirectional(uint16 spell_id, int16 resist_adjust)
 				continue;
 			}
 		}
-		
+
 		if (angle_start > angle_end) {
 			if ((heading_to_target >= angle_start && heading_to_target <= 360.0f) ||
 			    (heading_to_target >= 0.0f && heading_to_target <= angle_end)) {
@@ -6911,4 +6911,18 @@ bool Mob::IsFromTriggeredSpell(CastingSlot slot, uint32 item_slot) {
 		return true;
 	}
 	return false;
+}
+
+void Mob::SetHP(int32 hp)
+{
+	if (hp >= max_hp) {
+		current_hp = max_hp;
+		return;
+	}
+
+	if (combat_record.InCombat()) {
+		combat_record.ProcessHPEvent(hp, current_hp);
+	}
+
+	current_hp = hp;
 }

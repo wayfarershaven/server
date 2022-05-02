@@ -2724,7 +2724,8 @@ bool NPC::Death(Mob* killer_mob, int32 damage, uint16 spell, EQ::skills::SkillTy
 
 	std::string buffer = fmt::format("{} {} {} {}", killer_mob ? killer_mob->GetID() : 0, damage, spell, static_cast<int>(attack_skill));
 	parse->EventNPC(EVENT_DEATH_COMPLETE, this, oos, buffer.c_str(), 0);
-
+	combat_record.Stop();
+	
 	/* Zone controller process EVENT_DEATH_ZONE (Death events) */
 	if (RuleB(Zone, UseZoneController)) {
 		auto controller = entity_list.GetNPCByNPCTypeID(ZONE_CONTROLLER_NPC_ID);

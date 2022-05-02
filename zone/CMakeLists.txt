@@ -19,6 +19,7 @@ SET(zone_sources
     client_mods.cpp
     client_packet.cpp
     client_process.cpp
+    combat_record.cpp
     command.cpp
     corpse.cpp
     data_bucket.cpp
@@ -180,6 +181,7 @@ SET(zone_headers
     cheat_manager.h
     client.h
     client_packet.h
+    combat_record.h
     command.h
     common.h
     corpse.h
