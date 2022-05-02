@@ -1097,6 +1097,30 @@
 #define LogHTTPDetail(message, ...) do {\
 } while (0)
 
+#define LogScheduler(message, ...) do {\
+} while (0)
+
+#define LogSchedulerDetail(message, ...) do {\
+} while (0)
+
+#define LogCheat(message, ...) do {\
+} while (0)
+
+#define LogCheatDetail(message, ...) do {\
+} while (0)
+
+#define LogLoot(message, ...) do {\
+} while (0)
+
+#define LogLootDetail(message, ...) do {\
+} while (0)
+
+#define LogFood(message, ...) do {\
+} while (0)
+
+#define LogFoodDetail(message, ...) do {\
+} while (0)
+
 #define Log(debug_level, log_category, message, ...) do {\
 } while (0)
 
