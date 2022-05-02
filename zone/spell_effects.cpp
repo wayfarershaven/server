@@ -1088,19 +1088,14 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 						caster->MessageString(Chat::SpellFailure, SPELL_NO_EFFECT, spells[spell_id].name);
 					break;
 				}
-				/*
-					TODO: Parsing shows there is no level modifier. However, a consistent -2% modifer was
-					found on spell with value 950 (95% spells would have 7% failure rates).
-					Further investigation is needed. ~ Kayen
-				*/
-				int chance = spells[spell_id].base_value[i];
+
 				int buff_count = GetMaxTotalSlots();
 				for(int slot = 0; slot < buff_count; slot++) {
 					if (buffs[slot].spellid != SPELL_UNKNOWN &&
 						IsDetrimentalSpell(buffs[slot].spellid) &&
 						spells[buffs[slot].spellid].dispel_flag == 0)
 					{
-						if (zone->random.Int(1, 1000) <= chance){
+						if (caster && TryDispel(caster->GetLevel(),buffs[slot].casterlevel, effect_value)){
 							BuffFadeBySlot(slot);
 							slot = buff_count;
 						}
