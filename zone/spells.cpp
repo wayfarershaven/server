@@ -6511,6 +6511,23 @@ void Mob::BeamDirectional(uint16 spell_id, int16 resist_adjust)
 			}
 		}
 
+		if (!beneficial_targets) {
+			if (!IsAttackAllowed((*iter), true)) {
+				++iter;
+				continue;
+			}
+		}
+		else {
+			if (IsAttackAllowed((*iter), true)) {
+				++iter;
+				continue;
+			}
+			if (CheckAggro((*iter))) {
+				++iter;
+				continue;
+			}
+		}
+
 		//# shortest distance from line to target point
 		float d = std::abs((*iter)->GetY() - m * (*iter)->GetX() - b) / sqrt(m * m + 1);
 
@@ -6586,6 +6603,23 @@ void Mob::ConeDirectional(uint16 spell_id, int16 resist_adjust)
 			}
 		}
 
+		if (!beneficial_targets) {
+			if (!IsAttackAllowed((*iter), true)) {
+				++iter;
+				continue;
+			}
+		}
+		else {
+			if (IsAttackAllowed((*iter), true)) {
+				++iter;
+				continue;
+			}
+			if (CheckAggro((*iter))) {
+				++iter;
+				continue;
+			}
+		}
+		
 		if (angle_start > angle_end) {
 			if ((heading_to_target >= angle_start && heading_to_target <= 360.0f) ||
 			    (heading_to_target >= 0.0f && heading_to_target <= angle_end)) {
