@@ -3331,13 +3331,15 @@ bool ZoneDatabase::SetZoneTZ(uint32 zoneid, uint32 version, uint32 tz) {
 }
 
 void ZoneDatabase::RefreshGroupFromDB(Client *client){
-	if(!client)
+	if (!client) {
 		return;
+	}
 
 	Group *group = client->GetGroup();
 
-	if(!group)
+	if(!group) {
 		return;
+	}
 
 	auto outapp = new EQApplicationPacket(OP_GroupUpdate, sizeof(GroupUpdate2_Struct));
 	GroupUpdate2_Struct* gu = (GroupUpdate2_Struct*)outapp->pBuffer;
@@ -3349,19 +3351,20 @@ void ZoneDatabase::RefreshGroupFromDB(Client *client){
 
 	int index = 0;
 
-	std::string query = StringFormat("SELECT name FROM group_id WHERE groupid = %d", group->GetID());
+	auto query = fmt::format(
+		"SELECT name FROM group_id WHERE groupid = {}",
+		group->GetID()
+	);
 	auto results = QueryDatabase(query);
-	if (!results.Success())
-	{
-	}
-	else
-	{
-		for (auto row = results.begin(); row != results.end(); ++row) {
-			if(index >= 6)
+	if (results.Success()) {
+		for (auto row : results) {
+			if (index >= 6) {
 				continue;
+			}
 
-            if(strcmp(client->GetName(), row[0]) == 0)
+            if (!strcmp(client->GetName(), row[0])) {
 				continue;
+			}
 
 			strcpy(gu->membername[index], row[0]);
 			index++;
@@ -3382,7 +3385,6 @@ void ZoneDatabase::RefreshGroupFromDB(Client *client){
 	group->NotifyTankTarget(client);
 	group->NotifyPullerTarget(client);
 	group->SendMarkedNPCsToMember(client);
-
 }
 
 uint8 ZoneDatabase::GroupCount(uint32 groupid) {

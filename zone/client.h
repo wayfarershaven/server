@@ -987,7 +987,7 @@ public:
 	void RemoveTitle(int titleset);
 
 	void EnteringMessages(Client* client);
-	void SendRules(Client* client);
+	void SendRules();
 
 	const bool GetGMSpeed() const { return (gmspeed > 0); }
 	const bool GetGMInvul() const { return gminvul; }
