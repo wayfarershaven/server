@@ -873,7 +873,7 @@ bool BaseGuildManager::QueryWithLogging(std::string query, const char *errmsg) {
 " FROM `vw_bot_character_mobs` AS c LEFT JOIN `vw_guild_members` AS g ON c.`id` = g.`char_id` AND c.`mob_type` = g.`mob_type` "
 #else
 #define GuildMemberBaseQuery \
-"SELECT c.`id`, c.`name`, c.`class`, c.`level`, c.`last_login`, c.`zone_id`," \
+"SELECT c.`id`, c.`name`, c.`class`, c.`level`, c.`last_login`, c.`anon`, c.`zone_id`," \
 " g.`guild_id`, g.`rank`, g.`tribute_enable`, g.`total_tribute`, g.`last_tribute`," \
 " g.`banker`, g.`public_note`, g.`alt` " \
 " FROM `character_data` AS c LEFT JOIN `guild_members` AS g ON c.`id` = g.`char_id` "
@@ -885,23 +885,32 @@ static void ProcessGuildMember(MySQLRequestRow row, CharGuildInfo &into) {
 	into.class_			= atoi(row[2]);
 	into.level			= atoi(row[3]);
 	into.time_last_on	= atoul(row[4]);
-	into.zone_id		= atoi(row[5]);
+	into.anon			= atoi(row[5]);
+	into.zone_id		= atoi(row[6]);
 
 	//fields from `guild_members`, leave at defaults if missing
-	into.guild_id		= row[6] ? atoi(row[6]) : GUILD_NONE;
-	into.rank			= row[7] ? atoi(row[7]) : (GUILD_MAX_RANK+1);
-	into.tribute_enable = row[8] ? (row[8][0] == '0'?false:true) : false;
-	into.total_tribute	= row[9] ? atoi(row[9]) : 0;
-	into.last_tribute	= row[10]? atoul(row[10]) : 0;		//timestamp
-	into.banker			= row[11]? (row[11][0] == '0'?false:true) : false;
-	into.public_note	= row[12]? row[12] : "";
-	into.alt		= row[13]? (row[13][0] == '0'?false:true) : false;
+	into.guild_id		= row[7] ? atoi(row[7]) : GUILD_NONE;
+	into.rank			= row[8] ? atoi(row[8]) : (GUILD_MAX_RANK+1);
+	into.tribute_enable = row[9] ? (row[9][0] == '0'?false:true) : false;
+	into.total_tribute	= row[10] ? atoi(row[10]) : 0;
+	into.last_tribute	= row[11]? atoul(row[11]) : 0;		//timestamp
+	into.banker			= row[12]? (row[12][0] == '0'?false:true) : false;
+	into.public_note	= row[13]? row[13] : "";
+	into.alt			= row[14]? (row[14][0] == '0'?false:true) : false;
 
 	//a little sanity checking/cleanup
-	if(into.guild_id == 0)
+	if (into.anon == 1) {
+		into.zone_id = -1;
+	}
+
+	if(into.guild_id == 0) {
 		into.guild_id = GUILD_NONE;
-	if(into.rank > GUILD_MAX_RANK)
+	}
+
+	if(into.rank > GUILD_MAX_RANK) {
 		into.rank = GUILD_RANK_NONE;
+	}
+
 }
 
 

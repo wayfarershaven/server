@@ -17,6 +17,7 @@ class CharGuildInfo
 		uint8	class_;
 		uint16	level;
 		uint32	time_last_on;
+		uint8   anon;
 		uint32	zone_id;
 
 		//fields from `guild_members`
