@@ -37,12 +37,14 @@
 
 #include "../common/net/tcp_server.h"
 #include "../common/net/servertalk_client_connection.h"
+#include "../common/discord_manager.h"
 
 ChatChannelList *ChannelList;
 Clientlist *g_Clientlist;
 EQEmuLogSys LogSys;
 Database database;
 WorldServer *worldserver = nullptr;
+DiscordManager discord_manager;
 
 const ucsconfig *Config;
 
@@ -82,6 +84,13 @@ void CatchSignal(int sig_num) {
 		g_Clientlist->CloseAllConnections();
 		LogSys.CloseFileLogs();
 		std::exit(0);
+	}
+}
+
+void DiscordQueueListener() {
+	while (caught_loop == 0) {
+		discord_manager.ProcessMessageQueue();
+		Sleep(100);
 	}
 }
 
@@ -162,6 +171,8 @@ int main() {
 	std::signal(SIGKILL, CatchSignal);
 	std::signal(SIGSEGV, CatchSignal);
 
+	std::thread(DiscordQueueListener).detach();
+	
 	worldserver = new WorldServer;
 
 	//	uncomment to simulate timed crash for catching SIGSEV

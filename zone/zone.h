@@ -35,6 +35,8 @@
 #include "aa_ability.h"
 #include "pathfinder_interface.h"
 #include "global_loot_manager.h"
+#include "queryserv.h"
+#include "../common/discord/discord.h"
 
 class DynamicZone;
 
@@ -149,9 +151,10 @@ public:
 	const char *GetSpellBlockedMessage(uint32 spell_id, const glm::vec3 &location);
 
 	EQ::Random random;
-	EQTime        zone_time;
+	EQTime     zone_time;
 
-	ZonePoint *GetClosestZonePoint(const glm::vec3 &location, const char *to_name, Client *client, float max_distance = 40000.0f);
+	ZonePoint *
+	GetClosestZonePoint(const glm::vec3 &location, const char *to_name, Client *client, float max_distance = 40000.0f);
 
 	inline bool BuffTimersSuspended() const { return newzone_data.SuspendBuffs != 0; };
 	inline bool HasMap() { return zonemap != nullptr; }
@@ -182,7 +185,7 @@ public:
 	TempMerchantList GetTempMerchItem(uint32 merchantid, uint32 npcid, uint32 item);
 	int SaveTempItem(uint32 merchantid, uint32 npcid, uint32 item, int32 quantity, int32 charges, bool sold=false);
 	int32 MobsAggroCount() { return aggroedmobs; }
-	DynamicZone* GetDynamicZone();
+	DynamicZone *GetDynamicZone();
 
 	IPathfinder                                   *pathing;
 	LinkedList<NPC_Emote_Struct *>                NPCEmoteList;
@@ -190,31 +193,31 @@ public:
 	LinkedList<ZonePoint *>                       zone_point_list;
 	std::vector<ZonePointsRepository::ZonePoints> virtual_zone_point_list;
 
-	Map                            *zonemap;
+	Map                   *zonemap;
 	MercTemplate *GetMercTemplate(uint32 template_id);
-	NewZone_Struct                 newzone_data;
+	NewZone_Struct        newzone_data;
 	QGlobalCache *CreateQGlobals()
 	{
 		qGlobals = new QGlobalCache();
 		return qGlobals;
 	}
 	QGlobalCache *GetQGlobals() { return qGlobals; }
-	SpawnConditionManager          spawn_conditions;
-	SpawnGroupList                 spawn_group_list;
+	SpawnConditionManager spawn_conditions;
+	SpawnGroupList        spawn_group_list;
 
-	std::list<AltCurrencyDefinition_Struct>               AlternateCurrencies;
-	std::list<InternalVeteranReward>                      VeteranRewards;
-	std::map<uint32, LDoNTrapTemplate *>                  ldon_trap_list;
-	std::map<uint32, MercTemplate>                        merc_templates;
-	std::map<uint32, NPCType *>                           merctable;
-	std::map<uint32, NPCType *>                           npctable;
-	std::map<uint32, std::list<LDoNTrapTemplate *> >      ldon_trap_entry_list;
-	std::map<uint32, std::list<MerchantList> >            merchanttable;
-	std::map<uint32, std::list<MercSpellEntry> >          merc_spells_list;
-	std::map<uint32, std::list<MercStanceInfo> >          merc_stance_list;
-	std::map<uint32, std::list<TempMerchantList> >        tmpmerchanttable;
-	std::map<uint32, std::string>                         adventure_entry_list_flavor;
-	std::map<uint32, ZoneEXPModInfo>                      level_exp_mod;
+	std::list<AltCurrencyDefinition_Struct>          AlternateCurrencies;
+	std::list<InternalVeteranReward>                 VeteranRewards;
+	std::map<uint32, LDoNTrapTemplate *>             ldon_trap_list;
+	std::map<uint32, MercTemplate>                   merc_templates;
+	std::map<uint32, NPCType *>                      merctable;
+	std::map<uint32, NPCType *>                      npctable;
+	std::map<uint32, std::list<LDoNTrapTemplate *> > ldon_trap_entry_list;
+	std::map<uint32, std::list<MerchantList> >       merchanttable;
+	std::map<uint32, std::list<MercSpellEntry> >     merc_spells_list;
+	std::map<uint32, std::list<MercStanceInfo> >     merc_stance_list;
+	std::map<uint32, std::list<TempMerchantList> >   tmpmerchanttable;
+	std::map<uint32, std::string>                    adventure_entry_list_flavor;
+	std::map<uint32, ZoneEXPModInfo>                 level_exp_mod;
 
 	std::pair<AA::Ability *, AA::Rank *> GetAlternateAdvancementAbilityAndRank(int id, int points_spent);
 
@@ -357,6 +360,22 @@ public:
 		}
 	}
 
+	static void SendDiscordMessage(int webhook_id, const std::string& message);
+	static void SendDiscordMessage(const std::string& webhook_name, const std::string& message);
+	static void DiscordWebhookMessageHandler(uint16 log_category, int webhook_id, const std::string &message)
+	{
+		std::string message_prefix;
+		if (!LogSys.origination_info.zone_short_name.empty()) {
+			message_prefix = fmt::format(
+				"[**{}**] **Zone** [**{}**] ",
+				Logs::LogCategoryName[log_category],
+				LogSys.origination_info.zone_short_name
+			);
+		}
+
+		SendDiscordMessage(webhook_id, message_prefix + Discord::FormatDiscordMessage(log_category, message));
+	};
+	
 	double GetMaxMovementUpdateRange() const { return max_movement_update_range; }
 
 	/**

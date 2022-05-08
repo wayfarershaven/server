@@ -8190,6 +8190,19 @@ XS(XS__commify) {
 	XSRETURN(1);
 }
 
+XS(XS__discordsend);
+XS(XS__discordsend) {
+	dXSARGS;
+	if (items != 2)
+		Perl_croak(aTHX_ "Usage: quest::discordsend(string webhook_name, string message)");
+	{
+		std::string webhook_name = (std::string) SvPV_nolen(ST(0));
+		std::string message = (std::string) SvPV_nolen(ST(1));
+		zone->SendDiscordMessage(webhook_name, message);
+	}
+	XSRETURN_EMPTY;
+}
+
 /*
 This is the callback perl will look for to setup the
 quest package's XSUBs
@@ -8454,6 +8467,7 @@ EXTERN_C XS(boot_quest) {
 	newXS(strcpy(buf, "disable_spawn2"), XS__disable_spawn2, file);
 	newXS(strcpy(buf, "disablerecipe"), XS__disablerecipe, file);
 	newXS(strcpy(buf, "disabletask"), XS__disabletask, file);
+	newXS(strcpy(buf, "discordsend"), XS__discordsend, file);
 	newXS(strcpy(buf, "doanim"), XS__doanim, file);
 	newXS(strcpy(buf, "echo"), XS__echo, file);
 	newXS(strcpy(buf, "emote"), XS__emote, file);

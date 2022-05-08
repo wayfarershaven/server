@@ -1217,6 +1217,11 @@ bool Zone::Init(bool iStaticZone) {
 	//MODDING HOOK FOR ZONE INIT
 	mod_init();
 
+	// logging origination information
+	LogSys.origination_info.zone_short_name = zone->short_name;
+	LogSys.origination_info.zone_long_name  = zone->long_name;
+	LogSys.origination_info.instance_id     = zone->instanceid;
+
 	return true;
 }
 
@@ -2737,4 +2742,33 @@ uint32 Zone::GetCurrencyItemID(uint32 currency_id)
 	}
 
 	return 0;
+}
+
+void Zone::SendDiscordMessage(int webhook_id, const std::string& message)
+{
+	if (worldserver.Connected()) {
+		auto pack = new ServerPacket(ServerOP_DiscordWebhookMessage, sizeof(DiscordWebhookMessage_Struct) + 1);
+		auto *q   = (DiscordWebhookMessage_Struct *) pack->pBuffer;
+
+		strn0cpy(q->message, message.c_str(), 2000);
+		q->webhook_id = webhook_id;
+
+		worldserver.SendPacket(pack);
+		safe_delete(pack);
+	}
+}
+
+void Zone::SendDiscordMessage(const std::string& webhook_name, const std::string &message)
+{
+	bool not_found = true;
+	for (auto & w : LogSys.discord_webhooks) {
+		if (w.webhook_name == webhook_name) {
+			SendDiscordMessage(w.id, message);
+			not_found = false;
+		}
+	}
+
+	if (not_found) {
+		LogDiscord("[SendDiscordMessage] Did not find valid webhook by webhook name [{}]", webhook_name);
+	}
 }
