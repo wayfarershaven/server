@@ -210,6 +210,8 @@ public:
 
 	bool is_client_moving;
 
+	void ReconnectUCS();
+
 	void SetDisplayMobInfoWindow(bool display_mob_info_window);
 	bool GetDisplayMobInfoWindow() const;
 

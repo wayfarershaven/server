@@ -2255,6 +2255,10 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 		if (zone) {
 			zone->SetUCSServerAvailable((ucsss->available != 0), ucsss->timestamp);
 			LogInfo("UCS Server is now [{}]", (ucsss->available == 1 ? "online" : "offline"));
+
+			for (auto &e : entity_list.GetClientList()) {
+				e.second->ReconnectUCS();
+			}
 		}
 		break;
 	}
