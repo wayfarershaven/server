@@ -1,11 +1,11 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.2)
 
 SET(qserv_sources
-    database.cpp
-    lfguild.cpp
-    queryserv.cpp
-    queryservconfig.cpp
-    worldserver.cpp
+	database.cpp
+	lfguild.cpp
+	queryserv.cpp
+	queryservconfig.cpp
+	worldserver.cpp
 )
 
 SET(qserv_headers

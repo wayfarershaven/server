@@ -24,7 +24,6 @@
 #include "../common/servertalk.h"
 #include "../common/platform.h"
 #include "../common/crash.h"
-#include "../common/string_util.h"
 #include "../common/event/event_loop.h"
 #include "../common/timer.h"
 #include "database.h"
@@ -33,16 +32,15 @@
 #include "worldserver.h"
 #include <list>
 #include <signal.h>
-#include <thread>
 
 volatile bool RunLoops = true;
 
-Database              database;
-LFGuildManager        lfguildmanager;
-std::string           WorldShortName;
+Database database;
+LFGuildManager lfguildmanager;
+std::string WorldShortName;
 const queryservconfig *Config;
-WorldServer           *worldserver = 0;
-EQEmuLogSys           LogSys;
+WorldServer *worldserver = 0;
+EQEmuLogSys LogSys;
 
 void CatchSignal(int sig_num) {
 	RunLoops = false;

@@ -233,7 +233,6 @@
 #define ServerOP_ReloadAAData 0x4017
 #define ServerOP_ReloadTraps 0x4018
 #define ServerOP_ReloadStaticZoneData 0x4020
-#define ServerOP_DiscordWebhookMessage 0x4021
 
 #define ServerOP_CZDialogueWindow 0x4500
 #define ServerOP_CZLDoNUpdate 0x4501
@@ -1506,11 +1505,6 @@ struct QSPlayerDeathBy_Struct {
 	char killed_by[128];
 	uint16 spell;
 	uint32 damage;
-};
-
-struct DiscordWebhookMessage_Struct {
-	uint32 webhook_id;
-	char message[2000];
 };
 
 struct QSGeneralQuery_Struct {
