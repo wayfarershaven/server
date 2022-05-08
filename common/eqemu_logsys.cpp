@@ -33,6 +33,7 @@
 #include <iomanip>
 #include <time.h>
 #include <sys/stat.h>
+#include <thread>
 #include <algorithm>
 
 std::ofstream process_log;
@@ -48,7 +49,6 @@ std::ofstream process_log;
 
 #include <unistd.h>
 #include <sys/stat.h>
-#include <thread>
 
 #endif
 
