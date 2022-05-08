@@ -40,7 +40,7 @@ float Mob::GetActSpellRange(uint16 spell_id, float range, bool IsBard)
 	return (range * extrange) / 100;
 }
 
-int32 Mob::GetActSpellDamage(uint16 spell_id, int32 value, Mob* target) {
+int64 Mob::GetActSpellDamage(uint16 spell_id, int64 value, Mob* target) {
 
 	if (spells[spell_id].target_type == ST_Self)
 		return value;
@@ -49,7 +49,7 @@ int32 Mob::GetActSpellDamage(uint16 spell_id, int32 value, Mob* target) {
 		value += value*CastToNPC()->GetSpellFocusDMG()/100;
 
 	bool Critical = false;
-	int32 base_value = value;
+	int64 base_value = value;
 	int chance = 0;
 	int32 MBCap = 9492;  //Manaburn Damage Cap, same cap whether critical or normal
 
@@ -127,7 +127,7 @@ int32 Mob::GetActSpellDamage(uint16 spell_id, int32 value, Mob* target) {
 			} else if(!spells[spell_id].no_heal_damage_item_mod && itembonuses.SpellDmg && spells[spell_id].classes[(GetClass() % 17) - 1] >= GetLevel() - 5) {
 				value -= GetExtraSpellAmt(spell_id, itembonuses.SpellDmg, base_value)*ratio/100;
 			} else if (IsNPC() && CastToNPC()->GetSpellScale()) {
-				value = int(static_cast<float>(value) * CastToNPC()->GetSpellScale() / 100.0f);
+				value = int64(static_cast<float>(value) * CastToNPC()->GetSpellScale() / 100.0f);
 			}
 
 			// Manaburn can crit, but is still held to the same cap
@@ -184,7 +184,7 @@ int32 Mob::GetActSpellDamage(uint16 spell_id, int32 value, Mob* target) {
 	}
 
 	if (IsNPC() && CastToNPC()->GetSpellScale()) {
-		value = int(static_cast<float>(value) * CastToNPC()->GetSpellScale() / 100.0f);
+		value = int64(static_cast<float>(value) * CastToNPC()->GetSpellScale() / 100.0f);
 	}
 
 	// Apply Manaburn damage cap
@@ -196,7 +196,7 @@ int32 Mob::GetActSpellDamage(uint16 spell_id, int32 value, Mob* target) {
 	return value;
 }
 
-int32 Mob::GetActReflectedSpellDamage(int32 spell_id, int32 value, int effectiveness) {
+int64 Mob::GetActReflectedSpellDamage(int32 spell_id, int64 value, int effectiveness) {
 	/*
 		Reflected spells use the spells base damage before any modifiers or formulas applied.
 		That value can then be modifier by the reflect spells 'max' value, defined here as effectiveness
@@ -208,11 +208,11 @@ int32 Mob::GetActReflectedSpellDamage(int32 spell_id, int32 value, int effective
 		value += value * CastToNPC()->GetSpellFocusDMG() / 100;
 
 		if (CastToNPC()->GetSpellScale()) {
-			value = int(static_cast<float>(value) * CastToNPC()->GetSpellScale() / 100.0f);
+			value = int64(static_cast<float>(value) * CastToNPC()->GetSpellScale() / 100.0f);
 		}
 	}
 
-	int32 base_spell_dmg = value;
+	int64 base_spell_dmg = value;
 
 	value = value * effectiveness / 100;
 
@@ -223,7 +223,7 @@ int32 Mob::GetActReflectedSpellDamage(int32 spell_id, int32 value, int effective
 	return value;
 }
 
-int32 Mob::GetActDoTDamage(uint16 spell_id, int32 value, Mob* target) {
+int64 Mob::GetActDoTDamage(uint16 spell_id, int64 value, Mob* target) {
 
 	if (target == nullptr)
 		return value;
@@ -232,8 +232,8 @@ int32 Mob::GetActDoTDamage(uint16 spell_id, int32 value, Mob* target) {
 		value += value * CastToNPC()->GetSpellFocusDMG() / 100;
 	}
 
-	int32 base_value = value;
-	int32 extra_dmg = 0;
+	int64 base_value = value;
+	int64 extra_dmg = 0;
 	int16 chance = 0;
 	chance += itembonuses.CriticalDoTChance + spellbonuses.CriticalDoTChance + aabonuses.CriticalDoTChance;
 
@@ -244,16 +244,16 @@ int32 Mob::GetActDoTDamage(uint16 spell_id, int32 value, Mob* target) {
 		chance = spells[spell_id].override_crit_chance;
 
 	if (!spells[spell_id].good_effect && chance > 0 && (zone->random.Roll(chance))) {
-		int32 ratio = 200;
+		int64 ratio = 200;
 		ratio += itembonuses.DotCritDmgIncrease + spellbonuses.DotCritDmgIncrease + aabonuses.DotCritDmgIncrease;
 		value = base_value*ratio/100;
-		value += int(base_value*GetFocusEffect(focusImprovedDamage, spell_id)/100)*ratio/100;
-		value += int(base_value*GetFocusEffect(focusImprovedDamage2, spell_id)/100)*ratio/100;
-		value += int(base_value*GetFocusEffect(focusFcDamagePctCrit, spell_id)/100)*ratio/100;
-		value += int(base_value*GetFocusEffect(focusFcAmplifyMod, spell_id) / 100)*ratio/100;
-		value += int(base_value*target->GetVulnerability(this, spell_id, 0)/100)*ratio/100;
+		value += int64(base_value*GetFocusEffect(focusImprovedDamage, spell_id)/100)*ratio/100;
+		value += int64(base_value*GetFocusEffect(focusImprovedDamage2, spell_id)/100)*ratio/100;
+		value += int64(base_value*GetFocusEffect(focusFcDamagePctCrit, spell_id)/100)*ratio/100;
+		value += int64(base_value*GetFocusEffect(focusFcAmplifyMod, spell_id) / 100)*ratio/100;
+		value += int64(base_value*target->GetVulnerability(this, spell_id, 0)/100)*ratio/100;
 		extra_dmg = target->GetFcDamageAmtIncoming(this, spell_id) +
-					int(GetFocusEffect(focusFcDamageAmtCrit, spell_id)*ratio/100) +
+					int64(GetFocusEffect(focusFcDamageAmtCrit, spell_id)*ratio/100) +
 					GetFocusEffect(focusFcDamageAmt, spell_id) +
 					GetFocusEffect(focusFcDamageAmt2, spell_id) +
 					GetFocusEffect(focusFcAmplifyAmt, spell_id);
@@ -300,37 +300,42 @@ int32 Mob::GetActDoTDamage(uint16 spell_id, int32 value, Mob* target) {
 
 		if (extra_dmg) {
 			int duration = CalcBuffDuration(this, target, spell_id);
-			if (duration > 0)
+			if (duration > 0) {
 				extra_dmg /= duration;
+			}
 		}
 
 		value -= extra_dmg;
 	}
 
-	if (IsNPC() && CastToNPC()->GetSpellScale())
-		value = int(static_cast<float>(value) * CastToNPC()->GetSpellScale() / 100.0f);
+	if (IsNPC() && CastToNPC()->GetSpellScale()) {
+		value = int64(static_cast<float>(value) * CastToNPC()->GetSpellScale() / 100.0f);
+	}
 
 	return value;
 }
 
-int32 Mob::GetExtraSpellAmt(uint16 spell_id, int32 extra_spell_amt, int32 base_spell_dmg)
+int64 Mob::GetExtraSpellAmt(uint16 spell_id, int64 extra_spell_amt, int64 base_spell_dmg)
 {
-	if (RuleB(Spells, FlatItemExtraSpellAmt))
+	if (RuleB(Spells, FlatItemExtraSpellAmt)) {
 		return extra_spell_amt;
+	}
 
 	int total_cast_time = 0;
 
-	if (spells[spell_id].recast_time >= spells[spell_id].recovery_time)
+	if (spells[spell_id].recast_time >= spells[spell_id].recovery_time) {
 			total_cast_time = spells[spell_id].recast_time + spells[spell_id].cast_time;
-	else
+	} else {
 		total_cast_time = spells[spell_id].recovery_time + spells[spell_id].cast_time;
+	}
 
-	if (total_cast_time > 0 && total_cast_time <= 2500)
+	if (total_cast_time > 0 && total_cast_time <= 2500) {
 		extra_spell_amt = extra_spell_amt*25/100;
-	 else if (total_cast_time > 2500 && total_cast_time < 7000)
+	} else if (total_cast_time > 2500 && total_cast_time < 7000) {
 		 extra_spell_amt = extra_spell_amt*(167*((total_cast_time - 1000)/1000)) / 1000;
-	 else
+	} else {
 		 extra_spell_amt = extra_spell_amt * total_cast_time / 7000;
+	}
 
 	//Confirmed with parsing 10/9/21 ~Kayen
 	if (extra_spell_amt * 2 > abs(base_spell_dmg)) {
@@ -340,34 +345,29 @@ int32 Mob::GetExtraSpellAmt(uint16 spell_id, int32 extra_spell_amt, int32 base_s
 	return extra_spell_amt;
 }
 
-int32 Mob::GetActSpellHealing(uint16 spell_id, int32 value, Mob* target) {
-
-
+int64 Mob::GetActSpellHealing(uint16 spell_id, int64 value, Mob* target) {
 	if (IsNPC()) {
 		value += value * CastToNPC()->GetSpellFocusHeal() / 100;
 	}
 
-	int32 base_value = value;
+	int64 base_value = value;
 	int16 critical_chance = 0;
 	int8  critical_modifier = 1;
 
 	if (spells[spell_id].buff_duration < 1) {
 		critical_chance += itembonuses.CriticalHealChance + spellbonuses.CriticalHealChance + aabonuses.CriticalHealChance;
-
 		if (spellbonuses.CriticalHealDecay) {
 			critical_chance += GetDecayEffectValue(spell_id, SE_CriticalHealDecay);
 		}
 	}
 	else {
 		critical_chance = itembonuses.CriticalHealOverTime + spellbonuses.CriticalHealOverTime + aabonuses.CriticalHealOverTime;
-
 		if (spellbonuses.CriticalRegenDecay) {
 			critical_chance += GetDecayEffectValue(spell_id, SE_CriticalRegenDecay);
 		}
 	}
 
 	if (critical_chance) {
-
 		if (spells[spell_id].override_crit_chance > 0 && critical_chance > spells[spell_id].override_crit_chance) {
 			critical_chance = spells[spell_id].override_crit_chance;
 		}
@@ -378,17 +378,17 @@ int32 Mob::GetActSpellHealing(uint16 spell_id, int32 value, Mob* target) {
 	}
 
 	if (GetClass() == CLERIC) {
-		value += int(base_value*RuleI(Spells, ClericInnateHealFocus) / 100);  //confirmed on live parsing clerics get an innate 5 pct heal focus
+		value += int64(base_value*RuleI(Spells, ClericInnateHealFocus) / 100);  //confirmed on live parsing clerics get an innate 5 pct heal focus
 	}
-	value += int(base_value*GetFocusEffect(focusImprovedHeal, spell_id) / 100);
-	value += int(base_value*GetFocusEffect(focusFcAmplifyMod, spell_id) / 100);
+	value += int64(base_value*GetFocusEffect(focusImprovedHeal, spell_id) / 100);
+	value += int64(base_value*GetFocusEffect(focusFcAmplifyMod, spell_id) / 100);
 
 	// Instant Heals
 	if (spells[spell_id].buff_duration < 1) {
 
 		if (target) {
-			value += int(base_value * target->GetFocusEffect(focusFcHealPctIncoming, spell_id, this)/100); //SPA 393 Add before critical
-			value += int(base_value * target->GetFocusEffect(focusFcHealPctCritIncoming, spell_id, this)/100); //SPA 395 Add before critical (?)
+			value += int64(base_value * target->GetFocusEffect(focusFcHealPctIncoming, spell_id, this)/100); //SPA 393 Add before critical
+			value += int64(base_value * target->GetFocusEffect(focusFcHealPctCritIncoming, spell_id, this)/100); //SPA 395 Add before critical (?)
 		}
 
 		value += GetFocusEffect(focusFcHealAmtCrit, spell_id); //SPA 396 Add before critical
@@ -418,7 +418,7 @@ int32 Mob::GetActSpellHealing(uint16 spell_id, int32 value, Mob* target) {
 		}
 
 		if (IsNPC() && CastToNPC()->GetHealScale()) {
-			value = int(static_cast<float>(value) * CastToNPC()->GetHealScale() / 100.0f);
+			value = int64(static_cast<float>(value) * CastToNPC()->GetHealScale() / 100.0f);
 		}
 
 		if (critical_modifier > 1) {
@@ -437,7 +437,7 @@ int32 Mob::GetActSpellHealing(uint16 spell_id, int32 value, Mob* target) {
 	//Heal over time spells. [Heal Rate and Additional Healing effects do not increase this value]
 	else {
 		//Using IgnoreSpellDmgLvlRestriction to also allow healing to scale
-		int32 extra_heal = 0;
+		int64 extra_heal = 0;
 		if (RuleB(Spells, HOTsScaleWithHealAmt)) {
 			if (RuleB(Spells, IgnoreSpellDmgLvlRestriction) && !spells[spell_id].no_heal_damage_item_mod && itembonuses.HealAmt) {
 				extra_heal += GetExtraSpellAmt(spell_id, itembonuses.HealAmt, base_value);

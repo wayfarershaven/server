@@ -98,7 +98,7 @@ struct_HateList *HateList::Find(Mob *in_entity)
 	return nullptr;
 }
 
-void HateList::SetHateAmountOnEnt(Mob* other, uint32 in_hate, uint32 in_damage)
+void HateList::SetHateAmountOnEnt(Mob* other, uint64 in_hate, uint64 in_damage)
 {
 	struct_HateList *entity = Find(other);
 	if (entity)
@@ -116,7 +116,7 @@ Mob* HateList::GetDamageTopOnHateList(Mob* hater)
 	Mob* current = nullptr;
 	Group* grp = nullptr;
 	Raid* r = nullptr;
-	uint32 dmg_amt = 0;
+	uint64 dmg_amt = 0;
 
 	auto iterator = list.begin();
 	while (iterator != list.end())
@@ -145,7 +145,7 @@ Mob* HateList::GetDamageTopOnHateList(Mob* hater)
 				dmg_amt = grp->GetTotalGroupDamage(hater);
 			}
 		}
-		else if ((*iterator)->entity_on_hatelist != nullptr && (uint32)(*iterator)->hatelist_damage >= dmg_amt)
+		else if ((*iterator)->entity_on_hatelist != nullptr && (uint64)(*iterator)->hatelist_damage >= dmg_amt)
 		{
 			current = (*iterator)->entity_on_hatelist;
 			dmg_amt = (*iterator)->hatelist_damage;
@@ -188,7 +188,7 @@ Mob* HateList::GetClosestEntOnHateList(Mob *hater, bool skip_mezzed, bool client
 	return close_entity;
 }
 
-void HateList::AddEntToHateList(Mob *in_entity, int32 in_hate, int32 in_damage, bool in_is_entity_frenzied, bool iAddIfNotExist)
+void HateList::AddEntToHateList(Mob *in_entity, int64 in_hate, int64 in_damage, bool in_is_entity_frenzied, bool iAddIfNotExist)
 {
 	if (!in_entity) {
 		return;
@@ -257,7 +257,7 @@ bool HateList::RemoveEntFromHateList(Mob *in_entity)
 	return is_found;
 }
 
-void HateList::DoFactionHits(int32 npc_faction_level_id) {
+void HateList::DoFactionHits(int64 npc_faction_level_id) {
 	if (npc_faction_level_id <= 0)
 		return;
 	auto iterator = list.begin();
@@ -662,18 +662,19 @@ Mob *HateList::GetEscapingEntOnHateList(Mob *center, float range, bool first) {
 	return escaping_mob;
 }
 
-int32 HateList::GetEntHateAmount(Mob *in_entity, bool damage)
+int64 HateList::GetEntHateAmount(Mob *in_entity, bool damage)
 {
 	struct_HateList *entity;
 
 	entity = Find(in_entity);
 
-	if (entity && damage)
+	if (entity && damage) {
 		return entity->hatelist_damage;
-	else if (entity)
+	} else if (entity) {
 		return entity->stored_hate_amount;
-	else
+	} else {
 		return 0;
+	}
 }
 
 bool HateList::IsHateListEmpty() {
@@ -734,8 +735,9 @@ void HateList::PrintHateListToClient(Client *c)
 
 int HateList::AreaRampage(Mob *caster, Mob *target, int count, ExtraAttackOptions *opts)
 {
-	if (!target || !caster)
+	if (!target || !caster) {
 		return 0;
+	}
 
 	// tank will be hit ONLY if they are the only target on the hate list
 	// if there is anyone else on the hate list, the tank will not be hit, even if those others aren't hit either
@@ -770,13 +772,15 @@ int HateList::AreaRampage(Mob *caster, Mob *target, int count, ExtraAttackOption
 
 void HateList::SpellCast(Mob *caster, uint32 spell_id, float range, Mob* ae_center)
 {
-	if (!caster)
+	if (!caster) {
 		return;
+	}
 
 	Mob* center = caster;
 
-	if (ae_center)
+	if (ae_center) {
 		center = ae_center;
+	}
 
 	//this is slower than just iterating through the list but avoids
 	//crashes when people kick the bucket in the middle of this call
@@ -793,14 +797,11 @@ void HateList::SpellCast(Mob *caster, uint32 spell_id, float range, Mob* ae_cent
 		if (range > 0)
 		{
 			dist_targ = DistanceSquared(center->GetPosition(), h->entity_on_hatelist->GetPosition());
-			if (dist_targ <= range && dist_targ >= min_range2)
-			{
+			if (dist_targ <= range && dist_targ >= min_range2) {
 				id_list.push_back(h->entity_on_hatelist->GetID());
 				h->entity_on_hatelist->CalcSpellPowerDistanceMod(spell_id, dist_targ);
 			}
-		}
-		else
-		{
+		} else {
 			id_list.push_back(h->entity_on_hatelist->GetID());
 			h->entity_on_hatelist->CalcSpellPowerDistanceMod(spell_id, 0, caster);
 		}
@@ -808,11 +809,9 @@ void HateList::SpellCast(Mob *caster, uint32 spell_id, float range, Mob* ae_cent
 	}
 
 	auto iter = id_list.begin();
-	while (iter != id_list.end())
-	{
+	while (iter != id_list.end()) {
 		Mob *cur = entity_list.GetMobID((*iter));
-		if (cur)
-		{
+		if (cur) {
 			caster->SpellOnTarget(spell_id, cur);
 		}
 		iter++;
@@ -820,13 +819,10 @@ void HateList::SpellCast(Mob *caster, uint32 spell_id, float range, Mob* ae_cent
 }
 
 //When a death happens, this trigger causes entities on the hate list a trigger
-void HateList::OnDeathTrigger()
-{
-
+void HateList::OnDeathTrigger() {
 	// uint32 rank;
 	auto iterator = list.begin();
-	while (iterator != list.end())
-	{
+	while (iterator != list.end()) {
 		struct_HateList *h = (*iterator);
 		Mob *mobHated = h->entity_on_hatelist;
 
@@ -853,8 +849,7 @@ void HateList::OnDeathTrigger()
 	}
 }
 
-void HateList::RemoveStaleEntries(int time_ms, float dist)
-{
+void HateList::RemoveStaleEntries(int time_ms, float dist) {
 	auto it = list.begin();
 
 	auto cur_time = Timer::GetCurrentTime();
@@ -866,13 +861,15 @@ void HateList::RemoveStaleEntries(int time_ms, float dist)
 		if (m) {
 			bool remove = false;
 
-			if (cur_time - (*it)->last_modified > time_ms)
+			if (cur_time - (*it)->last_modified > time_ms) {
 				remove = true;
+			}
 
 			if (!remove && DistanceSquaredNoZ(hate_owner->GetPosition(), m->GetPosition()) > dist2) {
 				(*it)->oor_count++;
-				if ((*it)->oor_count == 2)
+				if ((*it)->oor_count == 2) {
 					remove = true;
+				}
 			} else if ((*it)->oor_count != 0) {
 				(*it)->oor_count = 0;
 			}
