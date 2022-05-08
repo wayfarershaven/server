@@ -26,10 +26,12 @@ Copyright (C) 2001-2014 EQEMu Development Team (http://eqemulator.net)
 extern WorldServer worldserver;
 extern QueryServ* QServ;
 
-QueryServ::QueryServ(){
+QueryServ::QueryServ()
+{
 }
 
-QueryServ::~QueryServ(){
+QueryServ::~QueryServ()
+{
 }
 
 void QueryServ::SendQuery(std::string Query)

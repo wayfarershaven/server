@@ -1117,6 +1117,12 @@
 #define LogHTTPDetail(message, ...) do {\
 } while (0)
 
+#define LogSaylink(message, ...) do {\
+} while (0)
+
+#define LogSaylinkDetail(message, ...) do {\
+} while (0)
+
 #define LogScheduler(message, ...) do {\
 } while (0)
 
