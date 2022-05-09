@@ -484,7 +484,7 @@ XS(XS_NPC_GetNPCHate) {
 		Perl_croak(aTHX_ "Usage: NPC::GetNPCHate(THIS, Mob* entity)"); // @categories Hate and Aggro
 	{
 		NPC   *THIS;
-		int64 RETVAL;
+		int32 RETVAL;
 		dXSTARG;
 		Mob   *in_ent;
 		VALIDATE_THIS_IS_NPC;

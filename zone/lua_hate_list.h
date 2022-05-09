@@ -20,10 +20,10 @@ public:
 	
 	Lua_Mob GetEnt();
 	void SetEnt(Lua_Mob e);
-	int64 GetDamage();
-	void SetDamage(int64 value);
-	uint64 GetHate();
-	void SetHate(uint64 value);
+	int GetDamage();
+	void SetDamage(int value);
+	int GetHate();
+	void SetHate(int value);
 	int GetFrenzy();
 	void SetFrenzy(bool value);
 };

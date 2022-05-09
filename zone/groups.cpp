@@ -1297,30 +1297,27 @@ void Group::HealGroup(uint32 heal_amt, Mob* caster, float range)
 
 void Group::BalanceHP(int32 penalty, float range, Mob* caster, int32 limit)
 {
-	if (!caster) {
+	if (!caster)
 		return;
-	}
 
-	if (!range) {
+	if (!range)
 		range = 200;
-	}
 
-	int64 dmgtaken = 0, numMem = 0, dmgtaken_tmp = 0;
+	int dmgtaken = 0, numMem = 0, dmgtaken_tmp = 0;
 
 	float distance;
 	float range2 = range*range;
 
 	unsigned int gi = 0;
-	
 	for(; gi < MAX_GROUP_MEMBERS; gi++)
 	{
 		if(members[gi]){
 			distance = DistanceSquared(caster->GetPosition(), members[gi]->GetPosition());
 			if(distance <= range2){
+
 				dmgtaken_tmp = members[gi]->GetMaxHP() - members[gi]->GetHP();
-				if (limit && (dmgtaken_tmp > limit)) {
+				if (limit && (dmgtaken_tmp > limit))
 					dmgtaken_tmp = limit;
-				}
 
 				dmgtaken += (dmgtaken_tmp);
 				numMem += 1;
@@ -1330,7 +1327,6 @@ void Group::BalanceHP(int32 penalty, float range, Mob* caster, int32 limit)
 
 	dmgtaken += dmgtaken * penalty / 100;
 	dmgtaken /= numMem;
-
 	for(gi = 0; gi < MAX_GROUP_MEMBERS; gi++)
 	{
 		if(members[gi]){

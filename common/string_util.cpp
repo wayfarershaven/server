@@ -575,9 +575,9 @@ char *RemoveApostrophes(const char *s)
 	return NewString;
 }
 
-const char *ConvertArray(int64 input, char *returnchar)
+const char *ConvertArray(int input, char *returnchar)
 {
-	sprintf(returnchar, "%lld", input);
+	sprintf(returnchar, "%i", input);
 	return returnchar;
 }
 

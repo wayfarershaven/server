@@ -2503,7 +2503,7 @@ const NPCType *ZoneDatabase::LoadNPCTypesData(uint32 npc_type_id, bool bulk_load
 		temp_npctype_data->level              = atoi(row[2]);
 		temp_npctype_data->race               = atoi(row[3]);
 		temp_npctype_data->class_             = atoi(row[4]);
-		temp_npctype_data->max_hp             = strtoll(row[5], nullptr, 10);
+		temp_npctype_data->max_hp             = atoi(row[5]);
 		temp_npctype_data->current_hp         = temp_npctype_data->max_hp;
 		temp_npctype_data->Mana               = atoi(row[6]);
 		temp_npctype_data->gender             = atoi(row[7]);

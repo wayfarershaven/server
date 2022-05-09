@@ -187,7 +187,7 @@ public:
 	bool has_zone_flag(int zone_id);
 	void set_zone_flag(int zone_id);
 	void clear_zone_flag(int zone_id);
-	void sethp(int64 hpperc);
+	void sethp(int hpperc);
 	bool summonburiedplayercorpse(uint32 char_id, const glm::vec4& position);
 	bool summonallplayercorpses(uint32 char_id, const glm::vec4& position);
 	uint32 getplayerburiedcorpsecount(uint32 char_id);

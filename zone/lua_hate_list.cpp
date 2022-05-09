@@ -20,22 +20,22 @@ void Lua_HateEntry::SetEnt(Lua_Mob e) {
 	self->entity_on_hatelist = e;
 }
 
-int64 Lua_HateEntry::GetDamage() {
+int Lua_HateEntry::GetDamage() {
 	Lua_Safe_Call_Int();
 	return self->hatelist_damage;
 }
 
-void Lua_HateEntry::SetDamage(int64 value) {
+void Lua_HateEntry::SetDamage(int value) {
 	Lua_Safe_Call_Void();
 	self->hatelist_damage = value;
 }
 
-uint64 Lua_HateEntry::GetHate() {
+int Lua_HateEntry::GetHate() {
 	Lua_Safe_Call_Int();
 	return self->stored_hate_amount;
 }
 
-void Lua_HateEntry::SetHate(uint64 value) {
+void Lua_HateEntry::SetHate(int value) {
 	Lua_Safe_Call_Void();
 	self->stored_hate_amount = value;
 }

@@ -882,8 +882,8 @@ bool NPC::Process()
 
 		uint32 npc_sitting_regen_bonus = 0;
 		uint32 pet_regen_bonus         = 0;
-		uint64 npc_regen               = 0;
-		int64  npc_hp_regen            = GetNPCHPRegen();
+		uint32 npc_regen               = 0;
+		int32  npc_hp_regen            = GetNPCHPRegen();
 
 		if (GetAppearance() == eaSitting) {
 			npc_sitting_regen_bonus += 3;
@@ -1768,7 +1768,7 @@ int32 NPC::GetEquipmentMaterial(uint8 material_slot) const
 
 uint32 NPC::GetMaxDamage(uint8 tlevel)
 {
-	uint64 dmg = 0;
+	uint32 dmg = 0;
 	if (tlevel < 40)
 		dmg = tlevel*2+2;
 	else if (tlevel < 50)
@@ -2419,7 +2419,7 @@ void NPC::ModifyNPCStat(const char *identifier, const char *new_value)
 		return;
 	}
 	else if (id == "max_hp") {
-		base_hp = std::stoull(val.c_str());
+		base_hp = atoi(val.c_str());
 
 		CalcMaxHP();
 		if (current_hp > max_hp) {
@@ -2429,7 +2429,7 @@ void NPC::ModifyNPCStat(const char *identifier, const char *new_value)
 		return;
 	}
 	else if (id == "max_mana") {
-		npc_mana = std::stoull(val.c_str());
+		npc_mana = atoi(val.c_str());
 		CalcMaxMana();
 		if (current_mana > max_mana) {
 			current_mana = max_mana;
@@ -2556,7 +2556,7 @@ void NPC::ModifyNPCStat(const char *identifier, const char *new_value)
 		return;
 	}
 	else if (id == "mana_regen") {
-		mana_regen = strtoll(val.c_str(), nullptr, 10);
+		mana_regen = atoi(val.c_str());
 		return;
 	}
 	else if (id == "combat_mana_regen") {
@@ -2847,13 +2847,13 @@ void NPC::LevelScale() {
 		} else {
 			uint8 scale_adjust = 1;
 
-			base_hp += (int64)(base_hp * scaling);
-			max_hp += (int64)(max_hp * scaling);
+			base_hp += (int)(base_hp * scaling);
+			max_hp += (int)(max_hp * scaling);
 			current_hp = max_hp;
 
 			if (max_dmg) {
-				max_dmg += (int64)(max_dmg * scaling / scale_adjust);
-				min_dmg += (int64)(min_dmg * scaling / scale_adjust);
+				max_dmg += (int)(max_dmg * scaling / scale_adjust);
+				min_dmg += (int)(min_dmg * scaling / scale_adjust);
 			}
 
 			STR += (int)(STR * scaling / scale_adjust);
@@ -2888,8 +2888,8 @@ void NPC::LevelScale() {
 
 		AC += (int)(AC * scaling);
 		ATK += (int)(ATK * scaling);
-		base_hp += (int64)(base_hp * scaling);
-		max_hp += (int64)(max_hp * scaling);
+		base_hp += (int)(base_hp * scaling);
+		max_hp += (int)(max_hp * scaling);
 		current_hp = max_hp;
 		STR += (int)(STR * scaling / scale_adjust);
 		STA += (int)(STA * scaling / scale_adjust);
@@ -2911,8 +2911,8 @@ void NPC::LevelScale() {
 
 		if (max_dmg)
 		{
-			max_dmg += (int64)(max_dmg * scaling / scale_adjust);
-			min_dmg += (int64)(min_dmg * scaling / scale_adjust);
+			max_dmg += (int)(max_dmg * scaling / scale_adjust);
+			min_dmg += (int)(min_dmg * scaling / scale_adjust);
 		}
 
 	}
@@ -2969,7 +2969,7 @@ void NPC::SetSwarmTarget(int target_id)
 	return;
 }
 
-int64 NPC::CalcMaxMana()
+int32 NPC::CalcMaxMana()
 {
 	if (npc_mana == 0) {
 		switch (GetCasterClass()) {
@@ -3156,11 +3156,11 @@ int NPC::GetScore()
     int lv = std::min(70, (int)GetLevel());
     int basedmg = (lv*2)*(1+(lv / 100)) - (lv / 2);
     int minx = 0;
-    int64 basehp = 0;
+    int basehp = 0;
     int hpcontrib = 0;
     int dmgcontrib = 0;
     int spccontrib = 0;
-    int64 hp = GetMaxHP();
+    int hp = GetMaxHP();
     int mindmg = min_dmg;
     int maxdmg = max_dmg;
     int final;

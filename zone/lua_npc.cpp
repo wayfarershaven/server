@@ -192,7 +192,7 @@ int Lua_NPC::GetPrimaryFaction() {
 	return self->GetPrimaryFaction();
 }
 
-int64 Lua_NPC::GetNPCHate(Lua_Mob ent) {
+int Lua_NPC::GetNPCHate(Lua_Mob ent) {
 	Lua_Safe_Call_Int();
 	return self->GetNPCHate(ent);
 }
@@ -728,7 +728,7 @@ luabind::scope lua_register_npc() {
 	.def("GetMaxWp", (int(Lua_NPC::*)(void))&Lua_NPC::GetMaxWp)
 	.def("GetMinDMG", (uint32(Lua_NPC::*)(void))&Lua_NPC::GetMinDMG)
 	.def("GetNPCFactionID", (int(Lua_NPC::*)(void))&Lua_NPC::GetNPCFactionID)
-	.def("GetNPCHate", (int64(Lua_NPC::*)(Lua_Mob))&Lua_NPC::GetNPCHate)
+	.def("GetNPCHate", (int(Lua_NPC::*)(Lua_Mob))&Lua_NPC::GetNPCHate)
 	.def("GetNPCSpellsID", (int(Lua_NPC::*)(void))&Lua_NPC::GetNPCSpellsID)
 	.def("GetNPCSpellsID", (int(Lua_NPC::*)(void))&Lua_NPC::GetNPCSpellsID)
 	.def("GetNPCStat", (float(Lua_NPC::*)(const char*))&Lua_NPC::GetNPCStat)

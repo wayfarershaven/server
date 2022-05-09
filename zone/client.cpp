@@ -1830,7 +1830,7 @@ void Client::IncStats(uint8 type,int16 increase_val){
 	safe_delete(outapp);
 }
 
-const int64& Client::SetMana(int64 amount) {
+const int32& Client::SetMana(int32 amount) {
 	bool update = false;
 	if (amount < 0)
 		amount = 0;
@@ -2861,7 +2861,7 @@ bool Client::BindWound(Mob *bindmob, bool start, bool fail)
 
 						max_percent = mod_bindwound_percent(max_percent, bindmob);
 
-						int64 max_hp = bindmob->GetMaxHP() * max_percent / 100;
+						int max_hp = bindmob->GetMaxHP() * max_percent / 100;
 
 						// send bindmob new hp's
 						if (bindmob->GetHP() < bindmob->GetMaxHP() && bindmob->GetHP() <= (max_hp)-1) {

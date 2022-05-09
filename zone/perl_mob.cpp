@@ -607,7 +607,7 @@ XS(XS_Mob_Damage); /* prototype to pass -Wmissing-prototypes */
 XS(XS_Mob_Damage) {
 	dXSARGS;
 	if (items < 5 || items > 8)
-		Perl_croak(aTHX_ "Usage: Mob::Damage(THIS, Mob* from, int64 damage, uint16 spell_id, int attack_skill, [bool avoidable = true], [int8 buffslot = -1], [bool buff_tic = false])"); // @categories Script Utility
+		Perl_croak(aTHX_ "Usage: Mob::Damage(THIS, Mob* from, int32 damage, uint16 spell_id, int attack_skill, [bool avoidable = true], [int8 buffslot = -1], [bool buff_tic = false])"); // @categories Script Utility
 	{
 		Mob *THIS;
 		Mob *from;
@@ -711,10 +711,10 @@ XS(XS_Mob_HealDamage); /* prototype to pass -Wmissing-prototypes */
 XS(XS_Mob_HealDamage) {
 	dXSARGS;
 	if (items < 2 || items > 3)
-		Perl_croak(aTHX_ "Usage: Mob::HealDamage(THIS, int64 amount, [Mob* caster = 0])"); // @categories Script Utility
+		Perl_croak(aTHX_ "Usage: Mob::HealDamage(THIS, int32 amount, [Mob* caster = 0])"); // @categories Script Utility
 	{
 		Mob *THIS;
-		int64 heal_amt = (int64) SvIV(ST(1));
+		int32 heal_amt = (int32) SvIV(ST(1));
 		Mob *caster = nullptr;
 		VALIDATE_THIS_IS_MOB;
 		if (items == 3) {
@@ -767,10 +767,10 @@ XS(XS_Mob_SetHP); /* prototype to pass -Wmissing-prototypes */
 XS(XS_Mob_SetHP) {
 	dXSARGS;
 	if (items != 2)
-		Perl_croak(aTHX_ "Usage: Mob::SetHP(THIS, int64 hp)"); // @categories Stats and Attributes
+		Perl_croak(aTHX_ "Usage: Mob::SetHP(THIS, int32 hp)"); // @categories Stats and Attributes
 	{
 		Mob *THIS;
-		int64 hp = (int32) SvIV(ST(1));
+		int32 hp = (int32) SvIV(ST(1));
 		VALIDATE_THIS_IS_MOB;
 		THIS->SetHP(hp);
 	}
@@ -2214,13 +2214,13 @@ XS(XS_Mob_GetActSpellDamage); /* prototype to pass -Wmissing-prototypes */
 XS(XS_Mob_GetActSpellDamage) {
 	dXSARGS;
 	if (items != 3)
-		Perl_croak(aTHX_ "Usage: Mob::GetActSpellDamage(THIS, uint16 spell_id, int64 value)"); // @categories Spells and Disciplines
+		Perl_croak(aTHX_ "Usage: Mob::GetActSpellDamage(THIS, uint16 spell_id, int32 value)"); // @categories Spells and Disciplines
 	{
 		Mob *THIS;
 		int32  RETVAL;
 		dXSTARG;
 		uint16 spell_id = (uint16) SvUV(ST(1));
-		int64  value    = (int64) SvIV(ST(2));
+		int32  value    = (int32) SvIV(ST(2));
 		VALIDATE_THIS_IS_MOB;
 		RETVAL = THIS->GetActSpellDamage(spell_id, value);
 		XSprePUSH;
@@ -2233,13 +2233,13 @@ XS(XS_Mob_GetActSpellHealing); /* prototype to pass -Wmissing-prototypes */
 XS(XS_Mob_GetActSpellHealing) {
 	dXSARGS;
 	if (items != 3)
-		Perl_croak(aTHX_ "Usage: Mob::GetActSpellHealing(THIS, uint16 spell_id, int64 value)"); // @categories Spells and Disciplines
+		Perl_croak(aTHX_ "Usage: Mob::GetActSpellHealing(THIS, uint16 spell_id, int32 value)"); // @categories Spells and Disciplines
 	{
 		Mob *THIS;
 		int32  RETVAL;
 		dXSTARG;
 		uint16 spell_id = (uint16) SvUV(ST(1));
-		int64  value    = (int64) SvIV(ST(2));
+		int32  value    = (int32) SvIV(ST(2));
 		VALIDATE_THIS_IS_MOB;
 		RETVAL = THIS->GetActSpellHealing(spell_id, value);
 		XSprePUSH;
@@ -3583,12 +3583,12 @@ XS(XS_Mob_AddToHateList); /* prototype to pass -Wmissing-prototypes */
 XS(XS_Mob_AddToHateList) {
 	dXSARGS;
 	if (items < 2 || items > 7)
-		Perl_croak(aTHX_ "Usage: Mob::AddToHateList(THIS, Mob* other, [int64 hate = 0], [int64 damage = 0], [bool yell_for_help = true], [bool frenzy = false], [bool buff_tic = false])"); // @categories Hate and Aggro
+		Perl_croak(aTHX_ "Usage: Mob::AddToHateList(THIS, Mob* other, [int32 hate = 0], [int32 damage = 0], [bool yell_for_help = true], [bool frenzy = false], [bool buff_tic = false])"); // @categories Hate and Aggro
 	{
 		Mob *THIS;
 		Mob *other;
-		int64 hate;
-		int64 damage;
+		int32 hate;
+		int32 damage;
 		bool  iYellForHelp;
 		bool  bFrenzy;
 		bool  iBuffTic;
@@ -3604,13 +3604,13 @@ XS(XS_Mob_AddToHateList) {
 		if (items < 3)
 			hate = 0;
 		else {
-			hate = (int64) SvIV(ST(2));
+			hate = (int32) SvIV(ST(2));
 		}
 
 		if (items < 4)
 			damage = 0;
 		else {
-			damage = (int64) SvIV(ST(3));
+			damage = (int32) SvIV(ST(3));
 		}
 
 		if (items < 5)
@@ -3640,12 +3640,12 @@ XS(XS_Mob_SetHate); /* prototype to pass -Wmissing-prototypes */
 XS(XS_Mob_SetHate) {
 	dXSARGS;
 	if (items < 2 || items > 4)
-		Perl_croak(aTHX_ "Usage: Mob::SetHate(THIS, Mob* other, [int64 hate = 0], [int64 damage = 0])"); // @categories Hate and Aggro
+		Perl_croak(aTHX_ "Usage: Mob::SetHate(THIS, Mob* other, [int32 hate = 0], [int32 damage = 0])"); // @categories Hate and Aggro
 	{
 		Mob *THIS;
 		Mob *other;
-		int64 hate;
-		int64 damage;
+		int32 hate;
+		int32 damage;
 		VALIDATE_THIS_IS_MOB;
 		if (sv_derived_from(ST(1), "Mob")) {
 			IV tmp = SvIV((SV *) SvRV(ST(1)));
@@ -3658,13 +3658,13 @@ XS(XS_Mob_SetHate) {
 		if (items < 3)
 			hate = 0;
 		else {
-			hate = (int64) SvIV(ST(2));
+			hate = (int32) SvIV(ST(2));
 		}
 
 		if (items < 4)
 			damage = 0;
 		else {
-			damage = (int64) SvIV(ST(3));
+			damage = (int32) SvIV(ST(3));
 		}
 
 		THIS->SetHateAmountOnEnt(other, hate, damage);

@@ -337,13 +337,13 @@ struct Buffs_Struct {
 
 struct StatBonuses {
 	int32	AC;
-	int64	HP;
-	int64	HPRegen;
-	int64	MaxHP;
-	int64	ManaRegen;
-	int64	EnduranceRegen;
-	int64	Mana;
-	int64	Endurance;
+	int32	HP;
+	int32	HPRegen;
+	int32	MaxHP;
+	int32	ManaRegen;
+	int32	EnduranceRegen;
+	int32	Mana;
+	int32	Endurance;
 	int32	ATK;
 	//would it be worth it to create a Stat_Struct?
 	int32	STR;
@@ -414,7 +414,7 @@ struct StatBonuses {
 	uint32	stringedMod;
 	uint32	songModCap;
 	int8	hatemod;
-	int64	EnduranceReduction;
+	int32	EnduranceReduction;
 
 	int32	StrikeThrough;						// PoP: Strike Through %
 	int32	MeleeMitigation;					//i = Shielding
@@ -876,7 +876,7 @@ struct ExtraAttackOptions {
 	{ }
 
 	float damage_percent;
-	int64 damage_flat;
+	int damage_flat;
 	float armor_pen_percent;
 	int armor_pen_flat;
 	float crit_percent;
@@ -898,9 +898,9 @@ struct DamageTable {
 struct DamageHitInfo {
 	//uint16 attacker; // id
 	//uint16 defender; // id
-	int64 base_damage;
-	int64 min_damage;
-	int64 damage_done;
+	int base_damage;
+	int min_damage;
+	int damage_done;
 	int offense;
 	int tohit;
 	int hand;

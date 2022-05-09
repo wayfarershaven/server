@@ -10,37 +10,37 @@ int32 Lua_StatBonuses::GetAC() const {
 	return self->AC;
 }
 
-int64 Lua_StatBonuses::GetHP() const {
+int32 Lua_StatBonuses::GetHP() const {
 	Lua_Safe_Call_Int();
 	return self->HP;
 }
 
-int64 Lua_StatBonuses::GetHPRegen() const {
+int32 Lua_StatBonuses::GetHPRegen() const {
 	Lua_Safe_Call_Int();
 	return self->HPRegen;
 }
 
-int64 Lua_StatBonuses::GetMaxHP() const {
+int32 Lua_StatBonuses::GetMaxHP() const {
 	Lua_Safe_Call_Int();
 	return self->MaxHP;
 }
 
-int64 Lua_StatBonuses::GetManaRegen() const {
+int32 Lua_StatBonuses::GetManaRegen() const {
 	Lua_Safe_Call_Int();
 	return self->ManaRegen;
 }
 
-int64 Lua_StatBonuses::GetEnduranceRegen() const {
+int32 Lua_StatBonuses::GetEnduranceRegen() const {
 	Lua_Safe_Call_Int();
 	return self->EnduranceRegen;
 }
 
-int64 Lua_StatBonuses::GetMana() const {
+int32 Lua_StatBonuses::GetMana() const {
 	Lua_Safe_Call_Int();
 	return self->Mana;
 }
 
-int64 Lua_StatBonuses::GetEndurance() const {
+int32 Lua_StatBonuses::GetEndurance() const {
 	Lua_Safe_Call_Int();
 	return self->Endurance;
 }
@@ -385,7 +385,7 @@ int8 Lua_StatBonuses::Gethatemod() const {
 	return self->hatemod;
 }
 
-int64 Lua_StatBonuses::GetEnduranceReduction() const {
+int32 Lua_StatBonuses::GetEnduranceReduction() const {
 	Lua_Safe_Call_Int();
 	return self->EnduranceReduction;
 }

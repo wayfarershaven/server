@@ -923,7 +923,7 @@ void Mob::Gate(uint8 bind_number) {
 	GoToBind(bind_number);
 	if (RuleB(NPC, NPCHealOnGate) && this->IsNPC() && this->GetHPRatio() <= RuleR(NPC, NPCHealOnGateAmount)) {
 		auto HealAmount = (RuleR(NPC, NPCHealOnGateAmount) / 100);
-		SetHP(int64(GetMaxHP() * HealAmount));
+		SetHP(int(this->GetMaxHP() * HealAmount));
 	}
 }
 
