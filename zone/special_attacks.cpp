@@ -2107,6 +2107,8 @@ void Mob::Taunt(NPC *who, bool always_succeed, int chance_bonus, bool FromSpell,
 		}
 	}
 
+	tauntChance += RuleI(Combat, TauntChanceBonus);
+
 	if (zone->random.Roll(tauntChance)) {
 		if (hate_top && hate_top != this) {
 			uint32 newhate = ((who->GetNPCHate(hate_top) - who->GetNPCHate(this)) + bonus_hate + RuleI(Combat, TauntOverAggro));
