@@ -14063,8 +14063,10 @@ void Client::Handle_OP_TargetCommand(const EQApplicationPacket *app)
 				HoTT_LAA = group->GetLeadershipAA(groupAAHealthOfTargetsTarget);
 			}
 		}
-		if (HoTT_LAA) {
+		if (GetGM() || HoTT_LAA) {
 			SetHoTT(GetTarget()->GetTarget()->GetID());
+		} else {
+			SetHoTT(0);
 		}
 	} else {
 		SetHoTT(0);
