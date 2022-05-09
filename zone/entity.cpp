@@ -4134,7 +4134,8 @@ void EntityList::UpdateHoTT(Mob *target)
 	auto it = client_list.begin();
 	while (it != client_list.end()) {
 		Client *c = it->second;
-		if (c->GetTarget() == target) {
+
+		if (c != nullptr) {
 			bool HoTT_LAA = false;
 			if (c->IsRaidGrouped()) {
 				Raid *raid = c->GetRaid();
@@ -4143,8 +4144,7 @@ void EntityList::UpdateHoTT(Mob *target)
 				if (gid < 12 && raid->GroupCount(gid) > 2)
 					HoTT_LAA = raid->GetLeadershipAA(groupAAHealthOfTargetsTarget, gid);
 				}
-			}
-			else {
+			} else {
 				Group *group = c->GetGroup();
 				if (group && group->GroupCount() > 2) {
 					HoTT_LAA = group->GetLeadershipAA(groupAAHealthOfTargetsTarget);
@@ -4156,6 +4156,8 @@ void EntityList::UpdateHoTT(Mob *target)
 			} else {
 				c->SetHoTT(0);
 			}
+		} else {
+			c->SetHoTT(0);
 		}
 		++it;
 	}
