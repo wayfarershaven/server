@@ -401,4 +401,22 @@ enum AugmentActions : int {
 	Destroy
 };
 
+enum ConsiderLevel : uint8 {
+	Ally = 1,
+	Warmly,
+	Kindly,
+	Amiably,
+	Indifferently,
+	Apprehensively,
+	Dubiously,
+	Threateningly,
+	Scowls
+};
+
+enum ReloadWorld : uint8 {
+	NoRepop = 0,
+	Repop,
+	ForceRepop
+};
+
 #endif /*COMMON_EMU_CONSTANTS_H*/

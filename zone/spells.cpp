@@ -103,7 +103,7 @@ Copyright (C) 2001-2002 EQEMu Development Team (http://eqemu.org)
 
 #include "mob_movement_manager.h"
 #include "client.h"
-
+#include "mob.h"
 
 extern Zone* zone;
 extern volatile bool is_zone_loaded;
@@ -2576,7 +2576,7 @@ bool Mob::SpellFinished(uint16 spell_id, Mob *spell_target, CastingSlot slot, ui
 	// lets not consume end for custom items that have disc procs.
 	// One might also want to filter out USE_ITEM_SPELL_SLOT, but DISCIPLINE_SPELL_SLOT are both #defined to the same thing ...
 	if (spells[spell_id].endurance_cost && !isproc) {
-		auto end_cost = spells[spell_id].endurance_cost;
+		auto end_cost = (int64)spells[spell_id].endurance_cost;
 		if (mgb)
 			end_cost *= 2;
 		SetEndurance(GetEndurance() - EQ::ClampUpper(end_cost, GetEndurance()));
@@ -2627,7 +2627,7 @@ bool Mob::SpellFinished(uint16 spell_id, Mob *spell_target, CastingSlot slot, ui
 				recast -= GetAA(aaTouchoftheWicked) * 720;
 			}
 
-			int reduction = CastToClient()->GetFocusEffect(focusReduceRecastTime, spell_id);
+			int64 reduction = CastToClient()->GetFocusEffect(focusReduceRecastTime, spell_id);
 
 			if (reduction) {
 				recast -= reduction;
@@ -3479,6 +3479,8 @@ int Mob::CanBuffStack(uint16 spellid, uint8 caster_level, bool iFailIfOverwrite)
 bool Mob::SpellOnTarget(uint16 spell_id, Mob *spelltar, int reflect_effectiveness, bool use_resist_adjust, int16 resist_adjust,
 			bool isproc, int level_override, int32 duration_override)
 {
+	auto spellOwner = GetOwnerOrSelf();
+
 	// well we can't cast a spell on target without a target
 	if(!spelltar)
 	{
@@ -3494,8 +3496,6 @@ bool Mob::SpellOnTarget(uint16 spell_id, Mob *spelltar, int reflect_effectivenes
 	if (!IsValidSpell(spell_id)) {
 		return false;
 	}
-
-	bool is_damage_or_lifetap_spell = IsDamageSpell(spell_id) || IsLifetapSpell(spell_id);
 
 	if(IsDetrimentalSpell(spell_id) && !IsAttackAllowed(spelltar, true) && !IsResurrectionEffects(spell_id) && !IsEffectInSpell(spell_id, SE_BindSight)) {
 		if(spell_id != 727) { // Bard Group Dispell
@@ -3592,7 +3592,7 @@ bool Mob::SpellOnTarget(uint16 spell_id, Mob *spelltar, int reflect_effectivenes
 		RuleI(Range, SpellMessages),
 		this, /* Skip this Mob */
 		true, /* Packet ACK */
-		(spelltar->IsClient() ? FilterPCSpells : FilterNPCSpells) /* EQ Filter Type: (8 or 9) */
+		(spellOwner->IsClient() ? FilterPCSpells : FilterNPCSpells) /* EQ Filter Type: (8 or 9) */
 	);
 
 	/* Send the EVENT_CAST_ON event */
@@ -4125,9 +4125,7 @@ bool Mob::SpellOnTarget(uint16 spell_id, Mob *spelltar, int reflect_effectivenes
 		if(IsClient())	// send to caster
 			CastToClient()->QueuePacket(action_packet);
 	}
-	// send to people in the area, ignoring caster and target
-	//live dosent send this to anybody but the caster
-	//entity_list.QueueCloseClients(spelltar, action_packet, true, 200, this, true, spelltar->IsClient() ? FILTER_PCSPELLS : FILTER_NPCSPELLS);
+
 	message_packet = new EQApplicationPacket(OP_Damage, sizeof(CombatDamage_Struct));
 	CombatDamage_Struct *cd = (CombatDamage_Struct *)message_packet->pBuffer;
 	cd->target = action->target;
@@ -4139,24 +4137,18 @@ bool Mob::SpellOnTarget(uint16 spell_id, Mob *spelltar, int reflect_effectivenes
 	cd->hit_pitch = action->hit_pitch;
 	cd->damage = 0;
 
-	auto spellOwner = GetOwnerOrSelf();
-	if(!IsEffectInSpell(spell_id, SE_BindAffinity) && !is_damage_or_lifetap_spell){
-		entity_list.QueueCloseClients(
-			spelltar, /* Sender */
-			message_packet, /* Packet */
-			false, /* Ignore Sender */
-			RuleI(Range, SpellMessages),
-			0, /* Skip this mob */
-			true, /* Packet ACK */
-			(spelltar->IsClient() ? FilterPCSpells : FilterNPCSpells) /* Message Filter Type: (8 or 9) */
-		);
-	} else if (is_damage_or_lifetap_spell && spellOwner->IsClient()) {
-		spellOwner->CastToClient()->QueuePacket(
-			message_packet,
-			true,
-			Mob::CLIENT_CONNECTINGALL,
-			(spelltar->IsClient() ? FilterPCSpells : FilterNPCSpells)
-		);
+	if (!IsEffectInSpell(spell_id, SE_BindAffinity) && !IsAENukeSpell(spell_id)) {
+		if (!IsDamageSpell(spell_id) || IsDOTWithDDSpell(spell_id)) {
+			entity_list.QueueCloseClients(
+				spelltar, /* Sender */
+				message_packet, /* Packet */
+				false, /* Ignore Sender */
+				RuleI(Range, SpellMessages),
+				0, /* Skip this mob */
+				true, /* Packet ACK */
+				(spellOwner->IsClient() ? FilterPCSpells : FilterNPCSpells) /* Message Filter Type: (8 or 9) */
+			);
+		}
 	}
 	safe_delete(action_packet);
 	safe_delete(message_packet);
@@ -4777,11 +4769,11 @@ float Mob::ResistSpell(uint8 resist_type, uint16 spell_id, Mob *caster, bool use
 		resist_modifier += caster->GetSpecialAbilityParam(CASTING_RESIST_DIFF, 0);
 	}
 
-	int focus_resist = caster->GetFocusEffect(focusResistRate, spell_id);
+	int64 focus_resist = caster->GetFocusEffect(focusResistRate, spell_id);
 
 	resist_modifier -= 2 * focus_resist;
 
-	int focus_incoming_resist = GetFocusEffect(focusFcResistIncoming, spell_id, caster);
+	int64 focus_incoming_resist = GetFocusEffect(focusFcResistIncoming, spell_id, caster);
 
 	resist_modifier -= focus_incoming_resist;
 
@@ -5816,7 +5808,7 @@ bool Mob::FindType(uint16 type, bool bOffensive, uint16 threshold) {
 				// adjustments necessary for offensive npc casting behavior
 				if (bOffensive) {
 					if (spells[buffs[i].spellid].effect_id[j] == type) {
-						int16 value =
+						int64 value =
 								CalcSpellEffectValue_formula(spells[buffs[i].spellid].buff_duration_formula,
 											spells[buffs[i].spellid].base_value[j],
 											spells[buffs[i].spellid].max_value[j],
@@ -6146,11 +6138,11 @@ void Mob::SendPetBuffsToClient()
 
 void Mob::SendBuffsToClient(Client *c)
 {
-	if(!c)
+	if(!c) {
 		return;
+	}
 
-	if (c->ClientVersionBit() & EQ::versions::maskSoDAndLater)
-	{
+	if (c->ClientVersionBit() & EQ::versions::maskSoDAndLater) {
 		EQApplicationPacket *outapp = MakeBuffsPacket();
 		c->FastQueuePacket(&outapp);
 	}
@@ -6505,6 +6497,23 @@ void Mob::BeamDirectional(uint16 spell_id, int16 resist_adjust)
 			}
 		}
 
+		if (!beneficial_targets) {
+			if (!IsAttackAllowed((*iter), true)) {
+				++iter;
+				continue;
+			}
+		}
+		else {
+			if (IsAttackAllowed((*iter), true)) {
+				++iter;
+				continue;
+			}
+			if (CheckAggro((*iter))) {
+				++iter;
+				continue;
+			}
+		}
+
 		//# shortest distance from line to target point
 		float d = std::abs((*iter)->GetY() - m * (*iter)->GetX() - b) / sqrt(m * m + 1);
 
@@ -6577,6 +6586,23 @@ void Mob::ConeDirectional(uint16 spell_id, int16 resist_adjust)
 					++iter;
 					continue;
 				}
+			}
+		}
+
+		if (!beneficial_targets) {
+			if (!IsAttackAllowed((*iter), true)) {
+				++iter;
+				continue;
+			}
+		}
+		else {
+			if (IsAttackAllowed((*iter), true)) {
+				++iter;
+				continue;
+			}
+			if (CheckAggro((*iter))) {
+				++iter;
+				continue;
 			}
 		}
 
@@ -6871,4 +6897,18 @@ bool Mob::IsFromTriggeredSpell(CastingSlot slot, uint32 item_slot) {
 		return true;
 	}
 	return false;
+}
+
+void Mob::SetHP(int64 hp)
+{
+	if (hp >= max_hp) {
+		current_hp = max_hp;
+		return;
+	}
+
+	if (combat_record.InCombat()) {
+		combat_record.ProcessHPEvent(hp, current_hp);
+	}
+
+	current_hp = hp;
 }

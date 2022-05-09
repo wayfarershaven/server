@@ -808,8 +808,18 @@ uint32 Client::GetEXPForLevel(uint16 check_level, bool aa)
         mod = 3.4;
     else if (check_level == 64)
         mod = 3.5;
-    else
+	else if (check_level == 65)
         mod = 3.6;
+	else if (check_level == 66)
+        mod = 5.0;
+	else if (check_level == 67)
+        mod = 5.9;
+	else if (check_level == 68)
+        mod = 6.0;			
+	else if (check_level == 69)
+        mod = 6.1;	
+    else
+        mod = 6.2;
 
     uint32 finalxp = uint32(base * playermod * mod);
     if(aa) {
@@ -863,7 +873,7 @@ void Group::SplitExp(uint32 exp, Mob* other) {
     int8 close_membercount = 0;
     uint8 maxlevel = 1;
     uint16 weighted_levels = 0;
-    uint8 minlevel = 65;
+    uint8 minlevel = 70;
 
     // This loop grabs the max player level for the group level check further down, the min level to subtract the 6th group member, adds up all
     // the player levels for the weighted split, and does a preliminary count of the group members for the group bonus calc.

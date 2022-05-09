@@ -28,6 +28,7 @@ void command_npcedit(Client *c, const Seperator *sep)
 		c->Message(Chat::White, "#npcedit herosforgemodel - Sets an NPC's Hero's Forge Model");
 		c->Message(Chat::White, "#npcedit size - Sets an NPC's Size");
 		c->Message(Chat::White, "#npcedit hpregen - Sets an NPC's Hitpoints Regeneration Rate Per Tick");
+		c->Message(Chat::White, "#npcedit hp_regen_per_second - Sets an NPC's HP regeneration per second");
 		c->Message(Chat::White, "#npcedit manaregen - Sets an NPC's Mana Regeneration Rate Per Tick");
 		c->Message(Chat::White, "#npcedit loottable - Sets an NPC's Loottable ID");
 		c->Message(Chat::White, "#npcedit merchantid - Sets an NPC's Merchant ID");
@@ -232,15 +233,22 @@ void command_npcedit(Client *c, const Seperator *sep)
 	}
 
 	if (strcasecmp(sep->arg[1], "hp") == 0) {
-		c->Message(Chat::Yellow, fmt::format("NPC ID {} now has {} Health.", npc_id, atoi(sep->arg[2])).c_str());
-		std::string query = fmt::format("UPDATE npc_types SET hp = {} WHERE id = {}", atoi(sep->arg[2]), npc_id);
+		c->Message(
+			Chat::Yellow,
+			fmt::format(
+				"NPC ID {} now has {} Health.",
+				npc_id,
+				std::strtoll(sep->arg[2], nullptr, 10)
+			).c_str()
+		);
+		std::string query = fmt::format("UPDATE npc_types SET hp = {} WHERE id = {}", strtoull(sep->arg[2], nullptr, 10), npc_id);
 		content_db.QueryDatabase(query);
 		return;
 	}
 
 	if (strcasecmp(sep->arg[1], "mana") == 0) {
-		c->Message(Chat::Yellow, fmt::format("NPC ID {} now has {} Mana.", npc_id, atoi(sep->arg[2])).c_str());
-		std::string query = fmt::format("UPDATE npc_types SET mana = {} WHERE id = {}", atoi(sep->arg[2]), npc_id);
+		c->Message(Chat::Yellow, fmt::format("NPC ID {} now has {} Mana.", npc_id, std::strtoll(sep->arg[2], nullptr, 10)).c_str());
+		std::string query = fmt::format("UPDATE npc_types SET mana = {} WHERE id = {}", std::strtoll(sep->arg[2], nullptr, 10), npc_id);
 		content_db.QueryDatabase(query);
 		return;
 	}
@@ -298,10 +306,27 @@ void command_npcedit(Client *c, const Seperator *sep)
 	if (strcasecmp(sep->arg[1], "hpregen") == 0) {
 		c->Message(
 			Chat::Yellow,
-			fmt::format("NPC ID {} now regenerates {} Health per Tick.", npc_id, atoi(sep->arg[2])).c_str());
+			fmt::format("NPC ID {} now regenerates {} Health per Tick.", npc_id, std::strtoll(sep->arg[2], nullptr, 10)).c_str());
 		std::string query = fmt::format(
 			"UPDATE npc_types SET hp_regen_rate = {} WHERE id = {}",
-			atoi(sep->arg[2]),
+			std::strtoll(sep->arg[2], nullptr, 10),
+			npc_id
+		);
+		content_db.QueryDatabase(query);
+		return;
+	}
+
+	if (strcasecmp(sep->arg[1], "hp_regen_per_second") == 0) {
+		c->Message(
+			Chat::Yellow,
+			fmt::format(
+				"NPC ID {} now regenerates {} HP per second.",
+				npc_id,
+				std::strtoll(sep->arg[2], nullptr, 10)).c_str()
+		);
+		std::string query = fmt::format(
+			"UPDATE npc_types SET hp_regen_per_second = {} WHERE id = {}",
+			std::strtoll(sep->arg[2], nullptr, 10),
 			npc_id
 		);
 		content_db.QueryDatabase(query);
@@ -519,19 +544,29 @@ void command_npcedit(Client *c, const Seperator *sep)
 	if (strcasecmp(sep->arg[1], "featuresave") == 0) {
 		c->Message(
 			Chat::Yellow,
-			fmt::format("NPC ID {} saved with all current facial feature settings.", npc_id).c_str());
+			fmt::format("NPC ID {} saved with all current body and facial feature settings.", npc_id).c_str());
 		Mob         *target = c->GetTarget();
 		std::string query   = fmt::format(
 			"UPDATE npc_types "
 			"SET luclin_haircolor = {}, luclin_beardcolor = {}, "
 			"luclin_hairstyle = {}, luclin_beard = {}, "
 			"face = {}, drakkin_heritage = {}, "
-			"drakkin_tattoo = {}, drakkin_details = {} "
+			"drakkin_tattoo = {}, drakkin_details = {}, "
+			"texture = {}, helmtexture = {}, "
+			"gender = {}, size = {:.2f}"
 			"WHERE id = {}",
-			target->GetHairColor(), target->GetBeardColor(),
-			target->GetHairStyle(), target->GetBeard(),
-			target->GetLuclinFace(), target->GetDrakkinHeritage(),
-			target->GetDrakkinTattoo(), target->GetDrakkinDetails(),
+			target->GetHairColor(),
+			target->GetBeardColor(),
+			target->GetHairStyle(),
+			target->GetBeard(),
+			target->GetLuclinFace(),
+			target->GetDrakkinHeritage(),
+			target->GetDrakkinTattoo(),
+			target->GetDrakkinDetails(),
+			target->GetTexture(),
+			target->GetHelmTexture(),
+			target->GetGender(),
+			target->GetSize(),
 			npc_id
 		);
 		content_db.QueryDatabase(query);
@@ -1403,4 +1438,3 @@ void command_npcedit(Client *c, const Seperator *sep)
 	}
 
 }
-

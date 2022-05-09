@@ -337,13 +337,13 @@ struct Buffs_Struct {
 
 struct StatBonuses {
 	int32	AC;
-	int32	HP;
-	int32	HPRegen;
-	int32	MaxHP;
-	int32	ManaRegen;
-	int32	EnduranceRegen;
-	int32	Mana;
-	int32	Endurance;
+	int64	HP;
+	int64	HPRegen;
+	int64	MaxHP;
+	int64	ManaRegen;
+	int64	EnduranceRegen;
+	int64	Mana;
+	int64	Endurance;
 	int32	ATK;
 	//would it be worth it to create a Stat_Struct?
 	int32	STR;
@@ -414,7 +414,7 @@ struct StatBonuses {
 	uint32	stringedMod;
 	uint32	songModCap;
 	int8	hatemod;
-	int32	EnduranceReduction;
+	int64	EnduranceReduction;
 
 	int32	StrikeThrough;						// PoP: Strike Through %
 	int32	MeleeMitigation;					//i = Shielding
@@ -573,7 +573,7 @@ struct StatBonuses {
 	int8	BaseMovementSpeed;					// Adjust base run speed, does not stack with other movement bonuses.
 	uint8	IncreaseRunSpeedCap;				// Increase max run speed above cap.
 	int32	DoubleSpecialAttack;				// Chance to to perform a double special attack (ie flying kick 2x)
-	int32	SkillAttackProc[3];					// [0] chance to proc [2] spell on [1] skill usage
+	int32	SkillAttackProc[MAX_CAST_ON_SKILL_USE];					// [0] chance to proc [2] spell on [1] skill usage
 	bool	HasSkillAttackProc[EQ::skills::HIGHEST_SKILL + 1]; //check if any skill proc is present before assessing for all skill procs
 	uint8	FrontalStunResist;					// Chance to resist a frontal stun
 	int32	BindWound;							// Increase amount of HP by percent.
@@ -876,7 +876,7 @@ struct ExtraAttackOptions {
 	{ }
 
 	float damage_percent;
-	int damage_flat;
+	int64 damage_flat;
 	float armor_pen_percent;
 	int armor_pen_flat;
 	float crit_percent;
@@ -898,9 +898,9 @@ struct DamageTable {
 struct DamageHitInfo {
 	//uint16 attacker; // id
 	//uint16 defender; // id
-	int base_damage;
-	int min_damage;
-	int damage_done;
+	int64 base_damage;
+	int64 min_damage;
+	int64 damage_done;
 	int offense;
 	int tohit;
 	int hand;

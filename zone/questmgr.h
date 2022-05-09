@@ -94,6 +94,9 @@ public:
 	void pausetimer(const char *timer_name);
 	void resumetimer(const char *timer_name);
 	bool ispausedtimer(const char *timer_name);
+	bool hastimer(const char *timer_name);
+	uint32 getremainingtimeMS(const char *timer_name);
+	uint32 gettimerdurationMS(const char *timer_name);
 	void emote(const char *str);
 	void shout(const char *str);
 	void shout2(const char *str);
@@ -184,7 +187,7 @@ public:
 	bool has_zone_flag(int zone_id);
 	void set_zone_flag(int zone_id);
 	void clear_zone_flag(int zone_id);
-	void sethp(int hpperc);
+	void sethp(int64 hpperc);
 	bool summonburiedplayercorpse(uint32 char_id, const glm::vec4& position);
 	bool summonallplayercorpses(uint32 char_id, const glm::vec4& position);
 	uint32 getplayerburiedcorpsecount(uint32 char_id);

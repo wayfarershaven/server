@@ -194,6 +194,7 @@ std::string JoinString(const std::vector<std::string>& ar, const std::string &de
 void find_replace(std::string& string_subject, const std::string& search_string, const std::string& replace_string);
 std::string replace_string(std::string subject, const std::string &search, const std::string &replace);
 void ParseAccountString(const std::string &s, std::string &account, std::string &loginserver);
+std::string commify(const std::string &number);
 
 //const char based
 
@@ -204,7 +205,7 @@ char *CleanMobName(const char *in, char *out);
 char *RemoveApostrophes(const char *s);
 void replace_all(std::string& in, std::string old, std::string repl);
 char* strn0cpy(char* dest, const char* source, uint32 size);
-const char *ConvertArray(int input, char *returnchar);
+const char *ConvertArray(int64 input, char *returnchar);
 const char *ConvertArrayF(float input, char *returnchar);
 const char *MakeLowerString(const char *source);
 uint32 hextoi(const char* num);

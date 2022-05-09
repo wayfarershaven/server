@@ -194,12 +194,12 @@ void Mob::MakePoweredPet(uint16 spell_id, const char* pettype, int16 petpower,
 
 	int16 act_power = 0; // The actual pet power we'll use.
 	if (petpower == -1) {
-		if (this->IsClient()) {
+		if (IsClient()) {
 			act_power = CastToClient()->GetFocusEffect(focusPetPower, spell_id);//Client only
 			act_power = CastToClient()->mod_pet_power(act_power, spell_id);
 		}
 #ifdef BOTS
-		else if (this->IsBot())
+		else if (IsBot())
 			act_power = CastToBot()->GetBotFocusEffect(focusPetPower, spell_id);
 #endif
 	}
@@ -231,9 +231,9 @@ void Mob::MakePoweredPet(uint16 spell_id, const char* pettype, int16 petpower,
 	memcpy(npc_type, base, sizeof(NPCType));
 
 	// If pet power is set to -1 in the DB, use stat scaling
-	if ((this->IsClient()
+	if ((IsClient()
 #ifdef BOTS
-		|| this->IsBot()
+		|| IsBot()
 #endif
 		) && record.petpower == -1)
 	{
@@ -252,7 +252,7 @@ void Mob::MakePoweredPet(uint16 spell_id, const char* pettype, int16 petpower,
 	}
 
 	//Live AA - Elemental Durability
-	int16 MaxHP = aabonuses.PetMaxHP + itembonuses.PetMaxHP + spellbonuses.PetMaxHP;
+	int64 MaxHP = aabonuses.PetMaxHP + itembonuses.PetMaxHP + spellbonuses.PetMaxHP;
 
 	if (MaxHP){
 		npc_type->max_hp += (npc_type->max_hp*MaxHP)/100;
@@ -276,15 +276,15 @@ void Mob::MakePoweredPet(uint16 spell_id, const char* pettype, int16 petpower,
 		EntityList::RemoveNumbers(npc_type->name);
 		entity_list.MakeNameUnique(npc_type->name);
 	} else if (record.petnaming == 0) {
-		strcpy(npc_type->name, this->GetCleanName());
+		strcpy(npc_type->name, GetCleanName());
 		npc_type->name[25] = '\0';
 		strcat(npc_type->name, "`s_pet");
 	} else if (record.petnaming == 1) {
-		strcpy(npc_type->name, this->GetName());
+		strcpy(npc_type->name, GetName());
 		npc_type->name[19] = '\0';
 		strcat(npc_type->name, "`s_familiar");
 	} else if (record.petnaming == 2) {
-		strcpy(npc_type->name, this->GetName());
+		strcpy(npc_type->name, GetName());
 		npc_type->name[21] = 0;
 		strcat(npc_type->name, "`s_Warder");
 	} else if (record.petnaming == 4) {
@@ -292,11 +292,11 @@ void Mob::MakePoweredPet(uint16 spell_id, const char* pettype, int16 petpower,
 	} else if (record.petnaming == 3 && IsClient()) {
 		GetRandPetName(npc_type->name);
 	} else if (record.petnaming == 5 && IsClient()) {
-		strcpy(npc_type->name, this->GetName());
+		strcpy(npc_type->name, GetName());
 		npc_type->name[24] = '\0';
 		strcat(npc_type->name, "`s_ward");
 	} else {
-		strcpy(npc_type->name, this->GetCleanName());
+		strcpy(npc_type->name, GetCleanName());
 		npc_type->name[25] = '\0';
 		strcat(npc_type->name, "`s_pet");
 	}
