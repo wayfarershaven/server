@@ -1217,11 +1217,6 @@ bool Zone::Init(bool iStaticZone) {
 	//MODDING HOOK FOR ZONE INIT
 	mod_init();
 
-	// logging origination information
-	LogSys.origination_info.zone_short_name = zone->short_name;
-	LogSys.origination_info.zone_long_name  = zone->long_name;
-	LogSys.origination_info.instance_id     = zone->instanceid;
-
 	return true;
 }
 
@@ -1576,7 +1571,7 @@ bool Zone::Process() {
 	if(Weather_Timer->Check())
 	{
 		Weather_Timer->Disable();
-		ChangeWeather();
+		this->ChangeWeather();
 	}
 
 	if(qGlobals)
@@ -1706,7 +1701,7 @@ void Zone::ChangeWeather()
 	else
 	{
 		LogDebug("The weather for zone: [{}] has changed. Old weather was = [{}]. New weather is = [{}] The next check will be in [{}] seconds. Rain chance: [{}], Rain duration: [{}], Snow chance [{}], Snow duration: [{}]", zone->GetShortName(), tmpOldWeather, zone_weather,Weather_Timer->GetRemainingTime()/1000,rainchance,rainduration,snowchance,snowduration);
-		weatherSend();
+		this->weatherSend();
 		if (zone->weather_intensity == 0)
 		{
 			zone->zone_weather = 0;
@@ -2742,75 +2737,4 @@ uint32 Zone::GetCurrencyItemID(uint32 currency_id)
 	}
 
 	return 0;
-}
-
-std::string Zone::GetZoneDescription()
-{
-	auto d = fmt::format(
-		"{} ({}){}{}",
-		GetLongName(),
-		GetZoneID(),
-		(
-			GetInstanceID() ?
-			fmt::format(
-				" (Instance ID {})",
-				GetInstanceID()
-			) :
-			""
-		),
-		(
-			GetInstanceVersion() ?
-			fmt::format(
-				" (Version {})",
-				GetInstanceVersion()
-			) :
-			""
-		)
-	);
-
-	return d;
-}
-
-void Zone::SendReloadMessage(std::string reload_type)
-{
-	worldserver.SendEmoteMessage(
-		0,
-		0,
-		AccountStatus::GMAdmin,
-		Chat::Yellow,
-		fmt::format(
-			"{} reloaded for {}.",
-			reload_type,
-			GetZoneDescription()
-		).c_str()
-	);
-}
-
-void Zone::SendDiscordMessage(int webhook_id, const std::string& message)
-{
-	if (worldserver.Connected()) {
-		auto pack = new ServerPacket(ServerOP_DiscordWebhookMessage, sizeof(DiscordWebhookMessage_Struct) + 1);
-		auto *q   = (DiscordWebhookMessage_Struct *) pack->pBuffer;
-
-		strn0cpy(q->message, message.c_str(), 2000);
-		q->webhook_id = webhook_id;
-
-		worldserver.SendPacket(pack);
-		safe_delete(pack);
-	}
-}
-
-void Zone::SendDiscordMessage(const std::string& webhook_name, const std::string &message)
-{
-	bool not_found = true;
-	for (auto & w : LogSys.discord_webhooks) {
-		if (w.webhook_name == webhook_name) {
-			SendDiscordMessage(w.id, message);
-			not_found = false;
-		}
-	}
-
-	if (not_found) {
-		LogDiscord("[SendDiscordMessage] Did not find valid webhook by webhook name [{}]", webhook_name);
-	}
 }
