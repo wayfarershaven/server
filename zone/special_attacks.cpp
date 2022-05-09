@@ -2113,6 +2113,7 @@ void Mob::Taunt(NPC *who, bool always_succeed, int chance_bonus, bool FromSpell,
 			LogCombat("[Aggro] - Not Top Hate - Hate Top Amt [{}] This Character Amt [{}] Bonus_Hate Amt [{}] TauntOverAggro Amt [{}] - Total [{}]", who->GetNPCHate(hate_top), who->GetNPCHate(this), bonus_hate, RuleI(Combat, TauntOverAggro), newhate);
 			who->CastToNPC()->AddToHateList(this, newhate);
 		} else {
+			LogCombat("[Aggro] - Already Hate Top");
 			who->CastToNPC()->AddToHateList(this, 12);
 		}
 
