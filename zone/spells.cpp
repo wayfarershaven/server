@@ -6138,11 +6138,11 @@ void Mob::SendPetBuffsToClient()
 
 void Mob::SendBuffsToClient(Client *c)
 {
-	if(!c)
+	if(!c) {
 		return;
+	}
 
-	if (c->ClientVersionBit() & EQ::versions::maskSoDAndLater)
-	{
+	if (c->ClientVersionBit() & EQ::versions::maskSoDAndLater) {
 		EQApplicationPacket *outapp = MakeBuffsPacket();
 		c->FastQueuePacket(&outapp);
 	}
