@@ -200,7 +200,7 @@ void Mob::DoSpecialAttackDamage(Mob *who, EQ::skills::SkillType skill, int32 bas
 	if (who->GetSpecialAbility(IMMUNE_MELEE_EXCEPT_BANE) && skill != EQ::skills::SkillBackstab)
 		my_hit.damage_done = DMG_INVULNERABLE;
 
-	uint64 hate = my_hit.base_damage;
+	int64 hate = my_hit.base_damage;
 	if (hate_override > -1)
 		hate = hate_override;
 
@@ -676,17 +676,19 @@ void Mob::TryBackstab(Mob *other, int ReuseTime) {
 //heko: backstab
 void Mob::RogueBackstab(Mob* other, bool min_damage, int ReuseTime)
 {
-	if (!other)
+	if (!other) {
 		return;
+	}
 
-	uint64 hate = 0;
+	int64 hate = 0;
 
 	// make sure we can hit (bane, magical, etc)
 	if (IsClient()) {
 		const EQ::ItemInstance *wpn = CastToClient()->GetInv().GetItem(EQ::invslot::slotPrimary);
-		if (!GetWeaponDamage(other, wpn))
+		if (!GetWeaponDamage(other, wpn)) {
 			return;
-	} else if (!GetWeaponDamage(other, (const EQ::ItemData*)nullptr)){
+		}
+	} else if (!GetWeaponDamage(other, (const EQ::ItemData*)nullptr)) {
 		return;
 	}
 
@@ -909,7 +911,7 @@ void Mob::DoArcheryAttackDmg(Mob *other, const EQ::ItemInstance *RangeWeapon, co
 
 	LogCombat("Ranged attack hit [{}]", other->GetName());
 
-	uint64 hate = 0;
+	int64 hate = 0;
 	int64 TotalDmg = 0;
 	int WDmg = 0;
 	int ADmg = 0;
@@ -931,10 +933,12 @@ void Mob::DoArcheryAttackDmg(Mob *other, const EQ::ItemInstance *RangeWeapon, co
 	}
 
 	if (WDmg > 0 || ADmg > 0) {
-		if (WDmg < 0)
+		if (WDmg < 0) {
 			WDmg = 0;
-		if (ADmg < 0)
+		}
+		if (ADmg < 0) {
 			ADmg = 0;
+		}
 		int MaxDmg = WDmg + ADmg;
 		hate = ((WDmg + ADmg));
 
@@ -945,8 +949,9 @@ void Mob::DoArcheryAttackDmg(Mob *other, const EQ::ItemInstance *RangeWeapon, co
 			LogCombat("Bow DMG [{}], Arrow DMG [{}], Max Damage [{}]", WDmg, ADmg, MaxDmg);
 		}
 
-		if (MaxDmg == 0)
+		if (MaxDmg == 0) {
 			MaxDmg = 1;
+		}
 
 		DamageHitInfo my_hit;
 		my_hit.base_damage = MaxDmg;
@@ -964,8 +969,9 @@ void Mob::DoArcheryAttackDmg(Mob *other, const EQ::ItemInstance *RangeWeapon, co
 		TotalDmg = DMG_INVULNERABLE;
 	}
 
-	if (IsClient() && !CastToClient()->GetFeigned())
+	if (IsClient() && !CastToClient()->GetFeigned()) {
 		other->AddToHateList(this, hate, 0);
+	}
 
 	other->Damage(this, TotalDmg, SPELL_UNKNOWN, EQ::skills::SkillArchery);
 
@@ -2111,7 +2117,7 @@ void Mob::Taunt(NPC *who, bool always_succeed, int chance_bonus, bool FromSpell,
 
 	if (zone->random.Roll(tauntChance)) {
 		if (hate_top && hate_top != this) {
-			int32 newhate = ((who->GetNPCHate(hate_top) - who->GetNPCHate(this)) + bonus_hate + RuleI(Combat, TauntOverAggro));
+			int64 newhate = ((who->GetNPCHate(hate_top) - who->GetNPCHate(this)) + bonus_hate + RuleI(Combat, TauntOverAggro));
 			LogCombat("[Aggro] - Not Top Hate - Hate Top Amt [{}] This Character Amt [{}] Bonus_Hate Amt [{}] TauntOverAggro Amt [{}] - Total [{}]", who->GetNPCHate(hate_top), who->GetNPCHate(this), bonus_hate, RuleI(Combat, TauntOverAggro), newhate);
 			who->CastToNPC()->AddToHateList(this, newhate);
 		} else {
@@ -2295,7 +2301,7 @@ void Mob::DoMeleeSkillAttackDmg(Mob *other, uint16 weapon_damage, EQ::skills::Sk
 		skillinuse = EQ::skills::SkillOffense;
 
 	int64 damage = 0;
-	uint64 hate = 0;
+	int64 hate = 0;
 	if (hate == 0 && weapon_damage > 1)
 		hate = weapon_damage;
 

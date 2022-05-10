@@ -77,7 +77,7 @@ void EntityList::DescribeAggro(Client *towho, NPC *from_who, float d, bool verbo
 			continue;
 
 		if (engaged) {
-			uint32 amm = from_who->GetHateAmount(mob);
+			int64 amm = from_who->GetHateAmount(mob);
 			if (amm == 0)
 				towho->Message(Chat::White, "... %s is not on my hate list.", mob->GetName());
 			else
@@ -1302,8 +1302,8 @@ bool Mob::PassCharismaCheck(Mob* caster, uint16 spell_id) {
 
 void Mob::RogueEvade(Mob *other)
 {
-	int amount = other->GetHateAmount(this) * zone->random.Int(40, 70) / 100;
-	other->SetHateAmountOnEnt(this, std::max(100, amount));
+	int64 amount = other->GetHateAmount(this) * zone->random.Int(40, 70) / 100;
+	other->SetHateAmountOnEnt(this, std::max((int64)100, amount));
 
 	return;
 }
