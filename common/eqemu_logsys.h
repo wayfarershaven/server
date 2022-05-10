@@ -131,6 +131,7 @@ namespace Logs {
 		NATS,
 		Group,
 		CombatRecord,
+		Hate,
 		MaxCategoryID /* Don't Remove this */
 	};
 
@@ -220,6 +221,7 @@ namespace Logs {
 		"NATS",
 		"Group",
 		"CombatRecord",
+		"Hate",
 	};
 }
 

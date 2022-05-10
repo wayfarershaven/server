@@ -200,7 +200,7 @@ void Mob::DoSpecialAttackDamage(Mob *who, EQ::skills::SkillType skill, int32 bas
 	if (who->GetSpecialAbility(IMMUNE_MELEE_EXCEPT_BANE) && skill != EQ::skills::SkillBackstab)
 		my_hit.damage_done = DMG_INVULNERABLE;
 
-	uint64 hate = my_hit.base_damage;
+	int64 hate = my_hit.base_damage;
 	if (hate_override > -1)
 		hate = hate_override;
 
@@ -676,17 +676,19 @@ void Mob::TryBackstab(Mob *other, int ReuseTime) {
 //heko: backstab
 void Mob::RogueBackstab(Mob* other, bool min_damage, int ReuseTime)
 {
-	if (!other)
+	if (!other) {
 		return;
+	}
 
-	uint64 hate = 0;
+	int64 hate = 0;
 
 	// make sure we can hit (bane, magical, etc)
 	if (IsClient()) {
 		const EQ::ItemInstance *wpn = CastToClient()->GetInv().GetItem(EQ::invslot::slotPrimary);
-		if (!GetWeaponDamage(other, wpn))
+		if (!GetWeaponDamage(other, wpn)) {
 			return;
-	} else if (!GetWeaponDamage(other, (const EQ::ItemData*)nullptr)){
+		}
+	} else if (!GetWeaponDamage(other, (const EQ::ItemData*)nullptr)) {
 		return;
 	}
 
@@ -909,7 +911,7 @@ void Mob::DoArcheryAttackDmg(Mob *other, const EQ::ItemInstance *RangeWeapon, co
 
 	LogCombat("Ranged attack hit [{}]", other->GetName());
 
-	uint64 hate = 0;
+	int64 hate = 0;
 	int64 TotalDmg = 0;
 	int WDmg = 0;
 	int ADmg = 0;
@@ -931,10 +933,12 @@ void Mob::DoArcheryAttackDmg(Mob *other, const EQ::ItemInstance *RangeWeapon, co
 	}
 
 	if (WDmg > 0 || ADmg > 0) {
-		if (WDmg < 0)
+		if (WDmg < 0) {
 			WDmg = 0;
-		if (ADmg < 0)
+		}
+		if (ADmg < 0) {
 			ADmg = 0;
+		}
 		int MaxDmg = WDmg + ADmg;
 		hate = ((WDmg + ADmg));
 
@@ -945,8 +949,9 @@ void Mob::DoArcheryAttackDmg(Mob *other, const EQ::ItemInstance *RangeWeapon, co
 			LogCombat("Bow DMG [{}], Arrow DMG [{}], Max Damage [{}]", WDmg, ADmg, MaxDmg);
 		}
 
-		if (MaxDmg == 0)
+		if (MaxDmg == 0) {
 			MaxDmg = 1;
+		}
 
 		DamageHitInfo my_hit;
 		my_hit.base_damage = MaxDmg;
@@ -964,8 +969,9 @@ void Mob::DoArcheryAttackDmg(Mob *other, const EQ::ItemInstance *RangeWeapon, co
 		TotalDmg = DMG_INVULNERABLE;
 	}
 
-	if (IsClient() && !CastToClient()->GetFeigned())
+	if (IsClient() && !CastToClient()->GetFeigned()) {
 		other->AddToHateList(this, hate, 0);
+	}
 
 	other->Damage(this, TotalDmg, SPELL_UNKNOWN, EQ::skills::SkillArchery);
 
@@ -2049,98 +2055,81 @@ void Client::DoClassAttacks(Mob *ca_target, uint16 skill, bool IsRiposte)
 
 void Mob::Taunt(NPC *who, bool always_succeed, int chance_bonus, bool FromSpell, int32 bonus_hate)
 {
-	if (who == nullptr)
+	if (who == nullptr || DivineAura() || (!FromSpell && !CombatRange(who)) || (IsNPC() && IsCharmed()) || !CombatRange(who)) {
 		return;
+	}
 
-	if (DivineAura())
-		return;
-
-	if (!FromSpell && !CombatRange(who))
-		return;
-
-	if (!always_succeed && IsClient())
+	if (!always_succeed && IsClient()) {
 		CastToClient()->CheckIncreaseSkill(EQ::skills::SkillTaunt, who, 10);
+	}
 
 	Mob *hate_top = who->GetHateMost();
 
 	int level_difference = GetLevel() - who->GetLevel();
-	bool success = false;
 
-	// Support for how taunt worked pre 2000 on LIVE - Can not taunt NPC over your level.
-	if ((RuleB(Combat, TauntOverLevel) == false) && (level_difference < 0) ||
-	    who->GetSpecialAbility(IMMUNE_TAUNT)) {
+	//Support for how taunt worked pre 2000 on LIVE - Can not taunt NPC over your level.
+	if (((RuleB(Combat, TauntOverLevel) == false) && (level_difference < 0)) || who->GetSpecialAbility(IMMUNE_TAUNT)){
 		MessageString(Chat::SpellFailure, FAILED_TAUNT);
 		return;
 	}
 
-	// All values used based on live parses after taunt was updated in 2006.
-	if ((hate_top && hate_top->GetHPRatio() >= 20) || hate_top == nullptr || chance_bonus) {
-		// SE_Taunt this is flat chance
-		if (chance_bonus) {
-			success = zone->random.Roll(chance_bonus);
-		} else {
-			float tauntchance = 50.0f;
+	int tauntChance = 50;
 
-			if (always_succeed) {
-				tauntchance = 101.0f;
+	if (always_succeed)	{
+		tauntChance = 100;
+	} else {
+		/* This is not how Sony did it.  This is a guess that fits the very limited data available.
+		 * Low level players with maxed taunt for their level taunted about 50% on white cons.
+		 * A 65 ranger with 150 taunt skill (max) taunted about 50% on level 60 and under NPCs.
+		 * A 65 warrior with maxed taunt (230) was taunting around 50% on SSeru NPCs.		*/
+
+		/* Rashere in 2006: "your taunt skill was irrelevant if you were above level 60 and taunting
+		 * something that was also above level 60."
+		 * Also: "The chance to taunt an NPC higher level than yourself dropped off at double the rate
+		 * if you were above level 60 than if you were below level 60 making it very hard to taunt creature
+		 * higher level than yourself if you were above level 60."
+		 * 
+		 * See http://www.elitegamerslounge.com/home/soearchive/viewtopic.php?t=81156 */
+		if (GetLevel() >= 60 && level_difference < 0) {
+			if (level_difference < -5) {
+				tauntChance = 0;
+			} else if (level_difference == -5) {
+				tauntChance = 10;
 			} else {
-				if (level_difference < 0) {
-					tauntchance += static_cast<float>(level_difference) * 3.0f;
-					if (tauntchance < 20) {
-						tauntchance = 20.0f;
-					}
-				} else {
-					tauntchance += static_cast<float>(level_difference) * 5.0f;
-					if (tauntchance > 65) {
-						tauntchance = 65.0f;
-					}
-				}
+				tauntChance = 50 + level_difference * 10;
 			}
+		} else {
+			// this will make the skill difference between the tank classes actually affect success rates
+			// but only for NPCs near the player's level.  Mid to low blues will start to taunt at 50%
+			// even with lower skill
+			tauntChance = 50 * GetSkill(EQ::skills::SkillTaunt) / (who->GetLevel() * 5 + 5);
+			tauntChance += level_difference * 5;
 
-			// TauntSkillFalloff rate is not based on any real data. Default of 33% gives a reasonable
-			// result.
-			if (IsClient() && !always_succeed) {
-				tauntchance -= (RuleR(Combat, TauntSkillFalloff) *
-						(CastToClient()->MaxSkill(EQ::skills::SkillTaunt) -
-						 GetSkill(EQ::skills::SkillTaunt)));
+			if (tauntChance > 50) {
+				tauntChance = 50;
+			} else if (tauntChance < 10) {
+				tauntChance = 10;
 			}
+		}
+	}
 
-			if (tauntchance < 1) {
-				tauntchance = 1.0f;
-			}
+	tauntChance += RuleI(Combat, TauntChanceBonus);
 
-			tauntchance /= 100.0f;
-
-			success = tauntchance > zone->random.Real(0, 1);
+	if (zone->random.Roll(tauntChance)) {
+		if (hate_top && hate_top != this) {
+			int64 newhate = ((who->GetNPCHate(hate_top) - who->GetNPCHate(this)) + bonus_hate + RuleI(Combat, TauntOverAggro));
+			LogCombat("[Aggro] - Not Top Hate - Hate Top Amt [{}] This Character Amt [{}] Bonus_Hate Amt [{}] TauntOverAggro Amt [{}] - Total [{}]", who->GetNPCHate(hate_top), who->GetNPCHate(this), bonus_hate, RuleI(Combat, TauntOverAggro), newhate);
+			who->CastToNPC()->AddToHateList(this, newhate);
+		} else {
+			LogCombat("[Aggro] - Already Hate Top");
+			who->CastToNPC()->AddToHateList(this, 12);
 		}
 
-		if (success) {
-			if (hate_top && hate_top != this) {
-				int64 newhate = (who->GetNPCHate(hate_top) - who->GetNPCHate(this)) + RuleI(Combat, TauntOverAggro) + bonus_hate;
-				who->CastToNPC()->AddToHateList(this, newhate);
-				success = true;
-			} else {
-				who->CastToNPC()->AddToHateList(this, 12);
-			}
-
-			if (who->CanTalk()) {
+		if (who->CanTalk()) {
 				who->SayString(SUCCESSFUL_TAUNT, GetCleanName());
-			}
-		} else {
-			MessageString(Chat::SpellFailure, FAILED_TAUNT);
 		}
 	} else {
 		MessageString(Chat::SpellFailure, FAILED_TAUNT);
-	}
-
-	TryCastOnSkillUse(who, EQ::skills::SkillTaunt);
-
-	if (HasSkillProcs()) {
-		TrySkillProc(who, EQ::skills::SkillTaunt, TauntReuseTime * 1000);
-	}
-
-	if (success && HasSkillProcSuccess()) {
-		TrySkillProc(who, EQ::skills::SkillTaunt, TauntReuseTime * 1000, true);
 	}
 }
 
@@ -2312,7 +2301,7 @@ void Mob::DoMeleeSkillAttackDmg(Mob *other, uint16 weapon_damage, EQ::skills::Sk
 		skillinuse = EQ::skills::SkillOffense;
 
 	int64 damage = 0;
-	uint64 hate = 0;
+	int64 hate = 0;
 	if (hate == 0 && weapon_damage > 1)
 		hate = weapon_damage;
 

@@ -14043,31 +14043,8 @@ void Client::Handle_OP_TargetCommand(const EQApplicationPacket *app)
 	}
 
 	// HoTT
-
-
-
-
 	if (GetTarget() && GetTarget()->GetTarget()) {
-		bool HoTT_LAA = false;
-		if (IsRaidGrouped()) {
-				Raid *raid = GetRaid();
-				if (raid) {
-					uint32 gid = raid->GetGroup(this);
-					if (gid < 12 && raid->GroupCount(gid) > 2)
-						HoTT_LAA = raid->GetLeadershipAA(groupAAHealthOfTargetsTarget, gid);
-				}
-			}
-		else {
-			Group *group = GetGroup();
-			if (group && group->GroupCount() > 2) {
-				HoTT_LAA = group->GetLeadershipAA(groupAAHealthOfTargetsTarget);
-			}
-		}
-		if (GetGM() || HoTT_LAA) {
-			SetHoTT(GetTarget()->GetTarget()->GetID());
-		} else {
-			SetHoTT(0);
-		}
+		SetHoTT(GetTarget()->GetTarget()->GetID());
 	} else {
 		SetHoTT(0);
 	}
