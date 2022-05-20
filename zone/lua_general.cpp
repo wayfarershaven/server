@@ -3394,6 +3394,10 @@ std::string lua_commify(std::string number) {
 	return commify(number);
 }
 
+bool lua_check_name_filter(std::string name) {
+	return database.CheckNameFilter(name);
+}
+
 #define LuaCreateNPCParse(name, c_type, default_value) do { \
 	cur = table[#name]; \
 	if(luabind::type(cur) != LUA_TNIL) { \
@@ -3847,6 +3851,7 @@ luabind::scope lua_register_general() {
 		luabind::def("get_environmental_damage_name", &lua_get_environmental_damage_name),
 		luabind::def("adminmessage", &lua_adminmessage),
 		luabind::def("commify", &lua_commify),
+		luabind::def("check_name_filter", &lua_check_name_filter),
 
 		/*
 			Cross Zone
