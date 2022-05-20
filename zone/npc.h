@@ -449,7 +449,7 @@ public:
 	virtual const bool IsUnderwaterOnly() const { return NPCTypedata_ours ? NPCTypedata_ours->underwater : NPCTypedata->underwater; }
 	const char* GetRawNPCTypeName() const { return NPCTypedata_ours ? NPCTypedata_ours->name : NPCTypedata->name; }
 
-	void ChangeLastName(const char* in_lastname);
+	void ChangeLastName(std::string last_name);
 	void ClearLastName();
 
 	bool GetDepop() { return p_depop; }
