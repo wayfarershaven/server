@@ -242,7 +242,7 @@ int64 Client::CalcHPRegen()
 
 int64 Client::CalcHPRegenCap()
 {
-	int cap = RuleI(Character, ItemHealthRegenCap) + itembonuses.HeroicSTA / 25;
+	int64 cap = RuleI(Character, ItemHealthRegenCap) + itembonuses.HeroicSTA / 25;
 	cap += aabonuses.ItemHPRegenCap + spellbonuses.ItemHPRegenCap + itembonuses.ItemHPRegenCap;
 	return (cap * RuleI(Character, HPRegenMultiplier) / 100);
 }
