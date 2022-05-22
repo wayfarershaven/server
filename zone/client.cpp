@@ -10492,3 +10492,21 @@ void Client::ReconnectUCS()
 	QueuePacket(outapp);
 	safe_delete(outapp);
 }
+
+void Client::Undye()
+{
+	for (uint8 slot = EQ::textures::textureBegin; slot <= EQ::textures::LastTexture; slot++) {
+		auto inventory_slot = SlotConvert(slot);
+		auto inst = m_inv.GetItem(inventory_slot);
+
+		if (inst) {
+			inst->SetColor(inst->GetItem()->Color);
+			database.SaveInventory(CharacterID(), inst, inventory_slot);
+		}
+
+		m_pp.item_tint.Slot[slot].Color = 0;
+		SendWearChange(slot);
+	}
+
+	database.DeleteCharacterDye(CharacterID());
+}
