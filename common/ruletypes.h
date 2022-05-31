@@ -475,6 +475,7 @@ RULE_INT(Spells, ClericInnateHealFocus, 5, "Clerics on live get a 5 pct innate h
 RULE_BOOL(Spells, DOTsScaleWithSpellDmg, false, "Allow SpellDmg stat to affect DoT spells")
 RULE_BOOL(Spells, HOTsScaleWithHealAmt, false, "Allow HealAmt stat to affect HoT spells")
 RULE_BOOL(Spells, CompoundLifetapHeals, true, "True: Lifetap heals calculate damage bonuses and then heal bonuses.  False:  Lifetaps heal using the amount damaged to mob.")
+RULE_BOOL(Spells, BuffsFadeOnDeath, true, "Disable to keep buffs from fading on death")
 RULE_BOOL(Spells, IllusionsAlwaysPersist, false, "Allows Illusions to persist beyond death and zoning always.")
 RULE_CATEGORY_END()
 
