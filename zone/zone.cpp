@@ -663,35 +663,44 @@ void Zone::LoadNewMerchantData(uint32 merchantid) {
 
 void Zone::GetMerchantDataForZoneLoad() {
 	LogInfo("Loading Merchant Lists");
+
+	std::string filter = fmt::format(
+		SQL(
+			id IN (
+				select npcID from spawnentry where spawngroupID IN (
+					select spawngroupID from spawn2 where `zone` = '{}' and `version` = {}
+				)
+			)
+		),
+		zone->GetShortName(),
+		zone->GetInstanceVersion()
+	);
+
 	std::string query = fmt::format(
 		SQL (
 			SELECT
-			  DISTINCT merchantlist.merchantid,
-			  merchantlist.slot,
-			  merchantlist.item,
-			  merchantlist.faction_required,
-			  merchantlist.level_required,
-			  merchantlist.alt_currency_cost,
-			  merchantlist.classes_required,
-			  merchantlist.probability
-			FROM
-			  merchantlist,
-			  npc_types,
-			  spawnentry,
-			  spawn2
-			WHERE
-			  npc_types.merchant_id = merchantlist.merchantid
-			  AND npc_types.id = spawnentry.npcid
-			  AND spawnentry.spawngroupid = spawn2.spawngroupid
-			  AND spawn2.zone = '{}'
-			  AND spawn2.version = {}
-			  {}
+			merchantid,
+			slot,
+			item,
+			faction_required,
+			level_required,
+			alt_currency_cost,
+			classes_required,
+			probability,
+			from merchantlist where merchantid IN (
+					select merchant_id from npc_types where id in (
+						select npcID from spawnentry where spawngroupID IN (
+							select spawngroupID from spawn2 where `zone` = '{}' and (`version` = {} OR `version` = -1)
+					)
+				)
+			)
+			{}
 			ORDER BY
-			  merchantlist.slot
+			merchantlist.slot
 		),
 		GetShortName(),
 		GetInstanceVersion(),
-		ContentFilterCriteria::apply("merchantlist")
+		ContentFilterCriteria::apply()
 	);
 
 	auto results = content_db.QueryDatabase(query);
@@ -1216,6 +1225,11 @@ bool Zone::Init(bool iStaticZone) {
 
 	//MODDING HOOK FOR ZONE INIT
 	mod_init();
+
+	// logging origination information
+	LogSys.origination_info.zone_short_name = zone->short_name;
+	LogSys.origination_info.zone_long_name  = zone->long_name;
+	LogSys.origination_info.instance_id     = zone->instanceid;
 
 	return true;
 }
@@ -2737,4 +2751,33 @@ uint32 Zone::GetCurrencyItemID(uint32 currency_id)
 	}
 
 	return 0;
+}
+
+void Zone::SendDiscordMessage(int webhook_id, const std::string& message)
+{
+	if (worldserver.Connected()) {
+		auto pack = new ServerPacket(ServerOP_DiscordWebhookMessage, sizeof(DiscordWebhookMessage_Struct) + 1);
+		auto *q   = (DiscordWebhookMessage_Struct *) pack->pBuffer;
+
+		strn0cpy(q->message, message.c_str(), 2000);
+		q->webhook_id = webhook_id;
+
+		worldserver.SendPacket(pack);
+		safe_delete(pack);
+	}
+}
+
+void Zone::SendDiscordMessage(const std::string& webhook_name, const std::string &message)
+{
+	bool not_found = true;
+	for (auto & w : LogSys.discord_webhooks) {
+		if (w.webhook_name == webhook_name) {
+			SendDiscordMessage(w.id, message);
+			not_found = false;
+		}
+	}
+
+	if (not_found) {
+		LogDiscord("[SendDiscordMessage] Did not find valid webhook by webhook name [{}]", webhook_name);
+	}
 }
