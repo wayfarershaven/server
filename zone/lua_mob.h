@@ -123,7 +123,7 @@ public:
 	int64 GetHP();
 	int64 GetMaxHP();
 	int64 GetItemHPBonuses();
-	int GetSpellHPBonuses();
+	int64 GetSpellHPBonuses();
 	double GetWalkspeed();
 	double GetRunspeed();
 	int GetCasterLevel(int spell_id);
