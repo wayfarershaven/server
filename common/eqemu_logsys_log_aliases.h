@@ -701,6 +701,16 @@
         OutF(LogSys, Logs::Detail, Logs::Saylink, __FILE__, __func__, __LINE__, message, ##__VA_ARGS__);\
 } while (0)
 
+#define LogChecksumVerification(message, ...) do {\
+    if (LogSys.log_settings[Logs::ChecksumVerification].is_category_enabled == 1)\
+        OutF(LogSys, Logs::General, Logs::ChecksumVerification, __FILE__, __func__, __LINE__, message, ##__VA_ARGS__);\
+} while (0)
+
+#define LogChecksumVerificationDetail(message, ...) do {\
+    if (LogSys.log_settings[Logs::ChecksumVerification].is_category_enabled == 1)\
+        OutF(LogSys, Logs::Detail, Logs::ChecksumVerification, __FILE__, __func__, __LINE__, message, ##__VA_ARGS__);\
+} while (0)
+
 #define LogCombatRecord(message, ...) do {\
     if (LogSys.log_settings[Logs::CombatRecord].is_category_enabled == 1)\
         OutF(LogSys, Logs::General, Logs::CombatRecord, __FILE__, __func__, __LINE__, message, ##__VA_ARGS__);\
@@ -1127,6 +1137,12 @@
 #define LogHTTPDetail(message, ...) do {\
 } while (0)
 
+#define LogSaylink(message, ...) do {\
+} while (0)
+
+#define LogSaylinkDetail(message, ...) do {\
+} while (0)
+
 #define LogScheduler(message, ...) do {\
 } while (0)
 
@@ -1149,6 +1165,12 @@
 } while (0)
 
 #define LogFoodDetail(message, ...) do {\
+} while (0)
+
+#define LogChecksumVerification(message, ...) do {\
+} while (0)
+
+#define LogChecksumVerificationDetail(message, ...) do {\
 } while (0)
 
 #define LogCombatRecord(message, ...) do {\
