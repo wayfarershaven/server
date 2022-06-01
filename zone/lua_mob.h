@@ -120,9 +120,9 @@ public:
 	void SetTarget(Lua_Mob t);
 	double GetHPRatio();
 	bool IsWarriorClass();
-	int GetHP();
-	int GetMaxHP();
-	int GetItemHPBonuses();
+	int64 GetHP();
+	int64 GetMaxHP();
+	int64 GetItemHPBonuses();
 	int GetSpellHPBonuses();
 	double GetWalkspeed();
 	double GetRunspeed();
@@ -289,7 +289,7 @@ public:
 	bool SetAA(int rank_id, int new_value);
 	bool SetAA(int rank_id, int new_value, int charges);
 	bool DivineAura();
-	void SetOOCRegen(int regen);
+	void SetOOCRegen(int64 new_ooc_regen);
 	const char* GetEntityVariable(const char *name);
 	void SetEntityVariable(const char *name, const char *value);
 	bool EntityVariableExists(const char *name);
