@@ -24,7 +24,6 @@
 #include "../common/servertalk.h"
 #include "../common/platform.h"
 #include "../common/crash.h"
-#include "../common/string_util.h"
 #include "../common/event/event_loop.h"
 #include "../common/timer.h"
 #include "database.h"
@@ -33,24 +32,21 @@
 #include "worldserver.h"
 #include <list>
 #include <signal.h>
-#include <thread>
 
 volatile bool RunLoops = true;
 
-Database              database;
-LFGuildManager        lfguildmanager;
-std::string           WorldShortName;
+Database database;
+LFGuildManager lfguildmanager;
+std::string WorldShortName;
 const queryservconfig *Config;
-WorldServer           *worldserver = 0;
-EQEmuLogSys           LogSys;
+WorldServer *worldserver = 0;
+EQEmuLogSys LogSys;
 
-void CatchSignal(int sig_num)
-{
+void CatchSignal(int sig_num) {
 	RunLoops = false;
 }
 
-int main()
-{
+int main() {
 	RegisterExecutablePlatform(ExePlatformQueryServ);
 	LogSys.LoadLogSettingsDefaults();
 	set_exception_handler();
@@ -62,7 +58,7 @@ int main()
 		return 1;
 	}
 
-	Config         = queryservconfig::get();
+	Config = queryservconfig::get();
 	WorldShortName = Config->ShortName;
 
 	LogInfo("Connecting to MySQL");
@@ -73,8 +69,7 @@ int main()
 		Config->QSDatabaseUsername.c_str(),
 		Config->QSDatabasePassword.c_str(),
 		Config->QSDatabaseDB.c_str(),
-		Config->QSDatabasePort
-	)) {
+		Config->QSDatabasePort)) {
 		LogInfo("Cannot continue without a database connection");
 		return 1;
 	}
@@ -83,11 +78,11 @@ int main()
 		->LoadLogDatabaseSettings()
 		->StartFileLogs();
 
-	if (signal(SIGINT, CatchSignal) == SIG_ERR) {
+	if (signal(SIGINT, CatchSignal) == SIG_ERR)	{
 		LogInfo("Could not set signal handler");
 		return 1;
 	}
-	if (signal(SIGTERM, CatchSignal) == SIG_ERR) {
+	if (signal(SIGTERM, CatchSignal) == SIG_ERR)	{
 		LogInfo("Could not set signal handler");
 		return 1;
 	}
@@ -99,11 +94,10 @@ int main()
 	/* Load Looking For Guild Manager */
 	lfguildmanager.LoadDatabase();
 
-	while (RunLoops) {
+	while(RunLoops) {
 		Timer::SetCurrentTime();
-		if (LFGuildExpireTimer.Check()) {
+		if(LFGuildExpireTimer.Check())
 			lfguildmanager.ExpireEntries();
-		}
 
 		EQ::EventLoop::Get().Process();
 		Sleep(5);
@@ -111,8 +105,7 @@ int main()
 	LogSys.CloseFileLogs();
 }
 
-void UpdateWindowTitle(char *iNewTitle)
-{
+void UpdateWindowTitle(char* iNewTitle) {
 #ifdef _WINDOWS
 	char tmp[500];
 	if (iNewTitle) {
