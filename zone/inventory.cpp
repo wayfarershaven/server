@@ -184,6 +184,13 @@ bool Client::SummonItem(uint32 item_id, int16 charges, uint32 aug1, uint32 aug2,
 
 	// TODO: update calling methods and script apis to handle a failure return
 
+	/* Handled this in the Tradeskill block, needs testing
+	// Added bypass to prevent error messages from 0 item combines
+	if(item_id == 0) {
+		return false;
+	}
+	*/
+
 	const EQ::ItemData* item = database.GetItem(item_id);
 
 	// make sure the item exists
