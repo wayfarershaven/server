@@ -1163,9 +1163,9 @@ XS(XS_Client_ChangeLastName) {
 		Perl_croak(aTHX_ "Usage: Client::ChangeLastName(THIS, string last_name)"); // @categories Account and Character
 	{
 		Client *THIS;
-		char   *in_lastname = (char *) SvPV_nolen(ST(1));
+		std::string last_name = (std::string) SvPV_nolen(ST(1));
 		VALIDATE_THIS_IS_CLIENT;
-		THIS->ChangeLastName(in_lastname);
+		THIS->ChangeLastName(last_name);
 	}
 	XSRETURN_EMPTY;
 }
@@ -2958,23 +2958,27 @@ XS(XS_Client_LoadZoneFlags) {
 XS(XS_Client_SetAATitle); /* prototype to pass -Wmissing-prototypes */
 XS(XS_Client_SetAATitle) {
 	dXSARGS;
-	if ((items < 2) || (items > 3))
+	if (items < 2 || items > 3)
 		Perl_croak(aTHX_ "Usage: Client::SetAATitle(THIS, string text, [bool save = false])"); // @categories Alternative Advancement
 	{
 		Client *THIS;
-		char   *txt = (char *) SvPV_nolen(ST(1));
-		bool SaveTitle = false;
+		std::string title = (std::string) SvPV_nolen(ST(1));
+		bool save = false;
 		VALIDATE_THIS_IS_CLIENT;
-		if (strlen(txt) > 31)
-			Perl_croak(aTHX_ "Title must be 31 characters or less");
 
-		if (items == 3)
-			SaveTitle = (SvIV(ST(2)) != 0);
+		if (title.size() > 31) {
+			Perl_croak(aTHX_ "Title must be 31 characters or less.");
+		}
 
-		if (!SaveTitle)
-			THIS->SetAATitle(txt);
-		else
-			title_manager.CreateNewPlayerTitle(THIS, txt);
+		if (items == 3) {
+			save = (bool) SvTRUE(ST(2));
+		}
+
+		if (!save) {
+			THIS->SetAATitle(title);
+		} else {
+			title_manager.CreateNewPlayerTitle(THIS, title);
+		}
 	}
 	XSRETURN_EMPTY;
 }
@@ -3016,23 +3020,27 @@ XS(XS_Client_GetClientVersionBit) {
 XS(XS_Client_SetTitleSuffix);
 XS(XS_Client_SetTitleSuffix) {
 	dXSARGS;
-	if ((items < 2) || (items > 3))
-		Perl_croak(aTHX_ "Usage: Client::SetTitleSuffix(THIS, string text, [bool save = false])"); // @categories Account and Character
+	if (items < 2 || items > 3)
+		Perl_croak(aTHX_ "Usage: Client::SetTitleSuffix(THIS, string suffix, [bool save = false])"); // @categories Account and Character
 	{
 		Client *THIS;
-		char   *txt = (char *) SvPV_nolen(ST(1));
-		bool SaveSuffix = false;
+		std::string suffix = (std::string) SvPV_nolen(ST(1));
+		bool save = false;
 		VALIDATE_THIS_IS_CLIENT;
-		if (strlen(txt) > 31)
-			Perl_croak(aTHX_ "Title must be 31 characters or less");
 
-		if (items == 3)
-			SaveSuffix = (SvIV(ST(2)) != 0);
+		if (suffix.size() > 31) {
+			Perl_croak(aTHX_ "Suffix must be 31 characters or less.");
+		}
 
-		if (!SaveSuffix)
-			THIS->SetTitleSuffix(txt);
-		else
-			title_manager.CreateNewPlayerSuffix(THIS, txt);
+		if (items == 3) {
+			save = (bool) SvTRUE(ST(2));
+		}
+
+		if (!save) {
+			THIS->SetTitleSuffix(suffix);
+		} else {
+			title_manager.CreateNewPlayerSuffix(THIS, suffix);
+		}
 	}
 	XSRETURN_EMPTY;
 }
@@ -3851,20 +3859,23 @@ XS(XS_Client_GetTaskActivityDoneCount) {
 XS(XS_Client_AssignTask); /* prototype to pass -Wmissing-prototypes */
 XS(XS_Client_AssignTask) {
 	dXSARGS;
-	if (items != 3 && items != 4)
-		Perl_croak(aTHX_ "Usage: Client::AssignTask(THIS, int task_id, int npc_id, [bool enforce_level_requirement = false])"); // @categories Tasks and Activities
+	if (items < 2 || items > 4)
+		Perl_croak(aTHX_ "Usage: Client::AssignTask(THIS, int task_id, [int npc_id = 0, bool enforce_level_requirement = false])"); // @categories Tasks and Activities
 	{
 		Client *THIS;
-		int  TaskID                    = (int) SvIV(ST(1));
-		int  NPCID                     = (int) SvIV(ST(2));
+		int task_id = (int) SvIV(ST(1));
+		int npc_id = 0;
 		bool enforce_level_requirement = false;
-		if (items == 4) {
-			if ((int) SvIV(ST(3)) == 1) {
-				enforce_level_requirement = true;
-			}
-		}
 		VALIDATE_THIS_IS_CLIENT;
-		THIS->AssignTask(TaskID, NPCID, enforce_level_requirement);
+		if (items > 2) {
+			npc_id = (int) SvIV(ST(2));
+		}
+
+		if (items > 3) {
+			enforce_level_requirement = SvTRUE(ST(3));
+		}
+
+		THIS->AssignTask(task_id, npc_id, enforce_level_requirement);
 	}
 	XSRETURN_EMPTY;
 }
@@ -6142,6 +6153,26 @@ XS(XS_Client_CountItemEquippedByID) {
 	XSRETURN(1);
 }
 
+XS(XS_Client_TaskSelector); /* prototype to pass -Wmissing-prototypes */
+XS(XS_Client_TaskSelector) {
+	dXSARGS;
+	if (items < 2 || items > 41) {
+		Perl_croak(aTHX_ "Usage: Client::TaskSelector(THIS, int task_id, 2, 3, 4, 5 [up to 40])");
+	}
+
+	Client *THIS;
+	VALIDATE_THIS_IS_CLIENT;
+
+	int tasks[MAXCHOOSERENTRIES];
+	int task_count = (items - 1);
+	for (int i = 1; i <= task_count; i++) {
+		tasks[i] = (int) SvIV(ST(i));
+	}
+
+	THIS->TaskQuestSetSelector(THIS, task_count, tasks);
+	XSRETURN_EMPTY;
+}
+
 #ifdef __cplusplus
 extern "C"
 #endif
@@ -6175,7 +6206,7 @@ XS(boot_Client) {
 	newXSproto(strcpy(buf, "AddPVPPoints"), XS_Client_AddPVPPoints, file, "$$");
 	newXSproto(strcpy(buf, "AddSkill"), XS_Client_AddSkill, file, "$$$");
 	newXSproto(strcpy(buf, "Admin"), XS_Client_Admin, file, "$");
-	newXSproto(strcpy(buf, "AssignTask"), XS_Client_AssignTask, file, "$$$;$");
+	newXSproto(strcpy(buf, "AssignTask"), XS_Client_AssignTask, file, "$$;$$");
 	newXSproto(strcpy(buf, "AssignToInstance"), XS_Client_AssignToInstance, file, "$$");
 	newXSproto(strcpy(buf, "AutoSplitEnabled"), XS_Client_AutoSplitEnabled, file, "$");
 	newXSproto(strcpy(buf, "BreakInvis"), XS_Client_BreakInvis, file, "$");
@@ -6457,6 +6488,7 @@ XS(boot_Client) {
 	newXSproto(strcpy(buf, "SummonItem"), XS_Client_SummonItem, file, "$$;$$$$$$$$");
 	newXSproto(strcpy(buf, "TGB"), XS_Client_TGB, file, "$");
 	newXSproto(strcpy(buf, "TakeMoneyFromPP"), XS_Client_TakeMoneyFromPP, file, "$$;$");
+	newXSproto(strcpy(buf, "TaskSelector"), XS_Client_TaskSelector, file, "$$;$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$");
 	newXSproto(strcpy(buf, "Thirsty"), XS_Client_Thirsty, file, "$");
 	newXSproto(strcpy(buf, "TrainDiscBySpellID"), XS_Client_TrainDiscBySpellID, file, "$$");
 	newXSproto(strcpy(buf, "UnFreeze"), XS_Client_UnFreeze, file, "$");

@@ -1045,11 +1045,11 @@ XS(XS__surname);
 XS(XS__surname) {
 	dXSARGS;
 	if (items != 1)
-		Perl_croak(aTHX_ "Usage: quest::surname(string name)");
+		Perl_croak(aTHX_ "Usage: quest::surname(string last_name)");
 
-	char *name = (char *) SvPV_nolen(ST(0));
+	std::string last_name = (std::string) SvPV_nolen(ST(0));
 
-	quest_manager.surname(name);
+	quest_manager.surname(last_name);
 
 	XSRETURN_EMPTY;
 }
@@ -1164,13 +1164,26 @@ XS(XS__untraindiscs) {
 XS(XS__givecash);
 XS(XS__givecash) {
 	dXSARGS;
-	if (items != 4)
-		Perl_croak(aTHX_ "Usage: quest::givecash(int copper, int silver, int gold, int platinum)");
+	if (items < 1 || items > 4) {
+		Perl_croak(aTHX_ "Usage: quest::givecash(uint32 copper, [uint32 silver = 0, uint32 gold = 0, uint32 platinum = 0])");
+	}
 
-	int copper   = (int) SvIV(ST(0));
-	int silver   = (int) SvIV(ST(1));
-	int gold     = (int) SvIV(ST(2));
-	int platinum = (int) SvIV(ST(3));
+	uint32 copper = (uint32) SvUV(ST(0));
+	uint32 silver = 0;
+	uint32 gold = 0;
+	uint32 platinum = 0;
+
+	if (items > 1) {
+		silver = (uint32) SvUV(ST(1));
+	}
+
+	if (items > 2) {
+		gold = (uint32) SvUV(ST(2));
+	}
+
+	if (items > 3) {
+		platinum = (uint32) SvUV(ST(3));
+	}
 
 	quest_manager.givecash(copper, silver, gold, platinum);
 
@@ -5716,7 +5729,7 @@ XS(XS__crosszoneassigntaskbyraidid);
 XS(XS__crosszoneassigntaskbyraidid) {
 	dXSARGS;
 	if (items < 2 || items > 3)
-		Perl_croak(aTHX_ "Usage: quest::crosszoneassigntaskbyraidid(int raid_id, uint32 task_identifier, [bool enforce_level_requirement = false])");\
+		Perl_croak(aTHX_ "Usage: quest::crosszoneassigntaskbyraidid(int raid_id, uint32 task_identifier, [bool enforce_level_requirement = false])");
 	{
 		uint8 update_type = CZUpdateType_Raid;
 		uint8 update_subtype = CZTaskUpdateSubtype_AssignTask;
@@ -8190,6 +8203,34 @@ XS(XS__commify) {
 	XSRETURN(1);
 }
 
+XS(XS__checknamefilter);
+XS(XS__checknamefilter) {
+	dXSARGS;
+	if (items != 1) {
+		Perl_croak(aTHX_ "Usage: quest::checknamefilter(std::string name)");
+	}
+
+	dXSTARG;
+	std::string name = (std::string) SvPV_nolen(ST(0));
+	bool passes = database.CheckNameFilter(name);
+	ST(0) = boolSV(passes);
+	sv_2mortal(ST(0));
+	XSRETURN(1);
+}
+
+XS(XS__discordsend);
+XS(XS__discordsend) {
+	dXSARGS;
+	if (items != 2)
+		Perl_croak(aTHX_ "Usage: quest::discordsend(string webhook_name, string message)");
+	{
+		std::string webhook_name = (std::string) SvPV_nolen(ST(0));
+		std::string message = (std::string) SvPV_nolen(ST(1));
+		zone->SendDiscordMessage(webhook_name, message);
+	}
+	XSRETURN_EMPTY;
+}
+
 /*
 This is the callback perl will look for to setup the
 quest package's XSUBs
@@ -8278,6 +8319,7 @@ EXTERN_C XS(boot_quest) {
 	newXS(strcpy(buf, "buryplayercorpse"), XS__buryplayercorpse, file);
 	newXS(strcpy(buf, "castspell"), XS__castspell, file);
 	newXS(strcpy(buf, "changedeity"), XS__changedeity, file);
+	newXS(strcpy(buf, "checknamefilter"), XS__checknamefilter, file);
 	newXS(strcpy(buf, "checktitle"), XS__checktitle, file);
 	newXS(strcpy(buf, "clear_npctype_cache"), XS__clear_npctype_cache, file);
 	newXS(strcpy(buf, "clear_proximity"), XS__clear_proximity, file);
@@ -8454,6 +8496,7 @@ EXTERN_C XS(boot_quest) {
 	newXS(strcpy(buf, "disable_spawn2"), XS__disable_spawn2, file);
 	newXS(strcpy(buf, "disablerecipe"), XS__disablerecipe, file);
 	newXS(strcpy(buf, "disabletask"), XS__disabletask, file);
+	newXS(strcpy(buf, "discordsend"), XS__discordsend, file);
 	newXS(strcpy(buf, "doanim"), XS__doanim, file);
 	newXS(strcpy(buf, "echo"), XS__echo, file);
 	newXS(strcpy(buf, "emote"), XS__emote, file);

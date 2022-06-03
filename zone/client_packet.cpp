@@ -3719,6 +3719,13 @@ void Client::Handle_OP_Bind_Wound(const EQApplicationPacket *app)
 		LogError("Size mismatch for Bind wound packet");
 		DumpPacket(app);
 	}
+
+	// Not allowed to forage while mounted
+	if (GetHorseId()) {
+		MessageString(Chat::Skills, NO_SKILL_WHILE_MOUNTED);
+		return;
+	}
+	
 	BindWound_Struct* bind_in = (BindWound_Struct*)app->pBuffer;
 	Mob* bindmob = entity_list.GetMob(bind_in->to);
 	if (!bindmob) {
@@ -6124,6 +6131,13 @@ void Client::Handle_OP_Forage(const EQApplicationPacket *app)
 		Message(Chat::Red, "Ability recovery time not yet met.");
 		return;
 	}
+
+	// Not allowed to forage while mounted
+	if (GetHorseId()) {
+		MessageString(Chat::Skills, NO_SKILL_WHILE_MOUNTED);
+		return;
+	}
+
 	p_timers.Start(pTimerForaging, ForagingReuseTime - 1);
 
 	ForageItem();
@@ -6465,7 +6479,7 @@ void Client::Handle_OP_GMNameChange(const EQApplicationPacket *app)
 	}
 	Client* client = entity_list.GetClientByName(gmn->oldname);
 	LogInfo("GM([{}]) changeing players name. Old:[{}] New:[{}]", GetName(), gmn->oldname, gmn->newname);
-	bool usedname = database.CheckUsedName((const char*)gmn->newname);
+	bool usedname = database.CheckUsedName(gmn->newname);
 	if (client == 0) {
 		Message(Chat::Red, "%s not found for name change. Operation failed!", gmn->oldname);
 		return;
@@ -12977,7 +12991,7 @@ void Client::Handle_OP_SetTitle(const EQApplicationPacket *app)
 		return;
 	}
 
-	SetTitle_Struct *sts = (SetTitle_Struct *)app->pBuffer;
+	auto sts = (SetTitle_Struct *) app->pBuffer;
 
 	if (sts->title_id && !title_manager.HasTitle(this, sts->title_id)) {
 		return;
@@ -12994,9 +13008,9 @@ void Client::Handle_OP_SetTitle(const EQApplicationPacket *app)
 	);
 	
 	if (!sts->is_suffix) {
-		SetAATitle(title.c_str());
+		SetAATitle(title);
 	} else {
-		SetTitleSuffix(title.c_str());
+		SetTitleSuffix(title);
 	}
 }
 

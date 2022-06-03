@@ -242,8 +242,9 @@ int64 Client::CalcHPRegen()
 
 int64 Client::CalcHPRegenCap()
 {
-	int cap = RuleI(Character, ItemHealthRegenCap) + itembonuses.HeroicSTA / 25;
-	cap += aabonuses.ItemHPRegenCap + spellbonuses.ItemHPRegenCap + itembonuses.ItemHPRegenCap;
+	int64 cap = RuleI(Character, ItemHealthRegenCap);
+	cap = std::max(cap, static_cast<int64>(itembonuses.HeroicSTA / 25));
+	cap += static_cast<int64>(aabonuses.ItemHPRegenCap + spellbonuses.ItemHPRegenCap + itembonuses.ItemHPRegenCap);
 	return (cap * RuleI(Character, HPRegenMultiplier) / 100);
 }
 

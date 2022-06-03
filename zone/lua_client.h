@@ -118,7 +118,7 @@ public:
 	void MoveZoneInstance(uint16 instance_id);
 	void MoveZoneInstanceGroup(uint16 instance_id);
 	void MoveZoneInstanceRaid(uint16 instance_id);
-	void ChangeLastName(const char *in);
+	void ChangeLastName(std::string last_name);
 	int GetFactionLevel(uint32 char_id, uint32 npc_id, uint32 race, uint32 class_, uint32 deity, uint32 faction, Lua_NPC npc);
 	void SetFactionLevel(uint32 char_id, uint32 npc_id, int char_class, int char_race, int char_deity);
 	void SetFactionLevel2(uint32 char_id, int faction_id, int char_class, int char_race, int char_deity, int value, int temp);
@@ -253,7 +253,8 @@ public:
 	void ClearZoneFlag(int zone_id);
 	bool HasZoneFlag(int zone_id);
 	void SendZoneFlagInfo(Lua_Client to);
-	void SetAATitle(const char *title);
+	void SetAATitle(std::string title);
+	void SetAATitle(std::string title, bool save_to_database);
 	int GetClientVersion();
 	uint32 GetClientVersionBit();
 	void SetTitleSuffix(const char *text);
@@ -313,8 +314,9 @@ public:
 	uint32 GetSpellIDByBookSlot(int book_slot);
 	int FindSpellBookSlotBySpellID(int spell_id);
 	void UpdateTaskActivity(int task, int activity, int count);
-	void AssignTask(int task, int npc_id);
-	void AssignTask(int task, int npc_id, bool enforce_level_requirement);
+	void AssignTask(int task_id);
+	void AssignTask(int task_id, int npc_id);
+	void AssignTask(int task_id, int npc_id, bool enforce_level_requirement);
 	void FailTask(int task);
 	bool IsTaskCompleted(int task);
 	bool IsTaskActive(int task);
@@ -404,6 +406,7 @@ public:
 	
 	void SetPrimaryWeaponOrnamentation(uint32 model_id);
 	void SetSecondaryWeaponOrnamentation(uint32 model_id);
+	void TaskSelector(luabind::adl::object table);
 
 	void SetClientMaxLevel(int value);
 	int GetClientMaxLevel();

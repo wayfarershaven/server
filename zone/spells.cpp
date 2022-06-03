@@ -2755,9 +2755,18 @@ int Mob::CalcBuffDuration(Mob *caster, Mob *target, uint16 spell_id, int32 caste
 		castlevel = caster_level_override;
 
 	int res = CalcBuffDuration_formula(castlevel, formula, duration);
-	if (caster == target && (target->aabonuses.IllusionPersistence || target->spellbonuses.IllusionPersistence ||
-		target->itembonuses.IllusionPersistence) &&
-		spell_id != SPELL_MINOR_ILLUSION && spell_id != SPELL_ILLUSION_TREE && IsEffectInSpell(spell_id, SE_Illusion)) {
+	if (
+		caster == target &&
+		(
+			target->aabonuses.IllusionPersistence ||
+			target->spellbonuses.IllusionPersistence ||
+			target->itembonuses.IllusionPersistence ||
+			RuleB(Spells, IllusionsAlwaysPersist)
+		) &&
+		spell_id != SPELL_MINOR_ILLUSION &&
+		spell_id != SPELL_ILLUSION_TREE &&
+		IsEffectInSpell(spell_id, SE_Illusion)
+	) {
 		res = 10000; // ~16h override
 	}
 
@@ -4137,18 +4146,16 @@ bool Mob::SpellOnTarget(uint16 spell_id, Mob *spelltar, int reflect_effectivenes
 	cd->hit_pitch = action->hit_pitch;
 	cd->damage = 0;
 
-	if (!IsEffectInSpell(spell_id, SE_BindAffinity) && !IsAENukeSpell(spell_id)) {
-		if (!IsDamageSpell(spell_id) || IsDOTWithDDSpell(spell_id)) {
-			entity_list.QueueCloseClients(
-				spelltar, /* Sender */
-				message_packet, /* Packet */
-				false, /* Ignore Sender */
-				RuleI(Range, SpellMessages),
-				0, /* Skip this mob */
-				true, /* Packet ACK */
-				(spellOwner->IsClient() ? FilterPCSpells : FilterNPCSpells) /* Message Filter Type: (8 or 9) */
-			);
-		}
+	if (!IsLifetapSpell(spell_id) && !IsEffectInSpell(spell_id, SE_BindAffinity) && !IsAENukeSpell(spell_id) && !IsDamageSpell(spell_id)) {
+		entity_list.QueueCloseClients(
+			spelltar, /* Sender */
+			message_packet, /* Packet */
+			false, /* Ignore Sender */
+			RuleI(Range, SpellMessages),
+			0, /* Skip this mob */
+			true, /* Packet ACK */
+			(spellOwner->IsClient() ? FilterPCSpells : FilterNPCSpells) /* Message Filter Type: (8 or 9) */
+		);
 	}
 	safe_delete(action_packet);
 	safe_delete(message_packet);

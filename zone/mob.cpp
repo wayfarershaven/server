@@ -945,8 +945,8 @@ int64 Mob::GetItemHPBonuses() {
 	return item_hp;
 }
 
-int32 Mob::GetSpellHPBonuses() {
-	int32 spell_hp = 0;
+int64 Mob::GetSpellHPBonuses() {
+	int64 spell_hp = 0;
 	spell_hp = spellbonuses.HP;
 	spell_hp += spell_hp * spellbonuses.MaxHPChange / 10000;
 	return spell_hp;
@@ -2792,6 +2792,16 @@ bool Mob::RandomizeFeatures(bool send_illusion, bool set_variables)
 	return false;
 }
 
+bool Mob::IsPlayerClass(uint16 in_class) {
+	if (
+		in_class >= WARRIOR &&
+		in_class <= BERSERKER
+	) {
+		return true;
+	}
+
+	return false;
+}
 
 bool Mob::IsPlayerRace(uint16 in_race) {
 
@@ -4427,9 +4437,9 @@ bool Mob::TrySpellTrigger(Mob *target, uint32 spell_id, int effect)
 	/*The effects SE_SpellTrigger (SPA 340) and SE_Chance_Best_in_Spell_Grp (SPA 469) work as follows, you typically will have 2-3 different spells each with their own
 	chance to be triggered with all chances equaling up to 100 pct, with only 1 spell out of the group being ultimately cast.
 	(ie Effect1 trigger spellA with 30% chance, Effect2 triggers spellB with 20% chance, Effect3 triggers spellC with 50% chance).
-	The following function ensures a stastically accurate chance for each spell to be cast based on their chance values. These effects are also  used in spells where there
+	The following function ensures a statistically accurate chance for each spell to be cast based on their chance values. These effects are also  used in spells where there
 	is only 1 effect using the trigger effect. In those situations we simply roll a chance for that spell to be cast once.
-	Note: Both SPA 340 and 469 can be in same spell and both cummulative add up to 100 pct chances. SPA469 only difference being the spell cast will
+	Note: Both SPA 340 and 469 can be in same spell and both cumulative add up to 100 pct chances. SPA469 only difference being the spell cast will
 	be "best in spell group", instead of a defined spell_id.*/
 
 	int chance_array[EFFECT_COUNT] = {};
@@ -4446,15 +4456,14 @@ bool Mob::TrySpellTrigger(Mob *target, uint32 spell_id, int effect)
 	if (total_chance == 100)
 	{
 		int current_chance = 0;
-		int cummulative_chance = 0;
 
 		for (int i = 0; i < EFFECT_COUNT; i++){
-			//Find spells with SPA 340 and add the cummulative percent chances to the roll array
+			//Find spells with SPA 340 and add the cumulative percent chances to the roll array
 			if ((spells[spell_id].effect_id[i] == SE_SpellTrigger) || (spells[spell_id].effect_id[i] == SE_Chance_Best_in_Spell_Grp)){
 
-				cummulative_chance = current_chance + spells[spell_id].base_value[i];
-				chance_array[i] = cummulative_chance;
-				current_chance = cummulative_chance;
+				const int cumulative_chance = current_chance + spells[spell_id].base_value[i];
+				chance_array[i] = cumulative_chance;
+				current_chance = cumulative_chance;
 			}
 		}
 		int random_roll = zone->random.Int(1, 100);
@@ -5201,11 +5210,14 @@ bool Mob::TrySpellOnDeath()
 		if(spellbonuses.SpellOnDeath[i] && IsValidSpell(spellbonuses.SpellOnDeath[i])) {
 			if(zone->random.Roll(static_cast<int>(spellbonuses.SpellOnDeath[i + 1]))) {
 				SpellFinished(spellbonuses.SpellOnDeath[i], this, EQ::spells::CastingSlot::Item, 0, -1, spells[spellbonuses.SpellOnDeath[i]].resist_difficulty);
-				}
 			}
 		}
+	}
 
-	BuffFadeNonPersistDeath();
+	if (RuleB(Spells, BuffsFadeOnDeath)) {
+		BuffFadeNonPersistDeath();
+	}
+
 	return false;
 	//You should not be able to use this effect and survive (ALWAYS return false),
 	//attempting to place a heal in these effects will still result
@@ -6550,7 +6562,7 @@ bool Mob::ShieldAbility(uint32 target_id, int shielder_max_distance, int shield_
 	entity_list.MessageCloseString(this, false, 100, 0, START_SHIELDING, GetCleanName(), shield_target->GetCleanName());
 
 	SetShieldTargetID(shield_target->GetID());
-	SetShielderMitigation(shield_target_mitigation);
+	SetShielderMitigation(shielder_mitigation);
 	SetShielderMaxDistance(shielder_max_distance);
 
 	shield_target->SetShielderID(GetID());

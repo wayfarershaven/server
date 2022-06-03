@@ -475,6 +475,8 @@ RULE_INT(Spells, ClericInnateHealFocus, 5, "Clerics on live get a 5 pct innate h
 RULE_BOOL(Spells, DOTsScaleWithSpellDmg, false, "Allow SpellDmg stat to affect DoT spells")
 RULE_BOOL(Spells, HOTsScaleWithHealAmt, false, "Allow HealAmt stat to affect HoT spells")
 RULE_BOOL(Spells, CompoundLifetapHeals, true, "True: Lifetap heals calculate damage bonuses and then heal bonuses.  False:  Lifetaps heal using the amount damaged to mob.")
+RULE_BOOL(Spells, BuffsFadeOnDeath, true, "Disable to keep buffs from fading on death")
+RULE_BOOL(Spells, IllusionsAlwaysPersist, false, "Allows Illusions to persist beyond death and zoning always.")
 RULE_CATEGORY_END()
 
 RULE_CATEGORY(Combat)
@@ -516,6 +518,7 @@ RULE_INT(Combat, MinRangedAttackDist, 25, "Minimum Distance to use Ranged Attack
 RULE_BOOL(Combat, ArcheryBonusRequiresStationary, true, "does the 2x archery bonus chance require a stationary npc")
 RULE_REAL(Combat, ArcheryBaseDamageBonus, 0.85, "Percentage modifier to base archery Damage 0.5=50% base damage, 1=100%,2=200%")
 RULE_REAL(Combat, ArcheryNPCMultiplier, 1.0, "Value is multiplied by the regular dmg to get the archery dmg")
+RULE_REAL(Combat, BashACBonusDivisor, 25.0f, "this divides the AC value contribution to bash damage, lower to increase damage")
 RULE_BOOL(Combat, AssistNoTargetSelf, true, "When assisting a target that does not have a target: true = target self, false = leave target as was before assist (false = live like)")
 RULE_INT(Combat, MaxRampageTargets, 3, "Maximum number of people hit with rampage")
 RULE_INT(Combat, DefaultRampageTargets, 1, "Default number of people to hit with rampage")

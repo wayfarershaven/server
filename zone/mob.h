@@ -552,7 +552,7 @@ public:
 		bool avoidable = true, int8 buffslot = -1, bool iBuffTic = false, eSpecialAttacks special = eSpecialAttacks::None) = 0;
 	virtual void SetHP(int64 hp);
 	bool ChangeHP(Mob* other, int32 amount, uint16 spell_id = 0, int8 buffslot = -1, bool iBuffTic = false);
-	inline void SetOOCRegen(int32 newoocregen) {ooc_regen = newoocregen;}
+	inline void SetOOCRegen(int64 new_ooc_regen) { ooc_regen = new_ooc_regen; }
 	virtual void Heal();
 	virtual void HealDamage(uint64 ammount, Mob* caster = nullptr, uint16 spell_id = SPELL_UNKNOWN);
 	virtual void SetMaxHP() { current_hp = max_hp; }
@@ -665,7 +665,7 @@ public:
 	virtual int64 GetMaxEndurance() const { return 0; }
 	virtual void SetEndurance(int32 newEnd) { return; }
 	int64 GetItemHPBonuses();
-	int32 GetSpellHPBonuses();
+	int64 GetSpellHPBonuses();
 	virtual const int64& SetMana(int64 amount);
 	inline float GetManaRatio() const { return max_mana == 0 ? 100 :
 		((static_cast<float>(current_mana) / max_mana) * 100); }
@@ -799,6 +799,7 @@ public:
 	//Util
 	static uint32 RandomTimer(int min, int max);
 	static uint8 GetDefaultGender(uint16 in_race, uint8 in_gender = 0xFF);
+	static bool IsPlayerClass(uint16 in_class);
 	static bool IsPlayerRace(uint16 in_race);
 	EQ::skills::SkillType GetSkillByItemType(int ItemType);
 	uint8 GetItemTypeBySkill(EQ::skills::SkillType skill);
@@ -1522,7 +1523,7 @@ protected:
 	int64 max_mana;
 	int64 hp_regen;
 	int64 mana_regen;
-	int32 ooc_regen;
+	int64 ooc_regen;
 	uint8 maxlevel;
 	uint32 scalerate;
 	Buffs_Struct *buffs;
