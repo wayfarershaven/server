@@ -184,7 +184,7 @@ void Embperl::DoInit() {
 		,FALSE
 	);
 
-	LogQuests("Loading perlemb plugins");
+	// LogQuests("Loading perlemb plugins");
 	try
 	{
 		std::string perl_command;

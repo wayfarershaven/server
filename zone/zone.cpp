@@ -60,6 +60,7 @@
 #include "../common/repositories/criteria/content_filter_criteria.h"
 #include "../common/repositories/content_flags_repository.h"
 #include "../common/repositories/zone_points_repository.h"
+#include "../common/serverinfo.h"
 
 #include <time.h>
 #include <ctime>
@@ -86,7 +87,7 @@ Zone* zone = 0;
 
 void UpdateWindowTitle(char* iNewTitle);
 
-bool Zone::Bootup(uint32 iZoneID, uint32 iInstanceID, bool iStaticZone) {
+bool Zone::Bootup(uint32 iZoneID, uint32 iInstanceID, bool is_static) {
 	const char* zonename = ZoneName(iZoneID);
 
 	if (iZoneID == 0 || zonename == 0)
@@ -103,7 +104,7 @@ bool Zone::Bootup(uint32 iZoneID, uint32 iInstanceID, bool iStaticZone) {
 	zone = new Zone(iZoneID, iInstanceID, zonename);
 
 	//init the zone, loads all the data, etc
-	if (!zone->Init(iStaticZone)) {
+	if (!zone->Init(is_static)) {
 		safe_delete(zone);
 		std::cerr << "Zone->Init failed" << std::endl;
 		worldserver.SetZoneData(0);
@@ -151,14 +152,14 @@ bool Zone::Bootup(uint32 iZoneID, uint32 iInstanceID, bool iStaticZone) {
 
 	LogInfo("---- Zone server [{}], listening on port:[{}] ----", zonename, ZoneConfig::get()->ZonePort);
 	LogInfo("Zone Bootup: [{}] [{}] ([{}]: [{}])",
-		(iStaticZone) ? "Static" : "Dynamic", zonename, iZoneID, iInstanceID);
+		(is_static) ? "Static" : "Dynamic", zonename, iZoneID, iInstanceID);
 	parse->Init();
 	UpdateWindowTitle(nullptr);
 
 	// Dynamic zones need to Sync here.
 	// Static zones sync when they connect in worldserver.cpp.
 	// Static zones cannot sync here as request is ignored by worldserver.
-	if (!iStaticZone)
+	if (!is_static)
 	{
 		zone->GetTimeSync();
 	}
@@ -663,31 +664,44 @@ void Zone::LoadNewMerchantData(uint32 merchantid) {
 
 void Zone::GetMerchantDataForZoneLoad() {
 	LogInfo("Loading Merchant Lists");
+
+	std::string filter = fmt::format(
+		SQL(
+			id IN (
+				select npcID from spawnentry where spawngroupID IN (
+					select spawngroupID from spawn2 where `zone` = '{}' and `version` = {}
+				)
+			)
+		),
+		zone->GetShortName(),
+		zone->GetInstanceVersion()
+	);
+
 	std::string query = fmt::format(
 		SQL (
 			SELECT
-			  DISTINCT merchantlist.merchantid,
-			  merchantlist.slot,
-			  merchantlist.item,
-			  merchantlist.faction_required,
-			  merchantlist.level_required,
-			  merchantlist.alt_currency_cost,
-			  merchantlist.classes_required,
-			  merchantlist.probability
+				DISTINCT merchantlist.merchantid,
+				merchantlist.slot,
+				merchantlist.item,
+				merchantlist.faction_required,
+				merchantlist.level_required,
+				merchantlist.alt_currency_cost,
+				merchantlist.classes_required,
+				merchantlist.probability
 			FROM
-			  merchantlist,
-			  npc_types,
-			  spawnentry,
-			  spawn2
+				merchantlist,
+				npc_types,
+				spawnentry,
+				spawn2
 			WHERE
-			  npc_types.merchant_id = merchantlist.merchantid
-			  AND npc_types.id = spawnentry.npcid
-			  AND spawnentry.spawngroupid = spawn2.spawngroupid
-			  AND spawn2.zone = '{}'
-			  AND spawn2.version = {}
-			  {}
+				npc_types.merchant_id = merchantlist.merchantid
+				AND npc_types.id = spawnentry.npcid
+				AND spawnentry.spawngroupid = spawn2.spawngroupid
+				AND spawn2.zone = '{}'
+				AND spawn2.version = {}
+				{}
 			ORDER BY
-			  merchantlist.slot
+				merchantlist.slot
 		),
 		GetShortName(),
 		GetInstanceVersion(),
@@ -1086,14 +1100,14 @@ Zone::~Zone() {
 }
 
 //Modified for timezones.
-bool Zone::Init(bool iStaticZone) {
-	SetStaticZone(iStaticZone);
+bool Zone::Init(bool is_static) {
+	SetStaticZone(is_static);
 
 	//load the zone config file.
-	if (!LoadZoneCFG(zone->GetShortName(), zone->GetInstanceVersion())) { // try loading the zone name...
+	if (!LoadZoneCFG(GetShortName(), GetInstanceVersion())) { // try loading the zone name...
 		LoadZoneCFG(
-			zone->GetFileName(),
-			zone->GetInstanceVersion()
+			GetFileName(),
+			GetInstanceVersion()
 		);
 	} // if that fails, try the file name, then load defaults
 
@@ -1104,9 +1118,9 @@ bool Zone::Init(bool iStaticZone) {
 		}
 	}
 
-	zone->zonemap  = Map::LoadMapFile(zone->map_name);
-	zone->watermap = WaterMap::LoadWaterMapfile(zone->map_name);
-	zone->pathing  = IPathfinder::Load(zone->map_name);
+	zonemap  = Map::LoadMapFile(map_name);
+	watermap = WaterMap::LoadWaterMapfile(map_name);
+	pathing  = IPathfinder::Load(map_name);
 
 	LogInfo("Loading spawn conditions");
 	if(!spawn_conditions.LoadSpawnConditions(short_name, instanceid)) {
@@ -1172,30 +1186,31 @@ bool Zone::Init(bool iStaticZone) {
 		database.DeleteBuyLines(0);
 	}
 
-	zone->LoadLDoNTraps();
-	zone->LoadLDoNTrapEntries();
-	zone->LoadVeteranRewards();
-	zone->LoadAlternateCurrencies();
-	zone->LoadNPCEmotes(&NPCEmoteList);
+	LoadLDoNTraps();
+	LoadLDoNTrapEntries();
+	LoadVeteranRewards();
+	LoadAlternateCurrencies();
+	LoadNPCEmotes(&NPCEmoteList);
 
 	LoadAlternateAdvancement();
 
 	content_db.LoadGlobalLoot();
 
 	//Load merchant data
-	zone->GetMerchantDataForZoneLoad();
+	GetMerchantDataForZoneLoad();
 
 	//Load temporary merchant data
-	zone->LoadTempMerchantData();
+	LoadTempMerchantData();
 
 	// Merc data
 	if (RuleB(Mercs, AllowMercs)) {
-		zone->LoadMercTemplates();
-		zone->LoadMercSpells();
+		LoadMercTemplates();
+		LoadMercSpells();
 	}
 
-	if (RuleB(Zone, LevelBasedEXPMods))
-		zone->LoadLevelEXPMods();
+	if (RuleB(Zone, LevelBasedEXPMods)) {
+		LoadLevelEXPMods();
+	}
 
 	petition_list.ClearPetitions();
 	petition_list.ReadDatabase();
@@ -1207,15 +1222,20 @@ bool Zone::Init(bool iStaticZone) {
 	Expedition::CacheAllFromDatabase();
 
 	LogInfo("Loading timezone data");
-	zone->zone_time.setEQTimeZone(content_db.GetZoneTZ(zoneid, GetInstanceVersion()));
+	zone_time.setEQTimeZone(content_db.GetZoneTZ(zoneid, GetInstanceVersion()));
 
-	LogInfo("Init Finished: ZoneID = [{}], Time Offset = [{}]", zoneid, zone->zone_time.getEQTimeZone());
+	LogInfo("Init Finished: ZoneID = [{}], Time Offset = [{}]", zoneid, zone_time.getEQTimeZone());
 
 	LoadGrids();
 	LoadTickItems();
 
 	//MODDING HOOK FOR ZONE INIT
 	mod_init();
+
+	// logging origination information
+	LogSys.origination_info.zone_short_name = zone->short_name;
+	LogSys.origination_info.zone_long_name  = zone->long_name;
+	LogSys.origination_info.instance_id     = zone->instanceid;
 
 	return true;
 }
@@ -1253,16 +1273,16 @@ void Zone::ReloadStaticData() {
 	zone->LoadZoneDoors(zone->GetShortName(), zone->GetInstanceVersion());
 	entity_list.RespawnAllDoors();
 
-	zone->LoadVeteranRewards();
-	zone->LoadAlternateCurrencies();
+	LoadVeteranRewards();
+	LoadAlternateCurrencies();
 	NPCEmoteList.Clear();
-	zone->LoadNPCEmotes(&NPCEmoteList);
+	LoadNPCEmotes(&NPCEmoteList);
 
 	//load the zone config file.
-	if (!LoadZoneCFG(zone->GetShortName(), zone->GetInstanceVersion())) { // try loading the zone name...
+	if (!LoadZoneCFG(GetShortName(), GetInstanceVersion())) { // try loading the zone name...
 		LoadZoneCFG(
-			zone->GetFileName(),
-			zone->GetInstanceVersion()
+			GetFileName(),
+			GetInstanceVersion()
 		);
 	} // if that fails, try the file name, then load defaults
 
@@ -1571,7 +1591,7 @@ bool Zone::Process() {
 	if(Weather_Timer->Check())
 	{
 		Weather_Timer->Disable();
-		this->ChangeWeather();
+		ChangeWeather();
 	}
 
 	if(qGlobals)
@@ -1701,7 +1721,7 @@ void Zone::ChangeWeather()
 	else
 	{
 		LogDebug("The weather for zone: [{}] has changed. Old weather was = [{}]. New weather is = [{}] The next check will be in [{}] seconds. Rain chance: [{}], Rain duration: [{}], Snow chance [{}], Snow duration: [{}]", zone->GetShortName(), tmpOldWeather, zone_weather,Weather_Timer->GetRemainingTime()/1000,rainchance,rainduration,snowchance,snowduration);
-		this->weatherSend();
+		weatherSend();
 		if (zone->weather_intensity == 0)
 		{
 			zone->zone_weather = 0;
@@ -2737,4 +2757,33 @@ uint32 Zone::GetCurrencyItemID(uint32 currency_id)
 	}
 
 	return 0;
+}
+
+void Zone::SendDiscordMessage(int webhook_id, const std::string& message)
+{
+	if (worldserver.Connected()) {
+		auto pack = new ServerPacket(ServerOP_DiscordWebhookMessage, sizeof(DiscordWebhookMessage_Struct) + 1);
+		auto *q   = (DiscordWebhookMessage_Struct *) pack->pBuffer;
+
+		strn0cpy(q->message, message.c_str(), 2000);
+		q->webhook_id = webhook_id;
+
+		worldserver.SendPacket(pack);
+		safe_delete(pack);
+	}
+}
+
+void Zone::SendDiscordMessage(const std::string& webhook_name, const std::string &message)
+{
+	bool not_found = true;
+	for (auto & w : LogSys.discord_webhooks) {
+		if (w.webhook_name == webhook_name) {
+			SendDiscordMessage(w.id, message);
+			not_found = false;
+		}
+	}
+
+	if (not_found) {
+		LogDiscord("[SendDiscordMessage] Did not find valid webhook by webhook name [{}]", webhook_name);
+	}
 }
