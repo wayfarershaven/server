@@ -437,19 +437,31 @@ void Client::SetEXP(uint32 set_exp, uint32 set_aaxp, bool isrezzexp) {
             else MessageString(Chat::Experience, REZ_REGAIN);
         } else {
             if(this->IsGrouped()) {
-                if (RuleI(Character, ShowExpValues) > 0) Message(Chat::Experience, "You have gained %s party experience! %s", exp_amount_message.c_str(), exp_percent_message.c_str());
-                else if (RuleB(Character, BonusExpEnabled)) MessageString(Chat::Experience, GAIN_GROUPXP_BONUS);
-				else MessageString(Chat::Experience, GAIN_GROUPXP);
+                if (RuleI(Character, ShowExpValues) > 0) {
+					Message(Chat::Experience, "You have gained %s party experience! %s", exp_amount_message.c_str(), exp_percent_message.c_str());
+				} else if (RuleB(Character, BonusExpEnabled)) {
+					MessageString(Chat::Experience, GAIN_GROUPXP_BONUS);
+				} else {
+					MessageString(Chat::Experience, GAIN_GROUPXP);
+				}
             }
             else if (IsRaidGrouped()) {
-                if (RuleI(Character, ShowExpValues) > 0) Message(Chat::Experience, "You have gained %s raid experience! %s", exp_amount_message.c_str(), exp_percent_message.c_str());
-                else if (RuleB(Character, BonusExpEnabled)) MessageString(Chat::Experience, GAIN_RAIDXP_BONUS);
-				else MessageString(Chat::Experience, GAIN_RAIDEXP);
+                if (RuleI(Character, ShowExpValues) > 0) {
+					Message(Chat::Experience, "You have gained %s raid experience! %s", exp_amount_message.c_str(), exp_percent_message.c_str());
+				} else if (RuleB(Character, BonusExpEnabled)) {
+					MessageString(Chat::Experience, GAIN_RAIDXP_BONUS);
+				} else {
+					MessageString(Chat::Experience, GAIN_RAIDEXP);
+				}
             }
             else {
-                if (RuleI(Character, ShowExpValues) > 0) Message(Chat::Experience, "You have gained %s experience! %s", exp_amount_message.c_str(), exp_percent_message.c_str());
-                else if (RuleB(Character, BonusExpEnabled)) MessageString(Chat::Experience, GAIN_XP_BONUS);
-				else MessageString(Chat::Experience, GAIN_XP);
+                if (RuleI(Character, ShowExpValues) > 0) {
+					Message(Chat::Experience, "You have gained %s experience! %s", exp_amount_message.c_str(), exp_percent_message.c_str());
+				} else if (RuleB(Character, BonusExpEnabled)) {
+					MessageString(Chat::Experience, GAIN_XP_BONUS);
+				} else {
+					MessageString(Chat::Experience, GAIN_XP);
+				}
             }
         }
     }
