@@ -699,7 +699,7 @@ void QuestManager::resumetimer(const char *timer_name) {
 
 	if (milliseconds == 0)
 	{
-		LogQuests("Paused timer [{}] not found or has expired. Returning", timer_name);
+		LogQuestDebug("Paused timer [{}] not found or has expired. Returning", timer_name);
 		return;
 	}
 
@@ -710,7 +710,7 @@ void QuestManager::resumetimer(const char *timer_name) {
 		{
 			cur->Timer_.Enable();
 			cur->Timer_.Start(milliseconds, false);
-			LogQuests("Resuming timer [{}] for [{}] with [{}] ms remaining", timer_name, owner->GetName(), milliseconds);
+			LogQuestDebug("Resuming timer [{}] for [{}] with [{}] ms remaining", timer_name, owner->GetName(), milliseconds);
 			return;
 		}
 		++cur;
