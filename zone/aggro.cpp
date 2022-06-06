@@ -224,28 +224,37 @@ void NPC::DescribeAggro(Client *towho, Mob *mob, bool verbose) {
 	to keep the #aggro command accurate.
 */
 bool Mob::CheckWillAggro(Mob *mob) {
-    if (!mob)
-        return false;
+	if(!mob) {
+		return false;
+	}
 
-    //sometimes if a client has some lag while zoning into a dangerous place while either invis or a GM
-    //they will aggro mobs even though it's supposed to be impossible, to lets make sure we've finished connecting
-    if (mob->IsClient()) {
-        if (!mob->CastToClient()->ClientFinishedLoading() || mob->CastToClient()->IsHoveringForRespawn() ||
-            mob->CastToClient()->bZoning)
-            return false;
+	//sometimes if a client has some lag while zoning into a dangerous place while either invis or a GM
+	//they will aggro mobs even though it's supposed to be impossible, to lets make sure we've finished connecting
+	if (mob->IsClient()) {
+		if (
+			!mob->CastToClient()->ClientFinishedLoading() ||
+			mob->CastToClient()->IsHoveringForRespawn() ||
+			mob->CastToClient()->bZoning
+		) {
+            		return false;
+    		}
+	}
+
+	// We don't want to aggro clients outside of water if we're water only.
+	if (
+		mob->IsClient() &&
+		mob->CastToClient()->GetLastRegion() != RegionTypeWater &&
+		IsUnderwaterOnly()
+	) {
+       		return false;
     }
 
-    // We don't want to aggro clients outside of water if we're water only.
-    if (mob->IsClient() && mob->CastToClient()->GetLastRegion() != RegionTypeWater && IsUnderwaterOnly()) {
-        return false;
-    }
-
-    /**
-     * Pets shouldn't scan for aggro
-     */
-    if (this->GetOwner()) {
-        return false;
-    }
+	/**
+	* Pets shouldn't scan for aggro
+	*/
+	if (GetOwner()) {
+        	return false;
+    	}
 
     Mob *pet_owner = mob->GetOwner();
     if (pet_owner && pet_owner->IsClient() &&
@@ -292,20 +301,20 @@ bool Mob::CheckWillAggro(Mob *mob) {
         return false;
     }
 
-    //im not sure I understand this..
-    //if I have an owner and it is not this mob, then I cannot
-    //aggro this mob...???
-    //changed to be 'if I have an owner and this is it'
-    if (mob == GetOwner()) {
-        return (false);
-    }
+	//im not sure I understand this..
+	//if I have an owner and it is not this mob, then I cannot
+	//aggro this mob...???
+	//changed to be 'if I have an owner and this is it'
+	if (mob == GetOwner()) {
+		return false;
+	}
 
     float dist2 = DistanceSquared(mob->GetPosition(), m_Position);
     float iAggroRange2 = iAggroRange * iAggroRange;
 
     if (dist2 > iAggroRange2) {
         // Skip it, out of range
-        return (false);
+		return false;
     }
 
     //Image: Get their current target and faction value now that its required
@@ -361,7 +370,7 @@ bool Mob::CheckWillAggro(Mob *mob) {
     LogAggro("Int: [{}]\n", GetINT());
     LogAggro("Con: [{}]\n", GetLevelCon(mob->GetLevel()));
 
-    return (false);
+	return false;
 }
 
 int EntityList::GetHatedCount(Mob *attacker, Mob *exclude, bool inc_gray_con)
@@ -634,7 +643,7 @@ type', in which case, the answer is yes.
 	}
 	while( reverse++ == 0 );
 
-	LogDebug("Mob::IsAttackAllowed: don't have a rule for this - [{}] vs [{}]\n", this->GetName(), target->GetName());
+	LogDebug("Mob::IsAttackAllowed: don't have a rule for this - [{}] vs [{}]\n", GetName(), target->GetName());
 	return false;
 }
 
@@ -659,7 +668,7 @@ bool Mob::IsBeneficialAllowed(Mob *target)
 
 	// first figure out if we're pets. we always look at the master's flags.
 	// no need to compare pets to anything
-	mob1 = this->GetOwnerID() ? this->GetOwner() : this;
+	mob1 = GetOwnerID() ? GetOwner() : this;
 	mob2 = target->GetOwnerID() ? target->GetOwner() : target;
 
 	// if it's self target or our own pet it's ok
@@ -774,7 +783,7 @@ bool Mob::IsBeneficialAllowed(Mob *target)
 	}
 	while( reverse++ == 0 );
 
-	LogDebug("Mob::IsBeneficialAllowed: don't have a rule for this - [{}] to [{}]\n", this->GetName(), target->GetName());
+	LogDebug("Mob::IsBeneficialAllowed: don't have a rule for this - [{}] to [{}]\n", GetName(), target->GetName());
 	return false;
 }
 
@@ -1311,4 +1320,3 @@ void Mob::RogueEvade(Mob *other)
 
 	return;
 }
-

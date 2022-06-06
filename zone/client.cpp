@@ -378,16 +378,16 @@ Client::~Client() {
 	if(IsInAGuild())
 		guild_mgr.SendGuildMemberUpdateToWorld(GetName(), GuildID(), 0, time(nullptr));
 
-	Mob* horse = entity_list.GetMob(this->CastToClient()->GetHorseId());
+	Mob* horse = entity_list.GetMob(CastToClient()->GetHorseId());
 	if (horse)
 		horse->Depop();
 
-	Mob* merc = entity_list.GetMob(this->GetMercID());
+	Mob* merc = entity_list.GetMob(GetMercID());
 	if (merc)
 		merc->Depop();
 
 	if(Trader)
-		database.DeleteTraderItem(this->CharacterID());
+		database.DeleteTraderItem(CharacterID());
 
 	if(Buyer)
 		ToggleBuyerMode(false);
@@ -697,7 +697,7 @@ bool Client::Save(uint8 iCommitNow) {
 
 	p_timers.Store(&database);
 
-	database.SaveCharacterTribute(this->CharacterID(), &m_pp);
+	database.SaveCharacterTribute(CharacterID(), &m_pp);
 	SaveTaskState(); /* Save Character Task */
 
 	LogFood("Client::Save - hunger_level: [{}] thirst_level: [{}]", m_pp.hunger_level, m_pp.thirst_level);
@@ -712,7 +712,7 @@ bool Client::Save(uint8 iCommitNow) {
 		}
 	}
 
-	database.SaveCharacterData(this->CharacterID(), this->AccountID(), &m_pp, &m_epp); /* Save Character Data */
+	database.SaveCharacterData(CharacterID(), AccountID(), &m_pp, &m_epp); /* Save Character Data */
 
 	return true;
 }
@@ -884,7 +884,7 @@ void Client::ChannelMessageReceived(uint8 chan_num, uint8 language, uint8 lang_s
 			sem->guilddbid = 0;
 
 		strcpy(sem->message, message);
-		sem->minstatus = this->Admin();
+		sem->minstatus = Admin();
 		sem->type = chan_num;
 		if(targetname != 0)
 			strcpy(sem->to, targetname);
@@ -1223,7 +1223,7 @@ void Client::ChannelMessageReceived(uint8 chan_num, uint8 language, uint8 lang_s
 }
 
 void Client::ChannelMessageSend(const char* from, const char* to, uint8 chan_num, uint8 language, uint8 lang_skill, const char* message, ...) {
-	if ((chan_num==11 && !(this->GetGM())) || (chan_num==10 && this->Admin() < AccountStatus::QuestTroupe)) // dont need to send /pr & /petition to everybody
+	if ((chan_num==11 && !(GetGM())) || (chan_num==10 && Admin() < AccountStatus::QuestTroupe)) // dont need to send /pr & /petition to everybody
 		return;
 	va_list argptr;
 	char buffer[4096];
@@ -1278,7 +1278,7 @@ void Client::ChannelMessageSend(const char* from, const char* to, uint8 chan_num
 	QueuePacket(&app);
 
 	bool senderCanTrainSelf = RuleB(Client, SelfLanguageLearning);
-	bool weAreNotSender = strcmp(this->GetCleanName(), cm->sender);
+	bool weAreNotSender = strcmp(GetCleanName(), cm->sender);
 
 	if (senderCanTrainSelf || weAreNotSender) {
 		if ((chan_num == ChatChannel_Group) && (ListenerSkill < 100)) {	// group message in unmastered language, check for skill up
@@ -1488,8 +1488,7 @@ void Client::SetSkill(EQ::skills::SkillType skillid, uint16 value) {
 		return;
 	m_pp.skills[skillid] = value; // We need to be able to #setskill 254 and 255 to reset skills
 
-	database.SaveCharacterSkill(this->CharacterID(), skillid, value);
-
+	database.SaveCharacterSkill(CharacterID(), skillid, value);
 	auto outapp = new EQApplicationPacket(OP_SkillUpdate, sizeof(SkillUpdate_Struct));
 	SkillUpdate_Struct* skill = (SkillUpdate_Struct*)outapp->pBuffer;
 	skill->skillId=skillid;
@@ -1508,7 +1507,7 @@ void Client::IncreaseLanguageSkill(int skill_id, int value) {
 	if (m_pp.languages[skill_id] > 100) //Lang skill above max
 		m_pp.languages[skill_id] = 100;
 
-	database.SaveCharacterLanguage(this->CharacterID(), skill_id, m_pp.languages[skill_id]);
+	database.SaveCharacterLanguage(CharacterID(), skill_id, m_pp.languages[skill_id]);
 
 	auto outapp = new EQApplicationPacket(OP_SkillUpdate, sizeof(SkillUpdate_Struct));
 	SkillUpdate_Struct* skill = (SkillUpdate_Struct*)outapp->pBuffer;
@@ -1564,22 +1563,22 @@ void Client::UpdateWho(uint8 remove)
 	auto pack = new ServerPacket(ServerOP_ClientList, sizeof(ServerClientList_Struct));
 	auto *s   = (ServerClientList_Struct *) pack->pBuffer;
 	s->remove = remove;
-	s->wid    = this->GetWID();
-	s->IP     = this->GetIP();
-	s->charid = this->CharacterID();
-	strcpy(s->name, this->GetName());
+	s->wid    = GetWID();
+	s->IP     = GetIP();
+	s->charid = CharacterID();
+	strcpy(s->name, GetName());
 
 	s->gm        = GetGM();
-	s->Admin     = this->Admin();
-	s->AccountID = this->AccountID();
-	strcpy(s->AccountName, this->AccountName());
+	s->Admin     = Admin();
+	s->AccountID = AccountID();
+	strcpy(s->AccountName, AccountName());
 
-	s->LSAccountID = this->LSAccountID();
+	s->LSAccountID = LSAccountID();
 	strn0cpy(s->lskey, lskey, sizeof(s->lskey));
 
 	s->zone        = zone->GetZoneID();
 	s->instance_id = zone->GetInstanceID();
-	s->race        = this->GetRace();
+	s->race        = GetRace();
 	s->class_      = GetClass();
 	s->level       = GetLevel();
 
@@ -1615,9 +1614,9 @@ void Client::WhoAll(Who_All_Struct* whom) {
 	else {
 		auto pack = new ServerPacket(ServerOP_Who, sizeof(ServerWhoAll_Struct));
 		ServerWhoAll_Struct* whoall = (ServerWhoAll_Struct*) pack->pBuffer;
-		whoall->admin = this->Admin();
-		whoall->fromid=this->GetID();
-		strcpy(whoall->from, this->GetName());
+		whoall->admin = Admin();
+		whoall->fromid=GetID();
+		strcpy(whoall->from, GetName());
 		strn0cpy(whoall->whom, whom->whom, 64);
 		whoall->lvllow = whom->lvllow;
 		whoall->lvlhigh = whom->lvlhigh;
@@ -1637,7 +1636,7 @@ void Client::FriendsWho(char *FriendsString) {
 		auto pack =
 		    new ServerPacket(ServerOP_FriendsWho, sizeof(ServerFriendsWho_Struct) + strlen(FriendsString));
 		ServerFriendsWho_Struct* FriendsWho = (ServerFriendsWho_Struct*) pack->pBuffer;
-		FriendsWho->FromID = this->GetID();
+		FriendsWho->FromID = GetID();
 		strcpy(FriendsWho->FromName, GetName());
 		strcpy(FriendsWho->FriendsString, FriendsString);
 		worldserver.SendPacket(pack);
@@ -1868,9 +1867,9 @@ void Client::CheckManaEndUpdate() {
 		safe_delete(outapp);
 
 		/* Let others know when our mana percent has changed */
-		if (this->GetManaPercent() != last_reported_mana_percent) {
-			Group *group = this->GetGroup();
-			Raid *raid = this->GetRaid();
+		if (GetManaPercent() != last_reported_mana_percent) {
+			Group *group = GetGroup();
+			Raid *raid = GetRaid();
 
 			if (raid) {
 				raid->SendManaPacketFrom(this);
@@ -1889,13 +1888,13 @@ void Client::CheckManaEndUpdate() {
 			}
 			safe_delete(mana_packet);
 
-			last_reported_mana_percent = this->GetManaPercent();
+			last_reported_mana_percent = GetManaPercent();
 		}
 
 		/* Let others know when our endurance percent has changed */
-		if (this->GetEndurancePercent() != last_reported_endurance_percent) {
-			Group *group = this->GetGroup();
-			Raid *raid = this->GetRaid();
+		if (GetEndurancePercent() != last_reported_endurance_percent) {
+			Group *group = GetGroup();
+			Raid *raid = GetRaid();
 
 			if (raid) {
 				raid->SendEndurancePacketFrom(this);
@@ -1914,7 +1913,7 @@ void Client::CheckManaEndUpdate() {
 			}
 			safe_delete(endurance_packet);
 
-			last_reported_endurance_percent = this->GetEndurancePercent();
+			last_reported_endurance_percent = GetEndurancePercent();
 		}
 
 		last_reported_mana = current_mana;
@@ -2721,12 +2720,12 @@ void Client::LogMerchant(Client* player, Mob* merchant, uint32 quantity, uint32 
 
 void Client::Disarm(Client* disarmer, int chance) {
 	int16 slot = EQ::invslot::SLOT_INVALID;
-	const EQ::ItemInstance *inst = this->GetInv().GetItem(EQ::invslot::slotPrimary);
+	const EQ::ItemInstance *inst = GetInv().GetItem(EQ::invslot::slotPrimary);
 	if (inst && inst->IsWeapon()) {
 		slot = EQ::invslot::slotPrimary;
 	}
 	else {
-		inst = this->GetInv().GetItem(EQ::invslot::slotSecondary);
+		inst = GetInv().GetItem(EQ::invslot::slotSecondary);
 		if (inst && inst->IsWeapon())
 			slot = EQ::invslot::slotSecondary;
 	}
@@ -2750,14 +2749,14 @@ void Client::Disarm(Client* disarmer, int chance) {
 						mi->number_in_stack = 0;
 					FastQueuePacket(&outapp); // this deletes item from the weapon slot on the client
 					if (PutItemInInventory(slot_id, *InvItem, true))
-						database.SaveInventory(this->CharacterID(), NULL, slot);
+						database.SaveInventory(CharacterID(), NULL, slot);
 					auto matslot = (slot == EQ::invslot::slotPrimary ? EQ::textures::weaponPrimary : EQ::textures::weaponSecondary);
 					if (matslot != EQ::textures::materialInvalid)
 						SendWearChange(matslot);
 				}
 				MessageString(Chat::Skills, DISARMED);
 				if (disarmer != this)
-					disarmer->MessageString(Chat::Skills, DISARM_SUCCESS, this->GetCleanName());
+					disarmer->MessageString(Chat::Skills, DISARM_SUCCESS, GetCleanName());
 				if (chance != 1000)
 					disarmer->CheckIncreaseSkill(EQ::skills::SkillDisarm, nullptr, 4);
 				CalcBonuses();
@@ -3320,7 +3319,7 @@ void Client::SetTint(int16 in_slot, uint32 color) {
 	EQ::textures::Tint_Struct new_color;
 	new_color.Color = color;
 	SetTint(in_slot, new_color);
-	database.SaveCharacterMaterialColor(this->CharacterID(), in_slot, color);
+	database.SaveCharacterMaterialColor(CharacterID(), in_slot, color);
 }
 
 // Still need to reconcile bracer01 versus bracer02
@@ -3330,7 +3329,7 @@ void Client::SetTint(int16 in_slot, EQ::textures::Tint_Struct& color) {
 	if (matslot != EQ::textures::materialInvalid)
 	{
 		m_pp.item_tint.Slot[matslot].Color = color.Color;
-		database.SaveCharacterMaterialColor(this->CharacterID(), in_slot, color.Color);
+		database.SaveCharacterMaterialColor(CharacterID(), in_slot, color.Color);
 	}
 
 }
@@ -3370,7 +3369,7 @@ void Client::SetLanguageSkill(int langid, int value)
 		value = 100; //Max lang value
 
 	m_pp.languages[langid] = value;
-	database.SaveCharacterLanguage(this->CharacterID(), langid, value);
+	database.SaveCharacterLanguage(CharacterID(), langid, value);
 
 	auto outapp = new EQApplicationPacket(OP_SkillUpdate, sizeof(SkillUpdate_Struct));
 	SkillUpdate_Struct* skill = (SkillUpdate_Struct*)outapp->pBuffer;
@@ -4718,7 +4717,7 @@ void Client::ClearGroupAAs() {
 	m_pp.raid_leadership_exp = 0;
 
 	Save();
-	database.SaveCharacterLeadershipAA(this->CharacterID(), &m_pp);
+	database.SaveCharacterLeadershipAA(CharacterID(), &m_pp);
 }
 
 void Client::UpdateGroupAAs(int32 points, uint32 type) {
@@ -5312,7 +5311,7 @@ void Client::SetStartZone(uint32 zoneid, float x, float y, float z, float headin
 	// setting city to zero allows the player to use /setstartcity to set the city themselves
 	if(zoneid == 0) {
 		m_pp.binds[4].zone_id = 0;
-		this->Message(Chat::Yellow,"Your starting city has been reset. Use /setstartcity to choose a new one");
+		Message(Chat::Yellow,"Your starting city has been reset. Use /setstartcity to choose a new one");
 		return;
 	}
 
@@ -6419,7 +6418,7 @@ void Client::ConsentCorpses(std::string consent_name, bool deny)
 
 void Client::Doppelganger(uint16 spell_id, Mob *target, const char *name_override, int pet_count, int pet_duration)
 {
-	if(!target || !IsValidSpell(spell_id) || this->GetID() == target->GetID())
+	if(!target || !IsValidSpell(spell_id) || GetID() == target->GetID())
 		return;
 
 	PetRecord record;
@@ -7130,8 +7129,8 @@ void Client::AddAlternateCurrencyValue(uint32 currency_id, int32 amount, int8 me
 	if (method == 1){
 		/* QS: PlayerLogAlternateCurrencyTransactions :: Cursor to Item Storage */
 		if (RuleB(QueryServ, PlayerLogAlternateCurrencyTransactions)){
-			std::string event_desc = StringFormat("Added via Quest :: Cursor to Item :: alt_currency_id:%i amount:%i in zoneid:%i instid:%i", currency_id, this->GetZoneID(), this->GetInstanceID());
-			QServ->PlayerLogEvent(Player_Log_Alternate_Currency_Transactions, this->CharacterID(), event_desc);
+			std::string event_desc = StringFormat("Added via Quest :: Cursor to Item :: alt_currency_id:%i amount:%i in zoneid:%i instid:%i", currency_id, GetZoneID(), GetInstanceID());
+			QServ->PlayerLogEvent(Player_Log_Alternate_Currency_Transactions, CharacterID(), event_desc);
 		}
 	}
 
@@ -7746,7 +7745,7 @@ void Client::UpdatePersonalFaction(int32 char_id, int32 npc_value, int32 faction
 	bool repair = false;
 	bool change = false;
 
-	if (this->itembonuses.HeroicCHA)
+	if (itembonuses.HeroicCHA)
 	{
 		int faction_mod = itembonuses.HeroicCHA / 5;
 		// If our result isn't truncated, then just do that
@@ -8446,16 +8445,16 @@ void Client::QuestReward(Mob* target, const QuestReward_Struct &reward, bool fac
 }
 
 void Client::SendHPUpdateMarquee(){
-	if (!this || !this->IsClient() || !this->current_hp || !this->max_hp)
+	if (!this || !IsClient() || !current_hp || !max_hp)
 		return;
 
 	/* Health Update Marquee Display: Custom*/
-	uint8 health_percentage = (uint8)(this->current_hp * 100 / this->max_hp);
+	uint8 health_percentage = (uint8)(current_hp * 100 / max_hp);
 	if (health_percentage >= 100)
 		return;
 
 	std::string health_update_notification = StringFormat("Health: %u%%", health_percentage);
-	this->SendMarqueeMessage(Chat::Yellow, 510, 0, 3000, 3000, health_update_notification);
+	SendMarqueeMessage(Chat::Yellow, 510, 0, 3000, 3000, health_update_notification);
 }
 
 uint32 Client::GetMoney(uint8 type, uint8 subtype) {
@@ -8825,15 +8824,15 @@ bool Client::GotoPlayer(std::string player_name)
 		auto heading     = static_cast<float>(atof(row[5]));
 
 		if (instance_id > 0 && !database.CheckInstanceExists(instance_id)) {
-			this->Message(Chat::Yellow, "Instance no longer exists...");
+			Message(Chat::Yellow, "Instance no longer exists...");
 			return false;
 		}
 
 		if (instance_id > 0) {
-			database.AddClientToInstance(instance_id, this->CharacterID());
+			database.AddClientToInstance(instance_id, CharacterID());
 		}
 
-		this->MovePC(zone_id, instance_id, x, y, z, heading);
+		MovePC(zone_id, instance_id, x, y, z, heading);
 
 		return true;
 	}
@@ -9721,7 +9720,7 @@ void Client::SetAnon(uint8 anon_flag) {
 	m_pp.anon = anon_flag;
 	auto outapp = new EQApplicationPacket(OP_SpawnAppearance, sizeof(SpawnAppearance_Struct));
 	SpawnAppearance_Struct* spawn_appearance = (SpawnAppearance_Struct*)outapp->pBuffer;
-	spawn_appearance->spawn_id = this->GetID();
+	spawn_appearance->spawn_id = GetID();
 	spawn_appearance->type = AT_Anon;
 	spawn_appearance->parameter = anon_flag;
 	entity_list.QueueClients(this, outapp);
@@ -9734,7 +9733,7 @@ void Client::SetAFK(uint8 afk_flag) {
 	AFK = afk_flag;
 	auto outapp = new EQApplicationPacket(OP_SpawnAppearance, sizeof(SpawnAppearance_Struct));
 	SpawnAppearance_Struct* spawn_appearance = (SpawnAppearance_Struct*)outapp->pBuffer;
-	spawn_appearance->spawn_id = this->GetID();
+	spawn_appearance->spawn_id = GetID();
 	spawn_appearance->type = AT_AFK;
 	spawn_appearance->parameter = afk_flag;
 	entity_list.QueueClients(this, outapp);
@@ -9854,8 +9853,8 @@ void Client::RemoveItem(uint32 item_id, uint32 quantity)
 }
 
 void Client::SetGMStatus(int newStatus) {
-	if (this->Admin() != newStatus)
-		database.UpdateGMStatus(this->AccountID(), newStatus);
+	if (Admin() != newStatus)
+		database.UpdateGMStatus(AccountID(), newStatus);
 }
 
 void Client::ApplyWeaponsStance()

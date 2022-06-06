@@ -56,7 +56,7 @@
 	void				MoveTo(float mtx, float mty, float mtz, float mth, bool saveguardspot);
 	
 	void				NextGuardPosition();
-	void				SaveGuardSpot(bool iClearGuardSpot = false);
+	void				SaveGuardSpot(bool ClearGuardSpot = false);
 	inline bool			IsGuarding() const { return(guard_heading != 0); }
 	void				AI_SetRoambox(float iDist, float iMaxX, float iMinX, float iMaxY, float iMinY, int32 iDelay = 2500);
 	const int32& GetNPCSpellsID();

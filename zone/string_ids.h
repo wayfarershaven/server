@@ -181,6 +181,7 @@
 #define PET_SPELLHOLD_SET_ON		702		//The pet spellhold mode has been set to on.
 #define PET_SPELLHOLD_SET_OFF		703		//The pet spellhold mode has been set to off.
 #define GUILD_NAME_IN_USE			711		//You cannot create a guild with that name, that guild already exists on this server.
+#define MAX_AA_EXP					1000	//You have reached the AA point cap, and cannot gain any further experience until some of your stored AA point pool is used.
 #define GM_GAINXP					1002	//[GM] You have gained %1 AXP and %2 EXP (%3).
 #define MALE_SLAYUNDEAD				1007	//%1's holy blade cleanses his target!(%2)
 #define FEMALE_SLAYUNDEAD			1008	//%1's holy blade cleanses her target!(%2)
@@ -443,15 +444,19 @@
 #define NO_MORE_AURAS				9160	//You do not have sufficient focus to maintain that ability.
 #define NEW_SPELLS_AVAIL			9149	//You have new spells available to you. Check the merchants near your guild master.
 #define FD_CAST_ON_NO_BREAK			9174	//The strength of your will allows you to resume feigning death.
+#define NO_CAST_IN_COMBAT			9190	//You can not cast this spell while in combat.
+#define NO_CAST_OUT_OF_COMBAT		9191	//You can not cast this spell while out of combat.
+#define NO_ABILITY_IN_COMBAT		9192	//You can not use this ability while in combat.
+#define NO_ABILITY_OUT_OF_COMBAT	9194	//You can not use this ability while out of combat.
 #define SNEAK_RESTRICT				9240	//You can not use this ability because you have not been hidden for long enough.
 #define PET_NOW_FOCUSING			9254	//Focusing on one target, Master.
 #define PET_NOT_FOCUSING			9263	//No longer focusing on one target, Master.
 #define PET_NOT_CASTING				9264	//Not casting spells, Master.
 #define PET_CASTING					9291	//Casting spells normally, Master.
-#define NO_CAST_IN_COMBAT			9190	//You can not cast this spell while in combat.
-#define NO_CAST_OUT_OF_COMBAT		9191	//You can not cast this spell while out of combat.
-#define NO_ABILITY_IN_COMBAT		9192	//You can not use this ability while in combat.
-#define NO_ABILITY_OUT_OF_COMBAT	9194	//You can not use this ability while out of combat.
+#define GAIN_GROUPXP_BONUS			9298	//You gain party experience (with a bonus)!
+#define GAIN_GROUPXP_PENALTY		9301	//You gain party experience (with a penalty)!
+#define GAIN_RAIDXP_BONUS			9302	//You gained raid experience (with a bonus)!
+#define GAIN_RAIDXP_PENALTY			9303	//You gained raid experience (with a penalty)!
 #define AE_RAMPAGE					11015	//%1 goes on a WILD RAMPAGE!
 #define FACE_ACCEPTED				12028	//Facial features accepted.
 #define SPELL_LEVEL_TO_LOW			12048	//You will have to achieve level %1 before you can scribe the %2.
@@ -527,6 +532,8 @@
 #define TOGGLE_OFF					13173	//Asking server to turn OFF all incoming tells for you.
 #define DUEL_INPROGRESS				13251	//You have already accepted a duel with someone else cowardly dog.
 #define OTHER_HIT_DOT				13327	//%1 has taken %2 damage from %3 by %4.
+#define GAIN_XP_BONUS				14541	//You gain experience (with a bonus)!
+#define GAIN_XP_PENALTY				14542	//You gain experience (with a penalty)!
 #define GENERIC_MISS				15041	//%1 missed %2
 
 #endif

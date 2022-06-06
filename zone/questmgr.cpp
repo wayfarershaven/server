@@ -651,7 +651,7 @@ void QuestManager::pausetimer(const char *timer_name) {
 	{
 		if (pcur->owner && pcur->owner == owner && pcur->name == timer_name)
 		{
-			LogQuests("Timer [{}] is already paused for [{}]. Returning", timer_name, owner->GetName());
+			LogQuestDebug("Timer [{}] is already paused for [{}]. Returning", timer_name, owner->GetName());
 			return;
 		}
 		++pcur;
@@ -673,7 +673,7 @@ void QuestManager::pausetimer(const char *timer_name) {
 	pt.name = timername;
 	pt.owner = owner;
 	pt.time = milliseconds;
-	LogQuests("Pausing timer [{}] for [{}] with [{}] ms remaining", timer_name, owner->GetName(), milliseconds);
+	LogQuestDebug("Pausing timer [{}] for [{}] with [{}] ms remaining", timer_name, owner->GetName(), milliseconds);
 	PTimerList.push_back(pt);
 }
 
@@ -699,7 +699,7 @@ void QuestManager::resumetimer(const char *timer_name) {
 
 	if (milliseconds == 0)
 	{
-		LogQuests("Paused timer [{}] not found or has expired. Returning", timer_name);
+		LogQuestDebug("Paused timer [{}] not found or has expired. Returning", timer_name);
 		return;
 	}
 
@@ -710,14 +710,14 @@ void QuestManager::resumetimer(const char *timer_name) {
 		{
 			cur->Timer_.Enable();
 			cur->Timer_.Start(milliseconds, false);
-			LogQuests("Resuming timer [{}] for [{}] with [{}] ms remaining", timer_name, owner->GetName(), milliseconds);
+			LogQuestDebug("Resuming timer [{}] for [{}] with [{}] ms remaining", timer_name, owner->GetName(), milliseconds);
 			return;
 		}
 		++cur;
 	}
 
 	QTimerList.push_back(QuestTimer(milliseconds, owner, timer_name));
-	LogQuests("Creating a new timer and resuming [{}] for [{}] with [{}] ms remaining", timer_name, owner->GetName(), milliseconds);
+	LogQuestDebug("Creating a new timer and resuming [{}] for [{}] with [{}] ms remaining", timer_name, owner->GetName(), milliseconds);
 
 }
 

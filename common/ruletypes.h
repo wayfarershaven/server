@@ -54,6 +54,8 @@ RULE_BOOL(Character, LeaveNakedCorpses, false, "Setting whether you leave a corp
 RULE_INT(Character, MaxDraggedCorpses, 2, "Maximum number of corpses you can drag at once")
 RULE_REAL(Character, DragCorpseDistance, 2000, "If a player is using /corpsedrag and moving, the corpse will not move until the player exceeds this distance")
 RULE_REAL(Character, CorpseDistance, 5000, "Corpse If the corpse is <= this distance from the player, it won't move")
+RULE_BOOL(Character, BonusExpEnabled, false, "Enable Bonus XP Rates")
+RULE_REAL(Character, BonusExpPercent, 1.2, "Bonus XP Percent - 1.2 = 20% Bonus")
 RULE_REAL(Character, FinalExpMultiplier, 1, "Added on top of everything else, easy for setting EXP events")
 RULE_REAL(Character, ExpMultiplier, 1.0, "If greater than 0, the experience gained is multiplied by this value. ")
 RULE_REAL(Character, AAExpMultiplier, 1.0, "If greater than 0, the AA experience gained is multiplied by this value. ")
