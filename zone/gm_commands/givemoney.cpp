@@ -35,12 +35,7 @@ void command_givemoney(Client *c, const Seperator *sep)
 		Chat::White,
 		fmt::format(
 			"Added {} to {}.",
-			ConvertMoneyToString(
-				platinum,
-				gold,
-				silver,
-				copper
-			),
+			ConvertMoneyToString(platinum, gold, silver, copper),
 			(
 				c == target ?
 				"yourself" :

@@ -1025,27 +1025,8 @@ void Corpse::MakeLootRequestPackets(Client* client, const EQApplicationPacket* a
 		loot_coin = (tmp[0] == 1 && tmp[1] == '\0');
 
 	if (loot_request_type == LootRequestType::GMPeek || loot_request_type == LootRequestType::GMAllowed) {
-		if (
-			GetPlatinum() ||
-			GetGold() ||
-			GetSilver() ||
-			GetCopper()
-		) {
-			client->Message(
-				Chat::Yellow,
-				fmt::format(
-					"This corpse contains {}.",
-					ConvertMoneyToString(
-						GetPlatinum(),
-						GetGold(),
-						GetSilver(),
-						GetCopper()
-					)
-				).c_str()
-			);
-		} else {
-			client->Message(Chat::Yellow, "This corpse contains no money.");
-		}
+		client->Message(Chat::Yellow, "This corpse contains %u platinum, %u gold, %u silver and %u copper.",
+			GetPlatinum(), GetGold(), GetSilver(), GetCopper());
 
 		auto outapp = new EQApplicationPacket(OP_MoneyOnCorpse, sizeof(moneyOnCorpseStruct));
 		moneyOnCorpseStruct* d = (moneyOnCorpseStruct*)outapp->pBuffer;
@@ -1545,12 +1526,13 @@ void Corpse::QueryLoot(Client* to) {
 		}
 	}
 
-	if (
-		platinum ||
-		gold ||
-		silver ||
-		copper
-	) {
+	bool has_money = (
+		platinum > 0 ||
+		gold > 0 ||
+		silver > 0 ||
+		copper > 0
+	);
+	if (has_money) {
 		to->Message(
 			Chat::White,
 			fmt::format(
