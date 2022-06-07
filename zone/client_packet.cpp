@@ -13214,7 +13214,7 @@ void Client::Handle_OP_ShopPlayerBuy(const EQApplicationPacket *app)
 		auto hacker_str = fmt::format("Vendor Cheat: attempted to buy {} of {}: {} that cost {} cp but only has {} pp {} gp {} sp {} cp",
 			mpo->quantity, item->ID, item->Name,
 			mpo->price, m_pp.platinum, m_pp.gold, m_pp.silver, m_pp.copper);
-		database.SetMQDetectionFlag(AccountName(), GetName(), hacker_str, zone->GetShortName());
+		database.SetMQDetectionFlag(AccountName(), GetName(), EscapeString(hacker_str), zone->GetShortName());
 		safe_delete(outapp);
 		safe_delete(inst);
 		return;
@@ -14132,7 +14132,7 @@ void Client::Handle_OP_TargetCommand(const EQApplicationPacket *app)
 				|| GetTarget()->GetBodyType() == BT_NoTarget) {
 				auto hacker_str = fmt::format("{} attempting to target something untargetable, {} bodytype: {}",
 					GetName(), GetTarget()->GetName(), (int)GetTarget()->GetBodyType());
-				database.SetMQDetectionFlag(AccountName(), GetName(), hacker_str, zone->GetShortName());
+				database.SetMQDetectionFlag(AccountName(), GetName(), EscapeString(hacker_str), zone->GetShortName());
 				SetTarget((Mob*)nullptr);
 				return;
 			} else if (cheat_manager.GetExemptStatus(Port)) {
@@ -14156,7 +14156,7 @@ void Client::Handle_OP_TargetCommand(const EQApplicationPacket *app)
 						    (zone->newzone_data.maxclip * zone->newzone_data.maxclip), GetX(),
 						    GetY(), GetZ(), GetTarget()->GetName(), GetTarget()->GetX(),
 						    GetTarget()->GetY(), GetTarget()->GetZ());
-						database.SetMQDetectionFlag(AccountName(), GetName(), hacker_str, zone->GetShortName());
+						database.SetMQDetectionFlag(AccountName(), GetName(), EscapeString(hacker_str), zone->GetShortName());
 						SetTarget(nullptr);
 						return;
 					}
@@ -14180,7 +14180,7 @@ void Client::Handle_OP_TargetCommand(const EQApplicationPacket *app)
 						GetName(), (zone->newzone_data.maxclip * zone->newzone_data.maxclip),
 						GetX(), GetY(), GetZ(), GetTarget()->GetName(), GetTarget()->GetX(),
 						GetTarget()->GetY(), GetTarget()->GetZ());
-				database.SetMQDetectionFlag(AccountName(), GetName(), hacker_str, zone->GetShortName());
+				database.SetMQDetectionFlag(AccountName(), GetName(), EscapeString(hacker_str), zone->GetShortName());
 				SetTarget(nullptr);
 				return;
 			}
