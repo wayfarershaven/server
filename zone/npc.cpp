@@ -694,12 +694,13 @@ void NPC::QueryLoot(Client* to, bool is_pet_query)
 	}
 
 	if (!is_pet_query) {
-		if (
-			platinum ||
-			gold ||
-			silver ||
-			copper
-		) {
+		bool has_money = (
+			platinum > 0 ||
+			gold > 0 ||
+			silver > 0 ||
+			copper > 0
+		);
+		if (has_money) {
 			to->Message(
 				Chat::White,
 				fmt::format(
