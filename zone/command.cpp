@@ -560,6 +560,7 @@ int command_realdispatch(Client *c, std::string message)
 	Seperator sep(message.c_str(), ' ', 10, 100, true); // "three word argument" should be considered 1 arg
 
 	command_logcommand(c, message.c_str());
+	nats.SendAdminMessage(StringFormat("%s in %s issued command: %s", c->GetCleanName(), zone->GetShortName(), message.c_str()));
 
 	std::string cstr(sep.arg[0] + 1);
 
@@ -572,8 +573,6 @@ int command_realdispatch(Client *c, std::string message)
 		c->Message(Chat::White, "Your status is not high enough to use this command.");
 		return -1;
 	}
-
-	nats.SendAdminMessage(StringFormat("%s in %s issued command: %s", c->GetCleanName(), zone->GetShortName(), message));
 	
 	if(cur->admin >= COMMANDS_LOGGING_MIN_STATUS) {
 				const char *targetType = "notarget";
