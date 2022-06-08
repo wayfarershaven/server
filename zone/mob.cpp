@@ -4486,8 +4486,7 @@ bool Mob::TrySpellTrigger(Mob *target, uint32 spell_id, int effect)
 		if (spells[spell_id].effect_id[effect_slot] == SE_SpellTrigger && IsValidSpell(spells[spell_id].limit_value[effect_slot])) {
 			SpellFinished(spells[spell_id].limit_value[effect_slot], target, EQ::spells::CastingSlot::Item, 0, -1, spells[spells[spell_id].limit_value[effect_slot]].resist_difficulty);
 			return true;
-		}
-		else if (IsClient() & spells[spell_id].effect_id[effect_slot] == SE_Chance_Best_in_Spell_Grp) {
+		} else if (IsClient() && spells[spell_id].effect_id[effect_slot] == SE_Chance_Best_in_Spell_Grp) {
 			uint32 best_spell_id = CastToClient()->GetHighestScribedSpellinSpellGroup(spells[spell_id].limit_value[effect_slot]);
 			if (IsValidSpell(best_spell_id)) {
 				SpellFinished(best_spell_id, target, EQ::spells::CastingSlot::Item, 0, -1, spells[best_spell_id].resist_difficulty);
@@ -4499,8 +4498,7 @@ bool Mob::TrySpellTrigger(Mob *target, uint32 spell_id, int effect)
 	return false;
 }
 
-void Mob::TryTriggerOnCastRequirement()
-{
+void Mob::TryTriggerOnCastRequirement() {
 	if (spellbonuses.TriggerOnCastRequirement) {
 		int buff_count = GetMaxTotalSlots();
 		for (int e = 0; e < buff_count; e++) {
