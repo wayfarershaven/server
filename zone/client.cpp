@@ -1282,19 +1282,25 @@ void Client::ChannelMessageSend(const char* from, const char* to, uint8 chan_num
 
 	if (senderCanTrainSelf || weAreNotSender) {
 		if ((chan_num == ChatChannel_Group) && (ListenerSkill < 100)) {	// group message in unmastered language, check for skill up
-			if (m_pp.languages[language] <= lang_skill)
+			if (language < MAX_PP_LANGUAGE && m_pp.languages[language] <= lang_skill) {
 				CheckLanguageSkillIncrease(language, lang_skill);
+			}
 		}
 	}
 }
 
 void Client::Message(uint32 type, const char* message, ...) {
-	if (GetFilter(FilterSpellDamage) == FilterHide && type == Chat::NonMelee)
+	if (GetFilter(FilterSpellDamage) == FilterHide && type == Chat::NonMelee) {
 		return;
-	if (GetFilter(FilterMeleeCrits) == FilterHide && type == Chat::MeleeCrit) //98 is self...
+	}
+
+	if (GetFilter(FilterMeleeCrits) == FilterHide && type == Chat::MeleeCrit) { //98 is self...
 		return;
-	if (GetFilter(FilterSpellCrits) == FilterHide && type == Chat::SpellCrit)
+	}
+
+	if (GetFilter(FilterSpellCrits) == FilterHide && type == Chat::SpellCrit) {
 		return;
+	}
 
 	va_list argptr;
 	auto buffer = new char[4096];
@@ -6418,12 +6424,12 @@ void Client::ConsentCorpses(std::string consent_name, bool deny)
 
 void Client::Doppelganger(uint16 spell_id, Mob *target, const char *name_override, int pet_count, int pet_duration)
 {
-	if(!target || !IsValidSpell(spell_id) || GetID() == target->GetID())
+	if(!target || !IsValidSpell(spell_id) || GetID() == target->GetID()) {
 		return;
+	}
 
 	PetRecord record;
-	if(!database.GetPetEntry(spells[spell_id].teleport_zone, &record))
-	{
+	if(!database.GetPetEntry(spells[spell_id].teleport_zone, &record)) {
 		LogError("Unknown doppelganger spell id: [{}], check pets table", spell_id);
 		Message(Chat::Red, "Unable to find data for pet %s", spells[spell_id].teleport_zone);
 		return;
@@ -6478,18 +6484,18 @@ void Client::Doppelganger(uint16 spell_id, Mob *target, const char *name_overrid
 	made_npc->drakkin_details = GetDrakkinDetails();
 	made_npc->d_melee_texture1 = GetEquipmentMaterial(EQ::textures::weaponPrimary);
 	made_npc->d_melee_texture2 = GetEquipmentMaterial(EQ::textures::weaponSecondary);
-	for (int i = EQ::textures::textureBegin; i <= EQ::textures::LastTexture; i++)	{
+	for (int i = EQ::textures::textureBegin; i <= EQ::textures::LastTexture; i++) {
 		made_npc->armor_tint.Slot[i].Color = GetEquipmentColor(i);
 	}
 	made_npc->loottable_id = 0;
 
 	npc_type = made_npc;
 
-	int summon_count = 0;
-	summon_count = pet.count;
+	int summon_count = pet.count;
 
-	if(summon_count > MAX_SWARM_PETS)
+	if(summon_count > MAX_SWARM_PETS) {
 		summon_count = MAX_SWARM_PETS;
+	}
 
 	static const glm::vec2 swarmPetLocations[MAX_SWARM_PETS] = {
 		glm::vec2(5, 5), glm::vec2(-5, 5), glm::vec2(5, -5), glm::vec2(-5, -5),
@@ -6507,15 +6513,14 @@ void Client::Doppelganger(uint16 spell_id, Mob *target, const char *name_overrid
 		NPC* swarm_pet_npc = new NPC(
 				(npc_dup!=nullptr)?npc_dup:npc_type,	//make sure we give the NPC the correct data pointer
 				0,
-				GetPosition() + glm::vec4(swarmPetLocations[summon_count], 0.0f, 0.0f),
+				GetPosition() + glm::vec4(swarmPetLocations[summon_count - 1], 0.0f, 0.0f),
 				GravityBehavior::Water);
 
-		if(!swarm_pet_npc->GetSwarmInfo()){
+		if(!swarm_pet_npc->GetSwarmInfo()) {
 			auto nSI = new SwarmPet;
 			swarm_pet_npc->SetSwarmInfo(nSI);
 			swarm_pet_npc->GetSwarmInfo()->duration = new Timer(pet_duration*1000);
-		}
-		else{
+		} else {
 			swarm_pet_npc->GetSwarmInfo()->duration->Start(pet_duration*1000);
 		}
 
