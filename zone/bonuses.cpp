@@ -215,8 +215,7 @@ void Client::ProcessItemCaps()
 	itembonuses.ATK = std::min(itembonuses.ATK, CalcItemATKCap());
 }
 
-void Client::AddItemBonuses(const EQ::ItemInstance *inst, StatBonuses *newbon, bool isAug, bool isTribute, int rec_override, bool ammo_slot_item)
-{
+void Client::AddItemBonuses(const EQ::ItemInstance *inst, StatBonuses *newbon, bool isAug, bool isTribute, int rec_override, bool ammo_slot_item) {
 	if (!inst || !inst->IsClassCommon()) {
 		return;
 	}
@@ -228,8 +227,9 @@ void Client::AddItemBonuses(const EQ::ItemInstance *inst, StatBonuses *newbon, b
 	const EQ::ItemData *item = inst->GetItem();
 
 	if (!isTribute && !inst->IsEquipable(GetBaseRace(), GetClass())) {
-		if (item->ItemType != EQ::item::ItemTypeFood && item->ItemType != EQ::item::ItemTypeDrink)
+		if (item->ItemType != EQ::item::ItemTypeFood && item->ItemType != EQ::item::ItemTypeDrink) {
 			return;
+		}
 	}
 
 	if (GetLevel() < inst->GetItemRequiredLevel(true)) {
@@ -290,8 +290,7 @@ void Client::AddItemBonuses(const EQ::ItemInstance *inst, StatBonuses *newbon, b
 			newbon->HeroicDR += item->HeroicDR;
 			newbon->HeroicCorrup += item->HeroicSVCorrup;
 
-		}
-		else {
+		} else {
 			int lvl = GetLevel();
 
 			newbon->AC += CalcRecommendedLevelBonus(lvl, rec_level, item->AC);
@@ -345,98 +344,126 @@ void Client::AddItemBonuses(const EQ::ItemInstance *inst, StatBonuses *newbon, b
 		}
 
 		// FatherNitwit: New style haste, shields, and regens
-		if (newbon->haste < (int32)item->Haste) {
+		if (newbon->haste < item->Haste) {
 			newbon->haste = item->Haste;
 		}
-		if (item->Regen > 0)
+
+		if (item->Regen > 0) {
 			newbon->HPRegen += item->Regen;
+		}
 
-		if (item->ManaRegen > 0)
+		if (item->ManaRegen > 0) {
 			newbon->ManaRegen += item->ManaRegen;
+		}
 
-		if (item->EnduranceRegen > 0)
+		if (item->EnduranceRegen > 0) {
 			newbon->EnduranceRegen += item->EnduranceRegen;
+		}
 
 		if (item->DamageShield > 0) {
-			if ((newbon->DamageShield + item->DamageShield) > RuleI(Character, ItemDamageShieldCap))
+			if ((newbon->DamageShield + item->DamageShield) > RuleI(Character, ItemDamageShieldCap)) {
 				newbon->DamageShield = RuleI(Character, ItemDamageShieldCap);
-			else
+			} else {
 				newbon->DamageShield += item->DamageShield;
+			}
 		}
+
 		if (item->SpellShield > 0) {
-			if ((newbon->SpellShield + item->SpellShield) > RuleI(Character, ItemSpellShieldingCap))
+			if ((newbon->SpellShield + item->SpellShield) > RuleI(Character, ItemSpellShieldingCap)) {
 				newbon->SpellShield = RuleI(Character, ItemSpellShieldingCap);
-			else
+			} else {
 				newbon->SpellShield += item->SpellShield;
+			}
 		}
+
 		if (item->Shielding > 0) {
-			if ((newbon->MeleeMitigation + item->Shielding) > RuleI(Character, ItemShieldingCap))
+			if ((newbon->MeleeMitigation + item->Shielding) > RuleI(Character, ItemShieldingCap)) {
 				newbon->MeleeMitigation = RuleI(Character, ItemShieldingCap);
-			else
+			} else {
 				newbon->MeleeMitigation += item->Shielding;
+			}
 		}
+
 		if (item->StunResist > 0) {
-			if ((newbon->StunResist + item->StunResist) > RuleI(Character, ItemStunResistCap))
+			if ((newbon->StunResist + item->StunResist) > RuleI(Character, ItemStunResistCap)) {
 				newbon->StunResist = RuleI(Character, ItemStunResistCap);
-			else
+			} else {
 				newbon->StunResist += item->StunResist;
+			}
 		}
+
 		if (item->StrikeThrough > 0) {
-			if ((newbon->StrikeThrough + item->StrikeThrough) > RuleI(Character, ItemStrikethroughCap))
+			if ((newbon->StrikeThrough + item->StrikeThrough) > RuleI(Character, ItemStrikethroughCap)) {
 				newbon->StrikeThrough = RuleI(Character, ItemStrikethroughCap);
-			else
+			} else {
 				newbon->StrikeThrough += item->StrikeThrough;
+			}
 		}
+
 		if (item->Avoidance > 0) {
-			if ((newbon->AvoidMeleeChance + item->Avoidance) > RuleI(Character, ItemAvoidanceCap))
+			if ((newbon->AvoidMeleeChance + item->Avoidance) > RuleI(Character, ItemAvoidanceCap)) {
 				newbon->AvoidMeleeChance = RuleI(Character, ItemAvoidanceCap);
-			else
+			} else {
 				newbon->AvoidMeleeChance += item->Avoidance;
+			}
 		}
+
 		if (item->Accuracy > 0) {
-			if ((newbon->HitChance + item->Accuracy) > RuleI(Character, ItemAccuracyCap))
+			if ((newbon->HitChance + item->Accuracy) > RuleI(Character, ItemAccuracyCap)) {
 				newbon->HitChance = RuleI(Character, ItemAccuracyCap);
-			else
+			} else {
 				newbon->HitChance += item->Accuracy;
+			}
 		}
+
 		if (item->CombatEffects > 0) {
-			if ((newbon->ProcChance + item->CombatEffects) > RuleI(Character, ItemCombatEffectsCap))
+			if ((newbon->ProcChance + item->CombatEffects) > RuleI(Character, ItemCombatEffectsCap)) {
 				newbon->ProcChance = RuleI(Character, ItemCombatEffectsCap);
-			else
+			} else {
 				newbon->ProcChance += item->CombatEffects;
+			}
 		}
+
 		if (item->DotShielding > 0) {
-			if ((newbon->DoTShielding + item->DotShielding) > RuleI(Character, ItemDoTShieldingCap))
+			if ((newbon->DoTShielding + item->DotShielding) > RuleI(Character, ItemDoTShieldingCap)) {
 				newbon->DoTShielding = RuleI(Character, ItemDoTShieldingCap);
-			else
+			} else {
 				newbon->DoTShielding += item->DotShielding;
+			}
 		}
 
 		if (item->HealAmt > 0) {
-			if ((newbon->HealAmt + item->HealAmt) > RuleI(Character, ItemHealAmtCap))
+			if ((newbon->HealAmt + item->HealAmt) > RuleI(Character, ItemHealAmtCap)) {
 				newbon->HealAmt = RuleI(Character, ItemHealAmtCap);
-			else
+			} else {
 				newbon->HealAmt += item->HealAmt;
+			}
 		}
+
 		if (item->SpellDmg > 0) {
-			if ((newbon->SpellDmg + item->SpellDmg) > RuleI(Character, ItemSpellDmgCap))
+			if ((newbon->SpellDmg + item->SpellDmg) > RuleI(Character, ItemSpellDmgCap)) {
 				newbon->SpellDmg = RuleI(Character, ItemSpellDmgCap);
-			else
+			} else {
 				newbon->SpellDmg += item->SpellDmg;
+			}
 		}
+
 		if (item->Clairvoyance > 0) {
-			if ((newbon->Clairvoyance + item->Clairvoyance) > RuleI(Character, ItemClairvoyanceCap))
+			if ((newbon->Clairvoyance + item->Clairvoyance) > RuleI(Character, ItemClairvoyanceCap)) {
 				newbon->Clairvoyance = RuleI(Character, ItemClairvoyanceCap);
-			else
+			} else {
 				newbon->Clairvoyance += item->Clairvoyance;
+			}
 		}
 
 		if (item->DSMitigation > 0) {
-			if ((newbon->DSMitigation + item->DSMitigation) > RuleI(Character, ItemDSMitigationCap))
+			if ((newbon->DSMitigation + item->DSMitigation) > RuleI(Character, ItemDSMitigationCap)) {
 				newbon->DSMitigation = RuleI(Character, ItemDSMitigationCap);
-			else
+			} else {
 				newbon->DSMitigation += item->DSMitigation;
+			}
 		}
+
 		if (item->Worn.Effect > 0 && item->Worn.Type == EQ::item::ItemEffectWorn) { // latent effects
 			ApplySpellsBonuses(item->Worn.Effect, item->Worn.Level, newbon, 0, item->Worn.Type);
 		}
@@ -447,36 +474,50 @@ void Client::AddItemBonuses(const EQ::ItemInstance *inst, StatBonuses *newbon, b
 
 		switch (item->BardType) {
 		case 51: /* All (e.g. Singing Short Sword) */
-			if (item->BardValue > newbon->singingMod)
+			if (item->BardValue > newbon->singingMod) {
 				newbon->singingMod = item->BardValue;
-			if (item->BardValue > newbon->brassMod)
+			}
+
+			if (item->BardValue > newbon->brassMod) {
 				newbon->brassMod = item->BardValue;
-			if (item->BardValue > newbon->stringedMod)
+			}
+
+			if (item->BardValue > newbon->stringedMod) {
 				newbon->stringedMod = item->BardValue;
-			if (item->BardValue > newbon->percussionMod)
+			}
+
+			if (item->BardValue > newbon->percussionMod) {
 				newbon->percussionMod = item->BardValue;
-			if (item->BardValue > newbon->windMod)
+			}
+
+			if (item->BardValue > newbon->windMod) {
 				newbon->windMod = item->BardValue;
+			}
 			break;
 		case 50: /* Singing */
-			if (item->BardValue > newbon->singingMod)
+			if (item->BardValue > newbon->singingMod) {
 				newbon->singingMod = item->BardValue;
+			}
 			break;
 		case 23: /* Wind */
-			if (item->BardValue > newbon->windMod)
+			if (item->BardValue > newbon->windMod) {
 				newbon->windMod = item->BardValue;
+			}
 			break;
 		case 24: /* stringed */
-			if (item->BardValue > newbon->stringedMod)
+			if (item->BardValue > newbon->stringedMod) {
 				newbon->stringedMod = item->BardValue;
+			}
 			break;
 		case 25: /* brass */
-			if (item->BardValue > newbon->brassMod)
+			if (item->BardValue > newbon->brassMod) {
 				newbon->brassMod = item->BardValue;
+			}
 			break;
 		case 26: /* Percussion */
-			if (item->BardValue > newbon->percussionMod)
+			if (item->BardValue > newbon->percussionMod) {
 				newbon->percussionMod = item->BardValue;
+			}
 			break;
 		}
 
@@ -484,42 +525,42 @@ void Client::AddItemBonuses(const EQ::ItemInstance *inst, StatBonuses *newbon, b
 		if (item->FactionMod1) {
 			if (item->FactionAmt1 > 0 && item->FactionAmt1 > GetItemFactionBonus(item->FactionMod1)) {
 				AddItemFactionBonus(item->FactionMod1, item->FactionAmt1);
-			}
-			else if (item->FactionAmt1 < 0 && item->FactionAmt1 < GetItemFactionBonus(item->FactionMod1)) {
+			} else if (item->FactionAmt1 < 0 && item->FactionAmt1 < GetItemFactionBonus(item->FactionMod1)) {
 				AddItemFactionBonus(item->FactionMod1, item->FactionAmt1);
 			}
 		}
+
 		if (item->FactionMod2) {
 			if (item->FactionAmt2 > 0 && item->FactionAmt2 > GetItemFactionBonus(item->FactionMod2)) {
 				AddItemFactionBonus(item->FactionMod2, item->FactionAmt2);
-			}
-			else if (item->FactionAmt2 < 0 && item->FactionAmt2 < GetItemFactionBonus(item->FactionMod2)) {
+			} else if (item->FactionAmt2 < 0 && item->FactionAmt2 < GetItemFactionBonus(item->FactionMod2)) {
 				AddItemFactionBonus(item->FactionMod2, item->FactionAmt2);
 			}
 		}
+
 		if (item->FactionMod3) {
 			if (item->FactionAmt3 > 0 && item->FactionAmt3 > GetItemFactionBonus(item->FactionMod3)) {
 				AddItemFactionBonus(item->FactionMod3, item->FactionAmt3);
-			}
-			else if (item->FactionAmt3 < 0 && item->FactionAmt3 < GetItemFactionBonus(item->FactionMod3)) {
+			} else if (item->FactionAmt3 < 0 && item->FactionAmt3 < GetItemFactionBonus(item->FactionMod3)) {
 				AddItemFactionBonus(item->FactionMod3, item->FactionAmt3);
 			}
 		}
+
 		if (item->FactionMod4) {
 			if (item->FactionAmt4 > 0 && item->FactionAmt4 > GetItemFactionBonus(item->FactionMod4)) {
 				AddItemFactionBonus(item->FactionMod4, item->FactionAmt4);
-			}
-			else if (item->FactionAmt4 < 0 && item->FactionAmt4 < GetItemFactionBonus(item->FactionMod4)) {
+			} else if (item->FactionAmt4 < 0 && item->FactionAmt4 < GetItemFactionBonus(item->FactionMod4)) {
 				AddItemFactionBonus(item->FactionMod4, item->FactionAmt4);
 			}
 		}
 
 		if (item->ExtraDmgSkill != 0 && item->ExtraDmgSkill <= EQ::skills::HIGHEST_SKILL) {
 			if ((newbon->SkillDamageAmount[item->ExtraDmgSkill] + item->ExtraDmgAmt) >
-				RuleI(Character, ItemExtraDmgCap))
+				RuleI(Character, ItemExtraDmgCap)) {
 				newbon->SkillDamageAmount[item->ExtraDmgSkill] = RuleI(Character, ItemExtraDmgCap);
-			else
+			} else {
 				newbon->SkillDamageAmount[item->ExtraDmgSkill] += item->ExtraDmgAmt;
+			}
 		}
 	}
 
@@ -534,8 +575,9 @@ void Client::AddItemBonuses(const EQ::ItemInstance *inst, StatBonuses *newbon, b
 	}
 
 	if (!isAug) {
-		for (int i = EQ::invaug::SOCKET_BEGIN; i <= EQ::invaug::SOCKET_END; i++)
+		for (int i = EQ::invaug::SOCKET_BEGIN; i <= EQ::invaug::SOCKET_END; i++) {
 			AddItemBonuses(inst->GetAugment(i), newbon, true, false, rec_level, ammo_slot_item);
+		}
 	}
 }
 
