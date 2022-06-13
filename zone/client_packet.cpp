@@ -9630,26 +9630,19 @@ void Client::Handle_OP_LootItem(const EQApplicationPacket *app)
 		return;
 	}
 
-	EQApplicationPacket* outapp = nullptr;
-	Entity* entity = entity_list.GetID(*((uint16*)app->pBuffer));
-	if (entity == 0) {
-		Message(Chat::Red, "Error: OP_LootItem: Corpse not found (ent = 0)");
-		outapp = new EQApplicationPacket(OP_LootComplete, 0);
+	auto* l = (LootItem_Struct*) app->pBuffer;
+	auto entity = entity_list.GetID(l->entity_id);
+	if (!entity) {
+		auto outapp = new EQApplicationPacket(OP_LootComplete, 0);
 		QueuePacket(outapp);
 		safe_delete(outapp);
 		return;
 	}
 
-	if (entity->IsCorpse()) {
-		entity->CastToCorpse()->LootItem(this, app);
-		return;
-	}
-	else {
-		Message(Chat::Red, "Error: Corpse not found! (!ent->IsCorpse())");
+	if (!entity->IsCorpse()) {
 		Corpse::SendEndLootErrorPacket(this);
 	}
-
-	return;
+	entity->CastToCorpse()->LootItem(this, app);
 }
 
 void Client::Handle_OP_LootRequest(const EQApplicationPacket *app)
@@ -13214,7 +13207,7 @@ void Client::Handle_OP_ShopPlayerBuy(const EQApplicationPacket *app)
 		auto hacker_str = fmt::format("Vendor Cheat: attempted to buy {} of {}: {} that cost {} cp but only has {} pp {} gp {} sp {} cp",
 			mpo->quantity, item->ID, item->Name,
 			mpo->price, m_pp.platinum, m_pp.gold, m_pp.silver, m_pp.copper);
-		database.SetMQDetectionFlag(AccountName(), GetName(), hacker_str, zone->GetShortName());
+		database.SetMQDetectionFlag(AccountName(), GetName(), EscapeString(hacker_str), zone->GetShortName());
 		safe_delete(outapp);
 		safe_delete(inst);
 		return;
@@ -14132,7 +14125,7 @@ void Client::Handle_OP_TargetCommand(const EQApplicationPacket *app)
 				|| GetTarget()->GetBodyType() == BT_NoTarget) {
 				auto hacker_str = fmt::format("{} attempting to target something untargetable, {} bodytype: {}",
 					GetName(), GetTarget()->GetName(), (int)GetTarget()->GetBodyType());
-				database.SetMQDetectionFlag(AccountName(), GetName(), hacker_str, zone->GetShortName());
+				database.SetMQDetectionFlag(AccountName(), GetName(), EscapeString(hacker_str), zone->GetShortName());
 				SetTarget((Mob*)nullptr);
 				return;
 			} else if (cheat_manager.GetExemptStatus(Port)) {
@@ -14156,7 +14149,7 @@ void Client::Handle_OP_TargetCommand(const EQApplicationPacket *app)
 						    (zone->newzone_data.maxclip * zone->newzone_data.maxclip), GetX(),
 						    GetY(), GetZ(), GetTarget()->GetName(), GetTarget()->GetX(),
 						    GetTarget()->GetY(), GetTarget()->GetZ());
-						database.SetMQDetectionFlag(AccountName(), GetName(), hacker_str, zone->GetShortName());
+						database.SetMQDetectionFlag(AccountName(), GetName(), EscapeString(hacker_str), zone->GetShortName());
 						SetTarget(nullptr);
 						return;
 					}
@@ -14180,7 +14173,7 @@ void Client::Handle_OP_TargetCommand(const EQApplicationPacket *app)
 						GetName(), (zone->newzone_data.maxclip * zone->newzone_data.maxclip),
 						GetX(), GetY(), GetZ(), GetTarget()->GetName(), GetTarget()->GetX(),
 						GetTarget()->GetY(), GetTarget()->GetZ());
-				database.SetMQDetectionFlag(AccountName(), GetName(), hacker_str, zone->GetShortName());
+				database.SetMQDetectionFlag(AccountName(), GetName(), EscapeString(hacker_str), zone->GetShortName());
 				SetTarget(nullptr);
 				return;
 			}
