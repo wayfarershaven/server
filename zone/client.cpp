@@ -10515,19 +10515,18 @@ void Client::Undye()
 
 void Client::SetTrackingID(uint32 entity_id)
 {
-	if (!entity_id) {
-		TrackingID = 0;
-		return;
-	}
+    if (!entity_id) {
+        TrackingID = 0;
+        return;
+    }
 
-	auto *m = entity_list.GetMob(entity_id);
-	if (!m) {
-		return;
-	}
+    auto *m = entity_list.GetMob(entity_id);
+    if (!m) {
+        TrackingID = 0;
+        return;
+    }
 
-	TrackingID = entity_id;
+    TrackingID = entity_id;
 
-	MessageString(Chat::Skills, TRACKING_BEGIN, m->GetCleanName());
-
-	DoTracking();
+    MessageString(Chat::Skills, TRACKING_BEGIN, m->GetCleanName());
 }
