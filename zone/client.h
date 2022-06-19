@@ -389,6 +389,8 @@ public:
 	inline void SetBaseGender(uint32 i) { m_pp.gender=i; }
 	inline void SetDeity(uint32 i) {m_pp.deity=i;deity=i;}
 
+	void SetTrackingID(uint32 entity_id);
+
 	inline uint8 GetLevel2() const { return m_pp.level2; }
 	inline uint16 GetBaseRace() const { return m_pp.race; }
 	inline uint16 GetBaseClass() const { return m_pp.class_; }
