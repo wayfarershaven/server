@@ -5347,8 +5347,9 @@ void Client::Handle_OP_Disarm(const EQApplicationPacket *app) {
 	BreakInvis();
 	Mob* pmob = entity_list.GetMob(disarm->source);
 	Mob* tmob = entity_list.GetMob(disarm->target);
-	if (!pmob || !tmob)
+	if (!pmob || !tmob) {
 		return;
+	}
 	if (pmob->GetID() != GetID()) {
 		// Client sent a disarm request with an originator ID not matching their own ID.
 		auto hack_str = fmt::format("Player {} ({}) sent OP_Disarm with source ID of: {}", GetCleanName(), GetID(), pmob->GetID());
@@ -5366,18 +5367,17 @@ void Client::Handle_OP_Disarm(const EQApplicationPacket *app) {
 		return;
 	}
 	// Too far away
-	if (pmob->CalculateDistance(GetTarget()->GetX(), GetTarget()->GetY(), GetTarget()->GetZ()) > 400)
+	if (pmob->CalculateDistance(GetTarget()->GetX(), GetTarget()->GetY(), GetTarget()->GetZ()) > 400) {
 		return;
-
-	// Can't see mob
-	//if (tmob->BehindMob(pmob))
-	//	return;
+	}
 	// How can we disarm someone if we are feigned.
-	if (GetFeigned())
+	if (GetFeigned()) {
 		return;
+	}
 	// We can't disarm someone who is feigned.
-	if (tmob->IsClient() && tmob->CastToClient()->GetFeigned())
+	if (tmob->IsClient() && tmob->CastToClient()->GetFeigned()) {
 		return;
+	}
 	if (GetTarget() == tmob && pmob == this->CastToMob() &&
 		disarm->skill == GetSkill(EQ::skills::SkillDisarm) && IsAttackAllowed(tmob)) {
 		int p_level = pmob->GetLevel() ? pmob->GetLevel() : 1;
