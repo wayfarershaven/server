@@ -234,8 +234,7 @@ NPC::NPC(const NPCType *npc_type_data, Spawn2 *in_respawn, const glm::vec4 &posi
 	// If server has not set a flymde in db, and this is a boat - force floating.
 	if (npc_type_data->flymode >= 0) {
 		flymode = static_cast<GravityBehavior>(npc_type_data->flymode);
-	}
-	else if (IsBoat()) {
+	} else if (GetIsBoat()) {
 		flymode = GravityBehavior::Floating;
 	}
 
