@@ -480,8 +480,6 @@ void NPC::AddLootDrop(
 		}
 
 		if (foundslot == EQ::invslot::slotPrimary) {
-			if (item2->Proc.Effect != 0)
-				CastToMob()->AddProcToWeapon(item2->Proc.Effect, true);
 
 			eslot = EQ::textures::weaponPrimary;
 			if (item2->Damage > 0) {
@@ -489,39 +487,31 @@ void NPC::AddLootDrop(
 				if (!RuleB(Combat, ClassicNPCBackstab))
 					SetFacestab(true);
 			}
-			if (item2->IsType2HWeapon())
+			if (item2->IsType2HWeapon()) {
 				SetTwoHanderEquipped(true);
+			}
 		}
 		else if (foundslot == EQ::invslot::slotSecondary
 			&& (GetOwner() != nullptr || (CanThisClassDualWield() && zone->random.Roll(NPC_DW_CHANCE)) || (item2->Damage==0)) &&
 			(item2->IsType1HWeapon() || item2->ItemType == EQ::item::ItemTypeShield || item2->ItemType ==  EQ::item::ItemTypeLight))
 		{
-			if (item2->Proc.Effect!=0)
-				CastToMob()->AddProcToWeapon(item2->Proc.Effect, true);
-
 			eslot = EQ::textures::weaponSecondary;
-			if (item2->Damage > 0)
+			if (item2->Damage > 0) {
 				SendAddPlayerState(PlayerState::SecondaryWeaponEquipped);
-		}
-		else if (foundslot == EQ::invslot::slotHead) {
+			}
+		} else if (foundslot == EQ::invslot::slotHead) {
 			eslot = EQ::textures::armorHead;
-		}
-		else if (foundslot == EQ::invslot::slotChest) {
+		} else if (foundslot == EQ::invslot::slotChest) {
 			eslot = EQ::textures::armorChest;
-		}
-		else if (foundslot == EQ::invslot::slotArms) {
+		} else if (foundslot == EQ::invslot::slotArms) {
 			eslot = EQ::textures::armorArms;
-		}
-		else if (foundslot == EQ::invslot::slotWrist1 || foundslot == EQ::invslot::slotWrist2) {
+		} else if (foundslot == EQ::invslot::slotWrist1 || foundslot == EQ::invslot::slotWrist2) {
 			eslot = EQ::textures::armorWrist;
-		}
-		else if (foundslot == EQ::invslot::slotHands) {
+		} else if (foundslot == EQ::invslot::slotHands) {
 			eslot = EQ::textures::armorHands;
-		}
-		else if (foundslot == EQ::invslot::slotLegs) {
+		} else if (foundslot == EQ::invslot::slotLegs) {
 			eslot = EQ::textures::armorLegs;
-		}
-		else if (foundslot == EQ::invslot::slotFeet) {
+		} else if (foundslot == EQ::invslot::slotFeet) {
 			eslot = EQ::textures::armorFeet;
 		}
 
