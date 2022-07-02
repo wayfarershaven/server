@@ -1075,10 +1075,9 @@ void MobMovementManager::UpdatePath(Mob *who, float x, float y, float z, MobMove
 		return;
 	}
 
-	if (who->IsBoat()) {
+	if (who->GetIsBoat()) {
 		UpdatePathBoat(who, x, y, z, mob_movement_mode);
-	}
-	else if (who->IsUnderwaterOnly()) {
+	} else if (who->IsUnderwaterOnly()) {
 		UpdatePathUnderwater(who, x, y, z, mob_movement_mode);
 	}
 	// If we can fly, and we have a target and we have LoS, simply fly to them.

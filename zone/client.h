@@ -389,6 +389,8 @@ public:
 	inline void SetBaseGender(uint32 i) { m_pp.gender=i; }
 	inline void SetDeity(uint32 i) {m_pp.deity=i;deity=i;}
 
+	void SetTrackingID(uint32 entity_id);
+
 	inline uint8 GetLevel2() const { return m_pp.level2; }
 	inline uint16 GetBaseRace() const { return m_pp.race; }
 	inline uint16 GetBaseClass() const { return m_pp.class_; }
@@ -1454,6 +1456,7 @@ public:
 	void LeaveRaidXTargets(Raid *r);
 	bool GroupFollow(Client* inviter);
 	inline bool  GetRunMode() const { return runmode; }
+	virtual bool CheckWaterAutoFireLoS(Mob* attacker, Mob* target);
 	void SendItemRecastTimer(int32 recast_type, uint32 recast_delay = 0);
 	void SetItemRecastTimer(int32 spell_id, uint32 inventory_slot);
 	bool HasItemRecastTimer(int32 spell_id, uint32 inventory_slot);

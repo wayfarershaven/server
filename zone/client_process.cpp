@@ -57,6 +57,8 @@
 #include "zonedb.h"
 #include "zone_store.h"
 
+#include "water_map.h"
+
 extern QueryServ* QServ;
 extern Zone* zone;
 extern volatile bool is_zone_loaded;
@@ -338,40 +340,41 @@ bool Client::Process() {
 			{
 				if (ranged->GetItem() && ranged->GetItem()->ItemType == EQ::item::ItemTypeBow) {
 					if (ranged_timer.Check(false)) {
-						if (GetTarget() && (GetTarget()->IsNPC() || GetTarget()->IsClient())) {
+						if (GetTarget() && (GetTarget()->IsNPC() || GetTarget()->IsClient()) && IsAttackAllowed(GetTarget())) {
 							if (GetTarget()->InFrontMob(this, GetTarget()->GetX(), GetTarget()->GetY())) {
-								if (CheckLosFN(GetTarget())) {
+								if (CheckLosFN(GetTarget()) && CheckWaterAutoFireLoS(this, GetTarget())) {
 									//client has built in los check, but auto fire does not.. done last.
 									RangedAttack(GetTarget());
-									if (CheckDoubleRangedAttack())
+									if (CheckDoubleRangedAttack()) {
 										RangedAttack(GetTarget(), true);
-								}
-								else
+									}
+								} else {
 									ranged_timer.Start();
-							}
-							else
+								}
+							} else {
 								ranged_timer.Start();
-						}
-						else
+							}
+						} else {
 							ranged_timer.Start();
+						}
 					}
 				}
 				else if (ranged->GetItem() && (ranged->GetItem()->ItemType == EQ::item::ItemTypeLargeThrowing || ranged->GetItem()->ItemType == EQ::item::ItemTypeSmallThrowing)) {
 					if (ranged_timer.Check(false)) {
-						if (GetTarget() && (GetTarget()->IsNPC() || GetTarget()->IsClient())) {
+						if (GetTarget() && (GetTarget()->IsNPC() || GetTarget()->IsClient()) && IsAttackAllowed(GetTarget())) {
 							if (GetTarget()->InFrontMob(this, GetTarget()->GetX(), GetTarget()->GetY())) {
-								if (CheckLosFN(GetTarget())) {
+								if (CheckLosFN(GetTarget()) && CheckWaterAutoFireLoS(this, GetTarget())) {
 									//client has built in los check, but auto fire does not.. done last.
 									ThrowingAttack(GetTarget());
-								}
-								else
+								} else {
 									ranged_timer.Start();
-							}
-							else
+								}
+							} else {
 								ranged_timer.Start();
-						}
-						else
+							}
+						} else {
 							ranged_timer.Start();
+						}
 					}
 				}
 			}
@@ -401,8 +404,7 @@ bool Client::Process() {
 					m_AutoAttackPosition.w = GetHeading();
 					los_status_facing = IsFacingMob(aa_los_them_mob);
 				}
-			}
-			else {
+			} else {
 				aa_los_them_mob            = auto_attack_target;
 				m_AutoAttackPosition       = GetPosition();
 				m_AutoAttackTargetLocation = glm::vec3(aa_los_them_mob->GetPosition());
@@ -412,14 +414,11 @@ bool Client::Process() {
 
 			if (!CombatRange(auto_attack_target)) {
 				MessageString(Chat::TooFarAway, TARGET_TOO_FAR);
-			}
-			else if (auto_attack_target == this) {
+			} else if (auto_attack_target == this) {
 				MessageString(Chat::TooFarAway, TRY_ATTACKING_SOMEONE);
-			}
-			else if (!los_status || !los_status_facing) {
+			} else if (!los_status || !los_status_facing) {
 				//you can't see your target
-			}
-			else if (auto_attack_target->GetHP() > -10) // -10 so we can watch people bleed in PvP
+			} else if (auto_attack_target->GetHP() > -10 && IsAttackAllowed(auto_attack_target)) // -10 so we can watch people bleed in PvP
 			{
 				EQ::ItemInstance *wpn = GetInv().GetItem(EQ::invslot::slotPrimary);
 				TryCombatProcs(wpn, auto_attack_target, EQ::invslot::slotPrimary);
@@ -459,12 +458,10 @@ bool Client::Process() {
 			// Don't attack yourself
 			else if (auto_attack_target == this) {
 				//MessageString(Chat::TooFarAway,TRY_ATTACKING_SOMEONE);
-			}
-			else if (!los_status || !los_status_facing)
+			} else if (!los_status || !los_status_facing)
 			{
 				//you can't see your target
-			}
-			else if (auto_attack_target->GetHP() > -10) {
+			} else if (auto_attack_target->GetHP() > -10 && IsAttackAllowed(auto_attack_target)) {
 				CheckIncreaseSkill(EQ::skills::SkillDualWield, auto_attack_target, -10);
 				if (CheckDualWield()) {
 					EQ::ItemInstance *wpn = GetInv().GetItem(EQ::invslot::slotSecondary);
@@ -1959,10 +1956,11 @@ void Client::CalcRestState()
 
 void Client::DoTracking()
 {
-	if (TrackingID == 0)
+	if (!TrackingID) {
 		return;
+	}
 
-	Mob *m = entity_list.GetMob(TrackingID);
+	auto *m = entity_list.GetMob(TrackingID);
 
 	if (!m || m->IsCorpse()) {
 		MessageString(Chat::Skills, TRACK_LOST_TARGET);
@@ -1970,29 +1968,43 @@ void Client::DoTracking()
 		return;
 	}
 
-	float RelativeHeading = GetHeading() - CalculateHeadingToTarget(m->GetX(), m->GetY());
+	if (DistanceNoZ(m->GetPosition(), GetPosition()) < 10) {
+		Message(
+			Chat::Skills,
+			fmt::format(
+				"You have found {}.",
+				m->GetCleanName()
+			).c_str()
+		);
+		TrackingID = 0;
+		return;
+	}
 
-	if (RelativeHeading < 0)
-		RelativeHeading += 512;
+	float relative_heading = GetHeading() - CalculateHeadingToTarget(m->GetX(), m->GetY());
 
-	if (RelativeHeading > 480)
+	if (relative_heading < 0) {
+		relative_heading += 512;
+	}
+
+	if (relative_heading > 480) {
 		MessageString(Chat::Skills, TRACK_STRAIGHT_AHEAD, m->GetCleanName());
-	else if (RelativeHeading > 416)
+	} else if (relative_heading > 416) {
 		MessageString(Chat::Skills, TRACK_AHEAD_AND_TO, m->GetCleanName(), "left");
-	else if (RelativeHeading > 352)
+	} else if (relative_heading > 352) {
 		MessageString(Chat::Skills, TRACK_TO_THE, m->GetCleanName(), "left");
-	else if (RelativeHeading > 288)
+	} else if (relative_heading > 288) {
 		MessageString(Chat::Skills, TRACK_BEHIND_AND_TO, m->GetCleanName(), "left");
-	else if (RelativeHeading > 224)
+	} else if (relative_heading > 224) {
 		MessageString(Chat::Skills, TRACK_BEHIND_YOU, m->GetCleanName());
-	else if (RelativeHeading > 160)
+	} else if (relative_heading > 160) {
 		MessageString(Chat::Skills, TRACK_BEHIND_AND_TO, m->GetCleanName(), "right");
-	else if (RelativeHeading > 96)
+	} else if (relative_heading > 96) {
 		MessageString(Chat::Skills, TRACK_TO_THE, m->GetCleanName(), "right");
-	else if (RelativeHeading > 32)
+	} else if (relative_heading > 32) {
 		MessageString(Chat::Skills, TRACK_AHEAD_AND_TO, m->GetCleanName(), "right");
-	else if (RelativeHeading >= 0)
+	} else if (relative_heading >= 0) {
 		MessageString(Chat::Skills, TRACK_STRAIGHT_AHEAD, m->GetCleanName());
+	}
 }
 
 void Client::HandleRespawnFromHover(uint32 Option)
@@ -2365,4 +2377,12 @@ void Client::SendGuildLFGuildStatus()
 
 	worldserver.SendPacket(pack);
 	safe_delete(pack);
+}
+
+bool Client::CheckWaterAutoFireLoS(Mob* los_attacker, Mob* los_target) // checks if both attacker and target are both in or out of the water
+{
+	if (!RuleB(Combat, WaterMatchRequiredForAutoFireLoS)) { // if rule is set to false, bypass check
+		return true;
+	}
+	return zone->watermap->InLiquid(los_attacker->GetPosition()) == zone->watermap->InLiquid(los_target->GetPosition());
 }

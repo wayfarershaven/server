@@ -459,6 +459,7 @@
 #define GAIN_RAIDXP_PENALTY			9303	//You gained raid experience (with a penalty)!
 #define AE_RAMPAGE					11015	//%1 goes on a WILD RAMPAGE!
 #define FACE_ACCEPTED				12028	//Facial features accepted.
+#define TRACKING_BEGIN				12040   //You begin tracking %1.
 #define SPELL_LEVEL_TO_LOW			12048	//You will have to achieve level %1 before you can scribe the %2.
 #define ATTACKFAILED				12158	//%1 try to %2 %3, but %4!
 #define HIT_STRING					12183	//hit
