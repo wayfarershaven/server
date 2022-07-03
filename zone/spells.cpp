@@ -105,8 +105,6 @@ Copyright (C) 2001-2002 EQEMu Development Team (http://eqemu.org)
 #include "client.h"
 #include "mob.h"
 
-#include "water_map.h"
-
 extern Zone* zone;
 extern volatile bool is_zone_loaded;
 extern WorldServer worldserver;
@@ -203,7 +201,7 @@ bool Mob::CastSpell(uint16 spell_id, uint16 target_id, CastingSlot slot,
 	}
 
     // check line of sight to target if it's a detrimental spell
-    if (spells[spell_id].target_type != ST_AECaster && !spells[spell_id].npc_no_los && GetTarget() && IsDetrimentalSpell(spell_id) && (!CheckLosFN(GetTarget()) || !CheckWaterLoS(this, GetTarget())) && !IsHarmonySpell(spell_id) && spells[spell_id].target_type != ST_TargetOptional && !IsBindSightSpell(spell_id))
+    if (spells[spell_id].target_type != ST_AECaster && !spells[spell_id].npc_no_los && GetTarget() && IsDetrimentalSpell(spell_id) && !CheckLosFN(GetTarget()) && !IsHarmonySpell(spell_id) && spells[spell_id].target_type != ST_TargetOptional && !IsBindSightSpell(spell_id))
     {
         Log(Logs::Detail, Logs::Spells, "Spell %d: cannot see target %s", spell_id, GetTarget()->GetName());
         MessageString(13, CANT_SEE_TARGET);
@@ -6920,12 +6918,4 @@ void Mob::SetHP(int64 hp)
 	}
 
 	current_hp = hp;
-}
-
-bool Mob::CheckWaterLoS(Mob* los_attacker, Mob* los_target) // checks if both attacker and target are both in or out of the water
-{
-	if (!RuleB(Spells, WaterMatchRequiredForLoS)) { // if rule is set to false, bypass check
-		return true;
-	}
-	return zone->watermap->InLiquid(los_attacker->GetPosition()) == zone->watermap->InLiquid(los_target->GetPosition());
 }

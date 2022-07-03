@@ -1456,7 +1456,6 @@ public:
 	void LeaveRaidXTargets(Raid *r);
 	bool GroupFollow(Client* inviter);
 	inline bool  GetRunMode() const { return runmode; }
-	virtual bool CheckWaterAutoFireLoS(Mob* attacker, Mob* target);
 	void SendItemRecastTimer(int32 recast_type, uint32 recast_delay = 0);
 	void SetItemRecastTimer(int32 spell_id, uint32 inventory_slot);
 	bool HasItemRecastTimer(int32 spell_id, uint32 inventory_slot);
