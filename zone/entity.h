@@ -361,7 +361,6 @@ public:
 		uint32 type,
 		eqFilterType filter,
 		uint32 string_id,
-		Mob *skip = 0,
 		const char *message1 = 0,
 		const char *message2 = 0,
 		const char *message3 = 0,
