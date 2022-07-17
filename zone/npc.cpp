@@ -1813,12 +1813,14 @@ void NPC::PickPocket(Client* thief)
 	while (steal_item) {
 		std::vector<std::pair<const EQ::ItemData*, uint16>> loot_selection; // <const ItemData*, charges>
 		for (auto item_iter : itemlist) {
-			if (!item_iter || !item_iter->item_id)
+			if (!item_iter || !item_iter->item_id) {
 				continue;
+			}
 
 			auto item_test = database.GetItem(item_iter->item_id);
-			if (item_test->Magic || !item_test->NoDrop || item_test->IsClassBag() || thief->CheckLoreConflict(item_test))
+			if (item_test->Magic || !item_test->NoDrop || item_test->IsClassBag() || thief->CheckLoreConflict(item_test) || item_iter->equip_slot != EQ::invslot::SLOT_INVALID) {
 				continue;
+			}
 
 			loot_selection.push_back(std::make_pair(item_test, ((item_test->Stackable) ? (1) : (item_iter->charges))));
 		}
