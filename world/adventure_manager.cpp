@@ -1094,8 +1094,21 @@ void AdventureManager::LoadLeaderboardInfo()
 	leaderboard_info_wins_tak.clear();
 	leaderboard_info_percentage_tak.clear();
 
-	std::string query = "SELECT ch.name, ch.id, adv_stats.* FROM adventure_stats "
-		"AS adv_stats LEFT JOIN `character_data` AS ch ON adv_stats.player_id = ch.id;";
+	std::string query = 
+		"SELECT "
+		"`cd.name`, "
+		"`cd.id`, "
+		"`adv_stats.*` "
+		"FROM "
+		"`adventure_stats` AS adv_stats, "
+		"`character_data` AS cd, "
+		"`account` "
+		"WHERE "
+		"cd.id = adv_stats.player_id AND "
+		"account.id = cd.account_id AND "
+		"account.status BETWEEN '0' AND '10' AND "
+		"cd.is_deleted = '0'";
+
     auto results = database.QueryDatabase(query);
 	if(!results.Success()) {
 		return;
