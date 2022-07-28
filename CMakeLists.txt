@@ -165,7 +165,6 @@ ENDIF()
 MESSAGE(STATUS "**************************************************")
 
 #options
-OPTION(EQEMU_DEPOP_INVALIDATES_CACHE "#repop invalidates the npc_types cache (will cause a larger database hit on #repop but is more convienent)." ON)
 OPTION(EQEMU_ENABLE_BOTS "Enable Bots" OFF)
 OPTION(EQEMU_COMMANDS_LOGGING "Enable GM Command logs" ON)
 OPTION(EQEMU_BUILD_SERVER "Build the game server." ON)
