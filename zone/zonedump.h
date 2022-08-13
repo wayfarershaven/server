@@ -125,7 +125,7 @@ struct NPCType
 	int16	slow_mitigation;	
 	uint8	maxlevel;
 	uint32	scalerate;
-	bool	private_corpse;
+	bool	private_corpse; 
 	bool	unique_spawn_by_name;
 	bool	underwater;
 	uint32	emoteid;
