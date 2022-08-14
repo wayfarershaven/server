@@ -262,6 +262,7 @@ NPC::NPC(const NPCType *npc_type_data, Spawn2 *in_respawn, const glm::vec4 &posi
 	HasAISpell           = false;
 	HasAISpellEffects    = false;
 	innate_proc_spell_id = 0;
+	m_record_loot_stats  = false;
 
 	if (GetClass() == MERCERNARY_MASTER && RuleB(Mercs, AllowMercs)) {
 		LoadMercTypes();
@@ -3640,4 +3641,36 @@ void NPC::DeleteQuestLoot(int16 itemid1, int16 itemid2, int16 itemid3, int16 ite
 			}
 		}
 	}
+}
+
+bool NPC::IsRecordLootStats() const
+{
+	return m_record_loot_stats;
+}
+
+void NPC::SetRecordLootStats(bool record_loot_stats)
+{
+	NPC::m_record_loot_stats = record_loot_stats;
+}
+
+void NPC::FlushLootStats()
+{
+	m_rolled_items = {};
+}
+
+const std::vector<uint32> &NPC::GetRolledItems() const
+{
+	return m_rolled_items;
+}
+
+int NPC::GetRolledItemCount(uint32 item_id)
+{
+	int rolled_count = 0;
+	for (auto &e: m_rolled_items) {
+		if (item_id == e) {
+			rolled_count++;
+		}
+	}
+
+	return rolled_count;
 }

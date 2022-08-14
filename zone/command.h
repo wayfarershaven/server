@@ -139,6 +139,7 @@ void command_lastname(Client *c, const Seperator *sep);
 void command_level(Client *c, const Seperator *sep);
 void command_list(Client *c, const Seperator *sep);
 void command_listpetition(Client *c, const Seperator *sep);
+void command_lootsim(Client *c, const Seperator *sep);
 void command_load_shared_memory(Client *c, const Seperator *sep);
 void command_loc(Client *c, const Seperator *sep);
 void command_lock(Client *c, const Seperator *sep);
