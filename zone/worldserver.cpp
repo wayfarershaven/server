@@ -419,8 +419,6 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 				ztz->response = -1;
 			else {
 				ztz->response = 1;
-				// since they asked about comming, lets assume they are on their way and not shut down.
-				zone->StartShutdownTimer(AUTHENTICATION_TIMEOUT * 1000);
 			}
 
 			SendPacket(pack);
@@ -557,7 +555,7 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 			SetZoneData(zone->GetZoneID(), zone->GetInstanceID());
 			if (zst->zoneid == zone->GetZoneID()) {
 				// This packet also doubles as "incoming client" notification, lets not shut down before they get here
-				zone->StartShutdownTimer(AUTHENTICATION_TIMEOUT * 1000);
+//				zone->StartShutdownTimer(AUTHENTICATION_TIMEOUT * 1000);
 			}
 			else {
 				SendEmoteMessage(
@@ -598,8 +596,6 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 
 				zone->RemoveAuth(szic->lsid);
 				zone->AddAuth(szic);
-				// This packet also doubles as "incoming client" notification, lets not shut down before they get here
-				zone->StartShutdownTimer(AUTHENTICATION_TIMEOUT * 1000);
 			}
 		}
 		else {
