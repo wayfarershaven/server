@@ -1323,8 +1323,8 @@ public:
 	void TarGlobal(const char *varname, const char *value, const char *duration, int npcid, int charid, int zoneid);
 	void DelGlobal(const char *varname);
 
-	inline void SetEmoteID(uint16 emote) { emoteid = emote; }
-	inline uint16 GetEmoteID() { return emoteid; }
+	inline void SetEmoteID(uint32 emote) { emoteid = emote; }
+	inline uint32 GetEmoteID() { return emoteid; }
 
 	inline void SetCombatHPRegen(uint32 regen) { combat_hp_regen = regen; };
 	inline uint32 GetCombatHPRegen() { return combat_hp_regen; }
@@ -1851,7 +1851,7 @@ protected:
 	bool m_targetable;
 	int QGVarDuration(const char *fmt);
 	void InsertQuestGlobal(int charid, int npcid, int zoneid, const char *name, const char *value, int expdate);
-	uint16 emoteid;
+	uint32 emoteid;
 	uint32 combat_hp_regen;
 	uint32 combat_mana_regen;
 
