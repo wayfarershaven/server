@@ -489,24 +489,22 @@ void Client::DoZoneSuccess(ZoneChange_Struct *zc, uint16 zone_id, uint32 instanc
 		zc2->success = 1;
 		outapp->priority = 6;
 		FastQueuePacket(&outapp);
-
-		zone->StartShutdownTimer(AUTHENTICATION_TIMEOUT * 1000);
 	} else {
-	// vesuvias - zoneing to another zone so we need to the let the world server
-	//handle things with the client for a while
-	auto pack = new ServerPacket(ServerOP_ZoneToZoneRequest, sizeof(ZoneToZone_Struct));
-	ZoneToZone_Struct *ztz = (ZoneToZone_Struct *)pack->pBuffer;
-	ztz->response = 0;
-	ztz->current_zone_id = zone->GetZoneID();
-	ztz->current_instance_id = zone->GetInstanceID();
-	ztz->requested_zone_id = zone_id;
-	ztz->requested_instance_id = instance_id;
-	ztz->admin = admin;
-	ztz->ignorerestrictions = ignore_r;
-	strcpy(ztz->name, GetName());
-	ztz->guild_id = GuildID();
-	worldserver.SendPacket(pack);
-	safe_delete(pack);
+		// vesuvias - zoneing to another zone so we need to the let the world server
+		//handle things with the client for a while
+		auto pack = new ServerPacket(ServerOP_ZoneToZoneRequest, sizeof(ZoneToZone_Struct));
+		ZoneToZone_Struct *ztz = (ZoneToZone_Struct *)pack->pBuffer;
+		ztz->response = 0;
+		ztz->current_zone_id = zone->GetZoneID();
+		ztz->current_instance_id = zone->GetInstanceID();
+		ztz->requested_zone_id = zone_id;
+		ztz->requested_instance_id = instance_id;
+		ztz->admin = admin;
+		ztz->ignorerestrictions = ignore_r;
+		strcpy(ztz->name, GetName());
+		ztz->guild_id = GuildID();
+		worldserver.SendPacket(pack);
+		safe_delete(pack);
 	}
 
 	//reset to unsolicited.
@@ -514,6 +512,9 @@ void Client::DoZoneSuccess(ZoneChange_Struct *zc, uint16 zone_id, uint32 instanc
 	m_ZoneSummonLocation = glm::vec4();
 	zonesummon_id = 0;
 	zonesummon_ignorerestrictions = 0;
+
+	// this simply resets the zone shutdown timer
+	zone->ResetShutdownTimer();
 }
 
 void Client::MovePC(const char* zonename, float x, float y, float z, float heading, uint8 ignorerestrictions, ZoneMode zm) {
