@@ -399,10 +399,6 @@ int EntityList::GetHatedCount(Mob *attacker, Mob *exclude, bool inc_gray_con)
 			continue;
 		}
 
-		if (!mob->IsPet()) {
-			continue;
-		}
-
 		/*
 		if (!mob->CheckAggro(attacker)) {
 			continue;
