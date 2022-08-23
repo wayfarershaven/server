@@ -567,7 +567,7 @@ int command_realdispatch(Client *c, std::string message)
 	Seperator sep(message.c_str(), ' ', 10, 100, true); // "three word argument" should be considered 1 arg
 
 	command_logcommand(c, message.c_str());
-	nats.SendAdminMessage(StringFormat("%s in %s issued command: %s", c->GetCleanName(), zone->GetShortName(), message.c_str()));
+	// nats.SendAdminMessage(StringFormat("%s in %s issued command: %s", c->GetCleanName(), zone->GetShortName(), message.c_str()));
 
 	std::string cstr(sep.arg[0] + 1);
 
@@ -580,20 +580,55 @@ int command_realdispatch(Client *c, std::string message)
 		c->Message(Chat::White, "Your status is not high enough to use this command.");
 		return -1;
 	}
-	
+
+	/* QS: Player_Log_Issued_Commands */
+	if (RuleB(QueryServ, PlayerLogIssuedCommandes)) {
+		auto event_desc = fmt::format(
+			"Issued command :: '{}' in Zone ID: {} Instance ID: {}",
+			message,
+			c->GetZoneID(),
+			c->GetInstanceID()
+		);
+		QServ->PlayerLogEvent(Player_Log_Issued_Commands, c->CharacterID(), event_desc);
+	}
+
 	if(cur->admin >= COMMANDS_LOGGING_MIN_STATUS) {
-				const char *targetType = "notarget";
+		const char *targetType = "notarget";
 		if (c->GetTarget()) {
 			if (c->GetTarget()->IsClient()) targetType = "player";
 			else if (c->GetTarget()->IsPet()) targetType = "pet";
 			else if (c->GetTarget()->IsNPC()) targetType = "NPC";
 			else if (c->GetTarget()->IsCorpse()) targetType = "Corpse";
-			database.LogGMCommands(c->GetName(), c->AccountName(), c->GetY(), c->GetX(), c->GetZ(), message.c_str(), targetType,
-								 c->GetTarget()->GetName(), c->GetTarget()->GetY(), c->GetTarget()->GetX(),
-								 c->GetTarget()->GetZ(), c->GetZoneID(), zone->GetShortName());
+
+			LogCommands(
+				"Issued command :: 'Issuing Player: {} Acct: {} - Command: {} - Target: Type: {} Name: {} Location: {} ({}) [{} {} {} {}]",
+					c->GetName(),
+					c->AccountName(),
+					message,
+					targetType,
+					c->GetTarget()->GetName(),
+					zone->GetShortName(),
+					c->GetInstanceID(),
+					c->GetZoneID(),
+					c->GetTarget()->GetX(),
+					c->GetTarget()->GetY(),
+					c->GetTarget()->GetZ()
+			);
 		} else {
-			database.LogGMCommands(c->GetName(), c->AccountName(), c->GetY(), c->GetX(), c->GetZ(), message.c_str(), targetType,
-								 targetType, 0, 0, 0, c->GetZoneID(), zone->GetShortName());
+			LogCommands(
+				"Issued command :: 'Issuing Player: {} Acct: {} - Command: {} - Target: Type: {} Name: {} Location: {} ({}) [{} {} {} {}]",
+					c->GetName(),
+					c->AccountName(),
+					message,
+					targetType,
+					targetType,
+					zone->GetShortName(),
+					c->GetInstanceID(),
+					c->GetZoneID(),
+					0,
+					0,
+					0
+			);
 		}
 	}
 
