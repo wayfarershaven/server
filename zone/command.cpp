@@ -595,19 +595,13 @@ int command_realdispatch(Client *c, std::string message)
 	if(cur->admin >= COMMANDS_LOGGING_MIN_STATUS) {
 		const char *targetType = "notarget";
 		if (c->GetTarget()) {
-			if (c->GetTarget()->IsClient()) targetType = "player";
-			else if (c->GetTarget()->IsPet()) targetType = "pet";
-			else if (c->GetTarget()->IsNPC()) targetType = "NPC";
-			else if (c->GetTarget()->IsCorpse()) targetType = "Corpse";
-
 			LogCommands(
-				"**Command Tracker** ```YAML\n Command User: [{}] ({}) - Account: [{}] ({}) \n Target: [{}] ({}) \n Command Used [{}] \n Zone: [{}] ({}) ID/Loc: [{} {} {} {}]```",
+				"**Command Tracker** ```YAML\n Command User: [{}] ({}) - Account: [{}] ({}) \n Target: [{}] \n Command Used: [{}] \n Zone: [{}] ({}) ID/Loc: [{} {} {} {}]```",
 					c->GetName(),
-					c->GetID(),
+					c->CharacterID(),
 					c->AccountName(),
 					c->AccountID(),
 					c->GetTarget()->GetName(),
-					c->GetTarget()->GetID(),
 					message,
 					zone->GetLongName(),
 					c->GetInstanceID(),
@@ -618,13 +612,12 @@ int command_realdispatch(Client *c, std::string message)
 			);
 		} else {
 			LogCommands(
-				"**Command Tracker** ```YAML\n Command User: [{}] ({}) - Account: [{}] ({}) \n Target: [{}] ({}) \n Command Used [{}] \n Zone: [{}] ({}) ID/Loc: [{} {} {} {}]```",
+				"**Command Tracker** ```YAML\n Command User: [{}] ({}) - Account: [{}] ({}) \n Target: [{}] \n Command Used: [{}] \n Zone: [{}] ({}) ID/Loc: [{} {} {} {}]```",
 					c->GetName(),
-					c->GetID(),
+					c->CharacterID(),
 					c->AccountName(),
 					c->AccountID(),
-					c->GetTarget()->GetName(),
-					c->GetTarget()->GetID(),
+					targetType,
 					message,
 					zone->GetLongName(),
 					c->GetInstanceID(),
