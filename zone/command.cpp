@@ -601,13 +601,15 @@ int command_realdispatch(Client *c, std::string message)
 			else if (c->GetTarget()->IsCorpse()) targetType = "Corpse";
 
 			LogCommands(
-				"Issued command :: 'Issuing Player: {} Acct: {} - Command: {} - Target: Type: {} Name: {} Location: {} ({}) [{} {} {} {}]",
+				"**Command Tracker** ```YAML\n Command User: [{}] ({}) - Account: [{}] ({}) \n Target: [{}] ({}) \n Command Used [{}] \n Zone: [{}] ({}) ID/Loc: [{} {} {} {}]```",
 					c->GetName(),
+					c->GetID(),
 					c->AccountName(),
-					message,
-					targetType,
+					c->AccountID(),
 					c->GetTarget()->GetName(),
-					zone->GetShortName(),
+					c->GetTarget()->GetID(),
+					message,
+					zone->GetLongName(),
 					c->GetInstanceID(),
 					c->GetZoneID(),
 					c->GetTarget()->GetX(),
@@ -616,13 +618,15 @@ int command_realdispatch(Client *c, std::string message)
 			);
 		} else {
 			LogCommands(
-				"Issued command :: 'Issuing Player: {} Acct: {} - Command: {} - Target: Type: {} Name: {} Location: {} ({}) [{} {} {} {}]",
+				"**Command Tracker** ```YAML\n Command User: [{}] ({}) - Account: [{}] ({}) \n Target: [{}] ({}) \n Command Used [{}] \n Zone: [{}] ({}) ID/Loc: [{} {} {} {}]```",
 					c->GetName(),
+					c->GetID(),
 					c->AccountName(),
+					c->AccountID(),
+					c->GetTarget()->GetName(),
+					c->GetTarget()->GetID(),
 					message,
-					targetType,
-					targetType,
-					zone->GetShortName(),
+					zone->GetLongName(),
 					c->GetInstanceID(),
 					c->GetZoneID(),
 					0,
