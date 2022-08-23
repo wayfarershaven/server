@@ -596,7 +596,7 @@ int command_realdispatch(Client *c, std::string message)
 		const char *targetType = "notarget";
 		if (c->GetTarget()) {
 			LogCommands(
-				"**Command Tracker** ```YAML\n Command User: [{}] ({}) - Account: [{}] ({}) \n Target: [{}] \n Command Used: [{}] \n Zone: [{}] ({}) ID/Loc: [{} {} {} {}]```",
+				"**Command Tracker** ```YAML\n Command User: [{}] ({}) - Account: [{}] ({}) \n Target: [{}] \n Command Used: ( {} ) \n Zone: [{}] ({}) ID/Loc: [{} {} {} {}]```",
 					c->GetName(),
 					c->CharacterID(),
 					c->AccountName(),
@@ -612,7 +612,7 @@ int command_realdispatch(Client *c, std::string message)
 			);
 		} else {
 			LogCommands(
-				"**Command Tracker** ```YAML\n Command User: [{}] ({}) - Account: [{}] ({}) \n Target: [{}] \n Command Used: [{}] \n Zone: [{}] ({}) ID/Loc: [{} {} {} {}]```",
+				"**Command Tracker** ```YAML\n Command User: [{}] ({}) - Account: [{}] ({}) \n Target: [{}] \n Command Used: ( {} ) \n Zone: [{}] ({}) ID/Loc: [{} {} {} {}]```",
 					c->GetName(),
 					c->CharacterID(),
 					c->AccountName(),
