@@ -116,6 +116,10 @@ bool EQ::Net::ConsoleServerConnection::SendChannelMessage(const ServerChannelMes
 	}
 
 	switch (scm->chan_num) {
+		case ChatChannel_UCSRelay: {
+			QueueMessage(fmt::format("{} tells [{}], '{}'", scm->from, scm->to, scm->message));
+			break;
+		}
 		case ChatChannel_Guild: {
 			QueueMessage(fmt::format("{} tells the guild [{}], '{}'", scm->from, scm->guilddbid, scm->message));
 			break;
