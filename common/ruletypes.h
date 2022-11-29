@@ -484,6 +484,7 @@ RULE_BOOL(Combat, UseNPCDamageClassLevelMods, true, "Uses GetClassLevelDamageMod
 RULE_BOOL(Combat, UseExtendedPoisonProcs, false, "Allow old school poisons to last until characrer zones, at a lower proc rate")
 RULE_BOOL(Combat, EnableSneakPull, false, "Enable implementation of Sneak Pull")
 RULE_INT(Combat, SneakPullAssistRange, 400, "Modified range of assist for sneak pull")
+RULE_INT(Combat, RampageDistance, 100, "Distance a mob can Rampage")
 RULE_BOOL(Combat, Classic2HBAnimation, false, "2HB will use the 2 hand piercing animation instead of the overhead slashing animation")
 RULE_BOOL(Combat, ArcheryConsumesAmmo, true, "Set to false to disable Archery Ammo Consumption")
 RULE_BOOL(Combat, ThrowingConsumesAmmo, true, "Set to false to disable Throwing Ammo Consumption")
