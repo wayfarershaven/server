@@ -277,6 +277,7 @@ void command_titlesuffix(Client *c, const Seperator *sep);
 void command_traindisc(Client *c, const Seperator *sep);
 void command_trapinfo(Client *c, const Seperator *sep);
 void command_tune(Client *c, const Seperator *sep);
+void command_undeletechar(Client *c, const Seperator *sep);
 void command_undye(Client *c, const Seperator *sep);
 void command_undyeme(Client *c, const Seperator *sep);
 void command_unfreeze(Client *c, const Seperator *sep);

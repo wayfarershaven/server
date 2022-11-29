@@ -372,6 +372,38 @@ bool Database::ReserveName(uint32 account_id, char* name) {
 	return true;
 }
 
+bool Database::MarkCharacterDeleted(char *name) {
+	std::string query = StringFormat("UPDATE character_data SET is_deleted = 1 where name='%s'", Strings::Escape(name).c_str());
+
+	auto results = QueryDatabase(query);
+
+	if (!results.Success()) {
+		return false;
+	}
+
+	if (results.RowsAffected() == 0) {
+		return false;
+	}
+
+	return true;
+}
+
+bool Database::UnDeleteCharacter(const char *name) {
+	std::string query = StringFormat("UPDATE character_data SET is_deleted = 0 where name='%s'", Strings::Escape(name).c_str());
+
+	auto results = QueryDatabase(query);
+
+	if (!results.Success()) {
+		return false;
+	}
+
+	if (results.RowsAffected() == 0) {
+		return false;
+	}
+
+	return true;
+}
+
 /**
  * @param character_name
  * @return
@@ -828,8 +860,24 @@ uint32 Database::GetAccountIDByChar(uint32 char_id) {
 		return 0;
 	}
 
-	if (results.RowCount() != 1)
+	if (results.RowCount() != 1) {
 		return 0;
+	}
+
+	auto row = results.begin();
+	return atoi(row[0]);
+}
+
+uint32 Database::GetLevelByChar(const char* charname) {
+	std::string query = StringFormat("SELECT `level` FROM `character_data` WHERE name='%s'", Strings::Escape(charname).c_str());
+	auto results = QueryDatabase(query);
+	if (!results.Success()) {
+		return 0;
+	}
+
+	if (results.RowCount() != 1) {
+		return 0;
+	}
 
 	auto row = results.begin();
 	return atoi(row[0]);
