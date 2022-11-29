@@ -471,19 +471,6 @@ static inline void loadbar(unsigned int x, unsigned int n, unsigned int w = 50) 
 	std::cout << "]\r" << std::flush;
 }
 
-
-bool Database::CheckDatabaseConversions() {
-	CheckDatabaseConvertPPDeblob();
-	CheckDatabaseConvertCorpseDeblob();
-
-	/* Run EQEmu Server script (Checks for database updates) */
-
-	const std::string file = fmt::format("{}/eqemu_server.pl", path.GetServerPath());
-	system(fmt::format("perl {} ran_from_world", file).c_str());
-
-	return true;
-}
-
 bool Database::CheckDatabaseConvertPPDeblob(){
 	unsigned int lengths;
 	unsigned int lengths_e;
