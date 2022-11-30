@@ -632,8 +632,9 @@ void Client::RemoveExpendedAA(int aa_id)
 }
 
 bool Client::Save(uint8 iCommitNow) {
-	if(!ClientDataLoaded())
+	if(!ClientDataLoaded()) {
 		return false;
+	}
 
 	/* Wrote current basics to PP for saves */
 	if (!m_lock_save_position) {
@@ -646,23 +647,27 @@ bool Client::Save(uint8 iCommitNow) {
 	m_pp.guildrank = guildrank;
 
 	/* Mana and HP */
-	if (GetHP() <= 0) {
-		m_pp.cur_hp = GetMaxHP();
-	}
-	else {
-		m_pp.cur_hp = GetHP();
-	}
+	// If the client is dead, HP, Mana and Endurance are fully restored.
 
-	m_pp.mana = current_mana;
-	m_pp.endurance = current_endurance;
+	if (GetHP() <= 0) {
+		m_pp.cur_hp    = GetMaxHP();
+		m_pp.mana      = GetMaxMana();
+		m_pp.endurance = GetMaxEndurance();
+	} else { 	// Otherwise, no changes.
+		m_pp.cur_hp    = GetHP();
+		m_pp.mana      = current_mana;
+		m_pp.endurance = current_endurance;
+	}
 
 	/* Save Character Currency */
 	database.SaveCharacterCurrency(CharacterID(), &m_pp);
 
 	/* Save Current Bind Points */
-	for (int i = 0; i < 5; i++)
-		if (m_pp.binds[i].zone_id)
+	for (int i = 0; i < 5; i++) {
+		if (m_pp.binds[i].zone_id) {
 			database.SaveCharacterBindPoint(CharacterID(), m_pp.binds[i], i);
+		}
+	}
 
 	/* Save Character Buffs */
 	database.SaveBuffs(this);
@@ -699,20 +704,22 @@ bool Client::Save(uint8 iCommitNow) {
 	} else {
 		memset(&m_petinfo, 0, sizeof(struct PetInfo));
 	}
+
 	database.SavePetInfo(this);
 
 	if(tribute_timer.Enabled()) {
 		m_pp.tribute_time_remaining = tribute_timer.GetRemainingTime();
-	}
-	else {
+	} else {
 		m_pp.tribute_time_remaining = 0xFFFFFFFF; m_pp.tribute_active = 0;
 	}
 
-	if (m_pp.hunger_level < 0)
+	if (m_pp.hunger_level < 0) {
 		m_pp.hunger_level = 0;
+	}
 
-	if (m_pp.thirst_level < 0)
+	if (m_pp.thirst_level < 0) {
 		m_pp.thirst_level = 0;
+	}
 
 	p_timers.Store(&database);
 
@@ -725,8 +732,7 @@ bool Client::Save(uint8 iCommitNow) {
 	if (RuleB(Character, ActiveInvSnapshots) && time(nullptr) >= GetNextInvSnapshotTime()) {
 		if (database.SaveCharacterInvSnapshot(CharacterID())) {
 			SetNextInvSnapshot(RuleI(Character, InvSnapshotMinIntervalM));
-		}
-		else {
+		} else {
 			SetNextInvSnapshot(RuleI(Character, InvSnapshotMinRetryM));
 		}
 	}
