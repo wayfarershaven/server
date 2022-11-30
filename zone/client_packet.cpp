@@ -4064,7 +4064,7 @@ void Client::Handle_OP_CastSpell(const EQApplicationPacket *app)
 		Message(13, "Spell slot 12 is disabled.");
 		return;
 	}
-	
+
 	/* Memorized Spell */
 	if (m_pp.mem_spells[castspell->slot] && m_pp.mem_spells[castspell->slot] == castspell->spell_id) {
 		uint16 spell_to_cast = 0;
@@ -6994,22 +6994,21 @@ void Client::Handle_OP_GroupInvite2(const EQApplicationPacket *app)
 
 	GroupInvite_Struct* gis = (GroupInvite_Struct*)app->pBuffer;
 
-	Mob *Invitee = entity_list.GetMob(gis->invitee_name);
+	// We can only invite the current target.
+	Mob* Invitee = GetTarget();
 
-	if (Invitee == this)
-	{
+	if (Invitee == this) {
 		MessageString(Chat::LightGray, GROUP_INVITEE_SELF);
 		return;
 	}
 
-	if (Invitee)
-	{
-		if (Invitee->IsClient())
-		{
-			if (Invitee->CastToClient()->MercOnlyOrNoGroup() && !Invitee->IsRaidGrouped())
-			{
-				if (app->GetOpcode() == OP_GroupInvite2)
-				{
+	if (Invitee) {
+		if (Invitee->IsClient()) {
+			// If the Invitee is correct (it is a valid client target), we set it as the person
+			// to invite.
+			strn0cpy(gis->invitee_name, Invitee->GetName(), 64);
+			if (Invitee->CastToClient()->MercOnlyOrNoGroup() && !Invitee->IsRaidGrouped()) {
+				if (app->GetOpcode() == OP_GroupInvite2) {
 					//Make a new packet using all the same information but make sure it's a fixed GroupInvite opcode so we
 					//Don't have to deal with GroupFollow2 crap.
 					auto outapp =
@@ -7018,14 +7017,11 @@ void Client::Handle_OP_GroupInvite2(const EQApplicationPacket *app)
 					Invitee->CastToClient()->QueuePacket(outapp);
 					safe_delete(outapp);
 					return;
-				}
-				else
-				{
+				} else {
 					//The correct opcode, no reason to bother wasting time reconstructing the packet
 					Invitee->CastToClient()->QueuePacket(app);
 				}
-			}
-			else {
+			} else {
 				if (RuleB(Character, OnInviteReceiveAlreadyinGroupMessage)) {
 					if (!Invitee->CastToClient()->MercOnlyOrNoGroup()) {
 						Message(Chat::LightGray, "%s is already in another group.", Invitee->GetCleanName());
@@ -7038,13 +7034,8 @@ void Client::Handle_OP_GroupInvite2(const EQApplicationPacket *app)
 			Bot::ProcessBotGroupInvite(this, std::string(Invitee->GetName()));
 		}
 #endif
-	}
-	else
-	{
-		auto pack = new ServerPacket(ServerOP_GroupInvite, sizeof(GroupInvite_Struct));
-		memcpy(pack->pBuffer, gis, sizeof(GroupInvite_Struct));
-		worldserver.SendPacket(pack);
-		safe_delete(pack);
+	} else {
+		Message(0, "Invalid target!");
 	}
 	return;
 }
