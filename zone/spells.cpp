@@ -4208,6 +4208,11 @@ bool Mob::SpellOnTarget(
 		LogSpells("Spell [{}] could not apply its effects [{}] -> [{}]\n", spell_id, GetName(), spelltar->GetName());
 		if (casting_spell_aa_id) {
 			MessageString(Chat::SpellFailure, SPELL_NO_HOLD);
+			// I could just call StopCasting(), but I am not sure whether or not we could
+			// have some problem with other AA's? So I am making a specific Manaburn thing.
+			if (IsClient() && casting_spell_aa_id == aaManaBurn) {
+				StopCasting();
+			}
 		}
 		safe_delete(action_packet);
 		return false;

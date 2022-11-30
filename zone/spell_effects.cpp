@@ -315,65 +315,36 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 					break; //no messages are given on live if this fails.
 				}
 
+				int64 dmg = effect_value;
+				if (spell_id == SPELL_MANA_BURN && caster) { //Manaburn
+					int MBMult = zone->random.Int(150, 200); //Manaburn deals 150-200% of mana
+					dmg = caster->GetMana()*MBMult / 100;
+					dmg *= -1;	//Damage should be negative
+					dmg = caster->GetActSpellDamage(spell_id, dmg, this); // Spell can crit, so need this.  Damage cap handled in this function.
+					LogSpells("MBMult [{}], Mana [{}], Damage [{}]", MBMult, caster->GetMana(), dmg);
+					caster->SetMana(0);
+				} else if (spell_id == SPELL_LIFE_BURN && caster) { //Lifeburn
+					dmg = caster->GetHP()*(-1);
+					caster->SetHP(1);
+					if(caster->IsClient()){
+						caster->CastToClient()->SetFeigned(true);
+						caster->SendAppearancePacket(AT_Anim, 115);
+					}
+				}
+
 				// hack fix for client health not reflecting server value
 				last_hp = 0;
 
-				int64 dmg = effect_value;
-
-				//hardcoded for manaburn and life burn
-				if (spell_id == SPELL_MANA_BURN || spell_id == SPELL_LIFE_BURN)
-				{
-					if (spell_id == SPELL_MANA_BURN && caster) //Manaburn
-					{
-						dmg = caster->GetMana()*-3;
-						caster->SetMana(0);
-					}
-					else if (spell_id == SPELL_LIFE_BURN && caster) //Lifeburn
-					{
-						dmg = caster->GetHP(); // just your current HP
-						caster->SetHP(dmg / 4); // 2003 patch notes say ~ 1/4 HP. Should this be 1/4 your current HP or do 3/4 max HP dmg? Can it kill you?
-						dmg = -dmg;
-					}
-
-					if (dmg < 0) {
-						dmg = -dmg;
-						Damage(caster, dmg, spell_id, spell.skill, false, buffslot, false);
-					}
-					else {
-						HealDamage(dmg, caster);
-					}
+				if (spells[spell_id].limit_value[i] && !PassCastRestriction(spells[spell_id].limit_value[i])) {
 					break;
 				}
-				//normal effects
-				else {
-					if (dmg < 0){
-						dmg = (int64)(dmg * partial / 100);
 
-						if (caster) {
-							if (reflect_effectiveness) {
-								dmg = caster->GetActReflectedSpellDamage(spell_id, (int64)(spells[spell_id].base_value[i] * partial / 100), reflect_effectiveness);
-							}
-							else {
-								dmg = caster->GetActSpellDamage(spell_id, dmg, this);
-							}
-							caster->ResourceTap(-dmg, spell_id);
-						}
-
-						if (dmg <= 0) {
-							dmg = -dmg;
-							Damage(caster, dmg, spell_id, spell.skill, false, buffslot, false);
-						}
-						else {
-							HealDamage(dmg, caster);
-						}
-					}
-					else if (dmg > 0) {
-						//do not apply focus/critical to buff spells
-						if (caster && !IsEffectInSpell(spell_id, SE_TotalHP)) {
-							dmg = caster->GetActSpellHealing(spell_id, dmg, this);
-						}
-						HealDamage(dmg, caster);
-					}
+				//do any AAs apply to these spells?
+				if(dmg < 0) {
+					dmg = -dmg;
+					Damage(caster, dmg, spell_id, spell.skill, false, buffslot, false);
+				} else {
+					HealDamage(dmg, caster);
 				}
 				break;
 			}
