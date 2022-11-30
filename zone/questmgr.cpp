@@ -870,15 +870,11 @@ void QuestManager::depop_withtimer(int npc_type) {
 
 void QuestManager::depopall(int npc_type) {
 	QuestManagerCurrentQuestVars();
-	if (npc_type > 0) {
+	if ((owner && owner->IsNPC() && (npc_type > 0)) || npc_type > 0) {
 		entity_list.DepopAll(npc_type);
 	} else {
-		if (owner && owner->IsNPC() && (npc_type > 0)) {
-			entity_list.DepopAll(npc_type);
-		} else {
-			LogQuests(
-					"QuestManager::depopall called with nullptr owner, non-NPC owner, or invalid NPC Type ID. Probably syntax error in quest file.");
-		}
+		LogQuests(
+				"QuestManager::depopall called with nullptr owner, non-NPC owner, or invalid NPC Type ID. Probably syntax error in quest file.");
 	}
 }
 
