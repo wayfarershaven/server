@@ -166,7 +166,7 @@ RULE_INT(Character, DefaultGuild, 0, "If not 0, new characters placed into the g
 RULE_BOOL(Character, ProcessFearedProximity, false, "Processes proximity checks when feared")
 RULE_BOOL(Character, EnableCharacterEXPMods, false, "Enables character zone-based experience modifiers.")
 RULE_BOOL(Character, PVPEnableGuardFactionAssist, true, "Enables faction based assisting against the aggresor in pvp.")
-RULE_BOOL(Character, SkillUpFromItems, true, "Allow Skill ups from clickable items")
+RULE_BOOL(Character, SkillUpFromItems, false, "Allow Skill ups from clickable items")
 RULE_BOOL(Character, EnableTestBuff, false, "Allow the use of /testbuff")
 RULE_BOOL(Character, UseResurrectionSickness, true, "Use Resurrection Sickness based on Resurrection spell cast, set to false to disable Resurrection Sickness.")
 RULE_INT(Character, OldResurrectionSicknessSpellID, 757, "757 is Default Old Resurrection Sickness Spell ID")
