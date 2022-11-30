@@ -224,7 +224,7 @@ bool Mob::CastSpell(uint16 spell_id, uint16 target_id, CastingSlot slot,
 	}
 
 	// check line of sight to target if it's a detrimental spell
-	if (!spells[spell_id].npc_no_los && GetTarget() && IsDetrimentalSpell(spell_id) && !CheckLosFN(GetTarget()) && !IsHarmonySpell(spell_id) && spells[spell_id].target_type != ST_TargetOptional && !IsBindSightSpell(spell_id))
+	if (!spells[spell_id].npc_no_los && GetTarget() && IsDetrimentalSpell(spell_id) && !CheckLosFN(GetTarget()) && !IsHarmonySpell(spell_id) && spells[spell_id].target_type != ST_TargetOptional && spells[spell_id].target_type != ST_AECaster && !IsBindSightSpell(spell_id))
 	{
 		LogSpells("Spell [{}]: cannot see target [{}]", spell_id, GetTarget()->GetName());
 		MessageString(Chat::Red, CANT_SEE_TARGET);
@@ -3895,7 +3895,7 @@ bool Mob::SpellOnTarget(
 		if (IsClient() && (casting_spell_aa_id == aaDireCharm || casting_spell_aa_id == aaDireCharm2 || casting_spell_aa_id == aaDireCharm3)) {
 			StopCasting();
 		}
-		
+
 		//the above call does the message to the client if needed
 		LogSpells("Spell [{}] can't take hold due to immunity [{}] -> [{}]", spell_id, GetName(), spelltar->GetName());
 		safe_delete(action_packet);
