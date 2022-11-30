@@ -587,21 +587,48 @@ int command_realdispatch(Client *c, std::string message, bool ignore_status)
 		QServ->PlayerLogEvent(Player_Log_Issued_Commands, c->CharacterID(), event_desc);
 	}
 
-	if (cur->admin >= COMMANDS_LOGGING_MIN_STATUS) {
-		LogCommands(
-			"[{}] ([{}]) used command: [{}] (target=[{}])",
-			c->GetName(),
-			c->AccountName(),
-			message,
-			c->GetTarget() ? c->GetTarget()->GetName() : "NONE"
-		);
+	if(cur->admin >= COMMANDS_LOGGING_MIN_STATUS) {
+		const char *targetType = "notarget";
+		if (c->GetTarget()) {
+			LogCommands(
+				"**Command Tracker** ```YAML\n Command User: [{}] ({}) - Account: [{}] ({}) \n Target: [{}] \n Command Used: ( {} ) \n Zone: [{}] ({}) ID/Loc: [{} {} {} {}]```",
+					c->GetName(),
+					c->CharacterID(),
+					c->AccountName(),
+					c->AccountID(),
+					c->GetTarget()->GetName(),
+					message,
+					zone->GetLongName(),
+					c->GetInstanceID(),
+					c->GetZoneID(),
+					c->GetTarget()->GetX(),
+					c->GetTarget()->GetY(),
+					c->GetTarget()->GetZ()
+			);
+		} else {
+			LogCommands(
+				"**Command Tracker** ```YAML\n Command User: [{}] ({}) - Account: [{}] ({}) \n Target: [{}] \n Command Used: ( {} ) \n Zone: [{}] ({}) ID/Loc: [{} {} {} {}]```",
+					c->GetName(),
+					c->CharacterID(),
+					c->AccountName(),
+					c->AccountID(),
+					targetType,
+					message,
+					zone->GetLongName(),
+					c->GetInstanceID(),
+					c->GetZoneID(),
+					0,
+					0,
+					0
+			);
+		}
 	}
 
 	if (!cur->function) {
 		LogError("Command [{}] has a null function", cstr);
 		return -1;
 	}
-
+	
 	cur->function(c, &sep);	// Dispatch C++ Command
 
 	return 0;
