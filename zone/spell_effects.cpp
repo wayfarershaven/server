@@ -1443,7 +1443,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 				if (!wipechance && IsClient()) {
 					entity_list.ClearAggro(this);
 				}
-				
+
 				if (caster) {
 					wipechance = caster->GetMemoryBlurChance(effect_value);
 				}
@@ -1702,7 +1702,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 						TargetClient = CastToClient();
 
 					// We now have a valid target for this spell. Either the caster himself or a targetted player. Lets see if the target is in the group.
-					Group* group = entity_list.GetGroupByClient(TargetClient);
+					Group* group = entity_list.GetGroupByClient(caster->CastToClient());
 					if(group) {
 						if(!group->IsGroupMember(TargetClient)) {
 							Message(Chat::Red, "Your target must be a group member for this spell.");
@@ -2141,9 +2141,17 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 							break;
 						}
 
-						// clear aggro when summoned in zone and further than aggro clear distance rule.
-						if (RuleR(Spells, CallOfTheHeroAggroClearDist) == 0 || caster->CalculateDistance(GetX(), GetY(), GetZ()) >= RuleR(Spells, CallOfTheHeroAggroClearDist)) {
+						if (caster->IsClient()) {
+						Group* group = entity_list.GetGroupByClient(caster->CastToClient());
+						if (!group || !group->IsGroupMember(this->CastToClient())) {
+							Message(13, "Your target must be a group member for this spell.");
+							break;
+						}
+
+						// clear aggro when summoned in zone
+						if (caster->CalculateDistance(GetX(), GetY(), GetZ()) >= RuleR(Spells, CallOfTheHeroAggroClearDist)) {
 							entity_list.ClearAggro(this);
+						}
 						}
 					}
 
