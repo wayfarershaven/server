@@ -1227,12 +1227,14 @@ void Client::Handle_Connect_OP_ZoneEntry(const EQApplicationPacket *app)
 
 		if (LFP) { LFP = atoi(row[0]); }
 		if (LFG) { LFG = atoi(row[1]); }
-		if (row[3])
+		if (row[3]) {
 			firstlogon = atoi(row[3]);
+		}
 	}
 
-	if (RuleB(Character, SharedBankPlat))
-		m_pp.platinum_shared = database.GetSharedPlatinum(AccountID());
+	if (RuleB(Character, SharedBankPlat)) {
+		m_pp.platinum_shared = database.GetSharedPlatinum(this->CharacterID());
+	}
 
 	database.ClearOldRecastTimestamps(cid); /* Clear out our old recast timestamps to keep the DB clean */
 	// set to full support in case they're a gm with items in disabled expansion slots...but, have their gm flag off...
