@@ -4911,6 +4911,12 @@ float Mob::ResistSpell(uint8 resist_type, uint16 spell_id, Mob *caster, bool use
 		}
 	}
 
+	// Special case. If the caster has the Unholy Aura Discipline activated and the spell is HT,
+	// or improved HT then the resist type is disease.
+	if ((spell_id == SPELL_HARM_TOUCH || spell_id == SPELL_HARM_TOUCH2 || spell_id == SPELL_IMP_HARM_TOUCH ) && caster->IsClient() && caster->CastToClient()->FindBuff(DISC_UNHOLY_AURA)) {
+		resist_type = RESIST_DISEASE;
+	}
+
 	//Get the resist chance for the target
 	if(resist_type == RESIST_NONE || spells[spell_id].no_resist)
 	{
@@ -6007,7 +6013,7 @@ bool Mob::RemoveProcFromWeapon(uint16 spell_id, bool bAll) {
 	if (spell_id == PI_VampEmbraceNecro && GetClass() == SHADOWKNIGHT) {
 		spell_id = PI_VampEmbraceShadow;
 	}
-	
+
 	for (int i = 0; i < MAX_PROCS; i++) {
 		if (bAll || SpellProcs[i].spellID == spell_id) {
 			SpellProcs[i].spellID = SPELL_UNKNOWN;
