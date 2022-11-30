@@ -33,76 +33,112 @@ int Mob::GetBaseSkillDamage(EQ::skills::SkillType skill, Mob *target)
 {
 	int base = EQ::skills::GetBaseDamage(skill);
 	auto skill_level = GetSkill(skill);
+	float ac_bonus = 0.0f;
 	switch (skill) {
 	case EQ::skills::SkillDragonPunch:
 	case EQ::skills::SkillEagleStrike:
-	case EQ::skills::SkillTigerClaw:
-	case EQ::skills::SkillRoundKick:
-		if (skill_level >= 25)
+	case EQ::skills::SkillTigerClaw: {
+		if (IsClient()) {
+			auto inst = CastToClient()->GetInv().GetItem(EQ::invslot::slotHands);
+			if (inst) {
+				ac_bonus = inst->GetItemArmorClass(true) / 25.0f;
+			}
+		}
+		if (skill_level >= 25) {
 			base++;
-		if (skill_level >= 75)
+		}
+		if (skill_level >= 75) {
 			base++;
-		if (skill_level >= 125)
+		}
+		if (skill_level >= 125) {
 			base++;
-		if (skill_level >= 175)
+		}
+		if (skill_level >= 175) {
 			base++;
-		return base;
+		}
+		return (base + static_cast<int>(ac_bonus));
+	}
 	case EQ::skills::SkillFrenzy:
 		if (IsClient() && CastToClient()->GetInv().GetItem(EQ::invslot::slotPrimary)) {
-			if (GetLevel() > 15)
+			if (GetLevel() > 15) {
 				base += GetLevel() - 15;
-			if (base > 23)
+			}
+			if (base > 23) {
 				base = 23;
-			if (GetLevel() > 50)
+			}
+			if (GetLevel() > 50) {
 				base += 2;
-			if (GetLevel() > 54)
+			}
+			if (GetLevel() > 54) {
 				base++;
-			if (GetLevel() > 59)
+			}
+			if (GetLevel() > 59) {
 				base++;
+			}
 		}
 		return base;
 	case EQ::skills::SkillFlyingKick: {
-		float skill_bonus = skill_level / 9.0f;
-		float ac_bonus = 0.0f;
 		if (IsClient()) {
 			auto inst = CastToClient()->GetInv().GetItem(EQ::invslot::slotFeet);
-			if (inst)
+			if (inst) {
 				ac_bonus = inst->GetItemArmorClass(true) / 25.0f;
+			}
 		}
-		if (ac_bonus > skill_bonus)
-			ac_bonus = skill_bonus;
-		return static_cast<int>(ac_bonus + skill_bonus);
+		if (skill_level >= 20) {
+			base++;
+		}
+		if (skill_level >= 60) {
+			base++;
+		}
+		if (skill_level >= 100) {
+			base++;
+		}
+		if (skill_level >= 140) {
+			base++;
+		}
+		if (skill_level >= 180) {
+			base++;
+		}
+		// return static_cast<int>(ac_bonus + skill_bonus);
+		return (base + static_cast<int>(ac_bonus));
 	}
-	case EQ::skills::SkillKick: {
+	case EQ::skills::SkillKick:
+	case EQ::skills::SkillRoundKick: {
 		// there is some base *= 4 case in here?
-		float skill_bonus = skill_level / 10.0f;
-		float ac_bonus = 0.0f;
 		if (IsClient()) {
 			auto inst = CastToClient()->GetInv().GetItem(EQ::invslot::slotFeet);
 			if (inst)
 				ac_bonus = inst->GetItemArmorClass(true) / 25.0f;
 		}
-		if (ac_bonus > skill_bonus)
-			ac_bonus = skill_bonus;
-		return static_cast<int>(ac_bonus + skill_bonus);
+		if (skill_level >= 75) {
+			base++;
+		}
+		if (skill_level >= 175) {
+			base++;
+		}
+		return (base + static_cast<int>(ac_bonus));
 	}
 	case EQ::skills::SkillBash: {
-		float skill_bonus = skill_level / 10.0f;
-		float ac_bonus = 0.0f;
 		const EQ::ItemInstance *inst = nullptr;
 		if (IsClient()) {
-			if (HasShieldEquiped())
+			if (HasShieldEquiped()) {
 				inst = CastToClient()->GetInv().GetItem(EQ::invslot::slotSecondary);
-			else if (HasTwoHanderEquipped())
-				inst = CastToClient()->GetInv().GetItem(EQ::invslot::slotPrimary);
+			}
 		}
-		if (inst)
+
+		if (inst) {
 			ac_bonus = inst->GetItemArmorClass(true) / 25.0f;
-		else
+		} else {
 			return 0; // return 0 in cases where we don't have an item
-		if (ac_bonus > skill_bonus)
-			ac_bonus = skill_bonus;
-		return static_cast<int>(ac_bonus + skill_bonus);
+		}
+
+		if (skill_level >= 75) {
+			base++;
+		}
+		if (skill_level >= 175) {
+			base++;
+		}
+		return (base + static_cast<int>(ac_bonus));
 	}
 	case EQ::skills::SkillBackstab: {
 		float skill_bonus = static_cast<float>(skill_level) * 0.02f;
@@ -187,6 +223,36 @@ void Mob::DoSpecialAttackDamage(Mob *who, EQ::skills::SkillType skill, int32 bas
 
 	my_hit.offense = offense(my_hit.skill);
 	my_hit.tohit = GetTotalToHit(my_hit.skill, 0);
+
+	// Rogue Backstab Haste Correction
+	// Haste should only provide a max of a 2 s reduction to Backstab cooldown, but it seems that while BackstabReuseTimer can be reduced, there is another timer (repop on the button)
+	// that is controlling the actual cooldown.  I'm not sure how this is implemented, but it is impacted by spell haste (including bard v2 and v3), but not worn haste.
+	// This code applies an adjustment to backstab accuracy to compensate for this so that Rogue DPS doesn't significantly outclass other classes.
+	//Log(Logs::Detail, Logs::Attack, "RogueBackstabHasteCorrect: %d, skills: %d, GetHaste: %d", RuleB(Combat, RogueBackstabHasteCorrection), skill, GetHaste());
+	if (RuleB(Combat, RogueBackstabHasteCorrection) && (skill == EQ::skills::SkillBackstab) && (GetHaste() > 100)) {
+		int haste_spell = spellbonuses.haste - spellbonuses.inhibitmelee + spellbonuses.hastetype2 + spellbonuses.hastetype3;
+		int haste_worn = itembonuses.haste;
+
+		// Compute Intended Cooldown.  100% Spell = 1 s reduction (max), 40% Worn = 1 s reduction (max).
+		int reduction_intended_spell = haste_spell > 100 ? 100 : haste_spell;
+		int reduction_intended_worn = 2.5 * (haste_worn > 40 ? 40 : haste_worn);
+		int16 intended_cooldown = 1000 - reduction_intended_spell - reduction_intended_worn;
+
+		// Compute Actual Cooldown.  Actual only impacted by spell haste ( + v2 + v3), and is 10 s / (100 + haste)
+		auto actual_cooldown = 100000 / ( 100 + haste_spell );
+
+		// Compute Accuracy Adjustment
+		auto backstab_accuracy_adjust = actual_cooldown * 1000 / intended_cooldown;
+
+		// auto orig_accuracy = my_hit.tohit;
+		auto adjusted_accuracy = my_hit.tohit * backstab_accuracy_adjust / 1000;
+		my_hit.tohit = adjusted_accuracy;
+	}
+
+	// Adjust min damage for Monk Flying Kick based on level.  This should be for a 40 damage min cap at level 60.
+	if (skill == EQ::skills::SkillFlyingKick) {
+		my_hit.min_damage = GetLevel() - 22;
+	}
 
 	my_hit.hand = EQ::invslot::slotPrimary; // Avoid checks hand for throwing/archery exclusion, primary should
 						  // work for most
@@ -2172,13 +2238,15 @@ int Mob::TryHeadShot(Mob *defender, EQ::skills::SkillType skillInUse)
 
 		if (HeadShot_Dmg && HeadShot_Level && (defender->GetLevel() <= HeadShot_Level)) {
 			int chance = GetDEX();
-			chance = 100 * chance / (chance + 3500);
-			if (IsClient())
+			chance = 100 * chance / (chance + 4750);
+			if (IsClient()) {
 				chance += CastToClient()->GetHeroicDEX() / 25;
+			}
 			chance *= 10;
 			int norm = aabonuses.HSLevel[SBIndex::FINISHING_EFFECT_LEVEL_CHANCE_BONUS];
-			if (norm > 0)
+			if (norm > 0) {
 				chance = chance * norm / 100;
+			}
 			chance += aabonuses.HeadShot[SBIndex::FINISHING_EFFECT_PROC_CHANCE] + spellbonuses.HeadShot[SBIndex::FINISHING_EFFECT_PROC_CHANCE] + itembonuses.HeadShot[SBIndex::FINISHING_EFFECT_PROC_CHANCE];
 			if (zone->random.Int(1, 1000) <= chance) {
 				entity_list.MessageCloseString(
@@ -2203,18 +2271,22 @@ int Mob::TryAssassinate(Mob *defender, EQ::skills::SkillType skillInUse)
 	) {
 		int chance = GetDEX();
 		if (skillInUse == EQ::skills::SkillBackstab) {
-			chance = 100 * chance / (chance + 3500);
-			if (IsClient())
+			chance = 100 * chance / (chance + 4750);
+			if (IsClient()) {
 				chance += CastToClient()->GetHeroicDEX();
+			}
 			chance *= 10;
 			int norm = aabonuses.AssassinateLevel[SBIndex::FINISHING_EFFECT_LEVEL_CHANCE_BONUS];
-			if (norm > 0)
+			if (norm > 0) {
 				chance = chance * norm / 100;
+			}
 		} else if (skillInUse == EQ::skills::SkillThrowing) {
-			if (chance > 255)
+			if (chance > 255) {
 				chance = 260;
-			else
+			} else {
 				chance += 5;
+			}
+			chance /= 2;
 		}
 
 		chance += aabonuses.Assassinate[SBIndex::FINISHING_EFFECT_PROC_CHANCE] + spellbonuses.Assassinate[SBIndex::FINISHING_EFFECT_PROC_CHANCE] + itembonuses.Assassinate[SBIndex::FINISHING_EFFECT_PROC_CHANCE];
@@ -2222,13 +2294,25 @@ int Mob::TryAssassinate(Mob *defender, EQ::skills::SkillType skillInUse)
 		uint32 Assassinate_Dmg =
 				   aabonuses.Assassinate[SBIndex::FINISHING_EFFECT_DMG] + spellbonuses.Assassinate[SBIndex::FINISHING_EFFECT_DMG] + itembonuses.Assassinate[SBIndex::FINISHING_EFFECT_DMG];
 
-		uint8 Assassinate_Level = 0; // Get Highest Headshot Level
+		uint8 Assassinate_Level = 0; // Get Highest Assassinate Level
 		Assassinate_Level = std::max(
 		    {aabonuses.AssassinateLevel[SBIndex::FINISHING_EFFECT_LEVEL_MAX], spellbonuses.AssassinateLevel[SBIndex::FINISHING_EFFECT_LEVEL_MAX], itembonuses.AssassinateLevel[SBIndex::FINISHING_EFFECT_LEVEL_MAX]});
 
+		// Innate Assassinate for Level 60+ Rogues.
+		if (GetLevel() >= 60) {
+			if (!Assassinate_Dmg) {
+				Assassinate_Dmg = 32000;
+			}
+
+			if (!Assassinate_Level) {
+				Assassinate_Level = 45;
+			}
+		}
+
 		// revamped AAs require AA line I believe?
-		if (!Assassinate_Level)
+		if (!Assassinate_Level) {
 			return 0;
+		}
 
 		if (Assassinate_Dmg && Assassinate_Level && (defender->GetLevel() <= Assassinate_Level)) {
 			if (zone->random.Int(1, 1000) <= chance) {

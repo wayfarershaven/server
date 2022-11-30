@@ -207,7 +207,14 @@ public:
 	int compute_defense();
 	int GetTotalDefense(); // compute_defense + spell bonuses
 	bool CheckHitChance(Mob* attacker, DamageHitInfo &hit);
+	bool RollMeleeCritCheck(Mob *defender, EQ::skills::SkillType skill);
+	// crit stuff
+	inline bool CanUndeadSlay() { return static_cast<bool>(GetUndeadSlayRate());}
+	inline bool IsUndeadForSlay() { return (GetBodyType() == BT_Undead || GetBodyType() == BT_SummonedUndead || GetBodyType() == BT_Vampire); }
+	int GetUndeadSlayRate();
+	void DoUndeadSlay(DamageHitInfo &hit, int crit_mod);
 	void TryCriticalHit(Mob *defender, DamageHitInfo &hit, ExtraAttackOptions *opts = nullptr);
+	bool TryUndeadSlay(Mob *defender, DamageHitInfo &hit, ExtraAttackOptions *opts = nullptr);
 	void TryPetCriticalHit(Mob *defender, DamageHitInfo &hit);
 	virtual bool TryFinishingBlow(Mob *defender, int64 &damage);
 	int TryHeadShot(Mob* defender, EQ::skills::SkillType skillInUse);
@@ -1077,6 +1084,8 @@ public:
 
 	uint8 GetWeaponDamageBonus(const EQ::ItemData* weapon, bool offhand = false);
 	const DamageTable &GetDamageTable() const;
+	int GetMobFixedOffenseSkill();
+	int GetMobFixedWeaponSkill();
 	void ApplyDamageTable(DamageHitInfo &hit);
 	virtual int GetHandToHandDamage(void);
 

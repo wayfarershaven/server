@@ -167,17 +167,29 @@ EQ::skills::SkillType Mob::AttackAnimation(int Hand, const EQ::ItemInstance* wea
 //SYNC WITH: tune.cpp, mob.h Tunecompute_tohit
 int Mob::compute_tohit(EQ::skills::SkillType skillinuse)
 {
-	int tohit = GetSkill(EQ::skills::SkillOffense) + 7;
-	tohit += GetSkill(skillinuse);
-	if (IsNPC())
+	int tohit = 0;
+
+	if (IsNPC() && !IsPet() && !IsTempPet()) {
+		tohit += GetMobFixedWeaponSkill();
+
+		if (RuleB(Combat, UseMobFixedOffenseSkill)) {
+			tohit += GetMobFixedOffenseSkill() + 7;
+		} else {
+			tohit += GetSkill(EQ::skills::SkillOffense) + 7;
+		}
+
 		tohit += CastToNPC()->GetAccuracyRating();
+	} else {
+		tohit += GetSkill(EQ::skills::SkillOffense) + 7;
+		tohit += GetSkill(skillinuse);
+	}
+
 	if (IsClient()) {
 		double reduction = CastToClient()->m_pp.intoxication / 2.0;
 		if (reduction > 20.0) {
 			reduction = std::min((110 - reduction) / 100.0, 1.0);
 			tohit = reduction * static_cast<double>(tohit);
-		}
-		else if (IsBerserk()) {
+		} else if (IsBerserk()) {
 			tohit += (GetLevel() * 2) / 5;
 		}
 	}
@@ -203,8 +215,13 @@ int Mob::GetTotalToHit(EQ::skills::SkillType skill, int chance_mod)
 	// unsure on the stacking order of these effects, rather hard to parse
 	// item mod2 accuracy isn't applied to range? Theory crafting and parses back it up I guess
 	// mod2 accuracy -- flat bonus
-	if (skill != EQ::skills::SkillArchery && skill != EQ::skills::SkillThrowing)
-		accuracy += itembonuses.HitChance;
+	// NOTE: Removing the Ranged/Thrown check as I could find the occasional source that says Accuracy SHOULD affect ranged/thrown in era,
+	// and the only stuff I could find that said otherwise was from Omens Expansion or later when Sharpshooting (accuracy for Ranged/Thrown) was added.
+	// Also applying a scale factor as sources suggest Accuracy should reduce number of missing by 0.1% per point, so 150 = 15% reduction in misses.
+	// Based on my calculator 150 Accuracy was reducing misses by too much (closer to 20%)
+	// NOTE: This doesn't mean if you have a 30% miss chance you now miss 15%.  It means if you have a 30% miss chance you now have a 30% * (100% - 15%) = 30% * 85% = 25.5% miss chance
+	// Using same scale factor for Avoidance and Accuracy since they impact the formula about the same.
+	accuracy += itembonuses.HitChance * RuleI(Combat, PCAccAvoidMod2ScaleFactor) / 100;
 
 	//518 Increase ATK accuracy by percentage, stackable
 	auto atkhit_bonus = itembonuses.Attack_Accuracy_Max_Percent + aabonuses.Attack_Accuracy_Max_Percent + spellbonuses.Attack_Accuracy_Max_Percent;
@@ -234,6 +251,11 @@ int Mob::GetTotalToHit(EQ::skills::SkillType skill, int chance_mod)
 		aabonuses.HitChanceEffect[skill] +
 		spellbonuses.HitChanceEffect[skill];
 
+	if(skill == EQ::skills::SkillArchery) 	{
+		hit_bonus += spellbonuses.increasearchery + aabonuses.increasearchery + itembonuses.increasearchery;
+		hit_bonus -= hit_bonus*RuleR(Combat, ArcheryHitPenalty);
+	}
+
 	accuracy = (accuracy * (100 + hit_bonus)) / 100;
 
 	// TODO: April 2003 added an archery/throwing PVP accuracy penalty while moving, should be in here some where,
@@ -253,18 +275,35 @@ int Mob::GetTotalToHit(EQ::skills::SkillType skill, int chance_mod)
 int Mob::compute_defense()
 {
 	int defense = GetSkill(EQ::skills::SkillDefense) * 400 / 225;
-	defense += (8000 * (GetAGI() - 40)) / 36000;
-	if (IsClient())
+	int AgiScaleFactor = 1000;
+	// In new code, AGI becomes a large contributor to avoidance at low levels, since AGI isn't capped by Level but Defense is
+	// A scale factor is implemented for PCs to reduce the effect of AGI at low levels.  This isn't applied to NPCs since they can be
+	// easily controlled via the Database.
+	if (IsClient()) {
+		AgiScaleFactor = std::min(1000, static_cast<int>(GetLevel()) * 1000 /
+										70); // Scales Agi Contribution for PC's Level, max Contribution at Level 70
+	}
+
+	defense += AgiScaleFactor * (800 * (GetAGI() - 40)) / 3600 / 1000;
+
+	if (IsClient()) {
 		defense += CastToClient()->GetHeroicAGI() / 10;
+	}
 
 	//516 SE_AC_Mitigation_Max_Percent
 	auto ac_bonus = itembonuses.AC_Mitigation_Max_Percent + aabonuses.AC_Mitigation_Max_Percent + spellbonuses.AC_Mitigation_Max_Percent;
-	if (ac_bonus)
+	if (ac_bonus) {
 		defense += round(static_cast<double>(defense) * static_cast<double>(ac_bonus) * 0.0001);
+	}
 
-	defense += itembonuses.AvoidMeleeChance; // item mod2
-	if (IsNPC())
+	// Based on my calculator 150 Avoidance was reducing misses by too much (closer to 20%)
+	// NOTE: This doesn't mean if you have a 30% miss chance you now miss 15%.  It means if you have a 30% miss chance you now have a 30% * (100% - 15%) = 30% * 85% = 25.5% miss chance
+	// Using same scale factor for Avoidance and Accuracy since they impact the formula about the same.
+	defense += itembonuses.AvoidMeleeChance * RuleI(Combat, PCAccAvoidMod2ScaleFactor) / 100; // item mod2
+
+	if (IsNPC()) {
 		defense += CastToNPC()->GetAvoidanceRating();
+	}
 
 	if (IsClient()) {
 		double reduction = CastToClient()->m_pp.intoxication / 2.0;
@@ -973,6 +1012,9 @@ int Mob::GetBestMeleeSkill()
 int Mob::offense(EQ::skills::SkillType skill)
 {
 	int offense = GetSkill(skill);
+	if (IsNPC() && !IsPet() && !IsTempPet()) {
+		offense = GetMobFixedWeaponSkill();
+	}
 	int stat_bonus = GetSTR();
 
 	switch (skill) {
@@ -993,10 +1035,20 @@ int Mob::offense(EQ::skills::SkillType skill)
 			break;
 	}
 
-	if (stat_bonus >= 75)
+	if (stat_bonus >= 75) {
 		offense += (2 * stat_bonus - 150) / 3;
+	}
 
-	offense += GetATK() + GetPetATKBonusFromOwner();
+	// GetATK() = ATK + itembonuses.ATK + spellbonuses.ATK.  However, ATK appears to already be itembonuses.ATK + spellbonuses.ATK for PCs, so as is, it is double counting attack
+	// This causes attack to be significantly more important than it should be based on era rule of thumbs.  I do not want to change the GetATK() function in case doing so breaks something,
+	// so instead I am just adding a /2 to remedy the double counting.  NPCs do not have this issue, so they are broken up.
+	// PCAttackPowerScaling is used to help bring attack power further in line with era estimates.
+	if (IsClient()) {
+		offense += (GetATK() / 2) * RuleI(Combat, PCAttackPowerScaling) / 100;
+	} else {
+		offense += GetATK();
+	}
+	
 	return offense;
 }
 
@@ -1120,7 +1172,6 @@ int64 Mob::GetWeaponDamage(Mob *against, const EQ::ItemData *weapon_item) {
 		if (weapon_item && weapon_item->ElemDmgAmt) {
 			//we don't check resist for npcs here
 			eledmg = weapon_item->ElemDmgAmt;
-			dmg += eledmg;
 		}
 	}
 
@@ -1136,15 +1187,15 @@ int64 Mob::GetWeaponDamage(Mob *against, const EQ::ItemData *weapon_item) {
 		}
 
 		if (!banedmg) {
-			if (!GetSpecialAbility(SPECATK_BANE))
+			if (!GetSpecialAbility(SPECATK_BANE)) {
 				return 0;
-			else
+			} else {
 				return 1;
+			}
+		} else {
+			dmg += (banedmg + eledmg);
 		}
-		else
-			dmg += banedmg;
-	}
-	else {
+	} else {
 		if (weapon_item) {
 			if (weapon_item->BaneDmgBody == against->GetBodyType()) {
 				banedmg += weapon_item->BaneDmgAmt;
@@ -1160,9 +1211,9 @@ int64 Mob::GetWeaponDamage(Mob *against, const EQ::ItemData *weapon_item) {
 
 	if (dmg <= 0) {
 		return 0;
-	}
-	else
+	} else {
 		return dmg;
+	}
 }
 
 int64 Mob::GetWeaponDamage(Mob *against, const EQ::ItemInstance *weapon_item, int64 *hate)
@@ -2850,12 +2901,12 @@ void Mob::AddToHateList(Mob* other, int64 hate /*= 0*/, int64 damage /*= 0*/, bo
 						   // Spell Casting Subtlety etc
 			int64 hatemod = 100 + other->spellbonuses.hatemod + other->itembonuses.hatemod + other->aabonuses.hatemod;
 
-			if (hatemod < 1)
+			if (hatemod < 1) {
 				hatemod = 1;
+			}
 			hate = ((hate * (hatemod)) / 100);
-		}
-		else {
-			hate += 100; // 100 bonus initial aggro
+		} else {
+			hate += RuleI(Aggro, InitialAggroBonus); // Bonus Initial Aggro
 		}
 	}
 
@@ -2866,10 +2917,13 @@ void Mob::AddToHateList(Mob* other, int64 hate /*= 0*/, int64 damage /*= 0*/, bo
 	// we skip these checks if it's forced through a pet command
 	if (!pet_command) {
 		if (IsPet()) {
-			if ((IsGHeld() || (IsHeld() && IsFocused())) && !on_hatelist) // we want them to be able to climb the hate list
+			if ((IsGHeld() || (IsHeld() && IsFocused())) && !on_hatelist) { // we want them to be able to climb the hate list
 				return;
-			if ((IsHeld() || IsPetStop() || IsPetRegroup()) && !wasengaged) // not 100% sure on stop/regroup kind of hard to test, but regroup is like "classic hold"
+			}
+
+			if ((IsHeld() || IsPetStop() || IsPetRegroup()) && !wasengaged) { // not 100% sure on stop/regroup kind of hard to test, but regroup is like "classic hold"
 				return;
+			}
 		}
 	}
 
@@ -3645,15 +3699,26 @@ bool Client::CheckDoubleAttack()
 // with varying triple attack skill (1-3% error at least)
 bool Client::CheckTripleAttack()
 {
-	int chance = GetSkill(EQ::skills::SkillTripleAttack);
-	if (chance < 1)
+	// In era, Triple Attack was an innate skill.  Don't have exact data, but found one post suggesting when
+	// they implemented Triple Attack as a skill, that 200 may have been the cap for some classes (~20% in this code).
+	// Only Level 60 Warriors and Monks get it, and making their percentage (fixed) separate as a tuning variable.
+	int chance = 0;
+
+	if (IsClient() && (GetLevel() == 60) && (GetClass() == WARRIOR)) {
+		chance = RuleI(Combat, TripleAttackChanceWarrior);
+	}
+
+	if (IsClient() && (GetLevel() == 60) && (GetClass() == MONK)) {
+		chance = RuleI(Combat, TripleAttackChanceMonk);
+	}
+
+	if (chance < 1) {
 		return false;
+	}
 
 	int inc = aabonuses.TripleAttackChance + spellbonuses.TripleAttackChance + itembonuses.TripleAttackChance;
 	chance = static_cast<int>(chance * (1 + inc / 100.0f));
-	chance = (chance * 100) / (chance + 800);
-
-	return zone->random.Int(1, 100) <= chance;
+	return zone->random.Int(1, 1000) <= chance;
 }
 
 bool Client::CheckDoubleRangedAttack() {
@@ -4461,8 +4526,9 @@ void Mob::TryWeaponProc(const EQ::ItemInstance *inst, const EQ::ItemData *weapon
 	ProcBonus += static_cast<float>(itembonuses.ProcChance) / 10.0f; // Combat Effects
 	float ProcChance = GetProcChances(ProcBonus, hand);
 
-	if (hand == EQ::invslot::slotSecondary)
+	if (hand == EQ::invslot::slotSecondary) {
 		ProcChance /= 2;
+	}
 
 	// Try innate proc on weapon
 	// We can proc once here, either weapon or one aug
@@ -4765,6 +4831,102 @@ void Mob::TryPetCriticalHit(Mob *defender, DamageHitInfo &hit)
 	}
 }
 
+bool Mob::RollMeleeCritCheck(Mob *defender, EQ::skills::SkillType skill)
+{
+	// We either require an innate crit chance or some SPA 169 to crit
+	bool innate_crit = false;
+	int crit_chance = GetCriticalChanceBonus(skill);
+	// Paladin check
+	if (defender->IsUndeadForSlay()) {
+		crit_chance = crit_chance + GetUndeadSlayRate();
+	}
+	if ((GetClass() == WARRIOR || GetClass() == BERSERKER) && GetLevel() >= 12) {
+		innate_crit = true;
+	} else if (GetClass() == RANGER && GetLevel() >= 12 && skill == EQ::skills::SkillArchery) {
+		innate_crit = true;
+	} else if (GetClass() == ROGUE && GetLevel() >= 12 && skill == EQ::skills::SkillThrowing) {
+		innate_crit = true;
+	}
+
+	// we have a chance to crit!
+	if (innate_crit || crit_chance) {
+		int difficulty = 0;
+		if (skill == EQ::skills::SkillArchery) {
+			difficulty = RuleI(Combat, ArcheryCritDifficulty);
+		} else if (skill == EQ::skills::SkillThrowing) {
+			difficulty = RuleI(Combat, ThrowingCritDifficulty);
+		} else {
+			difficulty = RuleI(Combat, MeleeCritDifficulty);
+		}
+		int roll = zone->random.Int(1, difficulty);
+
+
+		int dex_bonus = GetDEX();
+		if (dex_bonus > 255) {
+			dex_bonus = 255 + ((dex_bonus - 255) / 5);
+		}
+
+		dex_bonus += 45; // chances did not match live without a small boost
+
+		// so if we have an innate crit we have a better chance, except for ber throwing
+		if (!innate_crit || (GetClass() == BERSERKER && skill == EQ::skills::SkillThrowing)) {
+			dex_bonus = dex_bonus * 3 / 5;
+		}
+		LogCombat("dex_bonus ({}) * crit_chance ({}) / 100", dex_bonus, crit_chance);
+		if (crit_chance) {
+			dex_bonus += dex_bonus * crit_chance / 100;
+		}
+
+		// check if we crited
+		LogCombat("Final Roll! Difficulty = [{}] -- Dex_Bonus = [{}] ", difficulty, dex_bonus);
+		return (roll < dex_bonus);
+	}
+
+	return false;
+}
+
+int Mob::GetUndeadSlayRate()
+{
+	return aabonuses.SlayUndead[0] + itembonuses.SlayUndead[0] + spellbonuses.SlayUndead[0];
+}
+
+void Mob::DoUndeadSlay(DamageHitInfo &hit, int crit_mod)
+{
+
+	int SlayDmgBonus = std::max(
+			{ aabonuses.SlayUndead[1], itembonuses.SlayUndead[1], spellbonuses.SlayUndead[1] });
+	Log(Logs::Detail, Logs::Combat,
+		"Slayundead bonus %d", SlayDmgBonus);
+
+	hit.damage_done = std::max(hit.damage_done, hit.base_damage) + 5;
+	hit.damage_done = (hit.damage_done * SlayDmgBonus * crit_mod) / 100;
+	hit.damage_done = static_cast<int>(hit.damage_done * RuleR(Combat, SlayDamageAdjustment));
+
+	Log(Logs::Detail, Logs::Combat,
+		"Slayundead damage %d", hit.damage_done);
+
+	int slay_sex;
+	switch(GetGender()) {
+		case FEMALE:
+			slay_sex = FEMALE_SLAYUNDEAD;
+			break;
+		case MALE:
+		default:
+			slay_sex = MALE_SLAYUNDEAD;
+			break;
+	}
+
+	entity_list.FilteredMessageString(
+			this, /* Sender */
+			false, /* Skip Sender */
+			Chat::MeleeCrit, /* Type: 301 */
+			FilterMeleeCrits, /* FilterType: 12 */
+			slay_sex, /* MessageFormat: %1's holy blade cleanses her target!(%2) */
+			GetCleanName(), /* Message1 */
+			itoa(hit.damage_done) /* Message2 */
+	);
+}
+
 void Mob::TryCriticalHit(Mob *defender, DamageHitInfo &hit, ExtraAttackOptions *opts)
 {
 #ifdef LUA_EQEMU
@@ -4776,8 +4938,8 @@ void Mob::TryCriticalHit(Mob *defender, DamageHitInfo &hit, ExtraAttackOptions *
 	}
 #endif
 
-	if (hit.damage_done < 1 || !defender)
-		return;
+	// is there no damage
+	if (hit.damage_done < 1 || !defender) { return; }
 
 	// decided to branch this into it's own function since it's going to be duplicating a lot of the
 	// code in here, but could lead to some confusion otherwise
@@ -4786,192 +4948,112 @@ void Mob::TryCriticalHit(Mob *defender, DamageHitInfo &hit, ExtraAttackOptions *
 		return;
 	}
 
-#ifdef BOTS
-	if (IsPet() && GetOwner() && GetOwner()->IsBot()) {
-		TryPetCriticalHit(defender, hit);
-		return;
-	}
-#endif // BOTS
+	if (IsNPC()) { return; } // Npc's can not crit in our era
 
-	if (IsNPC() && !RuleB(Combat, NPCCanCrit))
-		return;
 
-	// 1: Try Slay Undead
-	if (defender->GetBodyType() == BT_Undead || defender->GetBodyType() == BT_SummonedUndead ||
-		defender->GetBodyType() == BT_Vampire) {
-		int SlayRateBonus = aabonuses.SlayUndead[SBIndex::SLAYUNDEAD_RATE_MOD] + itembonuses.SlayUndead[SBIndex::SLAYUNDEAD_RATE_MOD] + spellbonuses.SlayUndead[SBIndex::SLAYUNDEAD_RATE_MOD];
-		if (SlayRateBonus) {
-			float slayChance = static_cast<float>(SlayRateBonus) / 10000.0f;
-			if (zone->random.Roll(slayChance)) {
-				int SlayDmgBonus = std::max(
-				{aabonuses.SlayUndead[SBIndex::SLAYUNDEAD_DMG_MOD], itembonuses.SlayUndead[SBIndex::SLAYUNDEAD_DMG_MOD], spellbonuses.SlayUndead[SBIndex::SLAYUNDEAD_DMG_MOD] });
-				hit.damage_done = std::max(hit.damage_done, hit.base_damage) + 5;
-				hit.damage_done = (hit.damage_done * SlayDmgBonus) / 100;
+	// are we criting?
+	if (!RollMeleeCritCheck(defender, hit.skill)) { return; };
+	Log(Logs::General, Logs::Combat, "Crit Passed");
 
-				/* Female */
-				if (GetGender() == 1) {
-					entity_list.FilteredMessageCloseString(
-						this, /* Sender */
-						false, /* Skip Sender */
-						RuleI(Range, CriticalDamage),
-						Chat::MeleeCrit, /* Type: 301 */
-						FilterMeleeCrits, /* FilterType: 12 */
-						FEMALE_SLAYUNDEAD, /* MessageFormat: %1's holy blade cleanses her target!(%2) */
-						0,
-						GetCleanName(), /* Message1 */
-						itoa(hit.damage_done + hit.min_damage) /* Message2 */
-					);
-				}
-				/* Males and Neuter */
-				else {
-					entity_list.FilteredMessageCloseString(
-						this, /* Sender */
-						false, /* Skip Sender */
-						RuleI(Range, CriticalDamage),
-						Chat::MeleeCrit, /* Type: 301 */
-						FilterMeleeCrits, /* FilterType: 12 */
-						MALE_SLAYUNDEAD, /* MessageFormat: %1's holy blade cleanses his target!(%2)  */
-						0,
-						GetCleanName(), /* Message1 */
-						itoa(hit.damage_done + hit.min_damage) /* Message2 */
-					);
-				}
-				return;
-			}
-		}
+	int crit_mod = 170 + GetCritDmgMod(hit.skill);
+	if (crit_mod < 100) {
+		crit_mod = 100;
 	}
 
-	// 2: Try Melee Critical
+	// step 2: calculate damage
+	hit.damage_done = std::max(hit.damage_done, hit.base_damage) + 5;
+	int og_damage = hit.damage_done;
+	hit.damage_done = hit.damage_done * crit_mod / 100;
+
+	Log(Logs::Detail, Logs::Combat,
+	"Crit info: %d scaled from: %d", hit.damage_done, og_damage);
 	// a lot of good info: http://giline.versus.jp/shiden/damage_e.htm, http://giline.versus.jp/shiden/su.htm
 
-	// We either require an innate crit chance or some SPA 169 to crit
-	bool innate_crit = false;
-	int crit_chance = GetCriticalChanceBonus(hit.skill);
-	if ((GetClass() == WARRIOR || GetClass() == BERSERKER) && GetLevel() >= 12)
-		innate_crit = true;
-	else if (GetClass() == RANGER && GetLevel() >= 12 && hit.skill == EQ::skills::SkillArchery)
-		innate_crit = true;
-	else if (GetClass() == ROGUE && GetLevel() >= 12 && hit.skill == EQ::skills::SkillThrowing)
-		innate_crit = true;
-
-	// we have a chance to crit!
-	if (innate_crit || crit_chance) {
-		int difficulty = 0;
-		if (hit.skill == EQ::skills::SkillArchery)
-			difficulty = RuleI(Combat, ArcheryCritDifficulty);
-		else if (hit.skill == EQ::skills::SkillThrowing)
-			difficulty = RuleI(Combat, ThrowingCritDifficulty);
-		else
-			difficulty = RuleI(Combat, MeleeCritDifficulty);
-		int roll = zone->random.Int(1, difficulty);
-
-		int dex_bonus = GetDEX();
-		if (dex_bonus > 255)
-			dex_bonus = 255 + ((dex_bonus - 255) / 5);
-		dex_bonus += 45; // chances did not match live without a small boost
-
-						 // so if we have an innate crit we have a better chance, except for ber throwing
-		if (!innate_crit || (GetClass() == BERSERKER && hit.skill == EQ::skills::SkillThrowing))
-			dex_bonus = dex_bonus * 3 / 5;
-
-		if (crit_chance)
-			dex_bonus += dex_bonus * crit_chance / 100;
-
-		// check if we crited
-		if (roll < dex_bonus) {
-			// step 1: check for finishing blow
-			if (TryFinishingBlow(defender, hit.damage_done))
-				return;
-
-			// step 2: calculate damage
-			hit.damage_done = std::max(hit.damage_done, hit.base_damage) + 5;
-			int og_damage = hit.damage_done;
-			int crit_mod = 170 + GetCritDmgMod(hit.skill);
-			if (crit_mod < 100) {
-				crit_mod = 100;
-			}
-
-			hit.damage_done = hit.damage_done * crit_mod / 100;
-			LogCombat("Crit success roll [{}] dex chance [{}] og dmg [{}] crit_mod [{}] new dmg [{}]", roll, dex_bonus, og_damage, crit_mod, hit.damage_done);
-
-			// step 3: check deadly strike
-			if (GetClass() == ROGUE && hit.skill == EQ::skills::SkillThrowing) {
-				if (BehindMob(defender, GetX(), GetY())) {
-					int chance = GetLevel() * 12;
-					if (zone->random.Int(1, 1000) < chance) {
-						// step 3a: check assassinate
-						int assdmg = TryAssassinate(defender, hit.skill); // I don't think this is right
-						if (assdmg) {
-							hit.damage_done = assdmg;
-							return;
-						}
-						hit.damage_done = hit.damage_done * 200 / 100;
-
-						entity_list.FilteredMessageCloseString(
-							this, /* Sender */
-							false, /* Skip Sender */
-							RuleI(Range, CriticalDamage),
-							Chat::MeleeCrit, /* Type: 301 */
-							FilterMeleeCrits, /* FilterType: 12 */
-							DEADLY_STRIKE, /* MessageFormat: %1 scores a Deadly Strike!(%2) */
-							0,
-							GetCleanName(), /* Message1 */
-							itoa(hit.damage_done + hit.min_damage) /* Message2 */
-						);
-						return;
-					}
-				}
-			}
-
-			// step 4: check crips
-			// this SPA was reused on live ...
-			bool berserk = spellbonuses.BerserkSPA || itembonuses.BerserkSPA || aabonuses.BerserkSPA;
-			if (!berserk) {
-				if (zone->random.Roll(GetCrippBlowChance())) {
-					berserk = true;
-				} // TODO: Holyforge is suppose to have an innate extra undead chance? 1/5 which matches the SPA crip though ...
-			}
-
-			if (IsBerserk() || berserk) {
-				hit.damage_done += og_damage * 119 / 100;
-				LogCombat("Crip damage [{}]", hit.damage_done);
-
-				entity_list.FilteredMessageCloseString(
-					this, /* Sender */
-					false, /* Skip Sender */
-					RuleI(Range, CriticalDamage),
-					Chat::MeleeCrit, /* Type: 301 */
-					FilterMeleeCrits, /* FilterType: 12 */
-					CRIPPLING_BLOW, /* MessageFormat: %1 lands a Crippling Blow!(%2) */
-					0,
-					GetCleanName(), /* Message1 */
-					itoa(hit.damage_done + hit.min_damage) /* Message2 */
-				);
-
-				// Crippling blows also have a chance to stun
-				// Kayen: Crippling Blow would cause a chance to interrupt for npcs < 55, with a
-				// staggers message.
-				if (defender->GetLevel() <= 55 && !defender->GetSpecialAbility(UNSTUNABLE)) {
-					defender->Emote("staggers.");
-					defender->Stun(2000);
-				}
-				return;
-			}
-
-			/* Normal Critical hit message */
-			entity_list.FilteredMessageCloseString(
-				this, /* Sender */
-				false, /* Skip Sender */
-				RuleI(Range, CriticalDamage),
-				Chat::MeleeCrit, /* Type: 301 */
-				FilterMeleeCrits, /* FilterType: 12 */
-				CRITICAL_HIT, /* MessageFormat: %1 scores a critical hit! (%2) */
-				0,
-				GetCleanName(), /* Message1 */
-				itoa(hit.damage_done + hit.min_damage) /* Message2 */
-			);
+	Log(Logs::Detail, Logs::Combat, "is undead for slay %s", IsUndeadForSlay()?"true":"false");
+	// 1: Try Slay Undead
+	if (defender->IsUndeadForSlay())
+	{
+		Log(Logs::Detail, Logs::Combat, "Trying Undead slay");
+		float chance = GetUndeadSlayRate() / 100.0f;
+		if(zone->random.Roll(chance)) {
+			Log(Logs::Detail, Logs::Combat, "Slayundead success");
+			DoUndeadSlay(hit, crit_mod);
+			return;
 		}
 	}
+
+	// step 3: check deadly strike
+	if (GetClass() == ROGUE && hit.skill == EQ::skills::SkillThrowing) {
+		if (BehindMob(defender, GetX(), GetY())) {
+			int chance = GetLevel() * 12;
+			if (zone->random.Int(1, 1000) < chance) {
+				// step 3a: check assassinate
+				int assdmg = TryAssassinate(defender, hit.skill); // I don't think this is right
+				if (assdmg) {
+					hit.damage_done = assdmg;
+					return;
+				}
+				hit.damage_done = hit.damage_done * 200 / 100;
+
+				entity_list.FilteredMessageString(
+					this, /* Sender */
+					false, /* Skip Sender */
+					Chat::MeleeCrit, /* Type: 301 */
+					FilterMeleeCrits, /* FilterType: 12 */
+					DEADLY_STRIKE, /* MessageFormat: %1 scores a Deadly Strike!(%2) */
+					0,
+					GetCleanName(), /* Message1 */
+					itoa(hit.damage_done) /* Message2 */
+				);
+				return;
+			}
+		}
+	}
+
+	// step 4: check crips
+	// this SPA was reused on live ...
+	bool berserk = spellbonuses.BerserkSPA || itembonuses.BerserkSPA || aabonuses.BerserkSPA;
+	if (!berserk) {
+		if (zone->random.Roll(GetCrippBlowChance())) {
+			berserk = true;
+		}
+	}
+
+	if (IsBerserk() || berserk) {
+		hit.damage_done += og_damage * 119 / 100;
+		Log(Logs::Detail, Logs::Combat, "Crip damage %d", hit.damage_done);
+
+		entity_list.FilteredMessageString(
+			this, /* Sender */
+			false, /* Skip Sender */
+			Chat::MeleeCrit, /* Type: 301 */
+			FilterMeleeCrits, /* FilterType: 12 */
+			CRIPPLING_BLOW, /* MessageFormat: %1 lands a Crippling Blow!(%2) */
+			0,
+			GetCleanName(), /* Message1 */
+			itoa(hit.damage_done) /* Message2 */
+		);
+
+		// Crippling blows also have a chance to stun
+		// Kayen: Crippling Blow would cause a chance to interrupt for npcs < 55, with a
+		// staggers message.
+		if (defender->GetLevel() <= 55 && !defender->GetSpecialAbility(UNSTUNABLE)) {
+			defender->Emote("staggers.");
+			defender->Stun(2000);
+		}
+		return;
+	}
+
+	/* Normal Critical hit message */
+	entity_list.FilteredMessageString(
+		this, /* Sender */
+		false, /* Skip Sender */
+		Chat::MeleeCrit, /* Type: 301 */
+		FilterMeleeCrits, /* FilterType: 12 */
+		CRITICAL_HIT, /* MessageFormat: %1 scores a critical hit! (%2) */
+		GetCleanName(), /* Message1 */
+		itoa(hit.damage_done) /* Message2 */
+	);
 }
 
 bool Mob::TryFinishingBlow(Mob *defender, int64 &damage)
@@ -5092,8 +5174,9 @@ void Mob::ApplyMeleeDamageMods(uint16 skill, int64 &damage, Mob *defender, Extra
 		dmgbonusmod += opts->melee_damage_bonus_flat;
 
 	if (defender) {
-		if (defender->IsClient() && defender->GetClass() == WARRIOR)
+		if (defender->IsClient() && defender->GetClass() == WARRIOR) {
 			dmgbonusmod -= 5;
+		}
 		// 168 defensive
 		dmgbonusmod += (defender->spellbonuses.MeleeMitigationEffect +
 		                defender->itembonuses.MeleeMitigationEffect +
@@ -5250,6 +5333,250 @@ const DamageTable &Mob::GetDamageTable() const
 	return which[level - 50];
 }
 
+int Mob::GetMobFixedOffenseSkill()
+{
+	// Due to new code using a combination of Offense and Weapon skill to determine hit, depending on the class
+	// and weapon wielded by a mob, the hit rate of an equal level mob could vary between 15% and 60%, which made
+	// many mobs far too easy.  This particular call replaces the class based Offense Skill with a fixed value
+	// equal to that of a Warrior of appropriate Level if UseMobFixedOffenseSkill flag is TRUE.
+
+	int level = std::max(1,static_cast<int>(GetLevel()));
+
+	// Current tables are flat above Level 60
+	if (level > 60)
+		level = 60;
+
+	int FixedOffenseSkillTable[] = {
+			10, // 1
+			15,
+			20,
+			25,
+			30, // 5
+			35,
+			40,
+			45,
+			50,
+			55, // 10
+			60,
+			65,
+			70,
+			75,
+			80, // 15
+			85,
+			90,
+			95,
+			100,
+			105, // 20
+			110,
+			115,
+			120,
+			125,
+			130, // 25
+			135,
+			140,
+			145,
+			150,
+			155, // 30
+			160,
+			165,
+			170,
+			175,
+			180, // 35
+			185,
+			190,
+			195,
+			200,
+			205, // 40
+			210,
+			210,
+			210,
+			210,
+			210, // 45
+			210,
+			210,
+			210,
+			210,
+			210, // 50
+			215,
+			220,
+			225,
+			230,
+			235, // 55
+			240,
+			245,
+			250,
+			252,
+			252, // 60
+	};
+
+	return FixedOffenseSkillTable[level - 1];
+}
+
+int Mob::GetMobFixedWeaponSkill()
+{
+	// Due to new code using a combination of Offense and Weapon skill to determine hit, depending on the class
+	// and weapon wielded by a mob, the hit rate of an equal level mob could vary between 15% and 60%, which made
+	// many mobs far too easy.  This particular call replaces the weapon/class based Weapon Skill with a fixed value.
+	// Two tables exist, one equal to a Warrior of appropriate level, and one modified to make hit rate equal to the old code
+	// assuming the UseMobFixedOffenseSkill flag is set TRUE or the mob class is a Warrior (all the the bonus is in Weapon Skill).
+
+	int level = std::max(1,static_cast<int>(GetLevel()));
+
+	// Current tables are flat above Level 70
+	if (level > 70)
+		level = 70;
+
+	int FixedWeaponSkillTable[] = {
+			10, // 1
+			15,
+			20,
+			25,
+			30, // 5
+			35,
+			40,
+			45,
+			50,
+			55, // 10
+			60,
+			65,
+			70,
+			75,
+			80, // 15
+			85,
+			90,
+			95,
+			100,
+			105, // 20
+			110,
+			115,
+			120,
+			125,
+			130, // 25
+			135,
+			140,
+			145,
+			150,
+			155, // 30
+			160,
+			165,
+			170,
+			175,
+			180, // 35
+			185,
+			190,
+			195,
+			200,
+			200, // 40
+			200,
+			200,
+			200,
+			200,
+			200, // 45
+			200,
+			200,
+			200,
+			200,
+			200, // 50
+			205,
+			210,
+			215,
+			220,
+			225, // 55
+			230,
+			235,
+			240,
+			245,
+			250, // 60
+			250,
+			250,
+			250,
+			250,
+			250, // 65
+			255,
+			260,
+			265,
+			270,
+			275, // 70
+	};
+
+	int EnhancedFixedWeaponSkillTable[] = {
+			5, // 1
+			11,
+			18,
+			24,
+			30, // 5
+			37,
+			44,
+			49,
+			55,
+			62, // 10
+			68,
+			74,
+			80,
+			87,
+			94, // 15
+			99,
+			106,
+			112,
+			117,
+			124, // 20
+			131,
+			137,
+			143,
+			150,
+			156, // 25
+			163,
+			167,
+			174,
+			181,
+			188, // 30
+			193,
+			200,
+			206,
+			212,
+			219, // 35
+			224,
+			231,
+			237,
+			243,
+			250, // 40
+			257,
+			257,
+			258,
+			259,
+			260, // 45
+			260,
+			261,
+			263,
+			264,
+			264, // 50
+			270,
+			277,
+			283,
+			288,
+			295, // 55
+			302,
+			307,
+			314,
+			318,
+			319, // 60
+			326,
+			327,
+			328,
+			328,
+			329, // 65
+			330,
+			331,
+			332,
+			333,
+			334, // 70
+	};
+
+	auto &UsedTable = (RuleB(Combat, UseEnhancedMobFixedWeaponSkill)) ? EnhancedFixedWeaponSkillTable : FixedWeaponSkillTable;
+
+	return UsedTable[level - 1];
+}
+
 void Mob::ApplyDamageTable(DamageHitInfo &hit)
 {
 #ifdef LUA_EQEMU
@@ -5287,8 +5614,6 @@ void Mob::ApplyDamageTable(DamageHitInfo &hit)
 	int percent = std::min(100 + extrapercent, damage_table.max_extra);
 	hit.damage_done = (hit.damage_done * percent) / 100;
 
-	if (IsWarriorClass() && GetLevel() > 54)
-		hit.damage_done++;
 	Log(Logs::Detail, Logs::Attack, "Damage table applied %d (max %d)", percent, damage_table.max_extra);
 }
 
@@ -5681,33 +6006,39 @@ void Mob::CommonOutgoingHitSuccess(Mob* defender, DamageHitInfo &hit, ExtraAttac
 		int headshot = TryHeadShot(defender, hit.skill);
 		if (headshot > 0) {
 			hit.damage_done = headshot;
-		}
-		else if (GetClass() == RANGER && GetLevel() > 50) { // no double dmg on headshot
-			if ((defender->IsNPC() && !defender->IsMoving() && !defender->IsRooted()) || !RuleB(Combat, ArcheryBonusRequiresStationary)) {
+			return;
+		} else if (GetClass() == RANGER && GetLevel() > 50) { // no double dmg on headshot
+			// Double Damage Bonus should apply to Permarooted mobs
+			if (defender->IsNPC() && !defender->IsMoving() && !(defender->IsRooted() && !defender->permarooted)) {
 				hit.damage_done *= 2;
 				MessageString(Chat::MeleeCrit, BOW_DOUBLE_DAMAGE);
 			}
 		}
+
+		//Scale Factor for Archery Damage Tuning
+		hit.damage_done *= RuleR(Combat, ArcheryBaseDamageBonus);
 	}
 
 	int extra_mincap = 0;
 	int min_mod = hit.base_damage * GetMeleeMinDamageMod_SE(hit.skill) / 100;
 	if (hit.skill == EQ::skills::SkillBackstab) {
 		extra_mincap = GetLevel() < 7 ? 7 : GetLevel();
-		if (GetLevel() >= 60)
+		
+		if (GetLevel() >= 60) {
 			extra_mincap = GetLevel() * 2;
-		else if (GetLevel() > 50)
+		} else if (GetLevel() > 50) {
 			extra_mincap = GetLevel() * 3 / 2;
+		}
+
 		if (IsSpecialAttack(eSpecialAttacks::ChaoticStab)) {
 			hit.damage_done = extra_mincap;
-		}
-		else {
+		} else {
 			int ass = TryAssassinate(defender, hit.skill);
-			if (ass > 0)
+			if (ass > 0) {
 				hit.damage_done = ass;
+			}
 		}
-	}
-	else if (hit.skill == EQ::skills::SkillFrenzy && GetClass() == BERSERKER && GetLevel() > 50) {
+	} else if (hit.skill == EQ::skills::SkillFrenzy && GetClass() == BERSERKER && GetLevel() > 50) {
 		extra_mincap = 4 * GetLevel() / 5;
 	}
 
@@ -5718,13 +6049,15 @@ void Mob::CommonOutgoingHitSuccess(Mob* defender, DamageHitInfo &hit, ExtraAttac
 	hit.min_damage += GetSkillDmgAmt(hit.skill) + GetPositionalDmgAmt(defender);
 
 	// shielding mod2
-	if (defender->itembonuses.MeleeMitigation)
+	if (defender->itembonuses.MeleeMitigation) {
 		hit.min_damage -= hit.min_damage * defender->itembonuses.MeleeMitigation / 100;
+	}
 
 	ApplyMeleeDamageMods(hit.skill, hit.damage_done, defender, opts);
 	min_mod = std::max(min_mod, extra_mincap);
-	if (min_mod && hit.damage_done < min_mod) // SPA 186
+	if (min_mod && hit.damage_done < min_mod) { // SPA 186
 		hit.damage_done = min_mod;
+	}
 
 	TryCriticalHit(defender, hit, opts);
 
@@ -5758,17 +6091,21 @@ void Mob::CommonOutgoingHitSuccess(Mob* defender, DamageHitInfo &hit, ExtraAttac
 	}
 	else if (IsSpecialAttack(eSpecialAttacks::AERampage)) {
 		int mod = GetSpecialAbilityParam(SPECATK_AREA_RAMPAGE, 2);
-		if (mod > 0)
+		if (mod > 0) {
 			spec_mod = mod;
+		}
+
 		if ((IsPet() || IsTempPet()) && IsPetOwnerClient()) {
 			//SE_PC_Pet_AE_Rampage SPA 465 on pet, damage modifier
 			int spell_mod = spellbonuses.PC_Pet_AE_Rampage[SBIndex::PET_RAMPAGE_DMG_MOD] + itembonuses.PC_Pet_AE_Rampage[SBIndex::PET_RAMPAGE_DMG_MOD] + aabonuses.PC_Pet_AE_Rampage[SBIndex::PET_RAMPAGE_DMG_MOD];
-			if (spell_mod > spec_mod)
+			if (spell_mod > spec_mod) {
 				spec_mod = spell_mod;
+			}
 		}
 	}
-	if (spec_mod > 0)
+	if (spec_mod > 0) {
 		hit.damage_done = (hit.damage_done * spec_mod) / 100;
+	}
 
 	int pct_damage_reduction = defender->GetSkillDmgTaken(hit.skill, opts) + defender->GetPositionalDmgTaken(this);
 
@@ -6063,7 +6400,6 @@ void Client::DoAttackRounds(Mob *target, int hand, bool IsFromSpell)
 
 			// you can only triple from the main hand
 			if (hand == EQ::invslot::slotPrimary && CanThisClassTripleAttack()) {
-				CheckIncreaseSkill(EQ::skills::SkillTripleAttack, target, -10);
 				if (CheckTripleAttack()) {
 					Attack(target, hand, false, false, IsFromSpell);
 					auto flurrychance = aabonuses.FlurryChance + spellbonuses.FlurryChance +
