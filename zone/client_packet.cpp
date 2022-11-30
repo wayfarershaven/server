@@ -4151,33 +4151,17 @@ void Client::Handle_OP_CastSpell(const EQApplicationPacket *app)
 		uint16 spell_to_cast = 0;
 
 		if (castspell->spell_id == SPELL_LAY_ON_HANDS && GetClass() == PALADIN) {
-			if (!p_timers.Expired(&database, pTimerLayHands)) {
-				Message(Chat::Red, "Ability recovery time not yet met.");
-				InterruptSpell(castspell->spell_id);
-				return;
-			}
-			spell_to_cast = SPELL_LAY_ON_HANDS;
-			p_timers.Start(pTimerLayHands, LayOnHandsReuseTime);
+			// WFH we use the AA Version
+			Message(Chat::Red, "Ability requires an AA Hotkey - AA Window Default Hotkey 'V', located under the 'General' Tab");
+			InterruptSpell(castspell->spell_id);
+			return;
+		} else if ((castspell->spell_id == SPELL_HARM_TOUCH || castspell->spell_id == SPELL_HARM_TOUCH2) && GetClass() == SHADOWKNIGHT) {
+			// WFH we use the AA Version
+			Message(Chat::Red, "Ability requires an AA Hotkey - AA Window Default Hotkey 'V', located under the 'General' Tab");
+			InterruptSpell(castspell->spell_id);
+			return;
 		}
-		else if ((castspell->spell_id == SPELL_HARM_TOUCH
-			|| castspell->spell_id == SPELL_HARM_TOUCH2) && GetClass() == SHADOWKNIGHT) {
-			if (!p_timers.Expired(&database, pTimerHarmTouch)) {
-				Message(Chat::Red, "Ability recovery time not yet met.");
-				InterruptSpell(castspell->spell_id);
-				return;
-			}
-
-			// determine which version of HT we are casting based on level
-			if (GetLevel() < 40)
-				spell_to_cast = SPELL_HARM_TOUCH;
-			else
-				spell_to_cast = SPELL_HARM_TOUCH2;
-
-			p_timers.Start(pTimerHarmTouch, HarmTouchReuseTime);
-		}
-
-		if (spell_to_cast > 0)	// if we've matched LoH or HT, cast now
-			CastSpell(spell_to_cast, castspell->target_id, slot);
+		return;
 	}
 	return;
 }
