@@ -472,15 +472,17 @@ Mob *HateList::GetEntWithMostHateOnList(Mob *center, Mob *skip, bool skip_mezzed
 				return top_client_type_in_range ? top_client_type_in_range : nullptr;
 
 			return top_hate ? top_hate : nullptr;
-		}
-		else {
+		} else {
 			if (top_hate == nullptr && skipped_count > 0) {
-				return center->GetTarget() ? center->GetTarget() : nullptr;
+				if (center->GetTarget() && center->GetTarget()->GetHP() > 0) {
+					return center->GetTarget();
+				} else {
+					return nullptr;
+				}
 			}
 			return top_hate ? top_hate : nullptr;
 		}
-	}
-	else{
+	} else {
 		auto iterator = list.begin();
 		int skipped_count = 0;
 		while (iterator != list.end())
@@ -504,7 +506,11 @@ Mob *HateList::GetEntWithMostHateOnList(Mob *center, Mob *skip, bool skip_mezzed
 			++iterator;
 		}
 		if (top_hate == nullptr && skipped_count > 0) {
-			return center->GetTarget() ? center->GetTarget() : nullptr;
+			if (center->GetTarget() && center->GetTarget()->GetHP() > 0) {
+				return center->GetTarget();
+			} else {
+				return nullptr;
+			}
 		}
 		return top_hate ? top_hate : nullptr;
 	}
