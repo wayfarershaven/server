@@ -266,7 +266,7 @@ public:
 	inline bool SeeHide() const { return see_hide; }
 	inline bool SeeImprovedHide() const { return see_improved_hide; }
 	inline uint8 SeeInvisibleUndead() const { return see_invis_undead; }
-	inline uint8 SeeInvisible() const { return see_invis; }
+	uint8 SeeInvisible();
 
 	inline void SetInnateSeeInvisible(uint8 val) { innate_see_invis = val; }
 	inline void SetSeeInvisibleUndead(uint8 val) { see_invis_undead = val; }
