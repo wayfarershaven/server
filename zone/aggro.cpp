@@ -527,7 +527,8 @@ bool Mob::CheckWillAggro(Mob *mob) {
 	} else {
 		if (
 			(
-				GetINT() <= RuleI(Aggro, IntAggroThreshold) ||
+				( RuleB(Aggro, UndeadAlwaysAggro) && GetBodyType() == BT_Undead)
+				||( GetINT() <= RuleI(Aggro, IntAggroThreshold) ) ||
 				AlwaysAggro() ||
 				(
 					mob->IsClient() &&
