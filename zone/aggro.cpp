@@ -495,66 +495,37 @@ bool Mob::CheckWillAggro(Mob *mob) {
 		heroic_cha_mod = THREATENINGLY_AGGRO_CHANCE;
 	}
 
-	if (
-		RuleB(Aggro, UseLevelAggro) &&
-		(
-			GetLevel() >= RuleI(Aggro, MinAggroLevel) ||
-			GetBodyType() == BT_Undead ||
-			AlwaysAggro() ||
-			(
-				mob->IsClient() &&
-				mob->CastToClient()->IsSitting()
-			) ||
-			mob->GetLevelCon(GetLevel()) != CON_GRAY
-		) &&
-		(
-			faction_value == FACTION_SCOWLS ||
-			(
-				mob->GetPrimaryFaction() != GetPrimaryFaction() &&
-				mob->GetPrimaryFaction() == -4 &&
-				!GetOwner()
-			) ||
-			(
-				faction_value == FACTION_THREATENINGLY &&
-				zone->random.Roll(THREATENINGLY_AGGRO_CHANCE - heroic_cha_mod)
-			)
-		)
-	) {
-		if(CheckLosFN(mob)) {
-			LogAggro("Check aggro for [{}] target [{}]", GetName(), mob->GetName());
-			return mod_will_aggro(mob, this);
-		}
-	} else {
-		if (
-			(
-				( RuleB(Aggro, UndeadAlwaysAggro) && GetBodyType() == BT_Undead)
-				||( GetINT() <= RuleI(Aggro, IntAggroThreshold) ) ||
-				AlwaysAggro() ||
-				(
-					mob->IsClient() &&
-					mob->CastToClient()->IsSitting()
-				) ||
-				mob->GetLevelCon(GetLevel()) != CON_GRAY
-			) &&
-			(
-				faction_value == FACTION_SCOWLS	||
-				(
-					mob->GetPrimaryFaction() != GetPrimaryFaction() &&
-					mob->GetPrimaryFaction() == -4 &&
-					!GetOwner()
-				) ||
-				(
-					faction_value == FACTION_THREATENINGLY
-					&& zone->random.Roll(THREATENINGLY_AGGRO_CHANCE - heroic_cha_mod)
-				)
-			)
-		) {
-			if(CheckLosFN(mob)) {
-				LogAggro("Check aggro for [{}] target [{}]", GetName(), mob->GetName());
-				return mod_will_aggro(mob, this);
-			}
-		}
-	}
+	if (RuleB(Aggro, UseLevelAggro) &&
+        (
+                //old InZone check taken care of above by !mob->CastToClient()->Connected()
+                (
+                        (mob->IsClient() && mob->CastToClient()->IsSitting())
+                        || (mob->GetLevelCon(GetLevel()) != CON_GRAY)
+                        || ( GetLevel() >= RuleI(Aggro, MinAggroLevel))
+                        || ( RuleB(Aggro, UndeadAlwaysAggro) && GetBodyType() == BT_Undead)
+                        || ( GetINT() <= RuleI(Aggro, IntAggroThreshold) )
+                )
+                &&
+                (
+                        (
+                                faction_value == FACTION_SCOWLS
+                                ||
+                                (mob->GetPrimaryFaction() != GetPrimaryFaction() && mob->GetPrimaryFaction() == -4 && GetOwner() == nullptr)
+                                ||
+                                (
+                                        faction_value == FACTION_THREATENINGLY
+                                        && zone->random.Roll(THREATENINGLY_AGGRO_CHANCE - heroic_cha_mod)
+                                )
+                        )
+                )
+        ))
+    {
+        //FatherNiwtit: make sure we can see them. last since it is very expensive
+        if (CheckLosFN(mob)) {
+            LogAggro("Check aggro for [{}] target [{}]", GetName(), mob->GetName());
+            return (mod_will_aggro(mob, this));
+        }
+    }
 
 	LogAggro("Is In zone?:[{}]\n", mob->InZone());
 	LogAggro("Dist^2: [{}]\n", distance_squared);
