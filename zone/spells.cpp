@@ -3177,17 +3177,17 @@ int Mob::CheckStackConflict(uint16 spellid1, int caster_level1, uint16 spellid2,
 		sp2_value = CalcSpellEffectValue(spellid2, i, caster_level2);
 
 		// Spells like SoW won't stack if a snare effect is already in place.
-		if (effect2 == SE_MovementSpeed) {
-			if (effect1 == SE_MovementSpeed && sp1_value < 0 && sp2_value > 0) {
+		if (effect2 == SE_MovementSpeed && effect1 == SE_MovementSpeed) {
+			if (sp1_value < 0 && sp2_value > 0) {
 				return -1;
+			} else if (sp2_value < 0 && sp1_value > 0) {
+				continue;
 			}
-			continue;
 		}
 
 		// some spells are hard to compare just on value. attack speed spells
 		// have a value that's a percentage for instance
-		if
-		(
+		if (
 			effect1 == SE_AttackSpeed ||
 			effect1 == SE_AttackSpeed2
 		)
