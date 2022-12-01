@@ -2951,7 +2951,7 @@ int Mob::CheckStackConflict(uint16 spellid1, int caster_level1, uint16 spellid2,
 	if (IsResurrectionEffects(spellid1)) {
 		return 0;
 	}
-	
+
 	if (spellbonuses.CompleteHealBuffBlocker && IsEffectInSpell(spellid2, SE_CompleteHeal)) {
 		Message(0, "You must wait before you can be affected by this spell again.");
 		return -1;
@@ -4815,31 +4815,51 @@ bool Mob::IsImmuneToSpell(uint16 spell_id, Mob *caster)
 
 int Mob::GetResist(uint8 resist_type)
 {
-	switch(resist_type)
-	{
-	case RESIST_FIRE:
-		return GetFR();
-	case RESIST_COLD:
-		return GetCR();
-	case RESIST_MAGIC:
-		return GetMR();
-	case RESIST_DISEASE:
-		return GetDR();
-	case RESIST_POISON:
-		return GetPR();
-	case RESIST_CORRUPTION:
-		return GetCorrup();
-	case RESIST_PRISMATIC:
-		return (GetFR() + GetCR() + GetMR() + GetDR() + GetPR()) / 5;
-	case RESIST_CHROMATIC:
-		return std::min({GetFR(), GetCR(), GetMR(), GetDR(), GetPR()});
-	case RESIST_PHYSICAL:
-		if (IsNPC())
-			return GetPhR();
-		else
+	int target_resist;
+	switch(resist_type) {
+		case RESIST_FIRE:
+			target_resist = GetFR();
+			if (IsNPC()) {
+				target_resist += RuleI(Spells, NPCResistModFire);
+			}
+			return target_resist;
+		case RESIST_COLD:
+			target_resist = GetCR();
+			if (IsNPC()) {
+				target_resist += RuleI(Spells, NPCResistModCold);
+			}
+			return target_resist;
+		case RESIST_MAGIC:
+			target_resist = GetMR();
+			if (IsNPC()) {
+				target_resist += RuleI(Spells, NPCResistModMagic);
+			}
+			return target_resist;
+		case RESIST_DISEASE:
+			target_resist = GetDR();
+			if (IsNPC()) {
+				target_resist += RuleI(Spells, NPCResistModDisease);
+			}
+			return target_resist;
+		case RESIST_POISON:
+			target_resist = GetPR();
+			if (IsNPC()) {
+				target_resist += RuleI(Spells, NPCResistModPoison);
+			}
+			return target_resist;
+		case RESIST_CORRUPTION:
+			return GetCorrup();
+		case RESIST_PRISMATIC:
+			return (GetFR() + GetCR() + GetMR() + GetDR() + GetPR()) / 5;
+		case RESIST_CHROMATIC:
+			return std::min({GetFR(), GetCR(), GetMR(), GetDR(), GetPR()});
+		case RESIST_PHYSICAL:
+			if (IsNPC())
+				return GetPhR();
+			else
+				return 0;
+		default:
 			return 0;
-	default:
-		return 0;
 	}
 }
 
@@ -4854,7 +4874,7 @@ int Mob::GetResist(uint8 resist_type)
 // pvp_resist_cap
 float Mob::ResistSpell(uint8 resist_type, uint16 spell_id, Mob *caster, bool use_resist_override, int resist_override, bool CharismaCheck, bool CharmTick, bool IsRoot, int level_override)
 {
-	// Pets use owner's resistances
+	// Pets use owner's resistances if the pet isn't a charmed pet
 	if (IsPet() && !IsCharmed()) {
 		return GetOwner()->ResistSpell(resist_type, spell_id, caster, use_resist_override, resist_override, CharismaCheck, CharmTick, IsRoot, level_override);
 	}
@@ -5079,6 +5099,10 @@ float Mob::ResistSpell(uint8 resist_type, uint16 spell_id, Mob *caster, bool use
 		if (resist_chance < static_cast<int>(min_rootbreakchance)) {
 			resist_chance = min_rootbreakchance;
 		}
+	}
+
+	if (IsNPC()) {
+		resist_chance += RuleI(Spells, NPCResistMod);
 	}
 
 	//Finally our roll
