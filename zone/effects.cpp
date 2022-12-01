@@ -1049,6 +1049,10 @@ void EntityList::AESpell(
 			continue;
 		}
 
+		if (!current_mob->IsTargetable()) {
+			continue;
+		}
+		
 		/**
 		 * Check PC / NPC
 		 * 1 = PC
