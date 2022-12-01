@@ -4706,7 +4706,7 @@ void Client::Handle_OP_ClientUpdate(const EQApplicationPacket *app) {
 	}
 
 	if (zone->watermap) {
-		if (zone->watermap->InLiquid(glm::vec3(m_Position))) {
+		if (zone->watermap->InLiquid(glm::vec3(m_Position)) && IsMoving()) {
 			CheckIncreaseSkill(EQ::skills::SkillSwimming, nullptr, -17);
 
 			// Dismount horses when entering water
@@ -5850,6 +5850,12 @@ void Client::Handle_OP_EnvDamage(const EQApplicationPacket *app)
 	}
 
 	if (ed->dmgtype == EQ::constants::EnvironmentalDamage::Falling) {
+		if (zone->HasWaterMap()) {
+			auto targetPosition = glm::vec3(this->GetX(), this->GetY(), this->GetZ());
+			if (!zone->watermap->InLiquid(targetPosition)) {
+				return;
+			}
+		}
 		uint32 mod = spellbonuses.ReduceFallDamage + itembonuses.ReduceFallDamage + aabonuses.ReduceFallDamage;
 		damage -= damage * mod / 100;
 	}
