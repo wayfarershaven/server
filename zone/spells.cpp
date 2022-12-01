@@ -6126,8 +6126,10 @@ bool Mob::UseBardSpellLogic(uint16 spell_id, int slot)
 
 int Mob::GetCasterLevel(uint16 spell_id) {
 	int level = GetLevel();
-	// AA bonuses left in for Jamfest, otherwise items or spells shouldn't make spells more effective.
-	level += aabonuses.effective_casting_level;
+	// Bards receive effective casting level increases to resists/effect. They don't receive benefit from spells like intellectual superiority, however.
+	if (GetClass() == BARD) {
+		level += itembonuses.effective_casting_level + aabonuses.effective_casting_level;
+	}
 	LogSpells("Determined effective casting level [{}]+[{}]+[{}]=[{}]", GetLevel(), spellbonuses.effective_casting_level, itembonuses.effective_casting_level, level);
 	return std::max(1, level);
 }
