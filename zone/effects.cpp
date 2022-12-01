@@ -1049,7 +1049,7 @@ void EntityList::AESpell(
 			continue;
 		}
 
-		if (!current_mob->IsTargetable()) {
+		if (!current_mob->IsTargetable() || current_mob->isHorse()) {
 			continue;
 		}
 		
