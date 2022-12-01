@@ -629,11 +629,11 @@ bool Corpse::Save() {
 
 	/* Create New Corpse*/
 	if (corpse_db_id == 0) {
-		corpse_db_id = database.SaveCharacterCorpse(char_id, corpse_name, zone->GetZoneID(), zone->GetInstanceID(), dbpc, m_Position, consented_guild_id);
+		corpse_db_id = database.SaveCharacterCorpse(char_id, corpse_name, zone->GetZoneID(), zone->GetInstanceID(), dbpc, m_Position, consented_guild_id, RuleB(Character, UsePlayerCorpseBackups));
 	}
 	/* Update Corpse Data */
 	else{
-		corpse_db_id = database.UpdateCharacterCorpse(corpse_db_id, char_id, corpse_name, zone->GetZoneID(), zone->GetInstanceID(), dbpc, m_Position, consented_guild_id, IsRezzed());
+		corpse_db_id = database.UpdateCharacterCorpse(corpse_db_id, char_id, corpse_name, zone->GetZoneID(), zone->GetInstanceID(), dbpc, m_Position, consented_guild_id, IsRezzed(), RuleB(Character, UsePlayerCorpseBackups));
 	}
 
 	safe_delete_array(dbpc);
@@ -642,16 +642,21 @@ bool Corpse::Save() {
 }
 
 void Corpse::Delete() {
-	if (IsPlayerCorpse() && corpse_db_id != 0)
+	if (IsPlayerCorpse() && corpse_db_id != 0) {
 		database.DeleteCharacterCorpse(corpse_db_id);
+	}
+	Save();
 
 	corpse_db_id = 0;
 	player_corpse_depop = true;
 }
 
 void Corpse::Bury() {
-	if (IsPlayerCorpse() && corpse_db_id != 0)
+	if (IsPlayerCorpse() && corpse_db_id != 0) {
 		database.BuryCharacterCorpse(corpse_db_id);
+	}
+	Save();
+
 	corpse_db_id = 0;
 	player_corpse_depop = true;
 }
