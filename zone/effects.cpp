@@ -832,8 +832,9 @@ bool Client::UseDiscipline(uint32 spell_id, uint32 target) {
 		// and yes, the focus effect can be used to increase the durations (spell 38944)
 		if (focus > reduced_recast) {
 			reduced_recast = 0;
-			if (GetPTimers().Enabled((uint32)DiscTimer))
-				GetPTimers().Clear(&database, (uint32)DiscTimer);
+			if (GetPTimers().Enabled((uint32)DiscTimer)) {
+				GetPTimers().Clear(&database, (uint32) DiscTimer);
+			}
 		}
 		else {
 			reduced_recast -= focus;
