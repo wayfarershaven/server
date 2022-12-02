@@ -2899,8 +2899,7 @@ bool Client::BindWound(Mob *bindmob, bool start, bool fail)
 					; // Binding self
 				}
 			}
-		} else if (bindwound_timer.Check()) // Did the timer finish?
-		{
+		} else if (bindwound_timer.Check()) { // Did the timer finish?
 			// finish bind
 			// disable complete timer
 			bindwound_timer.Disable();
@@ -2910,9 +2909,7 @@ bool Client::BindWound(Mob *bindmob, bool start, bool fail)
 				bind_out->type = 5; // not in zone
 				QueuePacket(outapp);
 				bind_out->type = 0;
-			}
-
-			else {
+			} else {
 				if (!GetFeigned() && (DistanceSquared(bindmob->GetPosition(), m_Position) <= 400)) {
 					// send bindmob bind done
 					if (!bindmob->IsAIControlled() && bindmob != this) {
@@ -2950,8 +2947,7 @@ bool Client::BindWound(Mob *bindmob, bool start, bool fail)
 
 							if (GetSkill(EQ::skills::SkillBindWound) > 200) {
 								bindhps += GetSkill(EQ::skills::SkillBindWound) * 4 / 10;
-							}
-							else if (GetSkill(EQ::skills::SkillBindWound) >= 10) {
+							} else if (GetSkill(EQ::skills::SkillBindWound) >= 10) {
 								bindhps += GetSkill(EQ::skills::SkillBindWound) / 4;
 							}
 
@@ -2967,87 +2963,93 @@ bool Client::BindWound(Mob *bindmob, bool start, bool fail)
 							// cap it at that value. Dont know if live does it this way
 							// but it makes sense to me.
 							int chp = bindmob->GetHP() + bindhps;
-							if (chp > max_hp)
+							if (chp > max_hp) {
 								chp = max_hp;
+							}
 
 							bindmob->SetHP(chp);
 							bindmob->SendHPUpdate();
-						}
-						else {
+						} else {
 							// I dont have the real, live
 							Message(Chat::Yellow, "You cannot bind wounds above %d%% hitpoints.",
 								max_percent);
-							if (bindmob != this && bindmob->IsClient())
+							if (bindmob != this && bindmob->IsClient()) {
 								bindmob->CastToClient()->Message(
 								15,
 								"You cannot have your wounds bound above %d%% hitpoints.",
 								max_percent);
+							}
 							// Too many hp message goes here.
 						}
-					}
-					else {
+					} else {
 						int percent_base = 50;
 						if (GetRawSkill(EQ::skills::SkillBindWound) > 200) {
-							if ((GetClass() == MONK) || (GetClass() == BEASTLORD))
+							if ((GetClass() == MONK) || (GetClass() == BEASTLORD)) {
 								percent_base = 70;
-							else if ((GetLevel() > 50) && ((GetClass() == WARRIOR) || (GetClass() == ROGUE) || (GetClass() == CLERIC)))
+							} else if ((GetLevel() > 50) && ((GetClass() == WARRIOR) || (GetClass() == ROGUE) || (GetClass() == CLERIC))) {
 								percent_base = 70;
+							}
 						}
 
-						int percent_bonus = 0;
-						if (percent_base >= 70)
-							percent_bonus = spellbonuses.MaxBindWound + itembonuses.MaxBindWound + aabonuses.MaxBindWound;
+						int percent_bonus = spellbonuses.MaxBindWound + itembonuses.MaxBindWound + aabonuses.MaxBindWound;
 
 						int max_percent = percent_base + percent_bonus;
-						if (max_percent < 0)
+						if (max_percent < 0) {
 							max_percent = 0;
-						if (max_percent > 100)
+						}
+						if (max_percent > 100) {
 							max_percent = 100;
+						}
 
 						max_percent = mod_bindwound_percent(max_percent, bindmob);
 
 						int max_hp = (bindmob->GetMaxHP() * max_percent) / 100;
-						if (max_hp > bindmob->GetMaxHP())
+						if (max_hp > bindmob->GetMaxHP()) {
 							max_hp = bindmob->GetMaxHP();
+						}
 
 						if (bindmob->GetHP() < bindmob->GetMaxHP() && bindmob->GetHP() < max_hp) {
 							int bindhps = 3; // base bind hp
-							if (percent_base >= 70)
+							if (percent_base >= 70) {
 								bindhps = (GetSkill(EQ::skills::SkillBindWound) * 4) / 10; // 8:5 skill-to-hp ratio
-							else if (GetSkill(EQ::skills::SkillBindWound) >= 12)
+							} else if (GetSkill(EQ::skills::SkillBindWound) >= 12) {
 								bindhps = GetSkill(EQ::skills::SkillBindWound) / 4; // 4:1 skill-to-hp ratio
+							}
 
 							int bonus_hp_percent = 0;
-							if (percent_base >= 70)
+							if (percent_base >= 70) {
 								bonus_hp_percent = spellbonuses.BindWound + itembonuses.BindWound + aabonuses.BindWound;
+							}
 
 							bindhps += (bindhps * bonus_hp_percent) / 100;
 
-							if (bindhps < 3)
+							if (bindhps < 3) {
 								bindhps = 3;
+							}
 
 							bindhps = mod_bindwound_hp(bindhps, bindmob);
 
 							bindhps += bindmob->GetHP();
-							if (bindhps > max_hp)
+							if (bindhps > max_hp) {
 								bindhps = max_hp;
+							}
 
 							bindmob->SetHP(bindhps);
 							bindmob->SendHPUpdate();
-						}
-						else {
+						} else {
 							Message(Chat::Yellow, "You cannot bind wounds above %d%% hitpoints", max_percent);
-							if (bindmob != this && bindmob->IsClient())
+							if (bindmob != this && bindmob->IsClient()) {
 								bindmob->CastToClient()->Message(Chat::Yellow, "You cannot have your wounds bound above %d%% hitpoints", max_percent);
+							}
 						}
 					}
-				}
-				else {
+				} else {
 					// Send client bind failed
-					if (bindmob != this)
+					if (bindmob != this) {
 						bind_out->type = 6; // They moved
-					else
+					} else {
 						bind_out->type = 7; // Bandager moved
+					}
 
 					QueuePacket(outapp);
 					bind_out->type = 0;
@@ -3069,8 +3071,7 @@ bool Client::BindWound(Mob *bindmob, bool start, bool fail)
 	return true;
 }
 
-void Client::SetMaterial(int16 in_slot, uint32 item_id)
-{
+void Client::SetMaterial(int16 in_slot, uint32 item_id) {
 	const EQ::ItemData *item = database.GetItem(item_id);
 	if (item && item->IsClassCommon()) {
 		uint8 matslot = EQ::InventoryProfile::CalcMaterialFromSlot(in_slot);
