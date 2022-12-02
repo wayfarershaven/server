@@ -275,8 +275,8 @@ void Database::LogPlayerNPCKill(QSPlayerLogNPCKill_Struct *QS, uint32 members)
 	std::string query   = StringFormat(
 		"INSERT INTO `qs_player_npc_kill_record` "
 		"SET `npc_id` = '%i', `type` = '%i', "
-		"`zone_id` = '%i', `time` = NOW()",
-		QS->s1.NPCID, QS->s1.Type, QS->s1.ZoneID
+		"`zone_id` = '%i', `instance_id` = '%i', `time` = NOW()",
+		QS->s1.NPCID, QS->s1.Type, QS->s1.ZoneID, QS->s1.InstanceID
 	);
 	auto        results = QueryDatabase(query);
 	if (!results.Success()) {
