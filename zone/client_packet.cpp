@@ -14912,6 +14912,7 @@ void Client::Handle_OP_Translocate(const EQApplicationPacket *app)
 
 			////Was sending the packet back to initiate client zone...
 			////but that could be abusable, so lets go through proper channels
+			entity_list.ClearAggro(this, true);
 			MovePC(
 				PendingTranslocateData.zone_id,
 				PendingTranslocateData.instance_id,
