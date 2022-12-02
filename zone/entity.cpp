@@ -1498,6 +1498,17 @@ void EntityList::ReplaceWithTarget(Mob *pOldMob, Mob *pNewTarget)
 	}
 }
 
+void EntityList::DepopTargetLockedPets(Mob *mob) {
+	auto iterator = mob->GetHateList().begin();
+	while (iterator != mob->GetHateList().end()) {
+		Mob* entity = (*iterator)->entity_on_hatelist;
+		if (entity != nullptr && entity->IsNPC() && entity->CastToNPC()->IsPet() && entity->CastToNPC()->GetPetType() == petTargetLock) {
+			entity->Depop();
+		}
+		++iterator;
+	}
+}
+
 void EntityList::RemoveFromTargets(Mob *mob, bool RemoveFromXTargets)
 {
 	auto it = mob_list.begin();
@@ -1505,22 +1516,20 @@ void EntityList::RemoveFromTargets(Mob *mob, bool RemoveFromXTargets)
 		Mob *m = it->second;
 		++it;
 
-		if (!m)
+		if (!m) {
 			continue;
+		}
 
 		if (RemoveFromXTargets && mob) {
-			if (m->IsClient() && (mob->CheckAggro(m) || mob->IsOnFeignMemory(m)))
+			if (m->IsClient() && (mob->CheckAggro(m) || mob->IsOnFeignMemory(m))) {
 				m->CastToClient()->RemoveXTarget(mob, false);
-			// FadingMemories calls this function passing the client.
-			else if (mob->IsClient() && (m->CheckAggro(mob) || m->IsOnFeignMemory(mob)))
+				// FadingMemories calls this function passing the client.
+			} else if (mob->IsClient() && (m->CheckAggro(mob) || m->IsOnFeignMemory(mob))) {
 				mob->CastToClient()->RemoveXTarget(m, false);
+			}
 		}
 
 		m->RemoveFromHateList(mob);
-
-		if (m->IsPet() && m->GetPetType() == petTargetLock) {
-			m->Depop();
-		}
 	}
 }
 
@@ -1533,17 +1542,20 @@ void EntityList::RemoveFromTargetsFadingMemories(Mob *spell_target, bool RemoveF
 			continue;
 		}
 
-		if (max_level && mob->GetLevel() > max_level)
+		if (max_level && mob->GetLevel() > max_level) {
 			continue;
+		}
 
-		if (mob->GetSpecialAbility(IMMUNE_FADING_MEMORIES))
+		if (mob->GetSpecialAbility(IMMUNE_FADING_MEMORIES)) {
 			continue;
+		}
 
 		if (RemoveFromXTargets && spell_target) {
-			if (mob->IsClient() && (spell_target->CheckAggro(mob) || spell_target->IsOnFeignMemory(mob)))
+			if (mob->IsClient() && (spell_target->CheckAggro(mob) || spell_target->IsOnFeignMemory(mob))) {
 				mob->CastToClient()->RemoveXTarget(spell_target, false);
-			else if (spell_target->IsClient() && (mob->CheckAggro(spell_target) || mob->IsOnFeignMemory(spell_target)))
+			} else if (spell_target->IsClient() && (mob->CheckAggro(spell_target) || mob->IsOnFeignMemory(spell_target))) {
 				spell_target->CastToClient()->RemoveXTarget(mob, false);
+			}
 		}
 
 		mob->RemoveFromHateList(spell_target);

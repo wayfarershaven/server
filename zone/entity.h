@@ -415,6 +415,7 @@ public:
 	void	GroupMessage(uint32 gid, const char *from, const char *message);
 	void	ExpeditionWarning(uint32 minutes_left);
 
+	void	DepopTargetLockedPets(Mob *mob);
 	void	RemoveFromTargets(Mob* mob, bool RemoveFromXTargets = false);
 	void	RemoveFromTargetsFadingMemories(Mob* spell_target, bool RemoveFromXTargets = false, uint32 max_level = 0);
 	void	RemoveFromXTargets(Mob* mob);
