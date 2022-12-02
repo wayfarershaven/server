@@ -2920,7 +2920,7 @@ void Mob::AddToHateList(Mob* other, int64 hate /*= 0*/, int64 damage /*= 0*/, bo
 			hate = ((hate * (hatemod)) / 100);
 		} else {
 			hate += RuleI(Aggro, InitialAggroBonus); // Bonus Initial Aggro
-			if (other->IsCharmed()) { // charmed mobs get double initial aggro
+			if (other->IsNPC() && other->IsPet() && other->IsPetOwnerClient() && other->IsCharmed()) { // charmed mobs get double initial aggro
 				hate += RuleI(Aggro, InitialAggroBonus);
 			}
 		}
