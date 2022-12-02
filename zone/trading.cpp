@@ -1799,6 +1799,8 @@ void Client::SendBazaarResults(
 	uint32 item_slot,
 	uint32 item_type,
 	char item_name[64],
+	uint32 MinLevel,
+	uint32 MaxLevel,
 	uint32 min_price,
 	uint32 max_price
 )
@@ -1822,6 +1824,12 @@ void Client::SendBazaarResults(
 		search_criteria.append(StringFormat(" AND trader.item_cost <= %i", max_price));
 	}
 
+	if (MinLevel > 1) {
+		search_criteria.append(StringFormat(
+				" AND (items.reqlevel != 0 OR items.reclevel != 0) AND (items.reqlevel <= %i OR items.reclevel <= %i)",
+				MinLevel, MinLevel));
+	}
+	
 	if (strlen(item_name) > 0) {
 		char *safeName = RemoveApostrophes(item_name);
 		search_criteria.append(StringFormat(" AND items.name LIKE '%%%s%%'", safeName));
