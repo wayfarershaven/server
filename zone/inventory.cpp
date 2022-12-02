@@ -902,12 +902,12 @@ void Client::DropItem(int16 slot_id, bool recurse)
 	object->StartDecay();
 
 	LogInventory("Item drop handled ut assolet");
-	DropItemQS(inst, false);
+	DropItemQS(inst, false, object->GetID());
 
 	safe_delete(inst);
 }
 
-void Client::DropItemQS(EQ::ItemInstance* inst, bool pickup) {
+void Client::DropItemQS(EQ::ItemInstance* inst, bool pickup, uint32 ground_id) {
 	if (RuleB(QueryServ, PlayerDropItems)) {
 		QSPlayerDropItem_Struct qs_audit;
 		std::list<void*> event_details;
@@ -915,6 +915,7 @@ void Client::DropItemQS(EQ::ItemInstance* inst, bool pickup) {
 
 		qs_audit.char_id = character_id;
 		qs_audit.pickup = pickup;
+		qs_audit.ground_id = ground_id;
 		qs_audit.zone_id = GetZoneID();
 		qs_audit.x = (int) GetX();
 		qs_audit.y = (int) GetY();
