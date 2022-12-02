@@ -3625,7 +3625,7 @@ void NPC::AIYellForHelp(Mob *sender, Mob *attacker)
 					//attacking someone on same faction, or a friend
 					//Father Nitwit: make sure we can see them.
 					if (mob->CheckLosFN(sender)) {
-						mob->AddToHateList(attacker, 25, 0, false);
+						mob->AddToHateList(attacker, 0, 0, false);
 						sender->AddAssistCap();
 
 						LogAIYellForHelpDetail(

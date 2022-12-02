@@ -998,7 +998,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 							if(caster->IsClient() && caster != this) {
 								caster->CastToClient()->QueuePacket(message_packet);
 							}
-							
+
 							CastToClient()->SetBindPoint(spells[spell_id].base_value[i] - 1);
 							Save();
 							safe_delete(action_packet);
@@ -3795,11 +3795,12 @@ void Mob::DoBuffTic(const Buffs_Struct &buff, int slot, Mob *caster)
 
 				if (IsDetrimentalSpell(buff.spellid)) {
 					if (caster->IsClient()) {
-						if (!caster->CastToClient()->GetFeigned())
+						if (!caster->CastToClient()->GetFeigned()) {
 							AddToHateList(caster, -effect_value);
-					} else if (!IsClient()) // Allow NPC's to generate hate if casted on other
-								// NPC's.
+						}
+					} else if (!IsClient()) { // Allow NPC's to generate hate if casted on other NPC's
 						AddToHateList(caster, -effect_value);
+					}
 				}
 
 				effect_value = caster->GetActDoTDamage(buff.spellid, effect_value, this);
@@ -3900,6 +3901,11 @@ void Mob::DoBuffTic(const Buffs_Struct &buff, int slot, Mob *caster)
 		case SE_Charm: {
 			if (!caster || !PassCharismaCheck(caster, buff.spellid)) {
 				BuffFadeByEffect(SE_Charm);
+				// Remove from hate list of any NPC's hate list and remove all NPCs this hate list
+				if (IsNPC()) {
+					entity_list.RemoveFromHateLists(this);
+					WipeHateList(true);
+				}
 			}
 
 			break;

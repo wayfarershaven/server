@@ -3797,7 +3797,7 @@ bool Mob::RemoveFromHateList(Mob* mob)
 			}
 		}
 	}
-	
+
 	if(GetTarget() == mob) {
 		if (IsPet() && GetPetTargetLockID()) {
 			SetPetTargetLockID(0);
@@ -3808,16 +3808,14 @@ bool Mob::RemoveFromHateList(Mob* mob)
 	return bFound;
 }
 
-void Mob::WipeHateList()
-{
-	if(IsEngaged())
-	{
-		hate_list.WipeHateList();
-		AI_Event_NoLongerEngaged();
-	}
-	else
-	{
-		hate_list.WipeHateList();
+void Mob::WipeHateList(bool npc_only) {
+	if (IsEngaged()) {
+		hate_list.WipeHateList(npc_only);
+		if (hate_list.IsHateListEmpty()) {
+			AI_Event_NoLongerEngaged();
+		}
+	} else {
+		hate_list.WipeHateList(npc_only);
 	}
 }
 
