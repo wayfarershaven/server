@@ -518,7 +518,7 @@ int32 Mob::GetActSpellDuration(uint16 spell_id, int32 duration)
 	if (IsDiscipline(spell_id)) { // focuses don't affect discipline duration
 		return duration;
 	}
-	
+
 	int increase = 100;
 	increase += GetFocusEffect(focusSpellDuration, spell_id);
 	int tic_inc = 0;
@@ -1053,7 +1053,7 @@ void EntityList::AESpell(
 			continue;
 		}
 
-		if (!current_mob->IsTargetable() || current_mob->IsHorse()) {
+		if (!current_mob->IsTargetable()) {
 			continue;
 		}
 		
