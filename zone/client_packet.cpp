@@ -15047,22 +15047,18 @@ void Client::Handle_OP_VetClaimRequest(const EQApplicationPacket *app)
 
 void Client::Handle_OP_VoiceMacroIn(const EQApplicationPacket *app)
 {
-
 	if (app->size != sizeof(VoiceMacroIn_Struct)) {
-
 		LogDebug("Size mismatch in OP_VoiceMacroIn expected [{}] got [{}]", sizeof(VoiceMacroIn_Struct), app->size);
-
 		DumpPacket(app);
-
 		return;
 	}
 
-	if (!RuleB(Chat, EnableVoiceMacros)) return;
+	if (!RuleB(Chat, EnableVoiceMacros)) {
+		return;
+	}
 
 	VoiceMacroIn_Struct* vmi = (VoiceMacroIn_Struct*)app->pBuffer;
-
 	VoiceMacroReceived(vmi->Type, vmi->Target, vmi->MacroNumber);
-
 }
 
 void Client::Handle_OP_UpdateAura(const EQApplicationPacket *app)
@@ -15074,8 +15070,9 @@ void Client::Handle_OP_UpdateAura(const EQApplicationPacket *app)
 
 	// client only sends this for removing
 	auto aura = (AuraDestory_Struct *)app->pBuffer;
-	if (aura->action != 1)
+	if (aura->action != 1) {
 		return; // could log I guess, but should only ever get this action
+	}
 
 	RemoveAura(aura->entity_id);
 	QueuePacket(app); // if we don't resend this, the client gets confused
@@ -15090,12 +15087,14 @@ void Client::Handle_OP_WearChange(const EQApplicationPacket *app)
 	}
 
 	WearChange_Struct* wc = (WearChange_Struct*)app->pBuffer;
-	if (wc->spawn_id != GetID())
+	if (wc->spawn_id != GetID()) {
 		return;
+	}
 
 	// Hero Forge ID needs to be fixed here as RoF2 appears to send an incorrect value.
-	if (wc->hero_forge_model != 0 && wc->wear_slot_id >= 0 && wc->wear_slot_id < EQ::textures::weaponPrimary)
+	if (wc->hero_forge_model != 0 && wc->wear_slot_id >= 0 && wc->wear_slot_id < EQ::textures::weaponPrimary) {
 		wc->hero_forge_model = GetHerosForgeModel(wc->wear_slot_id);
+	}
 
 	// we could maybe ignore this and just send our own from moveitem
 	entity_list.QueueClients(this, app, true);
@@ -15109,17 +15108,36 @@ void Client::Handle_OP_WhoAllRequest(const EQApplicationPacket *app)
 	}
 	Who_All_Struct* whoall = (Who_All_Struct*)app->pBuffer;
 
-	if (whoall->type == 0) // SoF only, for regular /who
+	// /*000*/	char	whom[64];
+	// /*064*/	uint32	wrace;		// FF FF = no race
+	// /*068*/	uint32	wclass;		// FF FF = no class
+	// /*072*/	uint32	lvllow;		// FF FF = no numbers
+	// /*076*/	uint32	lvlhigh;	// FF FF = no numbers
+	// /*080*/	uint32	gmlookup;	// FF FF = not doing /who all gm
+	// /*084*/	uint32	guildid;
+	// /*088*/	uint8	unknown076[64];
+	// /*152*/	uint32	type;		// New for SoF. 0 = /who 3 = /who all
+
+	/*
+	std::string str = "";
+	for (int i = 0; i < sizeof(whoall->unknown076); ++i)
+		str += itoa(whoall->unknown076[i]);
+	Message(0, StringFormat("%s , %u , %u, %u, %u, %u, %u, %s, %u",
+		whoall->whom, whoall->wrace, whoall->wclass, whoall->lvllow, whoall->lvlhigh,
+		whoall->gmlookup, whoall->guildid, str, whoall->type).c_str());
+	*/
+
+	if (whoall->type == 0) { // SoF only, for regular /who
 		entity_list.ZoneWho(this, whoall);
-	else
+	} else {
 		WhoAll(whoall);
+	}
 	return;
 }
 
 void Client::Handle_OP_XTargetAutoAddHaters(const EQApplicationPacket *app)
 {
-	if (app->size != 1)
-	{
+	if (app->size != 1) {
 		LogDebug("Size mismatch in OP_XTargetAutoAddHaters, expected 1, got [{}]", app->size);
 		DumpPacket(app);
 		return;
