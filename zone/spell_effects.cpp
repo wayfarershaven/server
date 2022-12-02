@@ -2124,7 +2124,6 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 					CastToClient()->MovePC(zone->GetZoneID(), zone->GetInstanceID(), caster->GetX(),
 							       caster->GetY(), caster->GetZ(), caster->GetHeading(), 2,
 							       SummonPC);
-					MessageString(Chat::Spells, PLAYER_SUMMONED);
 				} else {
 					caster->Message(Chat::Red, "This spell can only be cast on players.");
 				}
