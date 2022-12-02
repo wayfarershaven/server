@@ -3787,19 +3787,21 @@ bool Mob::RemoveFromHateList(Mob* mob)
 {
 	SetRunAnimSpeed(0);
 	bool bFound = false;
-	if(IsEngaged())
-	{
+	if(IsEngaged()) {
 		bFound = hate_list.RemoveEntFromHateList(mob);
-		if(hate_list.IsHateListEmpty())
-		{
+		if(hate_list.IsHateListEmpty()) {
 			AI_Event_NoLongerEngaged();
 			zone->DelAggroMob();
-			if (IsNPC() && !RuleB(Aggro, AllowTickPulling))
+			if (IsNPC() && !RuleB(Aggro, AllowTickPulling)) {
 				ResetAssistCap();
+			}
 		}
 	}
-	if(GetTarget() == mob)
-	{
+	
+	if(GetTarget() == mob) {
+		if (IsPet() && GetPetTargetLockID()) {
+			SetPetTargetLockID(0);
+		}
 		SetTarget(hate_list.GetEntWithMostHateOnList(this));
 	}
 

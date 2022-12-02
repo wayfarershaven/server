@@ -517,6 +517,18 @@ Mob *HateList::GetEntWithMostHateOnList(Mob *center, Mob *skip, bool skip_mezzed
 	return nullptr;
 }
 
+Mob *HateList::GetEntOnHateListByID(uint16 mobId) {
+	Mob *toReturn = nullptr;
+	auto iterator = list.begin();
+	while (iterator != list.end()) {
+		struct_HateList *cur = (*iterator);
+		if (cur->entity_on_hatelist->GetID() == mobId)
+			return cur->entity_on_hatelist;
+		++iterator;
+	}
+	return toReturn;
+}
+
 Mob *HateList::GetEntWithMostHateOnList(bool skip_mezzed){
 	Mob* top = nullptr;
 	int64 hate = -1;

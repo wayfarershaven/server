@@ -2335,6 +2335,7 @@ bool Mob::SpellFinished(uint16 spell_id, Mob *spell_target, CastingSlot slot, in
 
 	//determine the type of spell target we have
 	CastAction_type CastAction;
+	// This method modifies spell_target, ae_center, and CastAction.
 	if (!DetermineSpellTargets(spell_id, spell_target, ae_center, CastAction, slot, isproc)) {
 		LogSpells("Spell [{}]: Determine spell targets failure.", spell_id);
 		return(false);
