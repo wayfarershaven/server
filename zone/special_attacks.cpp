@@ -2082,33 +2082,33 @@ void Mob::Taunt(NPC *who, bool always_succeed, int chance_bonus, bool FromSpell,
 		} else {
 			float tauntchance = 50.0f;
 
-			if (always_succeed)
+			if (always_succeed) {
 				tauntchance = 101.0f;
-
-			else {
-
+			} else {
 				if (level_difference < 0) {
 					tauntchance += static_cast<float>(level_difference) * 3.0f;
-					if (tauntchance < 20)
+					if (tauntchance < 20) {
 						tauntchance = 20.0f;
-				}
-
-				else {
+					}
+				} else {
 					tauntchance += static_cast<float>(level_difference) * 5.0f;
-					if (tauntchance > 65)
+					if (tauntchance > 65) {
 						tauntchance = 65.0f;
+					}
 				}
 			}
 
 			// TauntSkillFalloff rate is not based on any real data. Default of 33% gives a reasonable
 			// result.
-			if (IsClient() && !always_succeed)
+			if (IsClient() && !always_succeed) {
 				tauntchance -= (RuleR(Combat, TauntSkillFalloff) *
 						(CastToClient()->MaxSkill(EQ::skills::SkillTaunt) -
 						 GetSkill(EQ::skills::SkillTaunt)));
+			}
 
-			if (tauntchance < 1)
+			if (tauntchance < 1) {
 				tauntchance = 1.0f;
+			}
 
 			tauntchance /= 100.0f;
 
@@ -2126,7 +2126,7 @@ void Mob::Taunt(NPC *who, bool always_succeed, int chance_bonus, bool FromSpell,
 
 		if (success) {
 			if (hate_top && hate_top != this) {
-				int64 newhate = (who->GetNPCHate(hate_top) - who->GetNPCHate(this)) + 1 + bonus_hate;
+				int64 newhate = who->GetNPCHate(who->GetHateMost()) + 1 + bonus_hate;
 
 				LogHate(
 					"Taunter mob {} target npc {} newhate [{}] hated_top {} hate_of_top [{}] this_hate [{}] bonus_hate [{}]",
@@ -2145,8 +2145,9 @@ void Mob::Taunt(NPC *who, bool always_succeed, int chance_bonus, bool FromSpell,
 				who->CastToNPC()->AddToHateList(this, 12);
 			}
 
-			if (who->CanTalk())
+			if (who->CanTalk()) {
 				who->SayString(SUCCESSFUL_TAUNT, GetCleanName());
+			}
 		} else {
 			MessageString(Chat::SpellFailure, FAILED_TAUNT);
 		}
@@ -2170,15 +2171,18 @@ void Mob::InstillDoubt(Mob *who) {
 	/*int skill = GetSkill(INTIMIDATION);*/	//unused
 
 	//make sure our target is an NPC
-	if(!who || !who->IsNPC())
+	if(!who || !who->IsNPC()) {
 		return;
+	}
 
-	if(DivineAura())
+	if(DivineAura()) {
 		return;
+	}
 
 	//range check
-	if(!CombatRange(who))
+	if(!CombatRange(who)) {
 		return;
+	}
 
 	if(IsClient()) {
 		CastToClient()->CheckIncreaseSkill(EQ::skills::SkillIntimidation, who, 10);
