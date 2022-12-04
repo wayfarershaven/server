@@ -228,7 +228,7 @@ bool NPC::AICastSpell(Mob* tar, uint8 iChance, uint32 iSpellTypes, bool bInnates
 					case SpellType_Slow:
 					case SpellType_Debuff: {
 						Mob * debuffee = GetHateRandom();
-						if (debuffee && manaR >= 10 && (bInnates || zone->random.Roll(70)) &&
+						if (debuffee && manaR >= 10 && (bInnates || zone->random.Roll(75)) &&
 								debuffee->CanBuffStack(AIspells[i].spellid, GetLevel(), true) >= 0) {
 							if (spells[AIspells[i].spellid].target_type != ST_AECaster && !checked_los) {
 								if (!CheckLosFN(debuffee)) {
@@ -243,7 +243,7 @@ bool NPC::AICastSpell(Mob* tar, uint8 iChance, uint32 iSpellTypes, bool bInnates
 					}
 					case SpellType_Nuke: {
 						if (
-							manaR >= 10 && (bInnates || (zone->random.Roll(70)
+							manaR >= 10 && (bInnates || (zone->random.Roll(75)
 							&& tar->CanBuffStack(AIspells[i].spellid, GetLevel(), false) >= 0)) // saying it's a nuke here, AI shouldn't care too much if overwriting
 							) {
 							if(spells[AIspells[i].spellid].target_type != ST_AECaster && !checked_los) {
@@ -258,7 +258,7 @@ bool NPC::AICastSpell(Mob* tar, uint8 iChance, uint32 iSpellTypes, bool bInnates
 						break;
 					}
 					case SpellType_Dispel: {
-						if(bInnates || zone->random.Roll(15))
+						if(bInnates || zone->random.Roll(5))
 						{
 							if(spells[AIspells[i].spellid].target_type != ST_AECaster && !checked_los) {
 								if(!CheckLosFN(tar)) {
