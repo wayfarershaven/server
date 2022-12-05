@@ -2008,21 +2008,22 @@ void NPC::AI_Event_SpellCastFinished(bool iCastSucceeded, uint16 slot) {
 		uint32 recovery_time = 0;
 		if (iCastSucceeded) {
 			if (casting_spell_AIindex < AIspells.size()) {
-					recovery_time += spells[AIspells[casting_spell_AIindex].spellid].recovery_time;
-					if (AIspells[casting_spell_AIindex].recast_delay >= 0)
-					{
-						if (AIspells[casting_spell_AIindex].recast_delay < 10000)
-							AIspells[casting_spell_AIindex].time_cancast = Timer::GetCurrentTime() + (AIspells[casting_spell_AIindex].recast_delay*1000);
+				recovery_time += spells[AIspells[casting_spell_AIindex].spellid].recovery_time;
+				if (AIspells[casting_spell_AIindex].recast_delay >= 0) {
+					if (AIspells[casting_spell_AIindex].recast_delay < 1000) {
+						AIspells[casting_spell_AIindex].time_cancast = Timer::GetCurrentTime() + (AIspells[casting_spell_AIindex].recast_delay*1000);
 					}
-					else
-						AIspells[casting_spell_AIindex].time_cancast = Timer::GetCurrentTime() + spells[AIspells[casting_spell_AIindex].spellid].recast_time;
+				} else {
+					AIspells[casting_spell_AIindex].time_cancast = Timer::GetCurrentTime() + spells[AIspells[casting_spell_AIindex].spellid].recast_time;
+				}
 			}
-			if (recovery_time < AIautocastspell_timer->GetSetAtTrigger())
+			if (recovery_time < AIautocastspell_timer->GetSetAtTrigger()) {
 				recovery_time = AIautocastspell_timer->GetSetAtTrigger();
+			}
 			AIautocastspell_timer->Start(recovery_time, false);
-		}
-		else
+		} else {
 			AIautocastspell_timer->Start(AISpellVar.fail_recast, false);
+		}
 		casting_spell_AIindex = AIspells.size();
 	}
 }
