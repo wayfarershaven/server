@@ -36,7 +36,8 @@
 
 
 RULE_CATEGORY(Character)
-RULE_INT(Character, MaxLevel, 65, "Sets the highest level for players that can be reached through experience")
+RULE_INT(Character, MaxLevel, 65, "Sets the highest level attainable by experience for players")
+RULE_INT(Character, MaxZTargetDistance, 40, "Max distance in Z for target")
 RULE_BOOL(Character, PerCharacterQglobalMaxLevel, false, "Check for qglobal 'CharMaxLevel' character qglobal (Type 5, \"\"), if player tries to level beyond that point, it will not go beyond that level")
 RULE_BOOL(Character, PerCharacterBucketMaxLevel, false, "Check for data bucket 'CharMaxLevel', if player tries to level beyond that point, it will not go beyond that level")
 RULE_INT(Character, MaxExpLevel, 0, "Defines the maximum level that can be reached through experience")
