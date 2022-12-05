@@ -517,6 +517,7 @@ RULE_REAL(Combat, ArcheryHitPenalty, 0, "Archery has a hit penalty to try to hel
 RULE_REAL(Combat, ArcheryBaseDamageBonus, 0.85, "Percentage modifier to base archery Damage 0.5=50% base damage, 1=100%,2=200%")
 RULE_INT(Combat, TripleAttackChanceWarrior, 100, "Innate Chance for Warrior to Triple Attack after a Double Attack (125 = 12.5%). DEFAULT: 100")
 RULE_INT(Combat, TripleAttackChanceMonk, 100, "Innate Chance for Monk to Triple Attack after a Double Attack (200 = 20%). DEFAULT: 100")
+RULE_INT(Combat, TripleAttackChanceBerserker, 100, "Innate Chance for Berserker to Triple Attack after a Double Attack (200 = 20%). DEFAULT: 100")
 RULE_BOOL(Combat, RogueBackstabHasteCorrection, false, "Toggle to enable correction for Haste impacting Backstab DPS too much.  DEFAULT: false")
 RULE_BOOL(Combat, UseMobFixedOffenseSkill, true, "Toggle to enabled the use of a fixed offense skill for Mobs.  DEFAULT: true")
 RULE_BOOL(Combat, UseEnhancedMobFixedWeaponSkill, true, "Toggle to enabled the use of an enhanced (slightly higher hit rate) fixed weapon skill for Mobs.  DEFAULT: true")

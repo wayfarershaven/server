@@ -3725,20 +3725,24 @@ bool Client::CheckDoubleAttack()
 
 // Admittedly these parses were short, but this check worked for 3 toons across multiple levels
 // with varying triple attack skill (1-3% error at least)
-bool Client::CheckTripleAttack()
-{
+bool Client::CheckTripleAttack() {
 	// In era, Triple Attack was an innate skill.  Don't have exact data, but found one post suggesting when
 	// they implemented Triple Attack as a skill, that 200 may have been the cap for some classes (~20% in this code).
 	// Only Level 60 Warriors and Monks get it, and making their percentage (fixed) separate as a tuning variable.
 	int chance = 0;
 
-	if (IsClient() && (GetLevel() == 60) && (GetClass() == WARRIOR)) {
+	if (IsClient() && (GetLevel() >= 60) && (GetClass() == WARRIOR)) {
 		chance = RuleI(Combat, TripleAttackChanceWarrior);
 	}
 
-	if (IsClient() && (GetLevel() == 60) && (GetClass() == MONK)) {
+	if (IsClient() && (GetLevel() >= 60) && (GetClass() == MONK)) {
 		chance = RuleI(Combat, TripleAttackChanceMonk);
 	}
+
+	if (IsClient() && (GetLevel() >= 60) && (GetClass() == BERSERKER)) {
+		chance = RuleI(Combat, TripleAttackChanceBerserker);
+	}
+
 
 	if (chance < 1) {
 		return false;
