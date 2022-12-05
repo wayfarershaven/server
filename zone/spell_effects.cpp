@@ -7224,14 +7224,15 @@ uint16 Mob::GetSpellEffectResistChance(uint16 spell_id)
 				found = true;
 			}
 
-			if (found)
+			if (found) {
 				continue;
+			}
 		}
 	}
 	return resist_chance;
 }
 
-bool Mob::TryDispel(uint8 caster_level, uint8 buff_level, int level_modifier){
+bool Mob::TryDispel(uint8 caster_level, uint8 buff_level, int level_modifier) {
 
 	//Dispels - Check level of caster agianst buffs level (level of the caster who cast the buff)
 	//Effect value of dispels are treated as a level modifier.
@@ -7241,22 +7242,23 @@ bool Mob::TryDispel(uint8 caster_level, uint8 buff_level, int level_modifier){
 	int dispel_chance = 32; //Baseline chance if no level difference and no modifier
 	int level_diff = caster_level - buff_level;
 
-	if (level_diff > 0)
+	if (level_diff > 0) {
 		dispel_chance += level_diff * 7;
-
-	else if (level_diff < 0)
+	} else if (level_diff < 0) {
 		dispel_chance += level_diff * 2;
+	}
 
-	if (dispel_chance >= 100)
+	if (dispel_chance >= 100) {
 		return true;
-
-	else if (dispel_chance < 10)
+	} else if (dispel_chance < 10) {
 		dispel_chance = 10;
+	}
 
-	if (zone->random.Roll(dispel_chance))
+	if (zone->random.Roll(dispel_chance)) {
 		return true;
-	else
+	} else {
 		return false;
+	}
 }
 
 bool Mob::ImprovedTaunt(){
