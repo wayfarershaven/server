@@ -1298,8 +1298,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 							}
 						}
 					}
-				}
-				else if (!IsClient()) {
+				} else if (!IsClient() && !IsRaidTarget()) {
 					CalculateNewFearpoint();
 				}
 				break;
@@ -4384,27 +4383,34 @@ void Mob::BuffFadeBySlot(int slot, bool iRecalcBonuses)
 			}
 
 			case SE_Blind:
-				if (currently_fleeing && !FindType(SE_Fear))
+				if (IsRaidTarget()) {
+					break;
+				}
+
+				if (currently_fleeing && !FindType(SE_Fear)) {
 					currently_fleeing = false;
+				}
 				break;
 
 			case SE_Fear:
 			{
+				if (IsRaidTarget()) {
+					break;
+				}
+
 				if(RuleB(Combat, EnableFearPathing)){
-					if(IsClient())
-					{
+					if(IsClient()) {
 						bool charmed = FindType(SE_Charm);
-						if(!charmed)
+						if(!charmed) {
 							CastToClient()->AI_Stop();
+						}
 					}
 
 					if(currently_fleeing) {
 						currently_fleeing = false;
 						break;
 					}
-				}
-				else
-				{
+				} else {
 					UnStun();
 				}
 				break;
