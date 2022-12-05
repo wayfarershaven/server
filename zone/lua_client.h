@@ -148,6 +148,7 @@ public:
 	int GetRawItemAC();
 	uint32 AccountID();
 	const char *AccountName();
+	const char *GetForumName(uint32 acc_id);
 	int16 Admin();
 	uint32 CharacterID();
 	int GuildRank();

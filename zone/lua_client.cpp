@@ -431,6 +431,11 @@ int Lua_Client::GetAccountAge() {
 	return time(nullptr) - self->GetAccountCreation();
 }
 
+const char *Lua_Client::GetForumName(uint32 acc_id)	{
+	Lua_Safe_Call_String();
+	return self->GetForumName(acc_id);
+}
+
 int16 Lua_Client::Admin() {
 	Lua_Safe_Call_Int();
 	return self->Admin();
@@ -3046,6 +3051,7 @@ luabind::scope lua_register_client() {
 	.def("GetAAPoints", (int(Lua_Client::*)(void))&Lua_Client::GetAAPoints)
 	.def("GetAFK", (int(Lua_Client::*)(void))&Lua_Client::GetAFK)
 	.def("GetAccountAge", (int(Lua_Client::*)(void))&Lua_Client::GetAccountAge)
+	.def("GetForumName", (const char *(Lua_Client::*)(uint32 acc_id))&Lua_Client::GetForumName)
 	.def("GetAccountFlag", (std::string(Lua_Client::*)(std::string))&Lua_Client::GetAccountFlag)
 	.def("GetAggroCount", (int(Lua_Client::*)(void))&Lua_Client::GetAggroCount)
 	.def("GetAllMoney", (uint64(Lua_Client::*)(void))&Lua_Client::GetAllMoney)

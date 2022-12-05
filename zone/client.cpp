@@ -4369,6 +4369,27 @@ bool Client::KeyRingCheck(uint32 item_id)
 	return false;
 }
 
+
+const char* Client::GetForumName(uint32 acc_id)
+{
+
+	std::string query = StringFormat("SELECT forumName FROM account join tblLoginServerAccounts on lsaccount_id = LoginServerID WHERE id = %i ", acc_id);
+	auto results = database.QueryDatabase(query);
+
+	if (!results.Success()) {
+		return "Public_LS";
+	}
+
+	if(results.RowCount() == 0) {
+		return "Public_LS";
+	}
+
+	auto row = results.begin();
+	const char* forumName = row[0];
+
+	return forumName;
+}
+
 void Client::KeyRingList()
 {
 	Message(Chat::LightBlue,"Keys on Keyring:");
