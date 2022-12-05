@@ -5930,11 +5930,9 @@ bool Mob::TryRootFadeByDamage(int buffslot, Mob* attacker) {
 
 		if (level_diff == 2) {
 			BreakChance = (BreakChance * 80) / 100; //Decrease by 20%;
-		}
-		else if (level_diff >= 3 && level_diff <= 20) {
+		} else if (level_diff >= 3 && level_diff <= 20) {
 			BreakChance = (BreakChance * 60) / 100; //Decrease by 40%;
-		}
-		else if (level_diff > 21) {
+		} else if (level_diff > 21) {
 			BreakChance = (BreakChance * 20) / 100; //Decrease by 80%;
 		}
 
@@ -5943,16 +5941,15 @@ bool Mob::TryRootFadeByDamage(int buffslot, Mob* attacker) {
 		}
 
 		if (zone->random.Roll(BreakChance)) {
-
 			if (!TryFadeEffect(spellbonuses.Root[SBIndex::ROOT_BUFFSLOT])) {
 				BuffFadeBySlot(spellbonuses.Root[SBIndex::ROOT_BUFFSLOT]);
-				LogCombat("Spell broke root! BreakChance percent chance");
+				LogCombat("Spell broke root! BreakChance = [{}]", BreakChance);
 				return true;
 			}
 		}
+		LogCombat("Spell did not break root. BreakChance = [{}]", BreakChance);
 	}
 
-	LogCombat("Spell did not break root. BreakChance percent chance");
 	return false;
 }
 
