@@ -224,10 +224,9 @@ bool Mob::CastSpell(uint16 spell_id, uint16 target_id, CastingSlot slot,
 	}
 
 	// check line of sight to target if it's a detrimental spell
-	if (!spells[spell_id].npc_no_los && GetTarget() && IsDetrimentalSpell(spell_id) && !CheckLosFN(GetTarget()) && !IsHarmonySpell(spell_id) && spells[spell_id].target_type != ST_TargetOptional && spells[spell_id].target_type != ST_AECaster && !IsBindSightSpell(spell_id))
-	{
-		LogSpells("Spell [{}]: cannot see target [{}]", spell_id, GetTarget()->GetName());
-		MessageString(Chat::Red, CANT_SEE_TARGET);
+	if (spells[spell_id].target_type != ST_AECaster && !spells[spell_id].npc_no_los && GetTarget() && IsDetrimentalSpell(spell_id) && !CheckLosFN(GetTarget()) && !IsHarmonySpell(spell_id) && spells[spell_id].target_type != ST_TargetOptional && !IsBindSightSpell(spell_id)) {
+		Log(Logs::Detail, Logs::Spells, "Spell %d: cannot see target %s", spell_id, GetTarget()->GetName());
+		MessageString(13, CANT_SEE_TARGET);
 		if (IsClient()) {
 			CastToClient()->SendSpellBarEnable(spell_id);
 		}
@@ -2494,32 +2493,19 @@ bool Mob::SpellFinished(uint16 spell_id, Mob *spell_target, CastingSlot slot, in
 				ae_center->CastToBeacon()->AELocationSpell(this, spell_id, resist_adjust);
 			} else {
 				// unsure if we actually need this? Need to find some spell examples
-				// regular PB AE or targeted AE spell - spell_target is null if PB
-				if(spell_target)	// this must be an AETarget spell
-				{
-					bool cast_on_target = true;
-					if (spells[spell_id].target_type == ST_TargetAENoPlayersPets && spell_target->IsPetOwnerClient())
-						cast_on_target = false;
-					if (spells[spell_id].target_type == ST_AreaClientOnly && !spell_target->IsClient())
-						cast_on_target = false;
-					if (spells[spell_id].target_type == ST_AreaNPCOnly && !spell_target->IsNPC())
-						cast_on_target = false;
-
-					// affect the target too
-					if (cast_on_target)
-						SpellOnTarget(spell_id, spell_target, false, true, resist_adjust);
-				}
-				if(ae_center && ae_center == this && IsBeneficialSpell(spell_id))
+				if(ae_center && ae_center == this && IsBeneficialSpell(spell_id)) {
 					SpellOnTarget(spell_id, this);
+				}
 
 				// NPCs should never be affected by an AE they cast. PB AEs shouldn't affect caster either
 				// I don't think any other cases that get here matter
 				bool affect_caster = !IsNPC() && spells[spell_id].target_type != ST_AECaster;
 
-				if (spells[spell_id].target_type == ST_AETargetHateList)
+				if (spells[spell_id].target_type == ST_AETargetHateList) {
 					hate_list.SpellCast(this, spell_id, spells[spell_id].aoe_range, ae_center);
-				else
+				} else {
 					entity_list.AESpell(this, ae_center, spell_id, affect_caster, resist_adjust);
+				}
 			}
 			break;
 		}
