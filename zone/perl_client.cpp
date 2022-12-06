@@ -1597,11 +1597,6 @@ float Perl_Client_GetTargetRingZ(Client* self) // @categories Script Utility
 	return self->GetTargetRingZ();
 }
 
-uint32_t Perl_Client_CalcEXP(Client* self, uint8 conlevel)
-{
-	return self->CalcEXP(conlevel);
-}
-
 void Perl_Client_QuestReward(Client* self, Mob* mob) // @categories Currency and Points, Experience and Level, Inventory and Items, Faction
 {
 	self->QuestReward(mob);
@@ -2852,7 +2847,6 @@ void perl_register_client()
 	package.add("AssignToInstance", &Perl_Client_AssignToInstance);
 	package.add("AutoSplitEnabled", &Perl_Client_AutoSplitEnabled);
 	package.add("BreakInvis", &Perl_Client_BreakInvis);
-	package.add("CalcEXP", &Perl_Client_CalcEXP);
 	package.add("CalcPriceMod", (float(*)(Client*))&Perl_Client_CalcPriceMod);
 	package.add("CalcPriceMod", (float(*)(Client*, Mob*))&Perl_Client_CalcPriceMod);
 	package.add("CalcPriceMod", (float(*)(Client*, Mob*, bool))&Perl_Client_CalcPriceMod);

@@ -777,6 +777,10 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 					break;
 				}
 
+				if(IsDireCharmSpell(spell_id)) {
+					dire_charmed = true;
+				}
+
 				if (IsNPC()) {
 					CastToNPC()->SaveGuardSpotCharm();
 				}
@@ -786,8 +790,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 				WipeHateList();
 
 				Mob *my_pet = GetPet();
-				if(my_pet)
-				{
+				if(my_pet) {
 					my_pet->Kill();
 				}
 
@@ -4290,9 +4293,9 @@ void Mob::BuffFadeBySlot(int slot, bool iRecalcBonuses)
 			}
 
 			case SE_Charm:
-			{
-				if(IsNPC())
-				{
+			{	
+				dire_charmed = false;
+				if(IsNPC()) {
 					CastToNPC()->RestoreGuardSpotCharm();
 					CastToNPC()->ModifyStatsOnCharm(true);
 				}

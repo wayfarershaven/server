@@ -2411,8 +2411,7 @@ void NPC::Damage(Mob* other, int64 damage, uint16 spell_id, EQ::skills::SkillTyp
 	}
 }
 
-bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillType attack_skill)
-{
+bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillType attack_skill) {
 	bool charmedNoXp = false;	// using if charmed pet dies, shouldn't give player experience.
 	if (HasOwner()) {
 		Mob *clientOwner = GetOwnerOrSelf();
@@ -2580,8 +2579,7 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 		Group *kg = entity_list.GetGroupByClient(give_exp_client);
 		Raid *kr = entity_list.GetRaidByClient(give_exp_client);
 
-		int32 finalxp = give_exp_client->GetExperienceForKill(this);
-		finalxp = give_exp_client->mod_client_xp(finalxp, this);
+		uint32 finalxp = GetBaseEXP();
 
 		// handle task credit on behalf of the killer
 		if (RuleB(TaskSystem, EnableTaskSystem)) {
@@ -2688,11 +2686,11 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 		}
 		else {
 			if (!IsLdonTreasure && MerchantType == 0) {
-				int conlevel = give_exp->GetLevelCon(GetLevel());
+				int conlevel = give_exp_client->GetLevelCon(GetLevel());
 				if (conlevel != CON_GRAY) {
-					if (!GetOwner() || (GetOwner() && !GetOwner()->IsClient())) {
-						give_exp_client->AddEXP((finalxp), conlevel, false, GetLevel());
-						if (killer_mob && (killer_mob->GetID() == give_exp_client->GetID() || killer_mob->GetUltimateOwner()->GetID() == give_exp_client->GetID()))
+					give_exp_client->AddEXP(finalxp, conlevel, false, GetLevel());
+                    if (killer_mob && (killer_mob->GetID() == give_exp_client->GetID() ||
+                                       killer_mob->GetUltimateOwner()->GetID() == give_exp_client->GetID())) {
 							killer_mob->TrySpellOnKill(killed_level, spell);
 					}
 				}
@@ -2750,32 +2748,36 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 		corpse = new Corpse(this, &itemlist, GetNPCTypeID(), &NPCTypedata,
 			level > 54 ? RuleI(NPC, MajorNPCCorpseDecayTimeMS)
 			: RuleI(NPC, MinorNPCCorpseDecayTimeMS));
-		entity_list.LimitRemoveNPC(this);
-		entity_list.AddCorpse(corpse, GetID());
 
-		entity_list.UnMarkNPC(GetID());
-		entity_list.RemoveNPC(GetID());
+		if (corpse) {	
+			entity_list.LimitRemoveNPC(this);
+			entity_list.AddCorpse(corpse, GetID());
 
-		// entity_list.RemoveMobFromCloseLists(this);
-		close_mobs.clear();
-		SetID(0);
-		ApplyIllusionToCorpse(illusion_spell_id, corpse);
+			entity_list.UnMarkNPC(GetID());
+			entity_list.RemoveNPC(GetID());
 
-		if (killer != 0 && emoteid != 0)
-			corpse->CastToNPC()->DoNPCEmote(EQ::constants::EmoteEventTypes::AfterDeath, emoteid);
-		if (killer != 0 && killer->IsClient()) {
-			corpse->AllowPlayerLoot(killer, 0);
-			if (killer->IsGrouped()) {
-				Group* group = entity_list.GetGroupByClient(killer->CastToClient());
-				if (group != 0) {
-					for (int i = 0; i<6; i++) { // Doesnt work right, needs work
-						if (group->members[i] != nullptr) {
-							corpse->AllowPlayerLoot(group->members[i], i);
+			// entity_list.RemoveMobFromCloseLists(this);
+			close_mobs.clear();
+			SetID(0);
+			ApplyIllusionToCorpse(illusion_spell_id, corpse);
+
+			if (killer != 0 && emoteid != 0) {
+				corpse->CastToNPC()->DoNPCEmote(EQ::constants::EmoteEventTypes::AfterDeath, emoteid);
+			}
+
+			if (killer != 0 && killer->IsClient()) {
+				corpse->AllowPlayerLoot(killer, 0);
+				if (killer->IsGrouped()) {
+					Group* group = entity_list.GetGroupByClient(killer->CastToClient());
+					if (group != 0) {
+						for (int i = 0; i<6; i++) { // Doesnt work right, needs work
+							if (group->members[i] != nullptr) {
+								corpse->AllowPlayerLoot(group->members[i], i);
+							}
 						}
 					}
 				}
-			}
-			else if (killer->IsRaidGrouped()) {
+			} else if (killer->IsRaidGrouped()) {
 				Raid* r = entity_list.GetRaidByClient(killer->CastToClient());
 				if (r) {
 					int i = 0;
@@ -3955,6 +3957,11 @@ void Mob::CommonDamage(Mob* attacker, int64 &damage, const uint16 spell_id, cons
 		}
 
 		//final damage has been determined.
+
+		if(attacker->IsClient()) {
+			player_damage += damage;
+		}
+
 		SetHP(int64(GetHP() - damage));
 
 		if (HasDied()) {
