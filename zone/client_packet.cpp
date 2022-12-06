@@ -13184,14 +13184,15 @@ void Client::Handle_OP_ShopPlayerBuy(const EQApplicationPacket *app)
 		return;
 	}
 
-	// If item has charges then quantity is always 1
 	if (item->Stackable) {
+		if (prevcharges && mp->quantity > prevcharges) {
+			mp->quantity = prevcharges;
+		}
+		if (mp->quantity > item->StackSize) {
+			mp->quantity = item->StackSize;
+		}
+	} else if (!item->Stackable && item->MaxCharges != 0) {
 		mp->quantity = 1;
-	}
-
-	// Item's stackable, but the quantity they want to buy exceeds the max stackable quantity.
-	if (item->Stackable && mp->quantity > item->StackSize) {
-		mp->quantity = item->StackSize;
 	}
 
 	auto outapp = new EQApplicationPacket(OP_ShopPlayerBuy, sizeof(Merchant_Sell_Struct));
@@ -13203,10 +13204,10 @@ void Client::Handle_OP_ShopPlayerBuy(const EQApplicationPacket *app)
 
 	int16 freeslotid = INVALID_INDEX;
 	int16 charges = 0;
-	if (item->Stackable || tmpmer_used) {
+	if (item->Stackable) { // charges equal to quantity if an item is stackable, otherwise use itemcharges from temp merch table
 		charges = mp->quantity;
-	} else if (item->MaxCharges != 0) {
-		charges = itemcharges;
+	} else if (item->MaxCharges != 0) { // check if item has charges
+		charges = tmpmer_used ? itemcharges : item->MaxCharges;
 	}
 
 	EQ::ItemInstance* inst = database.CreateItem(item, charges);
@@ -13218,7 +13219,7 @@ void Client::Handle_OP_ShopPlayerBuy(const EQApplicationPacket *app)
 		SinglePrice = (item->Price * (RuleR(Merchant, SellCostMod)) * item->SellRate);
 	}
 
-	if (item->MaxCharges > 1) {
+	if (!item->Stackable && item->MaxCharges > 1) {
 		mpo->price = SinglePrice;
 	} else {
 		mpo->price = SinglePrice * mp->quantity;
