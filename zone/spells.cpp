@@ -3914,7 +3914,7 @@ bool Mob::SpellOnTarget(
 			!IsAttackAllowed(spelltar, true) &&
 			!IsResurrectionEffects(spell_id) && 
 			spell_id != 727
-			) // Detrimental spells - PVP check (excluding bard group dispell)
+			) { // Detrimental spells - PVP check (excluding bard group dispell)
 			LogSpells(
 				"Detrimental spell [{}] can't take hold [{}] -> [{}]",
 				spell_id,
