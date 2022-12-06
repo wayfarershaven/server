@@ -71,11 +71,12 @@ void Mob::TemporaryPets(uint16 spell_id, Mob *targ, const char *name_override, u
 	SwarmPet_Struct pet;
 	pet.count = 1;
 	pet.duration = 1;
+	pet.npc_id = record.npc_type;
+	NPCType *made_npc = nullptr;
+	const NPCType *npc_type = database.LoadNPCTypesData(pet.npc_id);
 
-	for (int x = 0; x < MAX_SWARM_PETS; x++)
-	{
-		if (spells[spell_id].effect_id[x] == SE_TemporaryPets)
-		{
+	for (int x = 0; x < MAX_SWARM_PETS; x++) {
+		if (spells[spell_id].effect_id[x] == SE_TemporaryPets) {
 			pet.count = spells[spell_id].base_value[x];
 			pet.duration = spells[spell_id].max_value[x];
 		}
@@ -83,11 +84,6 @@ void Mob::TemporaryPets(uint16 spell_id, Mob *targ, const char *name_override, u
 
 	pet.duration += GetFocusEffect(focusSwarmPetDuration, spell_id) / 1000;
 
-	pet.npc_id = record.npc_type;
-
-	NPCType *made_npc = nullptr;
-
-	const NPCType *npc_type = content_db.LoadNPCTypesData(pet.npc_id);
 	if (npc_type == nullptr) {
 		//log write
 		LogError("Unknown npc type for swarm pet spell id: [{}]", spell_id);
@@ -106,8 +102,9 @@ void Mob::TemporaryPets(uint16 spell_id, Mob *targ, const char *name_override, u
 	int summon_count = 0;
 	summon_count = pet.count;
 
-	if (summon_count > MAX_SWARM_PETS)
+	if (summon_count > MAX_SWARM_PETS) {
 		summon_count = MAX_SWARM_PETS;
+	}
 
 	static const glm::vec2 swarmPetLocations[MAX_SWARM_PETS] = {
 		glm::vec2(5, 5), glm::vec2(-5, 5), glm::vec2(5, -5), glm::vec2(-5, -5),
@@ -119,8 +116,9 @@ void Mob::TemporaryPets(uint16 spell_id, Mob *targ, const char *name_override, u
 
 	while (summon_count > 0) {
 		int pet_duration = pet.duration;
-		if (duration_override > 0)
+		if (duration_override > 0) {
 			pet_duration = duration_override;
+		}
 
 		//this is a little messy, but the only way to do it right
 		//it would be possible to optimize out this copy for the last pet, but oh well
@@ -136,15 +134,15 @@ void Mob::TemporaryPets(uint16 spell_id, Mob *targ, const char *name_override, u
 			GetPosition() + glm::vec4(swarmPetLocations[summon_count], 0.0f, 0.0f),
 			GravityBehavior::Water);
 
-		if (followme)
+		if (followme) {
 			swarm_pet_npc->SetFollowID(GetID());
+		}
 
 		if (!swarm_pet_npc->GetSwarmInfo()) {
 			auto nSI = new SwarmPet;
 			swarm_pet_npc->SetSwarmInfo(nSI);
 			swarm_pet_npc->GetSwarmInfo()->duration = new Timer(pet_duration * 1000);
-		}
-		else {
+		} else {
 			swarm_pet_npc->GetSwarmInfo()->duration->Start(pet_duration * 1000);
 		}
 
@@ -160,15 +158,15 @@ void Mob::TemporaryPets(uint16 spell_id, Mob *targ, const char *name_override, u
 				swarm_pet_npc->GetSwarmInfo()->target = targ->GetID();
 				swarm_pet_npc->SetPetTargetLockID(targ->GetID());
 				swarm_pet_npc->SetSpecialAbility(IMMUNE_AGGRO, 1);
-			}
-			else {
+			} else {
 				swarm_pet_npc->GetSwarmInfo()->target = 0;
 			}
 		}
 
 		//we allocated a new NPC type object, give the NPC ownership of that memory
-		if (npc_dup != nullptr)
+		if (npc_dup != nullptr) {
 			swarm_pet_npc->GiveNPCTypeData(npc_dup);
+		}
 
 		entity_list.AddNPC(swarm_pet_npc, true, true);
 		summon_count--;
@@ -179,9 +177,10 @@ void Mob::TemporaryPets(uint16 spell_id, Mob *targ, const char *name_override, u
 	}
 
 	//the target of these swarm pets will take offense to being cast on...
-	if (targ != nullptr)
+	if (targ != nullptr) {
 		targ->AddToHateList(this, 1, 0);
-
+	}
+	
 	// The other pointers we make are handled elsewhere.
 	delete made_npc;
 }
