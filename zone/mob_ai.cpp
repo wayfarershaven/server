@@ -384,6 +384,71 @@ bool NPC::AIDoSpellCast(uint8 i, Mob* tar, int32 mana_cost, uint32* oDontDoAgain
 	return CastSpell(AIspells[i].spellid, tar->GetID(), EQ::spells::CastingSlot::Gem2, AIspells[i].manacost == -2 ? 0 : -1, mana_cost, oDontDoAgainBefore, -1, -1, 0, &(AIspells[i].resist_adjust));
 }
 
+/**
+ * @param caster
+ * @param chance
+ * @param cast_range
+ * @param spell_types
+ * @return
+ */
+bool EntityList::AICheckCloseBeneficialSpells(NPC* caster, uint8 iChance, float iRange, uint32 iSpellTypes) {
+	if((iSpellTypes & SPELL_TYPES_DETRIMENTAL) != 0) {
+		//according to live, you can buff and heal through walls...
+		//now with PCs, this only applies if you can TARGET the target, but
+		// according to Rogean, Live NPCs will just cast through walls/floors, no problem..
+		//
+		// This check was put in to address an idle-mob CPU issue
+		Log(Logs::General, Logs::Error, "Error: detrimental spells requested from AICheckCloseBeneficialSpells!!");
+		return false;
+	}
+
+	if(!caster) {
+		return false;
+	}
+
+	if(caster->AI_HasSpells() == false) {
+		return false;
+	}
+
+	if(caster->GetSpecialAbility(NPC_NO_BUFFHEAL_FRIENDS)) {
+		return false;
+	}
+
+	if (iChance < 100) {
+		uint8 tmp = zone->random.Int(0, 99);
+		if (tmp >= iChance) {
+			return false;
+		}
+	}
+	if (caster->GetPrimaryFaction() == 0 ) {
+		return(false); // well, if we dont have a faction set, we're gonna be indiff to everybody
+	}
+
+	float iRange2 = iRange*iRange;
+
+	//Only iterate through NPCs
+	for (auto it = npc_list.begin(); it != npc_list.end(); ++it) {
+		NPC* mob = it->second;
+
+		if (mob->GetReverseFactionCon(caster) >= FACTION_KINDLY) {
+			continue;
+		}
+
+		if (DistanceSquared(caster->GetPosition(), mob->GetPosition()) > iRange2) {
+			continue;
+		}
+
+		if ((iSpellTypes & SpellType_Buff) && !RuleB(NPC, BuffFriends)) {
+			if (mob != caster)
+				iSpellTypes = SpellType_Heal;
+		}
+
+		if (caster->AICastSpell(mob, 100, iSpellTypes))
+			return true;
+	}
+	return false;
+}
+
 void Mob::AI_Init()
 {
 	pAIControlled = false;
@@ -2025,7 +2090,7 @@ bool NPC::AI_EngagedCastCheck() {
 				// try casting a heal or gate
 				if (!AICastSpell(this, AISpellVar.engaged_beneficial_self_chance, SpellType_Heal | SpellType_Escape | SpellType_InCombatBuff)) {
 					// try casting a heal on nearby
-					if (!AICheckCloseBeneficialSpells(this, AISpellVar.engaged_beneficial_other_chance, MobAISpellRange, SpellType_Heal)) {
+					if (!entity_list.AICheckCloseBeneficialSpells(this, AISpellVar.engaged_beneficial_other_chance, MobAISpellRange, SpellType_Heal)) {
 						//nobody to heal, try some detrimental spells.
 						if(!AICastSpell(GetTarget(), AISpellVar.engaged_detrimental_chance, SpellType_Nuke | SpellType_Lifetap | SpellType_DOT | SpellType_Dispel | SpellType_Mez | SpellType_Slow | SpellType_Debuff | SpellType_Charm | SpellType_Root)) {
 							//no spell to cast, try again soon.
@@ -2062,7 +2127,7 @@ bool NPC::AI_IdleCastCheck() {
 	if (AIautocastspell_timer->Check(false)) {
 		AIautocastspell_timer->Disable();	//prevent the timer from going off AGAIN while we are casting.
 		if (!AICastSpell(this, AISpellVar.idle_beneficial_chance, SpellType_Heal | SpellType_Buff | SpellType_Pet)) {
-			if(!AICheckCloseBeneficialSpells(this, 33, MobAISpellRange, SpellType_Heal | SpellType_Buff)) {
+			if (!entity_list.AICheckCloseBeneficialSpells(this, AISpellVar.engaged_beneficial_other_chance, MobAISpellRange, SpellType_Heal)) {
 				//if we didnt cast any spells, our autocast timer just resets to the
 				//last duration it was set to... try to put up a more reasonable timer...
 				AIautocastspell_timer->Start(RandomTimer(AISpellVar.idle_no_sp_recast_min, AISpellVar.idle_no_sp_recast_max), false);

@@ -159,7 +159,6 @@ public:
 	virtual bool	AI_IdleCastCheck();
 	virtual void	AI_Event_SpellCastFinished(bool iCastSucceeded, uint16 slot);
 
-	bool AICheckCloseBeneficialSpells(NPC* caster, uint8 chance, float cast_range, uint32 spell_types);
 	void AIYellForHelp(Mob* sender, Mob* attacker);
 
 	void LevelScale();
