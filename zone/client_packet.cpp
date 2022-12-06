@@ -13149,6 +13149,7 @@ void Client::Handle_OP_ShopPlayerBuy(const EQApplicationPacket *app)
 	}
 	const EQ::ItemData* item = nullptr;
 	uint32 prevcharges = 0;
+	uint32 itemcharges = 0;
 	if (item_id == 0) { //check to see if its on the temporary table
 		std::list<TempMerchantList> tmp_merlist = zone->tmpmerchanttable[tmp->GetNPCTypeID()];
 		std::list<TempMerchantList>::const_iterator tmp_itr;
@@ -13159,6 +13160,7 @@ void Client::Handle_OP_ShopPlayerBuy(const EQApplicationPacket *app)
 				item_id = ml.item;
 				tmpmer_used = true;
 				prevcharges = ml.charges;
+				itemcharges = ml.itemcharges;
 				break;
 			}
 		}
@@ -13177,22 +13179,20 @@ void Client::Handle_OP_ShopPlayerBuy(const EQApplicationPacket *app)
 		safe_delete(delitempacket);
 		return;
 	}
-	if (CheckLoreConflict(item))
-	{
+	if (CheckLoreConflict(item)) {
 		Message(Chat::Yellow, "You can only have one of a lore item.");
 		return;
 	}
-	if (tmpmer_used && (mp->quantity > prevcharges || item->MaxCharges > 1))
-	{
-		if (prevcharges > item->MaxCharges && item->MaxCharges > 1)
-			mp->quantity = item->MaxCharges;
-		else
-			mp->quantity = prevcharges;
+
+	// If item has charges then quantity is always 1
+	if (item->Stackable) {
+		mp->quantity = 1;
 	}
 
 	// Item's stackable, but the quantity they want to buy exceeds the max stackable quantity.
-	if (item->Stackable && mp->quantity > item->StackSize)
+	if (item->Stackable && mp->quantity > item->StackSize) {
 		mp->quantity = item->StackSize;
+	}
 
 	auto outapp = new EQApplicationPacket(OP_ShopPlayerBuy, sizeof(Merchant_Sell_Struct));
 	Merchant_Sell_Struct* mpo = (Merchant_Sell_Struct*)outapp->pBuffer;
@@ -13203,26 +13203,28 @@ void Client::Handle_OP_ShopPlayerBuy(const EQApplicationPacket *app)
 
 	int16 freeslotid = INVALID_INDEX;
 	int16 charges = 0;
-	if (item->Stackable || tmpmer_used)
+	if (item->Stackable || tmpmer_used) {
 		charges = mp->quantity;
-	else if ( item->MaxCharges >= 1)
-		charges = item->MaxCharges;
+	} else if (item->MaxCharges != 0) {
+		charges = itemcharges;
+	}
 
 	EQ::ItemInstance* inst = database.CreateItem(item, charges);
 
 	int SinglePrice = 0;
-	if (RuleB(Merchant, UsePriceMod))
+	if (RuleB(Merchant, UsePriceMod)) {
 		SinglePrice = (item->Price * (RuleR(Merchant, SellCostMod)) * item->SellRate * Client::CalcPriceMod(tmp, false));
-	else
+	} else {
 		SinglePrice = (item->Price * (RuleR(Merchant, SellCostMod)) * item->SellRate);
+	}
 
-	if (item->MaxCharges > 1)
+	if (item->MaxCharges > 1) {
 		mpo->price = SinglePrice;
-	else
+	} else {
 		mpo->price = SinglePrice * mp->quantity;
+	}
 
-	if (mpo->price < 0)
-	{
+	if (mpo->price < 0) {
 		safe_delete(outapp);
 		safe_delete(inst);
 		return;
@@ -13231,8 +13233,7 @@ void Client::Handle_OP_ShopPlayerBuy(const EQApplicationPacket *app)
 	// this area needs some work..two inventory insertion check failure points
 	// below do not return player's money..is this the intended behavior?
 
-	if (!TakeMoneyFromPP(mpo->price))
-	{
+	if (!TakeMoneyFromPP(mpo->price)) {
 		auto hacker_str = fmt::format("Vendor Cheat: attempted to buy {} of {}: {} that cost {} cp but only has {} pp {} gp {} sp {} cp",
 			mpo->quantity, item->ID, item->Name,
 			mpo->price, m_pp.platinum, m_pp.gold, m_pp.silver, m_pp.copper);
@@ -13243,8 +13244,9 @@ void Client::Handle_OP_ShopPlayerBuy(const EQApplicationPacket *app)
 	}
 
 	bool stacked = TryStacking(inst);
-	if (!stacked)
+	if (!stacked) {
 		freeslotid = m_inv.FindFreeSlot(false, true, item->Size);
+	}
 
 	// shouldn't we be reimbursing if these two fail?
 
@@ -13258,8 +13260,7 @@ void Client::Handle_OP_ShopPlayerBuy(const EQApplicationPacket *app)
 		}
 	}
 
-	if (!stacked && freeslotid == INVALID_INDEX)
-	{
+	if (!stacked && freeslotid == INVALID_INDEX) {
 		Message(Chat::Red, "You do not have room for any more items.");
 		safe_delete(outapp);
 		safe_delete(inst);
@@ -13270,15 +13271,14 @@ void Client::Handle_OP_ShopPlayerBuy(const EQApplicationPacket *app)
 	if (!stacked && inst) {
 		PutItemInInventory(freeslotid, *inst);
 		SendItemPacket(freeslotid, inst, ItemPacketTrade);
-	}
-	else if (!stacked) {
+	} else if (!stacked) {
 		LogError("OP_ShopPlayerBuy: item->ItemClass Unknown! Type: [{}]", item->ItemClass);
 	}
 	QueuePacket(outapp);
 	if (inst && tmpmer_used) {
-		int32 new_charges = prevcharges - mp->quantity;
-		zone->SaveTempItem(merchantid, tmp->GetNPCTypeID(), item_id, new_charges);
-		if (new_charges <= 0) {
+		int32 new_quantity = prevcharges - mp->quantity;
+		zone->SaveTempItem(merchantid, tmp->GetNPCTypeID(), item_id, new_quantity, itemcharges);
+		if (new_quantity <= 0) {
 			auto delitempacket = new EQApplicationPacket(OP_ShopDelItem, sizeof(Merchant_DelItem_Struct));
 			Merchant_DelItem_Struct* delitem = (Merchant_DelItem_Struct*)delitempacket->pBuffer;
 			delitem->itemslot = mp->itemslot;
@@ -13290,10 +13290,10 @@ void Client::Handle_OP_ShopPlayerBuy(const EQApplicationPacket *app)
 		}
 		else {
 			// Update the charges/quantity in the merchant window
-			inst->SetCharges(new_charges);
+			inst->SetCharges(itemcharges);
 			inst->SetPrice(SinglePrice);
 			inst->SetMerchantSlot(mp->itemslot);
-			inst->SetMerchantCount(new_charges);
+			inst->SetMerchantCount(new_quantity);
 
 			SendItemPacket(mp->itemslot, inst, ItemPacketMerchant);
 		}
@@ -13379,6 +13379,7 @@ void Client::Handle_OP_ShopPlayerBuy(const EQApplicationPacket *app)
 	std::cout << "At 1: " << t1.getDuration() << std::endl;
 	return;
 }
+
 void Client::Handle_OP_ShopPlayerSell(const EQApplicationPacket *app)
 {
 	if (app->size != sizeof(Merchant_Purchase_Struct)) {
@@ -13446,35 +13447,44 @@ void Client::Handle_OP_ShopPlayerSell(const EQApplicationPacket *app)
 		}
 	}
 
-	AddMoneyToPP(price);
+	AddMoneyToPP(price, false);
 
-	if (inst->IsStackable() || inst->IsCharged())
-	{
+	if (inst->IsStackable() && !inst->IsCharged()) {
 		unsigned int i_quan = inst->GetCharges();
-		if (mp->quantity > i_quan || inst->IsCharged())
+		if (mp->quantity > i_quan) {
 			mp->quantity = i_quan;
-	}
-	else
+		}
+	} else {
 		mp->quantity = 1;
+	}
 
 	if (RuleB(EventLog, RecordSellToMerchant))
 		LogMerchant(this, vendor, mp->quantity, price, item, false);
 
-	int charges = mp->quantity;
+	int quantity = mp->quantity;
+
+	if (quantity == 0 && item->ItemType != 11 && item->ItemType != 17 && item->ItemType != 19 && item->ItemType != 21) {
+		quantity = 1;
+	}
 
 	int freeslot = 0;
-	if ((freeslot = zone->SaveTempItem(vendor->CastToNPC()->MerchantType, vendor->GetNPCTypeID(), itemid, charges, true)) > 0) {
+	if (quantity > 0 && (freeslot = zone->SaveTempItem(vendor->CastToNPC()->MerchantType, vendor->GetNPCTypeID(), itemid, quantity, inst->GetCharges(), true)) > 0) {
 		EQ::ItemInstance* inst2 = inst->Clone();
 
+		if (item->MaxCharges > 0) { // set this item instance's charges to the charges of the temp item currently on the merchant
+			inst2->SetCharges(zone->GetTempMerchItem(vendor->CastToNPC()->MerchantType, vendor->GetNPCTypeID(), itemid).itemcharges);
+		}
+
 		while (true) {
-			if (inst2 == nullptr)
+			if (inst2 == nullptr) {
 				break;
+			}
 
 			if (RuleB(Merchant, UsePriceMod)) {
 				inst2->SetPrice(item->Price*(RuleR(Merchant, SellCostMod))*item->SellRate*Client::CalcPriceMod(vendor, false));
-			}
-			else
+			} else {
 				inst2->SetPrice(item->Price*(RuleR(Merchant, SellCostMod))*item->SellRate);
+			}
 			inst2->SetMerchantSlot(freeslot);
 
 			uint32 MerchantQuantity = zone->GetTempMerchantQuantity(vendor->GetNPCTypeID(), freeslot);
@@ -13514,7 +13524,7 @@ void Client::Handle_OP_ShopPlayerSell(const EQApplicationPacket *app)
 
 		qsaudit->items[0].char_slot = mp->itemslot;
 		qsaudit->items[0].item_id = itemid;
-		qsaudit->items[0].charges = charges;
+		qsaudit->items[0].charges = quantity;
 		qsaudit->items[0].aug_1 = m_inv[mp->itemslot]->GetAugmentItemID(1);
 		qsaudit->items[0].aug_2 = m_inv[mp->itemslot]->GetAugmentItemID(2);
 		qsaudit->items[0].aug_3 = m_inv[mp->itemslot]->GetAugmentItemID(3);
@@ -13525,17 +13535,6 @@ void Client::Handle_OP_ShopPlayerSell(const EQApplicationPacket *app)
 		safe_delete(qspack);
 	}
 	// end QS code
-
-	const auto& export_string = fmt::format(
-		"{} {} {} {} {}",
-		vendor->GetNPCTypeID(),
-		vendor->CastToNPC()->MerchantType,
-		itemid,
-		mp->quantity,
-		price
-	);
-	parse->EventPlayer(EVENT_MERCHANT_SELL, this, export_string, 0);
-
 
 	// Now remove the item from the player, this happens regardless of outcome
 	DeleteItemInInventory(
@@ -13549,8 +13548,9 @@ void Client::Handle_OP_ShopPlayerSell(const EQApplicationPacket *app)
 
 
 	//This forces the price to show up correctly for charged items.
-	if (inst->IsCharged())
+	if (inst->IsCharged()) {
 		mp->quantity = 1;
+	}
 
 	auto outapp = new EQApplicationPacket(OP_ShopPlayerSell, sizeof(Merchant_Purchase_Struct));
 	Merchant_Purchase_Struct* mco = (Merchant_Purchase_Struct*)outapp->pBuffer;

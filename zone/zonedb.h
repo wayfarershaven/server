@@ -561,8 +561,8 @@ public:
 	void	RefreshPetitionsFromDB();
 
 	/* Merchants  */
-	void	SaveMerchantTemp(uint32 npcid, uint32 slot, uint32 zone_id, uint32 instance_id, uint32 item, uint32 charges);
-	void	DeleteMerchantTemp(uint32 npcid, uint32 slot, uint32 zone_id, uint32 instance_id);
+	void	SaveMerchantTemp(uint32 npcid, uint32 slot, uint32 item, uint32 charges, uint32 itemcharges);
+	void	DeleteMerchantTemp(uint32 npcid, uint32 slot);
 
 	/* Tradeskills  */
 	bool	GetTradeRecipe(const EQ::ItemInstance* container, uint8 c_type, uint32 some_id, uint32 char_id, DBTradeskillRecipe_Struct *spec);

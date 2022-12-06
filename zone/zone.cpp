@@ -413,16 +413,26 @@ void Zone::DumpMerchantList(uint32 npcid) {
 	}
 }
 
-int Zone::SaveTempItem(uint32 merchantid, uint32 npcid, uint32 item, int32 charges, bool sold) {
+/*
+	Gets a temp item from a merchant.
+*/
+TempMerchantList Zone::GetTempMerchItem(uint32 merchantid, uint32 npcid, uint32 item) {
+	std::list<TempMerchantList> tmp_merlist = tmpmerchanttable[npcid];
+	std::list<TempMerchantList>::const_iterator tmp_itr;
+	TempMerchantList ml;
+	for (tmp_itr = tmp_merlist.begin(); tmp_itr != tmp_merlist.end(); ++tmp_itr) {
+		ml = *tmp_itr;
+		if (ml.item == item) {
+			return ml;
+		}
+	}
+}
 
-	LogInventory("[{}] [{}] charges of [{}]", ((sold) ? "Sold" : "Bought"),
-		charges, item);
-	//DumpMerchantList(npcid);
-	// Iterate past main items.
-	// If the item being transacted is in this list, return 0;
+int Zone::SaveTempItem(uint32 merchantid, uint32 npcid, uint32 item, int32 quantity, int32 charges, bool sold)	{
+	int freeslot = 0;
 	std::list<MerchantList> merlist = merchanttable[merchantid];
 	std::list<MerchantList>::const_iterator itr;
-	uint32 temp_slot_index = 1;
+	uint32 i = 1;
 	for (itr = merlist.begin(); itr != merlist.end(); ++itr) {
 		MerchantList ml = *itr;
 		if (ml.item == item) {
@@ -430,126 +440,83 @@ int Zone::SaveTempItem(uint32 merchantid, uint32 npcid, uint32 item, int32 charg
 		}
 
 		// Account for merchant lists with gaps in them.
-		if (ml.slot >= temp_slot_index) {
-			temp_slot_index = ml.slot + 1;
+		if (ml.slot >= i) {
+			i = ml.slot + 1;
 		}
 	}
 
-	LogInventory("Searching Temporary List.  Main list ended at [{}]", temp_slot_index-1);
-
-	// Now search the temporary list.
 	std::list<TempMerchantList> tmp_merlist = tmpmerchanttable[npcid];
 	std::list<TempMerchantList>::const_iterator tmp_itr;
+	bool update_charges = false;
 	TempMerchantList ml;
-	uint32 first_empty_slot = 0; // Save 1st vacant slot while searching..
-	bool found = false;
-
-	for (tmp_itr = tmp_merlist.begin(); tmp_itr != tmp_merlist.end(); ++tmp_itr) {
-		ml = *tmp_itr;
-
-		if (ml.item == item) {
-			found = true;
-			LogInventory("Item found in temp list at [{}] with [{}] charges", ml.origslot, ml.charges);
-			break;
+	while (freeslot == 0 && !update_charges) {
+		freeslot = i;
+		for (tmp_itr = tmp_merlist.begin(); tmp_itr != tmp_merlist.end(); ++tmp_itr) {
+			ml = *tmp_itr;
+			if (ml.item == item) {
+				update_charges = true;
+				freeslot = 0;
+				break;
+			}
+			if ((ml.slot == i) || (ml.origslot == i)) {
+				freeslot = 0;
+			}
 		}
+		i++;
 	}
 
-	if (found) {
+	if (update_charges) {
 		tmp_merlist.clear();
 		std::list<TempMerchantList> oldtmp_merlist = tmpmerchanttable[npcid];
 		for (tmp_itr = oldtmp_merlist.begin(); tmp_itr != oldtmp_merlist.end(); ++tmp_itr) {
 			TempMerchantList ml2 = *tmp_itr;
-			if(ml2.item != item)
+			if(ml2.item != item) {
 				tmp_merlist.push_back(ml2);
-			else {
-				if (sold) {
-					LogInventory("Total charges is [{}] + [{}] charges", ml.charges, charges);
-					ml.charges = ml.charges + charges;
-				}
-				else {
-					ml.charges = charges;
-					LogInventory("new charges is [{}] charges", ml.charges);
-				}
-
-				if (!ml.origslot) {
-					ml.origslot = ml.slot;
-				}
-				if (ml.charges > 0) {
-					database.SaveMerchantTemp(npcid, ml.origslot, GetZoneID(), GetInstanceID(), item, ml.charges);
-					tmp_merlist.push_back(ml);
-				} else {
-					database.DeleteMerchantTemp(npcid, ml.origslot, GetZoneID(), GetInstanceID());
-				}
 			}
+		}
+
+		if (sold) {
+			ml.charges = ml.charges + quantity;
+			ml.itemcharges = ml.itemcharges;
+		} else {
+			ml.charges = quantity;
+		}
+
+		if (!ml.origslot) {
+			ml.origslot = ml.slot;
+		}
+
+		if (quantity > 0) {
+			database.SaveMerchantTemp(npcid, ml.origslot, item, ml.charges, ml.itemcharges);
+			tmp_merlist.push_back(ml);
+		} else {
+			database.DeleteMerchantTemp(npcid, ml.origslot);
 		}
 
 		tmpmerchanttable[npcid] = tmp_merlist;
-		//DumpMerchantList(npcid);
-		return ml.slot;
+
+		if (sold) {
+			return ml.slot;
+		}
 	}
-	else {
-		if (charges < 0) { //sanity check only, shouldnt happen
-			charges = 0x7FFF;
+
+	if (freeslot) {
+		if (quantity < 0) { //sanity check only, shouldnt happen
+			quantity = 0x7FFF;
 		}
-
-		// Find an ununsed db slot #
-		std::list<int> slots;
-		TempMerchantList ml3;
-		for (tmp_itr = tmp_merlist.begin(); tmp_itr != tmp_merlist.end(); ++tmp_itr) {
-			ml3 = *tmp_itr;
-			slots.push_back(ml3.origslot);
-		}
-		slots.sort();
-		std::list<int>::const_iterator slots_itr;
-		uint32 first_empty_slot = 0;
-		uint32 idx = temp_slot_index;
-		for (slots_itr = slots.begin(); slots_itr != slots.end(); ++slots_itr) {
-			if (!first_empty_slot && *slots_itr > idx) {
-				LogInventory("Popped [{}]", *slots_itr);
-				LogInventory("First Gap Found at [{}]", idx);
-				break;
-			}
-
-			++idx;
-		}
-
-		first_empty_slot = idx;
-
-		// Find an ununsed mslot
-		slots.clear();
-		for (tmp_itr = tmp_merlist.begin(); tmp_itr != tmp_merlist.end(); ++tmp_itr) {
-			ml3 = *tmp_itr;
-			slots.push_back(ml3.slot);
-		}
-		slots.sort();
-		uint32 first_empty_mslot=0;
-		idx = temp_slot_index;
-		for (slots_itr = slots.begin(); slots_itr != slots.end(); ++slots_itr) {
-			if (!first_empty_mslot && *slots_itr > idx) {
-				LogInventory("Popped [{}]", *slots_itr);
-				LogInventory("First Gap Found at [{}]", idx);
-				break;
-			}
-
-			++idx;
-		}
-
-		first_empty_mslot = idx;
-
-		database.SaveMerchantTemp(npcid, first_empty_slot, GetZoneID(), GetInstanceID(), item, charges);
+		database.SaveMerchantTemp(npcid, freeslot, item, quantity, charges);
 		tmp_merlist = tmpmerchanttable[npcid];
 		TempMerchantList ml2;
-		ml2.charges = charges;
-		LogInventory("Adding slot [{}] with [{}] charges.", first_empty_mslot, charges);
+		ml2.charges = quantity;
+		ml2.itemcharges = charges;
 		ml2.item = item;
 		ml2.npcid = npcid;
-		ml2.slot = first_empty_mslot;
-		ml2.origslot = first_empty_slot;
+		ml2.slot = freeslot;
+		ml2.origslot = ml2.slot;
 		tmp_merlist.push_back(ml2);
 		tmpmerchanttable[npcid] = tmp_merlist;
-		//DumpMerchantList(npcid);
-		return ml2.slot;
 	}
+	return freeslot;
 }
 
 uint32 Zone::GetTempMerchantQuantity(uint32 NPCID, uint32 Slot) {
@@ -604,7 +571,8 @@ void Zone::LoadTempMerchantData()
 				npcid,
 				slot,
 				charges,
-				itemid
+				itemid,
+				itemcharges
 				FROM merchantlist_temp
 				WHERE npcid IN ({})
 				AND zone_id = {}
@@ -634,6 +602,7 @@ void Zone::LoadTempMerchantData()
 		temp_merchant_list.slot     = atoul(row[1]);
 		temp_merchant_list.charges  = atoul(row[2]);
 		temp_merchant_list.item     = atoul(row[3]);
+		temp_merchant_list.itemcharges	= atoul(row[4]);
 		temp_merchant_list.origslot = temp_merchant_list.slot;
 
 		LogMerchants(
