@@ -95,6 +95,7 @@ public:
 	void SpellCast(Mob *caster, uint32 spell_id, float range, Mob *ae_center = nullptr);
 	void WipeHateList(bool npc_only = false);
 	void RemoveStaleEntries(int time_ms, float dist);
+	void OnDeathTrigger();
 
 
 protected:

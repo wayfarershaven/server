@@ -2309,8 +2309,26 @@ void Mob::AreaRampage(ExtraAttackOptions *opts)
 	m_specialattacks = eSpecialAttacks::None;
 }
 
-uint32 Mob::GetLevelCon(uint8 mylevel, uint8 iOtherLevel) {
+uint8 Mob::GetLevelForClientCon(uint8 mylevel, uint8 iOtherLevel) {
+	signed diff = iOtherLevel - mylevel;
 
+	if (diff >= 0 || mylevel > MAX_CON_LEVELS) {
+		return iOtherLevel; // white/yellow/red is correct as database level
+	}
+	
+	// this determines a "fake" level to send a
+	// client based on their level to give era-correct con color
+	auto levels = CON_LEVELS_MAP[mylevel - 1];
+	if (levels[2] && iOtherLevel <= levels[0]) {
+		return levels[2]; // green
+	} else if (levels[3] && iOtherLevel <= levels[1]) {
+		return levels[3]; // light blue
+	} else {
+		return iOtherLevel; // blue
+	}
+}
+
+uint32 Mob::GetLevelCon(uint8 mylevel, uint8 iOtherLevel) {
 	uint32 conlevel = 0;
 
 	if (RuleB(Character, UseOldConSystem))

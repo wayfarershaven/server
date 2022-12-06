@@ -435,6 +435,7 @@ public:
 	int32 GetRawAC() const { return AC; }
 
 	float	GetNPCStat(std::string stat);
+	void	SetConLevel(uint8 in_level, Client *specific_target = nullptr);
 	void	ModifyNPCStat(std::string stat, std::string value);
 	virtual void SetLevel(uint8 in_level, bool command = false);
 

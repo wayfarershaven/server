@@ -2364,6 +2364,9 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 		}
 	}
 
+	//Shin: On death, see if anyone is on hate list that causes a trigger on death
+	hate_list.OnDeathTrigger();
+
 	LogCombat("Fatal blow dealt by [{}] with [{}] damage, spell [{}], skill [{}]",
 		((killer_mob) ? (killer_mob->GetName()) : ("[nullptr]")), damage, spell, attack_skill);
 
@@ -5067,9 +5070,9 @@ bool Mob::TryFinishingBlow(Mob *defender, int64 &damage)
 		else if (FB_Level < itembonuses.FinishingBlowLvl[SBIndex::FINISHING_EFFECT_LEVEL_MAX])
 			FB_Level = itembonuses.FinishingBlowLvl[SBIndex::FINISHING_EFFECT_LEVEL_MAX];
 
-		// modern AA description says rank 1 (500) is 50% chance
+		// With our code, 500 = 5%.
 		int ProcChance =
-				aabonuses.FinishingBlow[SBIndex::FINISHING_EFFECT_PROC_CHANCE] + spellbonuses.FinishingBlow[SBIndex::FINISHING_EFFECT_PROC_CHANCE] + spellbonuses.FinishingBlow[SBIndex::FINISHING_EFFECT_PROC_CHANCE];
+				(aabonuses.FinishingBlow[SBIndex::FINISHING_EFFECT_PROC_CHANCE] + spellbonuses.FinishingBlow[SBIndex::FINISHING_EFFECT_PROC_CHANCE] + spellbonuses.FinishingBlow[SBIndex::FINISHING_EFFECT_PROC_CHANCE])/10;
 
 		if (FB_Level && FB_Dmg && (defender->GetLevel() <= FB_Level) && defender->currently_fleeing &&
 			(ProcChance >= zone->random.Int(1, 1000))) {
