@@ -2114,11 +2114,16 @@ const NPCType *ZoneDatabase::LoadNPCTypesData(uint32 npc_type_id, bool bulk_load
 		t->raid_target            = n.raid_target != 0;
 		t->attack_delay           = n.attack_delay * 100; // TODO: fix DB
 		t->light                  = (n.light & 0x0F);
+		t->chesttexture           = n.chesttexture;
 		t->armtexture             = n.armtexture;
 		t->bracertexture          = n.bracertexture;
 		t->handtexture            = n.handtexture;
 		t->legtexture             = n.legtexture;
 		t->feettexture            = n.feettexture;
+		t->combat_hp_regen        = n.combat_hp_regen;
+		t->combat_mana_regen      = n.combat_mana_regen;
+		t->aggro_pc               = n.aggro_pc;
+		t->ignore_distance        = n.ignore_distance;
 		t->ignore_despawn         = n.ignore_despawn != 0;
 		t->show_name              = n.show_name != 0;
 		t->untargetable           = n.untargetable != 0;

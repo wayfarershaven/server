@@ -116,11 +116,14 @@ public:
 		float       healscale;
 		uint8_t     no_target_hotkey;
 		uint8_t     raid_target;
+		int8_t		chesttexture;
 		int8_t      armtexture;
 		int8_t      bracertexture;
 		int8_t      handtexture;
 		int8_t      legtexture;
 		int8_t      feettexture;
+		int32_t		combat_hp_regen;
+		int32_t		combat_mana_regen;
 		int8_t      light;
 		int8_t      walkspeed;
 		int32_t     peqid;
@@ -145,6 +148,9 @@ public:
 		int32_t     exp_mod;
 		int32_t     heroic_strikethrough;
 		int32_t     faction_amount;
+		int8_t		aggro_pc;
+		float		ignore_distance;
+		int8_t		disable_instance;
 	};
 
 	static std::string PrimaryKey()
@@ -252,6 +258,7 @@ public:
 			"healscale",
 			"no_target_hotkey",
 			"raid_target",
+			"chesttexture",
 			"armtexture",
 			"bracertexture",
 			"handtexture",
@@ -262,9 +269,19 @@ public:
 			"peqid",
 			"unique_",
 			"fixed",
+			"combat_hp_regen",
+			"combat_mana_regen",
+			"aggro_pc",
+			"ignore_distance",
 			"ignore_despawn",
 			"show_name",
 			"untargetable",
+			"disable_instance",
+			"stuck_behavior",
+			"model",
+			"flymode",
+			"skip_global_loot",
+			"rare_spawn",
 			"charm_ac",
 			"charm_min_dmg",
 			"charm_max_dmg",
@@ -272,11 +289,6 @@ public:
 			"charm_accuracy_rating",
 			"charm_avoidance_rating",
 			"charm_atk",
-			"skip_global_loot",
-			"rare_spawn",
-			"stuck_behavior",
-			"model",
-			"flymode",
 			"always_aggro",
 			"exp_mod",
 			"heroic_strikethrough",
@@ -384,6 +396,7 @@ public:
 			"healscale",
 			"no_target_hotkey",
 			"raid_target",
+			"chesttexture",
 			"armtexture",
 			"bracertexture",
 			"handtexture",
@@ -394,9 +407,19 @@ public:
 			"peqid",
 			"unique_",
 			"fixed",
+			"combat_hp_regen",
+			"combat_mana_regen",
+			"aggro_pc",
+			"ignore_distance",
 			"ignore_despawn",
 			"show_name",
 			"untargetable",
+			"disable_instance",
+			"stuck_behavior",
+			"model",
+			"flymode",
+			"skip_global_loot",
+			"rare_spawn",
 			"charm_ac",
 			"charm_min_dmg",
 			"charm_max_dmg",
@@ -404,11 +427,6 @@ public:
 			"charm_accuracy_rating",
 			"charm_avoidance_rating",
 			"charm_atk",
-			"skip_global_loot",
-			"rare_spawn",
-			"stuck_behavior",
-			"model",
-			"flymode",
 			"always_aggro",
 			"exp_mod",
 			"heroic_strikethrough",
@@ -550,6 +568,7 @@ public:
 		e.healscale              = 100;
 		e.no_target_hotkey       = 0;
 		e.raid_target            = 0;
+		e.chesttexture           = 0;
 		e.armtexture             = 0;
 		e.bracertexture          = 0;
 		e.handtexture            = 0;
@@ -560,9 +579,19 @@ public:
 		e.peqid                  = 0;
 		e.unique_                = 0;
 		e.fixed                  = 0;
+		e.combat_hp_regen        = 0;
+		e.combat_mana_regen      = 0;
+		e.aggro_pc               = 0;
+		e.ignore_distance        = 600;
 		e.ignore_despawn         = 0;
 		e.show_name              = 1;
 		e.untargetable           = 0;
+		e.disable_instance       = 0;
+		e.stuck_behavior         = 0;
+		e.model                  = 0;
+		e.flymode                = -1;
+		e.skip_global_loot       = 0;
+		e.rare_spawn             = 0;
 		e.charm_ac               = 0;
 		e.charm_min_dmg          = 0;
 		e.charm_max_dmg          = 0;
@@ -570,11 +599,6 @@ public:
 		e.charm_accuracy_rating  = 0;
 		e.charm_avoidance_rating = 0;
 		e.charm_atk              = 0;
-		e.skip_global_loot       = 0;
-		e.rare_spawn             = 0;
-		e.stuck_behavior         = 0;
-		e.model                  = 0;
-		e.flymode                = -1;
 		e.always_aggro           = 0;
 		e.exp_mod                = 100;
 		e.heroic_strikethrough   = 0;
@@ -711,35 +735,41 @@ public:
 			e.healscale              = strtof(row[94], nullptr);
 			e.no_target_hotkey       = static_cast<uint8_t>(strtoul(row[95], nullptr, 10));
 			e.raid_target            = static_cast<uint8_t>(strtoul(row[96], nullptr, 10));
-			e.armtexture             = static_cast<int8_t>(atoi(row[97]));
-			e.bracertexture          = static_cast<int8_t>(atoi(row[98]));
-			e.handtexture            = static_cast<int8_t>(atoi(row[99]));
-			e.legtexture             = static_cast<int8_t>(atoi(row[100]));
-			e.feettexture            = static_cast<int8_t>(atoi(row[101]));
-			e.light                  = static_cast<int8_t>(atoi(row[102]));
-			e.walkspeed              = static_cast<int8_t>(atoi(row[103]));
-			e.peqid                  = static_cast<int32_t>(atoi(row[104]));
-			e.unique_                = static_cast<int8_t>(atoi(row[105]));
-			e.fixed                  = static_cast<int8_t>(atoi(row[106]));
-			e.ignore_despawn         = static_cast<int8_t>(atoi(row[107]));
-			e.show_name              = static_cast<int8_t>(atoi(row[108]));
-			e.untargetable           = static_cast<int8_t>(atoi(row[109]));
-			e.charm_ac               = static_cast<int16_t>(atoi(row[110]));
-			e.charm_min_dmg          = static_cast<int32_t>(atoi(row[111]));
-			e.charm_max_dmg          = static_cast<int32_t>(atoi(row[112]));
-			e.charm_attack_delay     = static_cast<int8_t>(atoi(row[113]));
-			e.charm_accuracy_rating  = static_cast<int32_t>(atoi(row[114]));
-			e.charm_avoidance_rating = static_cast<int32_t>(atoi(row[115]));
-			e.charm_atk              = static_cast<int32_t>(atoi(row[116]));
-			e.skip_global_loot       = static_cast<int8_t>(atoi(row[117]));
-			e.rare_spawn             = static_cast<int8_t>(atoi(row[118]));
-			e.stuck_behavior         = static_cast<int8_t>(atoi(row[119]));
-			e.model                  = static_cast<int16_t>(atoi(row[120]));
-			e.flymode                = static_cast<int8_t>(atoi(row[121]));
-			e.always_aggro           = static_cast<int8_t>(atoi(row[122]));
-			e.exp_mod                = static_cast<int32_t>(atoi(row[123]));
-			e.heroic_strikethrough   = static_cast<int32_t>(atoi(row[124]));
-			e.faction_amount         = static_cast<int32_t>(atoi(row[125]));
+			e.chesttexture           = static_cast<int8_t>(atoi(row[97]));
+			e.armtexture             = static_cast<int8_t>(atoi(row[99]));
+			e.bracertexture          = static_cast<int8_t>(atoi(row[99]));
+			e.handtexture            = static_cast<int8_t>(atoi(row[100]));
+			e.legtexture             = static_cast<int8_t>(atoi(row[101]));
+			e.feettexture            = static_cast<int8_t>(atoi(row[102]));
+			e.light                  = static_cast<int8_t>(atoi(row[103]));
+			e.walkspeed              = static_cast<int8_t>(atoi(row[104]));
+			e.peqid                  = static_cast<int32_t>(atoi(row[105]));
+			e.unique_                = static_cast<int8_t>(atoi(row[106]));
+			e.fixed                  = static_cast<int8_t>(atoi(row[107]));
+			e.combat_hp_regen        = static_cast<int32_t>(atoi(row[108]));
+			e.combat_mana_regen      = static_cast<int32_t>(atoi(row[109]));
+			e.aggro_pc               = static_cast<int8_t>(atoi(row[110]));
+			e.ignore_distance        = strtof(row[111], nullptr);
+			e.ignore_despawn         = static_cast<int8_t>(atoi(row[112]));
+			e.show_name              = static_cast<int8_t>(atoi(row[113]));
+			e.untargetable           = static_cast<int8_t>(atoi(row[114]));
+			e.disable_instance       = static_cast<int8_t>(atoi(row[115]));
+			e.stuck_behavior         = static_cast<int8_t>(atoi(row[116]));
+			e.model                  = static_cast<int16_t>(atoi(row[117]));
+			e.flymode                = static_cast<int8_t>(atoi(row[118]));
+			e.skip_global_loot       = static_cast<int8_t>(atoi(row[119]));
+			e.rare_spawn             = static_cast<int8_t>(atoi(row[120]));
+			e.charm_ac               = static_cast<int16_t>(atoi(row[121]));
+			e.charm_min_dmg          = static_cast<int32_t>(atoi(row[122]));
+			e.charm_max_dmg          = static_cast<int32_t>(atoi(row[123]));
+			e.charm_attack_delay     = static_cast<int8_t>(atoi(row[124]));
+			e.charm_accuracy_rating  = static_cast<int32_t>(atoi(row[125]));
+			e.charm_avoidance_rating = static_cast<int32_t>(atoi(row[126]));
+			e.charm_atk              = static_cast<int32_t>(atoi(row[127]));
+			e.always_aggro           = static_cast<int8_t>(atoi(row[128]));
+			e.exp_mod                = static_cast<int32_t>(atoi(row[129]));
+			e.heroic_strikethrough   = static_cast<int32_t>(atoi(row[130]));
+			e.faction_amount         = static_cast<int32_t>(atoi(row[131]));
 
 			return e;
 		}
@@ -869,35 +899,41 @@ public:
 		v.push_back(columns[94] + " = " + std::to_string(e.healscale));
 		v.push_back(columns[95] + " = " + std::to_string(e.no_target_hotkey));
 		v.push_back(columns[96] + " = " + std::to_string(e.raid_target));
-		v.push_back(columns[97] + " = " + std::to_string(e.armtexture));
-		v.push_back(columns[98] + " = " + std::to_string(e.bracertexture));
-		v.push_back(columns[99] + " = " + std::to_string(e.handtexture));
-		v.push_back(columns[100] + " = " + std::to_string(e.legtexture));
-		v.push_back(columns[101] + " = " + std::to_string(e.feettexture));
-		v.push_back(columns[102] + " = " + std::to_string(e.light));
-		v.push_back(columns[103] + " = " + std::to_string(e.walkspeed));
-		v.push_back(columns[104] + " = " + std::to_string(e.peqid));
-		v.push_back(columns[105] + " = " + std::to_string(e.unique_));
-		v.push_back(columns[106] + " = " + std::to_string(e.fixed));
-		v.push_back(columns[107] + " = " + std::to_string(e.ignore_despawn));
-		v.push_back(columns[108] + " = " + std::to_string(e.show_name));
-		v.push_back(columns[109] + " = " + std::to_string(e.untargetable));
-		v.push_back(columns[110] + " = " + std::to_string(e.charm_ac));
-		v.push_back(columns[111] + " = " + std::to_string(e.charm_min_dmg));
-		v.push_back(columns[112] + " = " + std::to_string(e.charm_max_dmg));
-		v.push_back(columns[113] + " = " + std::to_string(e.charm_attack_delay));
-		v.push_back(columns[114] + " = " + std::to_string(e.charm_accuracy_rating));
-		v.push_back(columns[115] + " = " + std::to_string(e.charm_avoidance_rating));
-		v.push_back(columns[116] + " = " + std::to_string(e.charm_atk));
-		v.push_back(columns[117] + " = " + std::to_string(e.skip_global_loot));
-		v.push_back(columns[118] + " = " + std::to_string(e.rare_spawn));
-		v.push_back(columns[119] + " = " + std::to_string(e.stuck_behavior));
-		v.push_back(columns[120] + " = " + std::to_string(e.model));
-		v.push_back(columns[121] + " = " + std::to_string(e.flymode));
-		v.push_back(columns[122] + " = " + std::to_string(e.always_aggro));
-		v.push_back(columns[123] + " = " + std::to_string(e.exp_mod));
-		v.push_back(columns[124] + " = " + std::to_string(e.heroic_strikethrough));
-		v.push_back(columns[125] + " = " + std::to_string(e.faction_amount));
+		v.push_back(columns[97] + " = " + std::to_string(e.chesttexture));
+		v.push_back(columns[98] + " = " + std::to_string(e.armtexture));
+		v.push_back(columns[99] + " = " + std::to_string(e.bracertexture));
+		v.push_back(columns[100] + " = " + std::to_string(e.handtexture));
+		v.push_back(columns[101] + " = " + std::to_string(e.legtexture));
+		v.push_back(columns[102] + " = " + std::to_string(e.feettexture));
+		v.push_back(columns[103] + " = " + std::to_string(e.light));
+		v.push_back(columns[104] + " = " + std::to_string(e.walkspeed));
+		v.push_back(columns[105] + " = " + std::to_string(e.peqid));
+		v.push_back(columns[106] + " = " + std::to_string(e.unique_));
+		v.push_back(columns[107] + " = " + std::to_string(e.fixed));
+		v.push_back(columns[108] + " = " + std::to_string(e.combat_hp_regen));
+		v.push_back(columns[109] + " = " + std::to_string(e.combat_mana_regen));
+		v.push_back(columns[110] + " = " + std::to_string(e.aggro_pc));
+		v.push_back(columns[111] + " = " + std::to_string(e.ignore_distance));
+		v.push_back(columns[112] + " = " + std::to_string(e.ignore_despawn));
+		v.push_back(columns[113] + " = " + std::to_string(e.show_name));
+		v.push_back(columns[114] + " = " + std::to_string(e.untargetable));
+		v.push_back(columns[115] + " = " + std::to_string(e.disable_instance));
+		v.push_back(columns[116] + " = " + std::to_string(e.stuck_behavior));
+		v.push_back(columns[117] + " = " + std::to_string(e.model));
+		v.push_back(columns[118] + " = " + std::to_string(e.flymode));
+		v.push_back(columns[119] + " = " + std::to_string(e.skip_global_loot));
+		v.push_back(columns[120] + " = " + std::to_string(e.rare_spawn));
+		v.push_back(columns[121] + " = " + std::to_string(e.charm_ac));
+		v.push_back(columns[122] + " = " + std::to_string(e.charm_min_dmg));
+		v.push_back(columns[123] + " = " + std::to_string(e.charm_max_dmg));
+		v.push_back(columns[124] + " = " + std::to_string(e.charm_attack_delay));
+		v.push_back(columns[125] + " = " + std::to_string(e.charm_accuracy_rating));
+		v.push_back(columns[126] + " = " + std::to_string(e.charm_avoidance_rating));
+		v.push_back(columns[127] + " = " + std::to_string(e.charm_atk));
+		v.push_back(columns[128] + " = " + std::to_string(e.always_aggro));
+		v.push_back(columns[129] + " = " + std::to_string(e.exp_mod));
+		v.push_back(columns[130] + " = " + std::to_string(e.heroic_strikethrough));
+		v.push_back(columns[131] + " = " + std::to_string(e.faction_amount));
 
 		auto results = db.QueryDatabase(
 			fmt::format(
@@ -1016,6 +1052,7 @@ public:
 		v.push_back(std::to_string(e.healscale));
 		v.push_back(std::to_string(e.no_target_hotkey));
 		v.push_back(std::to_string(e.raid_target));
+		v.push_back(std::to_string(e.chesttexture));
 		v.push_back(std::to_string(e.armtexture));
 		v.push_back(std::to_string(e.bracertexture));
 		v.push_back(std::to_string(e.handtexture));
@@ -1026,9 +1063,19 @@ public:
 		v.push_back(std::to_string(e.peqid));
 		v.push_back(std::to_string(e.unique_));
 		v.push_back(std::to_string(e.fixed));
+		v.push_back(std::to_string(e.combat_hp_regen));
+		v.push_back(std::to_string(e.combat_mana_regen));
+		v.push_back(std::to_string(e.aggro_pc));
+		v.push_back(std::to_string(e.ignore_distance));
 		v.push_back(std::to_string(e.ignore_despawn));
 		v.push_back(std::to_string(e.show_name));
 		v.push_back(std::to_string(e.untargetable));
+		v.push_back(std::to_string(e.disable_instance));
+		v.push_back(std::to_string(e.stuck_behavior));
+		v.push_back(std::to_string(e.model));
+		v.push_back(std::to_string(e.flymode));
+		v.push_back(std::to_string(e.skip_global_loot));
+		v.push_back(std::to_string(e.rare_spawn));
 		v.push_back(std::to_string(e.charm_ac));
 		v.push_back(std::to_string(e.charm_min_dmg));
 		v.push_back(std::to_string(e.charm_max_dmg));
@@ -1036,11 +1083,6 @@ public:
 		v.push_back(std::to_string(e.charm_accuracy_rating));
 		v.push_back(std::to_string(e.charm_avoidance_rating));
 		v.push_back(std::to_string(e.charm_atk));
-		v.push_back(std::to_string(e.skip_global_loot));
-		v.push_back(std::to_string(e.rare_spawn));
-		v.push_back(std::to_string(e.stuck_behavior));
-		v.push_back(std::to_string(e.model));
-		v.push_back(std::to_string(e.flymode));
 		v.push_back(std::to_string(e.always_aggro));
 		v.push_back(std::to_string(e.exp_mod));
 		v.push_back(std::to_string(e.heroic_strikethrough));
@@ -1171,6 +1213,7 @@ public:
 			v.push_back(std::to_string(e.healscale));
 			v.push_back(std::to_string(e.no_target_hotkey));
 			v.push_back(std::to_string(e.raid_target));
+			v.push_back(std::to_string(e.chesttexture));
 			v.push_back(std::to_string(e.armtexture));
 			v.push_back(std::to_string(e.bracertexture));
 			v.push_back(std::to_string(e.handtexture));
@@ -1181,9 +1224,19 @@ public:
 			v.push_back(std::to_string(e.peqid));
 			v.push_back(std::to_string(e.unique_));
 			v.push_back(std::to_string(e.fixed));
+			v.push_back(std::to_string(e.combat_hp_regen));
+			v.push_back(std::to_string(e.combat_mana_regen));
+			v.push_back(std::to_string(e.aggro_pc));
+			v.push_back(std::to_string(e.ignore_distance));
 			v.push_back(std::to_string(e.ignore_despawn));
 			v.push_back(std::to_string(e.show_name));
 			v.push_back(std::to_string(e.untargetable));
+			v.push_back(std::to_string(e.disable_instance));
+			v.push_back(std::to_string(e.stuck_behavior));
+			v.push_back(std::to_string(e.model));
+			v.push_back(std::to_string(e.flymode));
+			v.push_back(std::to_string(e.skip_global_loot));
+			v.push_back(std::to_string(e.rare_spawn));
 			v.push_back(std::to_string(e.charm_ac));
 			v.push_back(std::to_string(e.charm_min_dmg));
 			v.push_back(std::to_string(e.charm_max_dmg));
@@ -1191,11 +1244,6 @@ public:
 			v.push_back(std::to_string(e.charm_accuracy_rating));
 			v.push_back(std::to_string(e.charm_avoidance_rating));
 			v.push_back(std::to_string(e.charm_atk));
-			v.push_back(std::to_string(e.skip_global_loot));
-			v.push_back(std::to_string(e.rare_spawn));
-			v.push_back(std::to_string(e.stuck_behavior));
-			v.push_back(std::to_string(e.model));
-			v.push_back(std::to_string(e.flymode));
 			v.push_back(std::to_string(e.always_aggro));
 			v.push_back(std::to_string(e.exp_mod));
 			v.push_back(std::to_string(e.heroic_strikethrough));
@@ -1330,35 +1378,41 @@ public:
 			e.healscale              = strtof(row[94], nullptr);
 			e.no_target_hotkey       = static_cast<uint8_t>(strtoul(row[95], nullptr, 10));
 			e.raid_target            = static_cast<uint8_t>(strtoul(row[96], nullptr, 10));
-			e.armtexture             = static_cast<int8_t>(atoi(row[97]));
-			e.bracertexture          = static_cast<int8_t>(atoi(row[98]));
-			e.handtexture            = static_cast<int8_t>(atoi(row[99]));
-			e.legtexture             = static_cast<int8_t>(atoi(row[100]));
-			e.feettexture            = static_cast<int8_t>(atoi(row[101]));
-			e.light                  = static_cast<int8_t>(atoi(row[102]));
-			e.walkspeed              = static_cast<int8_t>(atoi(row[103]));
-			e.peqid                  = static_cast<int32_t>(atoi(row[104]));
-			e.unique_                = static_cast<int8_t>(atoi(row[105]));
-			e.fixed                  = static_cast<int8_t>(atoi(row[106]));
-			e.ignore_despawn         = static_cast<int8_t>(atoi(row[107]));
-			e.show_name              = static_cast<int8_t>(atoi(row[108]));
-			e.untargetable           = static_cast<int8_t>(atoi(row[109]));
-			e.charm_ac               = static_cast<int16_t>(atoi(row[110]));
-			e.charm_min_dmg          = static_cast<int32_t>(atoi(row[111]));
-			e.charm_max_dmg          = static_cast<int32_t>(atoi(row[112]));
-			e.charm_attack_delay     = static_cast<int8_t>(atoi(row[113]));
-			e.charm_accuracy_rating  = static_cast<int32_t>(atoi(row[114]));
-			e.charm_avoidance_rating = static_cast<int32_t>(atoi(row[115]));
-			e.charm_atk              = static_cast<int32_t>(atoi(row[116]));
-			e.skip_global_loot       = static_cast<int8_t>(atoi(row[117]));
-			e.rare_spawn             = static_cast<int8_t>(atoi(row[118]));
-			e.stuck_behavior         = static_cast<int8_t>(atoi(row[119]));
-			e.model                  = static_cast<int16_t>(atoi(row[120]));
-			e.flymode                = static_cast<int8_t>(atoi(row[121]));
-			e.always_aggro           = static_cast<int8_t>(atoi(row[122]));
-			e.exp_mod                = static_cast<int32_t>(atoi(row[123]));
-			e.heroic_strikethrough   = static_cast<int32_t>(atoi(row[124]));
-			e.faction_amount         = static_cast<int32_t>(atoi(row[125]));
+			e.chesttexture           = static_cast<int8_t>(atoi(row[97]));
+			e.armtexture             = static_cast<int8_t>(atoi(row[99]));
+			e.bracertexture          = static_cast<int8_t>(atoi(row[99]));
+			e.handtexture            = static_cast<int8_t>(atoi(row[100]));
+			e.legtexture             = static_cast<int8_t>(atoi(row[101]));
+			e.feettexture            = static_cast<int8_t>(atoi(row[102]));
+			e.light                  = static_cast<int8_t>(atoi(row[103]));
+			e.walkspeed              = static_cast<int8_t>(atoi(row[104]));
+			e.peqid                  = static_cast<int32_t>(atoi(row[105]));
+			e.unique_                = static_cast<int8_t>(atoi(row[106]));
+			e.fixed                  = static_cast<int8_t>(atoi(row[107]));
+			e.combat_hp_regen        = static_cast<int32_t>(atoi(row[108]));
+			e.combat_mana_regen      = static_cast<int32_t>(atoi(row[109]));
+			e.aggro_pc               = static_cast<int8_t>(atoi(row[110]));
+			e.ignore_distance        = strtof(row[111], nullptr);
+			e.ignore_despawn         = static_cast<int8_t>(atoi(row[112]));
+			e.show_name              = static_cast<int8_t>(atoi(row[113]));
+			e.untargetable           = static_cast<int8_t>(atoi(row[114]));
+			e.disable_instance       = static_cast<int8_t>(atoi(row[115]));
+			e.stuck_behavior         = static_cast<int8_t>(atoi(row[116]));
+			e.model                  = static_cast<int16_t>(atoi(row[117]));
+			e.flymode                = static_cast<int8_t>(atoi(row[118]));
+			e.skip_global_loot       = static_cast<int8_t>(atoi(row[119]));
+			e.rare_spawn             = static_cast<int8_t>(atoi(row[120]));
+			e.charm_ac               = static_cast<int16_t>(atoi(row[121]));
+			e.charm_min_dmg          = static_cast<int32_t>(atoi(row[122]));
+			e.charm_max_dmg          = static_cast<int32_t>(atoi(row[123]));
+			e.charm_attack_delay     = static_cast<int8_t>(atoi(row[124]));
+			e.charm_accuracy_rating  = static_cast<int32_t>(atoi(row[125]));
+			e.charm_avoidance_rating = static_cast<int32_t>(atoi(row[126]));
+			e.charm_atk              = static_cast<int32_t>(atoi(row[127]));
+			e.always_aggro           = static_cast<int8_t>(atoi(row[128]));
+			e.exp_mod                = static_cast<int32_t>(atoi(row[129]));
+			e.heroic_strikethrough   = static_cast<int32_t>(atoi(row[130]));
+			e.faction_amount         = static_cast<int32_t>(atoi(row[131]));
 
 			all_entries.push_back(e);
 		}
@@ -1480,36 +1534,41 @@ public:
 			e.healscale              = strtof(row[94], nullptr);
 			e.no_target_hotkey       = static_cast<uint8_t>(strtoul(row[95], nullptr, 10));
 			e.raid_target            = static_cast<uint8_t>(strtoul(row[96], nullptr, 10));
-			e.armtexture             = static_cast<int8_t>(atoi(row[97]));
-			e.bracertexture          = static_cast<int8_t>(atoi(row[98]));
-			e.handtexture            = static_cast<int8_t>(atoi(row[99]));
-			e.legtexture             = static_cast<int8_t>(atoi(row[100]));
-			e.feettexture            = static_cast<int8_t>(atoi(row[101]));
-			e.light                  = static_cast<int8_t>(atoi(row[102]));
-			e.walkspeed              = static_cast<int8_t>(atoi(row[103]));
-			e.peqid                  = static_cast<int32_t>(atoi(row[104]));
-			e.unique_                = static_cast<int8_t>(atoi(row[105]));
-			e.fixed                  = static_cast<int8_t>(atoi(row[106]));
-			e.ignore_despawn         = static_cast<int8_t>(atoi(row[107]));
-			e.show_name              = static_cast<int8_t>(atoi(row[108]));
-			e.untargetable           = static_cast<int8_t>(atoi(row[109]));
-			e.charm_ac               = static_cast<int16_t>(atoi(row[110]));
-			e.charm_min_dmg          = static_cast<int32_t>(atoi(row[111]));
-			e.charm_max_dmg          = static_cast<int32_t>(atoi(row[112]));
-			e.charm_attack_delay     = static_cast<int8_t>(atoi(row[113]));
-			e.charm_accuracy_rating  = static_cast<int32_t>(atoi(row[114]));
-			e.charm_avoidance_rating = static_cast<int32_t>(atoi(row[115]));
-			e.charm_atk              = static_cast<int32_t>(atoi(row[116]));
-			e.skip_global_loot       = static_cast<int8_t>(atoi(row[117]));
-			e.rare_spawn             = static_cast<int8_t>(atoi(row[118]));
-			e.stuck_behavior         = static_cast<int8_t>(atoi(row[119]));
-			e.model                  = static_cast<int16_t>(atoi(row[120]));
-			e.flymode                = static_cast<int8_t>(atoi(row[121]));
-			e.always_aggro           = static_cast<int8_t>(atoi(row[122]));
-			e.exp_mod                = static_cast<int32_t>(atoi(row[123]));
-			e.heroic_strikethrough   = static_cast<int32_t>(atoi(row[124]));
-			e.faction_amount         = static_cast<int32_t>(atoi(row[125]));
-
+			e.chesttexture           = static_cast<int8_t>(atoi(row[97]));
+			e.armtexture             = static_cast<int8_t>(atoi(row[99]));
+			e.bracertexture          = static_cast<int8_t>(atoi(row[99]));
+			e.handtexture            = static_cast<int8_t>(atoi(row[100]));
+			e.legtexture             = static_cast<int8_t>(atoi(row[101]));
+			e.feettexture            = static_cast<int8_t>(atoi(row[102]));
+			e.light                  = static_cast<int8_t>(atoi(row[103]));
+			e.walkspeed              = static_cast<int8_t>(atoi(row[104]));
+			e.peqid                  = static_cast<int32_t>(atoi(row[105]));
+			e.unique_                = static_cast<int8_t>(atoi(row[106]));
+			e.fixed                  = static_cast<int8_t>(atoi(row[107]));
+			e.combat_hp_regen        = static_cast<int32_t>(atoi(row[108]));
+			e.combat_mana_regen      = static_cast<int32_t>(atoi(row[109]));
+			e.aggro_pc               = static_cast<int8_t>(atoi(row[110]));
+			e.ignore_distance        = strtof(row[111], nullptr);
+			e.ignore_despawn         = static_cast<int8_t>(atoi(row[112]));
+			e.show_name              = static_cast<int8_t>(atoi(row[113]));
+			e.untargetable           = static_cast<int8_t>(atoi(row[114]));
+			e.disable_instance       = static_cast<int8_t>(atoi(row[115]));
+			e.stuck_behavior         = static_cast<int8_t>(atoi(row[116]));
+			e.model                  = static_cast<int16_t>(atoi(row[117]));
+			e.flymode                = static_cast<int8_t>(atoi(row[118]));
+			e.skip_global_loot       = static_cast<int8_t>(atoi(row[119]));
+			e.rare_spawn             = static_cast<int8_t>(atoi(row[120]));
+			e.charm_ac               = static_cast<int16_t>(atoi(row[121]));
+			e.charm_min_dmg          = static_cast<int32_t>(atoi(row[122]));
+			e.charm_max_dmg          = static_cast<int32_t>(atoi(row[123]));
+			e.charm_attack_delay     = static_cast<int8_t>(atoi(row[124]));
+			e.charm_accuracy_rating  = static_cast<int32_t>(atoi(row[125]));
+			e.charm_avoidance_rating = static_cast<int32_t>(atoi(row[126]));
+			e.charm_atk              = static_cast<int32_t>(atoi(row[127]));
+			e.always_aggro           = static_cast<int8_t>(atoi(row[128]));
+			e.exp_mod                = static_cast<int32_t>(atoi(row[129]));
+			e.heroic_strikethrough   = static_cast<int32_t>(atoi(row[130]));
+			e.faction_amount         = static_cast<int32_t>(atoi(row[131]));
 			all_entries.push_back(e);
 		}
 

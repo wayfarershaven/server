@@ -135,6 +135,7 @@ struct NPCType
 	float	healscale;
 	bool	no_target_hotkey;
 	bool	raid_target;
+	uint8   chesttexture;
 	uint8	armtexture;
 	uint8	bracertexture;
 	uint8	handtexture;
@@ -152,6 +153,11 @@ struct NPCType
 	bool	always_aggro;
 	int     exp_mod;
 	int 	heroic_strikethrough;
+	uint32  combat_hp_regen;
+	uint32  combat_mana_regen;
+	uint8   aggro_pc;
+	float   ignore_distance;
+	uint8   disable_instance;
 };
 
 namespace player_lootitem {
