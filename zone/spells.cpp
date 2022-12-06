@@ -5253,8 +5253,7 @@ float Mob::ResistSpell(uint8 resist_type, uint16 spell_id, Mob *caster, bool use
 	}
 }
 
-int Mob::ResistPhysical(int level_diff, uint8 caster_level)
-{
+int Mob::ResistPhysical(int level_diff, uint8 caster_level) {
 	/*	Physical resists use the standard level mod calculation in
 	conjunction with a resist fall off formula that greatly prevents you
 	from landing abilities on mobs that are higher level than you.
@@ -5264,52 +5263,61 @@ int Mob::ResistPhysical(int level_diff, uint8 caster_level)
 	*/
 
 
-	if (level_diff == 0)
+	if (level_diff == 0) {
 		return level_diff;
+	}
 
 	int level_mod = 0;
 
 	if (level_diff > 0) {
-
 		int ResistFallOff = 0;
 
-		if (caster_level <= 12)
+		if (caster_level <= 12) {
 			ResistFallOff = 3;
-		else
+		} else {
 			ResistFallOff = caster_level/4;
+		}
 
-		if (level_diff > ResistFallOff || level_diff >= 15)
+		if (level_diff > ResistFallOff || level_diff >= 15) {
 			level_mod = ((level_diff * 10) + level_diff)*2;
-		else
+		} else {
 			level_mod = level_diff * level_diff / 2;
-	}
-
-	else
+		}
+	} else {
 		level_mod = -(level_diff * level_diff / 2);
-
+	}
 	return level_mod;
 }
 
-int16 Mob::CalcResistChanceBonus()
-{
+int16 Mob::CalcResistChanceBonus() {
 	int resistchance = spellbonuses.ResistSpellChance + itembonuses.ResistSpellChance;
 
-	if(IsClient())
+	if (IsClient()) {
 		resistchance += aabonuses.ResistSpellChance;
+	}
 
 	return resistchance;
 }
 
-int16 Mob::CalcFearResistChance()
-{
+int16 Mob::CalcFearResistChance() {
 	int resistchance = spellbonuses.ResistFearChance + itembonuses.ResistFearChance;
-	if(IsClient()) {
+	if (IsClient()) {
 		resistchance += aabonuses.ResistFearChance;
-		if(aabonuses.Fearless == true)
+		if(aabonuses.Fearless == true) {
 			resistchance = 100;
+		}
 	}
-	if(spellbonuses.Fearless == true || itembonuses.Fearless == true)
+
+	if (spellbonuses.Fearless == true || itembonuses.Fearless == true) {
 		resistchance = 100;
+	}
+
+	// Npc's over level 55 are immune to fear
+	// https://forums.daybreakgames.com/eq/index.php?threads/new-fear-storm.245782/
+	// http://everquest.allakhazam.com/db/spell.html?spell=59#m106884133414434
+	if (IsNPC() && GetLevel() >= RuleI(Spells, NpcFearImmuneLevel)) {
+		resistchance = 100;
+	}
 
 	return resistchance;
 }
