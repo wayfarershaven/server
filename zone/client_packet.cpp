@@ -1789,32 +1789,35 @@ void Client::Handle_OP_AAAction(const EQApplicationPacket *app)
 	}
 	AA_Action* action = (AA_Action*)app->pBuffer;
 
+	//break feign if casting
+	if (feigned) {
+		SetFeigned(false);
+	}
+
 	if (action->action == aaActionActivate) {//AA Hotkey
 		LogAA("Activating AA [{}]", action->ability);
 		ActivateAlternateAdvancementAbility(action->ability, action->target_id);
-	}
-	else if (action->action == aaActionBuy) {
+	} else if (action->action == aaActionBuy) {
 		PurchaseAlternateAdvancementRank(action->ability);
-	}
-	else if (action->action == aaActionDisableEXP) { //Turn Off AA Exp
-		if (m_epp.perAA > 0)
+	} else if (action->action == aaActionDisableEXP) { //Turn Off AA Exp
+		if (m_epp.perAA > 0) {
 			MessageString(Chat::White, AA_OFF);
+		}
 
 		m_epp.perAA = 0;
 		SendAlternateAdvancementStats();
-	}
-	else if (action->action == aaActionSetEXP) {
-		if (m_epp.perAA == 0)
+	} else if (action->action == aaActionSetEXP) {
+		if (m_epp.perAA == 0) {
 			MessageString(Chat::White, AA_ON);
+		}
 		m_epp.perAA = action->exp_value;
-		if (m_epp.perAA < 0 || m_epp.perAA > 100)
+		if (m_epp.perAA < 0 || m_epp.perAA > 100) {
 			m_epp.perAA = 0;	// stop exploit with sanity check
-
+		}
 								// send an update
 		SendAlternateAdvancementStats();
 		SendAlternateAdvancementTable();
-	}
-	else {
+	} else {
 		LogAA("Unknown AA action : [{}] [{}] [{}] [{}]", action->action, action->ability, action->target_id, action->exp_value);
 	}
 }
