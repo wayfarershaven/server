@@ -324,9 +324,14 @@ uint16 Lua_Mob::FindBuffBySlot(int slot) {
 	return self->FindBuffBySlot(slot);
 }
 
-uint32 Lua_Mob::BuffCount() {
+uint32 Lua_Mob::GetDetBuffCount() {
 	Lua_Safe_Call_Int();
-	return self->BuffCount();
+	return self->GetDetBuffCount();
+}
+
+uint32 Lua_Mob::GetBeneBuffCount() {
+	Lua_Safe_Call_Int();
+	return self->GetBeneBuffCount();
 }
 
 bool Lua_Mob::FindType(int type) {
@@ -2801,7 +2806,8 @@ luabind::scope lua_register_mob() {
 	.def("BehindMob", (bool(Lua_Mob::*)(Lua_Mob,float))&Lua_Mob::BehindMob)
 	.def("BehindMob", (bool(Lua_Mob::*)(Lua_Mob,float,float))&Lua_Mob::BehindMob)
 	.def("BehindMob", (bool(Lua_Mob::*)(void))&Lua_Mob::BehindMob)
-	.def("BuffCount", &Lua_Mob::BuffCount)
+	.def("GetDetBuffCount", &Lua_Mob::GetDetBuffCount)
+	.def("GetBeneBuffCount", &Lua_Mob::GetBeneBuffCount)
 	.def("BuffFadeAll", (void(Lua_Mob::*)(void))&Lua_Mob::BuffFadeAll)
 	.def("BuffFadeByEffect", (void(Lua_Mob::*)(int))&Lua_Mob::BuffFadeByEffect)
 	.def("BuffFadeByEffect", (void(Lua_Mob::*)(int,int))&Lua_Mob::BuffFadeByEffect)

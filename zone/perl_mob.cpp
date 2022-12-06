@@ -328,9 +328,14 @@ int Perl_Mob_FindBuffBySlot(Mob* self, int slot) // @categories Spells and Disci
 	return self->FindBuffBySlot(slot);
 }
 
-int Perl_Mob_BuffCount(Mob* self) // @categories Script Utility, Spells and Disciplines
+int Perl_Mob_GetDetBuffCount(Mob* self) // @categories Script Utility, Spells and Disciplines
 {
-	return self->BuffCount();
+	return self->GetDetBuffCount();
+}
+
+int Perl_Mob_GetBeneBuffCount(Mob* self) // @categories Script Utility, Spells and Disciplines
+{
+	return self->GetBeneBuffCount();
 }
 
 bool Perl_Mob_FindType(Mob* self, uint16_t type) // @categories Script Utility
@@ -2761,7 +2766,8 @@ void perl_register_mob()
 	package.add("BehindMob", (bool(*)(Mob*, Mob*))&Perl_Mob_BehindMob);
 	package.add("BehindMob", (bool(*)(Mob*, Mob*, float))&Perl_Mob_BehindMob);
 	package.add("BehindMob", (bool(*)(Mob*, Mob*, float, float))&Perl_Mob_BehindMob);
-	package.add("BuffCount", &Perl_Mob_BuffCount);
+	package.add("GetDetBuffCount", &Perl_Mob_GetDetBuffCount);
+	package.add("GetBeneBuffCount", &Perl_Mob_GetBeneBuffCount);
 	package.add("BuffFadeAll", &Perl_Mob_BuffFadeAll);
 	package.add("BuffFadeByEffect", (void(*)(Mob*, int))&Perl_Mob_BuffFadeByEffect);
 	package.add("BuffFadeByEffect", (void(*)(Mob*, int, int))&Perl_Mob_BuffFadeByEffect);
