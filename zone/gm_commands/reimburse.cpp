@@ -9,7 +9,7 @@ void command_reimburse(Client *c, const Seperator *sep) {
 		} else {
 			std::string char_name = sep->arg[1];
 			auto char_id = database.GetCharacterID(sep->arg[1]);
-            
+
 			if(char_id == 0) {
 				c->Message(Chat::Red, "Character does not exist.");
 				return;
@@ -62,9 +62,9 @@ void command_reimburse(Client *c, const Seperator *sep) {
 			}
 
 			std::string query = StringFormat("INSERT INTO `cust_playerawards` (`CharID`, `Item_id`, `Reason`) VALUES (%i, %i, '%s')",
-											 char_id, item_id, EscapeString(message).c_str());
+											 char_id, item_id, Strings::Escape(message).c_str());
 			auto results = database.QueryDatabase(query);
-			c->Message(Chat::Lime, "Successfully added item: %s (%i) to Vhanna for player: %s (%i) For Reason: (%s)", EscapeString(item_name).c_str(), item_id, EscapeString(char_name).c_str(), char_id, EscapeString(message).c_str());
+			c->Message(Chat::Lime, "Successfully added item: %s (%i) to Vhanna for player: %s (%i) For Reason: (%s)", Strings::Escape(item_name).c_str(), item_id, Strings::Escape(char_name).c_str(), char_id, Strings::Escape(message).c_str());
 		}
 	} else {
 		c->Message(Chat::Red, "#reimburse usage:");
