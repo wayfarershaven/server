@@ -1771,6 +1771,7 @@ protected:
 	std::unique_ptr<Timer> AI_movement_timer;
 	std::unique_ptr<Timer> AI_target_check_timer;
 	int8 ForcedMovement; // push
+	bool resisted; // spell resisted
 	bool permarooted;
 	std::unique_ptr<Timer> AI_scan_area_timer;
 	std::unique_ptr<Timer> AI_walking_timer;

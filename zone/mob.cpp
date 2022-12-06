@@ -429,6 +429,7 @@ Mob::Mob(
 
 	pause_timer_complete = false;
 	ForcedMovement = 0;
+	resisted = 0;
 	roamer = false;
 	rooted = false;
 	charmed = false;
