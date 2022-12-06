@@ -1351,10 +1351,9 @@ void Client::Handle_Connect_OP_ZoneEntry(const EQApplicationPacket *app)
 	SetClientMaxLevel(client_max_level);
 
 	// we know our class now, so we might have to fix our consume timer!
-	if (class_ == MONK)
+	if (class_ == MONK) {
 		consume_food_timer.SetTimer(CONSUMPTION_MNK_TIMER);
-
-	InitInnates();
+	}
 
 	/* If GM not set in DB, and does not meet min status to be GM, reset */
 	if (m_pp.gm && admin < minStatusToBeGM)
@@ -13770,8 +13769,6 @@ void Client::Handle_OP_SpawnAppearance(const EQApplicationPacket *app)
 				InterruptSpell();
 			SetFeigned(false);
 			BindWound(this, false, true);
-			tmSitting = Timer::GetCurrentTime();
-			BuffFadeBySitModifier();
 		}
 		else if (sa->parameter == ANIM_CROUCH) {
 			if (!UseBardSpellLogic())

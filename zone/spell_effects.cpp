@@ -70,9 +70,6 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 
 	const SPDat_Spell_Struct &spell = spells[spell_id];
 
-	if (spell.disallow_sit && IsBuffSpell(spell_id) && IsClient() && (CastToClient()->IsSitting() || CastToClient()->GetHorseId() != 0))
-		return false;
-
 	bool CanMemoryBlurFromMez = true;
 	if (IsMezzed()) { //Check for special memory blur behavior when on mez, this needs to be before buff override.
 		CanMemoryBlurFromMez = false;

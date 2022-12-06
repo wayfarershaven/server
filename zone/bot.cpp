@@ -8355,7 +8355,7 @@ int32 Bot::CalcATK() {
 }
 
 void Bot::CalcRestState() {
-	if(!RuleB(Character, RestRegenEnabled))
+	if(!RuleI(Character, RestRegenPercent))
 		return;
 
 	RestRegenHP = RestRegenMana = RestRegenEndurance = 0;
@@ -8371,9 +8371,10 @@ void Bot::CalcRestState() {
 		}
 	}
 
-	RestRegenHP = 6 * (GetMaxHP() / zone->newzone_data.fast_regen_hp);
-	RestRegenMana = 6 * (GetMaxMana() / zone->newzone_data.fast_regen_mana);
-	RestRegenEndurance = 6 * (GetMaxEndurance() / zone->newzone_data.fast_regen_endurance);
+	RestRegenHP = (GetMaxHP() * RuleI(Character, RestRegenPercent) / 100);
+	RestRegenMana = (GetMaxMana() * RuleI(Character, RestRegenPercent) / 100);
+	if(RuleB(Character, RestRegenEndurance))
+		RestRegenEndurance = (GetMaxEndurance() * RuleI(Character, RestRegenPercent) / 100);
 }
 
 int32 Bot::LevelRegen() {

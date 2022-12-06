@@ -182,28 +182,6 @@ struct RespawnOption
 	float heading;
 };
 
-// do not ask what all these mean because I have no idea!
-// named from the client's CEverQuest::GetInnateDesc, they're missing some
-enum eInnateSkill {
-	InnateEnabled = 0,
-	InnateAwareness = 1,
-	InnateBashDoor = 2,
-	InnateBreathFire = 3,
-	InnateHarmony = 4,
-	InnateInfravision = 6,
-	InnateLore = 8,
-	InnateNoBash = 9,
-	InnateRegen = 10,
-	InnateSlam = 11,
-	InnateSurprise = 12,
-	InnateUltraVision = 13,
-	InnateInspect = 14,
-	InnateOpen = 15,
-	InnateReveal = 16,
-	InnateSkillMax = 25, // size of array in client
-	InnateDisabled = 255
-};
-
 const std::string DIAWIND_RESPONSE_ONE_KEY       = "diawind_npc_response_one";
 const std::string DIAWIND_RESPONSE_TWO_KEY       = "diawind_npc_response_two";
 const uint32      POPUPID_DIAWIND_ONE            = 99999;
@@ -440,16 +418,6 @@ public:
 	const int64& SetMana(int64 amount);
 	int64 CalcManaRegenCap();
 
-	// guild pool regen shit. Sends a SpawnAppearance with a value that regens to value * 0.001
-	void EnableAreaHPRegen(int value);
-	void DisableAreaHPRegen();
-	void EnableAreaManaRegen(int value);
-	void DisableAreaManaRegen();
-	void EnableAreaEndRegen(int value);
-	void DisableAreaEndRegen();
-	void EnableAreaRegens(int value);
-	void DisableAreaRegens();
-
 	void ServerFilter(SetServerFilter_Struct* filter);
 	void BulkSendTraderInventory(uint32 char_id);
 	void SendSingleTraderItem(uint32 char_id, int uniqueid);
@@ -585,7 +553,7 @@ public:
 	/*Endurance and such*/
 	void CalcMaxEndurance(); //This calculates the maximum endurance we can have
 	int64 CalcBaseEndurance(); //Calculates Base End
-	int64 CalcEnduranceRegen(bool bCombat = false); //Calculates endurance regen used in DoEnduranceRegen()
+	int64 CalcEnduranceRegen(); //Calculates endurance regen used in DoEnduranceRegen()
 	int64 GetEndurance() const {return current_endurance;} //This gets our current endurance
 	int64 GetMaxEndurance() const {return max_end;} //This gets our endurance from the last CalcMaxEndurance() call
 	int64 CalcEnduranceRegenCap();
@@ -785,7 +753,6 @@ public:
 	void SendTradeskillDetails(uint32 recipe_id);
 	bool TradeskillExecute(DBTradeskillRecipe_Struct *spec);
 	void CheckIncreaseTradeskill(int16 bonusstat, int16 stat_modifier, float skillup_modifier, uint16 success_modifier, EQ::skills::SkillType tradeskill);
-	void InitInnates();
 
 	void GMKill();
 	inline bool IsMedding() const {return medding;}
@@ -860,9 +827,6 @@ public:
 	inline void SetControlledMobId(uint16 mob_id_in) { controlled_mob_id = mob_id_in; }
 	uint16 GetControlledMobId() const{ return controlled_mob_id; }
 	uint16 GetHorseId() const { return horseId; }
-	bool CanMedOnHorse();
-
-	bool CanFastRegen() const { return ooc_regen; }
 
 	void NPCSpawn(NPC *target_npc, const char *identifier, uint32 extra = 0);
 
@@ -1002,7 +966,6 @@ public:
 	void SetHunger(int32 in_hunger);
 	void SetThirst(int32 in_thirst);
 	void SetConsumption(int32 in_hunger, int32 in_thirst);
-	bool IsStarved() const { if (GetGM() || !RuleB(Character, EnableFoodRequirement) || !RuleB(Character, EnableHungerPenalties)) return false; return m_pp.hunger_level == 0 || m_pp.thirst_level == 0; }
 
 	bool CheckTradeLoreConflict(Client* other);
 	bool CheckTradeNonDroppable();
@@ -1754,17 +1717,14 @@ private:
 	int32 CalcCorrup();
 	int64 CalcMaxHP();
 	int64 CalcBaseHP();
-	int64 CalcHPRegen(bool bCombat = false);
-	int64 CalcManaRegen(bool bCombat = false);
+	int64 CalcHPRegen();
+	int64 CalcManaRegen();
 	int64 CalcBaseManaRegen();
 	uint64 GetClassHPFactor();
 	void DoHPRegen();
 	void DoManaRegen();
 	void DoStaminaHungerUpdate();
 	void CalcRestState();
-	// if they have aggro (AggroCount != 0) their timer is saved in m_pp.RestTimer, else we need to get current timer
-	inline uint32 GetRestTimer() const { return AggroCount ? m_pp.RestTimer : rest_timer.GetRemainingTime() / 1000; }
-	void UpdateRestTimer(uint32 new_timer);
 
 	uint32 pLastUpdate;
 	uint32 pLastUpdateWZ;
@@ -1825,7 +1785,6 @@ private:
 	std::string BuyerWelcomeMessage;
 	bool AbilityTimer;
 	int Haste; //precalced value
-	uint32 tmSitting; // time stamp started sitting, used for HP regen bonus added on MAY 5, 2004
 
 	int32 environment_damage_modifier;
 	bool invulnerable_environment_damage;
@@ -1949,10 +1908,9 @@ private:
 
 	unsigned int AggroCount; // How many mobs are aggro on us.
 
-	bool ooc_regen;
-	float AreaHPRegen;
-	float AreaManaRegen;
-	float AreaEndRegen;
+	unsigned int RestRegenHP;
+	unsigned int RestRegenMana;
+	unsigned int RestRegenEndurance;
 
 	std::set<uint32> zone_flags;
 	std::set<uint32> peqzone_flags;

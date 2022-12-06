@@ -424,7 +424,6 @@ public:
 	void BuffFadeBySitModifier();
 	void BuffDetachCaster(Mob *caster);
 	bool IsAffectedByBuff(uint16 spell_id);
-	bool IsAffectedByBuffByGlobalGroup(GlobalGroup group);
 	void BuffModifyDurationBySpellID(uint16 spell_id, int32 newDuration);
 	int AddBuff(Mob *caster, const uint16 spell_id, int duration = 0, int32 level_override = -1, bool disable_buff_overwrite = false);
 	int CanBuffStack(uint16 spellid, uint8 caster_level, bool iFailIfOverwrite = false);

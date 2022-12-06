@@ -655,10 +655,6 @@ enum spell_affect_index {
 	SAI_Trap_Lock				= 88
 };
 
-enum class GlobalGroup {
-	Lich = 46,
-};
-
 enum RESISTTYPE
 {
 	RESIST_NONE = 0,
