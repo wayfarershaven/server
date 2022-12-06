@@ -1747,11 +1747,13 @@ void Mob::Heal()
 
 void Client::Damage(Mob* other, int64 damage, uint16 spell_id, EQ::skills::SkillType attack_skill, bool avoidable, int8 buffslot, bool iBuffTic, eSpecialAttacks special)
 {
-	if (dead || IsCorpse())
+	if (dead || IsCorpse()) {
 		return;
+	}
 
-	if (spell_id == 0)
+	if (spell_id == 0) {
 		spell_id = SPELL_UNKNOWN;
+	}
 
 	// cut all PVP spell damage to 2/3
 	// Blasting ourselfs is considered PvP
@@ -1760,21 +1762,22 @@ void Client::Damage(Mob* other, int64 damage, uint16 spell_id, EQ::skills::Skill
 	//patch notes on PVP reductions only mention archery/throwing ... not normal dmg
 	if (other && other->IsClient() && (other != this) && damage > 0) {
 		int PvPMitigation = 100;
-		if (attack_skill == EQ::skills::SkillArchery || attack_skill == EQ::skills::SkillThrowing)
+		if (attack_skill == EQ::skills::SkillArchery || attack_skill == EQ::skills::SkillThrowing) {
 			PvPMitigation = 80;
-		else
+		} else {
 			PvPMitigation = 67;
+		}
 		damage = std::max<int64_t>((damage * PvPMitigation) / 100, 1);
 	}
 
-	if (!ClientFinishedLoading())
+	if (!ClientFinishedLoading()) {
 		damage = -5;
+	}
 
 	//do a majority of the work...
 	CommonDamage(other, damage, spell_id, attack_skill, avoidable, buffslot, iBuffTic, special);
 
 	if (damage > 0) {
-
 		if (spell_id == SPELL_UNKNOWN)
 			CheckIncreaseSkill(EQ::skills::SkillDefense, other, -15);
 	}
@@ -2398,9 +2401,12 @@ void NPC::Damage(Mob* other, int64 damage, uint16 spell_id, EQ::skills::SkillTyp
 	//do a majority of the work...
 	CommonDamage(other, damage, spell_id, attack_skill, avoidable, buffslot, iBuffTic, special);
 
+	// see if we are going to start fleeing
 	if (damage > 0) {
-		//see if we are gunna start fleeing
-		if (!IsPet()) CheckFlee();
+		// Sanity Check to ensure mob is not dead and is not a pet
+		if (!other->IsCorpse() && !IsPet()) {
+			CheckFlee();
+		}
 	}
 }
 
