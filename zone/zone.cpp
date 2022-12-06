@@ -352,6 +352,20 @@ bool Zone::IsSpecialBindLocation(const glm::vec4& location) {
 	return IsWithinAxisAlignedBox(glm::vec2(location.x, location.y), corner1, corner2);
 }
 
+bool Zone::IsBuyerAllowed(const glm::vec4& location) {
+	glm::vec2 corner1;
+	glm::vec2 corner2;
+	switch (GetZoneID()) {
+		case 151: // Bazaar
+			corner1 = glm::vec2(-104, -524);
+			corner2 = glm::vec2(94, -559);
+			break;
+		default:
+			return false;
+	}
+	return IsWithinAxisAlignedBox(glm::vec2(location.x, location.y), corner1, corner2);
+}
+
 //this also just loads into entity_list, not really into zone
 bool Zone::LoadGroundSpawns() {
 	Ground_Spawns groundspawn;
