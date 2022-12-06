@@ -189,8 +189,9 @@ void Mob::MakePet(uint16 spell_id, const char* pettype, const char *petname) {
 void Mob::MakePoweredPet(uint16 spell_id, const char* pettype, int16 petpower,
 		const char *petname, float in_size) {
 	// Sanity and early out checking first.
-	if(HasPet() || pettype == nullptr)
+	if(HasPet() || pettype == nullptr) {
 		return;
+	}
 
 	int16 act_power = 0; // The actual pet power we'll use.
 	if (petpower == -1) {
@@ -199,11 +200,11 @@ void Mob::MakePoweredPet(uint16 spell_id, const char* pettype, int16 petpower,
 			act_power = CastToClient()->mod_pet_power(act_power, spell_id);
 		}
 #ifdef BOTS
-		else if (IsBot())
+		else if (IsBot()) {
 			act_power = CastToBot()->GetBotFocusEffect(focusPetPower, spell_id);
+		}
 #endif
-	}
-	else if (petpower > 0)
+	} else if (petpower > 0)
 		act_power = petpower;
 
 	// optional rule: classic style variance in pets. Achieve this by
@@ -235,11 +236,9 @@ void Mob::MakePoweredPet(uint16 spell_id, const char* pettype, int16 petpower,
 #ifdef BOTS
 		|| IsBot()
 #endif
-		) && record.petpower == -1)
-	{
+		) && record.petpower == -1)	{
 		float scale_power = (float)act_power / 100.0f;
-		if(scale_power > 0)
-		{
+		if(scale_power > 0) {
 			npc_type->max_hp *= (1 + scale_power);
 			npc_type->current_hp = npc_type->max_hp;
 			npc_type->AC *= (1 + scale_power);
@@ -315,9 +314,7 @@ void Mob::MakePoweredPet(uint16 spell_id, const char* pettype, int16 petpower,
 
 	// handle monster summoning pet appearance
 	if(record.monsterflag) {
-
 		uint32 monsterid = 0;
-
 		// get a random npc id from the spawngroups assigned to this zone
 		auto query = StringFormat("SELECT npcID "
 									"FROM (spawnentry INNER JOIN spawn2 ON spawn2.spawngroupID = spawnentry.spawngroupID) "
@@ -340,8 +337,9 @@ void Mob::MakePoweredPet(uint16 spell_id, const char* pettype, int16 petpower,
 		}
 
 		// since we don't have any monsters, just make it look like an earth pet for now
-		if (monsterid == 0)
+		if (monsterid == 0) {
 			monsterid = 567;
+		}
 
 		// give the summoned pet the attributes of the monster we found
 		const NPCType* monster = content_db.LoadNPCTypesData(monsterid);
@@ -353,9 +351,9 @@ void Mob::MakePoweredPet(uint16 spell_id, const char* pettype, int16 petpower,
 			npc_type->luclinface = monster->luclinface;
 			npc_type->helmtexture = monster->helmtexture;
 			npc_type->herosforgemodel = monster->herosforgemodel;
-		} else
+		} else {
 			LogError("Error loading NPC data for monster summoning pet (NPC ID [{}])", monsterid);
-
+		}
 	}
 
 	//this takes ownership of the npc_type data
@@ -370,37 +368,36 @@ void Mob::MakePoweredPet(uint16 spell_id, const char* pettype, int16 petpower,
 	const EQ::ItemData *item = nullptr;
 
 	if (content_db.GetBasePetItems(record.equipmentset, petinv)) {
-		for (int i = EQ::invslot::EQUIPMENT_BEGIN; i <= EQ::invslot::EQUIPMENT_END; i++)
+		for (int i = EQ::invslot::EQUIPMENT_BEGIN; i <= EQ::invslot::EQUIPMENT_END; i++) {
 			if (petinv[i]) {
 				item = database.GetItem(petinv[i]);
 				npc->AddLootDrop(item, &npc->itemlist, NPC::NewLootDropEntry(), true);
 			}
+		}
 	}
 
 	npc->UpdateEquipmentLight();
 
 	// finally, override size if one was provided
-	if (in_size > 0.0f)
+	if (in_size > 0.0f)  {
 		npc->size = in_size;
+	}
 
 	entity_list.AddNPC(npc, true, true);
 	SetPetID(npc->GetID());
 	// We need to handle PetType 5 (petHatelist), add the current target to the hatelist of the pet
 
-	if (record.petcontrol == petTargetLock)
-	{
+	if (record.petcontrol == petTargetLock) {
 		Mob* m_target = GetTarget();
 
 		bool activiate_pet = false;
-		if (m_target && m_target->GetID() != GetID()) {
-
+		if (m_target && m_target->GetID() != GetID() && DistanceSquared(this->GetPosition(), m_target->GetPosition()) <= RuleR(Aggro, PetAttackRange)) {
 			if (spells[spell_id].target_type == ST_Self) {
 				float distance = CalculateDistance(m_target->GetX(), m_target->GetY(), m_target->GetZ());
 				if (distance <= 200) { //Live distance on targetlock pets that self cast. No message is given if not in range.
 					activiate_pet = true;
 				}
-			}
-			else {
+			} else {
 				activiate_pet = true;
 			}
 		}
@@ -409,8 +406,7 @@ void Mob::MakePoweredPet(uint16 spell_id, const char* pettype, int16 petpower,
 			npc->AddToHateList(m_target, 1);
 			npc->SetPetTargetLockID(m_target->GetID());
 			npc->SetSpecialAbility(IMMUNE_AGGRO, 1);
-		}
-		else {
+		} else {
 			npc->CastSpell(SPELL_UNSUMMON_SELF, npc->GetID()); //Live like behavior, damages self for 20K
 			if (!npc->HasDied()) {
 				npc->Kill(); //Ensure pet dies if over 20k HP.
