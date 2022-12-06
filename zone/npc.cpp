@@ -2567,12 +2567,20 @@ void NPC::ModifyNPCStat(std::string stat, std::string value)
 		hp_regen = strtoll(value.c_str(), nullptr, 10);
 		return;
 	}
+	else if (stat_lower == "combat_hp_regen") {
+		combat_hp_regen = strtoll(value.c_str(), nullptr, 10);
+		return;
+	}
 	else if (stat_lower == "hp_regen_per_second") {
 		hp_regen_per_second = strtoll(value.c_str(), nullptr, 10);
 		return;
 	}
 	else if (stat_lower == "mana_regen") {
 		mana_regen = strtoll(value.c_str(), nullptr, 10);
+		return;
+	}
+	else if (stat_lower == "combat_mana_regen") {
+		combat_mana_regen = strtoll(value.c_str(), nullptr, 10);
 		return;
 	}
 	else if (stat_lower == "level") {
