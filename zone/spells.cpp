@@ -3587,9 +3587,11 @@ bool Mob::SpellOnTarget(
 		!IsResurrectionEffects(spell_id) &&
 		!IsEffectInSpell(spell_id, SE_BindSight)
 	) {
-		if (!IsClient() || !CastToClient()->GetGM()) {
-			MessageString(Chat::SpellFailure, SPELL_NO_HOLD);
-			return false;
+		if (spell_id != 727) { // Bard Group Dispell
+			if (!IsClient() || !CastToClient()->GetGM()) {
+				MessageString(Chat::SpellFailure, SPELL_NO_HOLD);
+				return false;
+			}
 		}
 	}
 
@@ -3910,9 +3912,9 @@ bool Mob::SpellOnTarget(
 			}
 		} else if (
 			!IsAttackAllowed(spelltar, true) &&
-			!IsResurrectionEffects(spell_id) &&
-			!IsEffectInSpell(spell_id, SE_BindSight)
-		) { // Detrimental spells - PVP check
+			!IsResurrectionEffects(spell_id) && 
+			spell_id != 727
+			) // Detrimental spells - PVP check (excluding bard group dispell)
 			LogSpells(
 				"Detrimental spell [{}] can't take hold [{}] -> [{}]",
 				spell_id,
