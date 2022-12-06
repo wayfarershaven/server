@@ -254,7 +254,7 @@ public:
 
 	//Invisible
 	bool IsInvisible(Mob* other = 0) const;
-	void SetInvisible(uint8 state, bool set_on_bonus_calc = false);
+	void SetInvisible(uint8 state = 0, uint8 type = 0);
 
 	void CalcSeeInvisibleLevel();
 	void CalcInvisibleLevel();

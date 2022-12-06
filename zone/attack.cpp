@@ -3954,11 +3954,6 @@ void Mob::CommonDamage(Mob* attacker, int64 &damage, const uint16 spell_id, cons
 			TryTriggerThreshHold(damage, SE_TriggerSpellThreshold, attacker);
 		}
 
-		if (attacker && attacker->IsClient() && attacker->CastToClient()->sneaking) {
-			attacker->CastToClient()->sneaking = false;
-			attacker->SendAppearancePacket(AT_Sneak, 0);
-		}
-
 		//final damage has been determined.
 		SetHP(int64(GetHP() - damage));
 
@@ -6208,8 +6203,8 @@ void Mob::DoShieldDamageOnShielder(Mob *shield_target, int64 hit_damage_done, EQ
 void Mob::CommonBreakInvisibleFromCombat()
 {
 	//break invis when you attack
-	BreakInvisibleSpells();
 	CancelSneakHide();
+	SetInvisible(0);
 
 	if (spellbonuses.NegateIfCombat) {
 		BuffFadeByEffect(SE_NegateIfCombat);
