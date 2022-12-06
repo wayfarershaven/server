@@ -2362,27 +2362,21 @@ void NPC::FillSpawnStruct(NewSpawn_Struct* ns, Mob* ForWho)
 	ns->spawn.show_name = NPCTypedata->show_name;
 }
 
-void NPC::PetOnSpawn(NewSpawn_Struct* ns)
-{
+void NPC::PetOnSpawn(NewSpawn_Struct* ns) {
 	//Basic settings to make sure swarm pets work properly.
 	Mob *swarmOwner = nullptr;
-	if  (GetSwarmOwner())
-	{
+	if  (GetSwarmOwner()) {
 		swarmOwner = entity_list.GetMobID(GetSwarmOwner());
 	}
 
-	if  (swarmOwner != nullptr)
-	{
-		if(swarmOwner->IsClient())
-		{
+	if  (swarmOwner != nullptr)	{
+		if(swarmOwner->IsClient()) {
 			SetPetOwnerClient(true); //Simple flag to determine if pet belongs to a client
 			SetAllowBeneficial(true);//Allow temp pets to receive buffs and heals if owner is client.
 			//This will allow CLIENT swarm pets NOT to be targeted with F8.
 			ns->spawn.targetable_with_hotkey = 0;
 			no_target_hotkey = 1;
-		}
-		else
-		{
+		} else {
 			//NPC cast swarm pets should still be targetable with F8.
 			ns->spawn.targetable_with_hotkey = 1;
 			no_target_hotkey = 0;
@@ -2393,54 +2387,39 @@ void NPC::PetOnSpawn(NewSpawn_Struct* ns)
 		swarmOwner->SetTempPetCount(swarmOwner->GetTempPetCount() + 1);
 
 		//Not recommended if using above (However, this will work better on older clients).
-		if (RuleB(Pets, UnTargetableSwarmPet))
-		{
+		if (RuleB(Pets, UnTargetableSwarmPet)) {
 			ns->spawn.bodytype = 11;
-			if(!IsCharmed() && swarmOwner->IsClient()) {
-				std::string tmp_lastname = swarmOwner->GetName();
-				tmp_lastname += "'s Pet";
-				if (tmp_lastname.size() < sizeof(ns->spawn.lastName))
-					strn0cpy(ns->spawn.lastName, tmp_lastname.c_str(), sizeof(ns->spawn.lastName));
-			}
 		}
 
 		if (swarmOwner->IsNPC()) {
 			SetPetOwnerNPC(true);
 		}
-	}
-	else if(GetOwnerID())
-	{
+	} else if(GetOwnerID()) {
 		ns->spawn.is_pet = 1;
-		if (!IsCharmed())
-		{
+		if (!IsCharmed()) {
 			Client *client = entity_list.GetClientByID(GetOwnerID());
-			if(client)
-			{
+			if(client) {
 				SetPetOwnerClient(true);
 				std::string tmp_lastname = client->GetName();
 				tmp_lastname += "'s Pet";
-				if (tmp_lastname.size() < sizeof(ns->spawn.lastName))
+				if (tmp_lastname.size() < sizeof(ns->spawn.lastName)) {
 					strn0cpy(ns->spawn.lastName, tmp_lastname.c_str(), sizeof(ns->spawn.lastName));
-			}
-			else
-			{
-				if (entity_list.GetNPCByID(GetOwnerID()))
-				{
+				}
+			} else {
+				if (entity_list.GetNPCByID(GetOwnerID())) {
 					SetPetOwnerNPC(true);
 				}
 			}
 		}
-	}
-	else
-	{
+	} else {
 		ns->spawn.is_pet = 0;
 	}
 }
 
-void NPC::SetLevel(uint8 in_level, bool command)
-{
-	if(in_level > level)
+void NPC::SetLevel(uint8 in_level, bool command) {
+	if(in_level > level) {
 		SendLevelAppearance();
+	}
 	level = in_level;
 	SendAppearancePacket(AT_WhoLevel, in_level);
 }
