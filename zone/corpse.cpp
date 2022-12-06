@@ -1653,18 +1653,18 @@ uint16 Corpse::GetFirstSlotByItemID(uint32 item_id) {
 }
 
 bool Corpse::Summon(Client* client, bool spell, bool CheckDistance) {
-	uint32 dist2 = 10000; // pow(100, 2);
+	uint32 dist2 = RuleR(Character, CorpseDistance); // pow(100, 2);
 	if (!spell) {
 		if (GetCharID() == client->CharacterID()) {
 			if (IsLocked() && client->Admin() < AccountStatus::GMAdmin) {
 				client->Message(Chat::Red, "That corpse is locked by a GM.");
 				return false;
 			}
+			
 			if (!CheckDistance || (DistanceSquaredNoZ(m_Position, client->GetPosition()) <= dist2)) {
 				GMMove(client->GetX(), client->GetY(), client->GetZ());
 				is_corpse_changed = true;
-			}
-			else {
+			} else {
 				client->MessageString(Chat::Red, CORPSE_TOO_FAR);
 				return false;
 			}
