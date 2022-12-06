@@ -2171,15 +2171,6 @@ void Mob::ShowStats(Client* client)
 			).c_str()
 		);
 
-		// Experience Modifier
-		client->Message(
-			Chat::White,
-			fmt::format(
-				"Experience Modifier: {}",
-				target->GetKillExpMod()
-			).c_str()
-		);
-
 		// Quest Globals
 		client->Message(
 			Chat::White,

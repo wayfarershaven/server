@@ -12777,6 +12777,16 @@ void Client::Handle_OP_SenseHeading(const EQApplicationPacket *app)
 
 	int chancemod = 0;
 
+	// The client seems to limit sense heading packets based on skill
+	// level.  So if we're really low, we don't hit this routine very often.
+	// I think it's the GUI deciding when to skill you up.
+	// So, I'm adding a mod here which is larger at lower levels so
+	// very low levels get a much better chance to skill up when the GUI
+	// eventually sends a message.
+	if (GetLevel() <= 8) {
+		chancemod += (9 - level) * 10;
+	}
+
 	CheckIncreaseSkill(EQ::skills::SkillSenseHeading, nullptr, chancemod);
 
 	return;
@@ -14744,7 +14754,16 @@ void Client::Handle_OP_TradeRequest(const EQApplicationPacket *app)
 #else
 	else if (tradee && (tradee->IsNPC() || tradee->IsBot())) {
 #endif
-        if (!tradee->IsEngaged()) {
+		// If the NPC is engaged, we cannot trade with it.
+		// Note that this work as intended, if the NPC is charmed
+		// you can still trade with it.
+		if (tradee->IsEngaged()) {
+			Message(0, "Your target cannot trade with you at this moment.");
+		}
+
+		// If it not engaged, it will automatically accept the trade.
+		else {
+			//npcs always accept
 			trade->Start(msg->to_mob_id);
 			EQApplicationPacket *outapp = new EQApplicationPacket(OP_TradeRequestAck, sizeof(TradeRequest_Struct));
 			TradeRequest_Struct *acc = (TradeRequest_Struct *) outapp->pBuffer;
@@ -14752,8 +14771,6 @@ void Client::Handle_OP_TradeRequest(const EQApplicationPacket *app)
 			acc->to_mob_id = msg->from_mob_id;
 			FastQueuePacket(&outapp);
 			safe_delete(outapp);
-		} else {
-			Message(Chat::White, "Your target cannot trade with you at this moment.");
 		}
 	}
 	return;
