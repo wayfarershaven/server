@@ -1298,7 +1298,7 @@ void Client::Handle_Connect_OP_ZoneEntry(const EQApplicationPacket *app)
 
 	/* Set Max AA XP */
     max_AAXP = GetEXPForLevel(0, true);
-	
+
 	/* If we can maintain intoxication across zones, check for it */
 	if (!RuleB(Character, MaintainIntoxicationAcrossZones))
 		m_pp.intoxication = 0;
@@ -2679,6 +2679,7 @@ void Client::Handle_OP_AltCurrencySell(const EQApplicationPacket *app)
 		}
 
 		if (!RuleB(Merchant, EnableAltCurrencySell)) {
+			Message(13, "Selling alt currency items is disabled");
 			return;
 		}
 
