@@ -419,6 +419,10 @@ int QuestParserCollection::EventItem(QuestEventID evt, Client *client, EQ::ItemI
 									 std::vector<std::any> *extra_pointers) {
 	// needs pointer validation check on 'item' argument
 
+	if(!item) {
+		return 0; 
+	}
+
 	std::string item_script;
 	if(item->GetItem()->ScriptFileID != 0) {
 		item_script = "script_";

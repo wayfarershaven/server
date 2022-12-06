@@ -4985,16 +4985,78 @@ float Mob::ResistSpell(uint8 resist_type, uint16 spell_id, Mob *caster, bool use
 		return 100;
 	}
 
-	int target_resist = GetResist(resist_type);
+	int target_resist;
+	switch(resist_type) {
+		case RESIST_FIRE:
+			target_resist = GetFR();
+			if (IsNPC()) {
+				target_resist += RuleI(Spells, NPCResistModFire);
+			}
+			break;
+		case RESIST_COLD:
+			target_resist = GetCR();
+			if (IsNPC()) {
+				target_resist += RuleI(Spells, NPCResistModCold);
+			}
+			break;
+		case RESIST_MAGIC:
+			target_resist = GetMR();
+			if (IsNPC()) {
+				target_resist += RuleI(Spells, NPCResistModMagic);
+			}
+			break;
+		case RESIST_DISEASE:
+			target_resist = GetDR();
+			if (IsNPC()) {
+				target_resist += RuleI(Spells, NPCResistModDisease);
+			}
+			break;
+		case RESIST_POISON:
+			target_resist = GetPR();
+			if (IsNPC()) {
+				target_resist += RuleI(Spells, NPCResistModPoison);
+			}
+			break;
+		case RESIST_CORRUPTION:
+			target_resist = GetCorrup();
+			break;
+		case RESIST_PRISMATIC:
+			target_resist = (GetFR() + GetCR() + GetMR() + GetDR() + GetPR()) / 5;
+			break;
+		case RESIST_CHROMATIC:
+		{
+			target_resist = GetFR();
+			int temp = GetCR();
+			if(temp < target_resist) {
+				target_resist = temp;
+			}
 
-	// JULY 24, 2002 changes
-	int level = GetLevel();
-	if (RuleB(Spells,July242002PetResists) && IsPetOwnerClient() && caster->IsNPC() && !caster->IsPetOwnerClient()) {
-		auto owner = GetOwner();
-		if (owner != nullptr) {
-			target_resist = std::max(target_resist, owner->GetResist(resist_type));
-			level = owner->GetLevel();
+			temp = GetMR();
+			if(temp < target_resist) {
+				target_resist = temp;
+			}
+
+			temp = GetDR();
+			if(temp < target_resist) {
+				target_resist = temp;
+			}
+
+			temp = GetPR();
+			if(temp < target_resist) {
+				target_resist = temp;
+			}
 		}
+		break;
+		case RESIST_PHYSICAL:
+		{
+			if (IsNPC()) {
+				target_resist = GetPhR();
+			} else {
+				target_resist = 0;
+			}
+		}
+		default:
+			target_resist = 0;
 	}
 
 	//Setup our base resist chance.
@@ -5003,13 +5065,13 @@ float Mob::ResistSpell(uint8 resist_type, uint16 spell_id, Mob *caster, bool use
 
 	//Adjust our resist chance based on level modifiers
 	uint8 caster_level = level_override > 0 ? level_override : caster->GetLevel();
-	int temp_level_diff = level - caster_level;
+	int temp_level_diff = GetLevel() - caster_level;
 
 	//Physical Resists are calclated using their own formula derived from extensive parsing.
 	if (resist_type == RESIST_PHYSICAL) {
 		level_mod = ResistPhysical(temp_level_diff, caster_level);
 	} else {
-		if(IsNPC() && level >= RuleI(Casting,ResistFalloff)) {
+		if(IsNPC() && GetLevel() >= RuleI(Casting,ResistFalloff)) {
 			int a = (RuleI(Casting,ResistFalloff)-1) - caster_level;
 			if(a > 0) {
 				temp_level_diff = a;
@@ -5018,7 +5080,7 @@ float Mob::ResistSpell(uint8 resist_type, uint16 spell_id, Mob *caster, bool use
 			}
 		}
 
-		if(IsClient() && level >= 21 && temp_level_diff > 15) {
+		if(IsClient() && GetLevel() >= 21 && temp_level_diff > 15) {
 			temp_level_diff = 15;
 		}
 
@@ -5031,14 +5093,14 @@ float Mob::ResistSpell(uint8 resist_type, uint16 spell_id, Mob *caster, bool use
 			level_mod = -level_mod;
 		}
 
-		if(IsNPC() && (caster_level - level) < -20) {
+		if(IsNPC() && (caster_level - GetLevel()) < -20) {
 			level_mod = 1000;
 		}
 
 		//Even more level stuff this time dealing with damage spells
-		if(IsNPC() && IsDamageSpell(spell_id) && level >= 17) {
+		if(IsNPC() && IsDamageSpell(spell_id) && GetLevel() >= 17) {
 			int level_diff;
-			if(level >= RuleI(Casting,ResistFalloff)) {
+			if(GetLevel() >= RuleI(Casting,ResistFalloff)) {
 				level_diff = (RuleI(Casting,ResistFalloff)-1) - caster_level;
 				if(level_diff < 0) {
 					level_diff = 0;
@@ -5124,6 +5186,16 @@ float Mob::ResistSpell(uint8 resist_type, uint16 spell_id, Mob *caster, bool use
 		}
 	}
 
+	// AE Rain spells have a global 22% resist chance
+	// https://www.graffes.com/forums/showthread.php?3478-Rains-and-Resists-The-statistics-are-in-(with-debuffs)&s=6fd272ba22b5e11172d15f7d4cd282d6
+	if(caster->IsClient() && IsAERainNukeSpell(spell_id)) {
+		int rain_resist_chance = static_cast<int> (RuleR(Spells, AERainResistChance) * 200.0f);
+		if (resist_chance < rain_resist_chance){
+			//caster->Say("ITS RAINING MEN rc: %i rrc: %i", resist_chance, rain_resist_chance);
+			resist_chance = rain_resist_chance;
+		}
+	}
+
 	if (IsNPC()) {
 		resist_chance += RuleI(Spells, NPCResistMod);
 	}
@@ -5133,6 +5205,13 @@ float Mob::ResistSpell(uint8 resist_type, uint16 spell_id, Mob *caster, bool use
 	if(roll > resist_chance) {
 		return 100;
 	} else {
+		if (caster->IsClient() && IsAERainNukeSpell(spell_id)) {
+			if (roll <= static_cast<int> (RuleR(Spells, AERainResistChance) * 200.0f)) {
+				//caster->Say("skipping partial resist_chance since we are below the cutoff - roll: %i chance: %i", roll, resist_chance);
+				return 0;
+			}
+		}
+
 		//This is confusing but it's basically right
 		//It skews partial resists up over 100 more often than not
 		if(!IsPartialCapableSpell(spell_id)) {
@@ -5145,22 +5224,22 @@ float Mob::ResistSpell(uint8 resist_type, uint16 spell_id, Mob *caster, bool use
 			int partial_modifier = ((150 * (resist_chance - roll)) / resist_chance);
 
 			if(IsNPC()) {
-				if(level > caster_level && level >= 17 && caster_level <= 50) {
+				if(GetLevel() > caster_level && GetLevel() >= 17 && caster_level <= 50) {
 					partial_modifier += 5;
 				}
 
-				if(level >= 30 && caster_level < 50) {
+				if(GetLevel() >= 30 && caster_level < 50) {
 					partial_modifier += (caster_level - 25);
 				}
 
-				if(level < 15) {
+				if(GetLevel() < 15) {
 					partial_modifier -= 5;
 				}
 			}
 
 			if(caster->IsNPC()) {
-				if((level - caster_level) >= 20) {
-					partial_modifier += (level - caster_level) * 1.5;
+				if((GetLevel() - caster_level) >= 20) {
+					partial_modifier += (GetLevel() - caster_level) * 1.5;
 				}
 			}
 

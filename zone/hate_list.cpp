@@ -189,18 +189,20 @@ Mob* HateList::GetClosestEntOnHateList(Mob *hater, bool skip_mezzed, bool client
 
 void HateList::AddEntToHateList(Mob *in_entity, int64 in_hate, int64 in_damage, bool in_is_entity_frenzied, bool iAddIfNotExist)
 {
-	if (!in_entity)
+	if (!in_entity) {
 		return;
+	}
 
-	if (in_entity->IsCorpse())
+	if (in_entity->IsCorpse()) {
 		return;
+	}
 
-	if (in_entity->IsClient() && in_entity->CastToClient()->IsDead())
+	if (in_entity->IsClient() && in_entity->CastToClient()->IsDead()) {
 		return;
+	}
 
 	struct_HateList *entity = Find(in_entity);
-	if (entity)
-	{
+	if (entity)	{
 		entity->hatelist_damage += (in_damage >= 0) ? in_damage : 0;
 		entity->stored_hate_amount += in_hate;
 		entity->is_entity_frenzy = in_is_entity_frenzied;
@@ -215,8 +217,7 @@ void HateList::AddEntToHateList(Mob *in_entity, int64 in_hate, int64 in_damage, 
 			entity->stored_hate_amount,
 			entity->hatelist_damage
 		);
-	}
-	else if (iAddIfNotExist) {
+	} else if (iAddIfNotExist) {
 		entity = new struct_HateList;
 		entity->entity_on_hatelist = in_entity;
 		entity->hatelist_damage = (in_damage >= 0) ? in_damage : 0;
@@ -235,48 +236,51 @@ void HateList::AddEntToHateList(Mob *in_entity, int64 in_hate, int64 in_damage, 
 
 bool HateList::RemoveEntFromHateList(Mob *in_entity)
 {
-	if (!in_entity)
+	if (!in_entity) {
 		return false;
+	}
 
 	bool is_found = false;
 	auto iterator = list.begin();
 
-	while (iterator != list.end())
-	{
-		if ((*iterator)->entity_on_hatelist == in_entity)
-		{
+	while (iterator != list.end()) {
+		if ((*iterator)->entity_on_hatelist == in_entity) {
 			is_found = true;
 
-			if (in_entity && in_entity->IsClient())
+			if (in_entity && in_entity->IsClient()) {
 				in_entity->CastToClient()->DecrementAggroCount();
+			}
 
 			delete (*iterator);
 			iterator = list.erase(iterator);
 
-			if (in_entity)
+			if (in_entity) {
 				parse->EventNPC(EVENT_HATE_LIST, hate_owner->CastToNPC(), in_entity, "0", 0);
+			}
 
-		}
-		else
+		} else {
 			++iterator;
+		}
 	}
 	return is_found;
 }
 
 // so if faction_id and faction_value are set, we do RewardFaction, otherwise old stuff
 void HateList::DoFactionHits(int64 npc_faction_level_id, int32 faction_id, int32 faction_value) {
-	if (npc_faction_level_id <= 0 && faction_id <= 0 && faction_value == 0)
+	if (npc_faction_level_id <= 0 && faction_id <= 0 && faction_value == 0) {
 		return;
+	}
+
 	auto iterator = list.begin();
-	while (iterator != list.end())
-	{
+	while (iterator != list.end()) {
 		Client *client;
 
-		if ((*iterator)->entity_on_hatelist && (*iterator)->entity_on_hatelist->IsClient())
+		if ((*iterator)->entity_on_hatelist && (*iterator)->entity_on_hatelist->IsClient()) {
 			client = (*iterator)->entity_on_hatelist->CastToClient();
-		else
+		} else {
 			client = nullptr;
-
+		}
+		
 		if (client) {
 			if (faction_id != 0 && faction_value != 0) {
 				client->RewardFaction(faction_id, faction_value);
