@@ -167,7 +167,7 @@ public:
 	int32 GetNPCManaRegen() const { return mana_regen + itembonuses.ManaRegen + spellbonuses.ManaRegen; }
 	int32 GetHPRegen();
 	int32 GetManaRegen();
-	
+
 	virtual void SetTarget(Mob* mob);
 	virtual uint16 GetSkill(EQ::skills::SkillType skill_num) const { if (skill_num <= EQ::skills::HIGHEST_SKILL) { return skills[skill_num]; } return 0; }
 
@@ -476,7 +476,7 @@ public:
 	void NPCSlotTexture(uint8 slot, uint16 texture);	// Sets new material values for slots
 
 	uint32 GetAdventureTemplate() const { return adventure_template_id; }
-	void AddSpellToNPCList(int16 iPriority, uint16 iSpellID, uint32 iType, int16 iManaCost, int32 iRecastDelay, int16 iResistAdjust, int8 min_hp, int8 max_hp);
+	void AddSpellToNPCList(int16 iPriority, int16 iSpellID, uint32 iType, int16 iManaCost, int32 iRecastDelay, int16 iResistAdjust, int8 min_hp, int8 max_hp);
 	void AddSpellEffectToNPCList(uint16 iSpellEffectID, int32 base_value, int32 limit, int32 max_value, bool apply_bonus = false);
 	void RemoveSpellFromNPCList(uint16 spell_id);
 	void RemoveSpellEffectFromNPCList(uint16 iSpellEffectID, bool apply_bonus = false);
