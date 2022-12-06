@@ -8,6 +8,6 @@ void command_deletechar(Client *c, const Seperator *sep) {
 			c->Message(Chat::Green, "%s successfully deleted!", sep->arg[1]);
 		}
 	} else {
-		c->Message(Chat::White, "Usage: undeletechar [charname] - WARNING THIS BYPASSES THE UNDELETE FUNCTION");
+		c->Message(Chat::White, "Usage: deletechar [charname] - WARNING THIS BYPASSES THE UNDELETE FUNCTION");
 	}
 }
