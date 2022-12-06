@@ -123,6 +123,12 @@ bool Client::Process() {
 			SendHPUpdate();
 		}
 
+		// Purple Bug Hack
+		if (GetHP() < 0) {
+			Log(Logs::General, Logs::Debug, "GetHP < 0 - Killing!");
+			Death(0, 32000, SPELL_UNKNOWN, EQ::skills::SkillHandtoHand);
+		}
+		
 		/* I haven't naturally updated my position in 10 seconds, updating manually */
 		if (!IsMoving() && position_update_timer.Check()) {
 			SentPositionPacket(0.0f, 0.0f, 0.0f, 0.0f, 0);
