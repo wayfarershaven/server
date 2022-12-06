@@ -41,12 +41,13 @@ float Mob::GetActSpellRange(uint16 spell_id, float range, bool IsBard)
 }
 
 int64 Mob::GetActSpellDamage(uint16 spell_id, int64 value, Mob* target) {
-
-	if (spells[spell_id].target_type == ST_Self)
+	if (spells[spell_id].target_type == ST_Self) {
 		return value;
+	}
 
-	if (IsNPC())
+	if (IsNPC()) {
 		value += value*CastToNPC()->GetSpellFocusDMG()/100;
+	}
 
 	bool Critical = false;
 	int64 base_value = value;
@@ -59,23 +60,21 @@ int64 Mob::GetActSpellDamage(uint16 spell_id, int64 value, Mob* target) {
 
 	//Crtical Hit Calculation pathway
 	if (chance > 0 || (IsClient() && GetClass() == WIZARD && GetLevel() >= RuleI(Spells, WizCritLevel))) {
-
 		 int32 ratio = RuleI(Spells, BaseCritRatio); //Critical modifier is applied from spell effects only. Keep at 100 for live like criticals.
-
 		//Improved Harm Touch is a guaranteed crit if you have at least one level of SCF.
-		if (spell_id == SPELL_IMP_HARM_TOUCH && IsClient() && (GetAA(aaSpellCastingFury) > 0) && (GetAA(aaUnholyTouch) > 0))
+		if (spell_id == SPELL_IMP_HARM_TOUCH && IsClient() && (GetAA(aaSpellCastingFury) > 0) && (GetAA(aaUnholyTouch) > 0)) {
 			 chance = 100;
+		}
 
-		if (spells[spell_id].override_crit_chance > 0 && chance > spells[spell_id].override_crit_chance)
+		if (spells[spell_id].override_crit_chance > 0 && chance > spells[spell_id].override_crit_chance) {
 			chance = spells[spell_id].override_crit_chance;
+		}
 
 		if (zone->random.Roll(chance)) {
 			Critical = true;
 			ratio += itembonuses.SpellCritDmgIncrease + spellbonuses.SpellCritDmgIncrease + aabonuses.SpellCritDmgIncrease;
 			ratio += itembonuses.SpellCritDmgIncNoStack + spellbonuses.SpellCritDmgIncNoStack + aabonuses.SpellCritDmgIncNoStack;
-		}
-
-		else if ((IsClient() && GetClass() == WIZARD) || (IsMerc() && GetClass() == CASTERDPS)) {
+		} else if ((IsClient() && GetClass() == WIZARD) || (IsMerc() && GetClass() == CASTERDPS)) {
 			if ((GetLevel() >= RuleI(Spells, WizCritLevel)) && zone->random.Roll(RuleI(Spells, WizCritChance))){
 				//Wizard innate critical chance is calculated seperately from spell effect and is not a set ratio. (20-70 is parse confirmed)
 				ratio += zone->random.Int(20,70);
@@ -83,13 +82,25 @@ int64 Mob::GetActSpellDamage(uint16 spell_id, int64 value, Mob* target) {
 			}
 		}
 
-		if (IsClient() && GetClass() == WIZARD)
+		if (IsClient() && GetClass() == WIZARD) {
 			ratio += RuleI(Spells, WizCritRatio); //Default is zero
+		}
+
+		if (IsClient() && (spell_id == SPELL_HARM_TOUCH || spell_id == SPELL_HARM_TOUCH2 || spell_id == SPELL_IMP_HARM_TOUCH )) {
+			ratio += RuleI(Spells, HTCritRatio); //Default is zero
+		}
 
 		if (Critical){
-
 			value = base_value*ratio/100;
+			// Need to scale HT damage differently after level 40! It no longer scales by the constant value in the spell file. It scales differently, instead of 10 more damage per level, it does 30 more damage per level. So we multiply the level minus 40 times 20 if they are over level 40.
+			if ((spell_id == SPELL_HARM_TOUCH || spell_id == SPELL_HARM_TOUCH2 || spell_id == SPELL_IMP_HARM_TOUCH ) && GetLevel() > 40) {
+				value -= (GetLevel() - 40) * 20;
+			}
 
+			//This adds the extra damage from the AA Unholy Touch, 450 per level to the AA Improved Harm TOuch.
+			if (spell_id == SPELL_IMP_HARM_TOUCH && IsClient()) {//Improved Harm Touch
+				value -= GetAA(aaUnholyTouch) * 450; //Unholy Touch
+			}
 			value += base_value*GetFocusEffect(focusImprovedDamage, spell_id)/100;
 			value += base_value*GetFocusEffect(focusImprovedDamage2, spell_id)/100;
 

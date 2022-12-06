@@ -376,6 +376,8 @@ RULE_INT(Spells, BaseCritRatio, 100, "Base percentage bonus to damage on a succe
 RULE_INT(Spells, WizCritLevel, 12, "Level wizards first get spell crits")
 RULE_INT(Spells, WizCritChance, 7, "Wizards crit chance, on top of BaseCritChance")
 RULE_INT(Spells, WizCritRatio, 0, "Wizards crit bonus, on top of BaseCritRatio (should be 0 for Live-like)")
+RULE_INT(Spells, HTCritRatio, 200, "HT crit bonus, on top of BaseCritRatio")
+RULE_INT(Spells, ResistPerLevelDiff, 85, "Resist per level difference. 85=8.5")
 RULE_INT(Spells, TranslocateTimeLimit, 0, "If not zero, time in seconds to accept a Translocate")
 RULE_INT(Spells, SacrificeMinLevel, 46, "First level the spell Sacrifice will work on")
 RULE_INT(Spells, SacrificeMaxLevel, 69, "Last level the spell Sacrifice will work on")
