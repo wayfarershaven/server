@@ -169,6 +169,7 @@ public:
 	void AssignGroupToInstance(uint32 gid, uint32 instance_id);
 	void AssignRaidToInstance(uint32 rid, uint32 instance_id);
 	void DeleteInstance(uint16 instance_id);
+	void MoveCharOutInstance(uint16 instance_id);
 	void FlagInstanceByGroupLeader(uint32 zone_id, int16 version, uint32 charid, uint32 group_id);
 	void FlagInstanceByRaidLeader(uint32 zone_id, int16 version, uint32 charid, uint32 raid_id);
 	void GetCharactersInInstance(uint16 instance_id, std::list<uint32> &character_ids);
