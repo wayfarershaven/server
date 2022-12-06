@@ -1277,11 +1277,6 @@ void Perl_Client_AddLevelBasedExp(Client* self, uint8 exp_percentage, uint8 max_
 	self->AddLevelBasedExp(exp_percentage, max_level);
 }
 
-void Perl_Client_AddLevelBasedExp(Client* self, uint8 exp_percentage, uint8 max_level, bool ignore_mods) // @categories Experience and Level
-{
-	self->AddLevelBasedExp(exp_percentage, max_level, ignore_mods);
-}
-
 void Perl_Client_IncrementAA(Client* self, uint32 aa_skill_id) // @categories Alternative Advancement
 {
 	self->IncrementAlternateAdvancementRank(aa_skill_id);
@@ -2814,7 +2809,6 @@ void perl_register_client()
 	package.add("AddLDoNWin", &Perl_Client_AddLDoNWin);
 	package.add("AddLevelBasedExp", (void(*)(Client*, uint8))&Perl_Client_AddLevelBasedExp);
 	package.add("AddLevelBasedExp", (void(*)(Client*, uint8, uint8))&Perl_Client_AddLevelBasedExp);
-	package.add("AddLevelBasedExp", (void(*)(Client*, uint8, uint8, bool))&Perl_Client_AddLevelBasedExp);
 	package.add("AddMoneyToPP", (void(*)(Client*, uint32, uint32, uint32, uint32))&Perl_Client_AddMoneyToPP);
 	package.add("AddMoneyToPP", (void(*)(Client*, uint32, uint32, uint32, uint32, bool))&Perl_Client_AddMoneyToPP);
 	package.add("AddPlatinum", (void(*)(Client*, uint32))&Perl_Client_AddPlatinum);

@@ -1690,29 +1690,6 @@ bool Client::Attack(Mob* other, int Hand, bool bRiposte, bool IsStrikethrough, b
 
 	other->AddToHateList(this, hate);
 
-	//Guard Assist Code
-	if (RuleB(Character, PVPEnableGuardFactionAssist)) {
-		if (IsClient() && other->IsClient() || (HasOwner() && GetOwner()->IsClient() && other->IsClient() )) {
-			auto& mob_list = entity_list.GetCloseMobList(other);
-			for (auto& e : mob_list) {
-				auto mob = e.second;
-				if (!mob) {
-					continue;
-				}
-
-				if (mob->IsNPC() && mob->CastToNPC()->IsGuard()) {
-					float distance = Distance(other->CastToClient()->m_Position, mob->GetPosition());
-					if ((mob->CheckLosFN(other) || mob->CheckLosFN(this)) && distance <= 70) {
-						auto petorowner = GetOwnerOrSelf();
-						if (other->GetReverseFactionCon(mob) <= petorowner->GetReverseFactionCon(mob)) {
-							mob->AddToHateList(this);
-						}
-					}
-				}
-			}
-		}
-	}
-
 	///////////////////////////////////////////////////////////
 	////// Send Attack Damage
 	///////////////////////////////////////////////////////////
@@ -1950,15 +1927,6 @@ bool Client::Death(Mob* killerMob, int64 damage, uint16 spell, EQ::skills::Skill
 
 	if (!RuleB(Character, UseDeathExpLossMult)) {
 		exploss = static_cast<int>(GetLevel() * (GetLevel() / 18.0) * 12000);
-	}
-
-	if (RuleB(Zone, LevelBasedEXPMods)) {
-		// Death in levels with xp_mod (such as hell levels) was resulting
-		// in losing more that appropriate since the loss was the same but
-		// getting it back would take way longer.  This makes the death the
-		// same amount of time to recover.  Will also lose more if level is
-		// granting a bonus.
-		exploss *= zone->level_exp_mod[GetLevel()].ExpMod;
 	}
 
 	if (exploss > 0 && RuleB(Character, DeathKeepLevel)) {
@@ -2227,27 +2195,6 @@ bool NPC::Attack(Mob* other, int Hand, bool bRiposte, bool IsStrikethrough, bool
 		}
 	}
 
-	//Guard Assist Code
-	if (RuleB(Character, PVPEnableGuardFactionAssist)) {
-		if (IsClient() && other->IsClient() || (HasOwner() && GetOwner()->IsClient() && other->IsClient())) {
-			auto& mob_list = entity_list.GetCloseMobList(other);
-			for (auto& e : mob_list) {
-				auto mob = e.second;
-				if (!mob) {
-					continue;
-				}
-				if (mob->IsNPC() && mob->CastToNPC()->IsGuard()) {
-					float distance = Distance(other->GetPosition(), mob->GetPosition());
-					if ((mob->CheckLosFN(other) || mob->CheckLosFN(this)) && distance <= 70) {
-						if (other->GetReverseFactionCon(mob) <= GetOwner()->GetReverseFactionCon(mob)) {
-							mob->AddToHateList(this);
-						}
-					}
-				}
-			}
-		}
-	}
-
 	int64 weapon_damage = GetWeaponDamage(other, weapon);
 
 	//do attack animation regardless of whether or not we can hit below
@@ -2263,17 +2210,14 @@ bool NPC::Attack(Mob* other, int Hand, bool bRiposte, bool IsStrikethrough, bool
 		//if NPCs can't inheriently hit the target we don't add bane/magic dmg which isn't exactly the same as PCs
 		int eleBane = 0;
 		if (weapon) {
-			if (RuleB(NPC, UseBaneDamage)) {
-				if (weapon->BaneDmgBody == other->GetBodyType()) {
-					eleBane += weapon->BaneDmgAmt;
-				}
-
-				if (weapon->BaneDmgRace == other->GetRace()) {
-					eleBane += weapon->BaneDmgRaceAmt;
-				}
+			if (weapon->BaneDmgBody == other->GetBodyType()) {
+				eleBane += weapon->BaneDmgAmt;
 			}
 
-			// I don't think NPCs use this either ....
+			if (weapon->BaneDmgRace == other->GetRace()) {
+				eleBane += weapon->BaneDmgRaceAmt;
+			}
+
 			if (weapon->ElemDmgAmt) {
 				eleBane += (weapon->ElemDmgAmt * other->ResistSpell(weapon->ElemDmgType, 0, this) / 100);
 			}
@@ -2661,6 +2605,7 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 				}
 			}
 
+			// kg->SplitExp(finalxp, this);
 			// QueryServ Logging - Group Kills
 			if (RuleB(QueryServ, PlayerLogNPCKills)) {
 				auto pack =
@@ -2827,18 +2772,15 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 			ServerZoneAdventureDataReply_Struct *sr = (ServerZoneAdventureDataReply_Struct*)zone->adv_data;
 			if (sr->type == Adventure_Kill) {
 				zone->DoAdventureCountIncrease();
-			}
-			else if (sr->type == Adventure_Assassinate) {
+			} else if (sr->type == Adventure_Assassinate) {
 				if (sr->data_id == GetNPCTypeID()) {
 					zone->DoAdventureCountIncrease();
-				}
-				else {
+				} else {
 					zone->DoAdventureAssassinationCountIncrease();
 				}
 			}
 		}
-	}
-	else {
+	} else {
 		entity_list.RemoveFromXTargets(this);
 	}
 
@@ -2924,6 +2866,7 @@ void Mob::AddToHateList(Mob* other, int64 hate /*= 0*/, int64 damage /*= 0*/, bo
 	bool on_hatelist = CheckAggro(other);
 
 	if (other) {
+		bool on_hatelist = CheckAggro(other);
 		AddRampage(other);
 		if (on_hatelist) { // odd reason, if you're not on the hate list, subtlety etc don't apply!
 						   // Spell Casting Subtlety etc
@@ -2934,8 +2877,13 @@ void Mob::AddToHateList(Mob* other, int64 hate /*= 0*/, int64 damage /*= 0*/, bo
 			}
 			hate = ((hate * (hatemod)) / 100);
 		} else {
-			hate += RuleI(Aggro, InitialAggroBonus); // Bonus Initial Aggro
-			LogCombat("InitialAggroBonus: [{}]", RuleI(Aggro, InitialAggroBonus));
+			if (this->IsCharmed()){
+				hate += RuleI(Aggro, InitialPetAggroBonus);
+				Log(Logs::General, Logs::Combat, "InitialPetAggroBonus: %d", RuleI(Aggro, InitialPetAggroBonus));
+			} else {
+				hate += RuleI(Aggro, InitialAggroBonus);
+				Log(Logs::General, Logs::Combat, "InitialAggroBonus: %d", RuleI(Aggro, InitialAggroBonus));
+			}
 		}
 	}
 
@@ -2965,14 +2913,6 @@ void Mob::AddToHateList(Mob* other, int64 hate /*= 0*/, int64 damage /*= 0*/, bo
 	}
 
 	if (IsFamiliar() || GetSpecialAbility(IMMUNE_AGGRO)) {
-		return;
-	}
-
-	if (GetSpecialAbility(IMMUNE_AGGRO_NPC) && other->IsNPC()) {
-		return;
-	}
-
-	if (GetSpecialAbility(IMMUNE_AGGRO_CLIENT) && other->IsClient()) {
 		return;
 	}
 
@@ -3085,22 +3025,11 @@ void Mob::AddToHateList(Mob* other, int64 hate /*= 0*/, int64 damage /*= 0*/, bo
 	}
 
 	if (mypet && !mypet->IsHeld() && !mypet->IsPetStop()) { // I have a pet, add other to it
-		if (
-			!mypet->IsFamiliar() &&
-			!mypet->GetSpecialAbility(IMMUNE_AGGRO) &&
-			!(mypet->GetSpecialAbility(IMMUNE_AGGRO_CLIENT) && IsClient()) &&
-			!(mypet->GetSpecialAbility(IMMUNE_AGGRO_NPC) && IsNPC())
-		) {
+		if (!mypet->IsFamiliar() && !mypet->GetSpecialAbility(IMMUNE_AGGRO)) {
 			mypet->hate_list.AddEntToHateList(other, 0, 0, bFrenzy);
 		}
-	}
-	else if (myowner) { // I am a pet, add other to owner if it's NPC/LD
-		if (
-			myowner->IsAIControlled() &&
-			!myowner->GetSpecialAbility(IMMUNE_AGGRO) &&
-			!(GetSpecialAbility(IMMUNE_AGGRO_CLIENT) && myowner->IsClient()) &&
-			!(GetSpecialAbility(IMMUNE_AGGRO_NPC) && myowner->IsNPC())
-		) {
+	} else if (myowner) { // I am a pet, add other to owner if it's NPC/LD
+		if (myowner->IsAIControlled() && !myowner->GetSpecialAbility(IMMUNE_AGGRO)) {
 			myowner->hate_list.AddEntToHateList(other, 0, 0, bFrenzy);
 		}
 	}
@@ -3111,8 +3040,9 @@ void Mob::AddToHateList(Mob* other, int64 hate /*= 0*/, int64 damage /*= 0*/, bo
 	}
 
 	if (!wasengaged) {
-		if (IsNPC() && other->IsClient() && other->CastToClient())
+		if (IsNPC() && other->IsClient() && other->CastToClient()) {
 			parse->EventNPC(EVENT_AGGRO, CastToNPC(), other, "", 0);
+		}
 		AI_Event_Engaged(other, iYellForHelp);
 	}
 }
@@ -3340,9 +3270,10 @@ int Mob::GetHandToHandDelay(void)
 		else if (GetRace() == IKSAR)
 			iksar = 1;
 		// the delay bonus from the monk epic scales up to a skill of 280
-		if (epic >= skill)
-			epic = skill;
-		return iksar - epic / 21 + 38;
+		if (epic > skill) {
+            skill = epic;
+		}
+        return iksar - skill / 21 + 38;
 	}
 
 	int delay = 35;
@@ -3888,19 +3819,7 @@ void Mob::CommonDamage(Mob* attacker, int64 &damage, const uint16 spell_id, cons
 		// pets that have GHold will never automatically add NPCs
 		// pets that have Hold and no Focus will add NPCs if they're engaged
 		// pets that have Hold and Focus will not add NPCs
-		if (
-			pet &&
-			!pet->IsFamiliar() &&
-			!pet->GetSpecialAbility(IMMUNE_AGGRO) &&
-			!pet->IsEngaged() &&
-			attacker &&
-			!(pet->GetSpecialAbility(IMMUNE_AGGRO_CLIENT) && attacker->IsClient()) &&
-			!(pet->GetSpecialAbility(IMMUNE_AGGRO_NPC) && attacker->IsNPC()) &&
-			attacker != this &&
-			!attacker->IsCorpse() &&
-			!pet->IsGHeld() &&
-			!attacker->IsTrap()
-		) {
+		if (pet && !pet->IsFamiliar() && !pet->GetSpecialAbility(IMMUNE_AGGRO) && !pet->IsEngaged() && attacker && attacker != this && !attacker->IsCorpse() && !pet->IsGHeld() && !attacker->IsTrap()) {
 			if (!pet->IsHeld()) {
 				LogAggro("Sending pet [{}] into battle due to attack", pet->GetName());
 				if (IsClient()) {
@@ -3956,15 +3875,29 @@ void Mob::CommonDamage(Mob* attacker, int64 &damage, const uint16 spell_id, cons
 			TryTriggerThreshHold(damage, SE_TriggerSpellThreshold, attacker);
 		}
 
+		if (IsClient() && CastToClient()->sneaking) {
+			CastToClient()->sneaking = false;
+			SendAppearancePacket(AT_Sneak, 0);
+		}
+
+		if (attacker && attacker->IsClient() && attacker->CastToClient()->sneaking) {
+			attacker->CastToClient()->sneaking = false;
+			attacker->SendAppearancePacket(AT_Sneak, 0);
+		}
+
 		//final damage has been determined.
+
+		int32 pre_hit_hp;
 
 		if(attacker->IsClient()) {
 			player_damage += damage;
 		}
 
+		pre_hit_hp = GetHP();
+
 		SetHP(int64(GetHP() - damage));
 
-		if (HasDied()) {
+		if (HasDied() && pre_hit_hp > 0) {  // Don't make the mob die over and over if it was at 0 hp
 			bool IsSaved = false;
 
 			if (TryDivineSave()) {
@@ -6107,9 +6040,27 @@ void Mob::CommonOutgoingHitSuccess(Mob* defender, DamageHitInfo &hit, ExtraAttac
 		hit.damage_done = min_mod;
 	}
 
-	TryCriticalHit(defender, hit, opts);
+	// In Era, Finishing Blow isn't a Critical Conversion, but need to be able to crit still
+	bool innate_crit = false;
+	int crit_chance = GetCriticalChanceBonus(hit.skill);
+	if ((GetClass() == WARRIOR || GetClass() == BERSERKER) && GetLevel() >= 12) {
+		innate_crit = true;
+	} else if (GetClass() == RANGER && GetLevel() >= 12 && hit.skill == EQ::skills::SkillArchery) {
+		innate_crit = true;
+	} else if (GetClass() == ROGUE && GetLevel() >= 12 && hit.skill == EQ::skills::SkillThrowing) {
+		innate_crit = true;
+	}
+
+	if (innate_crit || crit_chance) {
+		if (TryFinishingBlow(defender, hit.damage_done)) {
+			return;
+		}
+	}
 
 	hit.damage_done += hit.min_damage;
+
+	TryCriticalHit(defender, hit, opts);
+	
 	if (IsClient()) {
 		int extra = 0;
 		switch (hit.skill) {

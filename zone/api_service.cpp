@@ -757,7 +757,6 @@ Json::Value ApiGetClientListDetail(EQ::Net::WebsocketServerConnection *connectio
 		row["raid_exp"]                                = client->GetRaidEXP();
 		row["raid_points"]                             = client->GetRaidPoints();
 		row["raw_item_ac"]                             = client->GetRawItemAC();
-		row["required_aa_experience"]                  = client->GetRequiredAAExperience();
 		row["revoked"]                                 = client->GetRevoked();
 		row["run_mode"]                                = client->GetRunMode();
 		row["save_currency"]                           = client->SaveCurrency();
