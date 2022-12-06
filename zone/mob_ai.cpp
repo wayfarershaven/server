@@ -116,7 +116,7 @@ bool NPC::AICastSpell(Mob* tar, uint8 iChance, uint32 iSpellTypes, bool bInnates
 			} else if (mana_cost == -2) {
 				mana_cost = 0;
 			}
-			
+
 			if (
 				((
 							 (spells[AIspells[i].spellid].target_type==ST_AECaster || spells[AIspells[i].spellid].target_type==ST_AEBard)
@@ -987,7 +987,11 @@ void Mob::AI_Process() {
 	bool engaged  = IsEngaged();
 	bool doranged = false;
 
-	if (!zone->CanDoCombat() || IsPetStop() || IsPetRegroup()) {
+	if (!zone->CanDoCombat() || IsPetRegroup()) {
+		engaged = false;
+	}
+
+	if (IsPet() && IsPetStop()) {
 		engaged = false;
 	}
 

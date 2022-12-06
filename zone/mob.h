@@ -1040,6 +1040,7 @@ public:
 	virtual Mob* GetOwnerOrSelf();
 	Mob* GetUltimateOwner();
 	void SetPetID(uint16 NewPetID);
+	void RemovePet();
 	inline uint16 GetPetID() const { return petid; }
 	inline PetType GetPetType() const { return typeofpet; }
 	void SetPetType(PetType p) { typeofpet = p; }
