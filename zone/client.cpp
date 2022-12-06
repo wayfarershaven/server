@@ -4393,7 +4393,7 @@ bool Client::KeyRingCheck(uint32 item_id)
 const char* Client::GetForumName(uint32 acc_id)
 {
 
-	std::string query = StringFormat("SELECT forumName FROM account join tblLoginServerAccounts on lsaccount_id = LoginServerID WHERE id = %i ", acc_id);
+	std::string query = StringFormat("SELECT forum_name FROM account join login_accounts on lsaccount_id = id WHERE id = %i ", acc_id);
 	auto results = database.QueryDatabase(query);
 
 	if (!results.Success()) {
