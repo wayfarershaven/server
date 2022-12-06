@@ -904,6 +904,13 @@ void Client::Gate(uint8 bind_number) {
 }
 
 void NPC::Gate(uint8 bind_number) {
+	if (IsNPC()) {
+		auto npcSpawnPoint = CastToNPC()->GetSpawnPoint();
+		if (DistanceSquaredNoZ(m_Position, npcSpawnPoint) < RuleI(NPC, NPCGateDistanceBind)) {
+			return;
+		}
+	}
+	
 	entity_list.MessageCloseString(this, true, RuleI(Range, SpellMessages), Chat::Spells, GATES, GetCleanName());
 
 	Mob::Gate(bind_number);
