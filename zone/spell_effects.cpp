@@ -2319,10 +2319,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 						dur = 60;
 					}
 
-					Mob* m_target = caster->GetTarget();
-					if (m_target) {
-						entity_list.TryWakeTheDead(caster, m_target, spell_id, 250, dur, 1);
-					}
+					caster->WakeTheDead(spell_id, caster->GetTarget(), dur);
 				}
 				break;
 			}
