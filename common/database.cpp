@@ -1071,16 +1071,64 @@ bool Database::SetVariable(const std::string varname, const std::string &varvalu
 	return true;
 }
 
-void Database::SetAccountCRCField(uint32 account_id, std::string field_name, uint64 checksum)
+uint64 Database::GetAccountCRC1EQGame(uint32 accountid)
 {
-	QueryDatabase(
-		fmt::format(
-			"UPDATE `account` SET `{}` = '{}' WHERE `id` = {}",
-			field_name,
-			checksum,
-			account_id
-		)
-	);
+	std::string query = StringFormat("SELECT `checksum_crc1_eqgame` FROM `account` WHERE `id` = '%i'", accountid);
+	auto results = QueryDatabase(query);
+
+	if (!results.Success())
+		return 0;
+
+	if (results.RowCount() == 0)
+		return 0;
+
+	auto row = results.begin();
+	return atoll(row[0]);
+}
+uint64 Database::GetAccountCRC2SkillCaps(uint32 accountid)
+{
+	std::string query = StringFormat("SELECT `checksum_crc2_skillcaps` FROM `account` WHERE `id` = '%i'", accountid);
+	auto results = QueryDatabase(query);
+
+	if (!results.Success())
+		return 0;
+
+	if (results.RowCount() == 0)
+		return 0;
+
+	auto row = results.begin();
+	return atoll(row[0]);
+}
+uint64 Database::GetAccountCRC3BaseData(uint32 accountid)
+{
+	std::string query = StringFormat("SELECT `checksum_crc3_basedata` FROM `account` WHERE `id` = '%i'", accountid);
+	auto results = QueryDatabase(query);
+
+	if (!results.Success())
+		return 0;
+
+	if (results.RowCount() == 0)
+		return 0;
+
+	auto row = results.begin();
+	return atoll(row[0]);
+}
+
+void Database::SetAccountCRC1EQGame(uint32 accountid, uint64 checksum)
+{
+	std::string query = StringFormat("UPDATE `account` SET `checksum_crc1_eqgame` = '%lld' WHERE `id` = '%i'", checksum, accountid);
+	auto results = QueryDatabase(query);
+}
+
+void Database::SetAccountCRC2SkillCaps(uint32 accountid, uint64 checksum)
+{
+	std::string query = StringFormat("UPDATE `account` SET `checksum_crc2_skillcaps` = '%lld' WHERE `id` = '%i'", checksum, accountid);
+	auto results = QueryDatabase(query);
+}
+void Database::SetAccountCRC3BaseData(uint32 accountid, uint64 checksum)
+{
+	std::string query = StringFormat("UPDATE `account` SET `checksum_crc3_basedata` = '%lld' WHERE `id` = '%i'", checksum, accountid);
+	auto results = QueryDatabase(query);
 }
 
 bool Database::GetZoneGraveyard(const uint32 graveyard_id, uint32* graveyard_zoneid, float* graveyard_x, float* graveyard_y, float* graveyard_z, float* graveyard_heading) {
