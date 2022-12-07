@@ -2489,6 +2489,8 @@ bool Client::CheckIncreaseSkill(EQ::skills::SkillType skillid, Mob *against_who,
 		return false;
 	if (IsAIControlled()) // no skillups while chamred =p
 		return false;
+	if (against_who->IsCorpse()) // no skillups on corpses
+		return false;	
 	if (against_who != nullptr && against_who->IsCorpse()) // no skillups on corpses
 		return false;
 	if (skillid > EQ::skills::HIGHEST_SKILL)
@@ -2990,7 +2992,7 @@ bool Client::BindWound(Mob *bindmob, bool start, bool fail)
 						if (percent_base >= 70) {
 							percent_bonus = spellbonuses.MaxBindWound + itembonuses.MaxBindWound + aabonuses.MaxBindWound;
 						}
-						
+
 						int max_percent = percent_base + percent_bonus;
 						if (max_percent < 0) {
 							max_percent = 0;
