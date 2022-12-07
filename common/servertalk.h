@@ -280,6 +280,12 @@
 #define ServerOP_QSPlayerLogMerchantTransactions 0x5005
 #define ServerOP_QSSendQuery 0x5006
 #define ServerOP_QSPlayerDropItem 0x5007
+#define ServerOP_QSPlayerAARateHourly				0x5019
+#define ServerOP_QSPlayerAAPurchase					0x5020
+#define ServerOP_QSPlayerDeathBy					0x5021
+#define ServerOP_QSPlayerTSEvents					0x5022
+#define ServerOP_QSPlayerQGlobalUpdates				0x5023
+#define ServerOP_QSPlayerLootRecords				0x5024
 
 enum {
 	CZUpdateType_Character,
@@ -1367,6 +1373,17 @@ struct QSHandinItems_Struct {
 	uint32 aug_5;
 };
 
+struct QSPlayerTSEvents_Struct {
+	uint32 charid;
+	uint32 zone_id;
+	int32 instance_id;
+	char results[8];
+	uint32 recipe_id;
+	uint32 tradeskill;
+	uint16 trivial;
+	float chance;
+};
+
 struct QSPlayerLogHandin_Struct {
 	uint32 quest_id;
 	uint32 char_id;
@@ -1447,14 +1464,61 @@ struct QSTransactionItems_Struct {
 };
 
 struct QSMerchantLogTransaction_Struct {
-	uint32 zone_id;
-	uint32 merchant_id;
+	uint32					char_id;
+	uint16					char_slot;
+	uint32					item_id;
+	uint16					charges;
+	uint32					zone_id;
+	uint32					merchant_id;;
 	MoneyUpdate_Struct		merchant_money;
-	uint16 merchant_count;
-	uint32 char_id;
+	uint16					merchant_count;
 	MoneyUpdate_Struct		char_money;
-	uint16 char_count;
+	uint16					char_count;
 	QSTransactionItems_Struct items[0];
+};
+
+struct QSPlayerAARateHourly_Struct {
+	uint32 charid;
+	uint32 add_points;
+};
+
+struct QSPlayerAAPurchase_Struct {
+	uint32 charid;
+	char aatype[8];
+	char aaname[128];
+	uint32 aaid;
+	uint32 cost;
+	uint32 zone_id;
+	int32 instance_id;
+};
+
+struct QSPlayerQGlobalUpdate_Struct {
+	uint32 charid;
+	char action[8];
+	uint32 zone_id;
+	int32 instance_id;
+	char varname[32];
+	char newvalue[32];
+};
+
+struct QSPlayerLootRecords_struct {
+	uint32 charid;
+	char corpse_name[64];
+	char type[12];
+	uint32 zone_id;
+	uint32 item_id;
+	char item_name[64];
+	int8 charges;
+	MoneyUpdate_Struct money;
+};
+
+struct QSPlayerDeathBy_Struct {
+	uint32 charid;
+	uint32 zone_id;
+	int32 instance_id;
+	char killed_by[128];
+	uint16 spell;
+	uint32 damage;
 };
 
 struct DiscordWebhookMessage_Struct {

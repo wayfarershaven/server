@@ -1110,6 +1110,11 @@ bool Client::TradeskillExecute(DBTradeskillRecipe_Struct *spec) {
 				QServ->PlayerLogEvent(Player_Log_Trade_Skill_Events, CharacterID(), event_desc);
 			}
 
+			/* QS: Player_Log_Trade_Skill_Events */
+			if (RuleB(QueryServ, PlayerLogTradeSkillEvents)) {
+				QServ->QSTSEvents(this->CharacterID(), this->GetZoneID(), this->GetInstanceID(), "Success", spec->recipe_id, spec->tradeskill, spec->trivial, chance);
+			}
+
 			if (RuleB(TaskSystem, EnableTaskSystem)) {
 				UpdateTasksForItem(TaskActivityType::TradeSkill, itr->first, itr->second);
 			}
@@ -1140,6 +1145,11 @@ bool Client::TradeskillExecute(DBTradeskillRecipe_Struct *spec) {
 			QServ->PlayerLogEvent(Player_Log_Trade_Skill_Events, CharacterID(), event_desc);
 		}
 
+		/* QS: Player_Log_Trade_Skill_Events */
+		if (RuleB(QueryServ, PlayerLogTradeSkillEvents)) {
+			QServ->QSTSEvents(this->CharacterID(), this->GetZoneID(), this->GetInstanceID(), "Failed", spec->recipe_id, spec->tradeskill, spec->trivial, chance);
+		}
+		
 		itr = spec->onfail.begin();
 		while(itr != spec->onfail.end()) {
 			//should we check these arguments?

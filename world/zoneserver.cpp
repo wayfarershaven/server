@@ -1273,9 +1273,15 @@ void ZoneServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p) {
 			break;
 		}
 		case ServerOP_Speech:
+		case ServerOP_QSPlayerAARateHourly:
+		case ServerOP_QSPlayerAAPurchase:
+		case ServerOP_QSPlayerDeathBy:
+		case ServerOP_QSPlayerTSEvents:
+		case ServerOP_QSPlayerQGlobalUpdates:
 		case ServerOP_QSSendQuery:
 		case ServerOP_QSPlayerLogDeletes:
 		case ServerOP_QSPlayerDropItem:
+		case ServerOP_QSPlayerLootRecords:
 		case ServerOP_QSPlayerLogHandins:
 		case ServerOP_QSPlayerLogMerchantTransactions:
 		case ServerOP_QSPlayerLogMoves:

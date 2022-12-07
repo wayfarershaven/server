@@ -2099,6 +2099,15 @@ bool Client::Death(Mob* killerMob, int64 damage, uint16 spell, EQ::skills::Skill
 		QServ->PlayerLogEvent(Player_Log_Deaths, CharacterID(), event_desc);
 	}
 
+	/* QS: PlayerLogDeaths */
+	if (RuleB(QueryServ, PlayerLogDeaths)) {
+		char killer_name[128];
+		if (killerMob && killerMob->GetCleanName()) {
+			strncpy(killer_name, killerMob->GetCleanName(), 128);
+		}
+		QServ->QSDeathBy(this->CharacterID(), this->GetZoneID(), this->GetInstanceID(), killer_name, spell, damage);
+	}
+
 	std::vector<std::any> args = { new_corpse };
 	parse->EventPlayer(EVENT_DEATH_COMPLETE, this, export_string, 0, &args);
 	return true;
