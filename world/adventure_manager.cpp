@@ -1096,9 +1096,9 @@ void AdventureManager::LoadLeaderboardInfo()
 
 	std::string query = 
 		"SELECT "
-		"`cd.name`, "
-		"`cd.id`, "
-		"`adv_stats.*` "
+		"`cd`.name, "
+		"`cd`.id, "
+		"`adv_stats`.* "
 		"FROM "
 		"`adventure_stats` AS adv_stats, "
 		"`character_data` AS cd, "
