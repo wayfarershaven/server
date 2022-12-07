@@ -588,8 +588,8 @@ void Database::LogPlayerLootRecords(QSPlayerLootRecords_struct* QS, uint32 items
 	{
 		return;
 	}
-    std::string item_name = EscapeString(QS->item_name);
-    std::string corpse_name = EscapeString(QS->corpse_name);
+    std::string item_name = Strings::Escape(QS->item_name);
+    std::string corpse_name = Strings::Escape(QS->corpse_name);
 
 	Log(Logs::General, Logs::QSServer, "Inserting loot record");
 	std::string query = StringFormat(
