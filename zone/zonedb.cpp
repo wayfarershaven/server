@@ -2010,12 +2010,12 @@ const NPCType *ZoneDatabase::LoadNPCTypesData(uint32 npc_type_id, bool bulk_load
 
 		// set default value for aggroradius
 		t->aggroradius = (int32) n.aggroradius;
-		if (t->aggroradius <= 0) {
+		if (t->aggroradius <= -1) {
 			t->aggroradius = 70;
 		}
 
 		t->assistradius = (int32) n.assistradius;
-		if (t->assistradius <= 0) {
+		if (t->assistradius <= -1) {
 			t->assistradius = t->aggroradius;
 		}
 
