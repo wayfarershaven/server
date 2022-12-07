@@ -673,31 +673,32 @@ void Zone::GetMerchantDataForZoneLoad() {
 	auto query = fmt::format(
 		SQL (
 			SELECT
-			merchantid,
-			slot,
-			item,
-			faction_required,
-			level_required,
-			alt_currency_cost,
-			classes_required,
-			probability,
-			bucket_name,
-			bucket_value,
-			bucket_comparison
-			from merchantlist where merchantid IN (
-					select merchant_id from npc_types where id in (
-						select npcID from spawnentry where spawngroupID IN (
-							select spawngroupID from spawn2 where `zone` = '{}' and (`version` = {} OR `version` = -1)
-					)
-				)
-			)
-			{}
+			DISTINCT merchantlist.merchantid,
+				merchantlist.slot,
+				merchantlist.item,
+				merchantlist.faction_required,
+				merchantlist.level_required,
+				merchantlist.alt_currency_cost,
+				merchantlist.classes_required,
+				merchantlist.probability
+			FROM
+				merchantlist,
+				npc_types,
+				spawnentry,
+				spawn2
+			WHERE
+				npc_types.merchant_id = merchantlist.merchantid
+				AND npc_types.id = spawnentry.npcid
+				AND spawnentry.spawngroupid = spawn2.spawngroupid
+				AND spawn2.zone = '{}'
+				AND spawn2.version = {}
+				{}
 			ORDER BY
-			merchantlist.slot
+				merchantlist.slot
 		),
 		GetShortName(),
 		GetInstanceVersion(),
-		ContentFilterCriteria::apply()
+		ContentFilterCriteria::apply("merchantlist")
 	);
 
 	auto results = content_db.QueryDatabase(query);
