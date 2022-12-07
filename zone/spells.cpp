@@ -1530,6 +1530,19 @@ void Mob::CastedSpellFinished(uint16 spell_id, uint32 target_id, CastingSlot slo
 					bool HasInstrument = true;
 					int InstComponent = spells[spell_id].no_expend_reagent[0];
 
+					// Lyssa's Solidarity of Vision has Instrument compoents
+					if (InstComponent == -1) {
+						for(int t_count = 0; t_count < 4; t_count++) {
+							int32 component = spells[spell_id].component[t_count];
+							if (component == -1) {
+								continue;
+							} else {
+								InstComponent = component;
+								break;
+							}
+						}
+					}
+
 					switch (InstComponent) {
 						case -1:
 							continue;		// no instrument required, go to next component
