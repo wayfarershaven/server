@@ -3547,7 +3547,7 @@ bool Client::MoveItemToInventory(EQ::ItemInstance *ItemToReturn, bool UpdateClie
 
 	// We have tried stacking items, now just try and find an empty slot.
 
-	for (int16 i = EQ::invslot::GENERAL_BEGIN; i <= EQ::invslot::slotCursor; i++) { // changed slot max to 30 from 29. client will move into slot 30 (bags too) before pushing onto cursor.
+	for (int16 i = EQ::invslot::GENERAL_BEGIN; i < EQ::invslot::slotGeneral9; i++) {
 		if ((((uint64)1 << i) & GetInv().GetLookup()->PossessionsBitmask) == 0)
 			continue;
 
@@ -3593,11 +3593,25 @@ bool Client::MoveItemToInventory(EQ::ItemInstance *ItemToReturn, bool UpdateClie
 		}
 	}
 
-	// Store on the cursor
-	//
+	// If we got here no space.
+	// Client may have stuck it in disabled slots 9 or 10
+	// Empty those and put it on cursor
+
+	EQApplicationPacket* outapp;
+	outapp = new EQApplicationPacket(OP_DeleteItem, sizeof(DeleteItem_Struct));
+	DeleteItem_Struct* delitem  = (DeleteItem_Struct*)outapp->pBuffer;
+	delitem->to_slot            = 0xFFFFFFFF;
+	delitem->number_in_stack    = 0xFFFFFFFF;
+
+	for (int16 i = EQ::invslot::slotGeneral9; i <= EQ::invslot::slotGeneral10; i++) {
+		delitem->from_slot = i;
+		QueuePacket(outapp);
+	}
+
+	safe_delete(outapp);
 	LogInventory("Char: [{}] No space, putting on the cursor", GetName());
 
-	PushItemOnCursor(*ItemToReturn, UpdateClient);
+	PushItemOnCursor(*ItemToReturn, true);
 
 	return true;
 }
