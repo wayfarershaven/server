@@ -447,15 +447,19 @@
 #define NO_MORE_AURAS				9160	//You do not have sufficient focus to maintain that ability.
 #define NEW_SPELLS_AVAIL			9149	//You have new spells available to you. Check the merchants near your guild master.
 #define FD_CAST_ON_NO_BREAK			9174	//The strength of your will allows you to resume feigning death.
+#define NO_CAST_IN_COMBAT			9190	//You can not cast this spell while in combat.
+#define NO_CAST_OUT_OF_COMBAT		9191	//You can not cast this spell while out of combat.
+#define NO_ABILITY_IN_COMBAT		9192	//You can not use this ability while in combat.
+#define NO_ABILITY_OUT_OF_COMBAT	9194	//You can not use this ability while out of combat.
 #define SNEAK_RESTRICT				9240	//You can not use this ability because you have not been hidden for long enough.
 #define PET_NOW_FOCUSING			9254	//Focusing on one target, Master.
 #define PET_NOT_FOCUSING			9263	//No longer focusing on one target, Master.
 #define PET_NOT_CASTING				9264	//Not casting spells, Master.
 #define PET_CASTING					9291	//Casting spells normally, Master.
-#define NO_CAST_IN_COMBAT			9190	//You can not cast this spell while in combat.
-#define NO_CAST_OUT_OF_COMBAT		9191	//You can not cast this spell while out of combat.
-#define NO_ABILITY_IN_COMBAT		9192	//You can not use this ability while in combat.
-#define NO_ABILITY_OUT_OF_COMBAT	9194	//You can not use this ability while out of combat.
+#define GAIN_GROUPXP_BONUS			9298	//You gain party experience (with a bonus)!
+#define GAIN_GROUPXP_PENALTY		9301	//You gain party experience (with a penalty)!
+#define GAIN_RAIDXP_BONUS			9302	//You gained raid experience (with a bonus)!
+#define GAIN_RAIDXP_PENALTY			9303	//You gained raid experience (with a penalty)!
 #define LESSER_SPELL_VERSION        11004   //%1 is a lesser version of %2 and cannot be scribed
 #define AE_RAMPAGE					11015	//%1 goes on a WILD RAMPAGE!
 #define FACE_ACCEPTED				12028	//Facial features accepted.
@@ -534,6 +538,8 @@
 #define TOGGLE_OFF					13173	//Asking server to turn OFF all incoming tells for you.
 #define DUEL_INPROGRESS				13251	//You have already accepted a duel with someone else cowardly dog.
 #define OTHER_HIT_DOT				13327	//%1 has taken %2 damage from %3 by %4.
+#define GAIN_XP_BONUS				14541	//You gain experience (with a bonus)!
+#define GAIN_XP_PENALTY				14542	//You gain experience (with a penalty)!
 #define GENERIC_MISS				15041	//%1 missed %2
 
 #endif
