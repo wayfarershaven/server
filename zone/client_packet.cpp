@@ -14071,16 +14071,12 @@ void Client::Handle_OP_TargetCommand(const EQApplicationPacket *app) {
 					}
 				} else {
 					Group *group = GetGroup();
-					if (group && group->GroupCount() > 2)
+					if (group && group->GroupCount() > 2) {
 						inspect_buffs = group->GetLeadershipAA(groupAAInspectBuffs);
+					}
 				}
 			}
-			if (GetGM() || RuleB(Spells, AlwaysSendTargetsBuffs) || nt == this || inspect_buffs || (nt->IsClient() && !nt->CastToClient()->GetPVP()) ||
-				(nt->IsPet() && nt->GetOwner() && nt->GetOwner()->IsClient() && !nt->GetOwner()->CastToClient()->GetPVP()) ||
-#ifdef BOTS
-				(nt->IsBot() && nt->GetOwner() && nt->GetOwner()->IsClient() && !nt->GetOwner()->CastToClient()->GetPVP()) || // TODO: bot pets
-#endif
-				(nt->IsMerc() && nt->GetOwner() && nt->GetOwner()->IsClient() && !nt->GetOwner()->CastToClient()->GetPVP())) {
+			if (GetGM() || RuleB(Spells, AlwaysSendTargetsBuffs) || inspect_buffs || (nt->IsPet() && nt->GetOwner() && nt->GetOwner()->IsClient() && !nt->GetOwner()->CastToClient()->GetPVP())) {
 				nt->SendBuffsToClient(this);
 			}
 		} else {
