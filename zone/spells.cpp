@@ -4130,11 +4130,9 @@ bool Mob::SpellOnTarget(
 				if (spells[spell_id].resist_type == RESIST_PHYSICAL){
 					MessageString(Chat::SpellFailure, PHYSICAL_RESIST_FAIL,spells[spell_id].name);
 					spelltar->MessageString(Chat::SpellFailure, YOU_RESIST, spells[spell_id].name);
-					resisted = 1;
 				} else {
 					MessageString(Chat::SpellFailure, TARGET_RESISTED, spells[spell_id].name);
 					spelltar->MessageString(Chat::SpellFailure, YOU_RESIST, spells[spell_id].name);
-					resisted = 1;
 				}
 
 				if (spelltar->IsAIControlled()) {
@@ -4277,12 +4275,10 @@ bool Mob::SpellOnTarget(
 			!spelltar->IsPseudoRooted() &&
 			!spelltar->ForcedMovement
 		) {
-			if ((!resisted) && (!spelltar->IsImmuneToSpell(spell_id, this))) {
-				spelltar->m_Delta.x += action->force * g_Math.FastSin(action->hit_heading);
-				spelltar->m_Delta.y += action->force * g_Math.FastCos(action->hit_heading);
-				spelltar->m_Delta.z += action->hit_pitch;
-				spelltar->ForcedMovement = 6;
-			}
+			spelltar->m_Delta.x += action->force * g_Math.FastSin(action->hit_heading);
+			spelltar->m_Delta.y += action->force * g_Math.FastCos(action->hit_heading);
+			spelltar->m_Delta.z += action->hit_pitch;
+			spelltar->ForcedMovement = 6;
 		}
 	}
 
@@ -4617,6 +4613,22 @@ void Mob::BuffFadeByEffect(int effect_id, int slot_to_skip)
 bool Mob::IsAffectedByBuff(uint16 spell_id)
 {
 	return FindBuff(spell_id);
+}
+
+bool Mob::IsAffectedByBuffByGlobalGroup(GlobalGroup group)
+{
+	int buff_count = GetMaxTotalSlots();
+	for (int buff_slot = 0; buff_slot < buff_count; buff_slot++) {
+		auto current_spell_id = buffs[buff_slot].spellid;
+		if (
+			IsValidSpell(current_spell_id) &&
+			spells[current_spell_id].spell_category == static_cast<int>(group)
+		) {
+			return true;
+		}
+	}
+
+	return false;
 }
 
 void Mob::BuffDetachCaster(Mob *caster)
@@ -6879,7 +6891,7 @@ void Client::ResetAllCastbarCooldowns() {
 			m_pp.spellSlotRefresh[i] = 1;
 			GetPTimers().Clear(&database, (pTimerSpellStart + m_pp.mem_spells[i]));
 			if (!IsLinkedSpellReuseTimerReady(spells[m_pp.mem_spells[i]].timer_id)) {
-				GetPTimers().Clear(&database, (pTimerLinkedSpellReuseStart + spells[m_pp.mem_spells[i]].timer_id));
+				GetPTimers().Clear(&database, (pTimerLinkedSpellReuseStart + spells[m_pp.mem_spells[i]].timer_id));	
 			}
 			if (spells[m_pp.mem_spells[i]].timer_id > 0 && spells[m_pp.mem_spells[i]].timer_id < MAX_DISCIPLINE_TIMERS) {
 				SetLinkedSpellReuseTimer(spells[m_pp.mem_spells[i]].timer_id, 0);
@@ -6895,7 +6907,7 @@ void Client::ResetCastbarCooldownBySpellID(uint32 spell_id) {
 			m_pp.spellSlotRefresh[i] = 1;
 			GetPTimers().Clear(&database, (pTimerSpellStart + m_pp.mem_spells[i]));
 			if (!IsLinkedSpellReuseTimerReady(spells[m_pp.mem_spells[i]].timer_id)) {
-				GetPTimers().Clear(&database, (pTimerLinkedSpellReuseStart + spells[m_pp.mem_spells[i]].timer_id));
+				GetPTimers().Clear(&database, (pTimerLinkedSpellReuseStart + spells[m_pp.mem_spells[i]].timer_id));	
 			}
 			if (spells[m_pp.mem_spells[i]].timer_id > 0 && spells[m_pp.mem_spells[i]].timer_id < MAX_DISCIPLINE_TIMERS) {
 				SetLinkedSpellReuseTimer(spells[m_pp.mem_spells[i]].timer_id, 0);
