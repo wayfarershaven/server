@@ -488,23 +488,9 @@ bool Mob::AvoidDamage(Mob *other, DamageHitInfo &hit)
 	int hstrikethrough = attacker->GetHeroicStrikethrough();
 
 	// riposte -- it may seem crazy, but if the attacker has SPA 173 on them, they are immune to Ripo
-	bool ImmuneRipo = false;
-	if (!RuleB(Combat, UseLiveRiposteMechanics)) {
-		ImmuneRipo = attacker->aabonuses.RiposteChance || attacker->spellbonuses.RiposteChance || attacker->itembonuses.RiposteChance || attacker->IsEnraged();
-	}
-	/*
-		Live Riposte Mechanics (~Kayen updated 1/22)
-		-Ripostes can not trigger another riposte. (Ie. Riposte from defender can't then trigger the attacker to riposte)
-		-Ripostes can not be 'avoided', only hit or miss.
-		-Attacker with SPA 173 is not immune to riposte. The defender can riposte against the attackers melee hits.
-
-		Legacy Riposte Mechanics
-		-Ripostes can trigger another riposte
-		-Attacker with SPA 173 is immune to riposte
-		-Attacker that is enraged is immune to riposte
-	*/
-
+	bool ImmuneRipo = attacker->aabonuses.RiposteChance || attacker->spellbonuses.RiposteChance || attacker->itembonuses.RiposteChance || attacker->IsEnraged();
 	// Need to check if we have something in MainHand to actually attack with (or fists)
+	
 	if (hit.hand != EQ::invslot::slotRange && (CanThisClassRiposte() || IsEnraged()) && InFront && !ImmuneRipo) {
 		if (IsEnraged()) {
 			hit.damage_done = DMG_RIPOSTED;
@@ -525,10 +511,6 @@ bool Mob::AvoidDamage(Mob *other, DamageHitInfo &hit)
 		if (counter_riposte || counter_all) {
 			float counter = (counter_riposte + counter_all) / 100.0f;
 			chance -= chance * counter;
-		}
-		if (modify_riposte || modify_all) {
-			float npc_modifier = (modify_riposte + modify_all) / 100.0f;
-			chance += chance * npc_modifier;
 		}
 		// AA Slippery Attacks
 		if (hit.hand == EQ::invslot::slotSecondary) {
@@ -569,10 +551,6 @@ bool Mob::AvoidDamage(Mob *other, DamageHitInfo &hit)
 			float counter = (counter_block + counter_all) / 100.0f;
 			chance -= chance * counter;
 		}
-		if (modify_block || modify_all) {
-			float npc_modifier = (modify_block + modify_all) / 100.0f;
-			chance += chance * npc_modifier;
-		}
 		if (zone->random.Roll(chance)) {
 			hit.damage_done = DMG_BLOCKED;
 			return true;
@@ -596,10 +574,6 @@ bool Mob::AvoidDamage(Mob *other, DamageHitInfo &hit)
 			float counter = (counter_parry + counter_all) / 100.0f;
 			chance -= chance * counter;
 		}
-		if (modify_parry || modify_all) {
-			float npc_modifier = (modify_parry + modify_all) / 100.0f;
-			chance += chance * npc_modifier;
-		}
 		if (zone->random.Roll(chance)) {
 			hit.damage_done = DMG_PARRIED;
 			return true;
@@ -622,10 +596,6 @@ bool Mob::AvoidDamage(Mob *other, DamageHitInfo &hit)
 		if (counter_dodge || counter_all) {
 			float counter = (counter_dodge + counter_all) / 100.0f;
 			chance -= chance * counter;
-		}
-		if (modify_dodge || modify_all) {
-			float npc_modifier = (modify_dodge + modify_all) / 100.0f;
-			chance += chance * npc_modifier;
 		}
 		if (zone->random.Roll(chance)) {
 			hit.damage_done = DMG_DODGED;
@@ -5047,21 +5017,8 @@ void Mob::TryCriticalHit(Mob *defender, DamageHitInfo &hit, ExtraAttackOptions *
 
 bool Mob::TryFinishingBlow(Mob *defender, int64 &damage)
 {
-	float hp_limit = 10.0f;
-
-	auto fb_hp_limit = std::max(
-		{
-			aabonuses.FinishingBlowLvl[SBIndex::FINISHING_BLOW_LEVEL_HP_RATIO],
-			spellbonuses.FinishingBlowLvl[SBIndex::FINISHING_BLOW_LEVEL_HP_RATIO],
-			itembonuses.FinishingBlowLvl[SBIndex::FINISHING_BLOW_LEVEL_HP_RATIO]
-		}
-	);
-
-	if (fb_hp_limit) {
-		hp_limit = fb_hp_limit/10.0f;
-	}
-	if (defender && !defender->IsClient() && defender->GetHPRatio() < hp_limit) {
-
+	// base2 of FinishingBlowLvl is the HP limit (cur / max) * 1000, 10% is listed as 100
+    if (defender && !defender->IsClient() && defender->GetHPRatio() < 10) {
 		uint32 FB_Dmg =
 				   aabonuses.FinishingBlow[SBIndex::FINISHING_EFFECT_DMG] + spellbonuses.FinishingBlow[SBIndex::FINISHING_EFFECT_DMG] + itembonuses.FinishingBlow[SBIndex::FINISHING_EFFECT_DMG];
 
