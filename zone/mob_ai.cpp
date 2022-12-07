@@ -1200,6 +1200,17 @@ void Mob::AI_Process() {
 			return;
 		}
 
+		if (target->IsMezzed() && IsPet()) {
+
+			auto pet_owner = GetOwner();
+			if (pet_owner && pet_owner->IsClient()) {
+				pet_owner->MessageString(Chat::NPCQuestSay, CANNOT_WAKE, GetCleanName(), target->GetCleanName());
+			}
+
+			RemoveFromHateList(target);
+			return;
+		}
+
 #ifdef BOTS
 		if (IsPet() && GetOwner() && GetOwner()->IsBot() && target == GetOwner())
 		{
@@ -1808,7 +1819,9 @@ void NPC::AI_DoMovement() {
 						if (cur_wp == patrol) {
 							// reached our randomly selected destination; force a pause
 							if (cur_wp_pause == 0) {
-								if (Waypoints.size() > 0 && Waypoints[0].pause) {
+								if (Waypoints.size() >= cur_wp && Waypoints[cur_wp].pause) {
+									cur_wp_pause = Waypoints[cur_wp].pause;
+								} else if (Waypoints.size() > 0 && Waypoints[0].pause) {
 									cur_wp_pause = Waypoints[0].pause;
 								} else {
 									cur_wp_pause = 38;
@@ -2259,10 +2272,10 @@ void Mob::ClearRampage()
 bool Mob::Rampage(ExtraAttackOptions *opts)
 {
 	int index_hit = 0;
-	if (IsPet() || IsTempPet() || IsCharmed() || IsAnimation()){
-		entity_list.MessageCloseString(this, true, 200, Chat::PetFlurry, NPC_RAMPAGE, GetCleanName());
+	if (!IsPet()) {
+		entity_list.MessageCloseString(this, true, 200, Chat::NPCRampage, AE_RAMPAGE, GetCleanName());
 	} else {
-		entity_list.MessageCloseString(this, true, 200, Chat::NPCRampage, NPC_RAMPAGE, GetCleanName());
+		entity_list.MessageCloseString(this, true, 200, Chat::PetFlurry, AE_RAMPAGE, GetCleanName());
 	}
 	int rampage_targets = GetSpecialAbilityParam(SPECATK_RAMPAGE, 1);
 	if (rampage_targets == 0) // if set to 0 or not set in the DB
@@ -2287,8 +2300,29 @@ bool Mob::Rampage(ExtraAttackOptions *opts)
 		}
 	}
 
-	if (RuleB(Combat, RampageHitsTarget) && index_hit < rampage_targets) {
+	if (RuleB(Combat, RampageHitsTarget)) {
+		if (index_hit < rampage_targets) {
 			ProcessAttackRounds(GetTarget(), opts);
+		}
+	} else { // let's do correct behavior here, if they set above rule we can assume they want non-live like behavior
+		if (index_hit < rampage_targets) {
+			// so we go over in reverse order and skip range check
+			// lets do it this way to still support non-live-like >1 rampage targets
+			// likely live is just a fall through of the last valid mob
+			for (auto i = RampageArray.crbegin(); i != RampageArray.crend(); ++i) {
+				if (index_hit >= rampage_targets) {
+					break;
+				}
+				auto m_target = entity_list.GetMob(*i);
+				if (m_target) {
+					if (m_target == GetTarget()) {
+						continue;
+					}
+					ProcessAttackRounds(m_target, opts);
+					index_hit++;
+				}
+			}
+		}
 	}
 
 	if(index_hit == 0) {
