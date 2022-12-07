@@ -2086,6 +2086,7 @@ void NPC::AI_Event_SpellCastFinished(bool iCastSucceeded, uint16 slot) {
 					AIspells[casting_spell_AIindex].time_cancast = Timer::GetCurrentTime() + spells[AIspells[casting_spell_AIindex].spellid].recast_time;
 				}
 			}
+
 			if (recovery_time < AIautocastspell_timer->GetSetAtTrigger()) {
 				recovery_time = AIautocastspell_timer->GetSetAtTrigger();
 			}
