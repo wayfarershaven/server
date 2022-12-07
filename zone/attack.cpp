@@ -1494,14 +1494,15 @@ void Mob::DoAttack(Mob *other, DamageHitInfo &hit, ExtraAttackOptions *opts, boo
 //SYNC WITH: tune.cpp, mob.h TuneClientAttack
 bool Client::Attack(Mob* other, int Hand, bool bRiposte, bool IsStrikethrough, bool IsFromSpell, ExtraAttackOptions *opts)
 {
-	if (!other) {
+	if (!other || other->IsCorpse()) {
 		SetTarget(nullptr);
 		LogError("A null Mob object was passed to Client::Attack() for evaluation!");
 		return false;
 	}
 
-	if (!GetTarget())
+	if (!GetTarget()) {
 		SetTarget(other);
+	}
 
 	LogCombat("Attacking [{}] with hand [{}] [{}]", other ? other->GetName() : "(nullptr)", Hand, bRiposte ? "(this is a riposte)" : "");
 
@@ -6312,8 +6313,9 @@ void NPC::SetAttackTimer()
 
 void Client::DoAttackRounds(Mob *target, int hand, bool IsFromSpell)
 {
-	if (!target)
+	if (!target || target->IsCorpse()) {
 		return;
+	}
 
 	Attack(target, hand, false, false, IsFromSpell);
 
