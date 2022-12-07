@@ -49,7 +49,7 @@ Core Zone features
 
 //enable IO capture and transmission to in game clients
 //this seems to make perl very unhappy on reload, and crashes
-#define EMBPERL_IO_CAPTURE
+// #define EMBPERL_IO_CAPTURE
 
 #endif
 
