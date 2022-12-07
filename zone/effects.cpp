@@ -528,7 +528,7 @@ int32 Client::GetActSpellCost(uint16 spell_id, int32 cost)
 
 int32 Mob::GetActSpellDuration(uint16 spell_id, int32 duration)
 {
-	if (IsDiscipline(spell_id)) { // focuses don't affect discipline duration
+	if (IsDiscipline(spell_id) && (!spell_id == 5027 || !spell_id == 5028 || !spell_id == 5029 || !spell_id == 5030 || !spell_id == 5031 || !spell_id == 5032 || !spell_id == 8476)) { // focuses don't affect discipline duration (Except War Cries)
 		return duration;
 	}
 
