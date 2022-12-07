@@ -2491,6 +2491,8 @@ bool Client::CheckIncreaseSkill(EQ::skills::SkillType skillid, Mob *against_who,
 		return false;
 	if (against_who != nullptr && against_who->IsCorpse()) // no skillups on corpses
 		return false;
+	if (against_who != nullptr && against_who->IsPet()) // no skillups on pets
+		return false;	
 	if (skillid > EQ::skills::HIGHEST_SKILL)
 		return false;
 	int skillval = GetRawSkill(skillid);
