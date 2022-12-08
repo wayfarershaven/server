@@ -2998,7 +2998,7 @@ void EntityList::ScanCloseMobs(
 		}
 	}
 
-	LogAIScanClose(
+	LogAIScanCloseModerate(
 		"[{}] Scanning Close List | list_size [{}] moving [{}]",
 		scanning_mob->GetCleanName(),
 		close_mobs.size(),

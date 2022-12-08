@@ -3500,7 +3500,7 @@ int Mob::CanBuffStack(uint16 spellid, uint8 caster_level, bool iFailIfOverwrite)
 {
 	int i, ret, firstfree = -2;
 
-	LogAI("Checking if buff [{}] cast at level [{}] can stack on me.[{}]", spellid, caster_level, iFailIfOverwrite?" failing if we would overwrite something":"");
+	LogAIModerate("Checking if buff [{}] cast at level [{}] can stack on me.[{}]", spellid, caster_level, iFailIfOverwrite?" failing if we would overwrite something":"");
 
 	int buff_count = GetMaxTotalSlots();
 	for (i=0; i < buff_count; i++)
@@ -3524,7 +3524,7 @@ int Mob::CanBuffStack(uint16 spellid, uint8 caster_level, bool iFailIfOverwrite)
 		if(ret == 1) {
 			// should overwrite current slot
 			if(iFailIfOverwrite) {
-				LogAI("Buff [{}] would overwrite [{}] in slot [{}], reporting stack failure", spellid, curbuf.spellid, i);
+				LogAIDetail("Buff [{}] would overwrite [{}] in slot [{}], reporting stack failure", spellid, curbuf.spellid, i);
 				return(-1);
 			}
 			if(firstfree == -2)
@@ -3532,12 +3532,12 @@ int Mob::CanBuffStack(uint16 spellid, uint8 caster_level, bool iFailIfOverwrite)
 		}
 		if(ret == -1) {
 
-			LogAI("Buff [{}] would conflict with [{}] in slot [{}], reporting stack failure", spellid, curbuf.spellid, i);
+			LogAIDetail("Buff [{}] would conflict with [{}] in slot [{}], reporting stack failure", spellid, curbuf.spellid, i);
 			return -1;	// stop the spell, can't stack it
 		}
 	}
 
-	LogAI("Reporting that buff [{}] could successfully be placed into slot [{}]", spellid, firstfree);
+	LogAIModerate("Reporting that buff [{}] could successfully be placed into slot [{}]", spellid, firstfree);
 
 	return firstfree;
 }
