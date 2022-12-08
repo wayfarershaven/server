@@ -1628,6 +1628,8 @@ public:
 
 	std::map<std::string,std::string> GetMerchantDataBuckets();
 
+	std::string GetGuildPublicNote();
+
 	// exp.cpp
 	uint32 GetEXPForLevel(uint16 level, bool aa = false);
 	void AddEXP(uint32 in_add_exp, uint8 conlevel = 0xFF, bool resexp = false, uint32 mob_level = 0);

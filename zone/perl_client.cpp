@@ -2722,6 +2722,11 @@ perl::array Perl_Client_GetZoneFlags(Client* self)
 	return a;
 }
 
+std::string Perl_Client_GetGuildPublicNote(Client* self)
+{
+	return self->GetGuildPublicNote();
+}
+
 #ifdef BOTS
 
 int Perl_Client_GetBotRequiredLevel(Client* self)
@@ -2969,6 +2974,7 @@ void perl_register_client()
 	package.add("GetGMStatus", &Perl_Client_GetGMStatus);
 	package.add("GetGroup", &Perl_Client_GetGroup);
 	package.add("GetGroupPoints", &Perl_Client_GetGroupPoints);
+	package.add("GetGuildPublicNote", &Perl_Client_GetGuildPublicNote);
 	package.add("GetHorseId", &Perl_Client_GetHorseId);
 	package.add("GetHealAmount", &Perl_Client_GetHealAmount);
 	package.add("GetHunger", &Perl_Client_GetHunger);

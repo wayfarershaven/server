@@ -11818,3 +11818,17 @@ void Client::SetSpellDuration(
 		m->SetBuffDuration(spell_id, duration);
 	}
 }
+
+std::string Client::GetGuildPublicNote()
+{
+	if (!IsInAGuild()) {
+		return std::string();
+	}
+
+	CharGuildInfo gci;
+	if (!guild_mgr.GetCharInfo(character_id, gci)) {
+		return std::string();
+	}
+
+	return gci.public_note;
+}
