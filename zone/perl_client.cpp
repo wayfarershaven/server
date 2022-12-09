@@ -2759,6 +2759,11 @@ std::string Perl_Client_GetGuildPublicNote(Client* self)
 
 #ifdef BOTS
 
+void Perl_Client_MaxSkills(Client* self)
+{
+	self->MaxSkills();
+}
+
 int Perl_Client_GetBotRequiredLevel(Client* self)
 {
 	return self->GetBotRequiredLevel();
@@ -3114,6 +3119,7 @@ void perl_register_client()
 	package.add("MaxSkill", (int(*)(Client*, uint16))&Perl_Client_MaxSkill);
 	package.add("MaxSkill", (int(*)(Client*, uint16, uint16))&Perl_Client_MaxSkill);
 	package.add("MaxSkill", (int(*)(Client*, uint16, uint16, uint16))&Perl_Client_MaxSkill);
+	package.add("MaxSkills", &Perl_Client_MaxSkills);
 	package.add("MemSpell", (void(*)(Client*, uint16, int))&Perl_Client_MemSpell);
 	package.add("MemSpell", (void(*)(Client*, uint16, int, bool))&Perl_Client_MemSpell);
 	package.add("MemmedCount", &Perl_Client_MemmedCount);
