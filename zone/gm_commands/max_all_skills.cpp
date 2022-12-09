@@ -4,7 +4,7 @@ void command_max_all_skills(Client *c, const Seperator *sep)
 {
 	auto t = c;
 	if (c->GetTarget() && c->GetTarget()->IsClient()) {
-		t = c->GetTarget()->CastToClient();client_target->SetSkill(skill_id, current_skill_value);
+		t = c->GetTarget()->CastToClient();
 	}
 
 	t->MaxSkills();
