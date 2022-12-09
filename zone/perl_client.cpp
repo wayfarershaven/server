@@ -2757,12 +2757,12 @@ std::string Perl_Client_GetGuildPublicNote(Client* self)
 	return self->GetGuildPublicNote();
 }
 
-#ifdef BOTS
-
 void Perl_Client_MaxSkills(Client* self)
 {
 	self->MaxSkills();
 }
+
+#ifdef BOTS
 
 int Perl_Client_GetBotRequiredLevel(Client* self)
 {
