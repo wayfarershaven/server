@@ -40,9 +40,9 @@ public:
 		uint32_t    time_creation;
 		std::string ban_reason;
 		std::string suspend_reason;
-		std::string crc_eqgame;
-		std::string crc_skillcaps;
-		std::string crc_basedata;
+		std::string checksum_crc1_eqgame;
+		std::string checksum_crc2_skillcaps;
+		std::string checksum_crc3_basedata;
 	};
 
 	static std::string PrimaryKey()
@@ -74,9 +74,9 @@ public:
 			"time_creation",
 			"ban_reason",
 			"suspend_reason",
-			"crc_eqgame",
-			"crc_skillcaps",
-			"crc_basedata",
+			"checksum_crc1_eqgame",
+			"checksum_crc2_skillcaps",
+			"checksum_crc3_basedata",
 		};
 	}
 
@@ -104,9 +104,9 @@ public:
 			"time_creation",
 			"ban_reason",
 			"suspend_reason",
-			"crc_eqgame",
-			"crc_skillcaps",
-			"crc_basedata",
+			"checksum_crc1_eqgame",
+			"checksum_crc2_skillcaps",
+			"checksum_crc3_basedata",
 		};
 	}
 
@@ -168,9 +168,9 @@ public:
 		e.time_creation  = 0;
 		e.ban_reason     = "";
 		e.suspend_reason = "";
-		e.crc_eqgame     = "";
-		e.crc_skillcaps  = "";
-		e.crc_basedata   = "";
+		e.checksum_crc1_eqgame     = "";
+		e.checksum_crc2_skillcaps  = "";
+		e.checksum_crc3_basedata   = "";
 
 		return e;
 	}
@@ -227,9 +227,9 @@ public:
 			e.time_creation  = static_cast<uint32_t>(strtoul(row[18], nullptr, 10));
 			e.ban_reason     = row[19] ? row[19] : "";
 			e.suspend_reason = row[20] ? row[20] : "";
-			e.crc_eqgame     = row[21] ? row[21] : "";
-			e.crc_skillcaps  = row[22] ? row[22] : "";
-			e.crc_basedata   = row[23] ? row[23] : "";
+			e.checksum_crc1_eqgame     = row[21] ? row[21] : "";
+			e.checksum_crc2_skillcaps  = row[22] ? row[22] : "";
+			e.checksum_crc3_basedata   = row[23] ? row[23] : "";
 
 			return e;
 		}
@@ -283,9 +283,9 @@ public:
 		v.push_back(columns[18] + " = " + std::to_string(e.time_creation));
 		v.push_back(columns[19] + " = '" + Strings::Escape(e.ban_reason) + "'");
 		v.push_back(columns[20] + " = '" + Strings::Escape(e.suspend_reason) + "'");
-		v.push_back(columns[21] + " = '" + Strings::Escape(e.crc_eqgame) + "'");
-		v.push_back(columns[22] + " = '" + Strings::Escape(e.crc_skillcaps) + "'");
-		v.push_back(columns[23] + " = '" + Strings::Escape(e.crc_basedata) + "'");
+		v.push_back(columns[21] + " = '" + Strings::Escape(e.checksum_crc1_eqgame) + "'");
+		v.push_back(columns[22] + " = '" + Strings::Escape(e.checksum_crc2_skillcaps) + "'");
+		v.push_back(columns[23] + " = '" + Strings::Escape(e.checksum_crc3_basedata) + "'");
 
 		auto results = db.QueryDatabase(
 			fmt::format(
@@ -328,9 +328,9 @@ public:
 		v.push_back(std::to_string(e.time_creation));
 		v.push_back("'" + Strings::Escape(e.ban_reason) + "'");
 		v.push_back("'" + Strings::Escape(e.suspend_reason) + "'");
-		v.push_back("'" + Strings::Escape(e.crc_eqgame) + "'");
-		v.push_back("'" + Strings::Escape(e.crc_skillcaps) + "'");
-		v.push_back("'" + Strings::Escape(e.crc_basedata) + "'");
+		v.push_back("'" + Strings::Escape(e.checksum_crc1_eqgame) + "'");
+		v.push_back("'" + Strings::Escape(e.checksum_crc2_skillcaps) + "'");
+		v.push_back("'" + Strings::Escape(e.checksum_crc3_basedata) + "'");
 
 		auto results = db.QueryDatabase(
 			fmt::format(
@@ -381,9 +381,9 @@ public:
 			v.push_back(std::to_string(e.time_creation));
 			v.push_back("'" + Strings::Escape(e.ban_reason) + "'");
 			v.push_back("'" + Strings::Escape(e.suspend_reason) + "'");
-			v.push_back("'" + Strings::Escape(e.crc_eqgame) + "'");
-			v.push_back("'" + Strings::Escape(e.crc_skillcaps) + "'");
-			v.push_back("'" + Strings::Escape(e.crc_basedata) + "'");
+			v.push_back("'" + Strings::Escape(e.checksum_crc1_eqgame) + "'");
+			v.push_back("'" + Strings::Escape(e.checksum_crc2_skillcaps) + "'");
+			v.push_back("'" + Strings::Escape(e.checksum_crc3_basedata) + "'");
 
 			insert_chunks.push_back("(" + Strings::Implode(",", v) + ")");
 		}
@@ -438,9 +438,9 @@ public:
 			e.time_creation  = static_cast<uint32_t>(strtoul(row[18], nullptr, 10));
 			e.ban_reason     = row[19] ? row[19] : "";
 			e.suspend_reason = row[20] ? row[20] : "";
-			e.crc_eqgame     = row[21] ? row[21] : "";
-			e.crc_skillcaps  = row[22] ? row[22] : "";
-			e.crc_basedata   = row[23] ? row[23] : "";
+			e.checksum_crc1_eqgame     = row[21] ? row[21] : "";
+			e.checksum_crc2_skillcaps  = row[22] ? row[22] : "";
+			e.checksum_crc3_basedata   = row[23] ? row[23] : "";
 
 			all_entries.push_back(e);
 		}
@@ -486,9 +486,9 @@ public:
 			e.time_creation  = static_cast<uint32_t>(strtoul(row[18], nullptr, 10));
 			e.ban_reason     = row[19] ? row[19] : "";
 			e.suspend_reason = row[20] ? row[20] : "";
-			e.crc_eqgame     = row[21] ? row[21] : "";
-			e.crc_skillcaps  = row[22] ? row[22] : "";
-			e.crc_basedata   = row[23] ? row[23] : "";
+			e.checksum_crc1_eqgame     = row[21] ? row[21] : "";
+			e.checksum_crc2_skillcaps  = row[22] ? row[22] : "";
+			e.checksum_crc3_basedata   = row[23] ? row[23] : "";
 
 			all_entries.push_back(e);
 		}
