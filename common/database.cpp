@@ -2105,8 +2105,7 @@ bool Database::GetAdventureStats(uint32 char_id, AdventureStats_Struct *as)
 		"account.id = character_data.account_id AND "
 		"account.status BETWEEN '0' AND '10' AND "
 		"character_data.is_deleted = '0' AND "
-		"WHERE "
-		"player_id = {}",
+		"adventure_stats.player_id = {}",
 		char_id
 	);
 	auto results = QueryDatabase(query);
