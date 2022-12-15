@@ -2,37 +2,40 @@
 
 void command_reload(Client *c, const Seperator *sep)
 {
-	int arguments = sep->argnum;
-	if (!arguments) {
+	std::string command   = sep->arg[0] ? sep->arg[0] : "";
+	int         arguments = sep->argnum;
+	if (!arguments && Strings::Contains(command, "#reload")) {
 		c->SendReloadCommandMessages();
 		return;
 	}
 
-	bool is_aa = !strcasecmp(sep->arg[1], "aa");
+	bool is_rq_alias             = sep->arg[0] && Strings::Contains(command, "#rq");
+	bool is_logs_reload_alias    = sep->arg[0] && Strings::Contains(command, "#rl");
+	bool is_aa                   = !strcasecmp(sep->arg[1], "aa");
 	bool is_alternate_currencies = !strcasecmp(sep->arg[1], "alternate_currencies");
-	bool is_blocked_spells = !strcasecmp(sep->arg[1], "blocked_spells");
-	bool is_commands = !strcasecmp(sep->arg[1], "commands");
-	bool is_content_flags = !strcasecmp(sep->arg[1], "content_flags");
-	bool is_doors = !strcasecmp(sep->arg[1], "doors");
-	bool is_dztemplates = !strcasecmp(sep->arg[1], "dztemplates");
-	bool is_ground_spawns = !strcasecmp(sep->arg[1], "ground_spawns");
-	bool is_level_mods = !strcasecmp(sep->arg[1], "level_mods");
-	bool is_logs = !strcasecmp(sep->arg[1], "logs");
-	bool is_merchants = !strcasecmp(sep->arg[1], "merchants");
-	bool is_npc_emotes = !strcasecmp(sep->arg[1], "npc_emotes");
-	bool is_objects = !strcasecmp(sep->arg[1], "objects");
-	bool is_perl_export = !strcasecmp(sep->arg[1], "perl_export");
-	bool is_quest = !strcasecmp(sep->arg[1], "quest");
-	bool is_rules = !strcasecmp(sep->arg[1], "rules");
-	bool is_static = !strcasecmp(sep->arg[1], "static");
-	bool is_tasks = !strcasecmp(sep->arg[1], "tasks");
-	bool is_titles = !strcasecmp(sep->arg[1], "titles");
-	bool is_traps = !strcasecmp(sep->arg[1], "traps");
-	bool is_variables = !strcasecmp(sep->arg[1], "variables");
-	bool is_veteran_rewards = !strcasecmp(sep->arg[1], "veteran_rewards");
-	bool is_world = !strcasecmp(sep->arg[1], "world");
-	bool is_zone = !strcasecmp(sep->arg[1], "zone");
-	bool is_zone_points = !strcasecmp(sep->arg[1], "zone_points");
+	bool is_blocked_spells       = !strcasecmp(sep->arg[1], "blocked_spells");
+	bool is_commands             = !strcasecmp(sep->arg[1], "commands");
+	bool is_content_flags        = !strcasecmp(sep->arg[1], "content_flags");
+	bool is_doors                = !strcasecmp(sep->arg[1], "doors");
+	bool is_dztemplates          = !strcasecmp(sep->arg[1], "dztemplates");
+	bool is_ground_spawns        = !strcasecmp(sep->arg[1], "ground_spawns");
+	bool is_level_mods           = !strcasecmp(sep->arg[1], "level_mods");
+	bool is_logs                 = !strcasecmp(sep->arg[1], "logs") || is_logs_reload_alias;
+	bool is_merchants            = !strcasecmp(sep->arg[1], "merchants");
+	bool is_npc_emotes           = !strcasecmp(sep->arg[1], "npc_emotes");
+	bool is_objects              = !strcasecmp(sep->arg[1], "objects");
+	bool is_perl_export          = !strcasecmp(sep->arg[1], "perl_export");
+	bool is_quest                = !strcasecmp(sep->arg[1], "quest") || (is_rq_alias);
+	bool is_rules                = !strcasecmp(sep->arg[1], "rules");
+	bool is_static               = !strcasecmp(sep->arg[1], "static");
+	bool is_tasks                = !strcasecmp(sep->arg[1], "tasks");
+	bool is_titles               = !strcasecmp(sep->arg[1], "titles");
+	bool is_traps                = !strcasecmp(sep->arg[1], "traps");
+	bool is_variables            = !strcasecmp(sep->arg[1], "variables");
+	bool is_veteran_rewards      = !strcasecmp(sep->arg[1], "veteran_rewards");
+	bool is_world                = !strcasecmp(sep->arg[1], "world");
+	bool is_zone                 = !strcasecmp(sep->arg[1], "zone");
+	bool is_zone_points          = !strcasecmp(sep->arg[1], "zone_points");
 
 	if (
 		!is_aa &&
