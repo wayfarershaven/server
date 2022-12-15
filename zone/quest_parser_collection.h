@@ -119,7 +119,7 @@ public:
 
 	PerlEventExportSettings perl_event_export_settings[_LargestEventID];
 
-	void LoadPerlEventExportSettings(PerlEventExportSettings* perl_event_export_settings);
+	void LoadPerlEventExportSettings(PerlEventExportSettings* s);
 
 private:
 	bool HasQuestSubLocal(uint32 npcid, QuestEventID evt);
