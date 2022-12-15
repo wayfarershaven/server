@@ -670,10 +670,22 @@ void Zone::LoadNewMerchantData(uint32 merchantid) {
 void Zone::GetMerchantDataForZoneLoad() {
 	LogInfo("Loading Merchant Lists");
 
-	auto query = fmt::format(
+	std::string filter = fmt::format(
+		SQL(
+			id IN (
+				select npcID from spawnentry where spawngroupID IN (
+					select spawngroupID from spawn2 where `zone` = '{}' and `version` = {}
+				)
+			)
+		),
+		zone->GetShortName(),
+		zone->GetInstanceVersion()
+	);
+
+	std::string query = fmt::format(
 		SQL (
 			SELECT
-			DISTINCT merchantlist.merchantid,
+				DISTINCT merchantlist.merchantid,
 				merchantlist.slot,
 				merchantlist.item,
 				merchantlist.faction_required,
@@ -706,50 +718,49 @@ void Zone::GetMerchantDataForZoneLoad() {
 	std::map<uint32, std::list<MerchantList> >::iterator merchant_list;
 
 	uint32 npc_id = 0;
-	if (!results.Success() || !results.RowCount()) {
+	if (results.RowCount() == 0) {
 		LogDebug("No Merchant Data found for [{}]", GetShortName());
 		return;
 	}
-
-	for (auto row : results) {
-		MerchantList mle{};
-		mle.id = std::stoul(row[0]);
-		if (npc_id != mle.id) {
-			merchant_list = merchanttable.find(mle.id);
+	for (auto row = results.begin(); row != results.end(); ++row) {
+		MerchantList merchant_list_entry{};
+		merchant_list_entry.id = atoul(row[0]);
+		if (npc_id != merchant_list_entry.id) {
+			merchant_list = merchanttable.find(merchant_list_entry.id);
 			if (merchant_list == merchanttable.end()) {
 				std::list<MerchantList> empty;
-				merchanttable[mle.id] = empty;
-				merchant_list = merchanttable.find(mle.id);
+				merchanttable[merchant_list_entry.id] = empty;
+				merchant_list = merchanttable.find(merchant_list_entry.id);
 			}
 
-			npc_id = mle.id;
+			npc_id = merchant_list_entry.id;
 		}
 
+		auto iter  = merchant_list->second.begin();
 		bool found = false;
-		for (const auto &m : merchant_list->second) {
-			if (m.item == mle.id) {
+		while (iter != merchant_list->second.end()) {
+			if ((*iter).item == merchant_list_entry.id) {
 				found = true;
 				break;
 			}
+			++iter;
 		}
 
 		if (found) {
 			continue;
 		}
 
-		mle.slot = std::stoul(row[1]);
-		mle.item = std::stoul(row[2]);
-		mle.faction_required = static_cast<int16>(std::stoi(row[3]));
-		mle.level_required = static_cast<uint8>(std::stoul(row[4]));
-		mle.alt_currency_cost = static_cast<uint16>(std::stoul(row[5]));
-		mle.classes_required = std::stoul(row[6]);
-		mle.probability = static_cast<uint8>(std::stoul(row[7]));
-		mle.bucket_name = row[8];
-		mle.bucket_value = row[9];
-		mle.bucket_comparison = static_cast<uint8>(std::stoul(row[10]));
+		merchant_list_entry.slot              = atoul(row[1]);
+		merchant_list_entry.item              = atoul(row[2]);
+		merchant_list_entry.faction_required  = atoul(row[3]);
+		merchant_list_entry.level_required    = atoul(row[4]);
+		merchant_list_entry.alt_currency_cost = atoul(row[5]);
+		merchant_list_entry.classes_required  = atoul(row[6]);
+		merchant_list_entry.probability       = atoul(row[7]);
 
-		merchant_list->second.push_back(mle);
+		merchant_list->second.push_back(merchant_list_entry);
 	}
+
 }
 
 void Zone::LoadMercTemplates(){
