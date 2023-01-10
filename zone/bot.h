@@ -38,9 +38,9 @@
 
 #include <sstream>
 
-constexpr float BOT_FOLLOW_DISTANCE_DEFAULT = 184.0f; // as DSq value (~13.565 units)
-constexpr float BOT_FOLLOW_DISTANCE_DEFAULT_MAX = 2500.0f; // as DSq value (50 units)
-constexpr float BOT_FOLLOW_DISTANCE_WALK = 1000.0f; // as DSq value (~31.623 units)
+constexpr uint32 BOT_FOLLOW_DISTANCE_DEFAULT = 184; // as DSq value (~13.565 units)
+constexpr uint32 BOT_FOLLOW_DISTANCE_DEFAULT_MAX = 2500; // as DSq value (50 units)
+constexpr uint32 BOT_FOLLOW_DISTANCE_WALK = 1000; // as DSq value (~31.623 units)
 
 constexpr uint32 BOT_KEEP_ALIVE_INTERVAL = 5000; // 5 seconds
 
@@ -315,12 +315,31 @@ public:
 		int16 iManaCost,
 		int32 iRecastDelay,
 		int16 iResistAdjust,
+		uint8 min_level,
+		uint8 max_level,
 		int8 min_hp,
 		int8 max_hp,
 		std::string bucket_name,
 		std::string bucket_value,
 		uint8 bucket_comparison
 	);
+
+	void AddSpellToBotEnforceList(
+		int16 iPriority,
+		uint16 iSpellID,
+		uint32 iType,
+		int16 iManaCost,
+		int32 iRecastDelay,
+		int16 iResistAdjust,
+		uint8 min_level,
+		uint8 max_level,
+		int8 min_hp,
+		int8 max_hp,
+		std::string bucket_name,
+		std::string bucket_value,
+		uint8 bucket_comparison
+	);
+
 	void AI_Bot_Event_SpellCastFinished(bool iCastSucceeded, uint16 slot);
 	// AI Methods
 	virtual bool AICastSpell(Mob* tar, uint8 iChance, uint32 iSpellTypes);
@@ -345,7 +364,6 @@ public:
 
 	// Mob Spell Virtual Override Methods
 	virtual void SpellProcess();
-	virtual int64 GetActSpellDamage(uint16 spell_id, int64 value, Mob* target = nullptr);
 	virtual int64 GetActSpellHealing(uint16 spell_id, int64 value, Mob* target = nullptr);
 	virtual int32 GetActSpellCasttime(uint16 spell_id, int32 casttime);
 	virtual int32 GetActSpellCost(uint16 spell_id, int32 cost);
@@ -370,7 +388,7 @@ public:
 	void EquipBot(std::string* error_message);
 	bool CheckLoreConflict(const EQ::ItemData* item);
 	virtual void UpdateEquipmentLight() { m_Light.Type[EQ::lightsource::LightEquipment] = m_inv.FindBrightestLightType(); m_Light.Level[EQ::lightsource::LightEquipment] = EQ::lightsource::TypeToLevel(m_Light.Type[EQ::lightsource::LightEquipment]); }
-	const EQ::InventoryProfile& GetBotInv() const { return m_inv; }
+	inline EQ::InventoryProfile& GetInv() { return m_inv; }
 
 	// Static Class Methods
 	//static void DestroyBotRaidObjects(Client* client);	// Can be removed after bot raids are dumped
@@ -449,13 +467,14 @@ public:
 	virtual bool GetSpawnStatus() { return _spawnStatus; }
 	uint8 GetPetChooserID() { return _petChooserID; }
 	bool IsPetChooser() { return _petChooser; }
-	bool IsBotArcher() { return _botArcher; }
+	bool IsBotArcher() { return m_bot_archery_setting; }
 	bool IsBotCharmer() { return _botCharmer; }
 	virtual bool IsBot() const { return true; }
 	bool GetRangerAutoWeaponSelect() { return _rangerAutoWeaponSelect; }
 	BotRoleType GetBotRole() { return _botRole; }
 	EQ::constants::StanceType GetBotStance() { return _botStance; }
 	uint8 GetChanceToCastBySpellType(uint32 spellType);
+	bool GetBotEnforceSpellSetting() { return m_enforce_spell_settings; }
 
 	bool IsGroupHealer() { return m_CastingRoles.GroupHealer; }
 	bool IsGroupSlower() { return m_CastingRoles.GroupSlower; }
@@ -476,6 +495,7 @@ public:
 	bool IsBotSpellFighter() { return IsSpellFighterClass(GetClass()); }
 	bool IsBotFighter() { return IsFighterClass(GetClass()); }
 	bool IsBotNonSpellFighter() { return IsNonSpellFighterClass(GetClass()); }
+	uint8 GetBotClass() { return GetClass(); }
 	bool CanHeal();
 	int GetRawACNoShield(int &shield_ac);
 
@@ -560,12 +580,22 @@ public:
 
 	// "Quest API" Methods
 	bool HasBotSpellEntry(uint16 spellid);
+	void ApplySpell(int spell_id, int duration = 0, ApplySpellType apply_type = ApplySpellType::Solo, bool allow_pets = false, bool is_raid_group_only = true);
+	void BreakInvis();
+	void Escape();
+	void Fling(float value, float target_x, float target_y, float target_z, bool ignore_los = false, bool clip_through_walls = false, bool calculate_speed = false);
+	std::vector<Mob*> GetApplySpellList(ApplySpellType apply_type, bool allow_pets, bool is_raid_group_only);
+	int32 GetItemIDAt(int16 slot_id);
+	int32 GetAugmentIDAt(int16 slot_id, uint8 augslot);
+	int32 GetRawItemAC();
+	void SendSpellAnim(uint16 targetid, uint16 spell_id);
+	void SetSpellDuration(int spell_id, int duration = 0, ApplySpellType apply_type = ApplySpellType::Solo, bool allow_pets = false, bool is_raid_group_only = true);
 
 	// "SET" Class Methods
 	void SetBotSpellID(uint32 newSpellID);
 	virtual void SetSpawnStatus(bool spawnStatus) { _spawnStatus = spawnStatus; }
 	void SetPetChooserID(uint8 id) { _petChooserID = id; }
-	void SetBotArcher(bool a) { _botArcher = a; }
+	void SetBotArcherySetting(bool bot_archer_setting, bool save = false);
 	void SetBotCharmer(bool c) { _botCharmer = c; }
 	void SetPetChooser(bool p) { _petChooser = p; }
 	void SetBotOwner(Mob* botOwner) { this->_botOwner = botOwner; }
@@ -597,9 +627,8 @@ public:
 	int GetExpansionBitmask();
 	void SetExpansionBitmask(int expansion_bitmask, bool save = true);
 
-	void ListBotSpells();
+	void ListBotSpells(uint8 min_level);
 
-	std::string GetLevelString(uint8 min_level, uint8 max_level);
 	std::string GetHPString(int8 min_hp, int8 max_hp);
 
 	bool AddBotSpellSetting(uint16 spell_id, BotSpellSetting* bs);
@@ -608,6 +637,7 @@ public:
 	void ListBotSpellSettings();
 	void LoadBotSpellSettings();
 	bool UpdateBotSpellSetting(uint16 spell_id, BotSpellSetting* bs);
+	void SetBotEnforceSpellSetting(bool enforcespellsettings, bool save = false);
 
 	static void SpawnBotGroupByName(Client* c, std::string botgroup_name, uint32 leader_id);
 
@@ -706,9 +736,6 @@ protected:
 	virtual void PetAIProcess();
 	virtual void BotMeditate(bool isSitting);
 	virtual bool CheckBotDoubleAttack(bool Triple = false);
-	virtual int32 GetBotFocusEffect(focusType bottype, uint16 spell_id, bool from_buff_tic = false);
-	virtual int32 CalcBotFocusEffect(focusType bottype, uint16 focus_id, uint16 spell_id, bool best_focus=false);
-	virtual int32 CalcBotAAFocus(focusType type, uint32 aa_ID, uint32 points, uint16 spell_id);
 	virtual void PerformTradeWithClient(int16 begin_slot_id, int16 end_slot_id, Client* client);
 	virtual bool AIDoSpellCast(uint8 i, Mob* tar, int32 mana_cost, uint32* oDontDoAgainBefore = 0);
 
@@ -723,6 +750,9 @@ protected:
 	//void SetRaidDoter(bool flag = true) { m_CastingRoles.RaidDoter = flag; }
 	std::deque<int> bot_signal_q;
 
+	std::vector<BotSpells_Struct> AIBot_spells;
+	std::vector<BotSpells_Struct> AIBot_spells_enforced;
+
 private:
 	// Class Members
 	uint32 _botID;
@@ -730,7 +760,7 @@ private:
 	bool _spawnStatus;
 	Mob* _botOwner;
 	bool _botOrderAttack;
-	bool _botArcher;
+	bool m_bot_archery_setting;
 	bool _botCharmer;
 	bool _petChooser;
 	uint8 _petChooserID;
@@ -790,6 +820,7 @@ private:
 	bool _pauseAI;
 	uint8 _stopMeleeLevel;
 	int m_expansion_bitmask;
+	bool m_enforce_spell_settings;
 
 	// Private "base stats" Members
 	int32 _baseMR;
