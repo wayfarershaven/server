@@ -106,7 +106,7 @@ namespace luabind
 	LUABIND_API void bind_class_info(lua_State* L)
 	{
 		module(L)
-		[
+		[(
 			class_<class_info>("class_info_data")
 				.def_readonly("name", &class_info::name)
 				.def_readonly("methods", &class_info::methods)
@@ -114,7 +114,7 @@ namespace luabind
 		
             def("class_info", &get_class_info),
             def("class_names", &get_class_names)
-		];
+		)];
 	}
 }
 

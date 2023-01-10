@@ -5484,7 +5484,7 @@ void bot_subcommand_bot_create(Client *c, const Seperator *sep)
 			}
 
 			window_text.append(
-				fmt::format(
+				fmt::format("{} {}",
 					class_substrs[i + 1],
 					(i + 1)
 				)
@@ -5509,7 +5509,7 @@ void bot_subcommand_bot_create(Client *c, const Seperator *sep)
 			}
 
 			window_text.append(
-				fmt::format(
+				fmt::format("{}, {}",
 					race_substrs[i + 1],
 					race_values[i + 1]
 				)
@@ -5528,7 +5528,7 @@ void bot_subcommand_bot_create(Client *c, const Seperator *sep)
 			window_text.append(message_separator);
 
 			window_text.append(
-				fmt::format(
+				fmt::format("{}, {}",
 					gender_substrs[i],
 					i
 				)

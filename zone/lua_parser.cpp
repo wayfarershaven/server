@@ -1157,7 +1157,7 @@ void LuaParser::MapFunctions(lua_State *L) {
 		luabind::open(L);
 
 		luabind::module(L)
-		[
+		[(
 			lua_register_general(),
 			lua_register_random(),
 			lua_register_events(),
@@ -1217,7 +1217,7 @@ void LuaParser::MapFunctions(lua_State *L) {
 			lua_register_journal_mode(),
 			lua_register_expedition(),
 			lua_register_expedition_lock_messages()
-		];
+		)];
 
 	} catch(std::exception &ex) {
 		std::string error = ex.what();
