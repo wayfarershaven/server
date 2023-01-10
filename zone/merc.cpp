@@ -4370,19 +4370,21 @@ bool Merc::IsStanding() {
 float Merc::GetMaxMeleeRangeToTarget(Mob* target) {
 	float result = 0;
 
-	if(target) {
+	if (target) {
 		float size_mod = GetSize();
 		float other_size_mod = target->GetSize();
 
-		if(GetRace() == 49 || GetRace() == 158 || GetRace() == 196) //For races with a fixed size
+		if (GetRace() == RACE_LAVA_DRAGON_49 || GetRace() == RACE_WURM_158 || GetRace() == RACE_GHOST_DRAGON_196) { //For races with a fixed size
 			size_mod = 60.0f;
-		else if (size_mod < 6.0)
+		} else if (size_mod < 6.0) {
 			size_mod = 8.0f;
+		}
 
-		if(target->GetRace() == 49 || target->GetRace() == 158 || target->GetRace() == 196) //For races with a fixed size
+		if (target->GetRace() == RACE_LAVA_DRAGON_49 || target->GetRace() == RACE_WURM_158 || target->GetRace() == RACE_GHOST_DRAGON_196) { //For races with a fixed size
 			other_size_mod = 60.0f;
-		else if (other_size_mod < 6.0)
+		} else if (other_size_mod < 6.0) {
 			other_size_mod = 8.0f;
+		}
 
 		if (other_size_mod > size_mod) {
 			size_mod = other_size_mod;
@@ -4390,35 +4392,38 @@ float Merc::GetMaxMeleeRangeToTarget(Mob* target) {
 
 		// this could still use some work, but for now it's an improvement....
 
-		if (size_mod > 29)
+		if (size_mod > 29) {
 			size_mod *= size_mod;
-		else if (size_mod > 19)
+		} else if (size_mod > 19) {
 			size_mod *= size_mod * 2;
-		else
+		} else {
 			size_mod *= size_mod * 4;
+		}
 
 		// prevention of ridiculously sized hit boxes
-		if (size_mod > 10000)
+		if (size_mod > 10000) {
 			size_mod = size_mod / 7;
-
+		}
 		result = size_mod;
 	}
-
 	return result;
 }
 
 void Merc::DoClassAttacks(Mob *target) {
-	if(target == nullptr)
+	if (target == nullptr) {
 		return; //gotta have a target for all these
+	}
 
 	bool ca_time = classattack_timer.Check(false);
 
 	//only check attack allowed if we are going to do something
-	if(ca_time && !IsAttackAllowed(target))
+	if (ca_time && !IsAttackAllowed(target)) {
 		return;
+	}
 
-	if(!ca_time)
+	if (!ca_time) {
 		return;
+	}
 
 	float HasteModifier = GetHaste() * 0.01f;
 

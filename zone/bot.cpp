@@ -263,148 +263,143 @@ Bot::Bot(uint32 botID, uint32 botOwnerCharacterID, uint32 botSpellsID, double to
 		//reapply some buffs
 		uint32 buff_count = GetMaxTotalSlots();
 		for (uint32 j1 = 0; j1 < buff_count; j1++) {
-			if (!IsValidSpell(buffs[j1].spellid))
+			if (!IsValidSpell(buffs[j1].spellid)) {
 				continue;
+			}
 
 			const SPDat_Spell_Struct& spell = spells[buffs[j1].spellid];
 
 			int NimbusEffect = GetNimbusEffect(buffs[j1].spellid);
 			if (NimbusEffect) {
-				if (!IsNimbusEffectActive(NimbusEffect))
+				if (!IsNimbusEffectActive(NimbusEffect)) {
 					SendSpellEffect(NimbusEffect, 500, 0, 1, 3000, true);
+				}
 			}
 
 			for (int x1 = 0; x1 < EFFECT_COUNT; x1++) {
 				switch (spell.effect_id[x1]) {
-				case SE_IllusionCopy:
-				case SE_Illusion: {
-					if (spell.base_value[x1] == -1) {
-						if (gender == 1)
-							gender = 0;
-						else if (gender == 0)
-							gender = 1;
-						SendIllusionPacket(GetRace(), gender, 0xFF, 0xFF);
+					case SE_IllusionCopy:
+					case SE_Illusion: {
+						if (spell.base_value[x1] == -1) {
+							if (gender == 1) {
+								gender = 0;
+							} else if (gender == 0) {
+								gender = 1;
+							}
+							SendIllusionPacket(GetRace(), gender, 0xFF, 0xFF);
+						} else if (spell.base_value[x1] == -2) {
+							if (GetRace() == IKSAR || GetRace() == VAHSHIR || GetRace() <= GNOME) {
+								SendIllusionPacket(GetRace(), GetGender(), spell.limit_value[x1], spell.max_value[x1]);
+							}
+						} else if (spell.max_value[x1] > 0) {
+							SendIllusionPacket(spell.base_value[x1], 0xFF, spell.limit_value[x1], spell.max_value[x1]);
+						} else {
+							SendIllusionPacket(spell.base_value[x1], 0xFF, 0xFF, 0xFF);
+						}
+						switch (spell.base_value[x1]) {
+						case OGRE:
+							SendAppearancePacket(AT_Size, 9);
+							break;
+						case TROLL:
+							SendAppearancePacket(AT_Size, 8);
+							break;
+						case VAHSHIR:
+						case BARBARIAN:
+							SendAppearancePacket(AT_Size, 7);
+							break;
+						case HALF_ELF:
+						case WOOD_ELF:
+						case DARK_ELF:
+						case FROGLOK:
+							SendAppearancePacket(AT_Size, 5);
+							break;
+						case DWARF:
+							SendAppearancePacket(AT_Size, 4);
+							break;
+						case HALFLING:
+						case GNOME:
+							SendAppearancePacket(AT_Size, 3);
+							break;
+						default:
+							SendAppearancePacket(AT_Size, 6);
+							break;
+						}
+						break;
 					}
-					else if (spell.base_value[x1] == -2) // WTF IS THIS
+					//case SE_SummonHorse: {
+					//	SummonHorse(buffs[j1].spellid);
+					//	//hasmount = true;	//this was false, is that the correct thing?
+					//	break;
+					//}
+					case SE_Silence:
 					{
-						if (GetRace() == 128 || GetRace() == 130 || GetRace() <= 12)
-							SendIllusionPacket(GetRace(), GetGender(), spell.limit_value[x1], spell.max_value[x1]);
+						Silence(true);
+						break;
 					}
-					else if (spell.max_value[x1] > 0)
+					case SE_Amnesia:
 					{
-						SendIllusionPacket(spell.base_value[x1], 0xFF, spell.limit_value[x1], spell.max_value[x1]);
+						Amnesia(true);
+						break;
 					}
-					else
+					case SE_DivineAura:
 					{
-						SendIllusionPacket(spell.base_value[x1], 0xFF, 0xFF, 0xFF);
-					}
-					switch (spell.base_value[x1]) {
-					case OGRE:
-						SendAppearancePacket(AT_Size, 9);
-						break;
-					case TROLL:
-						SendAppearancePacket(AT_Size, 8);
-						break;
-					case VAHSHIR:
-					case BARBARIAN:
-						SendAppearancePacket(AT_Size, 7);
-						break;
-					case HALF_ELF:
-					case WOOD_ELF:
-					case DARK_ELF:
-					case FROGLOK:
-						SendAppearancePacket(AT_Size, 5);
-						break;
-					case DWARF:
-						SendAppearancePacket(AT_Size, 4);
-						break;
-					case HALFLING:
-					case GNOME:
-						SendAppearancePacket(AT_Size, 3);
-						break;
-					default:
-						SendAppearancePacket(AT_Size, 6);
+						invulnerable = true;
 						break;
 					}
-					break;
-				}
-				//case SE_SummonHorse: {
-				//	SummonHorse(buffs[j1].spellid);
-				//	//hasmount = true;	//this was false, is that the correct thing?
-				//	break;
-				//}
-				case SE_Silence:
-				{
-					Silence(true);
-					break;
-				}
-				case SE_Amnesia:
-				{
-					Amnesia(true);
-					break;
-				}
-				case SE_DivineAura:
-				{
-					invulnerable = true;
-					break;
-				}
-				case SE_Invisibility2:
-				case SE_Invisibility:
-				{
-					invisible = true;
-					SendAppearancePacket(AT_Invis, 1);
-					break;
-				}
-				case SE_Levitate:
-				{
-					if (!zone->CanLevitate())
+					case SE_Invisibility2:
+					case SE_Invisibility:
 					{
-						//if (!GetGM())
-						//{
-							SendAppearancePacket(AT_Levitate, 0);
-							BuffFadeByEffect(SE_Levitate);
-							//Message(Chat::White, "You can't levitate in this zone.");
-						//}
+						invisible = true;
+						SendAppearancePacket(AT_Invis, 1);
+						break;
 					}
-					else {
-						SendAppearancePacket(AT_Levitate, 2);
+					case SE_Levitate:
+					{
+						if (!zone->CanLevitate())
+						{
+							//if (!GetGM())
+							//{
+								SendAppearancePacket(AT_Levitate, 0);
+								BuffFadeByEffect(SE_Levitate);
+								//Message(Chat::White, "You can't levitate in this zone.");
+							//}
+						}
+						else {
+							SendAppearancePacket(AT_Levitate, 2);
+						}
+						break;
 					}
-					break;
-				}
-				case SE_InvisVsUndead2:
-				case SE_InvisVsUndead:
-				{
-					invisible_undead = true;
-					break;
-				}
-				case SE_InvisVsAnimals:
-				{
-					invisible_animals = true;
-					break;
-				}
-				case SE_AddMeleeProc:
-				case SE_WeaponProc:
-				{
-					AddProcToWeapon(GetProcID(buffs[j1].spellid, x1), false, 100 + spells[buffs[j1].spellid].limit_value[x1], buffs[j1].spellid, buffs[j1].casterlevel);
-					break;
-				}
-				case SE_DefensiveProc:
-				{
-					AddDefensiveProc(GetProcID(buffs[j1].spellid, x1), 100 + spells[buffs[j1].spellid].limit_value[x1], buffs[j1].spellid);
-					break;
-				}
-				case SE_RangedProc:
-				{
-					AddRangedProc(GetProcID(buffs[j1].spellid, x1), 100 + spells[buffs[j1].spellid].limit_value[x1], buffs[j1].spellid);
-					break;
-				}
+					case SE_InvisVsUndead2:
+					case SE_InvisVsUndead:
+					{
+						invisible_undead = true;
+						break;
+					}
+					case SE_InvisVsAnimals:
+					{
+						invisible_animals = true;
+						break;
+					}
+					case SE_AddMeleeProc:
+					case SE_WeaponProc:
+					{
+						AddProcToWeapon(GetProcID(buffs[j1].spellid, x1), false, 100 + spells[buffs[j1].spellid].limit_value[x1], buffs[j1].spellid, buffs[j1].casterlevel);
+						break;
+					}
+					case SE_DefensiveProc:
+					{
+						AddDefensiveProc(GetProcID(buffs[j1].spellid, x1), 100 + spells[buffs[j1].spellid].limit_value[x1], buffs[j1].spellid);
+						break;
+					}
+					case SE_RangedProc:
+					{
+						AddRangedProc(GetProcID(buffs[j1].spellid, x1), 100 + spells[buffs[j1].spellid].limit_value[x1], buffs[j1].spellid);
+						break;
+					}
 				}
 			}
 		}
-
-
-	}
-	else {
+	} else {
 		bot_owner->Message(Chat::White, "&s for '%s'", BotDatabase::fail::LoadBuffs(), GetCleanName());
 	}
 
@@ -1205,23 +1200,25 @@ void Bot::GenerateBaseStats()
 void Bot::GenerateAppearance() {
 	// Randomize facial appearance
 	int iFace = 0;
-	if(GetRace() == 2) // Barbarian w/Tatoo
+	if (GetRace() == BARBARIAN) { // Barbarian w/Tatoo
 		iFace = zone->random.Int(0, 79);
-	else
+	} else {
 		iFace = zone->random.Int(0, 7);
+	}
 
 	int iHair = 0;
 	int iBeard = 0;
 	int iBeardColor = 1;
-	if(GetRace() == 522) {
+	if (GetRace() == DRAKKIN) {
 		iHair = zone->random.Int(0, 8);
 		iBeard = zone->random.Int(0, 11);
 		iBeardColor = zone->random.Int(0, 3);
 	} else if(GetGender()) {
 		iHair = zone->random.Int(0, 2);
-		if(GetRace() == 8) { // Dwarven Females can have a beard
-			if(zone->random.Int(1, 100) < 50)
+		if (GetRace() == DWARF) { // Dwarven Females can have a beard
+			if(zone->random.Int(1, 100) < 50) {
 				iFace += 10;
+			}
 		}
 	} else {
 		iHair = zone->random.Int(0, 3);
@@ -1230,24 +1227,26 @@ void Bot::GenerateAppearance() {
 	}
 
 	int iHairColor = 0;
-	if(GetRace() == 522)
+	if (GetRace() == DRAKKIN) {
 		iHairColor = zone->random.Int(0, 3);
-	else
+	} else {
 		iHairColor = zone->random.Int(0, 19);
+	}
 
 	uint8 iEyeColor1 = (uint8)zone->random.Int(0, 9);
 	uint8 iEyeColor2 = 0;
-	if(GetRace() == 522)
+	if (GetRace() == DRAKKIN) {
 		iEyeColor1 = iEyeColor2 = (uint8)zone->random.Int(0, 11);
-	else if(zone->random.Int(1, 100) > 96)
+	} else if(zone->random.Int(1, 100) > 96) {
 		iEyeColor2 = zone->random.Int(0, 9);
-	else
+	} else {
 		iEyeColor2 = iEyeColor1;
+	}
 
 	int iHeritage = 0;
 	int iTattoo = 0;
 	int iDetails = 0;
-	if(GetRace() == 522) {
+	if (GetRace() == DRAKKIN) {
 		iHeritage = zone->random.Int(0, 6);
 		iTattoo = zone->random.Int(0, 7);
 		iDetails = zone->random.Int(0, 7);
