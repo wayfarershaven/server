@@ -294,8 +294,8 @@ void Client::AddEXP(uint64 in_add_exp, uint8 conlevel, bool resexp, uint32 mob_l
 
 	uint64 neededxp = GetEXPForLevel(GetLevel() + 1) - (GetEXP() + add_exp);
 	if (admin >= 100 && GetGM()) {
-		Message(Chat::Yellow, "[GM] You have gained %d (%d) AXP and %d (%d) EXP. %d more EXP is needed for Level %d",
-				add_aaxp, GetAAXP() + add_aaxp, add_exp, GetEXP() + add_exp, neededxp, GetLevel() + 1);
+		Message(Chat::Yellow, fmt::format("[GM] You have gained {} ({}) AXP and {} ({}) EXP. {} more EXP is needed for Level {}",
+				add_aaxp, GetAAXP() + add_aaxp, add_exp, GetEXP() + add_exp, neededxp, GetLevel() + 1).c_str());
 	}
 
 	//Message(Chat::Yellow, "[DEBUG] XP awarded: %i (%i) Required XP is: %i Cap: %0.2f ", add_exp, GetEXP() + add_exp, requiredxp, xp_cap);
