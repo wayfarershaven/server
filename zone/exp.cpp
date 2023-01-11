@@ -272,7 +272,7 @@ void Client::AddEXP(uint64 in_add_exp, uint8 conlevel, bool resexp, uint32 mob_l
 	// Calculate Caps
 	uint64 requiredxp = GetEXPForLevel(GetLevel() + 1) - GetEXPForLevel(GetLevel());
 	float xp_cap = (float) requiredxp * 0.13f; //13% of total XP is our cap
-	int aaxp_cap = RuleI(Character, MaxAAExpPerKill);
+	uint64 aaxp_cap = RuleI(Character, MaxAAExpPerKill);
 
 	// Enforce Reg XP Cap
 	if (add_exp > xp_cap) {
@@ -843,14 +843,16 @@ uint64 Client::GetEXPForLevel(uint16 check_level, bool aa)
 	} else if (check_level == 65) {
 		mod = 3.6;
 	} else if (check_level == 66) {
-        mod = 5.0;
+        mod = RuleR(Character, ExpLevel66Mod);
 	} else if (check_level == 67) {
-        mod = 5.9;
+        mod = RuleR(Character, ExpLevel67Mod);
 	} else if (check_level == 68) {
-        mod = 6.0;
+        mod = RuleR(Character, ExpLevel68Mod);
 	} else if (check_level == 69) {
-        mod = 6.1;	
-    } else {
+        mod = RuleR(Character, ExpLevel69Mod);
+    } else if (check_level == 70) {
+        mod = RuleR(Character, ExpLevel70Mod);
+	} else {
         mod = 6.2;
 	}
 
@@ -1237,7 +1239,7 @@ bool Client::IsInLevelRange(uint8 maxlevel)
 	}
 }
 
-void Client::GetExpLoss(Mob* killerMob, uint16 spell, int &exploss)
+void Client::GetExpLoss(Mob* killerMob, uint16 spell, uint64 &exploss)
 {
 	float loss;
 	uint8 level = GetLevel();
@@ -1269,8 +1271,8 @@ void Client::GetExpLoss(Mob* killerMob, uint16 spell, int &exploss)
 		}
 	}
 
-	int requiredxp = GetEXPForLevel(level + 1) - GetEXPForLevel(level);
-	exploss = (int)((float)requiredxp * (loss * RuleR(Character, EXPLossMultiplier)));
+	uint64 requiredxp = GetEXPForLevel(level + 1) - GetEXPForLevel(level);
+	exploss = (uint64)((float)requiredxp * (loss * RuleR(Character, EXPLossMultiplier)));
 
 	if((level < RuleI(Character, DeathExpLossLevel)) || (level > RuleI(Character, DeathExpLossMaxLevel)) || IsBecomeNPC()) {
 		exploss = 0;

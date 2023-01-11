@@ -85,6 +85,12 @@ RULE_INT(Character, MaxAAExpPerKill, 3596474, "Maximum AA EXP per Kill")
 RULE_REAL(Character, ExpInstanceMultiplier, 0.20, "Instance based XP modifier")
 RULE_INT(Character, MaxLevelExpMultiplier, 60, "Maximum level allowed to receive Bonus EXP modifier")
 
+RULE_REAL(Character, ExpLevel66Mod, 5.0, "Required XP modififer for level 66 (5.0 default for int32) - DO NOT ADJUST ON LIVE, WILL AFFECT PLAYER LEVEL")
+RULE_REAL(Character, ExpLevel67Mod, 5.9, "Required XP modififer for level 67 (5.9 default for int32) - DO NOT ADJUST ON LIVE, WILL AFFECT PLAYER LEVEL")
+RULE_REAL(Character, ExpLevel68Mod, 6.0, "Required XP modififer for level 68 (6.0 default for int32) - DO NOT ADJUST ON LIVE, WILL AFFECT PLAYER LEVEL")
+RULE_REAL(Character, ExpLevel69Mod, 6.1, "Required XP modififer for level 69 (6.1 default for int32) - DO NOT ADJUST ON LIVE, WILL AFFECT PLAYER LEVEL")
+RULE_REAL(Character, ExpLevel70Mod, 6.2, "Required XP modififer for level 70 (6.2 default for int32) - DO NOT ADJUST ON LIVE, WILL AFFECT PLAYER LEVEL")
+
 RULE_BOOL(Character, SmoothEXPLoss, true, "")
 RULE_REAL(Character, EXPLossMultiplier, 1.0, "")
 RULE_BOOL(Character, UseXPConScaling, true, "When activated, the experience is modified depending on the difference between player level and NPC level. The settings Green/LightBlue/Blue//White/Yellow and RedModifier are used")

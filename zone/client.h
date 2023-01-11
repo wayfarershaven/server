@@ -1643,7 +1643,7 @@ public:
 	bool IsInLevelRange(uint8 maxlevel);
 	void AddQuestEXP(uint64 in_add_exp);
 	void AddEXPPercent(uint8 percent, uint8 level = 1);
-	void GetExpLoss(Mob* attacker, uint16 spell, int &exploss);
+	void GetExpLoss(Mob* attacker, uint16 spell, uint64 &exploss);
 
 protected:
 	friend class Mob;

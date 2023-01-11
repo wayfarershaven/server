@@ -11,18 +11,18 @@ void command_xpinfo(Client *c, const Seperator *sep){
 	}
 
 	uint16 level = t->GetLevel();
-	uint32 totalrequiredxp = t->GetEXPForLevel(level + 1);
-	uint32 currentxp = t->GetEXP();
+	uint64 totalrequiredxp = t->GetEXPForLevel(level + 1);
+	uint64 currentxp = t->GetEXP();
 	float xpforlevel = totalrequiredxp - currentxp;
 	float totalxpforlevel = totalrequiredxp - t->GetEXPForLevel(level);
 	float xp_percent = 100.0 - ((xpforlevel/totalxpforlevel) * 100.0);
 
-	int exploss;
+	uint64 exploss;
 	t->GetExpLoss(nullptr, 0, exploss);
 	float loss_percent = (exploss/totalxpforlevel) * 100.0;
 
 	float maxaa = t->GetEXPForLevel(0, true);
-	uint32 currentaaxp = t->GetAAXP();
+	uint64 currentaaxp = t->GetAAXP();
 	float aa_percent = (currentaaxp/maxaa) * 100.0;
 
 	c->Message(Chat::Yellow, "%s has %d of %d required XP.", t->GetName(), currentxp, totalrequiredxp);
