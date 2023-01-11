@@ -8754,6 +8754,8 @@ void EntityList::AddBot(Bot *new_bot, bool send_spawn_packet, bool dont_queue) {
 			}
 
 			parse->EventBot(EVENT_SPAWN, new_bot, nullptr, "", 0);
+
+			new_bot->DispatchZoneControllerEvent(EVENT_SPAWN_ZONE, new_bot, "", 0, nullptr);
 		}
 
 		bot_list.push_back(new_bot);

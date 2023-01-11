@@ -164,7 +164,10 @@ const char *QuestEventSubroutines[_LargestEventID] = {
 	"EVENT_AA_BUY",
 	"EVENT_AA_GAIN",
 	"EVENT_PAYLOAD",
-	"EVENT_LEVEL_DOWN"
+	"EVENT_LEVEL_DOWN",
+	"EVENT_GM_COMMAND",
+	"EVENT_DESPAWN",
+	"EVENT_DESPAWN_ZONE",
   #ifdef BOTS
 	,
 	"EVENT_SPELL_EFFECT_BOT",
@@ -1837,7 +1840,17 @@ void PerlembParser::ExportEventVariables(
 				NPC* killed = std::any_cast<NPC*>(extra_pointers->at(1));
 				if (killed)
 				{
-					ExportVar(package_name.c_str(), "killed_npc_id", killed->GetNPCTypeID());
+					ExportVar(package_name.c_str(), "killed_entity_id", killed->GetID());
+
+					if (killed->IsNPC()) {
+						ExportVar(package_name.c_str(), "killed_bot_id", 0);
+						ExportVar(package_name.c_str(), "killed_npc_id", killed->GetNPCTypeID());
+#ifdef BOTS
+					} else if (killed->IsBot()) {
+						ExportVar(package_name.c_str(), "killed_bot_id", killed->CastToBot()->GetBotID());
+						ExportVar(package_name.c_str(), "killed_npc_id", 0);
+#endif
+					}
 					ExportVar(package_name.c_str(), "killed_x", killed->GetX());
 					ExportVar(package_name.c_str(), "killed_y", killed->GetY());
 					ExportVar(package_name.c_str(), "killed_z", killed->GetZ());
@@ -1856,7 +1869,15 @@ void PerlembParser::ExportEventVariables(
 		}
 		case EVENT_SPAWN_ZONE: {
 			ExportVar(package_name.c_str(), "spawned_entity_id", mob->GetID());
-			ExportVar(package_name.c_str(), "spawned_npc_id", mob->GetNPCTypeID());
+			if (mob->IsNPC()) {
+				ExportVar(package_name.c_str(), "spawned_bot_id", 0);
+				ExportVar(package_name.c_str(), "spawned_npc_id", mob->GetNPCTypeID());
+#ifdef BOTS
+			} else if (mob->IsBot()) {
+				ExportVar(package_name.c_str(), "spawned_bot_id", mob->CastToBot()->GetBotID());
+				ExportVar(package_name.c_str(), "spawned_npc_id", 0);
+#endif
+			}
 			break;
 		}
 		case EVENT_USE_SKILL: {
@@ -2003,6 +2024,22 @@ void PerlembParser::ExportEventVariables(
 				ExportVar(package_name.c_str(), "area_id", *std::any_cast<int*>(extra_pointers->at(0)));
 				ExportVar(package_name.c_str(), "area_type", *std::any_cast<int*>(extra_pointers->at(1)));
 			}
+			break;
+		}
+
+		case EVENT_DESPAWN_ZONE: {
+			ExportVar(package_name.c_str(), "despawned_entity_id", mob->GetID());
+
+			if (mob->IsNPC()) {
+				ExportVar(package_name.c_str(), "despawned_bot_id", 0);
+				ExportVar(package_name.c_str(), "despawned_npc_id", mob->GetNPCTypeID());
+#ifdef BOTS
+			} else if (mob->IsBot()) {
+				ExportVar(package_name.c_str(), "despawned_bot_id", mob->CastToBot()->GetBotID());
+				ExportVar(package_name.c_str(), "despawned_npc_id", 0);
+#endif
+			}
+
 			break;
 		}
 		
