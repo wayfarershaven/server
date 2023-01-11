@@ -2965,7 +2965,7 @@ int Mob::CheckStackConflict(uint16 spellid1, int caster_level1, uint16 spellid2,
 			return -1;
 		}
 
-		if (!IsStackableDot(spellid1) && !(spellid1 == 2751)) { // Manaburn cannot land on a target with the debuff
+		if (!IsStackableDot(spellid1) && !(spellid1 == SPELL_MANA_BURN)) { // Manaburn cannot land on a target with the debuff
 			if (caster_level1 > caster_level2) { // cur buff higher level than new
 				if (IsEffectInSpell(spellid1, SE_ImprovedTaunt)) {
 					LogSpells("SE_ImprovedTaunt level exception, overwriting");
@@ -2978,7 +2978,7 @@ int Mob::CheckStackConflict(uint16 spellid1, int caster_level1, uint16 spellid2,
 				LogSpells("Spells the same but newer is higher or equal level, overwriting");
 				return 1;
 			}
-		} else if (spellid1 == 2751) {
+		} else if (spellid1 == SPELL_MANA_BURN) {
 			LogSpells("Blocking spell because manaburn does not stack with itself");
 			return -1;
 		}
@@ -3003,12 +3003,12 @@ int Mob::CheckStackConflict(uint16 spellid1, int caster_level1, uint16 spellid2,
 	if (spellid1 != spellid2) {
 		for (i = 0; i < EFFECT_COUNT; i++) {
 			// we don't want this optimization for mana burns
-			if (sp1.effect_id[i] != sp2.effect_id[i] || spellid1 == 2751) {
+			if (sp1.effect_id[i] != sp2.effect_id[i] || spellid1 == SPELL_MANA_BURN) {
 				effect_match = false;
 				break;
 			}
 		}
-	} else if (spellid1 == 2751) {
+	} else if (spellid1 == SPELL_MANA_BURN) {
 		LogSpells("We have a Mana Burn spell that is the same, they won't stack");
 		return -1;
 	}
