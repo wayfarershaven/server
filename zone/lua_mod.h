@@ -23,9 +23,9 @@ public:
 	void CheckHitChance(Mob *self, Mob* other, DamageHitInfo &hit, bool &returnValue, bool &ignoreDefault);
 	void CommonOutgoingHitSuccess(Mob *self, Mob* other, DamageHitInfo &hit, ExtraAttackOptions *opts, bool &ignoreDefault);
 	void TryCriticalHit(Mob *self, Mob *defender, DamageHitInfo &hit, ExtraAttackOptions *opts, bool &ignoreDefault);
-	void GetRequiredAAExperience(Client *self, uint32 &returnValue, bool &ignoreDefault);
-	void GetEXPForLevel(Client *self, uint16 level, uint32 &returnValue, bool &ignoreDefault);
-	void GetExperienceForKill(Client *self, Mob *against, uint32 &returnValue, bool &ignoreDefault);
+	void GetRequiredAAExperience(Client *self, uint64 &returnValue, bool &ignoreDefault);
+	void GetEXPForLevel(Client *self, uint16 level, uint64 &returnValue, bool &ignoreDefault);
+	void GetExperienceForKill(Client *self, Mob *against, uint64 &returnValue, bool &ignoreDefault);
 private:
 	LuaParser *parser_;
 	lua_State *L;

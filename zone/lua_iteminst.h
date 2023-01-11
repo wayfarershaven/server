@@ -72,8 +72,8 @@ public:
 	void SetScaling(bool v);
 	void SetScale(double scale_factor);
 	uint32 GetExp();
-	void SetExp(uint32 exp);
-	void AddExp(uint32 exp);
+	void SetExp(uint64 exp);
+	void AddExp(uint64 exp);
 	int GetMaxEvolveLvl();
 	uint32 GetKillsNeeded(int current_level);
 	Lua_ItemInst Clone();

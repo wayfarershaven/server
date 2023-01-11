@@ -99,12 +99,12 @@ void Client::mod_client_death_duel(Mob* killerMob) { return; }
 void Client::mod_client_death_env() { return; }
 
 //Calculated xp before consider modifier, called whenever a client gets XP for killing a mob.
-int32 Client::mod_client_xp(int32 in_xp, NPC *npc) { return(in_xp); }
+int64 Client::mod_client_xp(int64 in_xp, NPC *npc) { return(in_xp); }
 
 //Client XP formula.  Changes here will cause clients to change level after gaining or losing xp.
 //Either modify this before your server goes live, or be prepared to write a quest script that fixes levels.
 //To adjust how much XP is given per kill, use mod_client_xp
-uint32 Client::mod_client_xp_for_level(uint32 xp, uint16 check_level) { return(xp); }
+uint64 Client::mod_client_xp_for_level(uint64 xp, uint16 check_level) { return(xp); }
 
 //Food and drink values as computed by consume requests.  Return < 0 to abort the request.
 int Client::mod_food_value(const EQ::ItemData *item, int change) { return(change); }

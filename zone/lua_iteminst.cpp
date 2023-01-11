@@ -224,12 +224,12 @@ uint32 Lua_ItemInst::GetExp() {
 	return self->GetExp();
 }
 
-void Lua_ItemInst::SetExp(uint32 exp) {
+void Lua_ItemInst::SetExp(uint64 exp) {
 	Lua_Safe_Call_Void();
 	self->SetExp(exp);
 }
 
-void Lua_ItemInst::AddExp(uint32 exp) {
+void Lua_ItemInst::AddExp(uint64 exp) {
 	Lua_Safe_Call_Void();
 	self->AddExp(exp);
 }
@@ -291,7 +291,7 @@ luabind::scope lua_register_iteminst() {
 	.def(luabind::constructor<int,int>())
 	.property("null", &Lua_ItemInst::Null)
 	.property("valid", &Lua_ItemInst::Valid)
-	.def("AddExp", (void(Lua_ItemInst::*)(uint32))&Lua_ItemInst::AddExp)
+	.def("AddExp", (void(Lua_ItemInst::*)(uint64))&Lua_ItemInst::AddExp)
 	.def("ClearTimers", (void(Lua_ItemInst::*)(void))&Lua_ItemInst::ClearTimers)
 	.def("Clone", (Lua_ItemInst(Lua_ItemInst::*)(void))&Lua_ItemInst::Clone)
 	.def("ContainsAugmentByID", (bool(Lua_ItemInst::*)(uint32))&Lua_ItemInst::ContainsAugmentByID)

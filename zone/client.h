@@ -594,12 +594,12 @@ public:
 	void AddCrystals(uint32 Radiant, uint32 Ebon);
 	void SendCrystalCounts();
 
-	uint32 GetExperienceForKill(Mob *against);
-	void CalculateLeadershipExp(uint32 &add_exp, uint8 conlevel);
-	void SetEXP(uint32 set_exp, uint32 set_aaxp, bool resexp=false);
+	uint64 GetExperienceForKill(Mob *against);
+	void CalculateLeadershipExp(uint64 &add_exp, uint8 conlevel);
+	void SetEXP(uint64 set_exp, uint64 set_aaxp, bool resexp=false);
 	void AddLevelBasedExp(uint8 exp_percentage, uint8 max_level=0);
-	void SetLeadershipEXP(uint32 group_exp, uint32 raid_exp);
-	void AddLeadershipEXP(uint32 group_exp, uint32 raid_exp);
+	void SetLeadershipEXP(uint64 group_exp, uint64 raid_exp);
+	void AddLeadershipEXP(uint64 group_exp, uint64 raid_exp);
 	void SendLeadershipEXPUpdate();
 	bool IsLeadershipEXPOn();
 	inline int GetLeadershipAA(int AAID) { return m_pp.leader_abilities.ranks[AAID]; }
@@ -613,8 +613,8 @@ public:
 	void InspectBuffs(Client* Inspector, int Rank);
 	uint32 GetRaidPoints() { return(m_pp.raid_leadership_points); }
 	uint32 GetGroupPoints() { return(m_pp.group_leadership_points); }
-	uint32 GetRaidEXP() { return(m_pp.raid_leadership_exp); }
-	uint32 GetGroupEXP() { return(m_pp.group_leadership_exp); }
+	uint64 GetRaidEXP() { return(m_pp.raid_leadership_exp); }
+	uint64 GetGroupEXP() { return(m_pp.group_leadership_exp); }
 	uint32 GetTotalSecondsPlayed() { return(TotalSecondsPlayed); }
 	virtual void SetLevel(uint8 set_level, bool command = false);
 
@@ -872,7 +872,7 @@ public:
 	void AddAAPoints(uint32 points);
 	int GetAAPoints() { return m_pp.aapoints; }
 	int GetSpentAA() { return m_pp.aapoints_spent; }
-	uint32 GetRequiredAAExperience();
+	uint64 GetRequiredAAExperience();
 
 	bool SendGMCommand(std::string message, bool ignore_status = false);
 
@@ -1569,8 +1569,8 @@ public:
 	void mod_client_death_npc(Mob* killerMob);
 	void mod_client_death_duel(Mob* killerMob);
 	void mod_client_death_env();
-	int32 mod_client_xp(int32 in_exp, NPC *npc);
-	uint32 mod_client_xp_for_level(uint32 xp, uint16 check_level);
+	int64 mod_client_xp(int64 in_exp, NPC *npc);
+	uint64 mod_client_xp_for_level(uint64 xp, uint16 check_level);
 	int mod_client_haste_cap(int cap);
 	int mod_consume(EQ::ItemData *item, EQ::item::ItemType type, int change);
 	int mod_food_value(const EQ::ItemData *item, int change);
@@ -1635,11 +1635,11 @@ public:
 	std::string GetGuildPublicNote();
 
 	// exp.cpp
-	uint32 GetEXPForLevel(uint16 level, bool aa = false);
-	void AddEXP(uint32 in_add_exp, uint8 conlevel = 0xFF, bool resexp = false, uint32 mob_level = 0);
+	uint64 GetEXPForLevel(uint16 level, bool aa = false);
+	void AddEXP(uint64 in_add_exp, uint8 conlevel = 0xFF, bool resexp = false, uint32 mob_level = 0);
 	bool IsInRange(Mob* defender);
 	bool IsInLevelRange(uint8 maxlevel);
-	void AddQuestEXP(uint32 in_add_exp);
+	void AddQuestEXP(uint64 in_add_exp);
 	void AddEXPPercent(uint8 percent, uint8 level = 1);
 	void GetExpLoss(Mob* attacker, uint16 spell, int &exploss);
 

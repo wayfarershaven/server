@@ -1,7 +1,7 @@
 	void	DisbandGroup();
 	bool	IsGroupMember(Mob* client);
 	void	CastGroupSpell(Mob* caster,uint16 spellid);
-	void	SplitExp(uint32 exp, Mob* other);
+	void	SplitExp(uint64 exp, Mob* other);
 	void	GroupMessage(Mob* sender,const char* message);
 	int32	GetTotalGroupDamage(Mob* other);
 	void	SplitMoney(uint32 copper, uint32 silver, uint32 gold, uint32 platinum);

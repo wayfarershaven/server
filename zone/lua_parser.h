@@ -204,9 +204,9 @@ public:
 	bool CheckHitChance(Mob *self, Mob* other, DamageHitInfo &hit, bool &ignoreDefault);
 	void TryCriticalHit(Mob *self, Mob *defender, DamageHitInfo &hit, ExtraAttackOptions *opts, bool &ignoreDefault);
 	void CommonOutgoingHitSuccess(Mob *self, Mob* other, DamageHitInfo &hit, ExtraAttackOptions *opts, bool &ignoreDefault);
-	uint32 GetRequiredAAExperience(Client *self, bool &ignoreDefault);
-	uint32 GetEXPForLevel(Client *self, uint16 level, bool &ignoreDefault);
-	uint32 GetExperienceForKill(Client *self, Mob *against, bool &ignoreDefault);
+	uint64 GetRequiredAAExperience(Client *self, bool &ignoreDefault);
+	uint64 GetEXPForLevel(Client *self, uint16 level, bool &ignoreDefault);
+	uint64 GetExperienceForKill(Client *self, Mob *against, bool &ignoreDefault);
 
 private:
 	LuaParser();

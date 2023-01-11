@@ -922,7 +922,7 @@ public:
 	bool IsCombatProc(uint16 spell_id);
 
 	//exp
-	uint32  GetBaseEXP();
+	uint64  GetBaseEXP();
 
 	//Helpers
 	bool IsDireCharmed() { return dire_charmed; }

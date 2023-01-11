@@ -485,7 +485,7 @@ void LuaMod::TryCriticalHit(Mob *self, Mob *defender, DamageHitInfo &hit, ExtraA
 	}
 }
 
-void LuaMod::GetRequiredAAExperience(Client *self, uint32 &returnValue, bool &ignoreDefault)
+void LuaMod::GetRequiredAAExperience(Client *self, uint64 &returnValue, bool &ignoreDefault)
 {
 	int start = lua_gettop(L);
 
@@ -533,7 +533,7 @@ void LuaMod::GetRequiredAAExperience(Client *self, uint32 &returnValue, bool &ig
 	}
 }
 
-void LuaMod::GetEXPForLevel(Client *self, uint16 level, uint32 &returnValue, bool &ignoreDefault) {
+void LuaMod::GetEXPForLevel(Client *self, uint16 level, uint64 &returnValue, bool &ignoreDefault) {
 	int start = lua_gettop(L);
 
 	try {
@@ -581,10 +581,10 @@ void LuaMod::GetEXPForLevel(Client *self, uint16 level, uint32 &returnValue, boo
 	}
 }
 
-void LuaMod::GetExperienceForKill(Client *self, Mob *against, uint32 &returnValue, bool &ignoreDefault)
+void LuaMod::GetExperienceForKill(Client *self, Mob *against, uint64 &returnValue, bool &ignoreDefault)
 {
 	int start = lua_gettop(L);
-	uint32 retval = 0;
+	uint64 retval = 0;
 
 	try {
 		if (!m_has_get_experience_for_kill) {
