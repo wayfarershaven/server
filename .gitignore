@@ -82,3 +82,7 @@ common/message.pb.h
 # misc
 .vscode/*
 submodules/*
+
+# Clangd Generated Files.
+compile_flags.txt
+.cache/
