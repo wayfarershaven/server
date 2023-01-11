@@ -732,8 +732,7 @@ uint32 Strings::TimeToSeconds(std::string time_string)
 	return duration;
 }
 
-bool Strings::ToBool(std::string bool_string)
-{
+bool Strings::ToBool(std::string bool_string) {
 	if (
 		Strings::Contains(bool_string, "true") ||
 		Strings::Contains(bool_string, "y") ||

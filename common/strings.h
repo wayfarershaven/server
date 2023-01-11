@@ -113,6 +113,7 @@ public:
 	static void FindReplace(std::string &string_subject, const std::string &search_string, const std::string &replace_string);
 	static uint32 TimeToSeconds(std::string time_string);
 	static bool ToBool(std::string bool_string);
+	static inline bool EqualFold(const std::string &string_one, const std::string &string_two) { return strcasecmp(string_one.c_str(), string_two.c_str()) == 0; }
 	static std::string Random(size_t length);
 
 	template<typename T>
