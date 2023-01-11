@@ -189,6 +189,11 @@ void Client::AddEXP(uint64 in_add_exp, uint8 conlevel, bool resexp, uint32 mob_l
 		add_exp = static_cast<uint64>(in_add_exp * (static_cast<float>(XPRate) / 100.0f));
 	}
 
+	// Calculate any changes to leadership experience.
+	if(!resexp) {
+		CalculateLeadershipExp(add_exp, conlevel);
+	}
+	
 	if (m_epp.perAA < 0 || m_epp.perAA > 100) {
 		m_epp.perAA = 0;    // stop exploit with sanity check
 	}
