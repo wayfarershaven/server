@@ -127,7 +127,7 @@ int64 Mob::GetActSpellDamage(uint16 spell_id, int64 value, Mob* target) {
 			}
 
 			// Manaburn can crit, but is still held to the same cap
-			if (spell_id == 2751) {
+			if (spell_id == SPELL_MANA_BURN) {
 				if (value < -MBCap) {
 					value = -MBCap;
 				}
@@ -185,7 +185,7 @@ int64 Mob::GetActSpellDamage(uint16 spell_id, int64 value, Mob* target) {
 	}
 
 	// Apply Manaburn damage cap
-	if (spell_id == 2751) {
+	if (spell_id == SPELL_MANA_BURN) {
 		if (value < -MBCap) {
 			value = -MBCap;
 		}
