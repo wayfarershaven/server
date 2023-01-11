@@ -1070,4 +1070,11 @@ enum FVNoDropFlagRule
 	AdminOnly = 2
 };
 
+enum Anonymity : uint8
+{
+	NotAnonymous,
+	Anonymous,
+	Roleplaying
+};
+
 #endif /*COMMON_EQ_CONSTANTS_H*/
