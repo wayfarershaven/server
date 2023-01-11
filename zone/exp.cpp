@@ -163,6 +163,10 @@ uint32 Mob::GetBaseEXP() {
 
 void Client::AddEXP(uint32 in_add_exp, uint8 conlevel, bool resexp, uint32 mob_level) {
 
+	if (!IsEXPEnabled()) {
+		return;
+	}
+	
 	float mob_level_exp_mod = 0.0;
 	if (mob_level && mob_level > 0) {
 		int divsor = RuleI(Character, ExpByLevelDivsor);
