@@ -124,9 +124,11 @@ bool Client::Process() {
 		}
 
 		// Purple Bug Hack
-		if (GetHP() < 0) {
-			Log(Logs::General, Logs::Debug, "GetHP < 0 - Killing!");
-			Death(0, 32000, SPELL_UNKNOWN, EQ::skills::SkillHandtoHand);
+		if (RuleB(World, PurpleBugHackFix)) {
+			if (HasDied()) {
+				Log(Logs::General, Logs::Debug, "Purple Bug Hack - HasDied");
+				Death(0, 32000, SPELL_UNKNOWN, EQ::skills::SkillHandtoHand);
+			}
 		}
 		
 		/* I haven't naturally updated my position in 10 seconds, updating manually */
