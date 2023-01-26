@@ -2212,7 +2212,6 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 				snprintf(effect_desc, _EDLEN, "Fading Memories");
 #endif
 				if(zone->random.Roll(spells[spell_id].base_value[i])) {
-
 					if(caster && caster->IsClient()) {
 						if (caster->spellbonuses.ShroudofStealth || caster->aabonuses.ShroudofStealth || caster->itembonuses.ShroudofStealth) {
 							caster->CastToClient()->Escape(1);
@@ -2221,7 +2220,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 						}
 					} else {
 						entity_list.RemoveFromTargets(caster);
-						SetInvisible(0,1);
+                        SetInvisible(Invisibility::Invisible);
 					}
 				}
 				break;
