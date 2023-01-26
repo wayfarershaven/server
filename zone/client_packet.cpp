@@ -13780,12 +13780,12 @@ void Client::Handle_OP_SpawnAppearance(const EQApplicationPacket *app)
 				if (ClientVersion() < EQ::versions::ClientVersion::SoF)
 				{
 					auto hack_str = fmt::format("Player sent OP_SpawnAppearance with AT_Invis: {}", sa->parameter);
-					database.SetMQDetectionFlag(account_name, name, hack_str, zone->GetShortName());
+					database.SetMQDetectionFlag(this->account_name, this->name, hack_str, zone->GetShortName());
 				}
 			}
 			return;
 		}
-		ZeroInvisibleVars(InvisType::T_INVISIBLE);
+		invisible = false;
 		hidden = false;
 		improved_hidden = false;
 		entity_list.QueueClients(this, app, true);

@@ -9599,31 +9599,31 @@ void Mob::CalcSpellPowerDistanceMod(uint16 spell_id, float range, Mob* caster)
 void Mob::BreakInvisibleSpells()
 {
 	if(invisible) {
-		nobuff_invisible = 0;
 		BuffFadeByEffect(SE_Invisibility);
 		BuffFadeByEffect(SE_Invisibility2);
+		invisible = false;
 	}
 	if(invisible_undead) {
-		ZeroInvisibleVars(InvisType::T_INVISIBLE_VERSE_UNDEAD);
 		BuffFadeByEffect(SE_InvisVsUndead);
 		BuffFadeByEffect(SE_InvisVsUndead2);
+		invisible_undead = false;
 	}
 	if(invisible_animals){
-		ZeroInvisibleVars(InvisType::T_INVISIBLE_VERSE_ANIMAL);
-		BuffFadeByEffect(SE_ImprovedInvisAnimals);
 		BuffFadeByEffect(SE_InvisVsAnimals);
+		invisible_animals = false;
 	}
 }
 
-void Client::BreakSneakWhenCastOn(Mob *caster, bool IsResisted) {
+void Client::BreakSneakWhenCastOn(Mob *caster, bool IsResisted)
+{
 	bool IsCastersTarget = false; // Chance to avoid only applies to AOE spells when not targeted.
 	if (hidden || improved_hidden) {
 		if (caster) {
-			Mob *spell_target = caster->GetTarget();
-			if (spell_target && spell_target == this) {
-				IsCastersTarget = true;
-			}
+			Mob *target = nullptr;
+			target = caster->GetTarget();
+			IsCastersTarget = target && target == this;
 		}
+
 		if (!IsCastersTarget) {
 			int chance =
 			    spellbonuses.NoBreakAESneak + itembonuses.NoBreakAESneak + aabonuses.NoBreakAESneak;
@@ -9636,6 +9636,7 @@ void Client::BreakSneakWhenCastOn(Mob *caster, bool IsResisted) {
 				return; // Do not drop Sneak/Hide
 			}
 		}
+
 		CancelSneakHide();
 	}
 }

@@ -2428,31 +2428,6 @@ Lua_NPC Lua_Mob::GetHateRandomNPC() {
 	return Lua_NPC(self->GetHateRandomNPC());
 }
 
-uint8 Lua_Mob::GetInvisibleLevel()
-{
-	Lua_Safe_Call_Int();
-	return self->GetInvisibleLevel();
-}
-
-uint8 Lua_Mob::GetInvisibleUndeadLevel()
-{
-	Lua_Safe_Call_Int();
-	return self->GetInvisibleUndeadLevel();
-}
-
-void Lua_Mob::SetSeeInvisibleLevel(uint8 invisible_level)
-{
-	Lua_Safe_Call_Void();
-	self->SetInnateSeeInvisible(invisible_level);
-	self->CalcSeeInvisibleLevel();
-}
-
-void Lua_Mob::SetSeeInvisibleUndeadLevel(uint8 invisible_level)
-{
-	Lua_Safe_Call_Void();
-	self->SetSeeInvisibleUndead(invisible_level);
-}
-
 void Lua_Mob::ApplySpellBuff(int spell_id) {
 	Lua_Safe_Call_Void();
 	self->ApplySpellBuff(spell_id);
@@ -3090,8 +3065,6 @@ luabind::scope lua_register_mob() {
 	.def("GetHelmTexture", &Lua_Mob::GetHelmTexture)
 	.def("GetHerosForgeModel", (int32(Lua_Mob::*)(uint8))&Lua_Mob::GetHerosForgeModel)
 	.def("GetINT", &Lua_Mob::GetINT)
-	.def("GetInvisibleLevel", (uint8(Lua_Mob::*)(void))&Lua_Mob::GetInvisibleLevel)
-	.def("GetInvisibleUndeadLevel", (uint8(Lua_Mob::*)(void))&Lua_Mob::GetInvisibleUndeadLevel)
 	.def("GetInvul", (bool(Lua_Mob::*)(void))&Lua_Mob::GetInvul)
 	.def("GetItemBonuses", &Lua_Mob::GetItemBonuses)
 	.def("GetItemHPBonuses", &Lua_Mob::GetItemHPBonuses)
@@ -3243,8 +3216,6 @@ luabind::scope lua_register_mob() {
 	.def("SeeImprovedHide", (bool(Lua_Mob::*)(bool))&Lua_Mob::SeeImprovedHide)
 	.def("SeeInvisible", (uint8(Lua_Mob::*)(void))&Lua_Mob::SeeInvisible)
 	.def("SeeInvisibleUndead", (uint8(Lua_Mob::*)(void))&Lua_Mob::SeeInvisibleUndead)
-	.def("SetSeeInvisibleLevel", (void(Lua_Mob::*)(uint8))&Lua_Mob::SetSeeInvisibleLevel)
-	.def("SetSeeInvisibleUndeadLevel", (void(Lua_Mob::*)(uint8))&Lua_Mob::SetSeeInvisibleUndeadLevel)
 	.def("SendAppearanceEffect", (void(Lua_Mob::*)(uint32,uint32,uint32,uint32,uint32))&Lua_Mob::SendAppearanceEffect)
 	.def("SendAppearanceEffect", (void(Lua_Mob::*)(uint32,uint32,uint32,uint32,uint32,Lua_Client))&Lua_Mob::SendAppearanceEffect)
 	.def("SendWearChange", (void(Lua_Mob::*)(uint8))&Lua_Mob::SendWearChange)

@@ -47,8 +47,6 @@ void Mob::CalcBonuses()
 	CalcMaxMana();
 	SetAttackTimer();
 	CalcAC();
-	CalcSeeInvisibleLevel();
-	CalcInvisibleLevel();
 
 	/* Fast walking NPC's are prone to disappear into walls/hills
 		We set this here because NPC's can cast spells to change walkspeed/runspeed
@@ -82,9 +80,6 @@ void Client::CalcBonuses()
 	CalcEdibleBonuses(&itembonuses);
 	CalcSpellBonuses(&spellbonuses);
 	CalcAABonuses(&aabonuses);
-
-	CalcSeeInvisibleLevel();
-	CalcInvisibleLevel();
 
 	ProcessItemCaps(); // caps that depend on spell/aa bonuses
 

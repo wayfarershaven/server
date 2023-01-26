@@ -227,8 +227,8 @@ public:
 		uint32 in_drakkin_details,
 		EQ::TintProfile in_armor_tint,
 		uint8 in_aa_title,
-		uint16 in_see_invis, // see through invis
-		uint16 in_see_invis_undead, // see through invis vs. undead
+		uint8 in_see_invis, // see through invis
+		uint8 in_see_invis_undead, // see through invis vs. undead
 		uint8 in_see_hide,
 		uint8 in_see_improved_hide,
 		int64 in_hp_regen,
@@ -332,30 +332,12 @@ public:
 	}
 
 	//Invisible
-	bool IsInvisible(Mob* other = 0) const;
 	void SetInvisible(uint8 state = 0, uint8 type = 0);
-
-	void CalcSeeInvisibleLevel();
-	void CalcInvisibleLevel();
-	void ZeroInvisibleVars(uint8 invisible_type);
-
-	inline uint8 GetSeeInvisibleLevelFromNPCStat(uint16 in_see_invis);
 
 	void BreakInvisibleSpells();
 	virtual void CancelSneakHide();
 	void CommonBreakInvisible();
 	void CommonBreakInvisibleFromCombat();
-
-	inline uint8 GetInvisibleLevel() const { return invisible; }
-	inline uint8 GetInvisibleUndeadLevel() const { return invisible_undead; }
-
-	inline bool SeeHide() const { return see_hide; }
-	inline bool SeeImprovedHide() const { return see_improved_hide; }
-	inline uint8 SeeInvisibleUndead() const { return see_invis_undead; }
-	uint8 SeeInvisible();
-
-	inline void SetInnateSeeInvisible(uint8 val) { innate_see_invis = val; }
-	inline void SetSeeInvisibleUndead(uint8 val) { see_invis_undead = val; }
 
 	uint32 tmHidden; // timestamp of hide, only valid while hidden == true
 	uint8 invisible, nobuff_invisible, invisible_undead, invisible_animals;
@@ -372,7 +354,15 @@ public:
 
 	EQ::InternalTextureProfile mob_texture_profile = {};
 
+	bool IsInvisible(Mob* other = 0) const;
+
 	EQ::skills::SkillType AttackAnimation(int Hand, const EQ::ItemInstance* weapon, EQ::skills::SkillType skillinuse = EQ::skills::Skill1HBlunt);
+
+	inline bool GetSeeInvisible(uint8 see_invis);
+	inline bool SeeHide() const { return see_hide; }
+	inline bool SeeImprovedHide() const { return see_improved_hide; }
+	inline bool SeeInvisibleUndead() const { return see_invis_undead; }
+	uint8 SeeInvisible();
 
 	int32 GetTextureProfileMaterial(uint8 material_slot) const;
 	int32 GetTextureProfileColor(uint8 material_slot) const;

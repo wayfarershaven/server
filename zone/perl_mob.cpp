@@ -317,17 +317,6 @@ void Perl_Mob_SetInvisible(Mob* self, uint8_t state) // @categories Script Utili
 	self->SetInvisible(state);
 }
 
-void Perl_Mob_SetSeeInvisibleLevel(Mob* self, uint8 see_invis_level) // @categories Script Utility
-{
-	self->SetInnateSeeInvisible(see_invis_level);
-	self->CalcSeeInvisibleLevel();
-}
-
-void Perl_Mob_SetSeeInvisibleUndeadLevel(Mob* self, uint8 see_invis_undead_level) // @categories Script Utility
-{
-	self->SetSeeInvisibleUndead(see_invis_undead_level);
-}
-
 bool Perl_Mob_FindBuff(Mob* self, uint16 spell_id) // @categories Spells and Disciplines, Script Utility
 {
 	return self->FindBuff(spell_id);
@@ -2154,16 +2143,6 @@ bool Perl_Mob_IsBlind(Mob* self) // @categories Script Utility
 	return self->IsBlind();
 }
 
-int Perl_Mob_GetInvisibleLevel(Mob* self) // @categories Stats and Attributes
-{
-	return self->GetInvisibleLevel();
-}
-
-int Perl_Mob_GetInvisibleUndeadLevel(Mob* self) // @categories Stats and Attributes
-{
-	return self->GetInvisibleUndeadLevel();
-}
-
 int Perl_Mob_SeeInvisible(Mob* self) // @categories Stats and Attributes
 {
 	return self->SeeInvisible();
@@ -3028,8 +3007,6 @@ void perl_register_mob()
 	package.add("GetHerosForgeModel", &Perl_Mob_GetHerosForgeModel);
 	package.add("GetID", &Perl_Mob_GetID);
 	package.add("GetINT", &Perl_Mob_GetINT);
-	package.add("GetInvisibleLevel", &Perl_Mob_GetInvisibleLevel);
-	package.add("GetInvisibleUndeadLevel", &Perl_Mob_GetInvisibleUndeadLevel);
 	package.add("GetInvul", &Perl_Mob_GetInvul);
 	package.add("GetItemHPBonuses", &Perl_Mob_GetItemHPBonuses);
 	package.add("GetItemStat", &Perl_Mob_GetItemStat);
@@ -3285,8 +3262,6 @@ void perl_register_mob()
 	package.add("SetRace", &Perl_Mob_SetRace);
 	package.add("SetRunAnimSpeed", &Perl_Mob_SetRunAnimSpeed);
 	package.add("SetRunning", &Perl_Mob_SetRunning);
-	package.add("SetSeeInvisibleLevel", &Perl_Mob_SetSeeInvisibleLevel);
-	package.add("SetSeeInvisibleUndeadLevel", &Perl_Mob_SetSeeInvisibleUndeadLevel);
 	package.add("SetSlotTint", &Perl_Mob_SetSlotTint);
 	package.add("SetSpecialAbility", &Perl_Mob_SetSpecialAbility);
 	package.add("SetSpecialAbilityParam", &Perl_Mob_SetSpecialAbilityParam);
