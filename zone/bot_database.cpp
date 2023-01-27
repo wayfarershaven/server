@@ -75,9 +75,8 @@ bool BotDatabase::UpdateInjectedBotCommandSettings(const std::vector<std::pair<s
 			return false;
 		}
 
-		Log(Logs::General,
-			Logs::Status,
-			"%u New Bot Command%s Added",
+		LogInfo(
+			"[{}] New Bot Command{} Added",
 			injected.size(),
 			(injected.size() == 1 ? "" : "s")
 		);
@@ -99,9 +98,8 @@ bool BotDatabase::UpdateOrphanedBotCommandSettings(const std::vector<std::string
 			return false;
 		}
 
-		Log(Logs::General,
-			Logs::Status,
-			"%u Orphaned Bot Command%s Deleted",
+		LogInfo(
+			"[{}] Orphaned Bot Command{} Deleted",
 			orphaned.size(),
 			(orphaned.size() == 1 ? "" : "s")
 		);

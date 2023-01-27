@@ -636,21 +636,13 @@ void ConsoleZoneBootup(
 		tmpname[0] = '*';
 		strcpy(&tmpname[1], connection->UserName().c_str());
 
-		Log(Logs::Detail,
-			Logs::WorldServer,
-			"Console ZoneBootup: %s, %s, %s",
-			tmpname,
-			args[1].c_str(),
-			args[0].c_str());
-
 		if (args.size() > 2) {
 			zoneserver_list.SOPZoneBootup(
 				tmpname,
 				atoi(args[0].c_str()),
 				args[1].c_str(),
 				(bool) (strcasecmp(args[1].c_str(), "static") == 0));
-		}
-		else {
+		} else {
 			zoneserver_list.SOPZoneBootup(tmpname, atoi(args[0].c_str()), args[1].c_str(), false);
 		}
 	}

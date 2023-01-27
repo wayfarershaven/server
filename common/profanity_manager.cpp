@@ -18,6 +18,7 @@
 */
 
 #include "profanity_manager.h"
+#include "eqemu_logsys.h"
 #include "dbcore.h"
 #include "strings.h"
 
@@ -235,6 +236,8 @@ bool EQ::ProfanityManager::load_database_entries(DBcore *db) {
 		}
 	}
 
+	LogInfo("Loaded [{}] profanity entries", Strings::Commify(profanity_list.size()));
+	
 	return true;
 }
 

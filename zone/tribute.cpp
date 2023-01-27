@@ -403,6 +403,8 @@ bool ZoneDatabase::LoadTributes() {
 		tribute_list[id] = tributeData;
     }
 
+	LogInfo("Loaded [{}] tributes", Strings::Commify(results.RowCount()));
+
 	const std::string query2 = "SELECT tribute_id, level, cost, item_id FROM tribute_levels ORDER BY tribute_id, level";
 	results = QueryDatabase(query2);
 	if (!results.Success()) {
@@ -432,6 +434,8 @@ bool ZoneDatabase::LoadTributes() {
 		cur.tier_count++;
 	}
 
+	LogInfo("Loaded [{}] tribute levels", Strings::Commify(results.RowCount()));
+	
 	return true;
 }
 

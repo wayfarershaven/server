@@ -151,8 +151,8 @@ bool Zone::Bootup(uint32 iZoneID, uint32 iInstanceID, bool is_static) {
 		delete pack;
 	}
 
-	LogInfo("---- Zone server [{}], listening on port:[{}] ----", zonename, ZoneConfig::get()->ZonePort);
-	LogInfo("Zone Bootup: [{}] [{}] ([{}]: [{}])",
+	LogInfo("Zone server [{}] listening on port [{}]", zonename, ZoneConfig::get()->ZonePort);
+	LogInfo("Zone bootup type [{}] short_name [{}] zone_id [{}] instance_id [{}]",
 		(is_static) ? "Static" : "Dynamic", zonename, iZoneID, iInstanceID);
 	parse->Init();
 	UpdateWindowTitle(nullptr);
@@ -193,7 +193,6 @@ bool Zone::LoadZoneObjects()
 		return false;
 	}
 
-	LogInfo("Loading Objects from DB");
 	for (auto row = results.begin(); row != results.end(); ++row) {
 		if (atoi(row[9]) == 0) {
 			// Type == 0 - Static Object
@@ -316,6 +315,8 @@ bool Zone::LoadZoneObjects()
 		safe_delete(inst);
 	}
 
+	LogInfo("Loaded [{}] world objects", Strings::Commify(results.RowCount()));
+
 	return true;
 }
 
@@ -373,11 +374,11 @@ bool Zone::LoadGroundSpawns() {
 
 	memset(&groundspawn, 0, sizeof(groundspawn));
 	int gsindex=0;
-	LogInfo("Loading Ground Spawns from DB");
 	content_db.LoadGroundSpawns(zoneid, GetInstanceVersion(), &groundspawn);
 	uint32 ix=0;
 	char* name = nullptr;
 	uint32 gsnumber=0;
+	int added = 0;
 	for(gsindex=0;gsindex<50;gsindex++){
 		if(groundspawn.spawn[gsindex].item>0 && groundspawn.spawn[gsindex].item<SAYLINK_ITEM_ID){
 			EQ::ItemInstance* inst = nullptr;
@@ -394,11 +395,15 @@ bool Zone::LoadGroundSpawns() {
 					    groundspawn.spawn[gsindex].heading,
 					    groundspawn.spawn[gsindex].respawntimer); // new object with id of 10000+
 					entity_list.AddObject(object, false);
+					added++;
 				}
 				safe_delete(inst);
 			}
 		}
 	}
+
+	LogInfo("Loaded [{}] ground spawns", Strings::Commify(added));
+
 	return(true);
 }
 
@@ -536,8 +541,6 @@ uint32 Zone::GetTempMerchantQuantity(uint32 NPCID, uint32 Slot) {
 
 void Zone::LoadTempMerchantData()
 {
-	LogInfo("Loading Temporary Merchant Lists");
-
 	auto results = content_db.QueryDatabase(
 		fmt::format(
 			SQL(
@@ -583,6 +586,8 @@ void Zone::LoadTempMerchantData()
 			GetZoneID(), GetInstanceID()
 		)
 	);
+
+	LogInfo("Loaded [{}] temporary merchant entries", Strings::Commify(results.RowCount()));
 
 	std::map<uint32, std::list<TempMerchantList> >::iterator temp_merchant_table_entry;
 
@@ -669,8 +674,6 @@ void Zone::LoadNewMerchantData(uint32 merchantid) {
 }
 
 void Zone::GetMerchantDataForZoneLoad() {
-	LogInfo("Loading Merchant Lists");
-
 	std::string filter = fmt::format(
 		SQL(
 			id IN (
@@ -715,6 +718,8 @@ void Zone::GetMerchantDataForZoneLoad() {
 	);
 
 	auto results = content_db.QueryDatabase(query);
+
+	LogInfo("Loaded [{}] merchant lists", Strings::Commify(results.RowCount()));
 
 	std::map<uint32, std::list<MerchantList> >::iterator merchant_list;
 
@@ -964,8 +969,6 @@ void Zone::Shutdown(bool quiet)
 
 void Zone::LoadZoneDoors()
 {
-	LogInfo("Loading doors for [{}] ", GetShortName());
-
 	auto door_entries = content_db.LoadDoors(GetShortName(), GetInstanceVersion());
 	if (door_entries.empty()) {
 		LogInfo("No doors loaded");
@@ -1153,37 +1156,31 @@ bool Zone::Init(bool is_static) {
 	watermap = WaterMap::LoadWaterMapfile(map_name);
 	pathing  = IPathfinder::Load(map_name);
 
-	LogInfo("Loading spawn conditions");
 	if(!spawn_conditions.LoadSpawnConditions(short_name, instanceid)) {
 		LogError("Loading spawn conditions failed, continuing without them");
 	}
 
-	LogInfo("Loading static zone points");
 	if (!content_db.LoadStaticZonePoints(&zone_point_list, short_name, GetInstanceVersion())) {
 		LogError("Loading static zone points failed");
 		return false;
 	}
 
-	LogInfo("Loading spawn groups");
 	if (!content_db.LoadSpawnGroups(short_name, GetInstanceVersion(), &spawn_group_list)) {
 		LogError("Loading spawn groups failed");
 		return false;
 	}
 
-	LogInfo("Loading spawn2 points");
 	if (!content_db.PopulateZoneSpawnList(zoneid, spawn2_list, GetInstanceVersion()))
 	{
 		LogError("Loading spawn2 points failed");
 		return false;
 	}
 
-	LogInfo("Loading player corpses");
 	if (!database.LoadCharacterCorpses(zoneid, instanceid)) {
 		LogError("Loading player corpses failed");
 		return false;
 	}
 
-	LogInfo("Loading traps");
 	if (!content_db.LoadTraps(short_name, GetInstanceVersion()))
 	{
 		LogError("Loading traps failed");
@@ -1193,19 +1190,16 @@ bool Zone::Init(bool is_static) {
 	LogInfo("Loading adventure flavor text");
 	LoadAdventureFlavor();
 
-	LogInfo("Loading ground spawns");
 	if (!LoadGroundSpawns())
 	{
 		LogError("Loading ground spawns failed. continuing");
 	}
 
-	LogInfo("Loading World Objects from DB");
 	if (!LoadZoneObjects())
 	{
 		LogError("Loading World Objects failed. continuing");
 	}
 
-	LogInfo("Flushing old respawn timers");
 	database.QueryDatabase("DELETE FROM `respawn_times` WHERE (`start` + `duration`) < UNIX_TIMESTAMP(NOW())");
 
 	LoadZoneDoors();
@@ -1248,16 +1242,14 @@ bool Zone::Init(bool is_static) {
 
 	LoadDynamicZoneTemplates();
 
-	LogInfo("Loading dynamic zones");
 	DynamicZone::CacheAllFromDatabase();
 
-	LogInfo("Loading active Expeditions");
 	Expedition::CacheAllFromDatabase();
 
 	LogInfo("Loading timezone data");
 	zone_time.setEQTimeZone(content_db.GetZoneTZ(zoneid, GetInstanceVersion()));
 
-	LogInfo("Init Finished: ZoneID = [{}], Time Offset = [{}]", zoneid, zone_time.getEQTimeZone());
+	LogInfo("Zone booted successfully zone_id [{}] time_offset [{}]", zoneid, zone_time.getEQTimeZone());
 
 	LoadGrids();
 	LoadTickItems();
@@ -1276,7 +1268,6 @@ bool Zone::Init(bool is_static) {
 void Zone::ReloadStaticData() {
 	LogInfo("Reloading Zone Static Data");
 
-	LogInfo("Reloading static zone points");
 	if (!content_db.LoadStaticZonePoints(&zone_point_list, GetShortName(), GetInstanceVersion())) {
 		LogError("Loading static zone points failed");
 	}
@@ -1450,7 +1441,7 @@ bool Zone::LoadZoneCFG(const char* filename, uint16 instance_version)
 	strcpy(newzone_data.zone_short_name2, GetShortName());
 
 	LogInfo(
-		"Successfully loaded Zone Config for Zone [{}] ({}) Version [{}] Instance ID [{}]",
+		"Successfully loaded zone headers for zone [{}] long_name [{}] version [{}] instance_id [{}]",
 		GetShortName(),
 		GetLongName(),
 		GetInstanceVersion(),
@@ -1865,7 +1856,7 @@ void Zone::StartShutdownTimer(uint32 set_time)
 
 	if (set_time != autoshutdown_timer.GetDuration()) {
 		LogInfo(
-			"[StartShutdownTimer] Reset to [{}] {} from original remaining time [{}] duration [{}] zone [{}]",
+			"Reset to [{}] {} from original remaining time [{}] duration [{}] zone [{}]",
 			Strings::SecondsToTime(set_time, true),
 			!loaded_from.empty() ? fmt::format("(Loaded from [{}])", loaded_from) : "",
 			Strings::SecondsToTime(autoshutdown_timer.GetRemainingTime(), true),
@@ -1959,7 +1950,6 @@ void Zone::Repop()
 		LogError("Loading spawn groups failed");
 	}
 
-	LogInfo("Loading spawn conditions");
 	if (!spawn_conditions.LoadSpawnConditions(short_name, instanceid)) {
 		LogError("Loading spawn conditions failed, continuing without them");
 	}
@@ -2202,6 +2192,8 @@ bool ZoneDatabase::LoadStaticZonePoints(LinkedList<ZonePoint *> *zone_point_list
 		zone->numzonepoints++;
 	}
 
+	LogInfo("Loaded [{}] zone_points", Strings::Commify(std::to_string(zone_points.size())));
+
 	return true;
 }
 
@@ -2221,6 +2213,8 @@ bool ZoneDatabase::GetDecayTimes(npcDecayTimes_Struct *npcCorpseDecayTimes)
 
 		npcCorpseDecayTimes[index].seconds = std::min(24 * 60 * 60, atoi(row[1]));
 	}
+
+	LogInfo("Loaded [{}] decay timers", Strings::Commify(results.RowCount()));
 
 	return true;
 }
@@ -2270,6 +2264,7 @@ void Zone::LoadZoneBlockedSpells()
 				ClearBlockedSpells();
 			}
 		}
+		LogInfo("Loaded [{}] blocked spells(s)", Strings::Commify(zone_total_blocked_spells));
 	}
 }
 
@@ -2443,6 +2438,8 @@ void Zone::LoadVeteranRewards()
         return;
     }
 
+	LogInfo("Loaded [{}] veteran reward(s)", Strings::Commify(results.RowCount()));
+	
 	int index = 0;
     for (auto row = results.begin(); row != results.end(); ++row, ++index)
     {
@@ -2493,7 +2490,7 @@ void Zone::LoadAlternateCurrencies()
         current_currency.item_id = std::stoul(row[1]);
         AlternateCurrencies.push_back(current_currency);
     }
-
+	LogInfo("Loaded [{}] alternate currencies", Strings::Commify(results.RowCount()));
 }
 
 void Zone::UpdateQGlobal(uint32 qid, QGlobal newGlobal)
@@ -2538,7 +2535,7 @@ void Zone::LoadAdventureFlavor()
         uint32 id = atoi(row[0]);
         adventure_entry_list_flavor[id] = row[1];
     }
-
+	LogInfo("Loaded [{}] adventure text entries", Strings::Commify(results.RowCount()));
 }
 
 void Zone::DoAdventureCountIncrease()
@@ -2619,7 +2616,7 @@ void Zone::LoadNPCEmotes(LinkedList<NPC_Emote_Struct*>* NPCEmoteList)
 	    strn0cpy(nes->text, row[3], sizeof(nes->text));
 	    NPCEmoteList->Insert(nes);
     }
-
+	LogInfo("Loaded [{}] npc emotes", Strings::Commify(results.RowCount()));
 }
 
 void Zone::ReloadWorld(uint8 global_repop)
@@ -2708,7 +2705,7 @@ void Zone::LoadTickItems()
 		tick_items[atoi(row[0])] = ti_tmp;
 
     }
-
+	LogInfo("Loaded [{}] item_tick entries", Strings::Commify(results.RowCount()));
 }
 
 uint32 Zone::GetSpawnKillCount(uint32 in_spawnid) {
@@ -2821,6 +2818,12 @@ void Zone::LoadGrids()
 {
 	zone_grids        = GridRepository::GetZoneGrids(content_db, GetZoneID());
 	zone_grid_entries = GridEntriesRepository::GetZoneGridEntries(content_db, GetZoneID());
+
+	LogInfo(
+		"Loaded [{}] grids and [{}] grid_entries",
+		Strings::Commify(zone_grids.size()),
+		Strings::Commify(zone_grid_entries.size())
+	);
 }
 
 Timer Zone::GetInitgridsTimer()
