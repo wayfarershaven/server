@@ -460,6 +460,11 @@ void Lua_EntityList::SignalAllBotsByOwnerCharacterID(uint32 character_id, int si
 	self->SignalAllBotsByOwnerCharacterID(character_id, signal_id);
 }
 
+void Lua_EntityList::SignalAllBotsByOwnerName(std::string owner_name, int signal_id) {
+	Lua_Safe_Call_Void();
+	self->SignalAllBotsByOwnerName(owner_name, signal_id);
+}
+
 void Lua_EntityList::SignalBotByBotID(uint32 bot_id, int signal_id) {
 	Lua_Safe_Call_Void();
 	self->SignalBotByBotID(bot_id, signal_id);
@@ -722,6 +727,7 @@ luabind::scope lua_register_entity_list() {
 	.def("ReplaceWithTarget", (void(Lua_EntityList::*)(Lua_Mob, Lua_Mob))&Lua_EntityList::ReplaceWithTarget)
 #ifdef BOTS
 	.def("SignalAllBotsByOwnerCharacterID", (void(Lua_EntityList::*)(uint32, int))&Lua_EntityList::SignalAllBotsByOwnerCharacterID)
+	.def("SignalAllBotsByOwnerName", (void(Lua_EntityList::*)(std::string, int))&Lua_EntityList::SignalAllBotsByOwnerName)
 #endif
 	.def("SignalAllClients", (void(Lua_EntityList::*)(int))&Lua_EntityList::SignalAllClients)
 #ifdef BOTS
