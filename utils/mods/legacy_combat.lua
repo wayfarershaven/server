@@ -896,7 +896,7 @@ function GetRawACNoShield(self)
 	ac = ac - shield_ac;
 
 	eq.log_combat(
-			string.format("[%s] [Client::GetRawACNoShield] AC [%i] ItemAC [%i] SpellAC [%i] AAAC [%i]",
+			string.format("[%s] AC [%i] ItemAC [%i] SpellAC [%i] AAAC [%i]",
 					self:GetCleanName(),
 					ac,
 					self:GetItemBonuses():AC(),

@@ -15476,7 +15476,7 @@ void Client::Handle_OP_SharedTaskRemovePlayer(const EQApplicationPacket *app)
 	auto *r = (SharedTaskRemovePlayer_Struct *) app->pBuffer;
 
 	LogTasks(
-		"[Handle_OP_SharedTaskRemovePlayer] field1 [{}] field2 [{}] player_name [{}]",
+		"field1 [{}] field2 [{}] player_name [{}]",
 		r->field1,
 		r->field2,
 		r->player_name
@@ -15498,7 +15498,7 @@ void Client::Handle_OP_SharedTaskRemovePlayer(const EQApplicationPacket *app)
 		strn0cpy(rp->player_name, r->player_name, sizeof(r->player_name));
 
 		LogTasks(
-			"[Handle_OP_SharedTaskRemovePlayer] source_character_id [{}] task_id [{}] player_name [{}]",
+			"source_character_id [{}] task_id [{}] player_name [{}]",
 			rp->source_character_id,
 			rp->task_id,
 			rp->player_name
@@ -15523,7 +15523,7 @@ void Client::Handle_OP_SharedTaskAddPlayer(const EQApplicationPacket *app)
 	auto *r = (SharedTaskAddPlayer_Struct *) app->pBuffer;
 
 	LogTasks(
-		"[SharedTaskAddPlayer_Struct] field1 [{}] field2 [{}] player_name [{}]",
+		"field1 [{}] field2 [{}] player_name [{}]",
 		r->field1,
 		r->field2,
 		r->player_name
@@ -15548,7 +15548,7 @@ void Client::Handle_OP_SharedTaskAddPlayer(const EQApplicationPacket *app)
 		strn0cpy(rp->player_name, r->player_name, sizeof(r->player_name));
 
 		LogTasks(
-			"[Handle_OP_SharedTaskRemovePlayer] source_character_id [{}] task_id [{}] player_name [{}]",
+			"source_character_id [{}] task_id [{}] player_name [{}]",
 			rp->source_character_id,
 			rp->task_id,
 			rp->player_name
@@ -15573,7 +15573,7 @@ void Client::Handle_OP_SharedTaskMakeLeader(const EQApplicationPacket *app)
 
 	auto *r = (SharedTaskMakeLeader_Struct *) app->pBuffer;
 	LogTasks(
-		"[SharedTaskMakeLeader_Struct] field1 [{}] field2 [{}] player_name [{}]",
+		"field1 [{}] field2 [{}] player_name [{}]",
 		r->field1,
 		r->field2,
 		r->player_name
@@ -15595,7 +15595,7 @@ void Client::Handle_OP_SharedTaskMakeLeader(const EQApplicationPacket *app)
 		strn0cpy(rp->player_name, r->player_name, sizeof(r->player_name));
 
 		LogTasks(
-			"[Handle_OP_SharedTaskRemovePlayer] source_character_id [{}] task_id [{}] player_name [{}]",
+			"source_character_id [{}] task_id [{}] player_name [{}]",
 			rp->source_character_id,
 			rp->task_id,
 			rp->player_name
@@ -15620,7 +15620,7 @@ void Client::Handle_OP_SharedTaskInviteResponse(const EQApplicationPacket *app)
 
 	auto *r = (SharedTaskInviteResponse_Struct *) app->pBuffer;
 	LogTasks(
-		"[SharedTaskInviteResponse] unknown00 [{}] invite_id [{}] accepted [{}]",
+		"unknown00 [{}] invite_id [{}] accepted [{}]",
 		r->unknown00,
 		r->invite_id,
 		r->accepted
@@ -15641,7 +15641,7 @@ void Client::Handle_OP_SharedTaskInviteResponse(const EQApplicationPacket *app)
 	strn0cpy(c->player_name, GetName(), sizeof(c->player_name));
 
 	LogTasks(
-		"[ServerOP_SharedTaskInviteAcceptedPlayer] source_character_id [{}] shared_task_id [{}]",
+		"source_character_id [{}] shared_task_id [{}]",
 		c->source_character_id,
 		c->shared_task_id
 	);
@@ -15656,7 +15656,7 @@ void Client::Handle_OP_SharedTaskAccept(const EQApplicationPacket* app)
 	auto buf = reinterpret_cast<SharedTaskAccept_Struct*>(app->pBuffer);
 
 	LogTasksDetail(
-		"[OP_SharedTaskAccept] unknown00 [{}] unknown04 [{}] npc_entity_id [{}] task_id [{}]",
+		"unknown00 [{}] unknown04 [{}] npc_entity_id [{}] task_id [{}]",
 		buf->unknown00,
 		buf->unknown04,
 		buf->npc_entity_id,

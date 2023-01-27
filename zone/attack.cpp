@@ -2497,7 +2497,7 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
         // handle task credit on behalf of the killer
         if (RuleB(TaskSystem, EnableTaskSystem)) {
             LogTasksDetail(
-                    "[NPC::Death] Triggering HandleUpdateTasksOnKill for [{}] npc [{}]",
+                    "Triggering HandleUpdateTasksOnKill for [{}] npc [{}]",
                     give_exp_client->GetCleanName(),
                     GetNPCTypeID()
             );

@@ -170,7 +170,7 @@ bool HealRotation::ClearMemberPool()
 	m_active_heal_target = false;
 	
 	if (!ClearTargetPool())
-		LogError("HealRotation::ClearTargetPool() failed to clear m_target_pool (size: [{}])", m_target_pool.size());
+		LogError("failed to clear m_target_pool (size: [{}])", m_target_pool.size());
 
 	auto clear_list = const_cast<const std::list<Bot*>&>(m_member_pool);
 	for (auto member_iter : clear_list)

@@ -238,7 +238,7 @@ void Client::SendCharInfo() {
 		QueuePacket(outapp);
 	}
 	else {
-		LogInfo("[Error] Database did not return an OP_SendCharInfo packet for account [{}]", GetAccountID());
+		LogError("Database did not return an OP_SendCharInfo packet for account [{}]", GetAccountID());
 	}
 	safe_delete(outapp);
 }

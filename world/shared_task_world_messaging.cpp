@@ -246,7 +246,7 @@ void SharedTaskWorldMessaging::HandleZoneMessage(ServerPacket *pack)
 			auto *r = (ServerSharedTaskInviteAccepted_Struct *) pack->pBuffer;
 
 			LogTasksDetail(
-				"[ServerOP_SharedTaskInviteAcceptedPlayer] Received request from source_character_id [{}] shared_task_id [{}] accepted [{}]",
+				"Received request from source_character_id [{}] shared_task_id [{}] accepted [{}]",
 				r->source_character_id,
 				r->shared_task_id,
 				r->accepted
@@ -255,7 +255,7 @@ void SharedTaskWorldMessaging::HandleZoneMessage(ServerPacket *pack)
 			auto t = shared_task_manager.FindSharedTaskById(r->shared_task_id);
 			if (t && shared_task_manager.IsInvitationActive(r->shared_task_id, r->source_character_id)) {
 				LogTasksDetail(
-					"[ServerOP_SharedTaskInviteAcceptedPlayer] Found shared task character [{}] shared_task_id [{}]",
+					"Found shared task character [{}] shared_task_id [{}]",
 					r->source_character_id,
 					t->GetDbSharedTask().id
 				);

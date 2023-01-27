@@ -910,10 +910,6 @@ int64 Merc::CalcMaxMana()
 		if (current_mana > curMana_cap  || (spellbonuses.ManaPercCap[SBIndex::RESOURCE_AMOUNT_CAP] && current_mana > spellbonuses.ManaPercCap[SBIndex::RESOURCE_AMOUNT_CAP]))
 			current_mana = curMana_cap;
 	}
-
-#if EQDEBUG >= 11
-	LogDebug("Merc::CalcMaxMana() called for [{}] - returning [{}]", GetName(), max_mana);
-#endif
 	return max_mana;
 }
 

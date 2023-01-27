@@ -3374,7 +3374,7 @@ void QuestManager::voicetell(const char *str, int macronum, int racenum, int gen
 			safe_delete(outapp);
 		}
 		else
-			LogQuests("QuestManager::voicetell from [{}]. Client [{}] not found", owner->GetName(), str);
+			LogQuests("from [{}]. Client [{}] not found", owner->GetName(), str);
 	}
 }
 

@@ -41,7 +41,7 @@ function CalcSpellEffectValue_formula(e)
 	}
 	
 	eq.log_spells(
-			string.format("[Mob::CalcSpellEffectValue_formula] spell [%i] formula [%i] base [%i] max [%i] lvl [%i] Up/Down [%i]",
+			string.format("spell [%i] formula [%i] base [%i] max [%i] lvl [%i] Up/Down [%i]",
 					e.spell_id,
 					e.formula,
 					e.base_value,
@@ -79,7 +79,7 @@ function CalcSpellEffectValue_formula(e)
 	end
 	
 	eq.log_spells(
-			string.format("[Mob::CalcSpellEffectValue_formula] Result: [%i] (orig [%i]) cap [%i]",
+			string.format("Result: [%i] (orig [%i]) cap [%i]",
 					result,
 					oresult,
 					max_value

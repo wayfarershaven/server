@@ -1080,7 +1080,7 @@ void Client::OPMemorizeSpell(const EQApplicationPacket* app)
 {
 	if (app->size != sizeof(MemorizeSpell_Struct)) {
 		LogError(
-			"[Client::OPMemorizeSpell] Wrong size on OP_MemorizeSpell. Got: [{}] Expected: [{}]",
+			"Wrong size on OP_MemorizeSpell. Got: [{}] Expected: [{}]",
 			app->size,
 			sizeof(MemorizeSpell_Struct)
 		);
@@ -1862,7 +1862,7 @@ void Client::DoStaminaHungerUpdate()
 	auto outapp = new EQApplicationPacket(OP_Stamina, sizeof(Stamina_Struct));
 	Stamina_Struct *sta = (Stamina_Struct *)outapp->pBuffer;
 
-	LogFood("Client::DoStaminaHungerUpdate() hunger_level: [{}] thirst_level: [{}] before loss", m_pp.hunger_level, m_pp.thirst_level);
+	LogFood("hunger_level: [{}] thirst_level: [{}] before loss", m_pp.hunger_level, m_pp.thirst_level);
 
 	if (zone->GetZoneID() != 151 && !GetGM()) {
 		int loss = RuleI(Character, FoodLossPerUpdate);
@@ -1883,7 +1883,7 @@ void Client::DoStaminaHungerUpdate()
 		sta->water = 6000;
 	}
 
-	LogFood("Client::DoStaminaHungerUpdate() Current hunger_level: [{}] = ([{}] minutes left) thirst_level: [{}] = ([{}] minutes left) - after loss",
+	LogFood("Current hunger_level: [{}] = ([{}] minutes left) thirst_level: [{}] = ([{}] minutes left) - after loss",
 	    m_pp.hunger_level, m_pp.hunger_level, m_pp.thirst_level, m_pp.thirst_level);
 
 	FastQueuePacket(&outapp);

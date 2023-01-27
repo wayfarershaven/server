@@ -157,13 +157,13 @@ bool Spawn2::Process() {
 	if (timer.Check()) {
 		timer.Disable();
 
-		LogSpawns("Spawn2 [{}]: Timer has triggered", spawn2_id);
+		LogSpawns("[{}]: Timer has triggered", spawn2_id);
 
 		//first check our spawn condition, if this isnt active
 		//then we reset the timer and try again next time.
 		if (condition_id != SC_AlwaysEnabled
 			&& !zone->spawn_conditions.Check(condition_id, condition_min_value)) {
-			LogSpawns("Spawn2 [{}]: spawning prevented by spawn condition [{}]", spawn2_id, condition_id);
+			LogSpawns("[{}]: spawning prevented by spawn condition [{}]", spawn2_id, condition_id);
 			Reset();
 			return (true);
 		}
@@ -177,7 +177,7 @@ bool Spawn2::Process() {
 		}
 
 		if (spawn_group == nullptr) {
-			LogSpawns("Spawn2 [{}]: Unable to locate spawn group [{}]. Disabling", spawn2_id, spawngroup_id_);
+			LogSpawns("[{}]: Unable to locate spawn group [{}]. Disabling", spawn2_id, spawngroup_id_);
 
 			return false;
 		}
@@ -191,7 +191,7 @@ bool Spawn2::Process() {
 		//have the spawn group pick an NPC for us
 		uint32 npcid = spawn_group->GetNPCType(condition_value);
 		if (npcid == 0) {
-			LogSpawns("Spawn2 [{}]: Spawn group [{}] did not yeild an NPC! not spawning", spawn2_id, spawngroup_id_);
+			LogSpawns("[{}]: Spawn group [{}] did not yeild an NPC! not spawning", spawn2_id, spawngroup_id_);
 
 			Reset();    //try again later (why?)
 			return (true);
@@ -200,7 +200,7 @@ bool Spawn2::Process() {
 		//try to find our NPC type.
 		const NPCType *tmp = content_db.LoadNPCTypesData(npcid);
 		if (tmp == nullptr) {
-			LogSpawns("Spawn2 [{}]: Spawn group [{}] yeilded an invalid NPC type [{}]", spawn2_id, spawngroup_id_, npcid);
+			LogSpawns("[{}]: Spawn group [{}] yeilded an invalid NPC type [{}]", spawn2_id, spawngroup_id_, npcid);
 			Reset();    //try again later
 			return (true);
 		}
@@ -212,7 +212,7 @@ bool Spawn2::Process() {
 
 		if (tmp->unique_spawn_by_name) {
 			if (!entity_list.LimitCheckName(tmp->name)) {
-				LogSpawns("Spawn2 [{}]: Spawn group [{}] yeilded NPC type [{}], which is unique and one already exists", spawn2_id, spawngroup_id_, npcid);
+				LogSpawns("[{}]: Spawn group [{}] yeilded NPC type [{}], which is unique and one already exists", spawn2_id, spawngroup_id_, npcid);
 				timer.Start(5000);    //try again in five seconds.
 				return (true);
 			}
@@ -220,7 +220,7 @@ bool Spawn2::Process() {
 
 		if (tmp->spawn_limit > 0) {
 			if (!entity_list.LimitCheckType(npcid, tmp->spawn_limit)) {
-				LogSpawns("Spawn2 [{}]: Spawn group [{}] yeilded NPC type [{}], which is over its spawn limit ([{}])", spawn2_id, spawngroup_id_, npcid, tmp->spawn_limit);
+				LogSpawns("[{}]: Spawn group [{}] yeilded NPC type [{}], which is over its spawn limit ([{}])", spawn2_id, spawngroup_id_, npcid, tmp->spawn_limit);
 				timer.Start(5000);    //try again in five seconds.
 				return (true);
 			}
@@ -290,7 +290,7 @@ bool Spawn2::Process() {
 		}
 
 		if (zone->InstantGrids()) {
-			LogSpawns("Spawn2 [{}]: Group [{}] spawned [{}] ([{}]) at ([{}], [{}], [{}])",
+			LogSpawns("[{}]: Group [{}] spawned [{}] ([{}]) at ([{}], [{}], [{}])",
 				spawn2_id,
 				spawngroup_id_,
 				npc->GetName(),
@@ -303,7 +303,7 @@ bool Spawn2::Process() {
 			LoadGrid(starting_wp);
 		}
 		else {
-			LogSpawns("Spawn2 [{}]: Group [{}] spawned [{}] ([{}]) at ([{}], [{}], [{}]). Grid loading delayed",
+			LogSpawns("[{}]: Group [{}] spawned [{}] ([{}]) at ([{}], [{}], [{}]). Grid loading delayed",
 				spawn2_id,
 				spawngroup_id_,
 				tmp->name,
@@ -337,7 +337,7 @@ void Spawn2::LoadGrid(int start_wp) {
 	//dont set an NPC's grid until its loaded for them.
 	npcthis->SetGrid(grid_);
 	npcthis->AssignWaypoints(grid_, start_wp);
-	LogSpawns("Spawn2 [{}]: Loading grid [{}] for [{}]; starting wp is [{}]", spawn2_id, grid_, npcthis->GetName(), start_wp);
+	LogSpawns("[{}]: Loading grid [{}] for [{}]; starting wp is [{}]", spawn2_id, grid_, npcthis->GetName(), start_wp);
 }
 
 /*
@@ -347,21 +347,21 @@ void Spawn2::LoadGrid(int start_wp) {
 void Spawn2::Reset() {
 	timer.Start(resetTimer());
 	npcthis = nullptr;
-	LogSpawns("Spawn2 [{}]: Spawn reset, repop in [{}] ms", spawn2_id, timer.GetRemainingTime());
+	LogSpawns("[{}]: Spawn reset, repop in [{}] ms", spawn2_id, timer.GetRemainingTime());
 }
 
 void Spawn2::Depop() {
 	timer.Disable();
-	LogSpawns("Spawn2 [{}]: Spawn reset, repop disabled", spawn2_id);
+	LogSpawns("[{}]: Spawn reset, repop disabled", spawn2_id);
 	npcthis = nullptr;
 }
 
 void Spawn2::Repop(uint32 delay) {
 	if (delay == 0) {
 		timer.Trigger();
-		LogSpawns("Spawn2 [{}]: Spawn reset, repop immediately", spawn2_id);
+		LogSpawns("[{}]: Spawn reset, repop immediately", spawn2_id);
 	} else {
-		LogSpawns("Spawn2 [{}]: Spawn reset for repop, repop in [{}] ms", spawn2_id, delay);
+		LogSpawns("[{}]: Spawn reset for repop, repop in [{}] ms", spawn2_id, delay);
 		timer.Start(delay);
 	}
 	npcthis = nullptr;
@@ -406,7 +406,7 @@ void Spawn2::ForceDespawn()
 		cur = despawnTimer(dtimer);
 	}
 
-	LogSpawns("Spawn2 [{}]: Spawn group [{}] set despawn timer to [{}] ms", spawn2_id, spawngroup_id_, cur);
+	LogSpawns("[{}]: Spawn group [{}] set despawn timer to [{}] ms", spawn2_id, spawngroup_id_, cur);
 	timer.Start(cur);
 }
 
@@ -427,7 +427,7 @@ void Spawn2::DeathReset(bool realdeath)
 	if(spawn2_id)
 	{
 		database.UpdateRespawnTime(spawn2_id, zone->GetInstanceID(), (cur/1000));
-		LogSpawns("Spawn2 [{}]: Spawn reset by death, repop in [{}] ms", spawn2_id, timer.GetRemainingTime());
+		LogSpawns("[{}]: Spawn reset by death, repop in [{}] ms", spawn2_id, timer.GetRemainingTime());
 		//store it to database too
 	}
 }
@@ -722,12 +722,12 @@ void Spawn2::SpawnConditionChanged(const SpawnCondition &c, int16 old_value) {
 	if(GetSpawnCondition() != c.condition_id)
 		return;
 
-	LogSpawns("Spawn2 [{}]: Notified that our spawn condition [{}] has changed from [{}] to [{}]. Our min value is [{}]", spawn2_id, c.condition_id, old_value, c.value, condition_min_value);
+	LogSpawns("[{}]: Notified that our spawn condition [{}] has changed from [{}] to [{}]. Our min value is [{}]", spawn2_id, c.condition_id, old_value, c.value, condition_min_value);
 
 	bool old_state = (old_value >= condition_min_value);
 	bool new_state = (c.value >= condition_min_value);
 	if(old_state == new_state) {
-		LogSpawns("Spawn2 [{}]: Our threshold for this condition was not crossed. Doing nothing", spawn2_id);
+		LogSpawns("[{}]: Our threshold for this condition was not crossed. Doing nothing", spawn2_id);
 		return;	//no change
 	}
 
@@ -735,43 +735,43 @@ void Spawn2::SpawnConditionChanged(const SpawnCondition &c, int16 old_value) {
 	switch(c.on_change) {
 	case SpawnCondition::DoNothing:
 		//that was easy.
-		LogSpawns("Spawn2 [{}]: Our condition is now [{}]. Taking no action on existing spawn", spawn2_id, new_state?"enabled":"disabled");
+		LogSpawns("[{}]: Our condition is now [{}]. Taking no action on existing spawn", spawn2_id, new_state?"enabled":"disabled");
 		break;
 	case SpawnCondition::DoDepop:
-		LogSpawns("Spawn2 [{}]: Our condition is now [{}]. Depoping our mob", spawn2_id, new_state?"enabled":"disabled");
+		LogSpawns("[{}]: Our condition is now [{}]. Depoping our mob", spawn2_id, new_state?"enabled":"disabled");
 		if(npcthis != nullptr)
 			npcthis->Depop(false);	//remove the current mob
 		Reset();	//reset our spawn timer
 		break;
 	case SpawnCondition::DoRepop:
-		LogSpawns("Spawn2 [{}]: Our condition is now [{}]. Forcing a repop", spawn2_id, new_state?"enabled":"disabled");
+		LogSpawns("[{}]: Our condition is now [{}]. Forcing a repop", spawn2_id, new_state?"enabled":"disabled");
 		if(npcthis != nullptr)
 			npcthis->Depop(false);	//remove the current mob
 		Repop();	//repop
 		break;
 	case SpawnCondition::DoRepopIfReady:
-		LogSpawns("Spawn2 [{}]: Our condition is now [{}]. Forcing a repop if repsawn timer is expired", spawn2_id, new_state?"enabled":"disabled");
+		LogSpawns("[{}]: Our condition is now [{}]. Forcing a repop if repsawn timer is expired", spawn2_id, new_state?"enabled":"disabled");
 		if(npcthis != nullptr) {
-			LogSpawns("Spawn2 [{}]: Our npcthis is currently not null. The zone thinks it is [{}]. Forcing a depop", spawn2_id, npcthis->GetName());
+			LogSpawns("[{}]: Our npcthis is currently not null. The zone thinks it is [{}]. Forcing a depop", spawn2_id, npcthis->GetName());
 			npcthis->Depop(false);	//remove the current mob
 			npcthis = nullptr;
 		}
 		if(new_state) { // only get repawn timer remaining when the SpawnCondition is enabled.
 			timer_remaining = database.GetSpawnTimeLeft(spawn2_id,zone->GetInstanceID());
-			LogSpawns("Spawn2 [{}]: Our condition is now [{}]. The respawn timer_remaining is [{}]. Forcing a repop if it is <= 0", spawn2_id, new_state?"enabled":"disabled", timer_remaining);
+			LogSpawns("[{}]: Our condition is now [{}]. The respawn timer_remaining is [{}]. Forcing a repop if it is <= 0", spawn2_id, new_state?"enabled":"disabled", timer_remaining);
 			if(timer_remaining <= 0)
 				Repop();
 		} else {
-			LogSpawns("Spawn2 [{}]: Our condition is now [{}]. Not checking respawn timer", spawn2_id, new_state?"enabled":"disabled");
+			LogSpawns("[{}]: Our condition is now [{}]. Not checking respawn timer", spawn2_id, new_state?"enabled":"disabled");
 		}
 		break;
 	default:
 		if(c.on_change < SpawnCondition::DoSignalMin) {
-			LogSpawns("Spawn2 [{}]: Our condition is now [{}]. Invalid on-change action [{}]", spawn2_id, new_state?"enabled":"disabled", c.on_change);
+			LogSpawns("[{}]: Our condition is now [{}]. Invalid on-change action [{}]", spawn2_id, new_state?"enabled":"disabled", c.on_change);
 			return;	//unknown onchange action
 		}
 		int signal_id = c.on_change - SpawnCondition::DoSignalMin;
-		LogSpawns("Spawn2 [{}]: Our condition is now [{}]. Signaling our mob with [{}]", spawn2_id, new_state?"enabled":"disabled", signal_id);
+		LogSpawns("[{}]: Our condition is now [{}]. Signaling our mob with [{}]", spawn2_id, new_state?"enabled":"disabled", signal_id);
 		if(npcthis != nullptr)
 			npcthis->SignalNPC(signal_id);
 	}

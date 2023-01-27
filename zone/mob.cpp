@@ -1388,7 +1388,7 @@ void Mob::SendHPUpdate(bool force_update_all)
 		if (current_hp != last_hp || force_update_all) {
 
 			LogHPUpdate(
-				"[SendHPUpdate] Update HP of self [{}] current_hp [{}] max_hp [{}] last_hp [{}]",
+				"Update HP of self [{}] current_hp [{}] max_hp [{}] last_hp [{}]",
 				GetCleanName(),
 				current_hp,
 				max_hp,
@@ -1416,14 +1416,14 @@ void Mob::SendHPUpdate(bool force_update_all)
 	auto current_hp_percent = GetIntHPRatio();
 
 	LogHPUpdateDetail(
-		"[SendHPUpdate] Client [{}] HP is [{}] last [{}]",
+		"Client [{}] HP is [{}] last [{}]",
 		GetCleanName(),
 		current_hp_percent,
 		last_hp_percent
 	);
 
 	if (current_hp_percent == last_hp_percent && !force_update_all) {
-		LogHPUpdateDetail("[SendHPUpdate] Same HP for mob [{}] skipping update", GetCleanName());
+		LogHPUpdateDetail("Same HP for mob [{}] skipping update", GetCleanName());
 		ResetHPUpdateTimer();
 		return;
 	}
@@ -1433,7 +1433,7 @@ void Mob::SendHPUpdate(bool force_update_all)
 			CastToClient()->SendHPUpdateMarquee();
 		}
 
-		LogHPUpdate("[SendHPUpdate] HP Changed for mob [{}] send update", GetCleanName());
+		LogHPUpdate("HP Changed for mob [{}] send update", GetCleanName());
 
 		last_hp_percent = current_hp_percent;
 	}
