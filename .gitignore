@@ -92,3 +92,6 @@ compile_flags.txt
 .ninja_log
 build.ninja
 Testing/Temporary/LastTest.log
+
+# vscode generated settings
+.vscode/
