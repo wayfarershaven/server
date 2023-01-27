@@ -956,9 +956,9 @@ bool IsHealOverTimeSpell(uint16 spell_id)
 
 bool IsCompleteHealSpell(uint16 spell_id)
 {
-	if (spell_id == 13 || IsEffectInSpell(spell_id, SE_CompleteHeal) ||
-			(IsPercentalHealSpell(spell_id) && !IsGroupSpell(spell_id)))
+	if (spell_id == SPELL_COMPLETE_HEAL || IsEffectInSpell(spell_id, SE_CompleteHeal) || (IsPercentalHealSpell(spell_id) && !IsGroupSpell(spell_id))) {
 		return true;
+	}
 
 	return false;
 }
