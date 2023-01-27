@@ -95,3 +95,8 @@ Testing/Temporary/LastTest.log
 
 # vscode generated settings
 .vscode/
+
+# Build pipeline
+!utils/scripts/build/
+!utils/scripts/build/should-release/should-release
+!utils/scripts/build/should-release/should-release.exe
