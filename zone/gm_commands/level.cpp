@@ -41,11 +41,8 @@ void command_level(Client *c, const Seperator *sep)
 	if (target->IsClient()) {
 		target->CastToClient()->SendLevelAppearance();
 
-#ifdef BOTS
-		if (RuleB(Bots, BotLevelsWithOwner)) {
+		if (RuleB(Bots, Enabled) && RuleB(Bots, BotLevelsWithOwner)) {
 			Bot::LevelBotWithClient(target->CastToClient(), level, true);
 		}
-#endif
-
 	}
 }

@@ -5,10 +5,8 @@
 
 #include "client.h"
 #include "npc.h"
-#ifdef BOTS
 #include "bot.h"
 #include "lua_bot.h"
-#endif
 #include "lua_item.h"
 #include "lua_iteminst.h"
 #include "lua_mob.h"
@@ -1380,10 +1378,8 @@ void Lua_Mob::Signal(int signal_id) {
 		self->CastToClient()->Signal(signal_id);
 	} else if (self->IsNPC()) {
 		self->CastToNPC()->SignalNPC(signal_id);
-#ifdef BOTS
 	} else if (self->IsBot()) {
 		self->CastToBot()->Signal(signal_id);
-#endif
 	}
 }
 
@@ -2411,12 +2407,10 @@ void Lua_Mob::RemoveAllNimbusEffects() {
 	self->RemoveAllNimbusEffects();
 }
 
-#ifdef BOTS
 Lua_Bot Lua_Mob::GetHateRandomBot() {
 	Lua_Safe_Call_Class(Lua_Bot);
 	return Lua_Bot(self->GetHateRandomBot());
 }
-#endif
 
 Lua_Client Lua_Mob::GetHateRandomClient() {
 	Lua_Safe_Call_Class(Lua_Client);
@@ -2712,10 +2706,8 @@ void Lua_Mob::SendPayload(int payload_id) {
 		self->CastToClient()->SendPayload(payload_id);
 	} else if (self->IsNPC()) {
 		self->CastToNPC()->SendPayload(payload_id);
-#ifdef BOTS
 	} else if (self->IsBot()) {
 		self->CastToBot()->SendPayload(payload_id);
-#endif
 	}
 }
 
@@ -2726,10 +2718,8 @@ void Lua_Mob::SendPayload(int payload_id, std::string payload_value) {
 		self->CastToClient()->SendPayload(payload_id, payload_value);
 	} else if (self->IsNPC()) {
 		self->CastToNPC()->SendPayload(payload_id, payload_value);
-#ifdef BOTS
 	} else if (self->IsBot()) {
 		self->CastToBot()->SendPayload(payload_id, payload_value);
-#endif
 	}
 }
 
@@ -2748,7 +2738,6 @@ bool Lua_Mob::IsAttackAllowed(Lua_Mob target, bool is_spell_attack) {
 	return self->IsAttackAllowed(target, is_spell_attack);
 }
 
-#ifdef BOTS
 void Lua_Mob::DamageAreaBots(int64 damage) {
 	Lua_Safe_Call_Void();
 	self->DamageArea(damage, 0, EntityFilterType::Bots);
@@ -2814,7 +2803,6 @@ Lua_HateList Lua_Mob::GetHateListBots(uint32 distance) {
 
 	return ret;
 }
-#endif
 
 luabind::scope lua_register_mob() {
 	return luabind::class_<Lua_Mob, Lua_Entity>("Mob")
@@ -2909,12 +2897,10 @@ luabind::scope lua_register_mob() {
 	.def("DamageArea", (void(Lua_Mob::*)(int64,uint32))&Lua_Mob::DamageArea)
 	.def("DamageAreaPercentage", (void(Lua_Mob::*)(int64))&Lua_Mob::DamageAreaPercentage)
 	.def("DamageAreaPercentage", (void(Lua_Mob::*)(int64,uint32))&Lua_Mob::DamageAreaPercentage)
-#ifdef BOTS
 	.def("DamageAreaBots", (void(Lua_Mob::*)(int64))&Lua_Mob::DamageAreaBots)
 	.def("DamageAreaBots", (void(Lua_Mob::*)(int64,uint32))&Lua_Mob::DamageAreaBots)
 	.def("DamageAreaBotsPercentage", (void(Lua_Mob::*)(int64))&Lua_Mob::DamageAreaBotsPercentage)
 	.def("DamageAreaBotsPercentage", (void(Lua_Mob::*)(int64,uint32))&Lua_Mob::DamageAreaBotsPercentage)
-#endif
 	.def("DamageAreaClients", (void(Lua_Mob::*)(int64))&Lua_Mob::DamageAreaClients)
 	.def("DamageAreaClients", (void(Lua_Mob::*)(int64,uint32))&Lua_Mob::DamageAreaClients)
 	.def("DamageAreaClientsPercentage", (void(Lua_Mob::*)(int64))&Lua_Mob::DamageAreaClientsPercentage)
@@ -2925,12 +2911,10 @@ luabind::scope lua_register_mob() {
 	.def("DamageAreaNPCsPercentage", (void(Lua_Mob::*)(int64,uint32))&Lua_Mob::DamageAreaNPCsPercentage)
 	.def("DamageHateList", (void(Lua_Mob::*)(int64))&Lua_Mob::DamageHateList)
 	.def("DamageHateList", (void(Lua_Mob::*)(int64,uint32))&Lua_Mob::DamageHateList)
-#ifdef BOTS
 	.def("DamageHateListBots", (void(Lua_Mob::*)(int64))&Lua_Mob::DamageHateListBots)
 	.def("DamageHateListBots", (void(Lua_Mob::*)(int64,uint32))&Lua_Mob::DamageHateListBots)
 	.def("DamageHateListBotsPercentage", (void(Lua_Mob::*)(int64))&Lua_Mob::DamageHateListBots)
 	.def("DamageHateListBotsPercentage", (void(Lua_Mob::*)(int64,uint32))&Lua_Mob::DamageHateListBots)
-#endif
 	.def("DamageHateListClients", (void(Lua_Mob::*)(int64))&Lua_Mob::DamageHateListClients)
 	.def("DamageHateListClients", (void(Lua_Mob::*)(int64,uint32))&Lua_Mob::DamageHateListClients)
 	.def("DamageHateListClientsPercentage", (void(Lua_Mob::*)(int64))&Lua_Mob::DamageHateListClientsPercentage)
@@ -3044,10 +3028,8 @@ luabind::scope lua_register_mob() {
 	.def("GetHateClosest", &Lua_Mob::GetHateClosest)
 	.def("GetHateDamageTop", (Lua_Mob(Lua_Mob::*)(Lua_Mob))&Lua_Mob::GetHateDamageTop)
 	.def("GetHateList", &Lua_Mob::GetHateList)
-#ifdef BOTS
 	.def("GetHateListBots", (Lua_HateList(Lua_Mob::*)(void))&Lua_Mob::GetHateListBots)
 	.def("GetHateListBots", (Lua_HateList(Lua_Mob::*)(uint32))&Lua_Mob::GetHateListBots)
-#endif
 	.def("GetHateListClients", (Lua_HateList(Lua_Mob::*)(void))&Lua_Mob::GetHateListClients)
 	.def("GetHateListClients", (Lua_HateList(Lua_Mob::*)(uint32))&Lua_Mob::GetHateListClients)
 	.def("GetHateListNPCs", (Lua_HateList(Lua_Mob::*)(void))&Lua_Mob::GetHateListNPCs)
@@ -3055,9 +3037,7 @@ luabind::scope lua_register_mob() {
 	.def("GetHateListByDistance", (Lua_HateList(Lua_Mob::*)(void))&Lua_Mob::GetHateListByDistance)
 	.def("GetHateListByDistance", (Lua_HateList(Lua_Mob::*)(uint32))&Lua_Mob::GetHateListByDistance)
 	.def("GetHateRandom", (Lua_Mob(Lua_Mob::*)(void))&Lua_Mob::GetHateRandom)
-#ifdef BOTS
 	.def("GetHateRandomBot", (Lua_Bot(Lua_Mob::*)(void))&Lua_Mob::GetHateRandomBot)
-#endif
 	.def("GetHateRandomClient", (Lua_Client(Lua_Mob::*)(void))&Lua_Mob::GetHateRandomClient)
 	.def("GetHateRandomNPC", (Lua_NPC(Lua_Mob::*)(void))&Lua_Mob::GetHateRandomNPC)
 	.def("GetHateTop", (Lua_Mob(Lua_Mob::*)(void))&Lua_Mob::GetHateTop)

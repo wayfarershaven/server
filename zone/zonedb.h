@@ -11,10 +11,7 @@
 #include "aa_ability.h"
 #include "event_codes.h"
 #include "../common/repositories/doors_repository.h"
-
-#ifdef BOTS
 #include "bot_database.h"
-#endif
 
 #define WOLF 42
 
@@ -641,10 +638,8 @@ public:
 	/* Things which really dont belong here... */
 	int16	CommandRequirement(const char* commandname);
 
-#ifdef BOTS
 	// bot database add-on to eliminate the need for a second database connection
 	BotDatabase botdb;
-#endif
 
 protected:
 	void ZDBInitVars();

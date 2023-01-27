@@ -49,10 +49,7 @@ public:
 	Mob *GetEntWithMostHateOnList(bool skip_mezzed = false);
 	Mob *GetEscapingEntOnHateList(); // returns first eligble entity
 	Mob *GetEscapingEntOnHateList(Mob *center, float range = 0.0f, bool first = false);
-
-#ifdef BOTS
 	Bot* GetRandomBotOnHateList(bool skip_mezzed = false);
-#endif
 	Client *GetRandomClientOnHateList(bool skip_mezzed = false);
 	NPC *GetRandomNPCOnHateList(bool skip_mezzed = false);
 

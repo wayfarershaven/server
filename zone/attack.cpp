@@ -36,15 +36,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include "mob.h"
 #include "npc.h"
 
-
-#include <assert.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <boost/concept_check.hpp>
-
-#ifdef BOTS
 #include "bot.h"
-#endif
 
 extern QueryServ* QServ;
 extern WorldServer worldserver;
@@ -925,16 +919,15 @@ int Mob::ACSum(bool skip_caps)
             ac += GetSkill(EQ::skills::SkillDefense) / 3 + spell_aa_ac / 4;
     }
 
-    if (GetAGI() > 70)
+    if (GetAGI() > 70) {
         ac += GetAGI() / 20;
-    if (ac < 0)
-        ac = 0;
+    }
 
-    if (!skip_caps && (IsClient()
-#ifdef BOTS
-            || IsBot()
-#endif
-    )) {
+    if (ac < 0) {
+        ac = 0;
+    }
+
+    if (!skip_caps && (IsClient() || IsBot())) {
         auto softcap = GetACSoftcap();
         auto returns = GetSoftcapReturns();
         int total_aclimitmod = aabonuses.CombatStability + itembonuses.CombatStability + spellbonuses.CombatStability;
@@ -1319,7 +1312,7 @@ int64 Mob::GetWeaponDamage(Mob *against, const EQ::ItemInstance *weapon_item, in
     return std::max((int64)0, dmg);
 }
 
-int64 Client::DoDamageCaps(int64 base_damage)
+int64 Mob::DoDamageCaps(int64 base_damage)
 {
     // this is based on a client function that caps melee base_damage
     auto level = GetLevel();
@@ -1448,9 +1441,9 @@ void Mob::DoAttack(Mob *other, DamageHitInfo &hit, ExtraAttackOptions *opts, boo
 
     // check to see if we hit..
     if (!FromRiposte && other->AvoidDamage(this, hit)) {
-        int strike_through = itembonuses.StrikeThrough + spellbonuses.StrikeThrough + aabonuses.StrikeThrough;
-        if (strike_through && zone->random.Roll(strike_through)) {
-            MessageString(Chat::StrikeThrough,
+        if (int strike_through = itembonuses.StrikeThrough + spellbonuses.StrikeThrough + aabonuses.StrikeThrough;
+				strike_through && zone->random.Roll(strike_through)) {
+                MessageString(Chat::StrikeThrough,
                           STRIKETHROUGH_STRING); // You strike through your opponents defenses!
             hit.damage_done = 1;			// set to one, we will check this to continue
         }
@@ -1475,7 +1468,6 @@ void Mob::DoAttack(Mob *other, DamageHitInfo &hit, ExtraAttackOptions *opts, boo
             hit.damage_done = 0;
         }
 
-#ifdef BOTS
         if (IsBot()) {
 			const auto export_string = fmt::format(
 				"{} {}",
@@ -1484,7 +1476,6 @@ void Mob::DoAttack(Mob *other, DamageHitInfo &hit, ExtraAttackOptions *opts, boo
 			);
 			parse->EventBot(EVENT_USE_SKILL, CastToBot(), nullptr, export_string, 0);
 		}
-#endif
     }
 }
 
@@ -1492,11 +1483,11 @@ void Mob::DoAttack(Mob *other, DamageHitInfo &hit, ExtraAttackOptions *opts, boo
 //stop the attack calculations
 // IsFromSpell added to allow spell effects to use Attack. (Mainly for the Rampage AA right now.)
 //SYNC WITH: tune.cpp, mob.h TuneClientAttack
-bool Client::Attack(Mob* other, int Hand, bool bRiposte, bool IsStrikethrough, bool IsFromSpell, ExtraAttackOptions *opts)
+bool Mob::Attack(Mob* other, int Hand, bool bRiposte, bool IsStrikethrough, bool IsFromSpell, ExtraAttackOptions *opts)
 {
     if (!other || other->IsCorpse()) {
         SetTarget(nullptr);
-        LogError("A null Mob object was passed to Client::Attack() for evaluation!");
+        LogError("A null Mob object was passed for evaluation!");
         return false;
     }
 
@@ -1504,7 +1495,7 @@ bool Client::Attack(Mob* other, int Hand, bool bRiposte, bool IsStrikethrough, b
         SetTarget(other);
     }
 
-    LogCombat("Attacking [{}] with hand [{}] [{}]", other ? other->GetName() : "(nullptr)", Hand, bRiposte ? "(this is a riposte)" : "");
+    LogCombatDetail("Attacking [{}] with hand [{}] [{}]", other ? other->GetName() : "nullptr", Hand, bRiposte ? "this is a riposte" : "");
 
     //SetAttackTimer();
     if (
@@ -1513,27 +1504,34 @@ bool Client::Attack(Mob* other, int Hand, bool bRiposte, bool IsStrikethrough, b
             || ((IsClient() && CastToClient()->dead) || (other->IsClient() && other->CastToClient()->dead))
             || (GetHP() < 0)
             || (!IsAttackAllowed(other))
+            || (IsBot() && GetAppearance() == eaDead)
             ) {
         LogCombat("Attack cancelled, invalid circumstances");
         return false; // Only bards can attack while casting
     }
 
-    if (DivineAura() && !GetGM()) {//cant attack while invulnerable unless your a gm
+    if (DivineAura() && !CastToClient()->GetGM()) { //cant attack while invulnerable unless your a gm
         LogCombat("Attack cancelled, Divine Aura is in effect");
-        MessageString(Chat::DefaultText, DIVINE_AURA_NO_ATK);	//You can't attack while invulnerable
+        MessageString(Chat::DefaultText, DIVINE_AURA_NO_ATK);
         return false;
     }
 
-    if (GetFeigned())
+    if (GetFeigned()) {
         return false; // Rogean: How can you attack while feigned? Moved up from Aggro Code.
+    }
 
-    EQ::ItemInstance* weapon = nullptr;
-    if (Hand == EQ::invslot::slotSecondary) {	// Kaiyodo - Pick weapon from the attacking hand
-        weapon = GetInv().GetItem(EQ::invslot::slotSecondary);
+    const EQ::ItemInstance* weapon = nullptr;
+
+    if (IsBot()) {
+		FaceTarget(GetTarget());
+	}
+
+	if (Hand == EQ::invslot::slotSecondary) {
+		weapon = (IsClient()) ? GetInv().GetItem(EQ::invslot::slotSecondary) : CastToBot()->GetBotItem(EQ::invslot::slotPrimary);
         OffHandAtk(true);
     }
     else {
-        weapon = GetInv().GetItem(EQ::invslot::slotPrimary);
+        weapon = (IsClient()) ? GetInv().GetItem(EQ::invslot::slotPrimary) : CastToBot()->GetBotItem(EQ::invslot::slotPrimary);
         OffHandAtk(false);
     }
 
@@ -1542,29 +1540,30 @@ bool Client::Attack(Mob* other, int Hand, bool bRiposte, bool IsStrikethrough, b
             LogCombat("Attack cancelled, Item [{}] ([{}]) is not a weapon", weapon->GetItem()->Name, weapon->GetID());
             return(false);
         }
-        LogCombat("Attacking with weapon: [{}] ([{}])", weapon->GetItem()->Name, weapon->GetID());
+        LogCombatDetail("Attacking with weapon: [{}] ([{}])", weapon->GetItem()->Name, weapon->GetID());
     }
     else {
-        LogCombat("Attacking without a weapon");
+        LogCombatDetail("Attacking without a weapon");
     }
 
     DamageHitInfo my_hit;
     // calculate attack_skill and skillinuse depending on hand and weapon
     // also send Packet to near clients
     my_hit.skill = AttackAnimation(Hand, weapon);
-    LogCombat("Attacking with [{}] in slot [{}] using skill [{}]", weapon ? weapon->GetItem()->Name : "Fist", Hand, my_hit.skill);
+    LogCombatDetail("Attacking with [{}] in slot [{}] using skill [{}]", weapon ? weapon->GetItem()->Name : "Fist", Hand, my_hit.skill);
 
     // Now figure out damage
     my_hit.damage_done = 1;
     my_hit.min_damage = 0;
-    uint8 mylevel = GetLevel() ? GetLevel() : 1;
     int64 hate = 0;
-    if (weapon)
+    if (weapon) {
         hate = (weapon->GetItem()->Damage + weapon->GetItem()->ElemDmgAmt);
+    }
 
     my_hit.base_damage = GetWeaponDamage(other, weapon, &hate);
-    if (hate == 0 && my_hit.base_damage > 1)
+    if (hate == 0 && my_hit.base_damage > 1) {
         hate = my_hit.base_damage;
+    }
 
     //if weapon damage > 0 then we know we can hit the target with this weapon
     //otherwise we cannot and we set the damage to -5 later on
@@ -1579,8 +1578,10 @@ bool Client::Attack(Mob* other, int Hand, bool bRiposte, bool IsStrikethrough, b
             hate = hate * (100 + shield_inc) / 100;
         }
 
-        CheckIncreaseSkill(my_hit.skill, other, -15);
-        CheckIncreaseSkill(EQ::skills::SkillOffense, other, -15);
+        if (IsClient()) {
+			CastToClient()->CheckIncreaseSkill(my_hit.skill, other, -15);
+			CastToClient()->CheckIncreaseSkill(EQ::skills::SkillOffense, other, -15);
+		}
 
         // ***************************************************************
         // *** Calculate the damage bonus, if applicable, for this hit ***
@@ -1608,19 +1609,19 @@ bool Client::Attack(Mob* other, int Hand, bool bRiposte, bool IsStrikethrough, b
         }
 #endif
         //Live AA - Sinister Strikes *Adds weapon damage bonus to offhand weapon.
-        if (Hand == EQ::invslot::slotSecondary) {
-            if (aabonuses.SecondaryDmgInc || itembonuses.SecondaryDmgInc || spellbonuses.SecondaryDmgInc) {
-
-                ucDamageBonus = GetWeaponDamageBonus(weapon ? weapon->GetItem() : (const EQ::ItemData*) nullptr, true);
-
-                my_hit.min_damage = ucDamageBonus;
-                hate += ucDamageBonus;
-            }
+        if (Hand == EQ::invslot::slotSecondary &&
+			(
+				aabonuses.SecondaryDmgInc ||
+				itembonuses.SecondaryDmgInc ||
+				spellbonuses.SecondaryDmgInc
+			)
+		) {
+			ucDamageBonus = GetWeaponDamageBonus(weapon ? weapon->GetItem() : (const EQ::ItemData*) nullptr, true);
+            my_hit.min_damage = ucDamageBonus;
+			hate += ucDamageBonus;
         }
 
-        // damage = mod_client_damage(damage, skillinuse, Hand, weapon, other);
-
-        LogCombat("Damage calculated: base [{}] min damage [{}] skill [{}]", my_hit.base_damage, my_hit.min_damage, my_hit.skill);
+        LogCombatDetail("Damage calculated base [{}] min damage [{}] skill [{}]", my_hit.base_damage, my_hit.min_damage, my_hit.skill);
 
         int hit_chance_bonus = 0;
         my_hit.offense = offense(my_hit.skill); // we need this a few times
@@ -1637,6 +1638,8 @@ bool Client::Attack(Mob* other, int Hand, bool bRiposte, bool IsStrikethrough, b
         my_hit.tohit = GetTotalToHit(my_hit.skill, hit_chance_bonus);
 
         DoAttack(other, my_hit, opts, bRiposte);
+
+        LogCombatDetail("Final damage after all reductions [{}]", my_hit.damage_done);
     }
     else {
         my_hit.damage_done = DMG_INVULNERABLE;
@@ -1652,7 +1655,7 @@ bool Client::Attack(Mob* other, int Hand, bool bRiposte, bool IsStrikethrough, b
     ///////////////////////////////////////////////////////////
     other->Damage(this, my_hit.damage_done, SPELL_UNKNOWN, my_hit.skill, true, -1, false, m_specialattacks);
 
-    if (IsDead()) {
+    if (CastToClient()->IsDead() || (IsBot() && GetAppearance() == eaDead)) {
         return false;
     }
 
@@ -1821,11 +1824,9 @@ bool Client::Death(Mob* killerMob, int64 damage, uint16 spell, EQ::skills::Skill
             }
 
             killerMob->TrySpellOnKill(killed_level, spell);
-#ifdef BOTS
-            } else if (killerMob->IsBot()) {
+        } else if (killerMob->IsBot()) {
 			parse->EventBot(EVENT_SLAY, killerMob->CastToBot(), this, "", 0);
 			killerMob->TrySpellOnKill(killed_level, spell);
-#endif
         }
 
         if (
@@ -1902,10 +1903,8 @@ bool Client::Death(Mob* killerMob, int64 damage, uint16 spell, EQ::skills::Skill
             exploss = 0;
         } else if (killerMob->GetOwner() && killerMob->GetOwner()->IsClient()) {
             exploss = 0;
-#ifdef BOTS
-            } else if (killerMob->IsBot()) {
+        } else if (killerMob->IsBot()) {
 			exploss = 0;
-#endif
         }
     }
 
@@ -2353,8 +2352,7 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 
             return false;
         }
-#ifdef BOTS
-        } else if (IsBot()) {
+    } else if (IsBot()) {
 		if (parse->EventBot(EVENT_DEATH, CastToBot(), oos, export_string, 0) != 0) {
 			if (GetHP() < 0) {
 				SetHP(0);
@@ -2362,7 +2360,6 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 
 			return false;
 		}
-#endif
     }
 
     if (killer_mob && (killer_mob->IsClient() || killer_mob->IsBot()) && (spell != SPELL_UNKNOWN) && damage > 0) {
@@ -2458,11 +2455,9 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 
         give_exp = give_exp->GetUltimateOwner();
 
-#ifdef BOTS
         if (!RuleB(Bots, BotGroupXP) && !ownerInGroup) {
 			give_exp = nullptr;
 		}
-#endif //BOTS
     }
 
     if (give_exp && give_exp->IsTempPet() && give_exp->IsPetOwnerClient()) {
@@ -2773,12 +2768,10 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
         }
     }
 
-#ifdef BOTS
-    if (killer_mob->IsBot()) {
+    if (killer_mob && killer_mob->IsBot()) {
 		parse->EventBot(EVENT_NPC_SLAY, killer_mob->CastToBot(), this, "", 0);
 		killer_mob->TrySpellOnKill(killed_level, spell);
 	}
-#endif
 
     WipeHateList();
     p_depop = true;
@@ -2928,32 +2921,30 @@ void Mob::AddToHateList(Mob* other, int64 hate /*= 0*/, int64 damage /*= 0*/, bo
         other->CastToClient()->AddAutoXTarget(this);
     }
 
-#ifdef BOTS
     // if other is a bot, add the bots client to the hate list
-	while (other->IsBot()) {
+	if (RuleB(Bots, Enabled)) {
+		while (other->IsBot()) {
+            auto other_ = other->CastToBot();
+			if (!other_ || !other_->GetBotOwner()) {
+				break;
+			}
 
-		auto other_ = other->CastToBot();
-		if (!other_ || !other_->GetBotOwner()) {
+            auto owner_ = other_->GetBotOwner()->CastToClient();
+			if (!owner_ || owner_->IsDead() ||
+				!owner_->InZone()) { // added isdead and inzone checks to avoid issues in AddAutoXTarget(...) below
+				break;
+			}
+
+			if (owner_->GetFeigned()) {
+				AddFeignMemory(owner_);
+			} else if (!hate_list.IsEntOnHateList(owner_)) {
+				hate_list.AddEntToHateList(owner_, 0, 0, false, true);
+				owner_->AddAutoXTarget(this); // this was being called on dead/out-of-zone clients
+			}
+
 			break;
 		}
-
-		auto owner_ = other_->GetBotOwner()->CastToClient();
-		if (!owner_ || owner_->IsDead() || !owner_->InZone()) { // added isdead and inzone checks to avoid issues in AddAutoXTarget(...) below
-			break;
-		}
-
-		if (owner_->GetFeigned()) {
-			AddFeignMemory(owner_);
-		}
-		else if (!hate_list.IsEntOnHateList(owner_)) {
-
-			hate_list.AddEntToHateList(owner_, 0, 0, false, true);
-			owner_->AddAutoXTarget(this); // this was being called on dead/out-of-zone clients
-		}
-
-		break;
 	}
-#endif //BOTS
 
     // if other is a merc, add the merc client to the hate list
     if (other->IsMerc()) {
@@ -5538,24 +5529,25 @@ void Mob::ApplyDamageTable(DamageHitInfo &hit)
 #endif
 
     // someone may want to add this to custom servers, can remove this if that's the case
-    if (!IsClient()
-#ifdef BOTS
-        && !IsBot()
-#endif
-            )
+    if (!IsClient()&& !IsBot()) {
         return;
+    }
+
     // this was parsed, but we do see the min of 10 and the normal minus factor is 105, so makes sense
-    if (hit.offense < 115)
+    if (hit.offense < 115) {
         return;
+    }
 
     // things that come out to 1 dmg seem to skip this (ex non-bash slam classes)
-    if (hit.damage_done < 2)
+    if (hit.damage_done < 2) {
         return;
+    }
 
     auto &damage_table = GetDamageTable();
 
-    if (zone->random.Roll(damage_table.chance))
+    if (zone->random.Roll(damage_table.chance)) {
         return;
+    }
 
     int basebonus = hit.offense - damage_table.minusfactor;
     basebonus = std::max(10, basebonus / 2);

@@ -1331,7 +1331,6 @@ void NPC::RestoreGuardSpotCharm()
 /******************
 * Bot-specific overloads to make them play nice with the new movement system
 */
-#ifdef BOTS
 #include "bot.h"
 
 void Bot::WalkTo(float x, float y, float z)
@@ -1349,4 +1348,3 @@ void Bot::RunTo(float x, float y, float z)
 
 	Mob::RunTo(x, y, z);
 }
-#endif

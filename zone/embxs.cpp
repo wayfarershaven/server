@@ -24,9 +24,7 @@
 #include "embperl.h"
 #include "masterentity.h"
 #include "command.h"
-#ifdef BOTS
 #include "bot_command.h"
-#endif
 
 const char *getItemName(unsigned itemid) 
 { 

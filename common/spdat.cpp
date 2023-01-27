@@ -523,6 +523,26 @@ bool IsEffectInSpell(uint16 spellid, int effect)
 	return false;
 }
 
+uint16 GetTriggerSpellID(uint16 spell_id, uint32 effect) {
+
+	for (int index = 0; index < EFFECT_COUNT; index++) {
+		if (
+			spells[spell_id].effect_id[index] == SE_TriggerOnCast ||
+			spells[spell_id].effect_id[index] == SE_SpellTrigger ||
+			spells[spell_id].effect_id[index] == SE_ApplyEffect ||
+			spells[spell_id].effect_id[index] == SE_Trigger_Spell_Non_Item
+		) {
+			int apply_effect_spell_id = spells[spell_id].limit_value[index];
+			if (IsEffectInSpell(apply_effect_spell_id, effect)) {
+				if (IsValidSpell(apply_effect_spell_id)) {
+					return apply_effect_spell_id;
+				}
+			}
+		}
+	}
+	return 0;
+}
+
 // arguments are spell id and the index of the effect to check.
 // this is used in loops that process effects inside a spell to skip
 // the blanks

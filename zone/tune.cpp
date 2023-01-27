@@ -44,10 +44,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <boost/concept_check.hpp>
-
-#ifdef BOTS
 #include "bot.h"
-#endif
 
 extern QueryServ* QServ;
 extern WorldServer worldserver;
@@ -906,14 +903,15 @@ int64 Mob::TuneClientAttack(Mob* other, bool no_avoid, bool no_hit_chance, int h
 	// Now figure out damage
 	my_hit.damage_done = 1;
 	my_hit.min_damage = 0;
-	uint8 mylevel = GetLevel() ? GetLevel() : 1;
 	int64 hate = 0;
-	if (weapon)
+	if (weapon) {
 		hate = (weapon->GetItem()->Damage + weapon->GetItem()->ElemDmgAmt);
+	}
 
 	my_hit.base_damage = GetWeaponDamage(other, weapon, &hate);
-	if (hate == 0 && my_hit.base_damage > 1)
+	if (hate == 0 && my_hit.base_damage > 1) {
 		hate = my_hit.base_damage;
+	}
 
 	//if weapon damage > 0 then we know we can hit the target with this weapon
 	//otherwise we cannot and we set the damage to -5 later on

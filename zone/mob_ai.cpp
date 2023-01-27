@@ -31,10 +31,7 @@
 #include "water_map.h"
 #include "fastmath.h"
 #include "../common/data_verification.h"
-
-#ifdef BOTS
 #include "bot.h"
-#endif
 
 #include <glm/gtx/projection.hpp>
 #include <algorithm>
@@ -1215,17 +1212,16 @@ void Mob::AI_Process() {
 			return;
 		}
 
-#ifdef BOTS
 		if (IsPet() && GetOwner() && GetOwner()->IsBot() && target == GetOwner())
 		{
 			// this blocks all pet attacks against owner..bot pet test (copied above check)
 			RemoveFromHateList(this);
 			return;
 		}
-#endif //BOTS
 
-		if (DivineAura())
+		if (DivineAura()) {
 			return;
+		}
 
 		ProjectileAttack();
 
@@ -2028,11 +2024,9 @@ void Mob::AI_Event_Engaged(Mob *attacker, bool yell_for_help)
 		}
 	}
 
-#ifdef BOTS
 	if (IsBot()) {
 		parse->EventBot(EVENT_COMBAT, CastToBot(), attacker, "1", 0);
 	}
-#endif
 }
 
 // Note: Hate list may not be actually clear until after this function call completes
@@ -2068,10 +2062,8 @@ void Mob::AI_Event_NoLongerEngaged() {
 				CastToNPC()->SetCombatEvent(false);
 			}
 		}
-#ifdef BOTS
 	} else if (IsBot()) {
 		parse->EventBot(EVENT_COMBAT, CastToBot(), nullptr, "0", 0);
-#endif
 	}
 }
 

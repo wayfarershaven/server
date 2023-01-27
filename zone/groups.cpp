@@ -338,14 +338,15 @@ bool Group::AddMember(Mob* newmember, const char *NewMemberName, uint32 Characte
 		database.SetGroupID(NewMemberName, GetID(), CharacterID, ismerc);
 	}
 
-	if (newmember && newmember->IsClient())
+	if (newmember && newmember->IsClient()) {
 		newmember->CastToClient()->JoinGroupXTargets(this);
+	}
 
 	safe_delete(outapp);
 
-#ifdef BOTS
-	Bot::UpdateGroupCastingRoles(this);
-#endif
+	if (RuleB(Bots, Enabled)) {
+		Bot::UpdateGroupCastingRoles(this);
+	}
 
 	return true;
 }
@@ -521,12 +522,13 @@ bool Group::UpdatePlayer(Mob* update){
 	}
 
 	// mentoree isn't set, the name has a length and the name is ours! update the pointer
-	if (update->IsClient() && !mentoree && mentoree_name.length() && !mentoree_name.compare(update->GetName()))
+	if (update->IsClient() && !mentoree && mentoree_name.length() && !mentoree_name.compare(update->GetName())) {
 		mentoree = update->CastToClient();
+	}
 
-#ifdef BOTS
-	Bot::UpdateGroupCastingRoles(this);
-#endif
+	if (RuleB(Bots, Enabled)) {
+		Bot::UpdateGroupCastingRoles(this);
+	}
 
 	return updateSuccess;
 }
@@ -535,11 +537,13 @@ bool Group::UpdatePlayer(Mob* update){
 void Group::MemberZoned(Mob* removemob) {
 	uint32 i;
 
-	if (removemob == nullptr)
+	if (removemob == nullptr) {
 		return;
+	}
 
-	if(removemob == GetLeader())
+	if(removemob == GetLeader()) {
 		SetLeader(nullptr);
+	}
 
 	for (i = 0; i < MAX_GROUP_MEMBERS; i++) {
 		if (members[i] == removemob) {
@@ -549,21 +553,25 @@ void Group::MemberZoned(Mob* removemob) {
 		}
 	}
 
-	if(removemob->IsClient() && HasRole(removemob, RoleAssist))
+	if(removemob->IsClient() && HasRole(removemob, RoleAssist)) {
 		SetGroupAssistTarget(0);
+	}
 
-	if(removemob->IsClient() && HasRole(removemob, RoleTank))
+	if(removemob->IsClient() && HasRole(removemob, RoleTank)) {
 		SetGroupTankTarget(0);
+	}
 
-	if(removemob->IsClient() && HasRole(removemob, RolePuller))
+	if(removemob->IsClient() && HasRole(removemob, RolePuller)) {
 		SetGroupPullerTarget(0);
+	}
 
-	if (removemob->IsClient() && removemob == mentoree)
+	if (removemob->IsClient() && removemob == mentoree) {
 		mentoree = nullptr;
+	}
 
-#ifdef BOTS
-	Bot::UpdateGroupCastingRoles(this);
-#endif
+	if (RuleB(Bots, Enabled)) {
+		Bot::UpdateGroupCastingRoles(this);
+	}
 }
 
 void Group::SendGroupJoinOOZ(Mob* NewMember) {
@@ -782,9 +790,9 @@ bool Group::DelMember(Mob* oldmember, bool ignoresender)
 		ClearAllNPCMarks();
 	}
 
-#ifdef BOTS
-	Bot::UpdateGroupCastingRoles(this);
-#endif
+	if (RuleB(Bots, Enabled)) {
+		Bot::UpdateGroupCastingRoles(this);
+	}
 
 	return true;
 }
@@ -794,8 +802,9 @@ void Group::CastGroupSpell(Mob* caster, uint16 spell_id) {
 	uint32 z;
 	float range, distance;
 
-	if(!caster)
+	if(!caster) {
 		return;
+	}
 
 	castspell = true;
 	range = caster->GetAOERange(spell_id);
@@ -895,9 +904,9 @@ uint32 Group::GetTotalGroupDamage(Mob* other) {
 }
 
 void Group::DisbandGroup(bool joinraid) {
-#ifdef BOTS
-	Bot::UpdateGroupCastingRoles(this, true);
-#endif
+	if (RuleB(Bots, Enabled)) {
+		Bot::UpdateGroupCastingRoles(this, true);
+	}
 
 	auto outapp = new EQApplicationPacket(OP_GroupUpdate, sizeof(GroupUpdate_Struct));
 
@@ -990,7 +999,6 @@ void Group::GetClientList(std::list<Client*>& client_list, bool clear_list)
 	}
 }
 
-#ifdef BOTS
 void Group::GetBotList(std::list<Bot*>& bot_list, bool clear_list)
 {
 	if (clear_list)
@@ -1001,7 +1009,6 @@ void Group::GetBotList(std::list<Bot*>& bot_list, bool clear_list)
 			bot_list.push_back(bot_iter->CastToBot());
 	}
 }
-#endif
 
 bool Group::Process() {
 	if(disbandcheck && !GroupCount())

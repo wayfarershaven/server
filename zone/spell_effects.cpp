@@ -187,13 +187,11 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 			CalcBonuses();
 			return true;
 		}
-#ifdef BOTS
 	} else if (IsBot()) {
 		if (parse->EventSpell(EVENT_SPELL_EFFECT_BOT, this, nullptr, spell_id, export_string, 0) != 0) {
 			CalcBonuses();
 			return true;
 		}
-#endif
 	}
 
 	if(IsVirusSpell(spell_id)) {
@@ -2855,14 +2853,16 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 				since effect can potentially kill caster.
 			*/
 			case SE_Health_Transfer: {
-				effect_value = spells[spell_id].limit_value[i];
-				int64 amt = std::abs(caster->GetMaxHP() * effect_value / 1000);
+				if (caster) {
+					effect_value = spells[spell_id].limit_value[i];
+					int64 amt = std::abs(caster->GetMaxHP() * effect_value / 1000);
 
-				if (effect_value < 0) {
-					Damage(caster, amt, spell_id, spell.skill, false, buffslot, false);
-				}
-				else {
-					HealDamage(amt, caster);
+					if (effect_value < 0) {
+						Damage(caster, amt, spell_id, spell.skill, false, buffslot, false);
+					}
+					else {
+						HealDamage(amt, caster);
+					}
 				}
 				break;
 			}
@@ -3756,12 +3756,10 @@ void Mob::DoBuffTic(const Buffs_Struct &buff, int slot, Mob *caster)
 		if (parse->EventSpell(EVENT_SPELL_EFFECT_BUFF_TIC_NPC, this, nullptr, buff.spellid, export_string, 0) != 0) {
 			return;
 		}
-#ifdef BOTS
 	} else if (IsBot()) {
 		if (parse->EventSpell(EVENT_SPELL_EFFECT_BUFF_TIC_BOT, this, nullptr, buff.spellid, export_string, 0) != 0) {
 			return;
 		}
-#endif
 	}
 
 	for (int i = 0; i < EFFECT_COUNT; i++) {
@@ -4116,12 +4114,10 @@ void Mob::BuffFadeBySlot(int slot, bool iRecalcBonuses)
 		if (parse->EventSpell(EVENT_SPELL_FADE, this, nullptr, buffs[slot].spellid, export_string, 0) != 0) {
 			return;
 		}
-#ifdef BOTS
 	} else if (IsBot()) {
 		if (parse->EventSpell(EVENT_SPELL_FADE, this, nullptr, buffs[slot].spellid, export_string, 0) != 0) {
 			return;
 		}
-#endif
 	}
 
 	for (int i=0; i < EFFECT_COUNT; i++)
@@ -4538,9 +4534,7 @@ void Mob::BuffFadeBySlot(int slot, bool iRecalcBonuses)
 	}
 	if((IsClient() && !CastToClient()->GetPVP()) ||
 		(IsPet() && GetOwner() && GetOwner()->IsClient() && !GetOwner()->CastToClient()->GetPVP()) ||
-#ifdef BOTS
 		(IsBot() && GetOwner() && GetOwner()->IsClient() && !GetOwner()->CastToClient()->GetPVP()) ||
-#endif
 		(IsMerc() && GetOwner() && GetOwner()->IsClient() && !GetOwner()->CastToClient()->GetPVP()))
 	{
 		EQApplicationPacket *outapp = MakeBuffsPacket();
@@ -6784,11 +6778,9 @@ void Mob::CheckNumHitsRemaining(NumHit type, int32 buff_slot, uint16 spell_id)
 	bool bDepleted = false;
 	int buff_max = GetMaxTotalSlots();
 
-#ifdef BOTS
 	std::string buff_name;
 	size_t buff_counter = 0;
 	bool buff_update = false;
-#endif
 
 	//Spell specific procs [Type 7,10,11]
 	if (IsValidSpell(spell_id)) {
@@ -6796,11 +6788,9 @@ void Mob::CheckNumHitsRemaining(NumHit type, int32 buff_slot, uint16 spell_id)
 			if (buffs[d].spellid == spell_id && buffs[d].hit_number > 0 &&
 			    spells[buffs[d].spellid].hit_number_type == static_cast<int>(type)) {
 
-#ifdef BOTS
 				buff_name = spells[buffs[d].spellid].name;
 				buff_counter = (buffs[d].hit_number - 1);
 				buff_update = true;
-#endif
 
 				if (--buffs[d].hit_number == 0) {
 					CastOnNumHitFade(buffs[d].spellid);
@@ -6814,16 +6804,13 @@ void Mob::CheckNumHitsRemaining(NumHit type, int32 buff_slot, uint16 spell_id)
 	} else if (type == NumHit::MatchingSpells) {
 		if (buff_slot >= 0) {
 			if (--buffs[buff_slot].hit_number == 0) {
-
-#ifdef BOTS
 				buff_name = spells[buffs[buff_slot].spellid].name;
 				buff_counter = (buffs[buff_slot].hit_number - 1);
 				buff_update = true;
-#endif
-
 				CastOnNumHitFade(buffs[buff_slot].spellid);
-				if (!TryFadeEffect(buff_slot))
+				if (!TryFadeEffect(buff_slot)) {
 					BuffFadeBySlot(buff_slot , true);
+				}
 			} else if (IsClient()) { // still have numhits and client, update
 				CastToClient()->SendBuffNumHitPacket(buffs[buff_slot], buff_slot);
 			}
@@ -6834,16 +6821,14 @@ void Mob::CheckNumHitsRemaining(NumHit type, int32 buff_slot, uint16 spell_id)
 			if (IsValidSpell(buffs[d].spellid) && buffs[d].hit_number > 0 &&
 			    spells[buffs[d].spellid].hit_number_type == static_cast<int>(type)) {
 
-#ifdef BOTS
 				buff_name = spells[buffs[d].spellid].name;
 				buff_counter = (buffs[d].hit_number - 1);
 				buff_update = true;
-#endif
-
 				if (--buffs[d].hit_number == 0) {
 					CastOnNumHitFade(buffs[d].spellid);
-					if (!TryFadeEffect(d))
+					if (!TryFadeEffect(d)) {
 						BuffFadeBySlot(d, true);
+					}
 				} else if (IsClient()) { // still have numhits and client, update
 					CastToClient()->SendBuffNumHitPacket(buffs[d], d);
 				}
@@ -6851,7 +6836,6 @@ void Mob::CheckNumHitsRemaining(NumHit type, int32 buff_slot, uint16 spell_id)
 		}
 	}
 
-#ifdef BOTS
 	if (IsBot() && buff_update) {
 		auto bot_owner = entity_list.GetBotOwnerByBotEntityID(GetID());
 		if (bot_owner && bot_owner->GetBotOption(Client::booBuffCounter)) {
@@ -6871,7 +6855,6 @@ void Mob::CheckNumHitsRemaining(NumHit type, int32 buff_slot, uint16 spell_id)
 			);
 		}
 	}
-#endif
 }
 
 //for some stupid reason SK procs return theirs one base off...

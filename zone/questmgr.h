@@ -348,11 +348,7 @@ public:
 	bool HasRecipeLearned(uint32 recipe_id);
 	bool DoAugmentSlotsMatch(uint32 item_one, uint32 item_two);
 	int8 DoesAugmentFit(EQ::ItemInstance* inst, uint32 augment_id);
-
-#ifdef BOTS
 	Bot *GetBot() const;
-#endif
-
 	Client *GetInitiator() const;
 	NPC *GetNPC() const;
 	Mob *GetOwner() const;
@@ -361,14 +357,10 @@ public:
 	const SPDat_Spell_Struct *GetQuestSpell();
 	std::string GetEncounter() const;
 	inline bool ProximitySayInUse() { return HaveProximitySays; }
-
-#ifdef BOTS
 	int createbotcount(uint8 class_id = NO_CLASS);
 	int spawnbotcount(uint8 class_id = NO_CLASS);
 	bool botquest();
 	bool createBot(const char *name, const char *lastname, uint8 level, uint16 race, uint8 botclass, uint8 gender);
-#endif
-
 
 private:
 	std::stack<running_quest> quests_running_;

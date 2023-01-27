@@ -25,10 +25,7 @@
 #include "zonedb.h"
 #include "../common/zone_store.h"
 
-
-#ifdef BOTS
 #include "bot.h"
-#endif
 
 extern WorldServer worldserver;
 
@@ -4590,8 +4587,6 @@ const int EQ::InventoryProfile::GetItemStatValue(uint32 item_id, std::string ide
 	return stat;
 }
 
-
-#ifdef BOTS
 // Returns a slot's item ID (returns INVALID_ID if not found)
 int32 Bot::GetItemIDAt(int16 slot_id) {
 	if (slot_id <= EQ::invslot::POSSESSIONS_END && slot_id >= EQ::invslot::POSSESSIONS_BEGIN) {
@@ -4659,5 +4654,3 @@ int32 Bot::GetAugmentIDAt(int16 slot_id, uint8 augslot) {
 	// None found
 	return INVALID_ID;
 }
-
-#endif

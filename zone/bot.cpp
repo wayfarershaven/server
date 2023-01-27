@@ -16,8 +16,6 @@
 	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 */
 
-#ifdef BOTS
-
 #include "bot.h"
 #include "object.h"
 #include "doors.h"
@@ -224,9 +222,6 @@ Bot::Bot(uint32 botID, uint32 botOwnerCharacterID, uint32 botSpellsID, double to
 	memset(&_botInspectMessage, 0, sizeof(InspectMessage_Struct));
 	if (!database.botdb.LoadInspectMessage(GetBotID(), _botInspectMessage) && bot_owner)
 		bot_owner->Message(Chat::White, "%s for '%s'", BotDatabase::fail::LoadInspectMessage(), GetCleanName());
-
-	if (!database.botdb.LoadGuildMembership(GetBotID(), _guildId, _guildRank, _guildName) && bot_owner)
-		bot_owner->Message(Chat::White, "%s for '%s'", BotDatabase::fail::LoadGuildMembership(), GetCleanName());
 
 	std::string error_message;
 
@@ -3430,9 +3425,7 @@ void Bot::AI_Process()
 						(spellbonuses.ExtraAttackChance[0] + itembonuses.ExtraAttackChance[0] +
 						aabonuses.ExtraAttackChance[0]);
 					if (ExtraAttackChanceBonus) {
-
 						if (p_item && p_item->GetItem()->IsType2HWeapon()) {
-
 							if (zone->random.Int(0, 100) < ExtraAttackChanceBonus) {
 								Attack(tar, EQ::invslot::slotPrimary, false);
 							}
@@ -4864,6 +4857,10 @@ void Bot::PerformTradeWithClient(int16 begin_slot_id, int16 end_slot_id, Client*
 					continue;
 				}
 
+				if (trade_instance->GetItem()->ItemType == EQ::item::ItemTypeAugmentation) {
+					continue;
+				}
+				
 				//if (stage_loop == stageStackable) {
 				//	// TODO: implement
 				//	continue;
@@ -5319,171 +5316,6 @@ void Bot::Damage(Mob *from, int64 damage, uint16 spell_id, EQ::skills::SkillType
 			}
 		}
 	}
-}
-
-bool Bot::Attack(Mob* other, int Hand, bool FromRiposte, bool IsStrikethrough, bool IsFromSpell, ExtraAttackOptions *opts) {
-	if (!other) {
-		SetTarget(nullptr);
-		LogErrorDetail("A null Mob object was passed to Bot::Attack for evaluation!");
-		return false;
-	}
-
-	if ((GetHP() <= 0) || (GetAppearance() == eaDead)) {
-		SetTarget(nullptr);
-		LogCombatDetail("Attempted to attack [{}] while unconscious or, otherwise, appearing dead", other->GetCleanName());
-		return false;
-	}
-
-	//if(!GetTarget() || GetTarget() != other) // NPC::Attack() doesn't do this
-	//	SetTarget(other);
-
-	// apparently, we always want our target to be 'other'..why not just set it?
-	SetTarget(other);
-	// takes more to compare a call result, load for a call, load a compare to address and compare, and finally
-	// push a value to an address than to just load for a call and push a value to an address.
-
-	LogCombat("Attacking [{}] with hand [{}] [{}]", other->GetCleanName(), Hand, (FromRiposte ? "(this is a riposte)" : ""));
-	if ((IsCasting() && (GetClass() != BARD) && !IsFromSpell) || (!IsAttackAllowed(other))) {
-		if(GetOwnerID())
-			entity_list.MessageClose(this, 1, 200, 10, "%s says, '%s is not a legal target master.'", GetCleanName(), GetTarget()->GetCleanName());
-
-		if(other) {
-			RemoveFromHateList(other);
-			LogCombat("I am not allowed to attack [{}]", other->GetCleanName());
-		}
-		return false;
-	}
-
-	if(DivineAura()) {//cant attack while invulnerable
-		LogCombat("Attack canceled, Divine Aura is in effect");
-		return false;
-	}
-
-	FaceTarget(GetTarget());
-	EQ::ItemInstance* weapon = nullptr;
-	if (Hand == EQ::invslot::slotPrimary) {
-		weapon = GetBotItem(EQ::invslot::slotPrimary);
-		OffHandAtk(false);
-	}
-
-	if (Hand == EQ::invslot::slotSecondary) {
-		weapon = GetBotItem(EQ::invslot::slotSecondary);
-		OffHandAtk(true);
-	}
-
-	if(weapon != nullptr) {
-		if (!weapon->IsWeapon()) {
-			LogCombat("Attack canceled, Item [{}] ([{}]) is not a weapon", weapon->GetItem()->Name, weapon->GetID());
-			return false;
-		}
-		LogCombat("Attacking with weapon: [{}] ([{}])", weapon->GetItem()->Name, weapon->GetID());
-	}
-	else
-		LogCombat("Attacking without a weapon");
-
-	// calculate attack_skill and skillinuse depending on hand and weapon
-	// also send Packet to near clients
-	DamageHitInfo my_hit;
-	my_hit.skill = AttackAnimation(Hand, weapon);
-	LogCombat("Attacking with [{}] in slot [{}] using skill [{}]", weapon?weapon->GetItem()->Name:"Fist", Hand, my_hit.skill);
-
-	// Now figure out damage
-	my_hit.damage_done = 1;
-	my_hit.min_damage = 0;
-	uint8 mylevel = GetLevel() ? GetLevel() : 1;
-	int64 hate = 0;
-	if (weapon)
-		hate = (weapon->GetItem()->Damage + weapon->GetItem()->ElemDmgAmt);
-
-	my_hit.base_damage = GetWeaponDamage(other, weapon, &hate);
-	if (hate == 0 && my_hit.base_damage > 1)
-		hate = my_hit.base_damage;
-
-	//if weapon damage > 0 then we know we can hit the target with this weapon
-	//otherwise we cannot and we set the damage to -5 later on
-	if (my_hit.base_damage > 0) {
-		my_hit.min_damage = 0;
-
-		// ***************************************************************
-		// *** Calculate the damage bonus, if applicable, for this hit ***
-		// ***************************************************************
-
-#ifndef EQEMU_NO_WEAPON_DAMAGE_BONUS
-
-		// If you include the preprocessor directive "#define EQEMU_NO_WEAPON_DAMAGE_BONUS", that indicates that you do not
-		// want damage bonuses added to weapon damage at all. This feature was requested by ChaosSlayer on the EQEmu Forums.
-		//
-		// This is not recommended for normal usage, as the damage bonus represents a non-trivial component of the DPS output
-		// of weapons wielded by higher-level melee characters (especially for two-handed weapons).
-		int ucDamageBonus = 0;
-		if (Hand == EQ::invslot::slotPrimary && GetLevel() >= 28 && IsWarriorClass()) {
-			// Damage bonuses apply only to hits from the main hand (Hand == MainPrimary) by characters level 28 and above
-			// who belong to a melee class. If we're here, then all of these conditions apply.
-			ucDamageBonus = GetWeaponDamageBonus(weapon ? weapon->GetItem() : (const EQ::ItemData*) nullptr);
-			my_hit.min_damage = ucDamageBonus;
-			hate += ucDamageBonus;
-		}
-#endif
-		//Live AA - Sinister Strikes *Adds weapon damage bonus to offhand weapon.
-		if (Hand == EQ::invslot::slotSecondary) {
-			if (aabonuses.SecondaryDmgInc || itembonuses.SecondaryDmgInc || spellbonuses.SecondaryDmgInc) {
-				ucDamageBonus = GetWeaponDamageBonus(weapon ? weapon->GetItem() : (const EQ::ItemData*) nullptr);
-				my_hit.min_damage = ucDamageBonus;
-				hate += ucDamageBonus;
-			}
-		}
-
-		LogCombat("Damage calculated: base [{}] min damage [{}] skill [{}]", my_hit.base_damage, my_hit.min_damage, my_hit.skill);
-
-		int hit_chance_bonus = 0;
-		my_hit.offense = offense(my_hit.skill);
-		my_hit.hand = Hand;
-
-		if (opts) {
-			my_hit.base_damage *= opts->damage_percent;
-			my_hit.base_damage += opts->damage_flat;
-			hate *= opts->hate_percent;
-			hate += opts->hate_flat;
-			hit_chance_bonus += opts->hit_chance;
-		}
-
-		my_hit.tohit = GetTotalToHit(my_hit.skill, hit_chance_bonus);
-
-		DoAttack(other, my_hit, opts, FromRiposte);
-
-		LogCombat("Final damage after all reductions: [{}]", my_hit.damage_done);
-	} else {
-		my_hit.damage_done = DMG_INVULNERABLE;
-	}
-
-	// Hate Generation is on a per swing basis, regardless of a hit, miss, or block, its always the same.
-	// If we are this far, this means we are atleast making a swing.
-	other->AddToHateList(this, hate);
-
-	///////////////////////////////////////////////////////////
-	////// Send Attack Damage
-	///////////////////////////////////////////////////////////
-	other->Damage(this, my_hit.damage_done, SPELL_UNKNOWN, my_hit.skill);
-
-	if (GetHP() < 0)
-		return false;
-
-	MeleeLifeTap(my_hit.damage_done);
-
-	if (my_hit.damage_done > 0)
-		CheckNumHitsRemaining(NumHit::OutgoingHitSuccess);
-
-	CommonBreakInvisibleFromCombat();
-	if (spellbonuses.NegateIfCombat)
-		BuffFadeByEffect(SE_NegateIfCombat);
-
-	if(GetTarget())
-		TriggerDefensiveProcs(other, Hand, true, my_hit.damage_done);
-
-	if (my_hit.damage_done > 0)
-		return true;
-	else
-		return false;
 }
 
 //proc chance includes proc bonus
@@ -6256,65 +6088,6 @@ void Bot::ProcessBotOwnerRefDelete(Mob* botOwner) {
 	}
 }
 
-void Bot::ProcessGuildInvite(Client* guildOfficer, Bot* botToGuild) {
-	if(guildOfficer && botToGuild) {
-		if(!botToGuild->IsInAGuild()) {
-			if (!guild_mgr.CheckPermission(guildOfficer->GuildID(), guildOfficer->GuildRank(), GUILD_INVITE)) {
-				guildOfficer->Message(Chat::White, "You dont have permission to invite.");
-				return;
-			}
-
-			if (!database.botdb.SaveGuildMembership(botToGuild->GetBotID(), guildOfficer->GuildID(), GUILD_MEMBER)) {
-				guildOfficer->Message(Chat::White, "%s for '%s'", BotDatabase::fail::SaveGuildMembership(), botToGuild->GetCleanName());
-				return;
-			}
-
-			ServerPacket* pack = new ServerPacket(ServerOP_GuildCharRefresh, sizeof(ServerGuildCharRefresh_Struct));
-			ServerGuildCharRefresh_Struct *s = (ServerGuildCharRefresh_Struct *) pack->pBuffer;
-			s->guild_id = guildOfficer->GuildID();
-			s->old_guild_id = GUILD_NONE;
-			s->char_id = botToGuild->GetBotID();
-			worldserver.SendPacket(pack);
-
-			safe_delete(pack);
-		} else {
-			guildOfficer->Message(Chat::White, "Bot is in a guild.");
-			return;
-		}
-	}
-}
-
-bool Bot::ProcessGuildRemoval(Client* guildOfficer, std::string botName) {
-	bool Result = false;
-	if(guildOfficer && !botName.empty()) {
-		Bot* botToUnGuild = entity_list.GetBotByBotName(botName);
-		if(botToUnGuild) {
-			if (database.botdb.DeleteGuildMembership(botToUnGuild->GetBotID()))
-				Result = true;
-		} else {
-			uint32 ownerId = 0;
-			if (!database.botdb.LoadOwnerID(botName, ownerId))
-				guildOfficer->Message(Chat::White, "%s for '%s'", BotDatabase::fail::LoadOwnerID(), botName.c_str());
-			uint32 botId = 0;
-			if (!database.botdb.LoadBotID(ownerId, botName, botId))
-				guildOfficer->Message(Chat::White, "%s for '%s'", BotDatabase::fail::LoadBotID(), botName.c_str());
-			if (botId && database.botdb.DeleteGuildMembership(botId))
-				Result = true;
-		}
-
-		if(Result) {
-			EQApplicationPacket* outapp = new EQApplicationPacket(OP_GuildManageRemove, sizeof(GuildManageRemove_Struct));
-			GuildManageRemove_Struct* gm = (GuildManageRemove_Struct*) outapp->pBuffer;
-			gm->guildeqid = guildOfficer->GuildID();
-			strcpy(gm->member, botName.c_str());
-			guildOfficer->Message(Chat::White, "%s successfully removed from your guild.", botName.c_str());
-			entity_list.QueueClientsGuild(guildOfficer, outapp, false, gm->guildeqid);
-			safe_delete(outapp);
-		}
-	}
-	return Result;
-}
-
 int64 Bot::CalcMaxMana() {
 	switch(GetCasterClass()) {
 		case 'I':
@@ -6827,8 +6600,6 @@ void Bot::CalcBonuses() {
 	CalcSpellBonuses(&spellbonuses);
 	CalcAABonuses(&aabonuses);
 	SetAttackTimer();
-	CalcSeeInvisibleLevel();
-	CalcInvisibleLevel();
 	CalcATK();
 	CalcSTR();
 	CalcSTA();
@@ -7187,9 +6958,6 @@ int32 Bot::CalcATK() {
 }
 
 void Bot::CalcRestState() {
-	if(!RuleB(Character, RestRegenEnabled))
-		return;
-
 	RestRegenHP = RestRegenMana = RestRegenEndurance = 0;
 	if(IsEngaged() || !IsSitting() || !rest_timer.Check(false))
 		return;
@@ -8712,7 +8480,7 @@ void EntityList::ScanCloseClientMobs(std::unordered_map<uint16, Mob*>& close_mob
 		}
 	}
 
-	LogAIScanCloseModerate("[EntityList::ScanCloseClientMobs] Close Client Mob List Size [{}] for mob [{}]", close_mobs.size(), scanning_mob->GetCleanName());
+	LogAIScanCloseDetail("Close Client Mob List Size [{}] for mob [{}]", close_mobs.size(), scanning_mob->GetCleanName());
 }
 
 uint8 Bot::GetNumberNeedingHealedInGroup(uint8 hpr, bool includePets) {
@@ -9974,5 +9742,3 @@ void Bot::SendSpellAnim(uint16 target_id, uint16 spell_id)
 }
 
 uint8 Bot::spell_casting_chances[SPELL_TYPE_COUNT][PLAYER_CLASS_COUNT][EQ::constants::STANCE_TYPE_COUNT][cntHSND] = { 0 };
-
-#endif

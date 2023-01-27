@@ -69,11 +69,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include "gm_commands/door_manipulation.h"
 #include "client.h"
 #include "../common/repositories/account_repository.h"
-
-
-#ifdef BOTS
 #include "bot.h"
-#endif
 
 extern QueryServ* QServ;
 extern Zone* zone;
@@ -1539,11 +1535,11 @@ void Client::Handle_Connect_OP_ZoneEntry(const EQApplicationPacket *app)
 		LFG = false;
 	}
 
-#ifdef BOTS
-	database.botdb.LoadOwnerOptions(this);
-	// TODO: mod below function for loading spawned botgroups
-	Bot::LoadAndSpawnAllZonedBots(this);
-#endif
+	if (RuleB(Bots, Enabled)) {
+		database.botdb.LoadOwnerOptions(this);
+		// TODO: mod below function for loading spawned botgroups
+		Bot::LoadAndSpawnAllZonedBots(this);
+	}
 
 	m_inv.SetGMInventory((bool)m_pp.gm); // set to current gm state for calc
 	CalcBonuses();
@@ -4012,19 +4008,22 @@ void Client::Handle_OP_BuffRemoveRequest(const EQApplicationPacket *app)
 	{
 		m = entity_list.GetMobID(brrs->EntityID);
 	}
-#ifdef BOTS
 	else {
-		Mob* bot_test = entity_list.GetMob(brrs->EntityID);
-		if (bot_test && bot_test->IsBot() && bot_test->GetOwner() == this)
-			m = bot_test;
+		if (RuleB(Bots, Enabled)) {
+			Mob *bot_test = entity_list.GetMob(brrs->EntityID);
+			if (bot_test && bot_test->IsBot() && bot_test->GetOwner() == this) {
+				m = bot_test;
+			}
+		}
 	}
-#endif
 
-	if (!m)
+	if (!m) {
 		return;
+	}
 
-	if (brrs->SlotID > (uint32)m->GetMaxTotalSlots())
+	if (brrs->SlotID > (uint32)m->GetMaxTotalSlots()) {
 		return;
+	}
 
 	uint16 SpellID = m->GetSpellIDFromSlot(brrs->SlotID);
 
@@ -4051,17 +4050,13 @@ void Client::Handle_OP_Bug(const EQApplicationPacket *app)
 
 void Client::Handle_OP_Camp(const EQApplicationPacket *app)
 {
-#ifdef BOTS
-	// This block is necessary to clean up any bot objects owned by a Client
-	Bot::BotOrderCampAll(this);
-	// Evidently, this is bad under certain conditions and causes crashes...
-	// Group and Raid code really needs to be overhauled to account for non-client types (mercs and bots)
-	//auto group = GetGroup();
-	//if (group && group->GroupCount() < 2)
-	//	group->DisbandGroup();
-#endif
-	if (IsLFP())
+	if (RuleB(Bots, Enabled)) {
+		Bot::BotOrderCampAll(this);
+	}
+
+	if (IsLFP()) {
 		worldserver.StopLFP(CharacterID());
+	}
 
 	if (GetGM())
 	{
@@ -6826,12 +6821,12 @@ void Client::Handle_OP_GroupDisband(const EQApplicationPacket *app)
 
 	Group* group = GetGroup();
 
-	if (!group)
+	if (!group) {
 		return;
+	}
 
-#ifdef BOTS
 	// this block is necessary to allow more control over controlling how bots are zoned or camped.
-	if (Bot::GroupHasBot(group)) {
+	if (RuleB(Bots, Enabled) && Bot::GroupHasBot(group)) {
 		if (group->IsLeader(this)) {
 			if ((GetTarget() == 0 || GetTarget() == this) || (group->GroupCount() < 3)) {
 				Bot::ProcessBotGroupDisband(this, std::string());
@@ -6852,25 +6847,29 @@ void Client::Handle_OP_GroupDisband(const EQApplicationPacket *app)
 	}
 
 	group = GetGroup();
-	if (!group) //We must recheck this here.. incase the final bot disbanded the party..otherwise we crash
+	if (!group) {
 		return;
-#endif
+	}
+
 	Mob* memberToDisband = GetTarget();
 
-	if (!memberToDisband)
+	if (!memberToDisband) {
 		memberToDisband = entity_list.GetMob(gd->name2);
+	}
 
 	if (memberToDisband) {
 		auto group2 = memberToDisband->GetGroup();
-		if (group2 != group) // they're not in our group!
+		if (group2 != group) { // they're not in our group!
 			memberToDisband = this;
+		}
 	}
 
 	if (group->GroupCount() < 3)
 	{
 		group->DisbandGroup();
-		if (GetMerc())
+		if (GetMerc()) {
 			GetMerc()->Suspend();
+		}
 	}
 	else if (group->IsLeader(this) && GetTarget() == nullptr)
 	{
@@ -7045,11 +7044,9 @@ void Client::Handle_OP_GroupInvite2(const EQApplicationPacket *app)
 				}
 			}
 		}
-#ifdef BOTS
 		else if (Invitee->IsBot()) {
 			Bot::ProcessBotGroupInvite(this, std::string(Invitee->GetName()));
 		}
-#endif
 	} else {
 		Message(Chat::White, "Invalid target!");
 	}
@@ -7753,13 +7750,6 @@ void Client::Handle_OP_GuildInvite(const EQApplicationPacket *app)
 				return;
 			}
 		}
-#ifdef BOTS
-		else if (invitee->IsBot()) {
-			// The guild system is too tightly coupled with the character_data table so we have to avoid using much of the system
-			Bot::ProcessGuildInvite(this, invitee->CastToBot());
-			return;
-		}
-#endif
 	}
 }
 
@@ -8118,24 +8108,20 @@ void Client::Handle_OP_GuildRemove(const EQApplicationPacket *app)
 	}
 	GuildCommand_Struct* gc = (GuildCommand_Struct*)app->pBuffer;
 	if (!IsInAGuild())
-		Message(Chat::White, "Error: You arent in a guild!");
+		Message(Chat::Red, "Error: You aren't in a guild!");
 	// we can always remove ourself, otherwise, our rank needs remove permissions
 	else if (strcasecmp(gc->othername, GetName()) != 0 &&
 		!guild_mgr.CheckPermission(GuildID(), GuildRank(), GUILD_REMOVE))
-		Message(Chat::White, "You dont have permission to remove guild members.");
+		Message(Chat::Red, "You don't have permission to remove guild members.");
 	else if (!worldserver.Connected())
-		Message(Chat::White, "Error: World server disconnected");
+		Message(Chat::Red, "Error: World server disconnected");
 	else {
-#ifdef BOTS
-		if (Bot::ProcessGuildRemoval(this, gc->othername))
-			return;
-#endif
 		uint32 char_id;
 		Client* client = entity_list.GetClientByName(gc->othername);
 
 		if (client) {
 			if (!client->IsInGuild(GuildID())) {
-				Message(Chat::White, "You aren't in the same guild, what do you think you are doing?");
+				Message(Chat::Red, "You aren't in the same guild, what do you think you are doing?");
 				return;
 			}
 			char_id = client->CharacterID();
@@ -8147,11 +8133,11 @@ void Client::Handle_OP_GuildRemove(const EQApplicationPacket *app)
 		else {
 			CharGuildInfo gci;
 			if (!guild_mgr.GetCharInfo(gc->othername, gci)) {
-				Message(Chat::White, "Unable to find '%s'", gc->othername);
+				Message(Chat::Red, "Unable to find '%s'", gc->othername);
 				return;
 			}
 			if (gci.guild_id != GuildID()) {
-				Message(Chat::White, "You aren't in the same guild, what do you think you are doing?");
+				Message(Chat::Red, "You aren't in the same guild, what do you think you are doing?");
 				return;
 			}
 			char_id = gci.char_id;
@@ -8171,7 +8157,7 @@ void Client::Handle_OP_GuildRemove(const EQApplicationPacket *app)
 			safe_delete(outapp);
 		}
 		else
-			Message(Chat::White, "Unable to remove %s from your guild.", gc->othername);
+			Message(Chat::Red, "Unable to remove %s from your guild.", gc->othername);
 	}
 	//	SendGuildMembers(GuildID(), true);
 	return;
@@ -8481,9 +8467,9 @@ void Client::Handle_OP_InspectRequest(const EQApplicationPacket *app)
 		else { ProcessInspectRequest(tmp->CastToClient(), this); }
 	}
 
-#ifdef BOTS
-	if (tmp != 0 && tmp->IsBot()) { Bot::ProcessBotInspectionRequest(tmp->CastToBot(), this); }
-#endif
+	if (tmp != 0 && tmp->IsBot()) { 
+		Bot::ProcessBotInspectionRequest(tmp->CastToBot(), this); 
+	}
 
 	return;
 }
@@ -11238,10 +11224,8 @@ void Client::Handle_OP_PopupResponse(const EQApplicationPacket *app)
 	if (t) {
 		if (t->IsNPC()) {
 			parse->EventNPC(EVENT_POPUP_RESPONSE, t->CastToNPC(), this, export_string, 0);
-#ifdef BOTS
 		} else if (t->IsBot()) {
 			parse->EventBot(EVENT_POPUP_RESPONSE, t->CastToBot(), this, export_string, 0);
-#endif
 		}
 	}
 }
@@ -14444,11 +14428,10 @@ void Client::Handle_OP_TradeAcceptClick(const EQApplicationPacket *app)
 				FinishTrade(with->CastToNPC());
 			}
 		}
-#ifdef BOTS
 		// TODO: Log Bot trades
-		else if (with->IsBot())
+		else if (with->IsBot()) {
 			with->CastToBot()->FinishTrade(this, Bot::BotTradeClientNormal);
-#endif
+		}
 		trade->Reset();
 	}
 

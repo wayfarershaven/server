@@ -50,9 +50,7 @@ extern volatile bool RunLoops;
 #include "petitions.h"
 #include "command.h"
 #include "water_map.h"
-#ifdef BOTS
 #include "bot_command.h"
-#endif
 #include "string_ids.h"
 
 #include "guild_mgr.h"
@@ -363,7 +361,6 @@ Client::Client(EQStreamInterface* ieqs)
 	SetDisplayMobInfoWindow(true);
 	SetDevToolsEnabled(true);
 
-#ifdef BOTS
 	bot_owner_options[booDeathMarquee] = false;
 	bot_owner_options[booStatsUpdate] = false;
 	bot_owner_options[booSpawnMessageSay] = false;
@@ -376,7 +373,6 @@ Client::Client(EQStreamInterface* ieqs)
 
 	SetBotPulling(false);
 	SetBotPrecombat(false);
-#endif
 
 	AI_Init();
 }
@@ -384,25 +380,32 @@ Client::Client(EQStreamInterface* ieqs)
 Client::~Client() {
 	mMovementManager->RemoveClient(this);
 
-#ifdef BOTS
-	Bot::ProcessBotOwnerRefDelete(this);
-#endif
-	if(IsInAGuild())
+	if (RuleB(Bots, Enabled)) {
+		Bot::ProcessBotOwnerRefDelete(this);
+	}
+
+	if(IsInAGuild()) {
 		guild_mgr.SendGuildMemberUpdateToWorld(GetName(), GuildID(), 0, time(nullptr));
+	}
 
 	Mob* horse = entity_list.GetMob(CastToClient()->GetHorseId());
-	if (horse)
+	if (horse) {
 		horse->Depop();
+	}
 
 	Mob* merc = entity_list.GetMob(GetMercID());
-	if (merc)
+	if (merc) {
 		merc->Depop();
+	}
 
-	if(Trader)
+	if(Trader) {
 		database.DeleteTraderItem(CharacterID());
 
-	if(Buyer)
+	}
+
+	if(Buyer) {
 		ToggleBuyerMode(false);
+	}
 
 	if(conn_state != ClientConnectFinished) {
 		LogDebug("Client [{}] was destroyed before reaching the connected state:", GetName());
@@ -425,12 +428,14 @@ Client::~Client() {
 		}
 	}
 
-	if(GetTarget())
+	if(GetTarget()) {
 		GetTarget()->IsTargeted(-1);
+	}
 
 	//if we are in a group and we are not zoning, force leave the group
-	if(isgrouped && !bZoning && is_zone_loaded)
+	if(isgrouped && !bZoning && is_zone_loaded) {
 		LeaveGroup();
+	}
 
 	UpdateWho(2);
 
@@ -464,8 +469,9 @@ Client::~Client() {
 
 	numclients--;
 	UpdateWindowTitle(nullptr);
-	if(zone)
+	if(zone) {
 		zone->RemoveAuth(GetName(), lskey);
+	}
 
 	//let the stream factory know were done with this stream
 	eqs->Close();
@@ -1142,30 +1148,32 @@ void Client::ChannelMessageReceived(uint8 chan_num, uint8 language, uint8 lang_s
 			break;
 		}
 
-#ifdef BOTS
 		if (message[0] == BOT_COMMAND_CHAR) {
-			if (bot_command_dispatch(this, message) == -2) {
-				if (parse->PlayerHasQuestSub(EVENT_BOT_COMMAND)) {
-					int i = parse->EventPlayer(EVENT_BOT_COMMAND, this, message, 0);
-					if (i == 0 && !RuleB(Chat, SuppressCommandErrors)) {
-						Message(Chat::Red, "Bot command '%s' not recognized.", message);
+			if (RuleB(Bots, Enabled)) {
+				if (bot_command_dispatch(this, message) == -2) {
+					if (parse->PlayerHasQuestSub(EVENT_BOT_COMMAND)) {
+						int i = parse->EventPlayer(EVENT_BOT_COMMAND, this, message, 0);
+						if (i == 0 && !RuleB(Chat, SuppressCommandErrors)) {
+							Message(Chat::Red, "Bot command '%s' not recognized.", message);
+						}
+					}
+					else if (parse->PlayerHasQuestSub(EVENT_SAY)) {
+						int i = parse->EventPlayer(EVENT_SAY, this, message, 0);
+						if (i == 0 && !RuleB(Chat, SuppressCommandErrors)) {
+							Message(Chat::Red, "Bot command '%s' not recognized.", message);
+						}
+					}
+					else {
+						if (!RuleB(Chat, SuppressCommandErrors)) {
+							Message(Chat::Red, "Bot command '%s' not recognized.", message);
+						}
 					}
 				}
-				else if (parse->PlayerHasQuestSub(EVENT_SAY)) {
-					int i = parse->EventPlayer(EVENT_SAY, this, message, 0);
-					if (i == 0 && !RuleB(Chat, SuppressCommandErrors)) {
-						Message(Chat::Red, "Bot command '%s' not recognized.", message);
-					}
-				}
-				else {
-					if (!RuleB(Chat, SuppressCommandErrors)) {
-						Message(Chat::Red, "Bot command '%s' not recognized.", message);
-					}
-				}
+			} else {
+				Message(Chat::Red, "Bots are disabled on this server.");	
 			}
 			break;
 		}
-#endif
 
 		if (EQ::ProfanityManager::IsCensorshipActive()) {
 			EQ::ProfanityManager::RedactMessage(message);
@@ -1218,17 +1226,15 @@ void Client::ChannelMessageReceived(uint8 chan_num, uint8 language, uint8 lang_s
 
 		}
 
-#ifdef BOTS
-	else if (GetTarget() && GetTarget()->IsBot() && !IsInvisible(GetTarget())) {
-		if (DistanceNoZ(m_Position, GetTarget()->GetPosition()) <= RuleI(Range, Say)) {
-			if (GetTarget()->IsEngaged()) {
-				parse->EventBot(EVENT_AGGRO_SAY, GetTarget()->CastToBot(), this, message, language);
-			} else {
-				parse->EventBot(EVENT_SAY, GetTarget()->CastToBot(), this, message, language);
+		else if (GetTarget() && GetTarget()->IsBot() && !IsInvisible(GetTarget())) {
+			if (DistanceNoZ(m_Position, GetTarget()->GetPosition()) <= RuleI(Range, Say)) {
+				if (GetTarget()->IsEngaged()) {
+					parse->EventBot(EVENT_AGGRO_SAY, GetTarget()->CastToBot(), this, message, language);
+				} else {
+					parse->EventBot(EVENT_SAY, GetTarget()->CastToBot(), this, message, language);
+				}
 			}
 		}
-	}
-#endif
 
 
 		break;
@@ -7635,13 +7641,9 @@ void Client::GarbleMessage(char *message, uint8 variance)
 	int delimiter_count = 0;
 
 	// Don't garble # commands
-	if (message[0] == COMMAND_CHAR)
+	if (message[0] == COMMAND_CHAR || message[0] == BOT_COMMAND_CHAR) {
 		return;
-
-#ifdef BOTS
-	if (message[0] == BOT_COMMAND_CHAR)
-		return;
-#endif
+	}
 
 	for (size_t i = 0; i < strlen(message); i++) {
 		// Client expects hex values inside of a text link body
@@ -11446,14 +11448,12 @@ std::vector<Mob*> Client::GetApplySpellList(
 						l.push_back(m->GetPet());
 					}
 
-#ifdef BOTS
 					if (allow_bots) {
 						const auto& sbl = entity_list.GetBotListByCharacterID(m->CharacterID());
 						for (const auto& b : sbl) {
 							l.push_back(b);
 						}
 					}
-#endif
 				}
 			}
 		}
@@ -11469,14 +11469,12 @@ std::vector<Mob*> Client::GetApplySpellList(
 						l.push_back(m->GetPet());
 					}
 
-#ifdef BOTS
 					if (allow_bots) {
 						const auto& sbl = entity_list.GetBotListByCharacterID(m->CastToClient()->CharacterID());
 						for (const auto& b : sbl) {
 							l.push_back(b);
 						}
 					}
-#endif
 				}
 			}
 		}
@@ -11487,14 +11485,12 @@ std::vector<Mob*> Client::GetApplySpellList(
 			l.push_back(GetPet());
 		}
 
-#ifdef BOTS
 		if (allow_bots) {
 			const auto& sbl = entity_list.GetBotListByCharacterID(CharacterID());
 			for (const auto& b : sbl) {
 				l.push_back(b);
 			}
 		}
-#endif
 	}
 
 	return l;

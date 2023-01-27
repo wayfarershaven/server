@@ -97,9 +97,7 @@ Copyright (C) 2001-2002 EQEMu Development Team (http://eqemu.org)
 	#include "../common/packet_dump_file.h"
 #endif
 
-#ifdef BOTS
 #include "bot.h"
-#endif
 
 #include "mob_movement_manager.h"
 #include "client.h"
@@ -274,10 +272,8 @@ bool Mob::CastSpell(uint16 spell_id, uint16 target_id, CastingSlot slot,
 		}
 	} else if (IsNPC()) {
 		parse->EventNPC(EVENT_CAST_BEGIN, CastToNPC(), nullptr, export_string, 0);
-#ifdef BOTS
 	} else if (IsBot()) {
 		parse->EventBot(EVENT_CAST_BEGIN, CastToBot(), nullptr, export_string, 0);
-#endif
 	}
 
 	//To prevent NPC ghosting when spells are cast from scripts
@@ -1427,7 +1423,6 @@ void Mob::CastedSpellFinished(uint16 spell_id, uint32 target_id, CastingSlot slo
 				channelchance -= attacked_count * 2;
 				channelchance += channelchance * channelbonuses / 100.0f;
 			}
-#ifdef BOTS
 			else if(IsBot()) {
 				float channelbonuses = 0.0f;
 
@@ -1441,7 +1436,6 @@ void Mob::CastedSpellFinished(uint16 spell_id, uint32 target_id, CastingSlot slo
 				channelchance -= attacked_count * 2;
 				channelchance += channelchance * channelbonuses / 100.0f;
 			}
-#endif //BOTS
 			else {
 				// NPCs are just hard to interrupt, otherwise they get pwned
 				channelchance = 85;
@@ -1698,10 +1692,8 @@ void Mob::CastedSpellFinished(uint16 spell_id, uint32 target_id, CastingSlot slo
 		parse->EventPlayer(EVENT_CAST, CastToClient(), export_string, 0);
 	} else if (IsNPC()) {
 		parse->EventNPC(EVENT_CAST, CastToNPC(), nullptr, export_string, 0);
-#ifdef BOTS
 	} else if (IsBot()) {
 		parse->EventBot(EVENT_CAST, CastToBot(), nullptr, export_string, 0);
-#endif
 	}
 
 	if(bard_song_mode)
@@ -2134,7 +2126,6 @@ bool Mob::DetermineSpellTargets(uint16 spell_id, Mob *&spell_target, Mob *&ae_ce
 							}
 						}
 					}
-#ifdef BOTS
 					else if(IsBot())
 					{
 						if(IsGrouped())
@@ -2147,7 +2138,6 @@ bool Mob::DetermineSpellTargets(uint16 spell_id, Mob *&spell_target, Mob *&ae_ce
 								group_id_caster = (GetRaid()->GetGroup(GetOwner()->CastToClient()) == 0xFFFF) ? 0 : (GetRaid()->GetGroup(GetOwner()->CastToClient()) + 1);
 						}
 					}
-#endif //BOTS
 
 					if(spell_target->IsClient())
 					{
@@ -2182,7 +2172,6 @@ bool Mob::DetermineSpellTargets(uint16 spell_id, Mob *&spell_target, Mob *&ae_ce
 							}
 						}
 					}
-#ifdef BOTS
 					else if(spell_target->IsBot())
 					{
 						if(spell_target->IsGrouped())
@@ -2195,7 +2184,6 @@ bool Mob::DetermineSpellTargets(uint16 spell_id, Mob *&spell_target, Mob *&ae_ce
 								group_id_target = (spell_target->GetRaid()->GetGroup(spell_target->GetOwner()->CastToClient()) == 0xFFFF) ? 0 : (spell_target->GetRaid()->GetGroup(spell_target->GetOwner()->CastToClient()) + 1);
 						}
 					}
-#endif //BOTS
 
 					if(group_id_caster == 0 || group_id_target == 0)
 					{
@@ -2443,8 +2431,6 @@ bool Mob::SpellFinished(uint16 spell_id, Mob *spell_target, CastingSlot slot, in
 		case CastActUnknown:
 		case SingleTarget:
 		{
-
-#ifdef BOTS
 			if(IsBot()) {
 				bool StopLogic = false;
 				if(!CastToBot()->DoFinishedSpellSingleTarget(spell_id, spell_target, slot, StopLogic))
@@ -2452,7 +2438,6 @@ bool Mob::SpellFinished(uint16 spell_id, Mob *spell_target, CastingSlot slot, in
 				if(StopLogic)
 					break;
 			}
-#endif //BOTS
 
 			if(spell_target == nullptr) {
 				LogSpells("Spell [{}]: Targeted spell, but we have no target", spell_id);
@@ -2515,7 +2500,6 @@ bool Mob::SpellFinished(uint16 spell_id, Mob *spell_target, CastingSlot slot, in
 
 		case GroupSpell:
 		{
-#ifdef BOTS
 			if(IsBot()) {
 				bool StopLogic = false;
 				if(!CastToBot()->DoFinishedSpellGroupTarget(spell_id, spell_target, slot, StopLogic))
@@ -2523,7 +2507,6 @@ bool Mob::SpellFinished(uint16 spell_id, Mob *spell_target, CastingSlot slot, in
 				if(StopLogic)
 					break;
 			}
-#endif //BOTS
 
 			// We hold off turning MBG off so we can still use it to calc the mana cost
 			if(spells[spell_id].can_mgb && HasMGB()) {
@@ -3483,9 +3466,7 @@ int Mob::AddBuff(Mob *caster, uint16 spell_id, int duration, int32 level_overrid
 
 	if((IsClient() && !CastToClient()->GetPVP()) ||
 		(IsPet() && GetOwner() && GetOwner()->IsClient() && !GetOwner()->CastToClient()->GetPVP()) ||
-#ifdef BOTS
 		(IsBot() && GetOwner() && GetOwner()->IsClient() && !GetOwner()->CastToClient()->GetPVP()) ||
-#endif
 		(IsMerc() && GetOwner() && GetOwner()->IsClient() && !GetOwner()->CastToClient()->GetPVP()))
 	{
 		EQApplicationPacket *outapp = MakeBuffsPacket();
@@ -3733,10 +3714,8 @@ bool Mob::SpellOnTarget(
 		parse->EventNPC(EVENT_CAST_ON, spelltar->CastToNPC(), this, export_string, 0);
 	} else if (spelltar->IsClient()) {
 		parse->EventPlayer(EVENT_CAST_ON, spelltar->CastToClient(), export_string, 0);
-#ifdef BOTS
 	} else if (spelltar->IsBot()) {
 		parse->EventBot(EVENT_CAST_ON, spelltar->CastToBot(), this, export_string, 0);
-#endif
 	}
 
 	mod_spell_cast(spell_id, spelltar, reflect_effectiveness, use_resist_adjust, resist_adjust, isproc);

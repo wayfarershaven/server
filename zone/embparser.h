@@ -97,7 +97,6 @@ public:
 		std::vector<std::any> *extra_pointers
 	);
 
-#ifdef BOTS
 	virtual int EventBot(
 		QuestEventID evt,
 		Bot *bot,
@@ -114,7 +113,6 @@ public:
 		uint32 extra_data,
 		std::vector<std::any> *extra_pointers
 	);
-#endif
 
 	virtual bool HasQuestSub(uint32 npcid, QuestEventID evt);
 	virtual bool HasGlobalQuestSub(QuestEventID evt);
@@ -122,24 +120,16 @@ public:
 	virtual bool GlobalPlayerHasQuestSub(QuestEventID evt);
 	virtual bool SpellHasQuestSub(uint32 spell_id, QuestEventID evt);
 	virtual bool ItemHasQuestSub(EQ::ItemInstance *itm, QuestEventID evt);
-
-#ifdef BOTS
 	virtual bool BotHasQuestSub(QuestEventID evt);
 	virtual bool GlobalBotHasQuestSub(QuestEventID evt);
-#endif	
-
 	virtual void LoadNPCScript(std::string filename, int npc_id);
 	virtual void LoadGlobalNPCScript(std::string filename);
 	virtual void LoadPlayerScript(std::string filename);
 	virtual void LoadGlobalPlayerScript(std::string filename);
 	virtual void LoadItemScript(std::string filename, EQ::ItemInstance *item);
 	virtual void LoadSpellScript(std::string filename, uint32 spell_id);
-
-#ifdef BOTS
 	virtual void LoadBotScript(std::string filename);
 	virtual void LoadGlobalBotScript(std::string filename);
-#endif
-
 	virtual void AddVar(std::string name, std::string val);
 	virtual std::string GetVar(std::string name);
 	virtual void ReloadQuests();
@@ -256,10 +246,8 @@ private:
 	std::map<uint32, PerlQuestStatus> item_quest_status_;
 	std::map<uint32, PerlQuestStatus> spell_quest_status_;
 
-#ifdef BOTS
 	PerlQuestStatus bot_quest_status_;
 	PerlQuestStatus global_bot_quest_status_;
-#endif
 
 	std::map<std::string, std::string> vars_;
 	SV *_empty_sv;

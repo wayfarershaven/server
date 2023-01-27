@@ -1650,8 +1650,6 @@ void handle_player_augment_remove(
 }
 
 // Bot
-
-#ifdef BOTS
 void handle_bot_null(
 	QuestInterface *parse,
 	lua_State* L,
@@ -1936,7 +1934,5 @@ void handle_bot_use_skill(
 	lua_pushinteger(L, std::stoi(sep.arg[1]));
 	lua_setfield(L, -2, "skill_level");
 }
-
-#endif
 
 #endif

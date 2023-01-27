@@ -35,10 +35,7 @@ Copyright (C) 2001-2016 EQEMu Development Team (http://eqemulator.net)
 #include "titles.h"
 #include "zonedb.h"
 #include "../common/zone_store.h"
-
-#ifdef BOTS
 #include "bot.h"
-#endif
 
 extern QueryServ* QServ;
 
@@ -1553,13 +1550,11 @@ bool Mob::CanUseAlternateAdvancementRank(AA::Rank *rank) {
 			return false;
 		}
 	}
-#ifdef BOTS
 	else if (IsBot()) {
 		if (rank->expansion && !(CastToBot()->GetExpansionBitmask() & (1 << (rank->expansion - 1)))) {
 			return false;
 		}
 	}
-#endif
 	else {
 		if (rank->expansion && !(RuleI(World, ExpansionSettings) & (1 << (rank->expansion - 1)))) {
 			return false;
