@@ -332,7 +332,9 @@ namespace DatabaseSchema {
 			"ip_exemptions",
 			"item_tick",
 			"lfguild",
+			"merc_buffs",
 			"merchantlist_temp",
+			"mercs",
 			"object_contents",
 			"raid_details",
 			"raid_leaders",
@@ -412,6 +414,26 @@ namespace DatabaseSchema {
 		};
 	}
 
+	static std::vector<std::string> GetMercTables()
+	{
+		return {
+			"merc_armorinfo",
+			"merc_inventory",
+			"merc_merchant_entries",
+			"merc_merchant_template_entries",
+			"merc_merchant_templates",
+			"merc_name_types",
+			"merc_npc_types",
+			"merc_spell_list_entries",
+			"merc_spell_lists",
+			"merc_stance_entries",
+			"merc_stats",
+			"merc_subtypes",
+			"merc_templates",
+			"merc_types",
+			"merc_weaponinfo"
+		};
+	}
 }
 
 #endif //EQEMU_DATABASE_SCHEMA_H
