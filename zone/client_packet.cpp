@@ -8830,8 +8830,7 @@ void Client::Handle_OP_ItemPreview(const EQApplicationPacket *app)
 void Client::Handle_OP_ItemVerifyRequest(const EQApplicationPacket *app)
 {
 	using EQ::spells::CastingSlot;
-	if (app->size != sizeof(ItemVerifyRequest_Struct))
-	{
+	if (app->size != sizeof(ItemVerifyRequest_Struct)) {
 		LogError("OP size error: OP_ItemVerifyRequest expected:[{}] got:[{}]", sizeof(ItemVerifyRequest_Struct), app->size);
 		return;
 	}
@@ -8883,7 +8882,6 @@ void Client::Handle_OP_ItemVerifyRequest(const EQApplicationPacket *app)
 	bool is_casting_bard_song = false;
 
 	if (spell_id > 0) {
-
 		if (!IsValidSpell(spell_id) ||
 			IsStunned() ||
 			IsFeared() ||
@@ -8907,20 +8905,18 @@ void Client::Handle_OP_ItemVerifyRequest(const EQApplicationPacket *app)
 				Bards on live can click items while casting spell gems, it stops that song cast and replaces it with item click cast.
 				Can not click while casting other items.
 			*/
-			if (GetClass() == BARD && IsCasting() && casting_spell_slot < CastingSlot::MaxGems)
-			{
+			if (GetClass() == BARD && IsCasting() && casting_spell_slot < CastingSlot::MaxGems) {
 				is_casting_bard_song = true;
-			}
-			else
-			{
+			} else {
 				SendSpellBarEnable(spell_id);
 				return;
 			}
 		}
 	}
 	// Modern clients don't require pet targeted for item clicks that are ST_Pet
-	if (spell_id > 0 && (spells[spell_id].target_type == ST_Pet || spells[spell_id].target_type == ST_SummonedPet))
+	if (spell_id > 0 && (spells[spell_id].target_type == ST_Pet || spells[spell_id].target_type == ST_SummonedPet)) {
 		target_id = GetPetID();
+	}
 
 	LogDebug("OP ItemVerifyRequest: spell=[{}], target=[{}], inv=[{}]", spell_id, target_id, slot_id);
 
@@ -8930,8 +8926,7 @@ void Client::Handle_OP_ItemVerifyRequest(const EQApplicationPacket *app)
 
 		parse->EventItem(EVENT_ITEM_CLICK, this, p_inst, nullptr, "", slot_id);
 		inst = m_inv[slot_id];
-		if (!inst)
-		{
+		if (!inst) {
 			return;
 		}
 
@@ -8942,14 +8937,15 @@ void Client::Handle_OP_ItemVerifyRequest(const EQApplicationPacket *app)
 
 		for (r = EQ::invaug::SOCKET_BEGIN; r <= EQ::invaug::SOCKET_END; r++) {
 			const EQ::ItemInstance* aug_i = inst->GetAugment(r);
-			if (!aug_i)
+			if (!aug_i) {
 				continue;
+			}
 			const EQ::ItemData* aug = aug_i->GetItem();
-			if (!aug)
+			if (!aug) {
 				continue;
+			}
 
-			if ((aug->Click.Type == EQ::item::ItemEffectClick) || (aug->Click.Type == EQ::item::ItemEffectExpendable) || (aug->Click.Type == EQ::item::ItemEffectEquipClick) || (aug->Click.Type == EQ::item::ItemEffectClick2))
-			{
+			if ((aug->Click.Type == EQ::item::ItemEffectClick) || (aug->Click.Type == EQ::item::ItemEffectExpendable) || (aug->Click.Type == EQ::item::ItemEffectEquipClick) || (aug->Click.Type == EQ::item::ItemEffectClick2)) {
 				tryaug = true;
 				clickaug = (EQ::ItemInstance*)aug_i;
 				augitem = (EQ::ItemData*)aug;
@@ -8958,35 +8954,24 @@ void Client::Handle_OP_ItemVerifyRequest(const EQApplicationPacket *app)
 			}
 		}
 
-		if ((spell_id <= 0) && (item->ItemType != EQ::item::ItemTypeFood && item->ItemType != EQ::item::ItemTypeDrink && item->ItemType != EQ::item::ItemTypeAlcohol && item->ItemType != EQ::item::ItemTypeSpell))
-		{
+		if ((spell_id <= 0) && (item->ItemType != EQ::item::ItemTypeFood && item->ItemType != EQ::item::ItemTypeDrink && item->ItemType != EQ::item::ItemTypeAlcohol && item->ItemType != EQ::item::ItemTypeSpell)) {
 			LogDebug("Item with no effect right clicked by [{}]", GetName());
-		}
-		else if (inst->IsClassCommon())
-		{
-			if (!RuleB(Skills, RequireTomeHandin) && item->ItemType == EQ::item::ItemTypeSpell && (strstr((const char*)item->Name, "Tome of ") || strstr((const char*)item->Name, "Skill: ")))
-			{
+		} else if (inst->IsClassCommon()) {
+			if (!RuleB(Skills, RequireTomeHandin) && item->ItemType == EQ::item::ItemTypeSpell && (strstr((const char*)item->Name, "Tome of ") || strstr((const char*)item->Name, "Skill: "))) {
 				DeleteItemInInventory(slot_id, 1, true);
 				TrainDiscipline(item->ID);
-			}
-			else if (item->ItemType == EQ::item::ItemTypeSpell)
-			{
+			} else if (item->ItemType == EQ::item::ItemTypeSpell) {
 				spell_id = item->Scroll.Effect;
-				if (RuleB(Spells, AllowSpellMemorizeFromItem))
-				{
+				if (RuleB(Spells, AllowSpellMemorizeFromItem)) {
 					int highest_spell_id = GetHighestScribedSpellinSpellGroup(spells[spell_id].spell_group);
-					if (spells[spell_id].spell_group > 0 && highest_spell_id > 0)
-					{
-						if (spells[spell_id].rank > spells[highest_spell_id].rank)
-						{
+					if (spells[spell_id].spell_group > 0 && highest_spell_id > 0) {
+						if (spells[spell_id].rank > spells[highest_spell_id].rank) {
 							std::string message = fmt::format("{} will replace {} in your spellbook", GetSpellName(spell_id), GetSpellName(highest_spell_id));
 							SetEntityVariable("slot_id",itoa(slot_id));
 							SetEntityVariable("spell_id",itoa(item->ID));
 							SendPopupToClient("", message.c_str(), 1000001, 1, 10);
 							return;
-						}
-						else if (spells[spell_id].rank < spells[highest_spell_id].rank)
-						{
+						} else if (spells[spell_id].rank < spells[highest_spell_id].rank) {
 							MessageString(Chat::Red, LESSER_SPELL_VERSION, spells[spell_id].name, spells[highest_spell_id].name);
 							return;
 						}
@@ -8997,19 +8982,23 @@ void Client::Handle_OP_ItemVerifyRequest(const EQApplicationPacket *app)
 				} else {
 					return;
 				}
-			}
-			else if ((item->Click.Type == EQ::item::ItemEffectClick) || (item->Click.Type == EQ::item::ItemEffectExpendable) || (item->Click.Type == EQ::item::ItemEffectEquipClick) || (item->Click.Type == EQ::item::ItemEffectClick2))
-			{
-				if (inst->GetCharges() == 0)
-				{
+			} else if (
+				item->Click.Effect > 0 &&
+				(
+					(item->Click.Type == EQ::item::ItemEffectClick) ||
+					(item->Click.Type == EQ::item::ItemEffectExpendable) ||
+					(item->Click.Type == EQ::item::ItemEffectEquipClick) ||
+					(item->Click.Type == EQ::item::ItemEffectClick2)
+				)
+			) {
+				if (inst->GetCharges() == 0) {
 					//Message(Chat::White, "This item is out of charges.");
 					MessageString(Chat::Red, ITEM_OUT_OF_CHARGES);
 					return;
 				}
-				if (GetLevel() >= item->Click.Level2)
-				{
-					if (item->RecastDelay > 0)
-					{
+
+				if (GetLevel() >= item->Click.Level2) {
+					if (item->RecastDelay > 0) {
 						if (!GetPTimers().Expired(&database, (pTimerItemStart + item->RecastType), false)) {
 							SendItemRecastTimer(item->RecastType); //Problem: When you loot corpse, recast display is not present. This causes it to display again. Could not get to display when sending from looting.
 							MessageString(Chat::Red, SPELL_RECAST);
@@ -9021,40 +9010,34 @@ void Client::Handle_OP_ItemVerifyRequest(const EQApplicationPacket *app)
 
 					int i = parse->EventItem(EVENT_ITEM_CLICK_CAST, this, p_inst, nullptr, "", slot_id);
 					inst = m_inv[slot_id];
-					if (!inst)
-					{
+					if (!inst) {
 						return;
 					}
+
 					if (i == 0) {
 						if (!IsCastWhileInvis(item->Click.Effect)) {
 							CommonBreakInvisible(); // client can't do this for us :(
 						}
+
 						if (GetClass() == BARD){
 							DoBardCastingFromItemClick(is_casting_bard_song, item->CastTime, item->Click.Effect, target_id, CastingSlot::Item, slot_id, item->RecastType, item->RecastDelay);
-						}
-						else {
+						} else {
 							CastSpell(item->Click.Effect, target_id, CastingSlot::Item, item->CastTime, 0, 0, slot_id);
 						}
 					}
-				}
-				else
-				{
+				} else {
 					MessageString(Chat::Red, ITEMS_INSUFFICIENT_LEVEL);
 					return;
 				}
-			}
-			else if (tryaug)
-			{
-				if (clickaug->GetCharges() == 0)
-				{
+			} else if (tryaug) {
+				if (clickaug->GetCharges() == 0) {
 					//Message(Chat::White, "This item is out of charges.");
 					MessageString(Chat::Red, ITEM_OUT_OF_CHARGES);
 					return;
 				}
-				if (GetLevel() >= augitem->Click.Level2)
-				{
-					if (augitem->RecastDelay > 0)
-					{
+
+				if (GetLevel() >= augitem->Click.Level2) {
+					if (augitem->RecastDelay > 0) {
 						if (!GetPTimers().Expired(&database, (pTimerItemStart + augitem->RecastType), false)) {
 							LogSpells("Casting of [{}] canceled: item spell reuse timer from augment not expired", spell_id);
 							MessageString(Chat::Red, SPELL_RECAST);
@@ -9065,8 +9048,7 @@ void Client::Handle_OP_ItemVerifyRequest(const EQApplicationPacket *app)
 
 					int i = parse->EventItem(EVENT_ITEM_CLICK_CAST, this, clickaug, nullptr, "", slot_id);
 					inst = m_inv[slot_id];
-					if (!inst)
-					{
+					if (!inst) {
 						return;
 					}
 
@@ -9074,45 +9056,32 @@ void Client::Handle_OP_ItemVerifyRequest(const EQApplicationPacket *app)
 						if (!IsCastWhileInvis(augitem->Click.Effect)) {
 							CommonBreakInvisible(); // client can't do this for us :(
 						}
+
 						if (GetClass() == BARD) {
 							DoBardCastingFromItemClick(is_casting_bard_song, augitem->CastTime, augitem->Click.Effect, target_id, CastingSlot::Item, slot_id, augitem->RecastType, augitem->RecastDelay);
-						}
-						else {
+						} else {
 							CastSpell(augitem->Click.Effect, target_id, CastingSlot::Item, augitem->CastTime, 0, 0, slot_id);
 						}
 					}
-				}
-				else
-				{
+				} else {
 					MessageString(Chat::Red, ITEMS_INSUFFICIENT_LEVEL);
 					return;
 				}
-			}
-			else
-			{
-				if (ClientVersion() >= EQ::versions::ClientVersion::SoD && !inst->IsEquipable(GetBaseRace(), GetClass()))
-				{
-					if (item->ItemType != EQ::item::ItemTypeFood && item->ItemType != EQ::item::ItemTypeDrink && item->ItemType != EQ::item::ItemTypeAlcohol)
-					{
+			} else {
+				if (ClientVersion() >= EQ::versions::ClientVersion::SoD && !inst->IsEquipable(GetBaseRace(), GetClass())) {
+					if (item->ItemType != EQ::item::ItemTypeFood && item->ItemType != EQ::item::ItemTypeDrink && item->ItemType != EQ::item::ItemTypeAlcohol) {
 						LogDebug("Error: unknown item->Click.Type ([{}])", item->Click.Type);
 					}
-				}
-				else
-				{
+				} else {
 					LogDebug("Error: unknown item->Click.Type ([{}])", item->Click.Type);
 				}
 			}
-		}
-		else
-		{
+		} else {
 			Message(Chat::White, "Error: item not found in inventory slot #%i", slot_id);
 		}
-	}
-	else
-	{
+	} else {
 		Message(Chat::White, "Error: Invalid inventory slot for using effects (inventory slot #%i)", slot_id);
 	}
-
 	return;
 }
 
