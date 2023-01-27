@@ -6485,9 +6485,9 @@ void Client::SendSpellAnim(uint16 target_id, uint16 spell_id)
 	entity_list.QueueCloseClients(this, &app, false, RuleI(Range, SpellParticles));
 }
 
-void Client::SendItemRecastTimer(int32 recast_type, uint32 recast_delay)
+void Client::SendItemRecastTimer(int32 recast_type, uint32 recast_delay, bool in_ignore_casting_requirement)
 {
-	if (recast_type == -1) {
+	if (recast_type == RECAST_TYPE_UNLINKED_ITEM) {
 		return;
 	}
 
@@ -6500,6 +6500,7 @@ void Client::SendItemRecastTimer(int32 recast_type, uint32 recast_delay)
 		ItemRecastDelay_Struct *ird = (ItemRecastDelay_Struct *)outapp->pBuffer;
 		ird->recast_delay = recast_delay;
 		ird->recast_type = static_cast<uint32>(recast_type);
+		ird->ignore_casting_requirement = in_ignore_casting_requirement; //True allows reset of item cast timers
 		QueuePacket(outapp);
 		safe_delete(outapp);
 	}
@@ -6512,10 +6513,13 @@ void Client::SetItemRecastTimer(int32 spell_id, uint32 inventory_slot)
 	int recast_delay = 0;
 	int recast_type = 0;
 	bool from_augment = false;
+	int item_casting = 0;
 
 	if (!item) {
 		return;
 	}
+
+	item_casting = item->GetItem()->ID;
 
 	//Check primary item.
 	if (item->GetItem()->RecastDelay > 0) {
@@ -6539,6 +6543,7 @@ void Client::SetItemRecastTimer(int32 spell_id, uint32 inventory_slot)
 				recast_delay = aug_i->GetItem()->RecastDelay;
 				recast_type = aug_i->GetItem()->RecastType;
 				from_augment = true;
+				item_casting = aug_i->GetItem()->ID;
 				break;
 			}
 		}
@@ -6552,14 +6557,20 @@ void Client::SetItemRecastTimer(int32 spell_id, uint32 inventory_slot)
 	recast_delay = std::max(recast_delay, 0);
 
 	if (recast_delay > 0) {
-
-		GetPTimers().Start((pTimerItemStart + recast_type), static_cast<uint32>(recast_delay));
-		if (recast_type != -1) {
-			database.UpdateItemRecastTimestamps(
+		if (recast_type != RECAST_TYPE_UNLINKED_ITEM) {
+			GetPTimers().Start((pTimerItemStart + recast_type), static_cast<uint32>(recast_delay));
+			database.UpdateItemRecast(
 				CharacterID(),
 				recast_type,
 				GetPTimers().Get(pTimerItemStart + recast_type)->GetReadyTimestamp()
 			);
+		} else if (recast_type == RECAST_TYPE_UNLINKED_ITEM) {
+			GetPTimers().Start((pTimerNegativeItemReuse * item_casting), static_cast<uint32>(recast_delay));
+			database.UpdateItemRecast(
+				CharacterID(),
+				item_casting,
+				GetPTimers().Get(pTimerNegativeItemReuse * item_casting)->GetReadyTimestamp()
+			);	
 		}
 
 		if (!from_augment) {
@@ -6568,12 +6579,32 @@ void Client::SetItemRecastTimer(int32 spell_id, uint32 inventory_slot)
 	}
 }
 
+void Client::DeleteItemRecastTimer(uint32 item_id)
+{
+    const auto* d = database.GetItem(item_id);
+
+    if (!d) {
+        return;
+    }
+
+    const auto recast_type = d->RecastType != RECAST_TYPE_UNLINKED_ITEM ? d->RecastType : item_id;
+    const int timer_id = d->RecastType != RECAST_TYPE_UNLINKED_ITEM ? (pTimerItemStart + recast_type) : (pTimerNegativeItemReuse * item_id);
+
+    database.DeleteItemRecast(CharacterID(), recast_type);
+    GetPTimers().Clear(&database, timer_id);
+
+    if (recast_type != RECAST_TYPE_UNLINKED_ITEM) {
+        SendItemRecastTimer(recast_type, 1, true);
+    }
+}
+
 bool Client::HasItemRecastTimer(int32 spell_id, uint32 inventory_slot)
 {
 	EQ::ItemInstance *item = CastToClient()->GetInv().GetItem(inventory_slot);
 
 	int recast_delay = 0;
 	int recast_type = 0;
+	int item_id = 0;
 	bool from_augment = false;
 
 	if (!item) {
@@ -6588,6 +6619,7 @@ bool Client::HasItemRecastTimer(int32 spell_id, uint32 inventory_slot)
 	if (item->GetItem()->RecastDelay > 0) {
 		recast_type = item->GetItem()->RecastType;
 		recast_delay = item->GetItem()->RecastDelay;
+		item_id = item->GetItem()->ID;
 	}
 	//Check augmenent
 	else {
@@ -6606,6 +6638,7 @@ bool Client::HasItemRecastTimer(int32 spell_id, uint32 inventory_slot)
 				if (aug_i->GetItem() && aug_i->GetItem()->RecastDelay > 0) {
 					recast_delay = aug_i->GetItem()->RecastDelay;
 					recast_type = aug_i->GetItem()->RecastType;
+					item_id = aug_i->GetItem()->ID;
 				}
 				break;
 			}
@@ -6616,7 +6649,9 @@ bool Client::HasItemRecastTimer(int32 spell_id, uint32 inventory_slot)
 		return false;
 	}
 	//if time is not expired, then it exists and therefore we have a recast on this item.
-	if (!CastToClient()->GetPTimers().Expired(&database, (pTimerItemStart + recast_type), false)) {
+	if (recast_type != RECAST_TYPE_UNLINKED_ITEM && !CastToClient()->GetPTimers().Expired(&database, (pTimerItemStart + recast_type), false)) {
+		return true;
+	} else if (recast_type == RECAST_TYPE_UNLINKED_ITEM && !CastToClient()->GetPTimers().Expired(&database, (pTimerNegativeItemReuse * item_id), false)) {
 		return true;
 	}
 

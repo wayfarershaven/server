@@ -4544,7 +4544,7 @@ struct ItemVerifyReply_Struct {
 struct ItemRecastDelay_Struct {
 /*000*/	uint32	recast_delay;	// in seconds
 /*004*/	uint32	recast_type;
-/*008*/	uint32	unknown008;
+/*008*/	bool	ignore_casting_requirement; //Ignores recast times allows items to be reset?
 /*012*/
 };
 
