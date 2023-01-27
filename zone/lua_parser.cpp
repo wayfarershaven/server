@@ -408,9 +408,9 @@ int LuaParser::_EventNPC(std::string package_name, QuestEventID evt, NPC* npc, M
 
 		lua_pop(L, npop);
 	} catch(std::exception &ex) {
-		std::string error = "Lua Exception: ";
-		error += std::string(ex.what());
-		AddError(error);
+		// std::string error = "Lua Exception: ";
+		// error += std::string(ex.what());
+		// AddError(error);
 
 		//Restore our stack to the best of our ability
 		int end = lua_gettop(L);
@@ -502,9 +502,9 @@ int LuaParser::_EventPlayer(std::string package_name, QuestEventID evt, Client *
 
 		lua_pop(L, npop);
 	} catch(std::exception &ex) {
-		std::string error = "Lua Exception: ";
-		error += std::string(ex.what());
-		AddError(error);
+		// std::string error = "Lua Exception: ";
+		// error += std::string(ex.what());
+		// AddError(error);
 
 		//Restore our stack to the best of our ability
 		int end = lua_gettop(L);
@@ -587,9 +587,9 @@ int LuaParser::_EventItem(std::string package_name, QuestEventID evt, Client *cl
 
 		lua_pop(L, npop);
 	} catch(std::exception &ex) {
-		std::string error = "Lua Exception: ";
-		error += std::string(ex.what());
-		AddError(error);
+		// std::string error = "Lua Exception: ";
+		// error += std::string(ex.what());
+		// AddError(error);
 
 		//Restore our stack to the best of our ability
 		int end = lua_gettop(L);
@@ -669,9 +669,9 @@ int LuaParser::_EventSpell(std::string package_name, QuestEventID evt, Mob* mob,
 
 		lua_pop(L, npop);
 	} catch(std::exception &ex) {
-		std::string error = "Lua Exception: ";
-		error += std::string(ex.what());
-		AddError(error);
+		// std::string error = "Lua Exception: ";
+		// error += std::string(ex.what());
+		// AddError(error);
 
 		//Restore our stack to the best of our ability
 		int end = lua_gettop(L);
@@ -736,9 +736,9 @@ int LuaParser::_EventEncounter(std::string package_name, QuestEventID evt, std::
 
 		lua_pop(L, 2);
 	} catch(std::exception &ex) {
-		std::string error = "Lua Exception: ";
-		error += std::string(ex.what());
-		AddError(error);
+		// std::string error = "Lua Exception: ";
+		// error += std::string(ex.what());
+		// AddError(error);
 
 		//Restore our stack to the best of our ability
 		int end = lua_gettop(L);
@@ -1600,9 +1600,9 @@ int LuaParser::_EventBot(
 
 		lua_pop(L, npop);
 	} catch(std::exception &ex) {
-		std::string error = "Lua Exception: ";
-		error += std::string(ex.what());
-		AddError(error);
+		// std::string error = "Lua Exception: ";
+		// error += std::string(ex.what());
+		// AddError(error);
 
 		//Restore our stack to the best of our ability
 		int end = lua_gettop(L);

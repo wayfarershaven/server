@@ -3549,14 +3549,10 @@ uint8 Client::SlotConvert2(uint8 slot){
 	return slot2;
 }
 
-void Client::Escape(uint8 type /* = 0*/)
+void Client::Escape()
 {
 	entity_list.RemoveFromTargets(this, true);
-	if (type == 1) {
-		SetInvisible(1, 4);
-	} else {
-		SetInvisible(1, 3);
-	}
+	SetInvisible(Invisibility::Invisible);
 	MessageString(Chat::Skills, ESCAPE);
 }
 

@@ -6117,16 +6117,16 @@ void Mob::DoShieldDamageOnShielder(Mob *shield_target, int64 hit_damage_done, EQ
 
 void Mob::CommonBreakInvisibleFromCombat()
 {
-    //break invis when you attack
-    CancelSneakHide();
-    SetInvisible(0);
+	//break invis when you attack
+	BreakInvisibleSpells();
+	CancelSneakHide();
 
-    if (spellbonuses.NegateIfCombat) {
-        BuffFadeByEffect(SE_NegateIfCombat);
-    }
+	if (spellbonuses.NegateIfCombat) {
+		BuffFadeByEffect(SE_NegateIfCombat);
+	}
 
-    hidden = false;
-    improved_hidden = false;
+	hidden = false;
+	improved_hidden = false;
 }
 
 /* Dev quotes:

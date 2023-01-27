@@ -617,43 +617,6 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 				break;
 			}
 
-			case SE_Invisibility:
-			case SE_Invisibility2:
-			{
-#ifdef SPELL_EFFECT_SPAM
-				snprintf(effect_desc, _EDLEN, "Invisibility");
-#endif
-				SetInvisible(spell.base_value[i], 0);
-				break;
-			}
-
-			case SE_InvisVsAnimals:
-			{
-#ifdef SPELL_EFFECT_SPAM
-				snprintf(effect_desc, _EDLEN, "Invisibility to Animals");
-#endif
-				SetInvisible(1, 2);
-				break;
-			}
-
-			case SE_InvisVsUndead2:
-			case SE_InvisVsUndead:
-			{
-#ifdef SPELL_EFFECT_SPAM
-				snprintf(effect_desc, _EDLEN, "Invisibility to Undead");
-#endif
-				SetInvisible(1, 1);
-				break;
-			}
-			case SE_SeeInvis:
-			{
-#ifdef SPELL_EFFECT_SPAM
-				snprintf(effect_desc, _EDLEN, "See Invisible");
-#endif
-				see_invis = spell.base_value[i];
-				break;
-			}
-
 			case SE_FleshToBone:
 			{
 #ifdef SPELL_EFFECT_SPAM
@@ -2213,16 +2176,45 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 #ifdef SPELL_EFFECT_SPAM
 				snprintf(effect_desc, _EDLEN, "Fading Memories");
 #endif
-				if(zone->random.Roll(spells[spell_id].base_value[i])) {
-					if(caster && caster->IsClient()) {
-						if (caster->spellbonuses.ShroudofStealth || caster->aabonuses.ShroudofStealth || caster->itembonuses.ShroudofStealth) {
-							caster->CastToClient()->Escape(1);
-						} else {
-							caster->CastToClient()->Escape(0);
+				int max_level = 0;
+
+				if (RuleB(Spells, UseFadingMemoriesMaxLevel)) {
+					//handle ROF2 era where limit value determines max level
+					if (spells[spell_id].limit_value[i]) {
+						max_level = spells[spell_id].limit_value[i];
+					}
+					//handle modern client era where max value determines max level or range above client.
+					else if (spells[spell_id].max_value[i]) {
+						if (spells[spell_id].max_value[i] >= 1000) {
+							max_level = 1000 - spells[spell_id].max_value[i];
 						}
-					} else {
+						else {
+							max_level = GetLevel() + spells[spell_id].max_value[i];
+						}
+					}
+				}
+
+				if(zone->random.Roll(spells[spell_id].base_value[i])) {
+					if (IsClient()) {
+						int pre_aggro_count = CastToClient()->GetAggroCount();
+						entity_list.RemoveFromTargetsFadingMemories(this, true, max_level);
+						SetInvisible(Invisibility::Invisible);
+						int post_aggro_count = CastToClient()->GetAggroCount();
+						if (RuleB(Spells, UseFadingMemoriesMaxLevel)) {
+							if (pre_aggro_count == post_aggro_count) {
+								Message(Chat::SpellFailure, "You failed to escape from all your opponents.");
+								break;
+							}
+							else if (post_aggro_count) {
+								Message(Chat::SpellFailure, "You failed to escape from combat but you evade some of your opponents.");
+								break;
+							}
+						}
+						MessageString(Chat::Skills, ESCAPE);
+					}
+					else{
 						entity_list.RemoveFromTargets(caster);
-                        SetInvisible(Invisibility::Invisible);
+						SetInvisible(Invisibility::Invisible);
 					}
 				}
 				break;
@@ -3259,6 +3251,13 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 			case SE_Proc_Timer_Modifier:
 			case SE_FFItemClass:
 			case SE_SpellEffectResistChance:
+			case SE_SeeInvis:
+			case SE_Invisibility:
+			case SE_Invisibility2:
+			case SE_InvisVsAnimals:
+			case SE_ImprovedInvisAnimals:
+			case SE_InvisVsUndead:
+			case SE_InvisVsUndead2:
 			{
 				break;
 			}
@@ -3953,13 +3952,12 @@ void Mob::DoBuffTic(const Buffs_Struct &buff, int slot, Mob *caster)
 				}
 			}
 		}
+		case SE_ImprovedInvisAnimals:
 		case SE_Invisibility2:
 		case SE_InvisVsUndead2: {
 			if (!IsBardSong(buff.spellid)) {
-				if (!IsBardSong(buff.spellid)) {
-					if (buff.ticsremaining <= 3 && buff.ticsremaining > 1) {
-						MessageString(Chat::Spells, INVIS_BEGIN_BREAK);
-					}
+				if (buff.ticsremaining <= 3 && buff.ticsremaining > 1) {
+					MessageString(Chat::Spells, INVIS_BEGIN_BREAK);
 				}
 			}
 			break;
@@ -4202,32 +4200,6 @@ void Mob::BuffFadeBySlot(int slot, bool iRecalcBonuses)
 			{
 				if (!AffectedBySpellExcludingSlot(slot, SE_Levitate))
 					SendAppearancePacket(AT_Levitate, 0);
-				break;
-			}
-
-			case SE_Invisibility2:
-			case SE_Invisibility:
-			{
-				SetInvisible(0,0);
-				break;
-			}
-
-			case SE_InvisVsUndead2:
-			case SE_InvisVsUndead:
-			{
-				invisible_undead = false;	// Mongrel: No longer IVU
-				break;
-			}
-
-			case SE_InvisVsAnimals:
-			{
-				invisible_animals = false;
-				break;
-			}
-
-			case SE_SeeInvis:
-			{
-				see_invis = 0;
 				break;
 			}
 
@@ -9598,18 +9570,19 @@ void Mob::CalcSpellPowerDistanceMod(uint16 spell_id, float range, Mob* caster)
 void Mob::BreakInvisibleSpells()
 {
 	if(invisible) {
+		nobuff_invisible = 0;
 		BuffFadeByEffect(SE_Invisibility);
 		BuffFadeByEffect(SE_Invisibility2);
-		invisible = false;
 	}
 	if(invisible_undead) {
+		ZeroInvisibleVars(InvisType::T_INVISIBLE_VERSE_UNDEAD);
 		BuffFadeByEffect(SE_InvisVsUndead);
 		BuffFadeByEffect(SE_InvisVsUndead2);
-		invisible_undead = false;
 	}
 	if(invisible_animals){
+		ZeroInvisibleVars(InvisType::T_INVISIBLE_VERSE_ANIMAL);
+		BuffFadeByEffect(SE_ImprovedInvisAnimals);
 		BuffFadeByEffect(SE_InvisVsAnimals);
-		invisible_animals = false;
 	}
 }
 
@@ -9618,24 +9591,20 @@ void Client::BreakSneakWhenCastOn(Mob *caster, bool IsResisted)
 	bool IsCastersTarget = false; // Chance to avoid only applies to AOE spells when not targeted.
 	if (hidden || improved_hidden) {
 		if (caster) {
-			Mob *target = nullptr;
-			target = caster->GetTarget();
-			IsCastersTarget = target && target == this;
-		}
-
-		if (!IsCastersTarget) {
-			int chance =
-			    spellbonuses.NoBreakAESneak + itembonuses.NoBreakAESneak + aabonuses.NoBreakAESneak;
-
-			if (IsResisted) {
-				chance *= RuleR(Spells, BreakSneakWhenCastOn);
+			Mob *spell_target = caster->GetTarget();
+			if (spell_target && spell_target == this) {
+				IsCastersTarget = true;
 			}
-
+		}
+		if (!IsCastersTarget) {
+			int chance = spellbonuses.NoBreakAESneak + itembonuses.NoBreakAESneak + aabonuses.NoBreakAESneak;
+			if (IsResisted) {
+				chance *= 2;
+			}
 			if (chance && zone->random.Roll(chance)) {
 				return; // Do not drop Sneak/Hide
 			}
 		}
-
 		CancelSneakHide();
 	}
 }
