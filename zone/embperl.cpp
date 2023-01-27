@@ -283,7 +283,7 @@ int Embperl::dosub(const char * subname, const std::vector<std::string> * args, 
 			std::string syntax_error = Process::execute(
 				fmt::format("perl -c {} 2>&1", filename)
 			);
-			LogQuests("Perl eval [{}] took [{}]", filename, benchmark.elapsed());
+			LogQuestsDetail("Perl eval [{}] took [{}]", filename, benchmark.elapsed());
 			syntax_error = Strings::Trim(syntax_error);
 			if (!Strings::Contains(syntax_error, "syntax OK")) {
 				syntax_error += SvPVX(ERRSV);
