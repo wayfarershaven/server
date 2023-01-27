@@ -126,6 +126,10 @@ public:
 				continue;
 			}
 
+			if (!IsValidSpell(spell_id)) {
+				continue;
+			}
+
 			if (spells[spell_id].player_1[0] == '\0') {
 				continue;
 			}
