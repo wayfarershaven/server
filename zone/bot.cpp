@@ -4210,22 +4210,12 @@ Bot* Bot::LoadBot(uint32 botID)
 // Load and spawn all zoned bots by bot owner character
 void Bot::LoadAndSpawnAllZonedBots(Client* bot_owner) {
 	if (bot_owner) {
-		std::list<std::pair<uint32,std::string>> auto_spawn_botgroups;
 		if (bot_owner->HasGroup()) {
-			std::vector<int> bot_class_spawn_limits;
-			std::vector<int> bot_class_spawned_count = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-
-			for (uint8 class_id = WARRIOR; class_id <= BERSERKER; class_id++) {
-				bot_class_spawn_limits[class_id - 1] = bot_owner->GetBotSpawnLimit(class_id);
-			}
-
 			auto* g = bot_owner->GetGroup();
 			if (g) {
 				uint32 group_id = g->GetID();
 				std::list<uint32> active_bots;
-
-				auto spawned_bots_count = 0;
-				auto bot_spawn_limit = bot_owner->GetBotSpawnLimit();
+				std::list<std::pair<uint32,std::string>> auto_spawn_botgroups;
 
 				if (!database.botdb.LoadAutoSpawnBotGroupsByOwnerID(bot_owner->CharacterID(), auto_spawn_botgroups)) {
 					bot_owner->Message(Chat::White, "Failed to load auto spawn bot groups by group ID.");
@@ -4248,28 +4238,10 @@ void Bot::LoadAndSpawnAllZonedBots(Client* bot_owner) {
 							continue;
 						}
 
-						if (bot_spawn_limit >= 0 && spawned_bots_count >= bot_spawn_limit) {
-							database.SetGroupID(b->GetCleanName(), 0, b->GetBotID());
-							g->UpdatePlayer(bot_owner);
-							continue;
-						}
-
-						auto spawned_bot_count_class = bot_class_spawned_count[b->GetClass() - 1];
-						auto bot_spawn_limit_class = bot_class_spawn_limits[b->GetClass() - 1];
-
-						if (bot_spawn_limit_class >= 0 && spawned_bot_count_class >= bot_spawn_limit_class) {
-							database.SetGroupID(b->GetCleanName(), 0, b->GetBotID());
-							g->UpdatePlayer(bot_owner);
-							continue;
-						}
-
 						if (!b->Spawn(bot_owner)) {
 							safe_delete(b);
 							continue;
 						}
-
-						spawned_bots_count++;
-						bot_class_spawned_count[b->GetClass() - 1]++;
 
 						g->UpdatePlayer(b);
 
@@ -4284,6 +4256,8 @@ void Bot::LoadAndSpawnAllZonedBots(Client* bot_owner) {
 				}
 			}
 		} else {
+			std::list<std::pair<uint32,std::string>> auto_spawn_botgroups;
+
 			if (!database.botdb.LoadAutoSpawnBotGroupsByOwnerID(bot_owner->CharacterID(), auto_spawn_botgroups)) {
 				bot_owner->Message(Chat::White, "Failed to load auto spawn bot groups by group ID.");
 				return;
@@ -5320,11 +5294,6 @@ void Bot::Damage(Mob *from, int64 damage, uint16 spell_id, EQ::skills::SkillType
 	}
 }
 
-//void Bot::AddToHateList(Mob* other, int64 hate = 0, int64 damage = 0, bool iYellForHelp = true, bool bFrenzy = false, bool iBuffTic = false)
-void Bot::AddToHateList(Mob* other, int64 hate, int64 damage, bool iYellForHelp, bool bFrenzy, bool iBuffTic, bool pet_command) {
-	Mob::AddToHateList(other, hate, damage, iYellForHelp, bFrenzy, iBuffTic, pet_command);
-}
-
 bool Bot::Attack(Mob* other, int Hand, bool FromRiposte, bool IsStrikethrough, bool IsFromSpell, ExtraAttackOptions *opts) {
 	if (!other) {
 		SetTarget(nullptr);
@@ -6134,20 +6103,6 @@ void Bot::DoClassAttacks(Mob *target, bool IsRiposte) {
 	classattack_timer.Start(reuse / HasteModifier);
 }
 
-int32 Bot::CheckAggroAmount(uint16 spellid) {
-	int32 AggroAmount = Mob::CheckAggroAmount(spellid, nullptr);
-	int64 focusAggro = GetFocusEffect(focusSpellHateMod, spellid);
-	AggroAmount = (AggroAmount * (100 + focusAggro) / 100);
-	return AggroAmount;
-}
-
-int32 Bot::CheckHealAggroAmount(uint16 spellid, Mob *target, uint32 heal_possible) {
-	int32 AggroAmount = Mob::CheckHealAggroAmount(spellid, target, heal_possible);
-	int64 focusAggro = GetFocusEffect(focusSpellHateMod, spellid);
-	AggroAmount = (AggroAmount * (100 + focusAggro) / 100);
-	return AggroAmount;
-}
-
 void Bot::MakePet(uint16 spell_id, const char* pettype, const char *petname) {
 	Mob::MakePet(spell_id, pettype, petname);
 }
@@ -6246,14 +6201,11 @@ void Bot::EquipBot(std::string* error_message) {
 	UpdateEquipmentLight();
 }
 
-void Bot::BotOrderCampAll(Client* c, uint8 class_id) {
-	if (c) {
-		const auto& l = entity_list.GetBotsByBotOwnerCharacterID(c->CharacterID());
-		for (const auto& b : l) {
-			if (!class_id || b->GetClass() == class_id) {
-				b->Camp();
-			}
-		}
+void Bot::BotOrderCampAll(Client* c) {
+	if(c) {
+		std::list<Bot*> BotList = entity_list.GetBotsByBotOwnerCharacterID(c->CharacterID());
+		for(std::list<Bot*>::iterator botListItr = BotList.begin(); botListItr != BotList.end(); ++botListItr)
+			(*botListItr)->Camp();
 	}
 }
 
@@ -6413,276 +6365,6 @@ void Bot::SetAttackTimer() {
 		if (i == EQ::invslot::slotPrimary)
 			PrimaryWeapon = ItemToUse;
 	}
-}
-
-int64 Bot::GetActSpellHealing(uint16 spell_id, int64 value, Mob* target) {
-	if (target == nullptr)
-		target = this;
-
-	int64 base_value = value;
-	int16 critical_chance = 0;
-	int8  critical_modifier = 1;
-
-	if (spells[spell_id].buff_duration < 1) {
-		critical_chance += itembonuses.CriticalHealChance + spellbonuses.CriticalHealChance + aabonuses.CriticalHealChance;
-
-		if (spellbonuses.CriticalHealDecay) {
-			critical_chance += GetDecayEffectValue(spell_id, SE_CriticalHealDecay);
-		}
-	}
-	else {
-		critical_chance = itembonuses.CriticalHealOverTime + spellbonuses.CriticalHealOverTime + aabonuses.CriticalHealOverTime;
-
-		if (spellbonuses.CriticalRegenDecay) {
-			critical_chance += GetDecayEffectValue(spell_id, SE_CriticalRegenDecay);
-		}
-	}
-
-	if (critical_chance) {
-
-		if (spells[spell_id].override_crit_chance > 0 && critical_chance > spells[spell_id].override_crit_chance) {
-			critical_chance = spells[spell_id].override_crit_chance;
-		}
-
-		if (zone->random.Roll(critical_chance)) {
-			critical_modifier = 2; //At present time no critical heal amount modifier SPA exists.
-		}
-	}
-
-	if (GetClass() == CLERIC) {
-		value += int(base_value*RuleI(Spells, ClericInnateHealFocus) / 100);  //confirmed on live parsing clerics get an innate 5 pct heal focus
-	}
-	value += int(base_value*GetFocusEffect(focusImprovedHeal, spell_id) / 100);
-	value += int(base_value*GetFocusEffect(focusFcAmplifyMod, spell_id) / 100);
-
-	// Instant Heals
-	if (spells[spell_id].buff_duration < 1) {
-
-		/* Mob::GetFocusEffect is not accessible from this context. This focus effect was not accounted for in previous version of this method at all, either
-		if (target) {
-			value += int(base_value * target->GetFocusEffect(focusFcHealPctIncoming, spell_id, this)/100,nullptr); //SPA 393 Add before critical
-			value += int(base_value * target->GetFocusEffect(focusFcHealPctCritIncoming, spell_id, this)/100,nullptr); //SPA 395 Add before critical (?)
-		}
-		*/
-
-		value += GetFocusEffect(focusFcHealAmtCrit, spell_id); //SPA 396 Add before critical
-
-		//Using IgnoreSpellDmgLvlRestriction to also allow healing to scale
-		if ((RuleB(Spells, IgnoreSpellDmgLvlRestriction) || spells[spell_id].classes[(GetClass() % 17) - 1] >= GetLevel() - 5) && !spells[spell_id].no_heal_damage_item_mod && itembonuses.HealAmt) {
-			value += GetExtraSpellAmt(spell_id, itembonuses.HealAmt, base_value);//Item Heal Amt Add before critical
-		}
-
-		if (target) {
-			value += value * target->GetHealRate() / 100;  //SPA 120 modifies value after Focus Applied but before critical
-		}
-
-		/*
-			Apply critical hit modifier
-		*/
-
-		value *= critical_modifier;
-		value += GetFocusEffect(focusFcHealAmt, spell_id); //SPA 392 Add after critical
-		value += GetFocusEffect(focusFcAmplifyAmt, spell_id); //SPA 508 ? Add after critical
-
-
-		if (critical_modifier > 1) {
-			entity_list.MessageCloseString(
-				this, true, 100, Chat::SpellCrit,
-				OTHER_CRIT_HEAL, GetName(), itoa(value));
-		}
-
-		return value;
-	}
-
-	//Heal over time spells. [Heal Rate and Additional Healing effects do not increase this value]
-	else {
-		//Using IgnoreSpellDmgLvlRestriction to also allow healing to scale
-		if (RuleB(Spells, HOTsScaleWithHealAmt)) {
-			int duration = CalcBuffDuration(this, target, spell_id);
-			int32 extra_heal = 0;
-			if ((RuleB(Spells, IgnoreSpellDmgLvlRestriction) || spells[spell_id].classes[(GetClass() % 17) - 1] >= GetLevel() - 5) && !spells[spell_id].no_heal_damage_item_mod && itembonuses.HealAmt) {
-				extra_heal += GetExtraSpellAmt(spell_id, itembonuses.HealAmt, base_value);
-			}
-
-			if (duration > 0 && extra_heal > 0) {
-				extra_heal /= duration;
-				value += extra_heal;
-			}
-		}
-
-		if (critical_chance && zone->random.Roll(critical_chance))
-			value *= critical_modifier;
-	}
-
-	return value;
-}
-
-int32 Bot::GetActSpellCasttime(uint16 spell_id, int32 casttime) {
-	int64 cast_reducer = GetFocusEffect(focusSpellHaste, spell_id);
-	auto min_cap = casttime / 2;
-	uint8 botlevel = GetLevel();
-	uint8 botclass = GetClass();
-	if (botlevel >= 51 && casttime >= 3000 && !spells[spell_id].good_effect &&
-		(botclass == SHADOWKNIGHT || botclass == RANGER || botclass == PALADIN || botclass == BEASTLORD)) {
-		int level_mod = std::min(15, botlevel - 50);
-		cast_reducer += level_mod * 3;
-	}
-
-	if((casttime >= 4000) && BeneficialSpell(spell_id) && IsBuffSpell(spell_id)) {
-		switch (GetAA(aaSpellCastingDeftness)) {
-			case 1:
-				cast_reducer += 5;
-				break;
-			case 2:
-				cast_reducer += 10;
-				break;
-			case 3:
-				cast_reducer += 25;
-				break;
-		}
-
-		switch (GetAA(aaQuickBuff)) {
-			case 1:
-				cast_reducer += 10;
-				break;
-			case 2:
-				cast_reducer += 25;
-				break;
-			case 3:
-				cast_reducer += 50;
-				break;
-		}
-	}
-
-	if(IsSummonSpell(spell_id)) {
-		switch (GetAA(aaQuickSummoning)) {
-			case 1:
-				cast_reducer += 10;
-				break;
-			case 2:
-				cast_reducer += 25;
-				break;
-			case 3:
-				cast_reducer += 50;
-				break;
-		}
-	}
-
-	if(IsEvacSpell(spell_id)) {
-		switch (GetAA(aaQuickEvacuation)) {
-			case 1:
-				cast_reducer += 10;
-				break;
-			case 2:
-				cast_reducer += 25;
-				break;
-			case 3:
-				cast_reducer += 50;
-				break;
-		}
-	}
-
-	if(IsDamageSpell(spell_id) && spells[spell_id].cast_time >= 4000) {
-		switch (GetAA(aaQuickDamage)) {
-			case 1:
-				cast_reducer += 2;
-				break;
-			case 2:
-				cast_reducer += 5;
-				break;
-			case 3:
-				cast_reducer += 10;
-				break;
-		}
-	}
-
-	casttime = casttime * (100 - cast_reducer) / 100;
-	return std::max(casttime, min_cap);
-}
-
-int32 Bot::GetActSpellCost(uint16 spell_id, int32 cost) {
-	if(itembonuses.Clairvoyance && spells[spell_id].classes[(GetClass()%17) - 1] >= GetLevel() - 5) {
-		int32 mana_back = (itembonuses.Clairvoyance * zone->random.Int(1, 100) / 100);
-		if(mana_back > cost)
-			mana_back = cost;
-
-		cost -= mana_back;
-	}
-
-	float PercentManaReduction = 0;
-	float SpecializeSkill = GetSpecializeSkillValue(spell_id);
-	int SuccessChance = zone->random.Int(0, 100);
-	float bonus = 1.0;
-	switch(GetAA(aaSpellCastingMastery)) {
-		case 1:
-			bonus += 0.05;
-			break;
-		case 2:
-			bonus += 0.15;
-			break;
-		case 3:
-			bonus += 0.30;
-			break;
-	}
-
-	bonus += (0.05 * GetAA(aaAdvancedSpellCastingMastery));
-
-	if(SuccessChance <= (SpecializeSkill * 0.3 * bonus)) {
-		PercentManaReduction = (1 + 0.05 * SpecializeSkill);
-		switch(GetAA(aaSpellCastingMastery)) {
-			case 1:
-				PercentManaReduction += 2.5;
-				break;
-			case 2:
-				PercentManaReduction += 5.0;
-				break;
-			case 3:
-				PercentManaReduction += 10.0;
-				break;
-		}
-
-		switch(GetAA(aaAdvancedSpellCastingMastery)) {
-			case 1:
-				PercentManaReduction += 2.5;
-				break;
-			case 2:
-				PercentManaReduction += 5.0;
-				break;
-			case 3:
-				PercentManaReduction += 10.0;
-				break;
-		}
-	}
-
-	int64 focus_redux = GetFocusEffect(focusManaCost, spell_id);
-
-	if(focus_redux > 0)
-		PercentManaReduction += zone->random.Real(1, (double)focus_redux);
-
-	cost -= (cost * (PercentManaReduction / 100));
-	if(focus_redux >= 100) {
-		uint32 buff_max = GetMaxTotalSlots();
-		for (int buffSlot = 0; buffSlot < buff_max; buffSlot++) {
-			if (buffs[buffSlot].spellid == 0 || buffs[buffSlot].spellid >= SPDAT_RECORDS)
-				continue;
-
-			if(IsEffectInSpell(buffs[buffSlot].spellid, SE_ReduceManaCost)) {
-				if(CalcFocusEffect(focusManaCost, buffs[buffSlot].spellid, spell_id) == 100)
-					cost = 1;
-			}
-		}
-	}
-
-	if(cost < 0)
-		cost = 0;
-
-	return cost;
-}
-
-float Bot::GetActSpellRange(uint16 spell_id, float range) {
-	float extrange = 100;
-	extrange += GetFocusEffect(focusRange, spell_id);
-	return ((range * extrange) / 100);
 }
 
 int32 Bot::GetActSpellDuration(uint16 spell_id, int32 duration) {
@@ -9586,17 +9268,6 @@ void Bot::SpawnBotGroupByName(Client* c, std::string botgroup_name, uint32 leade
 
 	member_list[botgroup_id].remove(0);
 	member_list[botgroup_id].remove(leader->GetBotID());
-
-	auto bot_spawn_limit = c->GetBotSpawnLimit();
-	auto spawned_bot_count = 0;
-
-	std::vector<int> bot_class_spawn_limits;
-	std::vector<int> bot_class_spawned_count = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-
-	for (uint8 class_id = WARRIOR; class_id <= BERSERKER; class_id++) {
-		bot_class_spawn_limits[class_id - 1] = c->GetBotSpawnLimit(class_id);
-	}
-
 	for (const auto& member_iter : member_list[botgroup_id]) {
 		auto member = Bot::LoadBot(member_iter);
 		if (!member) {
@@ -9611,36 +9282,6 @@ void Bot::SpawnBotGroupByName(Client* c, std::string botgroup_name, uint32 leade
 			return;
 		}
 
-		if (bot_spawn_limit >= 0 && spawned_bot_count >= bot_spawn_limit) {
-			c->Message(
-				Chat::White,
-				fmt::format(
-					"Failed to spawn {} because you have a max of {} bot{} spawned.",
-					member->GetCleanName(),
-					bot_spawn_limit,
-					bot_spawn_limit != 1 ? "s" : ""
-				).c_str()
-			);
-			return;
-		}
-
-		auto spawned_bot_count_class = bot_class_spawned_count[member->GetClass() - 1];
-		auto bot_spawn_limit_class = bot_class_spawn_limits[member->GetClass() - 1];
-
-		if (bot_spawn_limit_class >= 0 && spawned_bot_count_class >= bot_spawn_limit_class) {
-			c->Message(
-				Chat::White,
-				fmt::format(
-					"Failed to spawn {} because you have a max of {} {} bot{} spawned.",
-					member->GetCleanName(),
-					bot_spawn_limit_class,
-					GetClassIDName(member->GetClass()),
-					bot_spawn_limit_class != 1 ? "s" : ""
-				).c_str()
-			);
-			continue;
-		}
-
 		if (!member->Spawn(c)) {
 			c->Message(
 				Chat::White,
@@ -9653,9 +9294,6 @@ void Bot::SpawnBotGroupByName(Client* c, std::string botgroup_name, uint32 leade
 			safe_delete(member);
 			return;
 		}
-
-		spawned_bot_count++;
-		bot_class_spawned_count[member->GetClass() - 1]++;
 
 		Bot::AddBotToGroup(member, g);
 	}
@@ -10243,19 +9881,17 @@ int32 Bot::GetRawItemAC()
 	return Total;
 }
 
-void Bot::SendSpellAnim(uint16 target_id, uint16 spell_id)
+void Bot::SendSpellAnim(uint16 targetid, uint16 spell_id)
 {
-	if (!target_id || !IsValidSpell(spell_id)) {
+	if (!targetid || !IsValidSpell(spell_id))
 		return;
-	}
 
 	EQApplicationPacket app(OP_Action, sizeof(Action_Struct));
-	auto* a = (Action_Struct*) app.pBuffer;
-
-	a->target      = target_id;
-	a->source      = GetID();
-	a->type        = 231;
-	a->spell       = spell_id;
+	Action_Struct* a = (Action_Struct*)app.pBuffer;
+	a->target = targetid;
+	a->source = GetID();
+	a->type = 231;
+	a->spell = spell_id;
 	a->hit_heading = GetHeading();
 
 	app.priority = 1;

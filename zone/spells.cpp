@@ -757,7 +757,7 @@ bool Mob::DoCastingChecksOnTarget(bool check_on_casting, int32 spell_id, Mob *sp
 		ignore_if_npc_or_gm = true;
 	}
 
-	if (check_on_casting){
+	if (check_on_casting) {
 
 		if (spells[spell_id].target_type == ST_AEClientV1 ||
 			spells[spell_id].target_type == ST_AECaster ||
@@ -769,12 +769,10 @@ bool Mob::DoCastingChecksOnTarget(bool check_on_casting, int32 spell_id, Mob *sp
 		if (!spell_target) {
 			if (IsGroupSpell(spell_id)){
 				return true;
-			}
-			else if (spells[spell_id].target_type == ST_Self) {
+			} else if (spells[spell_id].target_type == ST_Self) {
 				spell_target = this;
 			}
-		}
-		else {
+		} else {
 			if (IsGroupSpell(spell_id) && spell_target != this) {
 				ignore_on_casting = true;
 			}
@@ -808,8 +806,7 @@ bool Mob::DoCastingChecksOnTarget(bool check_on_casting, int32 spell_id, Mob *sp
 				return false;
 			}
 		}
-	}
-	else if (spells[spell_id].can_cast_in_combat && !spells[spell_id].can_cast_out_of_combat) {
+	} else if (spells[spell_id].can_cast_in_combat && !spells[spell_id].can_cast_out_of_combat) {
 		if (IsDetrimentalSpell(spell_id)) {
 			if (((spell_target->IsNPC() && !spell_target->IsEngaged()) ||
 				(spell_target->IsClient() && !spell_target->CastToClient()->GetAggroCount()))) {

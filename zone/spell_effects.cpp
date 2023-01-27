@@ -6370,8 +6370,8 @@ int64 Mob::GetFocusEffect(focusType type, uint16 spell_id, Mob *caster, bool fro
 		rand_effectiveness = true;
 	}
 
-	//Check if item focus effect exists for the client.
-	if (itembonuses.FocusEffects[type]){
+	//Check if item focus effect exists for the mob.
+	if (itembonuses.FocusEffects[type]) {
 
 		const EQ::ItemData* TempItem = nullptr;
 		const EQ::ItemData* UsedItem = nullptr;
@@ -6381,12 +6381,12 @@ int64 Mob::GetFocusEffect(focusType type, uint16 spell_id, Mob *caster, bool fro
 		int32 focus_max_real = 0;
 
 		//item focus
-		for (int x = EQ::invslot::EQUIPMENT_BEGIN; x <= EQ::invslot::EQUIPMENT_END; x++)
-		{
+		for (int x = EQ::invslot::EQUIPMENT_BEGIN; x <= EQ::invslot::EQUIPMENT_END; x++) {
 			TempItem = nullptr;
 			EQ::ItemInstance* ins = GetInv().GetItem(x);
-			if (!ins)
+			if (!ins) {
 				continue;
+			}
 			TempItem = ins->GetItem();
 			if (TempItem && TempItem->Focus.Effect > 0 && TempItem->Focus.Effect != SPELL_UNKNOWN) {
 				if(rand_effectiveness) {
@@ -6400,8 +6400,7 @@ int64 Mob::GetFocusEffect(focusType type, uint16 spell_id, Mob *caster, bool fro
 						UsedItem = TempItem;
 						UsedFocusID = TempItem->Focus.Effect;
 					}
-				}
-				else {
+				} else {
 					Total = CalcFocusEffect(type, TempItem->Focus.Effect, spell_id);
 					if (Total > 0 && realTotal >= 0 && Total > realTotal) {
 						realTotal = Total;
@@ -6415,12 +6414,10 @@ int64 Mob::GetFocusEffect(focusType type, uint16 spell_id, Mob *caster, bool fro
 				}
 			}
 
-			for (int y = EQ::invaug::SOCKET_BEGIN; y <= EQ::invaug::SOCKET_END; ++y)
-			{
+			for (int y = EQ::invaug::SOCKET_BEGIN; y <= EQ::invaug::SOCKET_END; ++y) {
 				EQ::ItemInstance *aug = nullptr;
 				aug = ins->GetAugment(y);
-				if(aug)
-				{
+				if(aug) {
 					const EQ::ItemData* TempItemAug = aug->GetItem();
 					if (TempItemAug && TempItemAug->Focus.Effect > 0 && TempItemAug->Focus.Effect != SPELL_UNKNOWN) {
 						if(rand_effectiveness) {
@@ -6453,7 +6450,7 @@ int64 Mob::GetFocusEffect(focusType type, uint16 spell_id, Mob *caster, bool fro
 		}
 
 		if (IsClient()) {
-			//Tribute Focus
+			//Client Tribute Focus
 			for (int x = EQ::invslot::TRIBUTE_BEGIN; x <= EQ::invslot::TRIBUTE_END; ++x) {
 				TempItem = nullptr;
 				EQ::ItemInstance* ins = GetInv().GetItem(x);
@@ -6462,7 +6459,7 @@ int64 Mob::GetFocusEffect(focusType type, uint16 spell_id, Mob *caster, bool fro
 				}
 				TempItem = ins->GetItem();
 				if (TempItem && TempItem->Focus.Effect > 0 && TempItem->Focus.Effect != SPELL_UNKNOWN) {
-					if(rand_effectiveness) {
+					if (rand_effectiveness) {
 						focus_max = CalcFocusEffect(type, TempItem->Focus.Effect, spell_id, true);
 						if (focus_max > 0 && focus_max_real >= 0 && focus_max > focus_max_real) {
 							focus_max_real = focus_max;
@@ -6489,8 +6486,9 @@ int64 Mob::GetFocusEffect(focusType type, uint16 spell_id, Mob *caster, bool fro
 			}
 		}
 
-		if(UsedItem && rand_effectiveness && focus_max_real != 0)
+		if (UsedItem && rand_effectiveness && focus_max_real != 0) {
 			realTotal = CalcFocusEffect(type, UsedFocusID, spell_id);
+		}
 
 		if ((rand_effectiveness && UsedItem) || (realTotal != 0 && UsedItem)) {
 			// there are a crap ton more of these, I was able to verify these ones though
@@ -6535,8 +6533,8 @@ int64 Mob::GetFocusEffect(focusType type, uint16 spell_id, Mob *caster, bool fro
 		}
 	}
 
-	//Check if spell focus effect exists for the client.
-	if (spellbonuses.FocusEffects[type]){
+	//Check if spell focus effect exists for the mob.
+	if (spellbonuses.FocusEffects[type]) {
 
 		//Spell Focus
 		int32 Total2 = 0;
@@ -6550,10 +6548,11 @@ int64 Mob::GetFocusEffect(focusType type, uint16 spell_id, Mob *caster, bool fro
 		int buff_max = GetMaxTotalSlots();
 		for (buff_slot = 0; buff_slot < buff_max; buff_slot++) {
 			focusspellid = buffs[buff_slot].spellid;
-			if (focusspellid == 0 || focusspellid >= SPDAT_RECORDS)
+			if (focusspellid == 0 || focusspellid >= SPDAT_RECORDS) {
 				continue;
+			}
 
-			if(rand_effectiveness) {
+			if (rand_effectiveness) {
 				focus_max2 = CalcFocusEffect(type, focusspellid, spell_id, true, buffs[buff_slot].casterid, caster);
 				if (focus_max2 > 0 && focus_max_real2 >= 0 && focus_max2 > focus_max_real2) {
 					focus_max_real2 = focus_max2;
@@ -6584,16 +6583,17 @@ int64 Mob::GetFocusEffect(focusType type, uint16 spell_id, Mob *caster, bool fro
 			original_caster_id = buffs[buff_tracker].casterid;
 		}
 
-		if(focusspell_tracker && rand_effectiveness && focus_max_real2 != 0)
+		if (focusspell_tracker && rand_effectiveness && focus_max_real2 != 0) {
 			realTotal2 = CalcFocusEffect(type, focusspell_tracker, spell_id, false, original_caster_id, caster);
+		}
 
-		if(!from_buff_tic && buff_tracker >= 0 && buffs[buff_tracker].hit_number > 0) {
+		if (!from_buff_tic && buff_tracker >= 0 && buffs[buff_tracker].hit_number > 0) {
 			CheckNumHitsRemaining(NumHit::MatchingSpells, buff_tracker);
 		}
 	}
 
 	// AA Focus
-	if (aabonuses.FocusEffects[type]){
+	if (aabonuses.FocusEffects[type]) {
 
 		int32 Total3 = 0;
 
@@ -6602,12 +6602,13 @@ int64 Mob::GetFocusEffect(focusType type, uint16 spell_id, Mob *caster, bool fro
 			auto ability = ability_rank.first;
 			auto rank = ability_rank.second;
 
-			if(!ability) {
+			if (!ability) {
 				continue;
 			}
 
-			if (rank->effects.empty())
+			if (rank->effects.empty()) {
 				continue;
+			}
 
 			Total3 = CalcAAFocus(type, *rank, spell_id);
 			if (Total3 > 0 && realTotal3 >= 0 && Total3 > realTotal3) {
@@ -6619,16 +6620,18 @@ int64 Mob::GetFocusEffect(focusType type, uint16 spell_id, Mob *caster, bool fro
 		}
 	}
 
-	if(type == focusReagentCost && (IsEffectInSpell(spell_id, SE_SummonItem) || IsSacrificeSpell(spell_id)))
+	if (type == focusReagentCost && (IsEffectInSpell(spell_id, SE_SummonItem) || IsSacrificeSpell(spell_id))) {
 		return 0;
+	}
 	//Summon Spells that require reagents are typically imbue type spells, enchant metal, sacrifice and shouldn't be affected
 	//by reagent conservation for obvious reasons.
 
 	//Non-Live like feature to allow for an additive focus bonus to be applied from foci that are placed in worn slot. (No limit checks)
 	int32 worneffect_bonus = 0;
-	if (RuleB(Spells, UseAdditiveFocusFromWornSlot))
+	if (RuleB(Spells, UseAdditiveFocusFromWornSlot)) {
 		worneffect_bonus = itembonuses.FocusEffectsWorn[type];
-
+	}
+	
 	return realTotal + realTotal2 + realTotal3 + worneffect_bonus;
 }
 
