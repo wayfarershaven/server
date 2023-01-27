@@ -86,3 +86,9 @@ submodules/*
 # Clangd Generated Files.
 compile_flags.txt
 .cache/
+
+# Ninja
+.ninja_deps
+.ninja_log
+build.ninja
+Testing/Temporary/LastTest.log
