@@ -100,3 +100,6 @@ Testing/Temporary/LastTest.log
 !utils/scripts/build/
 !utils/scripts/build/should-release/should-release
 !utils/scripts/build/should-release/should-release.exe
+
+# CMake Files
+cmake-build-relwithdebinfo/*
