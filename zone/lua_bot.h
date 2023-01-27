@@ -8,6 +8,7 @@
 class Bot;
 class Lua_Bot;
 class Lua_Mob;
+class Lua_Group;
 
 namespace luabind {
 	struct scope;
@@ -55,6 +56,13 @@ public:
 	void SendPayload(int payload_id);
 	void SendPayload(int payload_id, std::string payload_value);
 	uint32 GetBotID();
+	void Camp();
+	void Camp(bool save_to_database);
+	Lua_ItemInst GetAugmentAt(int16 slot_id, uint8 augment_index);
+	int GetAugmentIDAt(int16 slot_id, uint8 augment_index);
+	Lua_ItemInst GetItemAt(int16 slot_id);
+	int GetItemIDAt(int16 slot_id);
+	void SendSpellAnim(uint16 target_id, uint16 spell_id);
 
 	void ApplySpell(int spell_id);
 	void ApplySpell(int spell_id, int duration);
@@ -86,9 +94,6 @@ public:
 
 	void Escape();
 	int GetInstrumentMod(int spell_id);
-
-	int GetItemIDAt(int slot_id);
-	int GetAugmentIDAt(int slot_id, int aug_slot);
 
 	int GetBaseSTR();
 	int GetBaseSTA();
