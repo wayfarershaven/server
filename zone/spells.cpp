@@ -5321,7 +5321,7 @@ int Mob::ResistPhysical(int level_diff, uint8 caster_level) {
 int16 Mob::CalcResistChanceBonus() {
 	int resistchance = spellbonuses.ResistSpellChance + itembonuses.ResistSpellChance;
 
-	if (IsClient()) {
+	if (IsClient() || IsBot()) {
 		resistchance += aabonuses.ResistSpellChance;
 	}
 
@@ -5330,9 +5330,9 @@ int16 Mob::CalcResistChanceBonus() {
 
 int16 Mob::CalcFearResistChance() {
 	int resistchance = spellbonuses.ResistFearChance + itembonuses.ResistFearChance;
-	if (IsClient()) {
+	if (IsClient() || IsBot()) {
 		resistchance += aabonuses.ResistFearChance;
-		if(aabonuses.Fearless == true) {
+		if (aabonuses.Fearless == true) {
 			resistchance = 100;
 		}
 	}
@@ -5351,10 +5351,6 @@ int16 Mob::CalcFearResistChance() {
 	return resistchance;
 }
 
-/**
- * @param spell_id
- * @return
- */
 float Mob::GetAOERange(uint16 spell_id)
 {
 	float range = spells[spell_id].aoe_range;
@@ -6073,7 +6069,7 @@ bool Mob::IsCombatProc(uint16 spell_id) {
 		}
 	}
 
-	if (IsClient()) {
+	if (IsClient() || IsBot()) {
 		for (int i = 0; i < MAX_AA_PROCS; i += 4) {
 			if (aabonuses.SpellProc[i + 1] == spell_id ||
 				aabonuses.RangedProc[i + 1] == spell_id ||

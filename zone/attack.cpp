@@ -3551,7 +3551,7 @@ bool Mob::HasProcs() const
         }
     }
 
-    if (IsClient()) {
+    if (IsClient() || IsBot()) {
         for (int i = 0; i < MAX_AA_PROCS; i += 4) {
             if (aabonuses.SpellProc[i]) {
                 return true;
@@ -3569,7 +3569,7 @@ bool Mob::HasDefensiveProcs() const
         }
     }
 
-    if (IsClient()) {
+   if (IsClient() || IsBot()) {
         for (int i = 0; i < MAX_AA_PROCS; i += 4) {
             if (aabonuses.DefensiveProc[i]) {
                 return true;
@@ -3605,7 +3605,7 @@ bool Mob::HasRangedProcs() const
         }
     }
 
-    if (IsClient()) {
+    if (IsClient() || IsBot()) {
         for (int i = 0; i < MAX_AA_PROCS; i += 4) {
             if (aabonuses.RangedProc[i]) {
                 return true;
@@ -4403,7 +4403,7 @@ void Mob::TryDefensiveProc(Mob *on, uint16 hand) {
         }
 
         //AA Procs
-        if (IsClient()){
+        if (IsClient() || IsBot()) {
             for (int i = 0; i < MAX_AA_PROCS; i += 4) {
                 int32 aa_rank_id = aabonuses.DefensiveProc[i + +SBIndex::COMBAT_PROC_ORIGIN_ID];
                 int32 aa_spell_id = aabonuses.DefensiveProc[i + SBIndex::COMBAT_PROC_SPELL_ID];
@@ -4662,7 +4662,7 @@ void Mob::TrySpellProc(const EQ::ItemInstance *inst, const EQ::ItemData *weapon,
     }
 
     //AA Melee and Ranged Procs
-    if (IsClient()) {
+    if (IsClient() || IsBot()) {
         for (int i = 0; i < MAX_AA_PROCS; i += 4) {
 
             int32 aa_rank_id = 0;
