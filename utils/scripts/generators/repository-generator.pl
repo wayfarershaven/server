@@ -269,12 +269,12 @@ foreach my $table_to_generate (@tables) {
         # struct
         $table_struct_columns .= sprintf("\t\t\%-${longest_data_type_length}s %s;\n", $struct_data_type, $column_name_formatted);
 
-        # new entity
-        $default_entries .= sprintf("\t\te.%-${longest_column_length}s = %s;\n", $column_name_formatted, $default_value);
-
         if ($cereal_enabled == 1) {
             $cereal_columns .= sprintf("\t\t\t\tCEREAL_NVP(%s),\n", $column_name_formatted);
         }
+
+        # new entity
+        $default_entries .= sprintf("\t\te.%-${longest_column_length}s = %s;\n", $column_name_formatted, $default_value);
 
         # column names (string)
         $column_names_quoted .= sprintf("\t\t\t\"%s\",\n", format_column_name_for_mysql($column_name));
