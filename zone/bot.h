@@ -374,6 +374,11 @@ public:
 	inline bool Attack(Mob* other, int Hand = EQ::invslot::slotPrimary, bool FromRiposte = false, bool IsStrikethrough = false,
 		bool IsFromSpell = false, ExtraAttackOptions *opts = nullptr) override
 			{ return Mob::Attack(other, Hand, FromRiposte, IsStrikethrough, IsFromSpell, opts); }
+
+	[[nodiscard]] int GetMaxBuffSlots() const override { return EQ::spells::LONG_BUFFS; }
+	[[nodiscard]] int GetMaxSongSlots() const override { return EQ::spells::SHORT_BUFFS; }
+	[[nodiscard]] int GetMaxDiscSlots() const override { return EQ::spells::DISC_BUFFS; }
+	[[nodiscard]] int GetMaxTotalSlots() const override { return EQ::spells::TOTAL_BUFFS; }
 			
 	bool GetBotOwnerDataBuckets();
 	bool GetBotDataBuckets();
