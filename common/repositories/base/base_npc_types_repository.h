@@ -16,6 +16,7 @@
 #include "../../strings.h"
 #include <ctime>
 
+
 class BaseNpcTypesRepository {
 public:
 	struct NpcTypes {
@@ -116,22 +117,30 @@ public:
 		float       healscale;
 		uint8_t     no_target_hotkey;
 		uint8_t     raid_target;
-		int8_t		chesttexture;
+		int8_t      chesttexture;
 		int8_t      armtexture;
 		int8_t      bracertexture;
 		int8_t      handtexture;
 		int8_t      legtexture;
 		int8_t      feettexture;
-		int32_t		combat_hp_regen;
-		int32_t		combat_mana_regen;
 		int8_t      light;
 		int8_t      walkspeed;
 		int32_t     peqid;
 		int8_t      unique_;
 		int8_t      fixed;
+		int32_t     combat_hp_regen;
+		int32_t     combat_mana_regen;
+		uint8_t     aggro_pc;
+		float       ignore_distance;
 		int8_t      ignore_despawn;
 		int8_t      show_name;
 		int8_t      untargetable;
+		int8_t      disable_instance;
+		int8_t      stuck_behavior;
+		int16_t     model;
+		int8_t      flymode;
+		int8_t      skip_global_loot;
+		int8_t      rare_spawn;
 		int16_t     charm_ac;
 		int32_t     charm_min_dmg;
 		int32_t     charm_max_dmg;
@@ -139,18 +148,10 @@ public:
 		int32_t     charm_accuracy_rating;
 		int32_t     charm_avoidance_rating;
 		int32_t     charm_atk;
-		int8_t      skip_global_loot;
-		int8_t      rare_spawn;
-		int8_t      stuck_behavior;
-		int16_t     model;
-		int8_t      flymode;
 		int8_t      always_aggro;
 		int32_t     exp_mod;
 		int32_t     heroic_strikethrough;
 		int32_t     faction_amount;
-		int8_t		aggro_pc;
-		float		ignore_distance;
-		int8_t		disable_instance;
 	};
 
 	static std::string PrimaryKey()
@@ -628,8 +629,9 @@ public:
 	{
 		auto results = db.QueryDatabase(
 			fmt::format(
-				"{} WHERE id = {} LIMIT 1",
+				"{} WHERE {} = {} LIMIT 1",
 				BaseSelect(),
+				PrimaryKey(),
 				npc_types_id
 			)
 		);
@@ -736,7 +738,7 @@ public:
 			e.no_target_hotkey       = static_cast<uint8_t>(strtoul(row[95], nullptr, 10));
 			e.raid_target            = static_cast<uint8_t>(strtoul(row[96], nullptr, 10));
 			e.chesttexture           = static_cast<int8_t>(atoi(row[97]));
-			e.armtexture             = static_cast<int8_t>(atoi(row[99]));
+			e.armtexture             = static_cast<int8_t>(atoi(row[98]));
 			e.bracertexture          = static_cast<int8_t>(atoi(row[99]));
 			e.handtexture            = static_cast<int8_t>(atoi(row[100]));
 			e.legtexture             = static_cast<int8_t>(atoi(row[101]));
@@ -748,7 +750,7 @@ public:
 			e.fixed                  = static_cast<int8_t>(atoi(row[107]));
 			e.combat_hp_regen        = static_cast<int32_t>(atoi(row[108]));
 			e.combat_mana_regen      = static_cast<int32_t>(atoi(row[109]));
-			e.aggro_pc               = static_cast<int8_t>(atoi(row[110]));
+			e.aggro_pc               = static_cast<uint8_t>(strtoul(row[110], nullptr, 10));
 			e.ignore_distance        = strtof(row[111], nullptr);
 			e.ignore_despawn         = static_cast<int8_t>(atoi(row[112]));
 			e.show_name              = static_cast<int8_t>(atoi(row[113]));
@@ -1379,7 +1381,7 @@ public:
 			e.no_target_hotkey       = static_cast<uint8_t>(strtoul(row[95], nullptr, 10));
 			e.raid_target            = static_cast<uint8_t>(strtoul(row[96], nullptr, 10));
 			e.chesttexture           = static_cast<int8_t>(atoi(row[97]));
-			e.armtexture             = static_cast<int8_t>(atoi(row[99]));
+			e.armtexture             = static_cast<int8_t>(atoi(row[98]));
 			e.bracertexture          = static_cast<int8_t>(atoi(row[99]));
 			e.handtexture            = static_cast<int8_t>(atoi(row[100]));
 			e.legtexture             = static_cast<int8_t>(atoi(row[101]));
@@ -1391,7 +1393,7 @@ public:
 			e.fixed                  = static_cast<int8_t>(atoi(row[107]));
 			e.combat_hp_regen        = static_cast<int32_t>(atoi(row[108]));
 			e.combat_mana_regen      = static_cast<int32_t>(atoi(row[109]));
-			e.aggro_pc               = static_cast<int8_t>(atoi(row[110]));
+			e.aggro_pc               = static_cast<uint8_t>(strtoul(row[110], nullptr, 10));
 			e.ignore_distance        = strtof(row[111], nullptr);
 			e.ignore_despawn         = static_cast<int8_t>(atoi(row[112]));
 			e.show_name              = static_cast<int8_t>(atoi(row[113]));
@@ -1535,7 +1537,7 @@ public:
 			e.no_target_hotkey       = static_cast<uint8_t>(strtoul(row[95], nullptr, 10));
 			e.raid_target            = static_cast<uint8_t>(strtoul(row[96], nullptr, 10));
 			e.chesttexture           = static_cast<int8_t>(atoi(row[97]));
-			e.armtexture             = static_cast<int8_t>(atoi(row[99]));
+			e.armtexture             = static_cast<int8_t>(atoi(row[98]));
 			e.bracertexture          = static_cast<int8_t>(atoi(row[99]));
 			e.handtexture            = static_cast<int8_t>(atoi(row[100]));
 			e.legtexture             = static_cast<int8_t>(atoi(row[101]));
@@ -1547,7 +1549,7 @@ public:
 			e.fixed                  = static_cast<int8_t>(atoi(row[107]));
 			e.combat_hp_regen        = static_cast<int32_t>(atoi(row[108]));
 			e.combat_mana_regen      = static_cast<int32_t>(atoi(row[109]));
-			e.aggro_pc               = static_cast<int8_t>(atoi(row[110]));
+			e.aggro_pc               = static_cast<uint8_t>(strtoul(row[110], nullptr, 10));
 			e.ignore_distance        = strtof(row[111], nullptr);
 			e.ignore_despawn         = static_cast<int8_t>(atoi(row[112]));
 			e.show_name              = static_cast<int8_t>(atoi(row[113]));
@@ -1569,6 +1571,7 @@ public:
 			e.exp_mod                = static_cast<int32_t>(atoi(row[129]));
 			e.heroic_strikethrough   = static_cast<int32_t>(atoi(row[130]));
 			e.faction_amount         = static_cast<int32_t>(atoi(row[131]));
+
 			all_entries.push_back(e);
 		}
 
