@@ -165,6 +165,18 @@ public:
 	void DeleteQuestLoot();
 	void DeleteQuestLoot(int itemid1, int itemid2, int itemid3, int itemid4);
 	bool QuestLootCount(int itemid1, int itemid2, int itemid3, int itemid4);
+	bool IsLDoNTrapped();
+	void SetLDoNTrapped(bool is_trapped);
+	uint8 GetLDoNTrapType();
+	void SetLDoNTrapType(uint8 trap_type);
+	uint16 GetLDoNTrapSpellID();
+	void SetLDoNTrapSpellID(uint16 spell_id);
+	bool IsLDoNLocked();
+	void SetLDoNLocked(bool is_locked);
+	uint16 GetLDoNLockedSkill();
+	void SetLDoNLockedSkill(uint16 skill_value);
+	bool IsLDoNTrapDetected();
+	void SetLDoNTrapDetected(bool is_detected);
 };
 
 #endif
