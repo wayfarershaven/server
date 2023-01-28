@@ -125,9 +125,8 @@ public:
 	{
 		auto results = db.QueryDatabase(
 			fmt::format(
-				"{} WHERE {} = {} LIMIT 1",
+				"{} WHERE id = {} LIMIT 1",
 				BaseSelect(),
-				PrimaryKey(),
 				completed_shared_tasks_id
 			)
 		);

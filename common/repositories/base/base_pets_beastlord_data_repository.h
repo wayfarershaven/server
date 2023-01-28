@@ -129,9 +129,8 @@ public:
 	{
 		auto results = db.QueryDatabase(
 			fmt::format(
-				"{} WHERE {} = {} LIMIT 1",
+				"{} WHERE id = {} LIMIT 1",
 				BaseSelect(),
-				PrimaryKey(),
 				pets_beastlord_data_id
 			)
 		);
