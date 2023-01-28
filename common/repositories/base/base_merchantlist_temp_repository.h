@@ -16,15 +16,17 @@
 #include "../../strings.h"
 #include <ctime>
 
+
 class BaseMerchantlistTempRepository {
 public:
 	struct MerchantlistTemp {
 		uint32_t npcid;
-		uint8_t  slot;
+		uint32_t slot;
 		int32_t  zone_id;
 		int32_t  instance_id;
 		uint32_t itemid;
 		uint32_t charges;
+		int8_t   itemcharges;
 	};
 
 	static std::string PrimaryKey()
@@ -41,6 +43,7 @@ public:
 			"instance_id",
 			"itemid",
 			"charges",
+			"itemcharges",
 		};
 	}
 
@@ -53,6 +56,7 @@ public:
 			"instance_id",
 			"itemid",
 			"charges",
+			"itemcharges",
 		};
 	}
 
@@ -99,6 +103,7 @@ public:
 		e.instance_id = 0;
 		e.itemid      = 0;
 		e.charges     = 1;
+		e.itemcharges = 0;
 
 		return e;
 	}
@@ -135,11 +140,12 @@ public:
 			MerchantlistTemp e{};
 
 			e.npcid       = static_cast<uint32_t>(strtoul(row[0], nullptr, 10));
-			e.slot        = static_cast<uint8_t>(strtoul(row[1], nullptr, 10));
+			e.slot        = static_cast<uint32_t>(strtoul(row[1], nullptr, 10));
 			e.zone_id     = static_cast<int32_t>(atoi(row[2]));
 			e.instance_id = static_cast<int32_t>(atoi(row[3]));
 			e.itemid      = static_cast<uint32_t>(strtoul(row[4], nullptr, 10));
 			e.charges     = static_cast<uint32_t>(strtoul(row[5], nullptr, 10));
+			e.itemcharges = static_cast<int8_t>(atoi(row[6]));
 
 			return e;
 		}
@@ -179,6 +185,7 @@ public:
 		v.push_back(columns[3] + " = " + std::to_string(e.instance_id));
 		v.push_back(columns[4] + " = " + std::to_string(e.itemid));
 		v.push_back(columns[5] + " = " + std::to_string(e.charges));
+		v.push_back(columns[6] + " = " + std::to_string(e.itemcharges));
 
 		auto results = db.QueryDatabase(
 			fmt::format(
@@ -206,6 +213,7 @@ public:
 		v.push_back(std::to_string(e.instance_id));
 		v.push_back(std::to_string(e.itemid));
 		v.push_back(std::to_string(e.charges));
+		v.push_back(std::to_string(e.itemcharges));
 
 		auto results = db.QueryDatabase(
 			fmt::format(
@@ -241,6 +249,7 @@ public:
 			v.push_back(std::to_string(e.instance_id));
 			v.push_back(std::to_string(e.itemid));
 			v.push_back(std::to_string(e.charges));
+			v.push_back(std::to_string(e.itemcharges));
 
 			insert_chunks.push_back("(" + Strings::Implode(",", v) + ")");
 		}
@@ -275,11 +284,12 @@ public:
 			MerchantlistTemp e{};
 
 			e.npcid       = static_cast<uint32_t>(strtoul(row[0], nullptr, 10));
-			e.slot        = static_cast<uint8_t>(strtoul(row[1], nullptr, 10));
+			e.slot        = static_cast<uint32_t>(strtoul(row[1], nullptr, 10));
 			e.zone_id     = static_cast<int32_t>(atoi(row[2]));
 			e.instance_id = static_cast<int32_t>(atoi(row[3]));
 			e.itemid      = static_cast<uint32_t>(strtoul(row[4], nullptr, 10));
 			e.charges     = static_cast<uint32_t>(strtoul(row[5], nullptr, 10));
+			e.itemcharges = static_cast<int8_t>(atoi(row[6]));
 
 			all_entries.push_back(e);
 		}
@@ -305,11 +315,12 @@ public:
 			MerchantlistTemp e{};
 
 			e.npcid       = static_cast<uint32_t>(strtoul(row[0], nullptr, 10));
-			e.slot        = static_cast<uint8_t>(strtoul(row[1], nullptr, 10));
+			e.slot        = static_cast<uint32_t>(strtoul(row[1], nullptr, 10));
 			e.zone_id     = static_cast<int32_t>(atoi(row[2]));
 			e.instance_id = static_cast<int32_t>(atoi(row[3]));
 			e.itemid      = static_cast<uint32_t>(strtoul(row[4], nullptr, 10));
 			e.charges     = static_cast<uint32_t>(strtoul(row[5], nullptr, 10));
+			e.itemcharges = static_cast<int8_t>(atoi(row[6]));
 
 			all_entries.push_back(e);
 		}

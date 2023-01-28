@@ -45,37 +45,6 @@ public:
 
 	// Custom extended repository methods here
 
-	static std::vector<GridEntries> GetZoneGridEntries(Database& db, int zone_id)
-	{
-		std::vector<GridEntries> grid_entries;
-
-		auto results = db.QueryDatabase(
-			fmt::format(
-				"{} WHERE zoneid = {} ORDER BY gridid, number",
-				BaseSelect(),
-				zone_id
-			)
-		);
-
-		for (auto row = results.begin(); row != results.end(); ++row) {
-			GridEntries entry{};
-
-			entry.gridid      = atoi(row[0]);
-			entry.zoneid      = atoi(row[1]);
-			entry.number      = atoi(row[2]);
-			entry.x           = static_cast<float>(atof(row[3]));
-			entry.y           = static_cast<float>(atof(row[4]));
-			entry.z           = static_cast<float>(atof(row[5]));
-			entry.heading     = static_cast<float>(atof(row[6]));
-			entry.pause       = atoi(row[7]);
-			entry.centerpoint = atoi(row[8]);
-
-			grid_entries.push_back(entry);
-		}
-
-		return grid_entries;
-	}
-
 };
 
 #endif //EQEMU_GRID_ENTRIES_REPOSITORY_H

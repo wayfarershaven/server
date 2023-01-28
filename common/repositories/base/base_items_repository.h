@@ -16,6 +16,7 @@
 #include "../../strings.h"
 #include <ctime>
 
+
 class BaseItemsRepository {
 public:
 	struct Items {
@@ -304,6 +305,8 @@ public:
 		int32_t     UNK240;
 		int32_t     UNK241;
 		int32_t     epicitem;
+		int8_t      gmflag;
+		int8_t      soulbound;
 	};
 
 	static std::string PrimaryKey()
@@ -599,6 +602,8 @@ public:
 			"UNK240",
 			"UNK241",
 			"epicitem",
+			"gmflag",
+			"soulbound",
 		};
 	}
 
@@ -890,6 +895,8 @@ public:
 			"UNK240",
 			"UNK241",
 			"epicitem",
+			"gmflag",
+			"soulbound",
 		};
 	}
 
@@ -1215,6 +1222,8 @@ public:
 		e.UNK240              = 0;
 		e.UNK241              = 0;
 		e.epicitem            = 0;
+		e.gmflag              = 0;
+		e.soulbound           = 0;
 
 		return e;
 	}
@@ -1535,6 +1544,8 @@ public:
 			e.UNK240              = static_cast<int32_t>(atoi(row[282]));
 			e.UNK241              = static_cast<int32_t>(atoi(row[283]));
 			e.epicitem            = static_cast<int32_t>(atoi(row[284]));
+			e.gmflag              = static_cast<int8_t>(atoi(row[285]));
+			e.soulbound           = static_cast<int8_t>(atoi(row[286]));
 
 			return e;
 		}
@@ -1853,6 +1864,8 @@ public:
 		v.push_back(columns[282] + " = " + std::to_string(e.UNK240));
 		v.push_back(columns[283] + " = " + std::to_string(e.UNK241));
 		v.push_back(columns[284] + " = " + std::to_string(e.epicitem));
+		v.push_back(columns[285] + " = " + std::to_string(e.gmflag));
+		v.push_back(columns[286] + " = " + std::to_string(e.soulbound));
 
 		auto results = db.QueryDatabase(
 			fmt::format(
@@ -2159,6 +2172,8 @@ public:
 		v.push_back(std::to_string(e.UNK240));
 		v.push_back(std::to_string(e.UNK241));
 		v.push_back(std::to_string(e.epicitem));
+		v.push_back(std::to_string(e.gmflag));
+		v.push_back(std::to_string(e.soulbound));
 
 		auto results = db.QueryDatabase(
 			fmt::format(
@@ -2473,6 +2488,8 @@ public:
 			v.push_back(std::to_string(e.UNK240));
 			v.push_back(std::to_string(e.UNK241));
 			v.push_back(std::to_string(e.epicitem));
+			v.push_back(std::to_string(e.gmflag));
+			v.push_back(std::to_string(e.soulbound));
 
 			insert_chunks.push_back("(" + Strings::Implode(",", v) + ")");
 		}
@@ -2791,6 +2808,8 @@ public:
 			e.UNK240              = static_cast<int32_t>(atoi(row[282]));
 			e.UNK241              = static_cast<int32_t>(atoi(row[283]));
 			e.epicitem            = static_cast<int32_t>(atoi(row[284]));
+			e.gmflag              = static_cast<int8_t>(atoi(row[285]));
+			e.soulbound           = static_cast<int8_t>(atoi(row[286]));
 
 			all_entries.push_back(e);
 		}
@@ -3100,6 +3119,8 @@ public:
 			e.UNK240              = static_cast<int32_t>(atoi(row[282]));
 			e.UNK241              = static_cast<int32_t>(atoi(row[283]));
 			e.epicitem            = static_cast<int32_t>(atoi(row[284]));
+			e.gmflag              = static_cast<int8_t>(atoi(row[285]));
+			e.soulbound           = static_cast<int8_t>(atoi(row[286]));
 
 			all_entries.push_back(e);
 		}

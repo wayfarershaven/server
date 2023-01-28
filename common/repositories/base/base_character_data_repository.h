@@ -16,6 +16,7 @@
 #include "../../strings.h"
 #include <ctime>
 
+
 class BaseCharacterDataRepository {
 public:
 	struct CharacterData {
@@ -56,10 +57,10 @@ public:
 		uint8_t     ability_number;
 		uint8_t     ability_time_minutes;
 		uint8_t     ability_time_hours;
-		uint32_t    exp;
+		uint64_t    exp;
 		uint8_t     exp_enabled;
 		uint32_t    aa_points_spent;
-		uint32_t    aa_exp;
+		uint64_t    aa_exp;
 		uint32_t    aa_points;
 		uint32_t    group_leadership_exp;
 		uint32_t    raid_leadership_exp;
@@ -121,6 +122,11 @@ public:
 		uint32_t    aa_points_spent_old;
 		uint32_t    aa_points_old;
 		uint32_t    e_last_invsnapshot;
+		uint32_t    boatid;
+		std::string boatname;
+		int32_t     famished;
+		int8_t      is_deleted;
+		int8_t      enable_magelo;
 		time_t      deleted_at;
 	};
 
@@ -234,6 +240,11 @@ public:
 			"aa_points_spent_old",
 			"aa_points_old",
 			"e_last_invsnapshot",
+			"boatid",
+			"boatname",
+			"famished",
+			"is_deleted",
+			"enable_magelo",
 			"deleted_at",
 		};
 	}
@@ -343,6 +354,11 @@ public:
 			"aa_points_spent_old",
 			"aa_points_old",
 			"e_last_invsnapshot",
+			"boatid",
+			"boatname",
+			"famished",
+			"is_deleted",
+			"enable_magelo",
 			"UNIX_TIMESTAMP(deleted_at)",
 		};
 	}
@@ -486,6 +502,11 @@ public:
 		e.aa_points_spent_old     = 0;
 		e.aa_points_old           = 0;
 		e.e_last_invsnapshot      = 0;
+		e.boatid                  = 0;
+		e.boatname                = "";
+		e.famished                = 0;
+		e.is_deleted              = 0;
+		e.enable_magelo           = 1;
 		e.deleted_at              = 0;
 
 		return e;
@@ -512,9 +533,8 @@ public:
 	{
 		auto results = db.QueryDatabase(
 			fmt::format(
-				"{} WHERE {} = {} LIMIT 1",
+				"{} WHERE id = {} LIMIT 1",
 				BaseSelect(),
-				PrimaryKey(),
 				character_data_id
 			)
 		);
@@ -560,10 +580,10 @@ public:
 			e.ability_number          = static_cast<uint8_t>(strtoul(row[34], nullptr, 10));
 			e.ability_time_minutes    = static_cast<uint8_t>(strtoul(row[35], nullptr, 10));
 			e.ability_time_hours      = static_cast<uint8_t>(strtoul(row[36], nullptr, 10));
-			e.exp                     = static_cast<uint32_t>(strtoul(row[37], nullptr, 10));
+			e.exp                     = strtoull(row[37], nullptr, 10);
 			e.exp_enabled             = static_cast<uint8_t>(strtoul(row[38], nullptr, 10));
 			e.aa_points_spent         = static_cast<uint32_t>(strtoul(row[39], nullptr, 10));
-			e.aa_exp                  = static_cast<uint32_t>(strtoul(row[40], nullptr, 10));
+			e.aa_exp                  = strtoull(row[40], nullptr, 10);
 			e.aa_points               = static_cast<uint32_t>(strtoul(row[41], nullptr, 10));
 			e.group_leadership_exp    = static_cast<uint32_t>(strtoul(row[42], nullptr, 10));
 			e.raid_leadership_exp     = static_cast<uint32_t>(strtoul(row[43], nullptr, 10));
@@ -625,7 +645,12 @@ public:
 			e.aa_points_spent_old     = static_cast<uint32_t>(strtoul(row[99], nullptr, 10));
 			e.aa_points_old           = static_cast<uint32_t>(strtoul(row[100], nullptr, 10));
 			e.e_last_invsnapshot      = static_cast<uint32_t>(strtoul(row[101], nullptr, 10));
-			e.deleted_at              = strtoll(row[102] ? row[102] : "-1", nullptr, 10);
+			e.boatid                  = static_cast<uint32_t>(strtoul(row[102], nullptr, 10));
+			e.boatname                = row[103] ? row[103] : "";
+			e.famished                = static_cast<int32_t>(atoi(row[104]));
+			e.is_deleted              = static_cast<int8_t>(atoi(row[105]));
+			e.enable_magelo           = static_cast<int8_t>(atoi(row[106]));
+			e.deleted_at              = strtoll(row[107] ? row[107] : "-1", nullptr, 10);
 
 			return e;
 		}
@@ -760,7 +785,12 @@ public:
 		v.push_back(columns[99] + " = " + std::to_string(e.aa_points_spent_old));
 		v.push_back(columns[100] + " = " + std::to_string(e.aa_points_old));
 		v.push_back(columns[101] + " = " + std::to_string(e.e_last_invsnapshot));
-		v.push_back(columns[102] + " = FROM_UNIXTIME(" + (e.deleted_at > 0 ? std::to_string(e.deleted_at) : "null") + ")");
+		v.push_back(columns[102] + " = " + std::to_string(e.boatid));
+		v.push_back(columns[103] + " = '" + Strings::Escape(e.boatname) + "'");
+		v.push_back(columns[104] + " = " + std::to_string(e.famished));
+		v.push_back(columns[105] + " = " + std::to_string(e.is_deleted));
+		v.push_back(columns[106] + " = " + std::to_string(e.enable_magelo));
+		v.push_back(columns[107] + " = FROM_UNIXTIME(" + (e.deleted_at > 0 ? std::to_string(e.deleted_at) : "null") + ")");
 
 		auto results = db.QueryDatabase(
 			fmt::format(
@@ -884,6 +914,11 @@ public:
 		v.push_back(std::to_string(e.aa_points_spent_old));
 		v.push_back(std::to_string(e.aa_points_old));
 		v.push_back(std::to_string(e.e_last_invsnapshot));
+		v.push_back(std::to_string(e.boatid));
+		v.push_back("'" + Strings::Escape(e.boatname) + "'");
+		v.push_back(std::to_string(e.famished));
+		v.push_back(std::to_string(e.is_deleted));
+		v.push_back(std::to_string(e.enable_magelo));
 		v.push_back("FROM_UNIXTIME(" + (e.deleted_at > 0 ? std::to_string(e.deleted_at) : "null") + ")");
 
 		auto results = db.QueryDatabase(
@@ -1016,6 +1051,11 @@ public:
 			v.push_back(std::to_string(e.aa_points_spent_old));
 			v.push_back(std::to_string(e.aa_points_old));
 			v.push_back(std::to_string(e.e_last_invsnapshot));
+			v.push_back(std::to_string(e.boatid));
+			v.push_back("'" + Strings::Escape(e.boatname) + "'");
+			v.push_back(std::to_string(e.famished));
+			v.push_back(std::to_string(e.is_deleted));
+			v.push_back(std::to_string(e.enable_magelo));
 			v.push_back("FROM_UNIXTIME(" + (e.deleted_at > 0 ? std::to_string(e.deleted_at) : "null") + ")");
 
 			insert_chunks.push_back("(" + Strings::Implode(",", v) + ")");
@@ -1087,10 +1127,10 @@ public:
 			e.ability_number          = static_cast<uint8_t>(strtoul(row[34], nullptr, 10));
 			e.ability_time_minutes    = static_cast<uint8_t>(strtoul(row[35], nullptr, 10));
 			e.ability_time_hours      = static_cast<uint8_t>(strtoul(row[36], nullptr, 10));
-			e.exp                     = static_cast<uint32_t>(strtoul(row[37], nullptr, 10));
+			e.exp                     = strtoull(row[37], nullptr, 10);
 			e.exp_enabled             = static_cast<uint8_t>(strtoul(row[38], nullptr, 10));
 			e.aa_points_spent         = static_cast<uint32_t>(strtoul(row[39], nullptr, 10));
-			e.aa_exp                  = static_cast<uint32_t>(strtoul(row[40], nullptr, 10));
+			e.aa_exp                  = strtoull(row[40], nullptr, 10);
 			e.aa_points               = static_cast<uint32_t>(strtoul(row[41], nullptr, 10));
 			e.group_leadership_exp    = static_cast<uint32_t>(strtoul(row[42], nullptr, 10));
 			e.raid_leadership_exp     = static_cast<uint32_t>(strtoul(row[43], nullptr, 10));
@@ -1152,7 +1192,12 @@ public:
 			e.aa_points_spent_old     = static_cast<uint32_t>(strtoul(row[99], nullptr, 10));
 			e.aa_points_old           = static_cast<uint32_t>(strtoul(row[100], nullptr, 10));
 			e.e_last_invsnapshot      = static_cast<uint32_t>(strtoul(row[101], nullptr, 10));
-			e.deleted_at              = strtoll(row[102] ? row[102] : "-1", nullptr, 10);
+			e.boatid                  = static_cast<uint32_t>(strtoul(row[102], nullptr, 10));
+			e.boatname                = row[103] ? row[103] : "";
+			e.famished                = static_cast<int32_t>(atoi(row[104]));
+			e.is_deleted              = static_cast<int8_t>(atoi(row[105]));
+			e.enable_magelo           = static_cast<int8_t>(atoi(row[106]));
+			e.deleted_at              = strtoll(row[107] ? row[107] : "-1", nullptr, 10);
 
 			all_entries.push_back(e);
 		}
@@ -1214,10 +1259,10 @@ public:
 			e.ability_number          = static_cast<uint8_t>(strtoul(row[34], nullptr, 10));
 			e.ability_time_minutes    = static_cast<uint8_t>(strtoul(row[35], nullptr, 10));
 			e.ability_time_hours      = static_cast<uint8_t>(strtoul(row[36], nullptr, 10));
-			e.exp                     = static_cast<uint32_t>(strtoul(row[37], nullptr, 10));
+			e.exp                     = strtoull(row[37], nullptr, 10);
 			e.exp_enabled             = static_cast<uint8_t>(strtoul(row[38], nullptr, 10));
 			e.aa_points_spent         = static_cast<uint32_t>(strtoul(row[39], nullptr, 10));
-			e.aa_exp                  = static_cast<uint32_t>(strtoul(row[40], nullptr, 10));
+			e.aa_exp                  = strtoull(row[40], nullptr, 10);
 			e.aa_points               = static_cast<uint32_t>(strtoul(row[41], nullptr, 10));
 			e.group_leadership_exp    = static_cast<uint32_t>(strtoul(row[42], nullptr, 10));
 			e.raid_leadership_exp     = static_cast<uint32_t>(strtoul(row[43], nullptr, 10));
@@ -1279,7 +1324,12 @@ public:
 			e.aa_points_spent_old     = static_cast<uint32_t>(strtoul(row[99], nullptr, 10));
 			e.aa_points_old           = static_cast<uint32_t>(strtoul(row[100], nullptr, 10));
 			e.e_last_invsnapshot      = static_cast<uint32_t>(strtoul(row[101], nullptr, 10));
-			e.deleted_at              = strtoll(row[102] ? row[102] : "-1", nullptr, 10);
+			e.boatid                  = static_cast<uint32_t>(strtoul(row[102], nullptr, 10));
+			e.boatname                = row[103] ? row[103] : "";
+			e.famished                = static_cast<int32_t>(atoi(row[104]));
+			e.is_deleted              = static_cast<int8_t>(atoi(row[105]));
+			e.enable_magelo           = static_cast<int8_t>(atoi(row[106]));
+			e.deleted_at              = strtoll(row[107] ? row[107] : "-1", nullptr, 10);
 
 			all_entries.push_back(e);
 		}

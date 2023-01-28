@@ -16,6 +16,7 @@
 #include "../../strings.h"
 #include <ctime>
 
+
 class BaseNpcFactionRepository {
 public:
 	struct NpcFaction {

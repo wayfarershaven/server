@@ -1,11 +1,11 @@
-#ifndef EQEMU_EXPEDITION_LOCKOUTS_REPOSITORY_H
-#define EQEMU_EXPEDITION_LOCKOUTS_REPOSITORY_H
+#ifndef EQEMU_GUILD_MEMBERS_REPOSITORY_H
+#define EQEMU_GUILD_MEMBERS_REPOSITORY_H
 
 #include "../database.h"
 #include "../strings.h"
-#include "base/base_expedition_lockouts_repository.h"
+#include "base/base_guild_members_repository.h"
 
-class ExpeditionLockoutsRepository: public BaseExpeditionLockoutsRepository {
+class GuildMembersRepository: public BaseGuildMembersRepository {
 public:
 
     /**
@@ -32,10 +32,10 @@ public:
      *
      * Example custom methods in a repository
      *
-     * ExpeditionLockoutsRepository::GetByZoneAndVersion(int zone_id, int zone_version)
-     * ExpeditionLockoutsRepository::GetWhereNeverExpires()
-     * ExpeditionLockoutsRepository::GetWhereXAndY()
-     * ExpeditionLockoutsRepository::DeleteWhereXAndY()
+     * GuildMembersRepository::GetByZoneAndVersion(int zone_id, int zone_version)
+     * GuildMembersRepository::GetWhereNeverExpires()
+     * GuildMembersRepository::GetWhereXAndY()
+     * GuildMembersRepository::DeleteWhereXAndY()
      *
      * Most of the above could be covered by base methods, but if you as a developer
      * find yourself re-using logic for other parts of the code, its best to just make a
@@ -47,4 +47,4 @@ public:
 
 };
 
-#endif //EQEMU_EXPEDITION_LOCKOUTS_REPOSITORY_H
+#endif //EQEMU_GUILD_MEMBERS_REPOSITORY_H

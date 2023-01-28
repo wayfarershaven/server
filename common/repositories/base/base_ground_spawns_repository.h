@@ -16,6 +16,7 @@
 #include "../../strings.h"
 #include <ctime>
 
+
 class BaseGroundSpawnsRepository {
 public:
 	struct GroundSpawns {
@@ -32,7 +33,7 @@ public:
 		uint32_t    item;
 		uint32_t    max_allowed;
 		std::string comment;
-		uint32_t    respawn_timer;
+		uint64_t    respawn_timer;
 		int8_t      min_expansion;
 		int8_t      max_expansion;
 		std::string content_flags;
@@ -142,7 +143,7 @@ public:
 		e.item                   = 0;
 		e.max_allowed            = 1;
 		e.comment                = "";
-		e.respawn_timer          = 300;
+		e.respawn_timer          = 300000;
 		e.min_expansion          = -1;
 		e.max_expansion          = -1;
 		e.content_flags          = "";
@@ -195,7 +196,7 @@ public:
 			e.item                   = static_cast<uint32_t>(strtoul(row[10], nullptr, 10));
 			e.max_allowed            = static_cast<uint32_t>(strtoul(row[11], nullptr, 10));
 			e.comment                = row[12] ? row[12] : "";
-			e.respawn_timer          = static_cast<uint32_t>(strtoul(row[13], nullptr, 10));
+			e.respawn_timer          = strtoull(row[13], nullptr, 10);
 			e.min_expansion          = static_cast<int8_t>(atoi(row[14]));
 			e.max_expansion          = static_cast<int8_t>(atoi(row[15]));
 			e.content_flags          = row[16] ? row[16] : "";
@@ -382,7 +383,7 @@ public:
 			e.item                   = static_cast<uint32_t>(strtoul(row[10], nullptr, 10));
 			e.max_allowed            = static_cast<uint32_t>(strtoul(row[11], nullptr, 10));
 			e.comment                = row[12] ? row[12] : "";
-			e.respawn_timer          = static_cast<uint32_t>(strtoul(row[13], nullptr, 10));
+			e.respawn_timer          = strtoull(row[13], nullptr, 10);
 			e.min_expansion          = static_cast<int8_t>(atoi(row[14]));
 			e.max_expansion          = static_cast<int8_t>(atoi(row[15]));
 			e.content_flags          = row[16] ? row[16] : "";
@@ -424,7 +425,7 @@ public:
 			e.item                   = static_cast<uint32_t>(strtoul(row[10], nullptr, 10));
 			e.max_allowed            = static_cast<uint32_t>(strtoul(row[11], nullptr, 10));
 			e.comment                = row[12] ? row[12] : "";
-			e.respawn_timer          = static_cast<uint32_t>(strtoul(row[13], nullptr, 10));
+			e.respawn_timer          = strtoull(row[13], nullptr, 10);
 			e.min_expansion          = static_cast<int8_t>(atoi(row[14]));
 			e.max_expansion          = static_cast<int8_t>(atoi(row[15]));
 			e.content_flags          = row[16] ? row[16] : "";

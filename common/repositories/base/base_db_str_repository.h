@@ -16,10 +16,11 @@
 #include "../../strings.h"
 #include <ctime>
 
+
 class BaseDbStrRepository {
 public:
 	struct DbStr {
-		int32_t     id;
+		int64_t     id;
 		int32_t     type;
 		std::string value;
 	};
@@ -122,7 +123,7 @@ public:
 		if (results.RowCount() == 1) {
 			DbStr e{};
 
-			e.id    = static_cast<int32_t>(atoi(row[0]));
+			e.id    = strtoll(row[0], nullptr, 10);
 			e.type  = static_cast<int32_t>(atoi(row[1]));
 			e.value = row[2] ? row[2] : "";
 
@@ -250,7 +251,7 @@ public:
 		for (auto row = results.begin(); row != results.end(); ++row) {
 			DbStr e{};
 
-			e.id    = static_cast<int32_t>(atoi(row[0]));
+			e.id    = strtoll(row[0], nullptr, 10);
 			e.type  = static_cast<int32_t>(atoi(row[1]));
 			e.value = row[2] ? row[2] : "";
 
@@ -277,7 +278,7 @@ public:
 		for (auto row = results.begin(); row != results.end(); ++row) {
 			DbStr e{};
 
-			e.id    = static_cast<int32_t>(atoi(row[0]));
+			e.id    = strtoll(row[0], nullptr, 10);
 			e.type  = static_cast<int32_t>(atoi(row[1]));
 			e.value = row[2] ? row[2] : "";
 

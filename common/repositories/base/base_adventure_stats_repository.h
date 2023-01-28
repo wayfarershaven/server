@@ -16,6 +16,7 @@
 #include "../../strings.h"
 #include <ctime>
 
+
 class BaseAdventureStatsRepository {
 public:
 	struct AdventureStats {

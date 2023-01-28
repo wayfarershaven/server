@@ -16,13 +16,14 @@
 #include "../../strings.h"
 #include <ctime>
 
+
 class BaseSpawn2Repository {
 public:
 	struct Spawn2 {
 		int32_t     id;
 		int32_t     spawngroupID;
 		std::string zone;
-		int16_t     version;
+		uint16_t    version;
 		float       x;
 		float       y;
 		float       z;
@@ -193,7 +194,7 @@ public:
 			e.id                     = static_cast<int32_t>(atoi(row[0]));
 			e.spawngroupID           = static_cast<int32_t>(atoi(row[1]));
 			e.zone                   = row[2] ? row[2] : "";
-			e.version                = static_cast<int16_t>(atoi(row[3]));
+			e.version                = static_cast<uint16_t>(strtoul(row[3], nullptr, 10));
 			e.x                      = strtof(row[4], nullptr);
 			e.y                      = strtof(row[5], nullptr);
 			e.z                      = strtof(row[6], nullptr);
@@ -388,7 +389,7 @@ public:
 			e.id                     = static_cast<int32_t>(atoi(row[0]));
 			e.spawngroupID           = static_cast<int32_t>(atoi(row[1]));
 			e.zone                   = row[2] ? row[2] : "";
-			e.version                = static_cast<int16_t>(atoi(row[3]));
+			e.version                = static_cast<uint16_t>(strtoul(row[3], nullptr, 10));
 			e.x                      = strtof(row[4], nullptr);
 			e.y                      = strtof(row[5], nullptr);
 			e.z                      = strtof(row[6], nullptr);
@@ -432,7 +433,7 @@ public:
 			e.id                     = static_cast<int32_t>(atoi(row[0]));
 			e.spawngroupID           = static_cast<int32_t>(atoi(row[1]));
 			e.zone                   = row[2] ? row[2] : "";
-			e.version                = static_cast<int16_t>(atoi(row[3]));
+			e.version                = static_cast<uint16_t>(strtoul(row[3], nullptr, 10));
 			e.x                      = strtof(row[4], nullptr);
 			e.y                      = strtof(row[5], nullptr);
 			e.z                      = strtof(row[6], nullptr);

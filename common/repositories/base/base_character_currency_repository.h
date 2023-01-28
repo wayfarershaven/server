@@ -16,6 +16,7 @@
 #include "../../strings.h"
 #include <ctime>
 
+
 class BaseCharacterCurrencyRepository {
 public:
 	struct CharacterCurrency {
@@ -36,6 +37,7 @@ public:
 		uint32_t career_radiant_crystals;
 		uint32_t ebon_crystals;
 		uint32_t career_ebon_crystals;
+		uint32_t platinum_shared;
 	};
 
 	static std::string PrimaryKey()
@@ -63,6 +65,7 @@ public:
 			"career_radiant_crystals",
 			"ebon_crystals",
 			"career_ebon_crystals",
+			"platinum_shared",
 		};
 	}
 
@@ -86,6 +89,7 @@ public:
 			"career_radiant_crystals",
 			"ebon_crystals",
 			"career_ebon_crystals",
+			"platinum_shared",
 		};
 	}
 
@@ -143,6 +147,7 @@ public:
 		e.career_radiant_crystals = 0;
 		e.ebon_crystals           = 0;
 		e.career_ebon_crystals    = 0;
+		e.platinum_shared         = 0;
 
 		return e;
 	}
@@ -195,6 +200,7 @@ public:
 			e.career_radiant_crystals = static_cast<uint32_t>(strtoul(row[14], nullptr, 10));
 			e.ebon_crystals           = static_cast<uint32_t>(strtoul(row[15], nullptr, 10));
 			e.career_ebon_crystals    = static_cast<uint32_t>(strtoul(row[16], nullptr, 10));
+			e.platinum_shared         = static_cast<uint32_t>(strtoul(row[17], nullptr, 10));
 
 			return e;
 		}
@@ -245,6 +251,7 @@ public:
 		v.push_back(columns[14] + " = " + std::to_string(e.career_radiant_crystals));
 		v.push_back(columns[15] + " = " + std::to_string(e.ebon_crystals));
 		v.push_back(columns[16] + " = " + std::to_string(e.career_ebon_crystals));
+		v.push_back(columns[17] + " = " + std::to_string(e.platinum_shared));
 
 		auto results = db.QueryDatabase(
 			fmt::format(
@@ -283,6 +290,7 @@ public:
 		v.push_back(std::to_string(e.career_radiant_crystals));
 		v.push_back(std::to_string(e.ebon_crystals));
 		v.push_back(std::to_string(e.career_ebon_crystals));
+		v.push_back(std::to_string(e.platinum_shared));
 
 		auto results = db.QueryDatabase(
 			fmt::format(
@@ -329,6 +337,7 @@ public:
 			v.push_back(std::to_string(e.career_radiant_crystals));
 			v.push_back(std::to_string(e.ebon_crystals));
 			v.push_back(std::to_string(e.career_ebon_crystals));
+			v.push_back(std::to_string(e.platinum_shared));
 
 			insert_chunks.push_back("(" + Strings::Implode(",", v) + ")");
 		}
@@ -379,6 +388,7 @@ public:
 			e.career_radiant_crystals = static_cast<uint32_t>(strtoul(row[14], nullptr, 10));
 			e.ebon_crystals           = static_cast<uint32_t>(strtoul(row[15], nullptr, 10));
 			e.career_ebon_crystals    = static_cast<uint32_t>(strtoul(row[16], nullptr, 10));
+			e.platinum_shared         = static_cast<uint32_t>(strtoul(row[17], nullptr, 10));
 
 			all_entries.push_back(e);
 		}
@@ -420,6 +430,7 @@ public:
 			e.career_radiant_crystals = static_cast<uint32_t>(strtoul(row[14], nullptr, 10));
 			e.ebon_crystals           = static_cast<uint32_t>(strtoul(row[15], nullptr, 10));
 			e.career_ebon_crystals    = static_cast<uint32_t>(strtoul(row[16], nullptr, 10));
+			e.platinum_shared         = static_cast<uint32_t>(strtoul(row[17], nullptr, 10));
 
 			all_entries.push_back(e);
 		}

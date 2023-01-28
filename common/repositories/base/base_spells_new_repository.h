@@ -16,6 +16,7 @@
 #include "../../strings.h"
 #include <ctime>
 
+
 class BaseSpellsNewRepository {
 public:
 	struct SpellsNew {
@@ -200,8 +201,8 @@ public:
 		int32_t     pvpresistcalc;
 		int32_t     pvpresistcap;
 		int32_t     spell_category;
-		int32_t     pvp_duration;
-		int32_t     pvp_duration_cap;
+		int32_t     field181;
+		int32_t     field182;
 		int32_t     pcnpc_only_flag;
 		int32_t     cast_not_standing;
 		int32_t     can_mgb;
@@ -447,8 +448,8 @@ public:
 			"pvpresistcalc",
 			"pvpresistcap",
 			"spell_category",
-			"pvp_duration",
-			"pvp_duration_cap",
+			"field181",
+			"field182",
 			"pcnpc_only_flag",
 			"cast_not_standing",
 			"can_mgb",
@@ -690,8 +691,8 @@ public:
 			"pvpresistcalc",
 			"pvpresistcap",
 			"spell_category",
-			"pvp_duration",
-			"pvp_duration_cap",
+			"field181",
+			"field182",
 			"pcnpc_only_flag",
 			"cast_not_standing",
 			"can_mgb",
@@ -967,8 +968,8 @@ public:
 		e.pvpresistcalc        = 100;
 		e.pvpresistcap         = -150;
 		e.spell_category       = -99;
-		e.pvp_duration         = 0;
-		e.pvp_duration_cap     = 0;
+		e.field181             = 7;
+		e.field182             = 65;
 		e.pcnpc_only_flag      = 0;
 		e.cast_not_standing    = 0;
 		e.can_mgb              = 0;
@@ -1239,8 +1240,8 @@ public:
 			e.pvpresistcalc        = static_cast<int32_t>(atoi(row[178]));
 			e.pvpresistcap         = static_cast<int32_t>(atoi(row[179]));
 			e.spell_category       = static_cast<int32_t>(atoi(row[180]));
-			e.pvp_duration         = static_cast<int32_t>(atoi(row[181]));
-			e.pvp_duration_cap     = static_cast<int32_t>(atoi(row[182]));
+			e.field181             = static_cast<int32_t>(atoi(row[181]));
+			e.field182             = static_cast<int32_t>(atoi(row[182]));
 			e.pcnpc_only_flag      = static_cast<int32_t>(atoi(row[183]));
 			e.cast_not_standing    = static_cast<int32_t>(atoi(row[184]));
 			e.can_mgb              = static_cast<int32_t>(atoi(row[185]));
@@ -1509,8 +1510,8 @@ public:
 		v.push_back(columns[178] + " = " + std::to_string(e.pvpresistcalc));
 		v.push_back(columns[179] + " = " + std::to_string(e.pvpresistcap));
 		v.push_back(columns[180] + " = " + std::to_string(e.spell_category));
-		v.push_back(columns[181] + " = " + std::to_string(e.pvp_duration));
-		v.push_back(columns[182] + " = " + std::to_string(e.pvp_duration_cap));
+		v.push_back(columns[181] + " = " + std::to_string(e.field181));
+		v.push_back(columns[182] + " = " + std::to_string(e.field182));
 		v.push_back(columns[183] + " = " + std::to_string(e.pcnpc_only_flag));
 		v.push_back(columns[184] + " = " + std::to_string(e.cast_not_standing));
 		v.push_back(columns[185] + " = " + std::to_string(e.can_mgb));
@@ -1767,8 +1768,8 @@ public:
 		v.push_back(std::to_string(e.pvpresistcalc));
 		v.push_back(std::to_string(e.pvpresistcap));
 		v.push_back(std::to_string(e.spell_category));
-		v.push_back(std::to_string(e.pvp_duration));
-		v.push_back(std::to_string(e.pvp_duration_cap));
+		v.push_back(std::to_string(e.field181));
+		v.push_back(std::to_string(e.field182));
 		v.push_back(std::to_string(e.pcnpc_only_flag));
 		v.push_back(std::to_string(e.cast_not_standing));
 		v.push_back(std::to_string(e.can_mgb));
@@ -2033,8 +2034,8 @@ public:
 			v.push_back(std::to_string(e.pvpresistcalc));
 			v.push_back(std::to_string(e.pvpresistcap));
 			v.push_back(std::to_string(e.spell_category));
-			v.push_back(std::to_string(e.pvp_duration));
-			v.push_back(std::to_string(e.pvp_duration_cap));
+			v.push_back(std::to_string(e.field181));
+			v.push_back(std::to_string(e.field182));
 			v.push_back(std::to_string(e.pcnpc_only_flag));
 			v.push_back(std::to_string(e.cast_not_standing));
 			v.push_back(std::to_string(e.can_mgb));
@@ -2303,8 +2304,8 @@ public:
 			e.pvpresistcalc        = static_cast<int32_t>(atoi(row[178]));
 			e.pvpresistcap         = static_cast<int32_t>(atoi(row[179]));
 			e.spell_category       = static_cast<int32_t>(atoi(row[180]));
-			e.pvp_duration         = static_cast<int32_t>(atoi(row[181]));
-			e.pvp_duration_cap     = static_cast<int32_t>(atoi(row[182]));
+			e.field181             = static_cast<int32_t>(atoi(row[181]));
+			e.field182             = static_cast<int32_t>(atoi(row[182]));
 			e.pcnpc_only_flag      = static_cast<int32_t>(atoi(row[183]));
 			e.cast_not_standing    = static_cast<int32_t>(atoi(row[184]));
 			e.can_mgb              = static_cast<int32_t>(atoi(row[185]));
@@ -2564,8 +2565,8 @@ public:
 			e.pvpresistcalc        = static_cast<int32_t>(atoi(row[178]));
 			e.pvpresistcap         = static_cast<int32_t>(atoi(row[179]));
 			e.spell_category       = static_cast<int32_t>(atoi(row[180]));
-			e.pvp_duration         = static_cast<int32_t>(atoi(row[181]));
-			e.pvp_duration_cap     = static_cast<int32_t>(atoi(row[182]));
+			e.field181             = static_cast<int32_t>(atoi(row[181]));
+			e.field182             = static_cast<int32_t>(atoi(row[182]));
 			e.pcnpc_only_flag      = static_cast<int32_t>(atoi(row[183]));
 			e.cast_not_standing    = static_cast<int32_t>(atoi(row[184]));
 			e.can_mgb              = static_cast<int32_t>(atoi(row[185]));

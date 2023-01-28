@@ -16,6 +16,7 @@
 #include "../../strings.h"
 #include <ctime>
 
+
 class BaseLoginAccountsRepository {
 public:
 	struct LoginAccounts {
@@ -28,6 +29,7 @@ public:
 		time_t      last_login_date;
 		time_t      created_at;
 		time_t      updated_at;
+		std::string forum_name;
 	};
 
 	static std::string PrimaryKey()
@@ -47,6 +49,7 @@ public:
 			"last_login_date",
 			"created_at",
 			"updated_at",
+			"forum_name",
 		};
 	}
 
@@ -62,6 +65,7 @@ public:
 			"UNIX_TIMESTAMP(last_login_date)",
 			"UNIX_TIMESTAMP(created_at)",
 			"UNIX_TIMESTAMP(updated_at)",
+			"forum_name",
 		};
 	}
 
@@ -111,6 +115,7 @@ public:
 		e.last_login_date    = 0;
 		e.created_at         = 0;
 		e.updated_at         = std::time(nullptr);
+		e.forum_name         = "";
 
 		return e;
 	}
@@ -155,6 +160,7 @@ public:
 			e.last_login_date    = strtoll(row[6] ? row[6] : "-1", nullptr, 10);
 			e.created_at         = strtoll(row[7] ? row[7] : "-1", nullptr, 10);
 			e.updated_at         = strtoll(row[8] ? row[8] : "-1", nullptr, 10);
+			e.forum_name         = row[9] ? row[9] : "";
 
 			return e;
 		}
@@ -188,7 +194,6 @@ public:
 
 		auto columns = Columns();
 
-		v.push_back(columns[0] + " = " + std::to_string(e.id));
 		v.push_back(columns[1] + " = '" + Strings::Escape(e.account_name) + "'");
 		v.push_back(columns[2] + " = '" + Strings::Escape(e.account_password) + "'");
 		v.push_back(columns[3] + " = '" + Strings::Escape(e.account_email) + "'");
@@ -197,6 +202,7 @@ public:
 		v.push_back(columns[6] + " = FROM_UNIXTIME(" + (e.last_login_date > 0 ? std::to_string(e.last_login_date) : "null") + ")");
 		v.push_back(columns[7] + " = FROM_UNIXTIME(" + (e.created_at > 0 ? std::to_string(e.created_at) : "null") + ")");
 		v.push_back(columns[8] + " = FROM_UNIXTIME(" + (e.updated_at > 0 ? std::to_string(e.updated_at) : "null") + ")");
+		v.push_back(columns[9] + " = '" + Strings::Escape(e.forum_name) + "'");
 
 		auto results = db.QueryDatabase(
 			fmt::format(
@@ -227,6 +233,7 @@ public:
 		v.push_back("FROM_UNIXTIME(" + (e.last_login_date > 0 ? std::to_string(e.last_login_date) : "null") + ")");
 		v.push_back("FROM_UNIXTIME(" + (e.created_at > 0 ? std::to_string(e.created_at) : "null") + ")");
 		v.push_back("FROM_UNIXTIME(" + (e.updated_at > 0 ? std::to_string(e.updated_at) : "null") + ")");
+		v.push_back("'" + Strings::Escape(e.forum_name) + "'");
 
 		auto results = db.QueryDatabase(
 			fmt::format(
@@ -265,6 +272,7 @@ public:
 			v.push_back("FROM_UNIXTIME(" + (e.last_login_date > 0 ? std::to_string(e.last_login_date) : "null") + ")");
 			v.push_back("FROM_UNIXTIME(" + (e.created_at > 0 ? std::to_string(e.created_at) : "null") + ")");
 			v.push_back("FROM_UNIXTIME(" + (e.updated_at > 0 ? std::to_string(e.updated_at) : "null") + ")");
+			v.push_back("'" + Strings::Escape(e.forum_name) + "'");
 
 			insert_chunks.push_back("(" + Strings::Implode(",", v) + ")");
 		}
@@ -307,6 +315,7 @@ public:
 			e.last_login_date    = strtoll(row[6] ? row[6] : "-1", nullptr, 10);
 			e.created_at         = strtoll(row[7] ? row[7] : "-1", nullptr, 10);
 			e.updated_at         = strtoll(row[8] ? row[8] : "-1", nullptr, 10);
+			e.forum_name         = row[9] ? row[9] : "";
 
 			all_entries.push_back(e);
 		}
@@ -340,6 +349,7 @@ public:
 			e.last_login_date    = strtoll(row[6] ? row[6] : "-1", nullptr, 10);
 			e.created_at         = strtoll(row[7] ? row[7] : "-1", nullptr, 10);
 			e.updated_at         = strtoll(row[8] ? row[8] : "-1", nullptr, 10);
+			e.forum_name         = row[9] ? row[9] : "";
 
 			all_entries.push_back(e);
 		}

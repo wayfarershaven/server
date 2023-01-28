@@ -16,6 +16,7 @@
 #include "../../strings.h"
 #include <ctime>
 
+
 class BaseAaAbilityRepository {
 public:
 	struct AaAbility {
@@ -120,7 +121,7 @@ public:
 		e.id               = 0;
 		e.name             = "";
 		e.category         = -1;
-		e.classes          = 131070;
+		e.classes          = 65535;
 		e.races            = 65535;
 		e.drakkin_heritage = 127;
 		e.deities          = 131071;
