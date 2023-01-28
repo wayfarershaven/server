@@ -6311,24 +6311,19 @@ uint8 Mob::GetSeeInvisibleLevelFromNPCStat(uint16 in_see_invis)
 		ect... for higher levels, 200,300 ect.
 		MAX 25499, which can give you level 254.
 	*/
-	LogDebug("[See Invis Debugging] - GetSeeInvisibleLevelFromNPCStat - in_see_invis [{}]", in_see_invis);
 
 	//npc does not have see invis
 	if (!in_see_invis) {
-		LogDebug("[See Invis Debugging] - in_see_invis = 0 | Does not have see invis");
 		return 0;
 	}
 	//npc has basic see invis
 	if (in_see_invis == 1) {
-		LogDebug("[See Invis Debugging] - in_see_invis = 1 | Has See Invis (Level 1???)");
 		return 1;
 	}
 
 	//random chance to apply standard level 1 see invs
 	if (in_see_invis > 1 && in_see_invis < 100) {
-		LogDebug("[See Invis Debugging] - >1 and < 100 - Random Percent for See Invis");
 		if (zone->random.Int(0, 99) < in_see_invis) {
-			LogDebug("[See Invis Debugging] - >1 and < 100 - Pass Random - Mob Sees Invis");
 			return 1;
 		}
 	}
@@ -6336,24 +6331,17 @@ uint8 Mob::GetSeeInvisibleLevelFromNPCStat(uint16 in_see_invis)
 	int see_invis_level = 1;
 	see_invis_level += (in_see_invis / 100);
 
-	LogDebug("[See Invis Debugging] - see_invis_level = in_see_invis / 100 = [{}]", see_invis_level);
-
 	int see_invis_chance = in_see_invis % 100;
-
-	LogDebug("[See Invis Debugging] - see_invis_level = see_invis_chance % 100 = [{}]", see_invis_level);
 
 	//has enhanced see invis level
 	if (see_invis_chance == 0) {
-		LogDebug("[See Invis Debugging] - see_invis_level = 0 = sees Invis at higher level = Return Value = [{}]", std::min(see_invis_level, MAX_INVISIBILTY_LEVEL));
 		return std::min(see_invis_level, MAX_INVISIBILTY_LEVEL);
 	}
 	//has chance for enhanced see invis level
 	if (zone->random.Int(0, 99) < see_invis_chance) {
-		LogDebug("[See Invis Debugging] - see_invis_level = >1 <99 = Chance of SI at higher level - Return Value = [{}]", std::min(see_invis_level, MAX_INVISIBILTY_LEVEL));
 		return std::min(see_invis_level, MAX_INVISIBILTY_LEVEL);
 	}
 	//failed chance at attempted enhanced see invs level, use previous level.
-	LogDebug("[See Invis Debugging] - see_invis_level = 0 = Return Value = [{}] - Somehow failed?", std::min((see_invis_level - 1), MAX_INVISIBILTY_LEVEL));
 	return std::min((see_invis_level - 1), MAX_INVISIBILTY_LEVEL);
 }
 
