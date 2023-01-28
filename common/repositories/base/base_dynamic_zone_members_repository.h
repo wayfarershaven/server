@@ -16,14 +16,12 @@
 #include "../../strings.h"
 #include <ctime>
 
-
 class BaseDynamicZoneMembersRepository {
 public:
 	struct DynamicZoneMembers {
 		uint32_t id;
 		uint32_t dynamic_zone_id;
 		uint32_t character_id;
-		uint8_t  is_current_member;
 	};
 
 	static std::string PrimaryKey()
@@ -37,7 +35,6 @@ public:
 			"id",
 			"dynamic_zone_id",
 			"character_id",
-			"is_current_member",
 		};
 	}
 
@@ -47,7 +44,6 @@ public:
 			"id",
 			"dynamic_zone_id",
 			"character_id",
-			"is_current_member",
 		};
 	}
 
@@ -88,10 +84,9 @@ public:
 	{
 		DynamicZoneMembers e{};
 
-		e.id                = 0;
-		e.dynamic_zone_id   = 0;
-		e.character_id      = 0;
-		e.is_current_member = 1;
+		e.id              = 0;
+		e.dynamic_zone_id = 0;
+		e.character_id    = 0;
 
 		return e;
 	}
@@ -127,10 +122,9 @@ public:
 		if (results.RowCount() == 1) {
 			DynamicZoneMembers e{};
 
-			e.id                = static_cast<uint32_t>(strtoul(row[0], nullptr, 10));
-			e.dynamic_zone_id   = static_cast<uint32_t>(strtoul(row[1], nullptr, 10));
-			e.character_id      = static_cast<uint32_t>(strtoul(row[2], nullptr, 10));
-			e.is_current_member = static_cast<uint8_t>(strtoul(row[3], nullptr, 10));
+			e.id              = static_cast<uint32_t>(strtoul(row[0], nullptr, 10));
+			e.dynamic_zone_id = static_cast<uint32_t>(strtoul(row[1], nullptr, 10));
+			e.character_id    = static_cast<uint32_t>(strtoul(row[2], nullptr, 10));
 
 			return e;
 		}
@@ -166,7 +160,6 @@ public:
 
 		v.push_back(columns[1] + " = " + std::to_string(e.dynamic_zone_id));
 		v.push_back(columns[2] + " = " + std::to_string(e.character_id));
-		v.push_back(columns[3] + " = " + std::to_string(e.is_current_member));
 
 		auto results = db.QueryDatabase(
 			fmt::format(
@@ -191,7 +184,6 @@ public:
 		v.push_back(std::to_string(e.id));
 		v.push_back(std::to_string(e.dynamic_zone_id));
 		v.push_back(std::to_string(e.character_id));
-		v.push_back(std::to_string(e.is_current_member));
 
 		auto results = db.QueryDatabase(
 			fmt::format(
@@ -224,7 +216,6 @@ public:
 			v.push_back(std::to_string(e.id));
 			v.push_back(std::to_string(e.dynamic_zone_id));
 			v.push_back(std::to_string(e.character_id));
-			v.push_back(std::to_string(e.is_current_member));
 
 			insert_chunks.push_back("(" + Strings::Implode(",", v) + ")");
 		}
@@ -258,10 +249,9 @@ public:
 		for (auto row = results.begin(); row != results.end(); ++row) {
 			DynamicZoneMembers e{};
 
-			e.id                = static_cast<uint32_t>(strtoul(row[0], nullptr, 10));
-			e.dynamic_zone_id   = static_cast<uint32_t>(strtoul(row[1], nullptr, 10));
-			e.character_id      = static_cast<uint32_t>(strtoul(row[2], nullptr, 10));
-			e.is_current_member = static_cast<uint8_t>(strtoul(row[3], nullptr, 10));
+			e.id              = static_cast<uint32_t>(strtoul(row[0], nullptr, 10));
+			e.dynamic_zone_id = static_cast<uint32_t>(strtoul(row[1], nullptr, 10));
+			e.character_id    = static_cast<uint32_t>(strtoul(row[2], nullptr, 10));
 
 			all_entries.push_back(e);
 		}
@@ -286,10 +276,9 @@ public:
 		for (auto row = results.begin(); row != results.end(); ++row) {
 			DynamicZoneMembers e{};
 
-			e.id                = static_cast<uint32_t>(strtoul(row[0], nullptr, 10));
-			e.dynamic_zone_id   = static_cast<uint32_t>(strtoul(row[1], nullptr, 10));
-			e.character_id      = static_cast<uint32_t>(strtoul(row[2], nullptr, 10));
-			e.is_current_member = static_cast<uint8_t>(strtoul(row[3], nullptr, 10));
+			e.id              = static_cast<uint32_t>(strtoul(row[0], nullptr, 10));
+			e.dynamic_zone_id = static_cast<uint32_t>(strtoul(row[1], nullptr, 10));
+			e.character_id    = static_cast<uint32_t>(strtoul(row[2], nullptr, 10));
 
 			all_entries.push_back(e);
 		}

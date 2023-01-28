@@ -45,6 +45,55 @@ public:
 
 	// Custom extended repository methods here
 
+	static int InsertOrUpdateMany(Database& db,
+		const std::vector<InstanceListPlayer>& instance_list_player_entries)
+	{
+		std::vector<std::string> insert_chunks;
+
+		for (auto &instance_list_player_entry: instance_list_player_entries)
+		{
+			std::vector<std::string> insert_values;
+
+			insert_values.push_back(std::to_string(instance_list_player_entry.id));
+			insert_values.push_back(std::to_string(instance_list_player_entry.charid));
+
+			insert_chunks.push_back("(" + Strings::Implode(",", insert_values) + ")");
+		}
+
+		std::vector<std::string> insert_values;
+
+		auto results = db.QueryDatabase(
+			fmt::format(
+				"INSERT INTO {} ({}) VALUES {} ON DUPLICATE KEY UPDATE id = VALUES(id)",
+				TableName(),
+				ColumnsRaw(),
+				Strings::Implode(",", insert_chunks)
+			)
+		);
+
+		return (results.Success() ? results.RowsAffected() : 0);
+	}
+
+    static bool ReplaceOne(Database& db, InstanceListPlayer e)
+	{
+		std::vector<std::string> v;
+
+		v.push_back(std::to_string(e.id));
+		v.push_back(std::to_string(e.charid));
+
+		auto results = db.QueryDatabase(
+			fmt::format(
+				"REPLACE INTO {} VALUES ({})",
+				TableName(),
+				Strings::Implode(",", v)
+			)
+		);
+		if (results.Success()) {
+			return true;
+		}
+
+		return false;
+	}
 };
 
 #endif //EQEMU_INSTANCE_LIST_PLAYER_REPOSITORY_H

@@ -16,7 +16,6 @@
 #include "../../strings.h"
 #include <ctime>
 
-
 class BaseTrapsRepository {
 public:
 	struct Traps {
@@ -40,11 +39,11 @@ public:
 		int8_t      triggered_number;
 		int8_t      group;
 		int8_t      despawn_when_triggered;
+		int8_t      undetectable;
 		int8_t      min_expansion;
 		int8_t      max_expansion;
 		std::string content_flags;
 		std::string content_flags_disabled;
-		int8_t      undetectable;
 	};
 
 	static std::string PrimaryKey()
@@ -75,11 +74,11 @@ public:
 			"triggered_number",
 			"group",
 			"despawn_when_triggered",
+			"undetectable",
 			"min_expansion",
 			"max_expansion",
 			"content_flags",
 			"content_flags_disabled",
-			"undetectable",
 		};
 	}
 
@@ -106,11 +105,11 @@ public:
 			"triggered_number",
 			"group",
 			"despawn_when_triggered",
+			"undetectable",
 			"min_expansion",
 			"max_expansion",
 			"content_flags",
 			"content_flags_disabled",
-			"undetectable",
 		};
 	}
 
@@ -171,11 +170,11 @@ public:
 		e.triggered_number       = 0;
 		e.group                  = 0;
 		e.despawn_when_triggered = 0;
+		e.undetectable           = 0;
 		e.min_expansion          = -1;
 		e.max_expansion          = -1;
 		e.content_flags          = "";
 		e.content_flags_disabled = "";
-		e.undetectable           = 0;
 
 		return e;
 	}
@@ -231,11 +230,11 @@ public:
 			e.triggered_number       = static_cast<int8_t>(atoi(row[17]));
 			e.group                  = static_cast<int8_t>(atoi(row[18]));
 			e.despawn_when_triggered = static_cast<int8_t>(atoi(row[19]));
-			e.min_expansion          = static_cast<int8_t>(atoi(row[20]));
-			e.max_expansion          = static_cast<int8_t>(atoi(row[21]));
-			e.content_flags          = row[22] ? row[22] : "";
-			e.content_flags_disabled = row[23] ? row[23] : "";
-			e.undetectable           = static_cast<int8_t>(atoi(row[24]));
+			e.undetectable           = static_cast<int8_t>(atoi(row[20]));
+			e.min_expansion          = static_cast<int8_t>(atoi(row[21]));
+			e.max_expansion          = static_cast<int8_t>(atoi(row[22]));
+			e.content_flags          = row[23] ? row[23] : "";
+			e.content_flags_disabled = row[24] ? row[24] : "";
 
 			return e;
 		}
@@ -288,11 +287,11 @@ public:
 		v.push_back(columns[17] + " = " + std::to_string(e.triggered_number));
 		v.push_back(columns[18] + " = " + std::to_string(e.group));
 		v.push_back(columns[19] + " = " + std::to_string(e.despawn_when_triggered));
-		v.push_back(columns[20] + " = " + std::to_string(e.min_expansion));
-		v.push_back(columns[21] + " = " + std::to_string(e.max_expansion));
-		v.push_back(columns[22] + " = '" + Strings::Escape(e.content_flags) + "'");
-		v.push_back(columns[23] + " = '" + Strings::Escape(e.content_flags_disabled) + "'");
-		v.push_back(columns[24] + " = " + std::to_string(e.undetectable));
+		v.push_back(columns[20] + " = " + std::to_string(e.undetectable));
+		v.push_back(columns[21] + " = " + std::to_string(e.min_expansion));
+		v.push_back(columns[22] + " = " + std::to_string(e.max_expansion));
+		v.push_back(columns[23] + " = '" + Strings::Escape(e.content_flags) + "'");
+		v.push_back(columns[24] + " = '" + Strings::Escape(e.content_flags_disabled) + "'");
 
 		auto results = db.QueryDatabase(
 			fmt::format(
@@ -334,11 +333,11 @@ public:
 		v.push_back(std::to_string(e.triggered_number));
 		v.push_back(std::to_string(e.group));
 		v.push_back(std::to_string(e.despawn_when_triggered));
+		v.push_back(std::to_string(e.undetectable));
 		v.push_back(std::to_string(e.min_expansion));
 		v.push_back(std::to_string(e.max_expansion));
 		v.push_back("'" + Strings::Escape(e.content_flags) + "'");
 		v.push_back("'" + Strings::Escape(e.content_flags_disabled) + "'");
-		v.push_back(std::to_string(e.undetectable));
 
 		auto results = db.QueryDatabase(
 			fmt::format(
@@ -388,11 +387,11 @@ public:
 			v.push_back(std::to_string(e.triggered_number));
 			v.push_back(std::to_string(e.group));
 			v.push_back(std::to_string(e.despawn_when_triggered));
+			v.push_back(std::to_string(e.undetectable));
 			v.push_back(std::to_string(e.min_expansion));
 			v.push_back(std::to_string(e.max_expansion));
 			v.push_back("'" + Strings::Escape(e.content_flags) + "'");
 			v.push_back("'" + Strings::Escape(e.content_flags_disabled) + "'");
-			v.push_back(std::to_string(e.undetectable));
 
 			insert_chunks.push_back("(" + Strings::Implode(",", v) + ")");
 		}
@@ -446,11 +445,11 @@ public:
 			e.triggered_number       = static_cast<int8_t>(atoi(row[17]));
 			e.group                  = static_cast<int8_t>(atoi(row[18]));
 			e.despawn_when_triggered = static_cast<int8_t>(atoi(row[19]));
-			e.min_expansion          = static_cast<int8_t>(atoi(row[20]));
-			e.max_expansion          = static_cast<int8_t>(atoi(row[21]));
-			e.content_flags          = row[22] ? row[22] : "";
-			e.content_flags_disabled = row[23] ? row[23] : "";
-			e.undetectable           = static_cast<int8_t>(atoi(row[24]));
+			e.undetectable           = static_cast<int8_t>(atoi(row[20]));
+			e.min_expansion          = static_cast<int8_t>(atoi(row[21]));
+			e.max_expansion          = static_cast<int8_t>(atoi(row[22]));
+			e.content_flags          = row[23] ? row[23] : "";
+			e.content_flags_disabled = row[24] ? row[24] : "";
 
 			all_entries.push_back(e);
 		}
@@ -495,11 +494,11 @@ public:
 			e.triggered_number       = static_cast<int8_t>(atoi(row[17]));
 			e.group                  = static_cast<int8_t>(atoi(row[18]));
 			e.despawn_when_triggered = static_cast<int8_t>(atoi(row[19]));
-			e.min_expansion          = static_cast<int8_t>(atoi(row[20]));
-			e.max_expansion          = static_cast<int8_t>(atoi(row[21]));
-			e.content_flags          = row[22] ? row[22] : "";
-			e.content_flags_disabled = row[23] ? row[23] : "";
-			e.undetectable           = static_cast<int8_t>(atoi(row[24]));
+			e.undetectable           = static_cast<int8_t>(atoi(row[20]));
+			e.min_expansion          = static_cast<int8_t>(atoi(row[21]));
+			e.max_expansion          = static_cast<int8_t>(atoi(row[22]));
+			e.content_flags          = row[23] ? row[23] : "";
+			e.content_flags_disabled = row[24] ? row[24] : "";
 
 			all_entries.push_back(e);
 		}

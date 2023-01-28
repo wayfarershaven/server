@@ -16,7 +16,6 @@
 #include "../../strings.h"
 #include <ctime>
 
-
 class BaseLoginServerListTypesRepository {
 public:
 	struct LoginServerListTypes {

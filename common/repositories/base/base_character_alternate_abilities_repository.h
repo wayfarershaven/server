@@ -16,7 +16,6 @@
 #include "../../strings.h"
 #include <ctime>
 
-
 class BaseCharacterAlternateAbilitiesRepository {
 public:
 	struct CharacterAlternateAbilities {
@@ -24,7 +23,6 @@ public:
 		uint16_t aa_id;
 		uint16_t aa_value;
 		uint16_t charges;
-		uint16_t slot;
 	};
 
 	static std::string PrimaryKey()
@@ -39,7 +37,6 @@ public:
 			"aa_id",
 			"aa_value",
 			"charges",
-			"slot",
 		};
 	}
 
@@ -50,7 +47,6 @@ public:
 			"aa_id",
 			"aa_value",
 			"charges",
-			"slot",
 		};
 	}
 
@@ -95,7 +91,6 @@ public:
 		e.aa_id    = 0;
 		e.aa_value = 0;
 		e.charges  = 0;
-		e.slot     = 0;
 
 		return e;
 	}
@@ -135,7 +130,6 @@ public:
 			e.aa_id    = static_cast<uint16_t>(strtoul(row[1], nullptr, 10));
 			e.aa_value = static_cast<uint16_t>(strtoul(row[2], nullptr, 10));
 			e.charges  = static_cast<uint16_t>(strtoul(row[3], nullptr, 10));
-			e.slot     = static_cast<uint16_t>(strtoul(row[4], nullptr, 10));
 
 			return e;
 		}
@@ -173,7 +167,6 @@ public:
 		v.push_back(columns[1] + " = " + std::to_string(e.aa_id));
 		v.push_back(columns[2] + " = " + std::to_string(e.aa_value));
 		v.push_back(columns[3] + " = " + std::to_string(e.charges));
-		v.push_back(columns[4] + " = " + std::to_string(e.slot));
 
 		auto results = db.QueryDatabase(
 			fmt::format(
@@ -199,7 +192,6 @@ public:
 		v.push_back(std::to_string(e.aa_id));
 		v.push_back(std::to_string(e.aa_value));
 		v.push_back(std::to_string(e.charges));
-		v.push_back(std::to_string(e.slot));
 
 		auto results = db.QueryDatabase(
 			fmt::format(
@@ -233,7 +225,6 @@ public:
 			v.push_back(std::to_string(e.aa_id));
 			v.push_back(std::to_string(e.aa_value));
 			v.push_back(std::to_string(e.charges));
-			v.push_back(std::to_string(e.slot));
 
 			insert_chunks.push_back("(" + Strings::Implode(",", v) + ")");
 		}
@@ -271,7 +262,6 @@ public:
 			e.aa_id    = static_cast<uint16_t>(strtoul(row[1], nullptr, 10));
 			e.aa_value = static_cast<uint16_t>(strtoul(row[2], nullptr, 10));
 			e.charges  = static_cast<uint16_t>(strtoul(row[3], nullptr, 10));
-			e.slot     = static_cast<uint16_t>(strtoul(row[4], nullptr, 10));
 
 			all_entries.push_back(e);
 		}
@@ -300,7 +290,6 @@ public:
 			e.aa_id    = static_cast<uint16_t>(strtoul(row[1], nullptr, 10));
 			e.aa_value = static_cast<uint16_t>(strtoul(row[2], nullptr, 10));
 			e.charges  = static_cast<uint16_t>(strtoul(row[3], nullptr, 10));
-			e.slot     = static_cast<uint16_t>(strtoul(row[4], nullptr, 10));
 
 			all_entries.push_back(e);
 		}

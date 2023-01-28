@@ -16,7 +16,6 @@
 #include "../../strings.h"
 #include <ctime>
 
-
 class BaseCharacterCorpsesRepository {
 public:
 	struct CharacterCorpses {
@@ -67,10 +66,6 @@ public:
 		uint32_t    wc_7;
 		uint32_t    wc_8;
 		uint32_t    wc_9;
-		uint32_t    rez_time;
-		uint32_t    gmexp;
-		uint8_t     killedby;
-		uint8_t     rezzable;
 	};
 
 	static std::string PrimaryKey()
@@ -128,10 +123,6 @@ public:
 			"wc_7",
 			"wc_8",
 			"wc_9",
-			"rez_time",
-			"gmexp",
-			"killedby",
-			"rezzable",
 		};
 	}
 
@@ -185,10 +176,6 @@ public:
 			"wc_7",
 			"wc_8",
 			"wc_9",
-			"rez_time",
-			"gmexp",
-			"killedby",
-			"rezzable",
 		};
 	}
 
@@ -276,10 +263,6 @@ public:
 		e.wc_7             = 0;
 		e.wc_8             = 0;
 		e.wc_9             = 0;
-		e.rez_time         = 0;
-		e.gmexp            = 0;
-		e.killedby         = 0;
-		e.rezzable         = 1;
 
 		return e;
 	}
@@ -362,10 +345,6 @@ public:
 			e.wc_7             = static_cast<uint32_t>(strtoul(row[44], nullptr, 10));
 			e.wc_8             = static_cast<uint32_t>(strtoul(row[45], nullptr, 10));
 			e.wc_9             = static_cast<uint32_t>(strtoul(row[46], nullptr, 10));
-			e.rez_time         = static_cast<uint32_t>(strtoul(row[47], nullptr, 10));
-			e.gmexp            = static_cast<uint32_t>(strtoul(row[48], nullptr, 10));
-			e.killedby         = static_cast<uint8_t>(strtoul(row[49], nullptr, 10));
-			e.rezzable         = static_cast<uint8_t>(strtoul(row[50], nullptr, 10));
 
 			return e;
 		}
@@ -445,10 +424,6 @@ public:
 		v.push_back(columns[44] + " = " + std::to_string(e.wc_7));
 		v.push_back(columns[45] + " = " + std::to_string(e.wc_8));
 		v.push_back(columns[46] + " = " + std::to_string(e.wc_9));
-		v.push_back(columns[47] + " = " + std::to_string(e.rez_time));
-		v.push_back(columns[48] + " = " + std::to_string(e.gmexp));
-		v.push_back(columns[49] + " = " + std::to_string(e.killedby));
-		v.push_back(columns[50] + " = " + std::to_string(e.rezzable));
 
 		auto results = db.QueryDatabase(
 			fmt::format(
@@ -517,10 +492,6 @@ public:
 		v.push_back(std::to_string(e.wc_7));
 		v.push_back(std::to_string(e.wc_8));
 		v.push_back(std::to_string(e.wc_9));
-		v.push_back(std::to_string(e.rez_time));
-		v.push_back(std::to_string(e.gmexp));
-		v.push_back(std::to_string(e.killedby));
-		v.push_back(std::to_string(e.rezzable));
 
 		auto results = db.QueryDatabase(
 			fmt::format(
@@ -597,10 +568,6 @@ public:
 			v.push_back(std::to_string(e.wc_7));
 			v.push_back(std::to_string(e.wc_8));
 			v.push_back(std::to_string(e.wc_9));
-			v.push_back(std::to_string(e.rez_time));
-			v.push_back(std::to_string(e.gmexp));
-			v.push_back(std::to_string(e.killedby));
-			v.push_back(std::to_string(e.rezzable));
 
 			insert_chunks.push_back("(" + Strings::Implode(",", v) + ")");
 		}
@@ -681,10 +648,6 @@ public:
 			e.wc_7             = static_cast<uint32_t>(strtoul(row[44], nullptr, 10));
 			e.wc_8             = static_cast<uint32_t>(strtoul(row[45], nullptr, 10));
 			e.wc_9             = static_cast<uint32_t>(strtoul(row[46], nullptr, 10));
-			e.rez_time         = static_cast<uint32_t>(strtoul(row[47], nullptr, 10));
-			e.gmexp            = static_cast<uint32_t>(strtoul(row[48], nullptr, 10));
-			e.killedby         = static_cast<uint8_t>(strtoul(row[49], nullptr, 10));
-			e.rezzable         = static_cast<uint8_t>(strtoul(row[50], nullptr, 10));
 
 			all_entries.push_back(e);
 		}
@@ -756,10 +719,6 @@ public:
 			e.wc_7             = static_cast<uint32_t>(strtoul(row[44], nullptr, 10));
 			e.wc_8             = static_cast<uint32_t>(strtoul(row[45], nullptr, 10));
 			e.wc_9             = static_cast<uint32_t>(strtoul(row[46], nullptr, 10));
-			e.rez_time         = static_cast<uint32_t>(strtoul(row[47], nullptr, 10));
-			e.gmexp            = static_cast<uint32_t>(strtoul(row[48], nullptr, 10));
-			e.killedby         = static_cast<uint8_t>(strtoul(row[49], nullptr, 10));
-			e.rezzable         = static_cast<uint8_t>(strtoul(row[50], nullptr, 10));
 
 			all_entries.push_back(e);
 		}

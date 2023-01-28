@@ -45,6 +45,44 @@ public:
 
 	// Custom extended repository methods here
 
+	static CharacterInstanceSafereturns InsertOneOrUpdate(
+		Database& db, CharacterInstanceSafereturns& character_instance_safereturns_entry)
+	{
+		std::vector<std::string> insert_values;
+
+		insert_values.push_back(std::to_string(character_instance_safereturns_entry.id));
+		insert_values.push_back(std::to_string(character_instance_safereturns_entry.character_id));
+		insert_values.push_back(std::to_string(character_instance_safereturns_entry.instance_zone_id));
+		insert_values.push_back(std::to_string(character_instance_safereturns_entry.instance_id));
+		insert_values.push_back(std::to_string(character_instance_safereturns_entry.safe_zone_id));
+		insert_values.push_back(std::to_string(character_instance_safereturns_entry.safe_x));
+		insert_values.push_back(std::to_string(character_instance_safereturns_entry.safe_y));
+		insert_values.push_back(std::to_string(character_instance_safereturns_entry.safe_z));
+		insert_values.push_back(std::to_string(character_instance_safereturns_entry.safe_heading));
+
+		auto results = db.QueryDatabase(fmt::format(SQL(
+			{} VALUES ({})
+			ON DUPLICATE KEY UPDATE
+				instance_zone_id = VALUES(instance_zone_id),
+				instance_id      = VALUES(instance_id),
+				safe_zone_id     = VALUES(safe_zone_id),
+				safe_x           = VALUES(safe_x),
+				safe_y           = VALUES(safe_y),
+				safe_z           = VALUES(safe_z),
+				safe_heading     = VALUES(safe_heading)
+		),
+			BaseInsert(),
+			Strings::Implode(",", insert_values)
+		));
+
+		if (results.Success())
+		{
+			character_instance_safereturns_entry.id = results.LastInsertedID();
+			return character_instance_safereturns_entry;
+		}
+
+		return NewEntity();
+	}
 };
 
 #endif //EQEMU_CHARACTER_INSTANCE_SAFERETURNS_REPOSITORY_H

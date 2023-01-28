@@ -16,7 +16,6 @@
 #include "../../strings.h"
 #include <ctime>
 
-
 class BaseGlobalLootRepository {
 public:
 	struct GlobalLoot {
@@ -32,11 +31,11 @@ public:
 		std::string class_;
 		std::string bodytype;
 		std::string zone;
+		int8_t      hot_zone;
 		int8_t      min_expansion;
 		int8_t      max_expansion;
 		std::string content_flags;
 		std::string content_flags_disabled;
-		int8_t      hot_zone;
 	};
 
 	static std::string PrimaryKey()
@@ -59,11 +58,11 @@ public:
 			"`class`",
 			"bodytype",
 			"zone",
+			"hot_zone",
 			"min_expansion",
 			"max_expansion",
 			"content_flags",
 			"content_flags_disabled",
-			"hot_zone",
 		};
 	}
 
@@ -82,11 +81,11 @@ public:
 			"`class`",
 			"bodytype",
 			"zone",
+			"hot_zone",
 			"min_expansion",
 			"max_expansion",
 			"content_flags",
 			"content_flags_disabled",
-			"hot_zone",
 		};
 	}
 
@@ -139,11 +138,11 @@ public:
 		e.class_                 = "";
 		e.bodytype               = "";
 		e.zone                   = "";
+		e.hot_zone               = 0;
 		e.min_expansion          = -1;
 		e.max_expansion          = -1;
 		e.content_flags          = "";
 		e.content_flags_disabled = "";
-		e.hot_zone               = 0;
 
 		return e;
 	}
@@ -191,11 +190,11 @@ public:
 			e.class_                 = row[9] ? row[9] : "";
 			e.bodytype               = row[10] ? row[10] : "";
 			e.zone                   = row[11] ? row[11] : "";
-			e.min_expansion          = static_cast<int8_t>(atoi(row[12]));
-			e.max_expansion          = static_cast<int8_t>(atoi(row[13]));
-			e.content_flags          = row[14] ? row[14] : "";
-			e.content_flags_disabled = row[15] ? row[15] : "";
-			e.hot_zone               = static_cast<int8_t>(atoi(row[16]));
+			e.hot_zone               = static_cast<int8_t>(atoi(row[12]));
+			e.min_expansion          = static_cast<int8_t>(atoi(row[13]));
+			e.max_expansion          = static_cast<int8_t>(atoi(row[14]));
+			e.content_flags          = row[15] ? row[15] : "";
+			e.content_flags_disabled = row[16] ? row[16] : "";
 
 			return e;
 		}
@@ -240,11 +239,11 @@ public:
 		v.push_back(columns[9] + " = '" + Strings::Escape(e.class_) + "'");
 		v.push_back(columns[10] + " = '" + Strings::Escape(e.bodytype) + "'");
 		v.push_back(columns[11] + " = '" + Strings::Escape(e.zone) + "'");
-		v.push_back(columns[12] + " = " + std::to_string(e.min_expansion));
-		v.push_back(columns[13] + " = " + std::to_string(e.max_expansion));
-		v.push_back(columns[14] + " = '" + Strings::Escape(e.content_flags) + "'");
-		v.push_back(columns[15] + " = '" + Strings::Escape(e.content_flags_disabled) + "'");
-		v.push_back(columns[16] + " = " + std::to_string(e.hot_zone));
+		v.push_back(columns[12] + " = " + std::to_string(e.hot_zone));
+		v.push_back(columns[13] + " = " + std::to_string(e.min_expansion));
+		v.push_back(columns[14] + " = " + std::to_string(e.max_expansion));
+		v.push_back(columns[15] + " = '" + Strings::Escape(e.content_flags) + "'");
+		v.push_back(columns[16] + " = '" + Strings::Escape(e.content_flags_disabled) + "'");
 
 		auto results = db.QueryDatabase(
 			fmt::format(
@@ -278,11 +277,11 @@ public:
 		v.push_back("'" + Strings::Escape(e.class_) + "'");
 		v.push_back("'" + Strings::Escape(e.bodytype) + "'");
 		v.push_back("'" + Strings::Escape(e.zone) + "'");
+		v.push_back(std::to_string(e.hot_zone));
 		v.push_back(std::to_string(e.min_expansion));
 		v.push_back(std::to_string(e.max_expansion));
 		v.push_back("'" + Strings::Escape(e.content_flags) + "'");
 		v.push_back("'" + Strings::Escape(e.content_flags_disabled) + "'");
-		v.push_back(std::to_string(e.hot_zone));
 
 		auto results = db.QueryDatabase(
 			fmt::format(
@@ -324,11 +323,11 @@ public:
 			v.push_back("'" + Strings::Escape(e.class_) + "'");
 			v.push_back("'" + Strings::Escape(e.bodytype) + "'");
 			v.push_back("'" + Strings::Escape(e.zone) + "'");
+			v.push_back(std::to_string(e.hot_zone));
 			v.push_back(std::to_string(e.min_expansion));
 			v.push_back(std::to_string(e.max_expansion));
 			v.push_back("'" + Strings::Escape(e.content_flags) + "'");
 			v.push_back("'" + Strings::Escape(e.content_flags_disabled) + "'");
-			v.push_back(std::to_string(e.hot_zone));
 
 			insert_chunks.push_back("(" + Strings::Implode(",", v) + ")");
 		}
@@ -374,11 +373,11 @@ public:
 			e.class_                 = row[9] ? row[9] : "";
 			e.bodytype               = row[10] ? row[10] : "";
 			e.zone                   = row[11] ? row[11] : "";
-			e.min_expansion          = static_cast<int8_t>(atoi(row[12]));
-			e.max_expansion          = static_cast<int8_t>(atoi(row[13]));
-			e.content_flags          = row[14] ? row[14] : "";
-			e.content_flags_disabled = row[15] ? row[15] : "";
-			e.hot_zone               = static_cast<int8_t>(atoi(row[16]));
+			e.hot_zone               = static_cast<int8_t>(atoi(row[12]));
+			e.min_expansion          = static_cast<int8_t>(atoi(row[13]));
+			e.max_expansion          = static_cast<int8_t>(atoi(row[14]));
+			e.content_flags          = row[15] ? row[15] : "";
+			e.content_flags_disabled = row[16] ? row[16] : "";
 
 			all_entries.push_back(e);
 		}
@@ -415,11 +414,11 @@ public:
 			e.class_                 = row[9] ? row[9] : "";
 			e.bodytype               = row[10] ? row[10] : "";
 			e.zone                   = row[11] ? row[11] : "";
-			e.min_expansion          = static_cast<int8_t>(atoi(row[12]));
-			e.max_expansion          = static_cast<int8_t>(atoi(row[13]));
-			e.content_flags          = row[14] ? row[14] : "";
-			e.content_flags_disabled = row[15] ? row[15] : "";
-			e.hot_zone               = static_cast<int8_t>(atoi(row[16]));
+			e.hot_zone               = static_cast<int8_t>(atoi(row[12]));
+			e.min_expansion          = static_cast<int8_t>(atoi(row[13]));
+			e.max_expansion          = static_cast<int8_t>(atoi(row[14]));
+			e.content_flags          = row[15] ? row[15] : "";
+			e.content_flags_disabled = row[16] ? row[16] : "";
 
 			all_entries.push_back(e);
 		}

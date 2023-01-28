@@ -16,7 +16,6 @@
 #include "../../strings.h"
 #include <ctime>
 
-
 class BaseSpawnentryRepository {
 public:
 	struct Spawnentry {
@@ -24,8 +23,6 @@ public:
 		int32_t     npcID;
 		int16_t     chance;
 		int32_t     condition_value_filter;
-		int16_t     mintime;
-		int16_t     maxtime;
 		int8_t      min_expansion;
 		int8_t      max_expansion;
 		std::string content_flags;
@@ -44,8 +41,6 @@ public:
 			"npcID",
 			"chance",
 			"condition_value_filter",
-			"mintime",
-			"maxtime",
 			"min_expansion",
 			"max_expansion",
 			"content_flags",
@@ -60,8 +55,6 @@ public:
 			"npcID",
 			"chance",
 			"condition_value_filter",
-			"mintime",
-			"maxtime",
 			"min_expansion",
 			"max_expansion",
 			"content_flags",
@@ -110,8 +103,6 @@ public:
 		e.npcID                  = 0;
 		e.chance                 = 0;
 		e.condition_value_filter = 1;
-		e.mintime                = 0;
-		e.maxtime                = 0;
 		e.min_expansion          = -1;
 		e.max_expansion          = -1;
 		e.content_flags          = "";
@@ -155,12 +146,10 @@ public:
 			e.npcID                  = static_cast<int32_t>(atoi(row[1]));
 			e.chance                 = static_cast<int16_t>(atoi(row[2]));
 			e.condition_value_filter = static_cast<int32_t>(atoi(row[3]));
-			e.mintime                = static_cast<int16_t>(atoi(row[4]));
-			e.maxtime                = static_cast<int16_t>(atoi(row[5]));
-			e.min_expansion          = static_cast<int8_t>(atoi(row[6]));
-			e.max_expansion          = static_cast<int8_t>(atoi(row[7]));
-			e.content_flags          = row[8] ? row[8] : "";
-			e.content_flags_disabled = row[9] ? row[9] : "";
+			e.min_expansion          = static_cast<int8_t>(atoi(row[4]));
+			e.max_expansion          = static_cast<int8_t>(atoi(row[5]));
+			e.content_flags          = row[6] ? row[6] : "";
+			e.content_flags_disabled = row[7] ? row[7] : "";
 
 			return e;
 		}
@@ -198,12 +187,10 @@ public:
 		v.push_back(columns[1] + " = " + std::to_string(e.npcID));
 		v.push_back(columns[2] + " = " + std::to_string(e.chance));
 		v.push_back(columns[3] + " = " + std::to_string(e.condition_value_filter));
-		v.push_back(columns[4] + " = " + std::to_string(e.mintime));
-		v.push_back(columns[5] + " = " + std::to_string(e.maxtime));
-		v.push_back(columns[6] + " = " + std::to_string(e.min_expansion));
-		v.push_back(columns[7] + " = " + std::to_string(e.max_expansion));
-		v.push_back(columns[8] + " = '" + Strings::Escape(e.content_flags) + "'");
-		v.push_back(columns[9] + " = '" + Strings::Escape(e.content_flags_disabled) + "'");
+		v.push_back(columns[4] + " = " + std::to_string(e.min_expansion));
+		v.push_back(columns[5] + " = " + std::to_string(e.max_expansion));
+		v.push_back(columns[6] + " = '" + Strings::Escape(e.content_flags) + "'");
+		v.push_back(columns[7] + " = '" + Strings::Escape(e.content_flags_disabled) + "'");
 
 		auto results = db.QueryDatabase(
 			fmt::format(
@@ -229,8 +216,6 @@ public:
 		v.push_back(std::to_string(e.npcID));
 		v.push_back(std::to_string(e.chance));
 		v.push_back(std::to_string(e.condition_value_filter));
-		v.push_back(std::to_string(e.mintime));
-		v.push_back(std::to_string(e.maxtime));
 		v.push_back(std::to_string(e.min_expansion));
 		v.push_back(std::to_string(e.max_expansion));
 		v.push_back("'" + Strings::Escape(e.content_flags) + "'");
@@ -268,8 +253,6 @@ public:
 			v.push_back(std::to_string(e.npcID));
 			v.push_back(std::to_string(e.chance));
 			v.push_back(std::to_string(e.condition_value_filter));
-			v.push_back(std::to_string(e.mintime));
-			v.push_back(std::to_string(e.maxtime));
 			v.push_back(std::to_string(e.min_expansion));
 			v.push_back(std::to_string(e.max_expansion));
 			v.push_back("'" + Strings::Escape(e.content_flags) + "'");
@@ -311,12 +294,10 @@ public:
 			e.npcID                  = static_cast<int32_t>(atoi(row[1]));
 			e.chance                 = static_cast<int16_t>(atoi(row[2]));
 			e.condition_value_filter = static_cast<int32_t>(atoi(row[3]));
-			e.mintime                = static_cast<int16_t>(atoi(row[4]));
-			e.maxtime                = static_cast<int16_t>(atoi(row[5]));
-			e.min_expansion          = static_cast<int8_t>(atoi(row[6]));
-			e.max_expansion          = static_cast<int8_t>(atoi(row[7]));
-			e.content_flags          = row[8] ? row[8] : "";
-			e.content_flags_disabled = row[9] ? row[9] : "";
+			e.min_expansion          = static_cast<int8_t>(atoi(row[4]));
+			e.max_expansion          = static_cast<int8_t>(atoi(row[5]));
+			e.content_flags          = row[6] ? row[6] : "";
+			e.content_flags_disabled = row[7] ? row[7] : "";
 
 			all_entries.push_back(e);
 		}
@@ -345,12 +326,10 @@ public:
 			e.npcID                  = static_cast<int32_t>(atoi(row[1]));
 			e.chance                 = static_cast<int16_t>(atoi(row[2]));
 			e.condition_value_filter = static_cast<int32_t>(atoi(row[3]));
-			e.mintime                = static_cast<int16_t>(atoi(row[4]));
-			e.maxtime                = static_cast<int16_t>(atoi(row[5]));
-			e.min_expansion          = static_cast<int8_t>(atoi(row[6]));
-			e.max_expansion          = static_cast<int8_t>(atoi(row[7]));
-			e.content_flags          = row[8] ? row[8] : "";
-			e.content_flags_disabled = row[9] ? row[9] : "";
+			e.min_expansion          = static_cast<int8_t>(atoi(row[4]));
+			e.max_expansion          = static_cast<int8_t>(atoi(row[5]));
+			e.content_flags          = row[6] ? row[6] : "";
+			e.content_flags_disabled = row[7] ? row[7] : "";
 
 			all_entries.push_back(e);
 		}

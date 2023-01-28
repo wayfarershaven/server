@@ -16,7 +16,6 @@
 #include "../../strings.h"
 #include <ctime>
 
-
 class BaseInventoryRepository {
 public:
 	struct Inventory {

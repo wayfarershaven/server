@@ -104,13 +104,11 @@ public:
 		float       gravity;
 		int32_t     type;
 		int8_t      skylock;
-		int8_t      skip_los;
-		uint8_t     music;
-		int32_t     npc_max_aggro_dist;
-		uint32_t    max_movement_update_range;
 		int32_t     fast_regen_hp;
 		int32_t     fast_regen_mana;
 		int32_t     fast_regen_endurance;
+		int32_t     npc_max_aggro_dist;
+		uint32_t    max_movement_update_range;
 		int8_t      min_expansion;
 		int8_t      max_expansion;
 		std::string content_flags;
@@ -212,13 +210,11 @@ public:
 			"gravity",
 			"type",
 			"skylock",
-			"skip_los",
-			"music",
-			"npc_max_aggro_dist",
-			"max_movement_update_range",
 			"fast_regen_hp",
 			"fast_regen_mana",
 			"fast_regen_endurance",
+			"npc_max_aggro_dist",
+			"max_movement_update_range",
 			"min_expansion",
 			"max_expansion",
 			"content_flags",
@@ -316,13 +312,11 @@ public:
 			"gravity",
 			"type",
 			"skylock",
-			"skip_los",
-			"music",
-			"npc_max_aggro_dist",
-			"max_movement_update_range",
 			"fast_regen_hp",
 			"fast_regen_mana",
 			"fast_regen_endurance",
+			"npc_max_aggro_dist",
+			"max_movement_update_range",
 			"min_expansion",
 			"max_expansion",
 			"content_flags",
@@ -454,13 +448,11 @@ public:
 		e.gravity                   = 0.4;
 		e.type                      = 0;
 		e.skylock                   = 0;
-		e.skip_los                  = 0;
-		e.music                     = 2;
-		e.npc_max_aggro_dist        = 600;
-		e.max_movement_update_range = 600;
 		e.fast_regen_hp             = 180;
 		e.fast_regen_mana           = 180;
 		e.fast_regen_endurance      = 180;
+		e.npc_max_aggro_dist        = 600;
+		e.max_movement_update_range = 600;
 		e.min_expansion             = -1;
 		e.max_expansion             = -1;
 		e.content_flags             = "";
@@ -493,8 +485,9 @@ public:
 	{
 		auto results = db.QueryDatabase(
 			fmt::format(
-				"{} WHERE id = {} LIMIT 1",
+				"{} WHERE {} = {} LIMIT 1",
 				BaseSelect(),
+				PrimaryKey(),
 				zone_id
 			)
 		);
@@ -587,20 +580,18 @@ public:
 			e.gravity                   = strtof(row[81], nullptr);
 			e.type                      = static_cast<int32_t>(atoi(row[82]));
 			e.skylock                   = static_cast<int8_t>(atoi(row[83]));
-			e.skip_los                  = static_cast<int8_t>(atoi(row[84]));
-			e.music                     = static_cast<uint8_t>(strtoul(row[85], nullptr, 10));
-			e.npc_max_aggro_dist        = static_cast<int32_t>(atoi(row[86]));
-			e.max_movement_update_range = static_cast<uint32_t>(strtoul(row[87], nullptr, 10));
-			e.fast_regen_hp             = static_cast<int32_t>(atoi(row[88]));
-			e.fast_regen_mana           = static_cast<int32_t>(atoi(row[89]));
-			e.fast_regen_endurance      = static_cast<int32_t>(atoi(row[90]));
-			e.min_expansion             = static_cast<int8_t>(atoi(row[91]));
-			e.max_expansion             = static_cast<int8_t>(atoi(row[92]));
-			e.content_flags             = row[93] ? row[93] : "";
-			e.content_flags_disabled    = row[94] ? row[94] : "";
-			e.underworld_teleport_index = static_cast<int32_t>(atoi(row[95]));
-			e.lava_damage               = static_cast<int32_t>(atoi(row[96]));
-			e.min_lava_damage           = static_cast<int32_t>(atoi(row[97]));
+			e.fast_regen_hp             = static_cast<int32_t>(atoi(row[84]));
+			e.fast_regen_mana           = static_cast<int32_t>(atoi(row[85]));
+			e.fast_regen_endurance      = static_cast<int32_t>(atoi(row[86]));
+			e.npc_max_aggro_dist        = static_cast<int32_t>(atoi(row[87]));
+			e.max_movement_update_range = static_cast<uint32_t>(strtoul(row[88], nullptr, 10));
+			e.min_expansion             = static_cast<int8_t>(atoi(row[89]));
+			e.max_expansion             = static_cast<int8_t>(atoi(row[90]));
+			e.content_flags             = row[91] ? row[91] : "";
+			e.content_flags_disabled    = row[92] ? row[92] : "";
+			e.underworld_teleport_index = static_cast<int32_t>(atoi(row[93]));
+			e.lava_damage               = static_cast<int32_t>(atoi(row[94]));
+			e.min_lava_damage           = static_cast<int32_t>(atoi(row[95]));
 
 			return e;
 		}
@@ -717,20 +708,18 @@ public:
 		v.push_back(columns[81] + " = " + std::to_string(e.gravity));
 		v.push_back(columns[82] + " = " + std::to_string(e.type));
 		v.push_back(columns[83] + " = " + std::to_string(e.skylock));
-		v.push_back(columns[84] + " = " + std::to_string(e.skip_los));
-		v.push_back(columns[85] + " = " + std::to_string(e.music));
-		v.push_back(columns[86] + " = " + std::to_string(e.npc_max_aggro_dist));
-		v.push_back(columns[87] + " = " + std::to_string(e.max_movement_update_range));
-		v.push_back(columns[88] + " = " + std::to_string(e.fast_regen_hp));
-		v.push_back(columns[89] + " = " + std::to_string(e.fast_regen_mana));
-		v.push_back(columns[90] + " = " + std::to_string(e.fast_regen_endurance));
-		v.push_back(columns[91] + " = " + std::to_string(e.min_expansion));
-		v.push_back(columns[92] + " = " + std::to_string(e.max_expansion));
-		v.push_back(columns[93] + " = '" + Strings::Escape(e.content_flags) + "'");
-		v.push_back(columns[94] + " = '" + Strings::Escape(e.content_flags_disabled) + "'");
-		v.push_back(columns[95] + " = " + std::to_string(e.underworld_teleport_index));
-		v.push_back(columns[96] + " = " + std::to_string(e.lava_damage));
-		v.push_back(columns[97] + " = " + std::to_string(e.min_lava_damage));
+		v.push_back(columns[84] + " = " + std::to_string(e.fast_regen_hp));
+		v.push_back(columns[85] + " = " + std::to_string(e.fast_regen_mana));
+		v.push_back(columns[86] + " = " + std::to_string(e.fast_regen_endurance));
+		v.push_back(columns[87] + " = " + std::to_string(e.npc_max_aggro_dist));
+		v.push_back(columns[88] + " = " + std::to_string(e.max_movement_update_range));
+		v.push_back(columns[89] + " = " + std::to_string(e.min_expansion));
+		v.push_back(columns[90] + " = " + std::to_string(e.max_expansion));
+		v.push_back(columns[91] + " = '" + Strings::Escape(e.content_flags) + "'");
+		v.push_back(columns[92] + " = '" + Strings::Escape(e.content_flags_disabled) + "'");
+		v.push_back(columns[93] + " = " + std::to_string(e.underworld_teleport_index));
+		v.push_back(columns[94] + " = " + std::to_string(e.lava_damage));
+		v.push_back(columns[95] + " = " + std::to_string(e.min_lava_damage));
 
 		auto results = db.QueryDatabase(
 			fmt::format(
@@ -836,13 +825,11 @@ public:
 		v.push_back(std::to_string(e.gravity));
 		v.push_back(std::to_string(e.type));
 		v.push_back(std::to_string(e.skylock));
-		v.push_back(std::to_string(e.skip_los));
-		v.push_back(std::to_string(e.music));
-		v.push_back(std::to_string(e.npc_max_aggro_dist));
-		v.push_back(std::to_string(e.max_movement_update_range));
 		v.push_back(std::to_string(e.fast_regen_hp));
 		v.push_back(std::to_string(e.fast_regen_mana));
 		v.push_back(std::to_string(e.fast_regen_endurance));
+		v.push_back(std::to_string(e.npc_max_aggro_dist));
+		v.push_back(std::to_string(e.max_movement_update_range));
 		v.push_back(std::to_string(e.min_expansion));
 		v.push_back(std::to_string(e.max_expansion));
 		v.push_back("'" + Strings::Escape(e.content_flags) + "'");
@@ -963,13 +950,11 @@ public:
 			v.push_back(std::to_string(e.gravity));
 			v.push_back(std::to_string(e.type));
 			v.push_back(std::to_string(e.skylock));
-			v.push_back(std::to_string(e.skip_los));
-			v.push_back(std::to_string(e.music));
-			v.push_back(std::to_string(e.npc_max_aggro_dist));
-			v.push_back(std::to_string(e.max_movement_update_range));
 			v.push_back(std::to_string(e.fast_regen_hp));
 			v.push_back(std::to_string(e.fast_regen_mana));
 			v.push_back(std::to_string(e.fast_regen_endurance));
+			v.push_back(std::to_string(e.npc_max_aggro_dist));
+			v.push_back(std::to_string(e.max_movement_update_range));
 			v.push_back(std::to_string(e.min_expansion));
 			v.push_back(std::to_string(e.max_expansion));
 			v.push_back("'" + Strings::Escape(e.content_flags) + "'");
@@ -1094,20 +1079,18 @@ public:
 			e.gravity                   = strtof(row[81], nullptr);
 			e.type                      = static_cast<int32_t>(atoi(row[82]));
 			e.skylock                   = static_cast<int8_t>(atoi(row[83]));
-			e.skip_los                  = static_cast<int8_t>(atoi(row[84]));
-			e.music                     = static_cast<uint8_t>(strtoul(row[85], nullptr, 10));
-			e.npc_max_aggro_dist        = static_cast<int32_t>(atoi(row[86]));
-			e.max_movement_update_range = static_cast<uint32_t>(strtoul(row[87], nullptr, 10));
-			e.fast_regen_hp             = static_cast<int32_t>(atoi(row[88]));
-			e.fast_regen_mana           = static_cast<int32_t>(atoi(row[89]));
-			e.fast_regen_endurance      = static_cast<int32_t>(atoi(row[90]));
-			e.min_expansion             = static_cast<int8_t>(atoi(row[91]));
-			e.max_expansion             = static_cast<int8_t>(atoi(row[92]));
-			e.content_flags             = row[93] ? row[93] : "";
-			e.content_flags_disabled    = row[94] ? row[94] : "";
-			e.underworld_teleport_index = static_cast<int32_t>(atoi(row[95]));
-			e.lava_damage               = static_cast<int32_t>(atoi(row[96]));
-			e.min_lava_damage           = static_cast<int32_t>(atoi(row[97]));
+			e.fast_regen_hp             = static_cast<int32_t>(atoi(row[84]));
+			e.fast_regen_mana           = static_cast<int32_t>(atoi(row[85]));
+			e.fast_regen_endurance      = static_cast<int32_t>(atoi(row[86]));
+			e.npc_max_aggro_dist        = static_cast<int32_t>(atoi(row[87]));
+			e.max_movement_update_range = static_cast<uint32_t>(strtoul(row[88], nullptr, 10));
+			e.min_expansion             = static_cast<int8_t>(atoi(row[89]));
+			e.max_expansion             = static_cast<int8_t>(atoi(row[90]));
+			e.content_flags             = row[91] ? row[91] : "";
+			e.content_flags_disabled    = row[92] ? row[92] : "";
+			e.underworld_teleport_index = static_cast<int32_t>(atoi(row[93]));
+			e.lava_damage               = static_cast<int32_t>(atoi(row[94]));
+			e.min_lava_damage           = static_cast<int32_t>(atoi(row[95]));
 
 			all_entries.push_back(e);
 		}
@@ -1216,20 +1199,18 @@ public:
 			e.gravity                   = strtof(row[81], nullptr);
 			e.type                      = static_cast<int32_t>(atoi(row[82]));
 			e.skylock                   = static_cast<int8_t>(atoi(row[83]));
-			e.skip_los                  = static_cast<int8_t>(atoi(row[84]));
-			e.music                     = static_cast<uint8_t>(strtoul(row[85], nullptr, 10));
-			e.npc_max_aggro_dist        = static_cast<int32_t>(atoi(row[86]));
-			e.max_movement_update_range = static_cast<uint32_t>(strtoul(row[87], nullptr, 10));
-			e.fast_regen_hp             = static_cast<int32_t>(atoi(row[88]));
-			e.fast_regen_mana           = static_cast<int32_t>(atoi(row[89]));
-			e.fast_regen_endurance      = static_cast<int32_t>(atoi(row[90]));
-			e.min_expansion             = static_cast<int8_t>(atoi(row[91]));
-			e.max_expansion             = static_cast<int8_t>(atoi(row[92]));
-			e.content_flags             = row[93] ? row[93] : "";
-			e.content_flags_disabled    = row[94] ? row[94] : "";
-			e.underworld_teleport_index = static_cast<int32_t>(atoi(row[95]));
-			e.lava_damage               = static_cast<int32_t>(atoi(row[96]));
-			e.min_lava_damage           = static_cast<int32_t>(atoi(row[97]));
+			e.fast_regen_hp             = static_cast<int32_t>(atoi(row[84]));
+			e.fast_regen_mana           = static_cast<int32_t>(atoi(row[85]));
+			e.fast_regen_endurance      = static_cast<int32_t>(atoi(row[86]));
+			e.npc_max_aggro_dist        = static_cast<int32_t>(atoi(row[87]));
+			e.max_movement_update_range = static_cast<uint32_t>(strtoul(row[88], nullptr, 10));
+			e.min_expansion             = static_cast<int8_t>(atoi(row[89]));
+			e.max_expansion             = static_cast<int8_t>(atoi(row[90]));
+			e.content_flags             = row[91] ? row[91] : "";
+			e.content_flags_disabled    = row[92] ? row[92] : "";
+			e.underworld_teleport_index = static_cast<int32_t>(atoi(row[93]));
+			e.lava_damage               = static_cast<int32_t>(atoi(row[94]));
+			e.min_lava_damage           = static_cast<int32_t>(atoi(row[95]));
 
 			all_entries.push_back(e);
 		}

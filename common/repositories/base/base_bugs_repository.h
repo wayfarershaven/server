@@ -16,7 +16,6 @@
 #include "../../strings.h"
 #include <ctime>
 
-
 class BaseBugsRepository {
 public:
 	struct Bugs {

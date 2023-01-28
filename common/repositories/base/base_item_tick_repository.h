@@ -16,7 +16,6 @@
 #include "../../strings.h"
 #include <ctime>
 
-
 class BaseItemTickRepository {
 public:
 	struct ItemTick {

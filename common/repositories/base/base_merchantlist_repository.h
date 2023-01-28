@@ -16,7 +16,6 @@
 #include "../../strings.h"
 #include <ctime>
 
-
 class BaseMerchantlistRepository {
 public:
 	struct Merchantlist {
@@ -31,7 +30,6 @@ public:
 		std::string bucket_name;
 		std::string bucket_value;
 		uint8_t     bucket_comparison;
-		int8_t      quantity;
 		int8_t      min_expansion;
 		int8_t      max_expansion;
 		std::string content_flags;
@@ -57,7 +55,6 @@ public:
 			"bucket_name",
 			"bucket_value",
 			"bucket_comparison",
-			"quantity",
 			"min_expansion",
 			"max_expansion",
 			"content_flags",
@@ -79,7 +76,6 @@ public:
 			"bucket_name",
 			"bucket_value",
 			"bucket_comparison",
-			"quantity",
 			"min_expansion",
 			"max_expansion",
 			"content_flags",
@@ -135,7 +131,6 @@ public:
 		e.bucket_name            = "";
 		e.bucket_value           = "";
 		e.bucket_comparison      = 0;
-		e.quantity               = 0;
 		e.min_expansion          = -1;
 		e.max_expansion          = -1;
 		e.content_flags          = "";
@@ -186,11 +181,10 @@ public:
 			e.bucket_name            = row[8] ? row[8] : "";
 			e.bucket_value           = row[9] ? row[9] : "";
 			e.bucket_comparison      = static_cast<uint8_t>(strtoul(row[10], nullptr, 10));
-			e.quantity               = static_cast<int8_t>(atoi(row[11]));
-			e.min_expansion          = static_cast<int8_t>(atoi(row[12]));
-			e.max_expansion          = static_cast<int8_t>(atoi(row[13]));
-			e.content_flags          = row[14] ? row[14] : "";
-			e.content_flags_disabled = row[15] ? row[15] : "";
+			e.min_expansion          = static_cast<int8_t>(atoi(row[11]));
+			e.max_expansion          = static_cast<int8_t>(atoi(row[12]));
+			e.content_flags          = row[13] ? row[13] : "";
+			e.content_flags_disabled = row[14] ? row[14] : "";
 
 			return e;
 		}
@@ -235,11 +229,10 @@ public:
 		v.push_back(columns[8] + " = '" + Strings::Escape(e.bucket_name) + "'");
 		v.push_back(columns[9] + " = '" + Strings::Escape(e.bucket_value) + "'");
 		v.push_back(columns[10] + " = " + std::to_string(e.bucket_comparison));
-		v.push_back(columns[11] + " = " + std::to_string(e.quantity));
-		v.push_back(columns[12] + " = " + std::to_string(e.min_expansion));
-		v.push_back(columns[13] + " = " + std::to_string(e.max_expansion));
-		v.push_back(columns[14] + " = '" + Strings::Escape(e.content_flags) + "'");
-		v.push_back(columns[15] + " = '" + Strings::Escape(e.content_flags_disabled) + "'");
+		v.push_back(columns[11] + " = " + std::to_string(e.min_expansion));
+		v.push_back(columns[12] + " = " + std::to_string(e.max_expansion));
+		v.push_back(columns[13] + " = '" + Strings::Escape(e.content_flags) + "'");
+		v.push_back(columns[14] + " = '" + Strings::Escape(e.content_flags_disabled) + "'");
 
 		auto results = db.QueryDatabase(
 			fmt::format(
@@ -272,7 +265,6 @@ public:
 		v.push_back("'" + Strings::Escape(e.bucket_name) + "'");
 		v.push_back("'" + Strings::Escape(e.bucket_value) + "'");
 		v.push_back(std::to_string(e.bucket_comparison));
-		v.push_back(std::to_string(e.quantity));
 		v.push_back(std::to_string(e.min_expansion));
 		v.push_back(std::to_string(e.max_expansion));
 		v.push_back("'" + Strings::Escape(e.content_flags) + "'");
@@ -317,7 +309,6 @@ public:
 			v.push_back("'" + Strings::Escape(e.bucket_name) + "'");
 			v.push_back("'" + Strings::Escape(e.bucket_value) + "'");
 			v.push_back(std::to_string(e.bucket_comparison));
-			v.push_back(std::to_string(e.quantity));
 			v.push_back(std::to_string(e.min_expansion));
 			v.push_back(std::to_string(e.max_expansion));
 			v.push_back("'" + Strings::Escape(e.content_flags) + "'");
@@ -366,11 +357,10 @@ public:
 			e.bucket_name            = row[8] ? row[8] : "";
 			e.bucket_value           = row[9] ? row[9] : "";
 			e.bucket_comparison      = static_cast<uint8_t>(strtoul(row[10], nullptr, 10));
-			e.quantity               = static_cast<int8_t>(atoi(row[11]));
-			e.min_expansion          = static_cast<int8_t>(atoi(row[12]));
-			e.max_expansion          = static_cast<int8_t>(atoi(row[13]));
-			e.content_flags          = row[14] ? row[14] : "";
-			e.content_flags_disabled = row[15] ? row[15] : "";
+			e.min_expansion          = static_cast<int8_t>(atoi(row[11]));
+			e.max_expansion          = static_cast<int8_t>(atoi(row[12]));
+			e.content_flags          = row[13] ? row[13] : "";
+			e.content_flags_disabled = row[14] ? row[14] : "";
 
 			all_entries.push_back(e);
 		}
@@ -406,11 +396,10 @@ public:
 			e.bucket_name            = row[8] ? row[8] : "";
 			e.bucket_value           = row[9] ? row[9] : "";
 			e.bucket_comparison      = static_cast<uint8_t>(strtoul(row[10], nullptr, 10));
-			e.quantity               = static_cast<int8_t>(atoi(row[11]));
-			e.min_expansion          = static_cast<int8_t>(atoi(row[12]));
-			e.max_expansion          = static_cast<int8_t>(atoi(row[13]));
-			e.content_flags          = row[14] ? row[14] : "";
-			e.content_flags_disabled = row[15] ? row[15] : "";
+			e.min_expansion          = static_cast<int8_t>(atoi(row[11]));
+			e.max_expansion          = static_cast<int8_t>(atoi(row[12]));
+			e.content_flags          = row[13] ? row[13] : "";
+			e.content_flags_disabled = row[14] ? row[14] : "";
 
 			all_entries.push_back(e);
 		}

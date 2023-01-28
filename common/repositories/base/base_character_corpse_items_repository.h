@@ -16,7 +16,6 @@
 #include "../../strings.h"
 #include <ctime>
 
-
 class BaseCharacterCorpseItemsRepository {
 public:
 	struct CharacterCorpseItems {
@@ -29,7 +28,7 @@ public:
 		uint32_t aug_3;
 		uint32_t aug_4;
 		uint32_t aug_5;
-		uint32_t aug_6;
+		int32_t  aug_6;
 		int16_t  attuned;
 	};
 
@@ -164,7 +163,7 @@ public:
 			e.aug_3      = static_cast<uint32_t>(strtoul(row[6], nullptr, 10));
 			e.aug_4      = static_cast<uint32_t>(strtoul(row[7], nullptr, 10));
 			e.aug_5      = static_cast<uint32_t>(strtoul(row[8], nullptr, 10));
-			e.aug_6      = static_cast<uint32_t>(strtoul(row[9], nullptr, 10));
+			e.aug_6      = static_cast<int32_t>(atoi(row[9]));
 			e.attuned    = static_cast<int16_t>(atoi(row[10]));
 
 			return e;
@@ -324,7 +323,7 @@ public:
 			e.aug_3      = static_cast<uint32_t>(strtoul(row[6], nullptr, 10));
 			e.aug_4      = static_cast<uint32_t>(strtoul(row[7], nullptr, 10));
 			e.aug_5      = static_cast<uint32_t>(strtoul(row[8], nullptr, 10));
-			e.aug_6      = static_cast<uint32_t>(strtoul(row[9], nullptr, 10));
+			e.aug_6      = static_cast<int32_t>(atoi(row[9]));
 			e.attuned    = static_cast<int16_t>(atoi(row[10]));
 
 			all_entries.push_back(e);
@@ -359,7 +358,7 @@ public:
 			e.aug_3      = static_cast<uint32_t>(strtoul(row[6], nullptr, 10));
 			e.aug_4      = static_cast<uint32_t>(strtoul(row[7], nullptr, 10));
 			e.aug_5      = static_cast<uint32_t>(strtoul(row[8], nullptr, 10));
-			e.aug_6      = static_cast<uint32_t>(strtoul(row[9], nullptr, 10));
+			e.aug_6      = static_cast<int32_t>(atoi(row[9]));
 			e.attuned    = static_cast<int16_t>(atoi(row[10]));
 
 			all_entries.push_back(e);
