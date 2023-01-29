@@ -3238,14 +3238,18 @@ bool Mob::CheckSpellLevelRestriction(Mob *caster, uint16 spell_id)
 		return true;
 	}
 
+	/* Commenting out as this seems to cause issues with players casting group beneficial spells/songs when a mob is targeted.
 	// NON GM clients might be restricted by rule setting
 	if (caster->IsClient()) {
 		if (RuleB(Spells, BuffLevelRestrictions)) {
 			check_for_restrictions = true;
 		}
 	}
+	*/
+
 	// NPCS might be restricted by rule setting
-	else if (RuleB(Spells, NPCBuffLevelRestrictions)) {
+	//else if (RuleB(Spells, NPCBuffLevelRestrictions)) {
+	if (!caster->IsClient() && RuleB(Spells, NPCBuffLevelRestrictions)) {
 		check_for_restrictions = true;
 	}
 
