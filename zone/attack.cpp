@@ -5040,7 +5040,6 @@ void Mob::TryCriticalHit(Mob *defender, DamageHitInfo &hit, ExtraAttackOptions *
                         Chat::MeleeCrit, /* Type: 301 */
                         FilterMeleeCrits, /* FilterType: 12 */
                         DEADLY_STRIKE, /* MessageFormat: %1 scores a Deadly Strike!(%2) */
-                        0,
                         GetCleanName(), /* Message1 */
                         itoa(hit.damage_done) /* Message2 */
                 );
@@ -5068,7 +5067,6 @@ void Mob::TryCriticalHit(Mob *defender, DamageHitInfo &hit, ExtraAttackOptions *
                 Chat::MeleeCrit, /* Type: 301 */
                 FilterMeleeCrits, /* FilterType: 12 */
                 CRIPPLING_BLOW, /* MessageFormat: %1 lands a Crippling Blow!(%2) */
-                0,
                 GetCleanName(), /* Message1 */
                 itoa(hit.damage_done) /* Message2 */
         );
@@ -5090,7 +5088,6 @@ void Mob::TryCriticalHit(Mob *defender, DamageHitInfo &hit, ExtraAttackOptions *
             Chat::MeleeCrit, /* Type: 301 */
             FilterMeleeCrits, /* FilterType: 12 */
             CRITICAL_HIT, /* MessageFormat: %1 scores a critical hit! (%2) */
-            0,
             GetCleanName(), /* Message1 */
             itoa(hit.damage_done) /* Message2 */
     );
