@@ -3951,7 +3951,7 @@ void Mob::CommonDamage(Mob* attacker, int64 &damage, const uint16 spell_id, cons
 				parse->EventNPC(EVENT_DAMAGE_GIVEN, attacker->CastToNPC(), this, export_string, 0);
 			}
 		}
-        
+
         if (HasDied() && pre_hit_hp > 0) {  // Don't make the mob die over and over if it was at 0 hp
             bool IsSaved = false;
 
@@ -5090,6 +5090,7 @@ void Mob::TryCriticalHit(Mob *defender, DamageHitInfo &hit, ExtraAttackOptions *
             Chat::MeleeCrit, /* Type: 301 */
             FilterMeleeCrits, /* FilterType: 12 */
             CRITICAL_HIT, /* MessageFormat: %1 scores a critical hit! (%2) */
+            0,
             GetCleanName(), /* Message1 */
             itoa(hit.damage_done) /* Message2 */
     );
