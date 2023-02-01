@@ -1266,6 +1266,7 @@ bool Client::CanEnterZone(const std::string& zone_short_name, int16 instance_ver
 				GetCleanName(),
 				z->flag_needed
 			);
+			return false;
 		}
 	}
 
