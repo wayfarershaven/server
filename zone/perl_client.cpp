@@ -2701,6 +2701,30 @@ void Perl_Client_SetSpellDurationRaid(Client* self, int spell_id, int duration, 
 	self->SetSpellDuration(spell_id, duration, ApplySpellType::Raid, allow_pets, is_raid_group_only, allow_bots);
 }
 
+perl::array Perl_Client_GetPEQZoneFlags(Client* self)
+{
+	perl::array a;
+
+	auto l = self->GetPEQZoneFlags();
+	for (const auto& f : l) {
+		a.push_back(f);
+	}
+
+	return a;
+}
+
+perl::array Perl_Client_GetZoneFlags(Client* self)
+{
+	perl::array a;
+
+	auto l = self->GetZoneFlags();
+	for (const auto& f : l) {
+		a.push_back(f);
+	}
+
+	return a;
+}
+
 void Perl_Client_SendPayload(Client* self, int payload_id) // @categories Script Utility
 {
 	self->SendPayload(payload_id);
@@ -3083,6 +3107,8 @@ void perl_register_client()
 	package.add("GetThirst", &Perl_Client_GetThirst);
 	package.add("GetTotalSecondsPlayed", &Perl_Client_GetTotalSecondsPlayed);
 	package.add("GetWeight", &Perl_Client_GetWeight);
+	package.add("GetPEQZoneFlags", &Perl_Client_GetPEQZoneFlags);
+	package.add("GetZoneFlags", &Perl_Client_GetZoneFlags);
 	package.add("GoFish", &Perl_Client_GoFish);
 	package.add("GrantAlternateAdvancementAbility", (bool(*)(Client*, int, int))&Perl_Client_GrantAlternateAdvancementAbility);
 	package.add("GrantAlternateAdvancementAbility", (bool(*)(Client*, int, int, bool))&Perl_Client_GrantAlternateAdvancementAbility);
