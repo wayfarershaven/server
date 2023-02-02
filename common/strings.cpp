@@ -762,3 +762,17 @@ std::string Strings::Random(size_t length)
 	std::generate_n(str.begin(), length, randchar);
 	return str;
 }
+
+std::string Strings::RemoveNumbers(std::string s)
+{
+	int      current = 0;
+	for (int i       = 0; i < s.length(); i++) {
+		if (!isdigit(s[i])) {
+			s[current] = s[i];
+			current++;
+		}
+	}
+
+	return s.substr(0, current);
+
+}
