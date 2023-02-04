@@ -1930,8 +1930,9 @@ void Client::CheckManaEndUpdate() {
 			mana_update->cur_mana = GetMana();
 			mana_update->max_mana = GetMaxMana();
 			mana_update->spawn_id = GetID();
-			if ((ClientVersionBit() & EQ::versions::ClientVersionBitmask::maskSoDAndLater) != 0)
+			if ((ClientVersionBit() & EQ::versions::ClientVersionBitmask::maskSoDAndLater) != 0) {
 				QueuePacket(mana_packet); // do we need this with the OP_ManaChange packet above?
+			}
 			entity_list.QueueClientsByXTarget(this, mana_packet, false, EQ::versions::ClientVersionBitmask::maskSoDAndLater);
 			safe_delete(mana_packet);
 
@@ -1955,8 +1956,9 @@ void Client::CheckManaEndUpdate() {
 			endurance_update->cur_end = GetEndurance();
 			endurance_update->max_end = GetMaxEndurance();
 			endurance_update->spawn_id = GetID();
-			if ((ClientVersionBit() & EQ::versions::ClientVersionBitmask::maskSoDAndLater) != 0)
+			if ((ClientVersionBit() & EQ::versions::ClientVersionBitmask::maskSoDAndLater) != 0) {
 				QueuePacket(endurance_packet); // do we need this with the OP_ManaChange packet above?
+			}
 			entity_list.QueueClientsByXTarget(this, endurance_packet, false, EQ::versions::ClientVersionBitmask::maskSoDAndLater);
 			safe_delete(endurance_packet);
 
@@ -2071,7 +2073,6 @@ void Client::ChangeLastName(std::string last_name) {
 	gmn->unknown[3] = 1;
 
 	entity_list.QueueClients(this, outapp, false);
-
 	safe_delete(outapp);
 }
 
@@ -6190,12 +6191,12 @@ void Client::ConsentCorpses(std::string consent_name, bool deny)
 
 void Client::Doppelganger(uint16 spell_id, Mob *target, const char *name_override, int pet_count, int pet_duration)
 {
-	if(!target || !IsValidSpell(spell_id) || GetID() == target->GetID())
+	if(!target || !IsValidSpell(spell_id) || GetID() == target->GetID()) {
 		return;
+	}
 
 	PetRecord record;
-	if(!database.GetPetEntry(spells[spell_id].teleport_zone, &record))
-	{
+	if(!database.GetPetEntry(spells[spell_id].teleport_zone, &record)) {
 		LogError("Unknown doppelganger spell id: [{}], check pets table", spell_id);
 		Message(Chat::Red, "Unable to find data for pet %s", spells[spell_id].teleport_zone);
 		return;
@@ -6257,8 +6258,9 @@ void Client::Doppelganger(uint16 spell_id, Mob *target, const char *name_overrid
 
 	int summon_count = pet.count;
 
-	if(summon_count > MAX_SWARM_PETS)
+	if(summon_count > MAX_SWARM_PETS) {
 		summon_count = MAX_SWARM_PETS;
+	}
 
 	static const glm::vec2 swarmPetLocations[MAX_SWARM_PETS] = {
 		glm::vec2(5, 5), glm::vec2(-5, 5), glm::vec2(5, -5), glm::vec2(-5, -5),
@@ -6280,8 +6282,7 @@ void Client::Doppelganger(uint16 spell_id, Mob *target, const char *name_overrid
 			auto nSI = new SwarmPet;
 			swarm_pet_npc->SetSwarmInfo(nSI);
 			swarm_pet_npc->GetSwarmInfo()->duration = new Timer(pet_duration*1000);
-		}
-		else{
+		} else {
 			swarm_pet_npc->GetSwarmInfo()->duration->Start(pet_duration*1000);
 		}
 

@@ -635,8 +635,9 @@ void Client::CompleteConnect()
 			if (!GetXTargetAutoMgr()->empty())
 				SetDirtyAutoHaters();
 
-			if (raid->IsLocked())
+			if (raid->IsLocked()) {
 				raid->SendRaidLockTo(this);
+			}
 
 			raid->SendHPManaEndPacketsTo(this);
 		}
@@ -644,8 +645,9 @@ void Client::CompleteConnect()
 	else {
 		Group *group = nullptr;
 		group = GetGroup();
-		if (group)
+		if (group) {
 			group->SendHPManaEndPacketsTo(this);
+		}
 	}
 
 
@@ -5440,8 +5442,9 @@ void Client::Handle_OP_Disarm(const EQApplicationPacket *app) {
 	BreakInvis();
 	Mob* pmob = entity_list.GetMob(disarm->source);
 	Mob* tmob = entity_list.GetMob(disarm->target);
-	if (!pmob || !tmob)
+	if (!pmob || !tmob) {
 		return;
+	}
 	if (pmob->GetID() != GetID()) {
 		// Client sent a disarm request with an originator ID not matching their own ID.
 		auto hack_str = fmt::format("Player {} ({}) sent OP_Disarm with source ID of: {}", GetCleanName(), GetID(), pmob->GetID());
@@ -5459,18 +5462,18 @@ void Client::Handle_OP_Disarm(const EQApplicationPacket *app) {
 		return;
 	}
 	// Too far away
-	if (pmob->CalculateDistance(GetTarget()->GetX(), GetTarget()->GetY(), GetTarget()->GetZ()) > 400)
+	if (pmob->CalculateDistance(GetTarget()->GetX(), GetTarget()->GetY(), GetTarget()->GetZ()) > 400) {
 		return;
-
-	// Can't see mob
-	//if (tmob->BehindMob(pmob))
-	//	return;
+	}
 	// How can we disarm someone if we are feigned.
-	if (GetFeigned())
+	if (GetFeigned()) {
 		return;
+	}
 	// We can't disarm someone who is feigned.
-	if (tmob->IsClient() && tmob->CastToClient()->GetFeigned())
+	if (tmob->IsClient() && tmob->CastToClient()->GetFeigned()) {
 		return;
+	}
+	
 	if (GetTarget() == tmob && pmob == CastToMob() &&
 		disarm->skill == GetSkill(EQ::skills::SkillDisarm) && IsAttackAllowed(tmob)) {
 		int p_level = pmob->GetLevel() ? pmob->GetLevel() : 1;
@@ -11150,18 +11153,14 @@ void Client::Handle_OP_PickPocket(const EQApplicationPacket *app)
 
 	if (victim == this) {
 		Message(Chat::White, "You catch yourself red-handed.");
-	}
-	else if (victim->GetOwnerID()) {
+	} else if (victim->GetOwnerID()) {
 		Message(Chat::White, "You cannot steal from pets!");
-	}
-	else if (victim->IsClient()) {
+	} else if (victim->IsClient()) {
 		Message(Chat::White, "Stealing from clients not yet supported.");
-	}
-	else if (Distance(GetPosition(), victim->GetPosition()) > 20) {
+	} else if (Distance(GetPosition(), victim->GetPosition()) > 20) {
 		Message(Chat::Red, "Attempt to pickpocket out of range detected.");
 		database.SetMQDetectionFlag(AccountName(), GetName(), "OP_PickPocket was sent from outside combat range.", zone->GetShortName());
-	}
-	else if (victim->IsNPC()) {
+	} else if (victim->IsNPC()) {
 		auto body = victim->GetBodyType();
 		if (body == BT_Humanoid || body == BT_Monster || body == BT_Giant ||
 			body == BT_Lycanthrope) {
@@ -11169,7 +11168,6 @@ void Client::Handle_OP_PickPocket(const EQApplicationPacket *app)
 			return;
 		}
 	}
-
 	SendPickPocketResponse(victim, 0, PickPocketFailed);
 }
 
@@ -14682,8 +14680,7 @@ void Client::Handle_OP_TraderBuy(const EQApplicationPacket *app)
 	return;
 }
 
-void Client::Handle_OP_TradeRequest(const EQApplicationPacket *app)
-{
+void Client::Handle_OP_TradeRequest(const EQApplicationPacket *app) {
 	if (app->size != sizeof(TradeRequest_Struct)) {
 		LogError("Wrong size: OP_TradeRequest, size=[{}], expected [{}]", app->size, sizeof(TradeRequest_Struct));
 		return;
