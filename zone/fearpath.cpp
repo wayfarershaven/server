@@ -30,8 +30,7 @@ extern Zone* zone;
 #define FEAR_PATHING_DEBUG
 
 //this is called whenever we are damaged to process possible fleeing
-void Mob::CheckFlee()
-{
+void Mob::CheckFlee() {
 
 	// if mob is dead why would you run?
 	if (GetHP() == 0) {
@@ -40,6 +39,11 @@ void Mob::CheckFlee()
 
 	// if were already fleeing, don't need to check more...
 	if (flee_mode && currently_fleeing) {
+		return;
+	}
+
+	// Undead do not flee
+	if(GetBodyType() == BT_Undead) {
 		return;
 	}
 
