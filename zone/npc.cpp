@@ -3719,3 +3719,14 @@ void NPC::DeleteQuestLoot(int16 itemid1, int16 itemid2, int16 itemid3, int16 ite
 		}
 	}
 }
+
+void NPC::SendPositionToClients()
+{
+	auto      p  = new EQApplicationPacket(OP_ClientUpdate, sizeof(PlayerPositionUpdateServer_Struct));
+	auto      *s = (PlayerPositionUpdateServer_Struct *) p->pBuffer;
+	for (auto &c: entity_list.GetClientList()) {
+		MakeSpawnUpdate(s);
+		c.second->QueuePacket(p, false);
+	}
+	safe_delete(p);
+}

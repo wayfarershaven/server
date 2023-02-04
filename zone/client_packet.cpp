@@ -776,6 +776,12 @@ void Client::CompleteConnect()
 
 	parse->EventPlayer(EVENT_ENTER_ZONE, this, "", 0);
 
+	// the way that the client deals with positions during the initial spawn struct
+	// is subtly different from how it deals with getting a position update
+	// if a mob is slightly in the wall or slightly clipping a floor they will be
+	// sent to a succor point
+	SendMobPositions();
+
 	SetLastPositionBeforeBulkUpdate(GetPosition());
 
 	/* This sub event is for if a player logs in for the first time since entering world. */
@@ -4145,10 +4151,12 @@ void Client::Handle_OP_CastSpell(const EQApplicationPacket *app)
 	CastingSlot slot = static_cast<CastingSlot>(castspell->slot);
 
 	// casting from slot 9, 10, 11 or 12, we disable cause not classic.
-	if(castspell->slot == 8) {
-		InterruptSpell(castspell->spell_id);
-		Message(13, "Spell slot 9 is disabled.");
-		return;
+	if (castspell->slot == 8) {
+		if (!GetAA(aaMnemonicRetention) > 0) {
+			InterruptSpell(castspell->spell_id);
+			Message(13, "Spell slot 9 is disabled.");
+			return;
+		}
 	} else if(castspell->slot == 9) {
 		InterruptSpell(castspell->spell_id);
 		Message(13, "Spell slot 10 is disabled.");
@@ -15721,4 +15729,15 @@ bool Client::CanTradeFVNoDropItem()
 	}
 
 	return false;
+}
+
+void Client::SendMobPositions()
+{
+	auto      p  = new EQApplicationPacket(OP_ClientUpdate, sizeof(PlayerPositionUpdateServer_Struct));
+	auto      *s = (PlayerPositionUpdateServer_Struct *) p->pBuffer;
+	for (auto &m: entity_list.GetMobList()) {
+		m.second->MakeSpawnUpdate(s);
+		QueuePacket(p, false);
+	}
+	safe_delete(p);
 }
