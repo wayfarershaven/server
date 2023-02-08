@@ -4143,6 +4143,7 @@ void Client::Handle_OP_CastSpell(const EQApplicationPacket *app)
 		return;
 	}
 
+	SetInvisible(Invisibility::Visible);
 	BreakInvisibleSpells();
 
 	CastSpell_Struct* castspell = (CastSpell_Struct*)app->pBuffer;

@@ -9571,6 +9571,7 @@ void Mob::BreakInvisibleSpells()
 {
 	if(invisible) {
 		nobuff_invisible = 0;
+		SetInvisible(Invisibility::Visible);
 		BuffFadeByEffect(SE_Invisibility);
 		BuffFadeByEffect(SE_Invisibility2);
 	}
