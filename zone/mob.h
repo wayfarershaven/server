@@ -1413,9 +1413,9 @@ public:
 	inline uint32 GetEmoteID() { return emoteid; }
 
 	inline void SetCombatHPRegen(uint32 regen) { combat_hp_regen = regen; };
-	inline uint32 GetCombatHPRegen() { return combat_hp_regen; }
+	inline uint64 GetCombatHPRegen() { return combat_hp_regen; }
 	inline void SetCombatManaRegen(uint32 regen) { combat_mana_regen = regen; };
-	inline uint32 GetCombatManaRegen() { return combat_mana_regen; }
+	inline uint64 GetCombatManaRegen() { return combat_mana_regen; }
 
 	bool HasSpellEffect(int effect_id);
 	int mod_effect_value(int effect_value, uint16 spell_id, int effect_type, Mob *caster, uint16 caster_id);

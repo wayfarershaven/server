@@ -2793,8 +2793,8 @@ float NPC::GetNPCStat(std::string stat)
 	return 0.0f;
 }
 
-int32 NPC::GetHPRegen() {
-	uint32 bonus = 0;
+int64 NPC::GetHPRegen() {
+	uint64 bonus = 0;
 	if (GetAppearance() == eaSitting) {
 		bonus += 3;
 	}
@@ -2820,8 +2820,8 @@ int32 NPC::GetHPRegen() {
 	}
 }
 
-int32 NPC::GetManaRegen() {
-	uint32 bonus = 0;
+int64 NPC::GetManaRegen() {
+	uint64 bonus = 0;
 	if (GetAppearance() == eaSitting) {
 		bonus += 3;
 	}
