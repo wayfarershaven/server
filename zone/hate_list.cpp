@@ -349,8 +349,8 @@ Mob *HateList::GetEntWithMostHateOnList(Mob *center, Mob *skip, bool skip_mezzed
 		while (iterator != list.end())
 		{
 			struct_HateList *cur = (*iterator);
-			int16 aggro_mod = 0;
-			int16 hate_mod = 0;
+			int64 aggro_mod = 0;
+			int64 hate_mod = 0;
 
 			if (!cur){
 				++iterator;
@@ -405,7 +405,7 @@ Mob *HateList::GetEntWithMostHateOnList(Mob *center, Mob *skip, bool skip_mezzed
 					}
 
 					if (center->CombatRange(cur->entity_on_hatelist)) {
-						int32 max_hp = center->GetMaxHP();
+						uint64 max_hp = center->GetMaxHP();
 						if (max_hp < 4000) {
 							hate_mod = 100;
 						} else if (max_hp >= 4000 && max_hp <= 60000) {
