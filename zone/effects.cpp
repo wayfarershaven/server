@@ -58,10 +58,10 @@ int64 Mob::GetActSpellDamage(uint16 spell_id, int64 value, Mob* target) {
 	chance += itembonuses.FrenziedDevastation + spellbonuses.FrenziedDevastation + aabonuses.FrenziedDevastation;
 
 	//Crtical Hit Calculation pathway
-	if (chance > 0 || ((IsClient() || IsBot()) && GetClass() == WIZARD && GetLevel() >= RuleI(Spells, WizCritLevel))) {
+	if (chance > 0 || (IsOfClientBot() && GetClass() == WIZARD && GetLevel() >= RuleI(Spells, WizCritLevel))) {
 		 int32 ratio = RuleI(Spells, BaseCritRatio); //Critical modifier is applied from spell effects only. Keep at 100 for live like criticals.
 		//Improved Harm Touch is a guaranteed crit if you have at least one level of SCF.
-		if (spell_id == SPELL_IMP_HARM_TOUCH && (IsClient() || IsBot()) && (GetAA(aaSpellCastingFury) > 0) && (GetAA(aaUnholyTouch) > 0)) {
+		if (spell_id == SPELL_IMP_HARM_TOUCH && IsOfClientBot() && (GetAA(aaSpellCastingFury) > 0) && (GetAA(aaUnholyTouch) > 0)) {
 			 chance = 100;
 		}
 
@@ -73,7 +73,7 @@ int64 Mob::GetActSpellDamage(uint16 spell_id, int64 value, Mob* target) {
 			Critical = true;
 			ratio += itembonuses.SpellCritDmgIncrease + spellbonuses.SpellCritDmgIncrease + aabonuses.SpellCritDmgIncrease;
 			ratio += itembonuses.SpellCritDmgIncNoStack + spellbonuses.SpellCritDmgIncNoStack + aabonuses.SpellCritDmgIncNoStack;
-		} else if (((IsClient() || IsBot()) && GetClass() == WIZARD) || (IsMerc() && GetClass() == CASTERDPS)) {
+		} else if ((IsOfClientBot() && GetClass() == WIZARD) || (IsMerc() && GetClass() == CASTERDPS)) {
 			if ((GetLevel() >= RuleI(Spells, WizCritLevel)) && zone->random.Roll(RuleI(Spells, WizCritChance))){
 				//Wizard innate critical chance is calculated seperately from spell effect and is not a set ratio. (20-70 is parse confirmed)
 				ratio += zone->random.Int(20,70);
@@ -81,7 +81,7 @@ int64 Mob::GetActSpellDamage(uint16 spell_id, int64 value, Mob* target) {
 			}
 		}
 
-		if ((IsClient() || IsBot()) && GetClass() == WIZARD) {
+		if (IsOfClientBot() && GetClass() == WIZARD) {
 			ratio += RuleI(Spells, WizCritRatio); //Default is zero
 		}
 
