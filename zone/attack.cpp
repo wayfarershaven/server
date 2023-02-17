@@ -280,9 +280,9 @@ int Mob::compute_defense()
 
     defense += AgiScaleFactor * (800 * (GetAGI() - 40)) / 3600 / 1000;
 
-    if (IsClient()) {
-        defense += CastToClient()->GetHeroicAGI() / 10;
-    }
+    if (IsClient() || IsBot()) {
+		defense += GetHeroicAGI() / 10;
+	}
 
     //516 SE_AC_Mitigation_Max_Percent
     auto ac_bonus = itembonuses.AC_Mitigation_Max_Percent + aabonuses.AC_Mitigation_Max_Percent + spellbonuses.AC_Mitigation_Max_Percent;

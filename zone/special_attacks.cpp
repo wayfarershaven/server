@@ -2245,8 +2245,8 @@ int Mob::TryAssassinate(Mob *defender, EQ::skills::SkillType skillInUse)
 		int chance = GetDEX();
 		if (skillInUse == EQ::skills::SkillBackstab) {
 			chance = 100 * chance / (chance + 4750);
-			if (IsClient()) {
-				chance += CastToClient()->GetHeroicDEX();
+			if (IsClient() || IsBot()) {
+				chance += GetHeroicDEX();
 			}
 			chance *= 10;
 			int norm = aabonuses.AssassinateLevel[SBIndex::FINISHING_EFFECT_LEVEL_CHANCE_BONUS];
