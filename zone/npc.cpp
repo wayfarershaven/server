@@ -911,59 +911,14 @@ bool NPC::Process()
 			npc_sitting_regen_bonus += 3;
 		}
 
-		int64 ooc_regen_calc = 0;
-		if (ooc_regen > 0) { //should pull from Mob class
-			ooc_regen_calc += GetMaxHP() * ooc_regen / 100;
+		// Hp regen
+		if(GetHP() < GetMaxHP()) {
+			SetHP(GetHP() + GetHPRegen());
 		}
 
-		/**
-		 * Use max value between two values
-		 */
-		npc_regen = std::max(npc_hp_regen, ooc_regen_calc);
-
-		if ((GetHP() < GetMaxHP()) && !IsPet()) {
-			if (!IsEngaged()) {
-				SetHP(GetHP() + npc_regen + npc_sitting_regen_bonus);
-			}
-			else {
-				SetHP(GetHP() + npc_hp_regen);
-			}
-		}
-		else if (GetHP() < GetMaxHP() && GetOwnerID() != 0) {
-			if (!IsEngaged()) {
-				if (ooc_regen > 0) {
-					pet_regen_bonus = std::max(ooc_regen_calc, npc_hp_regen);
-				}
-				else {
-					pet_regen_bonus = npc_hp_regen + (GetLevel() / 5);
-				}
-
-				SetHP(GetHP() + npc_sitting_regen_bonus + pet_regen_bonus);
-			}
-			else {
-				SetHP(GetHP() + npc_hp_regen);
-			}
-
-		}
-		else {
-			SetHP(GetHP() + npc_hp_regen + npc_sitting_regen_bonus);
-		}
-
+		// mana regen
 		if (GetMana() < GetMaxMana()) {
-			if (RuleB(NPC, UseMeditateBasedManaRegen)) {
-				int64 npc_idle_mana_regen_bonus = 2;
-				uint16 meditate_skill = GetSkill(EQ::skills::SkillMeditate);
-				if (!IsEngaged() && meditate_skill > 0) {
-					uint8 clevel = GetLevel();
-					npc_idle_mana_regen_bonus =
-						(((meditate_skill / 10) +
-						(clevel - (clevel / 4))) / 4) + 4;
-				}
-				SetMana(GetMana() + mana_regen + npc_idle_mana_regen_bonus);
-			}
-			else {
-				SetMana(GetMana() + mana_regen + npc_sitting_regen_bonus);
-			}
+			SetMana(GetMana() + GetManaRegen());
 		}
 
 		SendHPUpdate();
