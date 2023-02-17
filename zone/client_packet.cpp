@@ -4382,6 +4382,7 @@ void Client::Handle_OP_CastSpell(const EQApplicationPacket *app)
 							}
 							else {
 								InterruptSpell(castspell->spell_id);
+								SendSpellBarEnable(castspell->spell_id);
 								return;
 							}
 						}
@@ -4420,6 +4421,7 @@ void Client::Handle_OP_CastSpell(const EQApplicationPacket *app)
 						}
 						else {
 							InterruptSpell(castspell->spell_id);
+							SendSpellBarEnable(castspell->spell_id);
 							return;
 						}
 					}
@@ -9231,6 +9233,10 @@ void Client::Handle_OP_ItemVerifyRequest(const EQApplicationPacket *app)
 						} else {
 							CastSpell(item->Click.Effect, target_id, CastingSlot::Item, item->CastTime, 0, 0, slot_id);
 						}
+					} else {
+						InterruptSpell(item->Click.Effect);
+						SendSpellBarEnable(item->Click.Effect);
+						return;	
 					}
 				} else {
 					MessageString(Chat::Red, ITEMS_INSUFFICIENT_LEVEL);
@@ -9292,6 +9298,10 @@ void Client::Handle_OP_ItemVerifyRequest(const EQApplicationPacket *app)
 						} else {
 							CastSpell(augitem->Click.Effect, target_id, CastingSlot::Item, augitem->CastTime, 0, 0, slot_id);
 						}
+					} else {
+						InterruptSpell(item->Click.Effect);
+						SendSpellBarEnable(item->Click.Effect);
+						return;	
 					}
 				} else {
 					MessageString(Chat::Red, ITEMS_INSUFFICIENT_LEVEL);
