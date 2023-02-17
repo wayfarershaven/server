@@ -1279,59 +1279,57 @@ bool Mob::PassCharismaCheck(Mob* caster, uint16 spell_id) {
 	Charm has a lower limit of 5% chance to break per tick, regardless of resist modifiers / level difference.
 	*/
 
-	if(!caster) return false;
-
-	if(spells[spell_id].resist_difficulty <= -600)
+	if(!caster) {
+		return false;
+	}
+	
+	if(spells[spell_id].resist_difficulty <= -600) {
 		return true;
+	}
 
 	float resist_check = 0;
 
 	if(IsCharmSpell(spell_id)) {
-
-		if (spells[spell_id].no_resist) //If charm spell has this set(-1), it can not break till end of duration.
+		if (spells[spell_id].no_resist) { //If charm spell has this set(-1), it can not break till end of duration.
 			return true;
+		}
 
 		//1: The mob has a default 25% chance of being allowed a resistance check against the charm.
-		if (zone->random.Int(0, 99) > RuleI(Spells, CharmBreakCheckChance))
+		if (zone->random.Int(0, 99) > RuleI(Spells, CharmBreakCheckChance)) {
 			return true;
+		}
 
-		if (RuleB(Spells, CharismaCharmDuration))
+		if (RuleB(Spells, CharismaCharmDuration)) {
 			resist_check = ResistSpell(spells[spell_id].resist_type, spell_id, caster,false,0,true,true);
-		else
+		} else {
 			resist_check = ResistSpell(spells[spell_id].resist_type, spell_id, caster, false,0, false, true);
+		}
 
 		//2: The mob makes a resistance check against the charm
-		if (resist_check == 100)
+		if (resist_check == 100) {
 			return true;
-
-		else
-		{
-			if (caster->IsClient())
-			{
+		} else {
+			if (caster->IsOfClientBot()) {
 				//3: At maxed ability, Total Domination has a 50% chance of preventing the charm break that otherwise would have occurred.
 				int16 TotalDominationBonus = caster->aabonuses.CharmBreakChance + caster->spellbonuses.CharmBreakChance + caster->itembonuses.CharmBreakChance;
 
-				if (zone->random.Int(0, 99) < TotalDominationBonus)
+				if (zone->random.Int(0, 99) < TotalDominationBonus) {
 					return true;
-
+				}
 			}
 		}
-	}
-
-	else
-	{
+	} else {
 		// Assume this is a harmony/pacify spell
 		// If 'Lull' spell resists, do a second resist check with a charisma modifier AND regular resist checks. If resists agian you gain aggro.
 		resist_check = ResistSpell(spells[spell_id].resist_type, spell_id, caster, false,0,true);
-		if (resist_check == 100)
+		if (resist_check == 100) {
 			return true;
+		}
 	}
-
 	return false;
 }
 
-void Mob::RogueEvade(Mob *other)
-{
+void Mob::RogueEvade(Mob *other) {
 	int64 amount = other->GetHateAmount(this) * zone->random.Int(40, 70) / 100;
 	other->SetHateAmountOnEnt(this, std::max(static_cast<int64>(100), amount));
 
