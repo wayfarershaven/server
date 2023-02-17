@@ -2023,7 +2023,7 @@ void Mob::AI_Event_Engaged(Mob *attacker, bool yell_for_help)
 					}
 
 					std::string mob_name = GetCleanName();
-					combat_record.Start(mob_name);
+					m_combat_record.Start(mob_name);
 					CastToNPC()->SetCombatEvent(true);
 				}
 			}
@@ -2064,7 +2064,7 @@ void Mob::AI_Event_NoLongerEngaged() {
 					CastToNPC()->DoNPCEmote(EQ::constants::EmoteEventTypes::LeaveCombat, emoteid);
 				}
 
-				combat_record.Stop();
+				m_combat_record.Stop();
 				CastToNPC()->SetCombatEvent(false);
 			}
 		}

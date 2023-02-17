@@ -1516,17 +1516,3 @@ void MobMovementManager::HandleStuckBehavior(Mob *who, float x, float y, float z
 			break;
 	}
 }
-
-void Mob::DrawDebugCoordinateNode(std::string node_name, const glm::vec4 vec)
-{
-	NPC* node = nullptr;
-	for (const auto& n : entity_list.GetNPCList()) {
-		if (n.second->GetCleanName() == node_name) {
-			node = n.second;
-			break;
-		}
-	}
-	if (!node) {
-		node = NPC::SpawnNodeNPC(node_name, "", GetPosition());
-	}
-}

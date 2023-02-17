@@ -67,6 +67,7 @@ namespace EQ
 #include "task_manager.h"
 #include "task_client_state.h"
 #include "cheat_manager.h"
+#include "../common/events/player_events.h"
 
 #ifdef _WINDOWS
 	// since windows defines these within windef.h (which windows.h include)
@@ -308,7 +309,6 @@ public:
 	bool ShouldISpawnFor(Client *c) { return !GMHideMe(c) && !IsHoveringForRespawn(); }
 	virtual bool Process();
 	void ProcessPackets();
-	void LogMerchant(Client* player, Mob* merchant, uint32 quantity, uint32 price, const EQ::ItemData* item, bool buying);
 	void QueuePacket(const EQApplicationPacket* app, bool ack_req = true, CLIENT_CONN_STATUS = CLIENT_CONNECTINGALL, eqFilterType filter=FilterNone);
 	void FastQueuePacket(EQApplicationPacket** app, bool ack_req = true, CLIENT_CONN_STATUS = CLIENT_CONNECTINGALL);
 	void ChannelMessageReceived(uint8 chan_num, uint8 language, uint8 lang_skill, const char* orig_message, const char* targetname = nullptr, bool is_silent = false);
@@ -1448,7 +1448,7 @@ public:
 	void ConsentCorpses(std::string consent_name, bool deny = false);
 	void SendAltCurrencies();
 	void SetAlternateCurrencyValue(uint32 currency_id, uint32 new_amount);
-	void AddAlternateCurrencyValue(uint32 currency_id, int32 amount, int8 method = 0);
+	int AddAlternateCurrencyValue(uint32 currency_id, int32 amount, int8 method = 0);
 	void SendAlternateCurrencyValues();
 	void SendAlternateCurrencyValue(uint32 currency_id, bool send_if_null = true);
 	uint32 GetAlternateCurrencyValue(uint32 currency_id) const;
@@ -1639,6 +1639,9 @@ public:
 	std::map<std::string,std::string> GetMerchantDataBuckets();
 
 	std::string GetGuildPublicNote();
+
+	PlayerEvent::PlayerEvent GetPlayerEvent();
+	void RecordKilledNPCEvent(NPC *n);
 
 	// exp.cpp
 	uint64 GetEXPForLevel(uint16 level, bool aa = false);
@@ -2050,6 +2053,7 @@ private:
 
 	bool CanTradeFVNoDropItem();
 	void SendMobPositions();
+	void PlayerTradeEventLog(Trade *t, Trade *t2);
 };
 
 #endif

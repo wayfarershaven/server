@@ -1841,7 +1841,9 @@ protected:
 	bool spawned_in_water;
 	bool is_boat;
 
-	CombatRecord combat_record{};
+	CombatRecord m_combat_record{};
+public:
+	const CombatRecord &GetCombatRecord() const;
 
 public:
 	bool GetWasSpawnedInWater() const;

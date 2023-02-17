@@ -37,6 +37,7 @@ extern Zone* zone;
 
 #include "../common/repositories/character_peqzone_flags_repository.h"
 #include "../common/repositories/zone_repository.h"
+#include "../common/events/player_event_logs.h"
 
 
 void Client::Handle_OP_ZoneChange(const EQApplicationPacket *app) {
@@ -215,6 +216,22 @@ void Client::Handle_OP_ZoneChange(const EQApplicationPacket *app) {
 		return;
 	}
 
+	if (player_event_logs.IsEventEnabled(PlayerEvent::ZONING)) {
+		auto e = PlayerEvent::ZoningEvent{};
+		e.from_zone_long_name   = zone->GetLongName();
+		e.from_zone_short_name  = zone->GetShortName();
+		e.from_zone_id          = zone->GetZoneID();
+		e.from_instance_id      = zone->GetInstanceID();
+		e.from_instance_version = zone->GetInstanceVersion();
+		e.to_zone_long_name     = ZoneLongName(target_zone_id);
+		e.to_zone_short_name    = ZoneName(target_zone_id);
+		e.to_zone_id            = target_zone_id;
+		e.to_instance_id        = target_instance_id;
+		e.to_instance_version   = target_instance_version;
+
+		RecordPlayerEventLog(PlayerEvent::ZONING, e);
+	}
+	
 	//handle circumvention of zone restrictions
 	//we need the value when creating the outgoing packet as well.
 	uint8 ignore_restrictions = zonesummon_ignorerestrictions;

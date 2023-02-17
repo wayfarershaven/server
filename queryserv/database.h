@@ -44,7 +44,7 @@ public:
 	void LogPlayerDeathBy(QSPlayerDeathBy_Struct* QS, uint32 items);
 	void LogPlayerLootRecords(QSPlayerLootRecords_struct* QS, uint32 Items);
 	void LogPlayerQGlobalUpdates(QSPlayerQGlobalUpdate_Struct* QS, uint32 items);
-	void LogPlayerTrade(QSPlayerLogTrade_Struct* QS, uint32 DetailCount);
+	void LogPlayerTrade(PlayerLogTrade_Struct* QS, uint32 DetailCount);
 	void LogPlayerTSEvents(QSPlayerTSEvents_Struct* QS, uint32 items);
 	void LogPlayerDropItem(QSPlayerDropItem_Struct* QS);
 	void LogPlayerHandin(QSPlayerLogHandin_Struct* QS, uint32 DetailCount);

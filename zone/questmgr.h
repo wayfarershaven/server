@@ -348,6 +348,8 @@ public:
 	bool HasRecipeLearned(uint32 recipe_id);
 	bool DoAugmentSlotsMatch(uint32 item_one, uint32 item_two);
 	int8 DoesAugmentFit(EQ::ItemInstance* inst, uint32 augment_id);
+
+	void SendPlayerHandinEvent();
 	Bot *GetBot() const;
 	Client *GetInitiator() const;
 	NPC *GetNPC() const;
