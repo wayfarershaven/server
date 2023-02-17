@@ -740,7 +740,10 @@ public:
 	inline const bool AlwaysAggro() const { return always_aggro; }
 	inline int32 GetHeroicStrikethrough() const  { return heroic_strikethrough; }
 
+	virtual bool IsSitting() const { return false; }
+
 	int CalcRecommendedLevelBonus(uint8 level, uint8 reclevel, int basestat);
+	
 	void CopyHateList(Mob* to);
 	
 	//Group
