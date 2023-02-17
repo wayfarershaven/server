@@ -378,10 +378,6 @@ void Client::GoFish()
 				}
 
 				if (inst) {
-					std::vector<std::any> args;
-					args.push_back(inst);
-					parse->EventPlayer(EVENT_FISH_SUCCESS, this, "", inst->GetID(), &args);
-
 					if (player_event_logs.IsEventEnabled(PlayerEvent::FISH_SUCCESS)) {
 						auto e = PlayerEvent::FishSuccessEvent{
 							.item_id = inst->GetItem()->ID,
@@ -390,26 +386,34 @@ void Client::GoFish()
 
 						RecordPlayerEventLog(PlayerEvent::FISH_SUCCESS, e);
 					}
+
+					if (parse->PlayerHasQuestSub(EVENT_FISH_SUCCESS)) {
+						std::vector<std::any> args = { inst };
+						parse->EventPlayer(EVENT_FISH_SUCCESS, this, "", inst->GetID(), &args);
+					}
 				}
 			}
 		}
-	}
-	else
-	{
+	} else {
 		//chance to use bait when you dont catch anything...
 		if (zone->random.Int(0, 4) == 1) {
 			DeleteItemInInventory(bslot, 1, true);	//do we need client update?
 			MessageString(Chat::Skills, FISHING_LOST_BAIT);	//You lost your bait!
 		} else {
-			if (zone->random.Int(0, 15) == 1)	//give about a 1 in 15 chance to spill your beer. we could make this a rule, but it doesn't really seem worth it
+			if (zone->random.Int(0, 15) == 1) { //give about a 1 in 15 chance to spill your beer. we could make this a rule, but it doesn't really seem worth it
 				//TODO: check for & consume an alcoholic beverage from inventory when this triggers, and set it as a rule that's disabled by default
 				MessageString(Chat::Skills, FISHING_SPILL_BEER);	//You spill your beer while bringing in your line.
-			else
+			} else {
 				MessageString(Chat::Skills, FISHING_FAILED);	//You didn't catch anything.
+			}
 		}
 
 		parse->EventPlayer(EVENT_FISH_FAILURE, this, "", 0);
 		RecordPlayerEventLog(PlayerEvent::FISH_FAILURE, PlayerEvent::EmptyEvent{});
+		
+		if (parse->PlayerHasQuestSub(EVENT_FISH_FAILURE)) {
+			parse->EventPlayer(EVENT_FISH_FAILURE, this, "", 0);
+		}
 	}
 
 	//chance to break fishing pole...
@@ -508,16 +512,17 @@ void Client::ForageItem(bool guarantee) {
 			}
 
 			if (inst) {
-				std::vector<std::any> args;
-				args.push_back(inst);
-				parse->EventPlayer(EVENT_FORAGE_SUCCESS, this, "", inst->GetID(), &args);
-
 				if (player_event_logs.IsEventEnabled(PlayerEvent::FORAGE_SUCCESS)) {
 					auto e = PlayerEvent::ForageSuccessEvent{
 						.item_id = inst->GetItem()->ID,
 						.item_name = inst->GetItem()->Name
 					};
 					RecordPlayerEventLog(PlayerEvent::FORAGE_SUCCESS, e);
+				}
+
+				if (parse->PlayerHasQuestSub(EVENT_FORAGE_SUCCESS)) {
+					std::vector<std::any> args = { inst };
+					parse->EventPlayer(EVENT_FORAGE_SUCCESS, this, "", inst->GetID(), &args);
 				}
 			}
 		}
@@ -529,8 +534,11 @@ void Client::ForageItem(bool guarantee) {
 		}
 	} else {
 		MessageString(Chat::Skills, FORAGE_FAILED);
-		parse->EventPlayer(EVENT_FORAGE_FAILURE, this, "", 0);
 		RecordPlayerEventLog(PlayerEvent::FORAGE_FAILURE, PlayerEvent::EmptyEvent{});
+
+		if (parse->PlayerHasQuestSub(EVENT_FORAGE_FAILURE)) {
+			parse->EventPlayer(EVENT_FORAGE_FAILURE, this, "", 0);
+		}
 	}
 
 	CheckIncreaseSkill(EQ::skills::SkillForage, nullptr, 5);
