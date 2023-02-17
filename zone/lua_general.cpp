@@ -3692,6 +3692,11 @@ int8 lua_does_augment_fit(Lua_ItemInst inst, uint32 augment_id)
 	return quest_manager.DoesAugmentFit(inst, augment_id);
 }
 
+int8 lua_does_augment_fit(Lua_ItemInst inst, uint32 augment_id, uint8 augment_slot)
+{
+	return quest_manager.DoesAugmentFit(inst, augment_id, augment_slot);
+}
+
 luabind::object lua_get_recipe_component_item_ids(lua_State* L, uint32 recipe_id)
 {
 	auto lua_table = luabind::newtable(L);
@@ -4321,7 +4326,8 @@ luabind::scope lua_register_general() {
 		luabind::def("get_recipe_salvage_count", (int8(*)(uint32,uint32))&lua_get_recipe_salvage_count),
 		luabind::def("get_recipe_success_count", (int8(*)(uint32,uint32))&lua_get_recipe_success_count),
 		luabind::def("send_player_handin_event", (void(*)(void))&lua_send_player_handin_event),
-		luabind::def("does_augment_fit", &lua_does_augment_fit),
+		luabind::def("does_augment_fit", (int8(*)(Lua_ItemInst, uint32))&lua_does_augment_fit),
+		luabind::def("does_augment_fit", (int8(*)(Lua_ItemInst, uint32, uint8))&lua_does_augment_fit),
 
 		/*
 			Cross Zone
