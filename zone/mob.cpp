@@ -1386,9 +1386,10 @@ void Mob::CreateHPPacket(EQApplicationPacket* app)
 	{
 		if (ds->hp < GetNextHPEvent())
 		{
-			std::string export_string = fmt::format("{}", GetNextHPEvent());
 			SetNextHPEvent(-1);
-			parse->EventNPC(EVENT_HP, CastToNPC(), nullptr, export_string, 0);
+			if (parse->HasQuestSub(GetNPCTypeID(), EVENT_HP)) {
+				parse->EventNPC(EVENT_HP, CastToNPC(), nullptr, std::to_string(GetNextHPEvent()), 0);
+			}
 		}
 	}
 
@@ -1396,9 +1397,10 @@ void Mob::CreateHPPacket(EQApplicationPacket* app)
 	{
 		if (ds->hp > GetNextIncHPEvent())
 		{
-			std::string export_string = fmt::format("{}", GetNextIncHPEvent());
 			SetNextIncHPEvent(-1);
-			parse->EventNPC(EVENT_HP, CastToNPC(), nullptr, export_string, 1);
+			if (parse->HasQuestSub(GetNPCTypeID(), EVENT_HP)) {
+				parse->EventNPC(EVENT_HP, CastToNPC(), nullptr, std::to_string(GetNextIncHPEvent()), 1);
+			}
 		}
 	}
 }
@@ -4136,9 +4138,19 @@ void Mob::ExecWeaponProc(const EQ::ItemInstance *inst, uint16 spell_id, Mob *on,
 		//const cast is dirty but it would require redoing a ton of interfaces at this point
 		//It should be safe as we don't have any truly const EQ::ItemInstance floating around anywhere.
 		//So we'll live with it for now
-		int i = parse->EventItem(EVENT_WEAPON_PROC, CastToClient(), const_cast<EQ::ItemInstance*>(inst), on, "", spell_id);
-		if(i != 0) {
-			return;
+		if (parse->ItemHasQuestSub(const_cast<EQ::ItemInstance*>(inst), EVENT_WEAPON_PROC)) {
+			int i = parse->EventItem(
+				EVENT_WEAPON_PROC,
+				CastToClient(),
+				const_cast<EQ::ItemInstance*>(inst),
+				on,
+				"",
+				spell_id
+			);
+
+			if (i != 0) {
+				return;
+			}
 		}
 	}
 
@@ -5351,32 +5363,35 @@ int16 Mob::GetCritDmgMod(uint16 skill, Mob* owner)
 
 void Mob::SetGrouped(bool v)
 {
-	if(v)
-	{
+	if (v) {
 		israidgrouped = false;
 	}
+
 	isgrouped = v;
 
-	if(IsClient())
-	{
+	if (IsClient()) {
+		if (parse->PlayerHasQuestSub(EVENT_GROUP_CHANGE)) {
 			parse->EventPlayer(EVENT_GROUP_CHANGE, CastToClient(), "", 0);
+		}
 
-		if(!v)
+		if (!v) {
 			CastToClient()->RemoveGroupXTargets();
+		}
 	}
 }
 
 void Mob::SetRaidGrouped(bool v)
 {
-	if(v)
-	{
+	if (v) {
 		isgrouped = false;
 	}
+
 	israidgrouped = v;
 
-	if(IsClient())
-	{
-		parse->EventPlayer(EVENT_GROUP_CHANGE, CastToClient(), "", 0);
+	if (IsClient()) {
+		if (parse->PlayerHasQuestSub(EVENT_GROUP_CHANGE)) {
+			parse->EventPlayer(EVENT_GROUP_CHANGE, CastToClient(), "", 0);
+		}
 	}
 }
 

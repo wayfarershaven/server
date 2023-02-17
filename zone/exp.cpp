@@ -545,6 +545,10 @@ void Client::SetEXP(uint64 set_exp, uint64 set_aaxp, bool isrezzexp) {
 			SendSound();
 		}
 
+		if (parse->PlayerHasQuestSub(EVENT_AA_GAIN)) {
+			parse->EventPlayer(EVENT_AA_GAIN, this, std::to_string(gained), 0);
+		}
+
 		RecordPlayerEventLog(PlayerEvent::AA_GAIN, PlayerEvent::AAGainedEvent{gained});
 
 		/* QS: PlayerLogAARate */
@@ -703,8 +707,10 @@ void Client::SetLevel(uint8 set_level, bool command)
 
 	if (set_level > m_pp.level) {
 		int levels_gained = (set_level - m_pp.level);
-		const auto export_string = fmt::format("{}", levels_gained);
-		parse->EventPlayer(EVENT_LEVEL_UP, this, export_string, 0);
+		if (parse->PlayerHasQuestSub(EVENT_LEVEL_UP)) {
+			parse->EventPlayer(EVENT_LEVEL_UP, this, std::to_string(levels_gained), 0);
+		}
+
 		if (player_event_logs.IsEventEnabled(PlayerEvent::LEVEL_GAIN)) {
 			auto e = PlayerEvent::LevelGainedEvent{
 				.from_level = m_pp.level,
@@ -727,8 +733,10 @@ void Client::SetLevel(uint8 set_level, bool command)
 		}
 	} else if (set_level < m_pp.level) {
 		int levels_lost = (m_pp.level - set_level);
-		const auto export_string = fmt::format("{}", levels_lost);
-		parse->EventPlayer(EVENT_LEVEL_DOWN, this, export_string, 0);
+		if (parse->PlayerHasQuestSub(EVENT_LEVEL_DOWN)) {
+			parse->EventPlayer(EVENT_LEVEL_DOWN, this, std::to_string(levels_lost), 0);
+		}
+		
 		if (player_event_logs.IsEventEnabled(PlayerEvent::LEVEL_LOSS)) {
 			auto e = PlayerEvent::LevelLostEvent{
 				.from_level = m_pp.level,

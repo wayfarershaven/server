@@ -467,10 +467,10 @@ int Client::HandlePacket(const EQApplicationPacket *app)
 	switch (client_state) {
 	case CLIENT_CONNECTING: {
 		if (ConnectingOpcodes.count(opcode) != 1) {
-			//Hate const cast but everything in lua needs to be non-const even if i make it non-mutable
-			std::vector<std::any> args;
-			args.push_back(const_cast<EQApplicationPacket*>(app));
-			parse->EventPlayer(EVENT_UNHANDLED_OPCODE, this, "", 1, &args);
+			if (parse->PlayerHasQuestSub(EVENT_UNHANDLED_OPCODE)) {
+				std::vector<std::any> args = {const_cast<EQApplicationPacket *>(app)};
+				parse->EventPlayer(EVENT_UNHANDLED_OPCODE, this, "", 1, &args);
+			}
 
 			break;
 		}
@@ -492,9 +492,10 @@ int Client::HandlePacket(const EQApplicationPacket *app)
 		ClientPacketProc p;
 		p = ConnectedOpcodes[opcode];
 		if (p == nullptr) {
-			std::vector<std::any> args;
-			args.push_back(const_cast<EQApplicationPacket*>(app));
-			parse->EventPlayer(EVENT_UNHANDLED_OPCODE, this, "", 0, &args);
+			if (parse->PlayerHasQuestSub(EVENT_UNHANDLED_OPCODE)) {
+				std::vector<std::any> args = {const_cast<EQApplicationPacket *>(app)};
+				parse->EventPlayer(EVENT_UNHANDLED_OPCODE, this, "", 0, &args);
+			}
 
 			break;
 		}
@@ -778,7 +779,9 @@ void Client::CompleteConnect()
 	TotalKarma = database.GetKarma(AccountID());
 	SendDisciplineTimers();
 
-	parse->EventPlayer(EVENT_ENTER_ZONE, this, "", 0);
+	if (parse->PlayerHasQuestSub(EVENT_ENTER_ZONE)) {
+		parse->EventPlayer(EVENT_ENTER_ZONE, this, "", 0);
+	}
 
 	// the way that the client deals with positions during the initial spawn struct
 	// is subtly different from how it deals with getting a position update
@@ -790,8 +793,12 @@ void Client::CompleteConnect()
 
 	/* This sub event is for if a player logs in for the first time since entering world. */
 	if (firstlogon == 1) {
-		parse->EventPlayer(EVENT_CONNECT, this, "", 0);
 		RecordPlayerEventLog(PlayerEvent::WENT_ONLINE, PlayerEvent::EmptyEvent{});
+
+		if (parse->PlayerHasQuestSub(EVENT_CONNECT)) {
+			parse->EventPlayer(EVENT_CONNECT, this, "", 0);
+		}
+		
 		/* QS: PlayerLogConnectDisconnect */
 		if (RuleB(QueryServ, PlayerLogConnectDisconnect)) {
 			std::string event_desc = StringFormat("Connect :: Logged into zoneid:%i instid:%i", GetZoneID(), GetInstanceID());
@@ -2596,15 +2603,18 @@ void Client::Handle_OP_AltCurrencyPurchase(const EQApplicationPacket *app)
 			QServ->PlayerLogEvent(Player_Log_Alternate_Currency_Transactions, CharacterID(), event_desc);
 		}
 
-		const auto& export_string = fmt::format(
-			"{} {} {} {} {}",
-			alt_cur_id,
-			tar->GetNPCTypeID(),
-			tar->MerchantType,
-			item->ID,
-			cost
-		);
-		parse->EventPlayer(EVENT_ALT_CURRENCY_MERCHANT_BUY, this, export_string, 0);
+		if (parse->PlayerHasQuestSub(EVENT_ALT_CURRENCY_MERCHANT_BUY)) {
+			const auto& export_string = fmt::format(
+				"{} {} {} {} {}",
+				alt_cur_id,
+				tar->GetNPCTypeID(),
+				tar->MerchantType,
+				item->ID,
+				cost
+			);
+
+			parse->EventPlayer(EVENT_ALT_CURRENCY_MERCHANT_BUY, this, export_string, 0);
+		}
 
 		uint64 current_balance = AddAlternateCurrencyValue(alt_cur_id, -((int32) cost));
 		int16  charges         = 1;
@@ -2788,15 +2798,18 @@ void Client::Handle_OP_AltCurrencySell(const EQApplicationPacket *app)
 			QServ->PlayerLogEvent(Player_Log_Alternate_Currency_Transactions, CharacterID(), event_desc);
 		}
 
-		const auto& export_string = fmt::format(
-			"{} {} {} {} {}",
-			alt_cur_id,
-			tar->GetNPCTypeID(),
-			tar->MerchantType,
-			item->ID,
-			cost
-		);
-		parse->EventPlayer(EVENT_ALT_CURRENCY_MERCHANT_SELL, this, export_string, 0);
+		if (parse->PlayerHasQuestSub(EVENT_ALT_CURRENCY_MERCHANT_SELL)) {
+			const auto& export_string = fmt::format(
+				"{} {} {} {} {}",
+				alt_cur_id,
+				tar->GetNPCTypeID(),
+				tar->MerchantType,
+				item->ID,
+				cost
+			);
+
+			parse->EventPlayer(EVENT_ALT_CURRENCY_MERCHANT_SELL, this, export_string, 0);
+		}
 
 		FastQueuePacket(&outapp);
 		uint64 new_balance = AddAlternateCurrencyValue(alt_cur_id, cost);
@@ -3143,24 +3156,46 @@ void Client::Handle_OP_AugmentItem(const EQApplicationPacket *app)
 
 							std::vector<std::any> args;
 							args.push_back(old_aug);
-							parse->EventItem(EVENT_UNAUGMENT_ITEM, this, tobe_auged, nullptr, "", in_augment->augment_index, &args);
+							if (parse->ItemHasQuestSub(tobe_auged, EVENT_UNAUGMENT_ITEM)) {
+								parse->EventItem(
+									EVENT_UNAUGMENT_ITEM,
+									this,
+									tobe_auged,
+									nullptr,
+									"",
+									in_augment->augment_index,
+									&args
+								);
+							}
 
 							args.assign(1, tobe_auged);
 							args.push_back(false);
-							parse->EventItem(EVENT_AUGMENT_REMOVE, this, old_aug, nullptr, "", in_augment->augment_index, &args);
+							if (parse->ItemHasQuestSub(old_aug, EVENT_AUGMENT_REMOVE)) {
+								parse->EventItem(
+									EVENT_AUGMENT_REMOVE,
+									this,
+									old_aug,
+									nullptr,
+									"",
+									in_augment->augment_index,
+									&args
+								);
+							}
 
-							const auto export_string = fmt::format(
-								"{} {} {} {} {}",
-								tobe_auged->GetID(),
-								item_slot,
-								old_aug->GetID(),
-								in_augment->augment_index,
-								false
-							);
+							if (parse->PlayerHasQuestSub(EVENT_AUGMENT_REMOVE_CLIENT)) {
+								const auto& export_string = fmt::format(
+									"{} {} {} {} {}",
+									tobe_auged->GetID(),
+									item_slot,
+									old_aug->GetID(),
+									in_augment->augment_index,
+									false
+								);
 
-							args.push_back(old_aug);
+								args.push_back(old_aug);
 
-							parse->EventPlayer(EVENT_AUGMENT_REMOVE_CLIENT, this, export_string, 0, &args);
+								parse->EventPlayer(EVENT_AUGMENT_REMOVE_CLIENT, this, export_string, 0, &args);
+							}
 						}
 
 						tobe_auged->PutAugment(in_augment->augment_index, *new_aug);
@@ -3170,22 +3205,44 @@ void Client::Handle_OP_AugmentItem(const EQApplicationPacket *app)
 						if (aug) {
 							std::vector<std::any> args;
 							args.push_back(aug);
-							parse->EventItem(EVENT_AUGMENT_ITEM, this, tobe_auged, nullptr, "", in_augment->augment_index, &args);
+							if (parse->ItemHasQuestSub(tobe_auged, EVENT_AUGMENT_ITEM)) {
+								parse->EventItem(
+									EVENT_AUGMENT_ITEM,
+									this,
+									tobe_auged,
+									nullptr,
+									"",
+									in_augment->augment_index,
+									&args
+								);
+							}
 
 							args.assign(1, tobe_auged);
-							parse->EventItem(EVENT_AUGMENT_INSERT, this, aug, nullptr, "", in_augment->augment_index, &args);
+							if (parse->ItemHasQuestSub(aug, EVENT_AUGMENT_INSERT)) {
+								parse->EventItem(
+									EVENT_AUGMENT_INSERT,
+									this,
+									aug,
+									nullptr,
+									"",
+									in_augment->augment_index,
+									&args
+								);
+							}
 
 							args.push_back(aug);
 
-							const auto export_string = fmt::format(
-								"{} {} {} {}",
-								tobe_auged->GetID(),
-								item_slot,
-								aug->GetID(),
-								in_augment->augment_index
-							);
+							if (parse->PlayerHasQuestSub(EVENT_AUGMENT_INSERT_CLIENT)) {
+								const auto& export_string = fmt::format(
+									"{} {} {} {}",
+									tobe_auged->GetID(),
+									item_slot,
+									aug->GetID(),
+									in_augment->augment_index
+								);
 
-							parse->EventPlayer(EVENT_AUGMENT_INSERT_CLIENT, this, export_string, 0, &args);
+								parse->EventPlayer(EVENT_AUGMENT_INSERT_CLIENT, this, export_string, 0, &args);
+							}
 						} else {
 							Message(
 								Chat::Red,
@@ -3238,24 +3295,46 @@ void Client::Handle_OP_AugmentItem(const EQApplicationPacket *app)
 				if (aug) {
 					std::vector<std::any> args;
 					args.push_back(aug);
-					parse->EventItem(EVENT_UNAUGMENT_ITEM, this, tobe_auged, nullptr, "", in_augment->augment_index, &args);
+					if (parse->ItemHasQuestSub(tobe_auged, EVENT_UNAUGMENT_ITEM)) {
+						parse->EventItem(
+							EVENT_UNAUGMENT_ITEM,
+							this,
+							tobe_auged,
+							nullptr,
+							"",
+							in_augment->augment_index,
+							&args
+						);
+					}
 
 					args.assign(1, tobe_auged);
 					args.push_back(false);
-					parse->EventItem(EVENT_AUGMENT_REMOVE, this, aug, nullptr, "", in_augment->augment_index, &args);
+					if (parse->ItemHasQuestSub(aug, EVENT_AUGMENT_REMOVE)) {
+						parse->EventItem(
+							EVENT_AUGMENT_REMOVE,
+							this,
+							aug,
+							nullptr,
+							"",
+							in_augment->augment_index,
+							&args
+						);
+					}
 
 					args.push_back(aug);
 
-					const auto export_string = fmt::format(
-						"{} {} {} {} {}",
-						tobe_auged->GetID(),
-						item_slot,
-						aug->GetID(),
-						in_augment->augment_index,
-						false
-					);
+					if (parse->PlayerHasQuestSub(EVENT_AUGMENT_REMOVE_CLIENT)) {
+						const auto& export_string = fmt::format(
+							"{} {} {} {} {}",
+							tobe_auged->GetID(),
+							item_slot,
+							aug->GetID(),
+							in_augment->augment_index,
+							false
+						);
 
-					parse->EventPlayer(EVENT_AUGMENT_REMOVE_CLIENT, this, export_string, 0, &args);
+						parse->EventPlayer(EVENT_AUGMENT_REMOVE_CLIENT, this, export_string, 0, &args);
+					}
 				} else {
 					Message(Chat::Red, "Error: Could not find augmentation to remove at index %i. Aborting.", in_augment->augment_index);
 					return;
@@ -3302,24 +3381,46 @@ void Client::Handle_OP_AugmentItem(const EQApplicationPacket *app)
 				if (aug) {
 					std::vector<std::any> args;
 					args.push_back(aug);
-					parse->EventItem(EVENT_UNAUGMENT_ITEM, this, tobe_auged, nullptr, "", in_augment->augment_index, &args);
+					if (parse->ItemHasQuestSub(tobe_auged, EVENT_UNAUGMENT_ITEM)) {
+						parse->EventItem(
+							EVENT_UNAUGMENT_ITEM,
+							this,
+							tobe_auged,
+							nullptr,
+							"",
+							in_augment->augment_index,
+							&args
+						);
+					}
 
 					args.assign(1, tobe_auged);
 					args.push_back(true);
-					parse->EventItem(EVENT_AUGMENT_REMOVE, this, aug, nullptr, "", in_augment->augment_index, &args);
+					if (parse->ItemHasQuestSub(aug, EVENT_AUGMENT_REMOVE)) {
+						parse->EventItem(
+							EVENT_AUGMENT_REMOVE,
+							this,
+							aug,
+							nullptr,
+							"",
+							in_augment->augment_index,
+							&args
+						);
+					}
 
 					args.push_back(aug);
 
-					const auto export_string = fmt::format(
-						"{} {} {} {} {}",
-						tobe_auged->GetID(),
-						item_slot,
-						aug->GetID(),
-						in_augment->augment_index,
-						true
-					);
+					if (parse->PlayerHasQuestSub(EVENT_AUGMENT_REMOVE_CLIENT)) {
+						const auto& export_string = fmt::format(
+							"{} {} {} {} {}",
+							tobe_auged->GetID(),
+							item_slot,
+							aug->GetID(),
+							in_augment->augment_index,
+							true
+						);
 
-					parse->EventPlayer(EVENT_AUGMENT_REMOVE_CLIENT, this, export_string, 0, &args);
+						parse->EventPlayer(EVENT_AUGMENT_REMOVE_CLIENT, this, export_string, 0, &args);
+					}
 				} else {
 					Message(
 						Chat::Red,
@@ -4478,11 +4579,11 @@ void Client::Handle_OP_ClickDoor(const EQApplicationPacket *app)
 
 	// don't spam scripts with client controlled doors if not within distance
 	if (within_distance) {
-		std::string           export_string = fmt::format("{}", cd->doorid);
-		std::vector<std::any> args;
-		args.push_back(currentdoor);
-		if (parse->EventPlayer(EVENT_CLICK_DOOR, this, export_string, 0, &args) == 0) {
-			currentdoor->HandleClick(this, 0);
+		if (parse->PlayerHasQuestSub(EVENT_CLICK_DOOR)) {
+			std::vector<std::any> args = { currentdoor };
+			if (parse->EventPlayer(EVENT_CLICK_DOOR, this, std::to_string(cd->doorid), 0, &args) == 0) {
+				currentdoor->HandleClick(this, 0);
+			}
 		}
 	}
 	else {
@@ -4500,18 +4601,17 @@ void Client::Handle_OP_ClickObject(const EQApplicationPacket *app)
 		return;
 	}
 
-	ClickObject_Struct* click_object = (ClickObject_Struct*)app->pBuffer;
-	Entity* entity = entity_list.GetID(click_object->drop_id);
+	auto* click_object = (ClickObject_Struct*) app->pBuffer;
+	auto* entity = entity_list.GetID(click_object->drop_id);
 	if (entity && entity->IsObject()) {
-		Object* object = entity->CastToObject();
+		auto* object = entity->CastToObject();
 
 		object->HandleClick(this, click_object);
 
-		std::vector<std::any> args;
-		args.push_back(object);
-
-		std::string export_string = fmt::format("{}", click_object->drop_id);
-		parse->EventPlayer(EVENT_CLICK_OBJECT, this, export_string, GetID(), &args);
+		if (parse->PlayerHasQuestSub(EVENT_CLICK_OBJECT)) {
+			std::vector<std::any> args = { object };
+			parse->EventPlayer(EVENT_CLICK_OBJECT, this, std::to_string(click_object->drop_id), GetID(), &args);
+		}
 	}
 
 	// Observed in RoF after OP_ClickObjectAction:
@@ -4962,105 +5062,114 @@ void Client::Handle_OP_Consider(const EQApplicationPacket *app)
 		LogDebug("Size mismatch in Consider expected [{}] got [{}]", sizeof(Consider_Struct), app->size);
 		return;
 	}
-	Consider_Struct* conin = (Consider_Struct*)app->pBuffer;
-	Mob* tmob = entity_list.GetMob(conin->targetid);
-	if (tmob == 0)
-		return;
-
-	std::string export_string = fmt::format("{}", conin->targetid);
-	if (parse->EventPlayer(EVENT_CONSIDER, this, export_string, 0) == 1) {
+	auto *conin = (Consider_Struct*) app->pBuffer;
+	auto *t     = entity_list.GetMob(conin->targetid);
+	if (!t) {
 		return;
 	}
 
-	if (tmob->GetClass() == LDON_TREASURE)
-	{
-		Message(Chat::Yellow, "%s", tmob->GetCleanName());
+	if (parse->PlayerHasQuestSub(EVENT_CONSIDER)) {
+		std::vector<std::any> args = { t };
+
+		if (parse->EventPlayer(EVENT_CONSIDER, this, std::to_string(conin->targetid), 0, &args) == 1) {
+			return;
+		}
+	}
+
+	if (t->GetClass() == LDON_TREASURE) {
+		Message(Chat::Yellow, fmt::format("{}", t->GetCleanName()).c_str());
 		return;
 	}
 
 	auto outapp = new EQApplicationPacket(OP_Consider, sizeof(Consider_Struct));
-	Consider_Struct* con = (Consider_Struct*)outapp->pBuffer;
+	auto* con = (Consider_Struct*) outapp->pBuffer;
 	con->playerid = GetID();
 	con->targetid = conin->targetid;
-	if (tmob->IsNPC())
-		con->faction = GetFactionLevel(character_id, tmob->GetNPCTypeID(), GetFactionRace(), class_, deity, (tmob->IsNPC()) ? tmob->CastToNPC()->GetPrimaryFaction() : 0, tmob); // Dec. 20, 2001; TODO: Send the players proper deity
-	else
+	if (t->IsNPC()) {
+		con->faction = GetFactionLevel(
+			character_id,
+			t->GetNPCTypeID(),
+			GetFactionRace(),
+			class_,
+			deity,
+			(t->IsNPC()) ? t->CastToNPC()->GetPrimaryFaction() : 0,
+			t
+		);
+	} else {
 		con->faction = 1;
-	con->level = GetLevelCon(tmob->GetLevel());
+	}
+
+	con->level = GetLevelCon(t->GetLevel());
 
 	if (ClientVersion() <= EQ::versions::ClientVersion::Titanium) {
-		if (con->level == CON_GRAY)	{
+		if (con->level == CON_GRAY) {
 			con->level = CON_GREEN;
-		}
-		if (con->level == CON_WHITE) {
+		} else if (con->level == CON_WHITE) {
 			con->level = CON_WHITE_TITANIUM;
 		}
 	}
 
 	if (zone->IsPVPZone()) {
-		if (!tmob->IsNPC())
-			con->pvpcon = tmob->CastToClient()->GetPVP();
+		if (!t->IsNPC()) {
+			con->pvpcon = t->CastToClient()->GetPVP();
+		}
 	}
 
 	// If we're feigned show NPC as indifferent
-	if (tmob->IsNPC())
-	{
-		if (GetFeigned())
+	if (t->IsNPC()) {
+		if (GetFeigned()) {
 			con->faction = FACTION_INDIFFERENTLY;
+		}
 	}
 
-	if (!(con->faction == FACTION_SCOWLS))
-	{
-		if (tmob->IsNPC())
-		{
-			if (tmob->CastToNPC()->IsOnHatelist(this))
+	if (!(con->faction == FACTION_SCOWLS)) {
+		if (t->IsNPC()) {
+			if (t->CastToNPC()->IsOnHatelist(this)) {
 				con->faction = FACTION_THREATENINGLY;
+			}
 		}
 	}
 
 	if (con->faction == FACTION_APPREHENSIVELY) {
 		con->faction = FACTION_SCOWLS;
-	}
-	else if (con->faction == FACTION_DUBIOUSLY) {
+	} else if (con->faction == FACTION_DUBIOUSLY) {
 		con->faction = FACTION_THREATENINGLY;
-	}
-	else if (con->faction == FACTION_SCOWLS) {
+	} else if (con->faction == FACTION_SCOWLS) {
 		con->faction = FACTION_APPREHENSIVELY;
-	}
-	else if (con->faction == FACTION_THREATENINGLY) {
+	} else if (con->faction == FACTION_THREATENINGLY) {
 		con->faction = FACTION_DUBIOUSLY;
 	}
 
-	mod_consider(tmob, con);
+	mod_consider(t, con);
 
 	QueuePacket(outapp);
 	// only wanted to check raid target once
 	// and need con to still be around so, do it here!
-	if (tmob->IsRaidTarget()) {
+	if (t->IsRaidTarget()) {
 		uint32 color = 0;
 		switch (con->level) {
-		case CON_GREEN:
-			color = 2;
-			break;
-		case CON_LIGHTBLUE:
-			color = 10;
-			break;
-		case CON_BLUE:
-			color = 4;
-			break;
-		case CON_WHITE_TITANIUM:
-		case CON_WHITE:
-			color = 10;
-			break;
-		case CON_YELLOW:
-			color = 15;
-			break;
-		case CON_RED:
-			color = 13;
-			break;
-		case CON_GRAY:
-			color = 6;
-			break;
+			case CON_GREEN:
+				color = 2;
+				break;
+			case CON_LIGHTBLUE:
+				color = 10;
+				break;
+			case CON_BLUE:
+				color = 4;
+				break;
+			case CON_WHITE_TITANIUM:
+			case CON_WHITE:
+				color = 10;
+				break;
+			case CON_YELLOW:
+				color = 15;
+				break;
+			case CON_RED:
+				color = 13;
+				break;
+			case CON_GRAY:
+				color = 6;
+				break;
 		}
 
 		if (ClientVersion() <= EQ::versions::ClientVersion::Titanium) {
@@ -5074,11 +5183,11 @@ void Client::Handle_OP_Consider(const EQApplicationPacket *app)
 
 	// this could be done better, but this is only called when you con so w/e
 	// Shroud of Stealth has a special message
-	if (improved_hidden && (!tmob->see_improved_hide && (tmob->SeeInvisible() || tmob->see_hide)))
-		MessageString(Chat::NPCQuestSay, SOS_KEEPS_HIDDEN);
-	// we are trying to hide but they can see us
-	else if ((invisible || invisible_undead || hidden || invisible_animals) && !IsInvisible(tmob))
+	if (improved_hidden && (!t->see_improved_hide && (t->SeeInvisible() || t->see_hide))) {
+		MessageString(Chat::NPCQuestSay, SOS_KEEPS_HIDDEN); // we are trying to hide but they can see us
+	} else if ((invisible || invisible_undead || hidden || invisible_animals) && !IsInvisible(t)) {
 		MessageString(Chat::NPCQuestSay, SUSPECT_SEES_YOU);
+	}
 
 	safe_delete(outapp);
 
@@ -5092,18 +5201,21 @@ void Client::Handle_OP_ConsiderCorpse(const EQApplicationPacket *app)
 		return;
 	}
 
-	Consider_Struct* conin = (Consider_Struct*)app->pBuffer;
-	Corpse* target = entity_list.GetCorpseByID(conin->targetid);
-	std::string export_string = fmt::format("{}", conin->targetid);
-	if (!target) {
+	auto* conin = (Consider_Struct*)app->pBuffer;
+	auto* t = entity_list.GetCorpseByID(conin->targetid);
+	if (!t) {
 		return;
 	}
 
-	if (parse->EventPlayer(EVENT_CONSIDER_CORPSE, this, export_string, 0)) {
-		return;
+	if (parse->PlayerHasQuestSub(EVENT_CONSIDER_CORPSE)) {
+		std::vector<std::any> args = { t };
+
+		if (parse->EventPlayer(EVENT_CONSIDER_CORPSE, this, std::to_string(conin->targetid), 0, &args)) {
+			return;
+		}
 	}
 
-	uint32 decay_time = target->GetDecayTime();
+	uint32 decay_time = t->GetDecayTime();
 	if (decay_time) {
 		auto time_string = Strings::SecondsToTime(decay_time, true);
 		Message(
@@ -5114,12 +5226,12 @@ void Client::Handle_OP_ConsiderCorpse(const EQApplicationPacket *app)
 			).c_str()
 		);
 
-		if (target->IsPlayerCorpse()) {
+		if (t->IsPlayerCorpse()) {
 			Message(
 				Chat::NPCQuestSay,
 				fmt::format(
 					"This corpse {} be resurrected.",
-					target->IsRezzed() ? "cannot" : "can"
+					t->IsRezzed() ? "cannot" : "can"
 				).c_str()
 			);
 		}
@@ -6105,14 +6217,16 @@ void Client::Handle_OP_EnvDamage(const EQApplicationPacket *app)
 		return;
 	} else {
 		SetHP(GetHP() - (damage * RuleR(Character, EnvironmentDamageMulipliter)));
-		int final_damage = (damage * RuleR(Character, EnvironmentDamageMulipliter));
-		std::string export_string = fmt::format(
-			"{} {} {}",
-			ed->damage,
-			ed->dmgtype,
-			final_damage
-		);
-		parse->EventPlayer(EVENT_ENVIRONMENTAL_DAMAGE, this, export_string, 0);
+		if (parse->PlayerHasQuestSub(EVENT_ENVIRONMENTAL_DAMAGE)) {
+			int         final_damage  = (damage * RuleR(Character, EnvironmentDamageMulipliter));
+			const auto& export_string = fmt::format(
+				"{} {} {}",
+				ed->damage,
+				ed->dmgtype,
+				final_damage
+			);
+			parse->EventPlayer(EVENT_ENVIRONMENTAL_DAMAGE, this, export_string, 0);
+		}
 	}
 
 	if (GetHP() <= 0) {
@@ -9290,13 +9404,13 @@ void Client::Handle_OP_LDoNDisarmTraps(const EQApplicationPacket *app)
 
 void Client::Handle_OP_LDoNInspect(const EQApplicationPacket *app)
 {
-	Mob * target = GetTarget();
-	if (target && target->GetClass() == LDON_TREASURE && !target->IsAura())
-	{
-		std::vector<std::any> args = { target };
-		if (parse->EventPlayer(EVENT_INSPECT, this, "", target->GetID(), &args) == 0)
-		{
-			Message(Chat::Yellow, "%s", target->GetCleanName());
+	auto* t = GetTarget();
+	if (t && t->GetClass() == LDON_TREASURE && !t->IsAura()) {
+		if (parse->PlayerHasQuestSub(EVENT_INSPECT)) {
+			std::vector<std::any> args = { t };
+			if (parse->EventPlayer(EVENT_INSPECT, this, "", t->GetID(), &args) == 0) {
+				Message(Chat::Yellow, fmt::format("{}", t->GetCleanName()).c_str());
+			}
 		}
 	}
 }
@@ -11382,16 +11496,20 @@ void Client::Handle_OP_PopupResponse(const EQApplicationPacket *app)
 			break;
 	}
 
-	const auto export_string = fmt::format("{}", popup_response->popupid);
-
-	parse->EventPlayer(EVENT_POPUP_RESPONSE, this, export_string, 0);
+	if (parse->PlayerHasQuestSub(EVENT_POPUP_RESPONSE)) {
+		parse->EventPlayer(EVENT_POPUP_RESPONSE, this, std::to_string(popup_response->popupid), 0);
+	}
 
 	auto t = GetTarget();
 	if (t) {
 		if (t->IsNPC()) {
-			parse->EventNPC(EVENT_POPUP_RESPONSE, t->CastToNPC(), this, export_string, 0);
+			if (parse->HasQuestSub(t->GetNPCTypeID(), EVENT_POPUP_RESPONSE)) {
+				parse->EventNPC(EVENT_POPUP_RESPONSE, t->CastToNPC(), this, std::to_string(popup_response->popupid), 0);
+			}
 		} else if (t->IsBot()) {
-			parse->EventBot(EVENT_POPUP_RESPONSE, t->CastToBot(), this, export_string, 0);
+			if (parse->BotHasQuestSub(EVENT_POPUP_RESPONSE)) {
+				parse->EventBot(EVENT_POPUP_RESPONSE, t->CastToBot(), this, std::to_string(popup_response->popupid), 0);
+			}
 		}
 	}
 }
@@ -13509,15 +13627,17 @@ void Client::Handle_OP_ShopPlayerBuy(const EQApplicationPacket *app)
 	
 	// end QS code
 
-	const auto& export_string = fmt::format(
-		"{} {} {} {} {}",
-		tmp->GetNPCTypeID(),
-		tmp->CastToNPC()->MerchantType,
-		item_id,
-		mpo->quantity,
-		mpo->price
-	);
-	parse->EventPlayer(EVENT_MERCHANT_BUY, this, export_string, 0);
+	if (parse->PlayerHasQuestSub(EVENT_MERCHANT_BUY)) {
+		const auto& export_string = fmt::format(
+			"{} {} {} {} {}",
+			tmp->GetNPCTypeID(),
+			tmp->CastToNPC()->MerchantType,
+			item_id,
+			mpo->quantity,
+			mpo->price
+		);
+		parse->EventPlayer(EVENT_MERCHANT_BUY, this, export_string, 0);
+	}	
 
 	if (player_event_logs.IsEventEnabled(PlayerEvent::MERCHANT_PURCHASE)) {
 		auto e = PlayerEvent::MerchantPurchaseEvent{
@@ -13697,6 +13817,19 @@ void Client::Handle_OP_ShopPlayerSell(const EQApplicationPacket *app)
 	}
 	// end QS code
 
+	if (parse->PlayerHasQuestSub(EVENT_MERCHANT_SELL)) {
+		const auto& export_string = fmt::format(
+			"{} {} {} {} {}",
+			vendor->GetNPCTypeID(),
+			vendor->CastToNPC()->MerchantType,
+			itemid,
+			mp->quantity,
+			price
+		);
+
+		parse->EventPlayer(EVENT_MERCHANT_SELL, this, export_string, 0);
+	}
+	
 	if (player_event_logs.IsEventEnabled(PlayerEvent::MERCHANT_SELL)) {
 		auto e = PlayerEvent::MerchantSellEvent{
 			.npc_id = vendor->GetNPCTypeID(),
@@ -14475,8 +14608,10 @@ void Client::Handle_OP_TestBuff(const EQApplicationPacket *app)
 	if (!RuleB(Character, EnableTestBuff)) {
 		return;
 	}
-	parse->EventPlayer(EVENT_TEST_BUFF, this, "", 0);
-	return;
+	
+	if (parse->PlayerHasQuestSub(EVENT_TEST_BUFF)) {
+		parse->EventPlayer(EVENT_TEST_BUFF, this, "", 0);
+	}
 }
 
 void Client::Handle_OP_TGB(const EQApplicationPacket *app)
@@ -15147,33 +15282,34 @@ void Client::Handle_OP_Translocate(const EQApplicationPacket *app)
 			zone->GetInstanceID() == PendingTranslocateData.instance_id
 		);
 
-		if (parse->EventSpell(EVENT_SPELL_EFFECT_TRANSLOCATE_COMPLETE, nullptr, this, spell_id, "", 0) == 0) {
-			// If the spell has a translocate to bind effect, AND we are already in the zone the client
-			// is bound in, use the GoToBind method. If we send OP_Translocate in this case, the client moves itself
-			// to the bind coords it has from the PlayerProfile, but with the X and Y reversed. I suspect they are
-			// reversed in the pp, and since spells like Gate are handled serverside, this has not mattered before.
-			if (
-				IsTranslocateSpell(spell_id) &&
-				in_translocate_zone
-			) {
-				PendingTranslocate = false;
-				GoToBind();
-				return;
-			}
+		if (parse->SpellHasQuestSub(spell_id, EVENT_SPELL_EFFECT_TRANSLOCATE_COMPLETE)) {
+			if (parse->EventSpell(EVENT_SPELL_EFFECT_TRANSLOCATE_COMPLETE, nullptr, this, spell_id, "", 0) == 0) {
+				// If the spell has a translocate to bind effect, AND we are already in the zone the client
+				// is bound in, use the GoToBind method. If we send OP_Translocate in this case, the client moves itself
+				// to the bind coords it has from the PlayerProfile, but with the X and Y reversed. I suspect they are
+				// reversed in the pp, and since spells like Gate are handled serverside, this has not mattered before.
+				if (
+					IsTranslocateSpell(spell_id) &&
+					in_translocate_zone
+				) {
+					PendingTranslocate = false;
+					GoToBind();
+					return;
+				}
 
-			////Was sending the packet back to initiate client zone...
-			////but that could be abusable, so lets go through proper channels
-			entity_list.ClearAggro(this, true);
-			MovePC(
-				PendingTranslocateData.zone_id,
-				PendingTranslocateData.instance_id,
-				PendingTranslocateData.x,
-				PendingTranslocateData.y,
-				PendingTranslocateData.z,
-				PendingTranslocateData.heading,
-				0,
-				ZoneSolicited
-			);
+				////Was sending the packet back to initiate client zone...
+				////but that could be abusable, so lets go through proper channels
+				MovePC(
+					PendingTranslocateData.zone_id,
+					PendingTranslocateData.instance_id,
+					PendingTranslocateData.x,
+					PendingTranslocateData.y,
+					PendingTranslocateData.z,
+					PendingTranslocateData.heading,
+					0,
+					ZoneSolicited
+				);
+			}
 		}
 	}
 

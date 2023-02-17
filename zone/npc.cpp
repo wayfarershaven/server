@@ -896,7 +896,9 @@ bool NPC::Process()
 	}
 
 	if (tic_timer.Check()) {
-		parse->EventNPC(EVENT_TICK, this, nullptr, "", 0);
+		if (parse->HasQuestSub(GetNPCTypeID(), EVENT_TICK)) {
+			parse->EventNPC(EVENT_TICK, this, nullptr, "", 0);
+		}
 		BuffProcess();
 
 		if (currently_fleeing) {
@@ -1067,11 +1069,21 @@ void NPC::Depop(bool start_spawn_timer) {
 	}
 
 	if (IsNPC()) {
-		parse->EventNPC(EVENT_DESPAWN, this, nullptr, "", 0);
-		DispatchZoneControllerEvent(EVENT_DESPAWN_ZONE, this, "", 0, nullptr);
+		if (parse->HasQuestSub(GetNPCTypeID(), EVENT_DESPAWN)) {
+			parse->EventNPC(EVENT_DESPAWN, this, nullptr, "", 0);
+		}
+
+		if (parse->HasQuestSub(ZONE_CONTROLLER_NPC_ID, EVENT_DESPAWN_ZONE)) {
+			DispatchZoneControllerEvent(EVENT_DESPAWN_ZONE, this, "", 0, nullptr);
+		}
 	} else if (IsBot()) {
-		parse->EventBot(EVENT_DESPAWN, CastToBot(), nullptr, "", 0);
-		DispatchZoneControllerEvent(EVENT_DESPAWN_ZONE, this, "", 0, nullptr);
+		if (parse->BotHasQuestSub(EVENT_DESPAWN)) {
+			parse->EventBot(EVENT_DESPAWN, CastToBot(), nullptr, "", 0);
+		}
+
+		if (parse->HasQuestSub(ZONE_CONTROLLER_NPC_ID, EVENT_DESPAWN_ZONE)) {
+			DispatchZoneControllerEvent(EVENT_DESPAWN_ZONE, this, "", 0, nullptr);
+		}
 	}
 
 	p_depop = true;
@@ -3050,8 +3062,11 @@ void NPC::SignalNPC(int _signal_id)
 
 void NPC::SendPayload(int payload_id, std::string payload_value)
 {
-	const auto export_string = fmt::format("{} {}", payload_id, payload_value);
-	parse->EventNPC(EVENT_PAYLOAD, this, nullptr, export_string, 0);
+	if (parse->HasQuestSub(GetNPCTypeID(), EVENT_PAYLOAD)) {
+		const auto& export_string = fmt::format("{} {}", payload_id, payload_value);
+
+		parse->EventNPC(EVENT_PAYLOAD, this, nullptr, export_string, 0);
+	}
 }
 
 NPC_Emote_Struct* NPC::GetNPCEmote(uint32 emoteid, uint8 event_) {

@@ -140,22 +140,28 @@ void Object::HandleAugmentation(Client* user, const AugmentItem_Struct* in_augme
 			if(aug) {
 				std::vector<std::any> args;
 				args.push_back(aug);
-				parse->EventItem(EVENT_AUGMENT_ITEM, user, tobe_auged, nullptr, "", slot, &args);
+				if (parse->ItemHasQuestSub(tobe_auged, EVENT_AUGMENT_ITEM)) {
+					parse->EventItem(EVENT_AUGMENT_ITEM, user, tobe_auged, nullptr, "", slot, &args);
+				}
 
 				args.assign(1, tobe_auged);
-				parse->EventItem(EVENT_AUGMENT_INSERT, user, aug, nullptr, "", slot, &args);
+				if (parse->ItemHasQuestSub(aug, EVENT_AUGMENT_INSERT)) {
+					parse->EventItem(EVENT_AUGMENT_INSERT, user, aug, nullptr, "", slot, &args);
+				}
 
 				args.push_back(aug);
 
-				const auto export_string = fmt::format(
-					"{} {} {} {}",
-					tobe_auged->GetID(),
-					-1,
-					aug->GetID(),
-					slot
-				);
+				if (parse->PlayerHasQuestSub(EVENT_AUGMENT_INSERT_CLIENT)) {
+					const auto& export_string = fmt::format(
+						"{} {} {} {}",
+						tobe_auged->GetID(),
+						-1,
+						aug->GetID(),
+						slot
+					);
 
-				parse->EventPlayer(EVENT_AUGMENT_INSERT_CLIENT, user, export_string, 0, &args);
+					parse->EventPlayer(EVENT_AUGMENT_INSERT_CLIENT, user, export_string, 0, &args);
+				}
 			}
 
 			item_one_to_push = tobe_auged->Clone();
@@ -182,12 +188,16 @@ void Object::HandleAugmentation(Client* user, const AugmentItem_Struct* in_augme
 			}
 			std::vector<std::any> args;
 			args.push_back(aug);
-			parse->EventItem(EVENT_UNAUGMENT_ITEM, user, tobe_auged, nullptr, "", slot, &args);
+			if (parse->ItemHasQuestSub(tobe_auged, EVENT_UNAUGMENT_ITEM)) {
+				parse->EventItem(EVENT_UNAUGMENT_ITEM, user, tobe_auged, nullptr, "", slot, &args);
+			}
 
 			args.assign(1, tobe_auged);
 			args.push_back(&is_solvent);
 
-			parse->EventItem(EVENT_AUGMENT_REMOVE, user, aug, nullptr, "", slot, &args);
+			if (parse->ItemHasQuestSub(aug, EVENT_AUGMENT_REMOVE)) {
+				parse->EventItem(EVENT_AUGMENT_REMOVE, user, aug, nullptr, "", slot, &args);
+			}
 		}
 
 		if (is_solvent) {
@@ -360,11 +370,13 @@ void Object::HandleCombine(Client* user, const NewCombine_Struct* in_combine, Ob
 
 	DBTradeskillRecipe_Struct spec;
 
-	if (parse->EventPlayer(EVENT_COMBINE, user, std::to_string(in_combine->container_slot), 0) == 1) {
-		auto outapp = new EQApplicationPacket(OP_TradeSkillCombine, 0);
-		user->QueuePacket(outapp);
-		safe_delete(outapp);
-		return;
+	if (parse->PlayerHasQuestSub(EVENT_COMBINE)) {
+		if (parse->EventPlayer(EVENT_COMBINE, user, std::to_string(in_combine->container_slot), 0) == 1) {
+			auto outapp = new EQApplicationPacket(OP_TradeSkillCombine, 0);
+			user->QueuePacket(outapp);
+			safe_delete(outapp);
+			return;
+		}
 	}
 
 	if (!content_db.GetTradeRecipe(container, c_type, some_id, user->CharacterID(), &spec)) {
@@ -433,13 +445,17 @@ void Object::HandleCombine(Client* user, const NewCombine_Struct* in_combine, Ob
 	}
 
 	// final check for any additional quest requirements .. "check_zone" in this case - exported as variable [validate_type]
-	std::string export_string = fmt::format("check_zone {}", zone->GetZoneID());
-	if (parse->EventPlayer(EVENT_COMBINE_VALIDATE, user, export_string, spec.recipe_id) != 0) {
-		user->Message(Chat::Emote, "You cannot make this combine because the location requirement has not been met.");
-		auto outapp = new EQApplicationPacket(OP_TradeSkillCombine, 0);
-		user->QueuePacket(outapp);
-		safe_delete(outapp);
-		return;
+	if (parse->PlayerHasQuestSub(EVENT_COMBINE_VALIDATE)) {
+		if (parse->EventPlayer(EVENT_COMBINE_VALIDATE, user, fmt::format("check_zone {}", zone->GetZoneID()), spec.recipe_id) != 0) {
+			user->Message(
+				Chat::Emote,
+				"You cannot make this combine because the location requirement has not been met."
+			);
+			auto outapp = new EQApplicationPacket(OP_TradeSkillCombine, 0);
+			user->QueuePacket(outapp);
+			safe_delete(outapp);
+			return;
+		}
 	}
 
 	// Send acknowledgement packets to client
@@ -496,24 +512,28 @@ void Object::HandleCombine(Client* user, const NewCombine_Struct* in_combine, Ob
 				.recipe_id = spec.recipe_id,
 				.recipe_name = spec.name,
 				.made_count = spec.madecount,
-				.tradeskill_id = (uint32)spec.tradeskill
+				.tradeskill_id = (uint32) spec.tradeskill
 			};
 			RecordPlayerEventLogWithClient(user, PlayerEvent::COMBINE_SUCCESS, e);
 		}
 
-		parse->EventPlayer(EVENT_COMBINE_SUCCESS, user, spec.name, spec.recipe_id);
+		if (parse->PlayerHasQuestSub(EVENT_COMBINE_SUCCESS)) {
+			parse->EventPlayer(EVENT_COMBINE_SUCCESS, user, spec.name, spec.recipe_id);
+		}
 	} else {
 		if (player_event_logs.IsEventEnabled(PlayerEvent::COMBINE_FAILURE)) {
 			auto e = PlayerEvent::CombineEvent{
 				.recipe_id = spec.recipe_id,
 				.recipe_name = spec.name,
 				.made_count = spec.madecount,
-				.tradeskill_id = (uint32)spec.tradeskill
+				.tradeskill_id = (uint32) spec.tradeskill
 			};
 			RecordPlayerEventLogWithClient(user, PlayerEvent::COMBINE_FAILURE, e);
 		}
 		
-		parse->EventPlayer(EVENT_COMBINE_FAILURE, user, spec.name, spec.recipe_id);
+		if (parse->PlayerHasQuestSub(EVENT_COMBINE_FAILURE)) {
+			parse->EventPlayer(EVENT_COMBINE_FAILURE, user, spec.name, spec.recipe_id);
+		}
 	}
 }
 
@@ -697,9 +717,13 @@ void Object::HandleAutoCombine(Client* user, const RecipeAutoCombine_Struct* rac
 	}
 
 	if (success) {
-		parse->EventPlayer(EVENT_COMBINE_SUCCESS, user, spec.name, spec.recipe_id);
+		if (parse->PlayerHasQuestSub(EVENT_COMBINE_SUCCESS)) {
+			parse->EventPlayer(EVENT_COMBINE_SUCCESS, user, spec.name, spec.recipe_id);
+		}
 	} else {
-		parse->EventPlayer(EVENT_COMBINE_FAILURE, user, spec.name, spec.recipe_id);
+		if (parse->PlayerHasQuestSub(EVENT_COMBINE_FAILURE)) {
+			parse->EventPlayer(EVENT_COMBINE_FAILURE, user, spec.name, spec.recipe_id);
+		}
 	}
 }
 

@@ -5085,17 +5085,25 @@ void Bot::PerformTradeWithClient(int16 begin_slot_id, int16 end_slot_id, Client*
 
 			BotRemoveEquipItem(return_iterator.from_bot_slot);
 
-			const auto export_string = fmt::format(
-				"{} {}",
-				return_iterator.return_item_instance->IsStackable() ? return_iterator.return_item_instance->GetCharges() : 1,
-				return_iterator.from_bot_slot
-			);
+			if (parse->BotHasQuestSub(EVENT_UNEQUIP_ITEM_BOT)) {
+				const auto& export_string = fmt::format(
+					"{} {}",
+					return_iterator.return_item_instance->IsStackable() ? return_iterator.return_item_instance->GetCharges() : 1,
+					return_iterator.from_bot_slot
+				);
 
-			std::vector<std::any> args;
+				std::vector<std::any> args = { return_iterator.return_item_instance };
 
-			args.emplace_back(return_iterator.return_item_instance);
+				parse->EventBot(
+					EVENT_UNEQUIP_ITEM_BOT,
+					this,
+					nullptr,
+					export_string,
+					return_iterator.return_item_instance->GetID(),
+					&args
+				);
+			}
 
-			parse->EventBot(EVENT_UNEQUIP_ITEM_BOT, this, nullptr, export_string , return_iterator.return_item_instance->GetID(), &args);
 			if (return_instance) {
 				EQ::SayLinkEngine linker;
 				linker.SetLinkType(EQ::saylink::SayLinkItemInst);
@@ -5145,17 +5153,24 @@ void Bot::PerformTradeWithClient(int16 begin_slot_id, int16 end_slot_id, Client*
 		m_inv.PutItem(trade_iterator.to_bot_slot, *trade_iterator.trade_item_instance);
 		BotAddEquipItem(trade_iterator.to_bot_slot, (trade_iterator.trade_item_instance ? trade_iterator.trade_item_instance->GetID() : 0));
 
-		const auto export_string = fmt::format(
-			"{} {}",
-			trade_iterator.trade_item_instance->IsStackable() ? trade_iterator.trade_item_instance->GetCharges() : 1,
-			trade_iterator.to_bot_slot
-		);
+		if (parse->BotHasQuestSub(EVENT_EQUIP_ITEM_BOT)) {
+			const auto& export_string = fmt::format(
+				"{} {}",
+				trade_iterator.trade_item_instance->IsStackable() ? trade_iterator.trade_item_instance->GetCharges() : 1,
+				trade_iterator.to_bot_slot
+			);
 
-		std::vector<std::any> args;
+			std::vector<std::any> args = { trade_iterator.trade_item_instance };
 
-		args.emplace_back(trade_iterator.trade_item_instance);
-
-		parse->EventBot(EVENT_EQUIP_ITEM_BOT, this, nullptr, export_string, trade_iterator.trade_item_instance->GetID(), &args);
+			parse->EventBot(
+				EVENT_EQUIP_ITEM_BOT,
+				this,
+				nullptr,
+				export_string,
+				trade_iterator.trade_item_instance->GetID(),
+				&args
+			);
+		}
 
 		trade_iterator.trade_item_instance = nullptr; // actual deletion occurs in client delete below
 
@@ -5192,8 +5207,10 @@ void Bot::PerformTradeWithClient(int16 begin_slot_id, int16 end_slot_id, Client*
 			std::vector<EQ::ItemInstance*> items(insts, insts + std::size(insts));
 
 			// Check if EVENT_TRADE accepts any items
-			std::vector<std::any> item_list(items.begin(), items.end());
-			parse->EventBot(EVENT_TRADE, this, client, "", 0, &item_list);
+			if (parse->BotHasQuestSub(EVENT_TRADE)) {
+				std::vector<std::any> item_list(items.begin(), items.end());
+				parse->EventBot(EVENT_TRADE, this, client, "", 0, &item_list);
+			}
 			CalcBotStats(false);
 
 		} else {
@@ -5208,8 +5225,10 @@ void Bot::PerformTradeWithClient(int16 begin_slot_id, int16 end_slot_id, Client*
 			std::vector<EQ::ItemInstance*> items(insts, insts + std::size(insts));
 
 			// Check if EVENT_TRADE accepts any items
-			std::vector<std::any> item_list(items.begin(), items.end());
-			parse->EventBot(EVENT_TRADE, this, client, "", 0, &item_list);
+			if (parse->BotHasQuestSub(EVENT_TRADE)) {
+				std::vector<std::any> item_list(items.begin(), items.end());
+				parse->EventBot(EVENT_TRADE, this, client, "", 0, &item_list);
+			}
 			CalcBotStats(false);
 		}
 	}
@@ -5299,15 +5318,17 @@ bool Bot::Death(Mob *killerMob, int64 damage, uint16 spell_id, EQ::skills::Skill
 		my_owner->CastToClient()->SetBotPulling(false);
 	}
 
-	const auto export_string = fmt::format(
-		"{} {} {} {}",
-		killerMob ? killerMob->GetID() : 0,
-		damage,
-		spell_id,
-		static_cast<int>(attack_skill)
-	);
+	if (parse->BotHasQuestSub(EVENT_DEATH_COMPLETE)) {
+		const auto& export_string = fmt::format(
+			"{} {} {} {}",
+			killerMob ? killerMob->GetID() : 0,
+			damage,
+			spell_id,
+			static_cast<int>(attack_skill)
+		);
 
-	parse->EventBot(EVENT_DEATH_COMPLETE, this, killerMob, export_string, 0);
+		parse->EventBot(EVENT_DEATH_COMPLETE, this, killerMob, export_string, 0);
+	}
 
 	entity_list.RemoveBot(GetID());
 	return true;
@@ -5318,9 +5339,12 @@ void Bot::Damage(Mob *from, int64 damage, uint16 spell_id, EQ::skills::SkillType
 		spell_id = SPELL_UNKNOWN;
 
 	//handle EVENT_ATTACK. Resets after we have not been attacked for 12 seconds
-	if(attacked_timer.Check()) {
-		LogCombat("Triggering EVENT_ATTACK due to attack by [{}]", from->GetName());
-		parse->EventBot(EVENT_ATTACK, this, from, "", 0);
+	if (attacked_timer.Check()) {
+		if (parse->BotHasQuestSub(EVENT_ATTACK)) {
+			LogCombat("Triggering EVENT_ATTACK due to attack by [{}]", from->GetName());
+
+			parse->EventBot(EVENT_ATTACK, this, from, "", 0);
+		}
 	}
 
 	attacked_timer.Start(CombatEventTimer_expire);
@@ -9197,14 +9221,18 @@ void Bot::SpawnBotGroupByName(Client* c, std::string botgroup_name, uint32 leade
 
 void Bot::Signal(int signal_id)
 {
-	const auto export_string = fmt::format("{}", signal_id);
-	parse->EventBot(EVENT_SIGNAL, this, nullptr, export_string, 0);
+	if (parse->BotHasQuestSub(EVENT_SIGNAL)) {
+		parse->EventBot(EVENT_SIGNAL, this, nullptr, std::to_string(signal_id), 0);
+	}
 }
 
 void Bot::SendPayload(int payload_id, std::string payload_value)
 {
-	const auto export_string = fmt::format("{} {}", payload_id, payload_value);
-	parse->EventBot(EVENT_PAYLOAD, this, nullptr, export_string, 0);
+	if (parse->BotHasQuestSub(EVENT_PAYLOAD)) {
+		const auto& export_string = fmt::format("{} {}", payload_id, payload_value);
+
+		parse->EventBot(EVENT_PAYLOAD, this, nullptr, export_string, 0);
+	}
 }
 
 void Bot::OwnerMessage(std::string message)

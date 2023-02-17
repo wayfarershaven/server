@@ -1201,7 +1201,9 @@ void Client::ChannelMessageReceived(uint8 chan_num, uint8 language, uint8 lang_s
 			entity_list.ChannelMessage(sender, chan_num, language, lang_skill, message);
 		}
 
-		parse->EventPlayer(EVENT_SAY, this, message, language);
+		if (parse->PlayerHasQuestSub(EVENT_SAY)) {
+			parse->EventPlayer(EVENT_SAY, this, message, language);
+		}
 
 		if (sender != this) {
 			break;
@@ -1223,7 +1225,9 @@ void Client::ChannelMessageReceived(uint8 chan_num, uint8 language, uint8 lang_s
 
 				if (DistanceNoZ(m_Position, t->GetPosition()) <= RuleI(Range, Say)) {
 
-					parse->EventNPC(EVENT_SAY, t, this, message, language);
+					if (parse->HasQuestSub(t->GetNPCTypeID(), EVENT_SAY)) {
+						parse->EventNPC(EVENT_SAY, t, this, message, language);
+					}
 
 					if (RuleB(TaskSystem, EnableTaskSystem)) {
 						if (UpdateTasksOnSpeakWith(t)) {
@@ -1232,8 +1236,10 @@ void Client::ChannelMessageReceived(uint8 chan_num, uint8 language, uint8 lang_s
 					}
 				}
 			} else {
-				if (DistanceSquaredNoZ(m_Position, t->GetPosition()) <= RuleI(Range, Say)) {
-					parse->EventNPC(EVENT_AGGRO_SAY, t, this, message, language);
+				if (parse->HasQuestSub(t->GetNPCTypeID(), EVENT_AGGRO_SAY)) {
+					if (DistanceSquaredNoZ(m_Position, t->GetPosition()) <= RuleI(Range, Say)) {
+						parse->EventNPC(EVENT_AGGRO_SAY, t, this, message, language);
+					}
 				}
 			}
 
@@ -1242,9 +1248,13 @@ void Client::ChannelMessageReceived(uint8 chan_num, uint8 language, uint8 lang_s
 		else if (GetTarget() && GetTarget()->IsBot() && !IsInvisible(GetTarget())) {
 			if (DistanceNoZ(m_Position, GetTarget()->GetPosition()) <= RuleI(Range, Say)) {
 				if (GetTarget()->IsEngaged()) {
-					parse->EventBot(EVENT_AGGRO_SAY, GetTarget()->CastToBot(), this, message, language);
+					if (parse->BotHasQuestSub(EVENT_AGGRO_SAY)) {
+						parse->EventBot(EVENT_AGGRO_SAY, GetTarget()->CastToBot(), this, message, language);
+					}
 				} else {
-					parse->EventBot(EVENT_SAY, GetTarget()->CastToBot(), this, message, language);
+					if (parse->BotHasQuestSub(EVENT_SAY)) {
+						parse->EventBot(EVENT_SAY, GetTarget()->CastToBot(), this, message, language);
+					}
 				}
 			}
 		}
@@ -2505,24 +2515,38 @@ uint64 Client::GetAllMoney() {
 }
 
 bool Client::CheckIncreaseSkill(EQ::skills::SkillType skillid, Mob *against_who, int chancemodi) {
-	if (IsDead() || IsUnconscious())
+	if (IsDead() || IsUnconscious()) {
 		return false;
-	if (IsAIControlled()) // no skillups while chamred =p
+	}
+
+	if (IsAIControlled()) {
 		return false;
-	if (against_who != nullptr && against_who->IsCorpse()) // no skillups on corpses
+	}
+
+	if (against_who != nullptr && against_who->IsCorpse()) {
 		return false;
-	if (against_who != nullptr && against_who->IsPet()) // no skillups on pets
-		return false;	
-	if (skillid > EQ::skills::HIGHEST_SKILL)
+	}
+
+	if (against_who != nullptr && against_who->IsPet()) {
 		return false;
-	int skillval = GetRawSkill(skillid);
-	int maxskill = GetMaxSkillAfterSpecializationRules(skillid, MaxSkill(skillid));
-	std::string export_string = fmt::format(
-		"{} {}",
-		skillid,
-		skillval
-	);
-	parse->EventPlayer(EVENT_USE_SKILL, this, export_string, 0);
+	}
+
+	if (skillid > EQ::skills::HIGHEST_SKILL) {
+		return false;
+	}
+
+	auto skillval = GetRawSkill(skillid);
+	auto maxskill = GetMaxSkillAfterSpecializationRules(skillid, MaxSkill(skillid));
+
+	if (parse->PlayerHasQuestSub(EVENT_USE_SKILL)) {
+		const auto& export_string = fmt::format(
+			"{} {}",
+			skillid,
+			skillval
+		);
+
+		parse->EventPlayer(EVENT_USE_SKILL, this, export_string, 0);
+	}
 	if (against_who) {
 		if (
 			against_who->GetSpecialAbility(IMMUNE_AGGRO) ||
@@ -2556,23 +2580,26 @@ bool Client::CheckIncreaseSkill(EQ::skills::SkillType skillid, Mob *against_who,
 		if(zone->random.Real(0, 99) < Chance)
 		{
 			SetSkill(skillid, GetRawSkill(skillid) + 1);
-			std::string export_string = fmt::format(
-				"{} {} {} {}",
-				skillid,
-				skillval+1,
-				maxskill,
-				0
-			);
-			parse->EventPlayer(EVENT_SKILL_UP, this, export_string, 0);
-
 			if (player_event_logs.IsEventEnabled(PlayerEvent::SKILL_UP)) {
 				auto e = PlayerEvent::SkillUpEvent{
 					.skill_id = static_cast<uint32>(skillid),
-					.value = (skillval + 1),
+					.value = static_cast<int>((skillval + 1)),
 					.max_skill = static_cast<int16>(maxskill),
 					.against_who = (against_who) ? against_who->GetCleanName() : GetCleanName(),
 				};
 				RecordPlayerEventLog(PlayerEvent::SKILL_UP, e);
+			}
+
+			if (parse->PlayerHasQuestSub(EVENT_SKILL_UP)) {
+				const auto& export_string = fmt::format(
+					"{} {} {} {}",
+					skillid,
+					skillval + 1,
+					maxskill,
+					0
+				);
+
+				parse->EventPlayer(EVENT_SKILL_UP, this, export_string, 0);
 			}
 
 			LogSkills("Skill [{}] at value [{}] successfully gain with [{}] chance (mod [{}])", skillid, skillval, Chance, chancemodi);
@@ -2602,13 +2629,17 @@ void Client::CheckLanguageSkillIncrease(uint8 langid, uint8 TeacherSkill) {
 
 		if(zone->random.Real(0,100) < Chance) {	// if they make the roll
 			IncreaseLanguageSkill(langid);	// increase the language skill by 1
-			std::string export_string = fmt::format(
-				"{} {} {}",
-				langid,
-				LangSkill + 1,
-				100
-			);
-			parse->EventPlayer(EVENT_LANGUAGE_SKILL_UP, this, export_string, 0);
+			if (parse->PlayerHasQuestSub(EVENT_LANGUAGE_SKILL_UP)) {
+				const auto& export_string = fmt::format(
+					"{} {} {}",
+					langid,
+					LangSkill + 1,
+					100
+				);
+
+				parse->EventPlayer(EVENT_LANGUAGE_SKILL_UP, this, export_string, 0);
+			}
+			
 			LogSkills("Language [{}] at value [{}] successfully gain with [{}] % chance", langid, LangSkill, Chance);
 		}
 		else
@@ -4119,8 +4150,6 @@ void Client::DiscoverItem(uint32 item_id) {
 
 	auto d = DiscoveredItemsRepository::InsertOne(database, e);
 
-	parse->EventPlayer(EVENT_DISCOVER_ITEM, this, "", item_id);
-
 	if (player_event_logs.IsEventEnabled(PlayerEvent::DISCOVER_ITEM)) {
 		const auto* item = database.GetItem(item_id);
 
@@ -4129,6 +4158,13 @@ void Client::DiscoverItem(uint32 item_id) {
 			.item_name = item->Name,
 		};
 		RecordPlayerEventLog(PlayerEvent::DISCOVER_ITEM, e);
+	}
+
+	if (parse->PlayerHasQuestSub(EVENT_DISCOVER_ITEM)) {
+		const auto* item = database.GetItem(item_id);
+		std::vector<std::any> args = {item};
+
+		parse->EventPlayer(EVENT_DISCOVER_ITEM, this, "", item_id, &args);
 	}
 }
 
@@ -5195,14 +5231,18 @@ void Client::ShowSkillsWindow()
 
 void Client::Signal(int signal_id)
 {
-	const auto export_string = fmt::format("{}", signal_id);
-	parse->EventPlayer(EVENT_SIGNAL, this, export_string, 0);
+	if (parse->PlayerHasQuestSub(EVENT_SIGNAL)) {
+		parse->EventPlayer(EVENT_SIGNAL, this, std::to_string(signal_id), 0);
+	}
 }
 
 void Client::SendPayload(int payload_id, std::string payload_value)
 {
-	const auto export_string = fmt::format("{} {}", payload_id, payload_value);
-	parse->EventPlayer(EVENT_PAYLOAD, this, export_string, 0);
+	if (parse->PlayerHasQuestSub(EVENT_PAYLOAD)) {
+		const auto& export_string = fmt::format("{} {}", payload_id, payload_value);
+
+		parse->EventPlayer(EVENT_PAYLOAD, this, export_string, 0);
+	}
 }
 
 void Client::SendRewards()
@@ -8125,7 +8165,9 @@ void Client::TryItemTick(int slot)
 		if (GetLevel() >= zone->tick_items[iid].level && zone->random.Int(0, 100) >= (100 - zone->tick_items[iid].chance) && (zone->tick_items[iid].bagslot || slot <= EQ::invslot::EQUIPMENT_END))
 		{
 			EQ::ItemInstance* e_inst = (EQ::ItemInstance*)inst;
-			parse->EventItem(EVENT_ITEM_TICK, this, e_inst, nullptr, "", slot);
+			if (parse->ItemHasQuestSub(e_inst, EVENT_ITEM_TICK)) {
+				parse->EventItem(EVENT_ITEM_TICK, this, e_inst, nullptr, "", slot);
+			}
 		}
 	}
 
@@ -8143,8 +8185,10 @@ void Client::TryItemTick(int slot)
 		{
 			if( GetLevel() >= zone->tick_items[iid].level && zone->random.Int(0, 100) >= (100 - zone->tick_items[iid].chance) )
 			{
-				EQ::ItemInstance* e_inst = (EQ::ItemInstance*)a_inst;
-				parse->EventItem(EVENT_ITEM_TICK, this, e_inst, nullptr, "", slot);
+				EQ::ItemInstance* e_inst = (EQ::ItemInstance*) a_inst;
+				if (parse->ItemHasQuestSub(e_inst, EVENT_ITEM_TICK)) {
+					parse->EventItem(EVENT_ITEM_TICK, this, e_inst, nullptr, "", slot);
+				}
 			}
 		}
 	}
@@ -8174,7 +8218,9 @@ void Client::TryItemTimer(int slot)
 	auto it_iter = item_timers.begin();
 	while(it_iter != item_timers.end()) {
 		if(it_iter->second.Check()) {
-			parse->EventItem(EVENT_TIMER, this, inst, nullptr, it_iter->first, 0);
+			if (parse->ItemHasQuestSub(inst, EVENT_TIMER)) {
+				parse->EventItem(EVENT_TIMER, this, inst, nullptr, it_iter->first, 0);
+			}
 		}
 		++it_iter;
 	}
@@ -8194,7 +8240,9 @@ void Client::TryItemTimer(int slot)
 		auto it_iter = item_timers.begin();
 		while(it_iter != item_timers.end()) {
 			if(it_iter->second.Check()) {
-				parse->EventItem(EVENT_TIMER, this, a_inst, nullptr, it_iter->first, 0);
+				if (parse->ItemHasQuestSub(a_inst, EVENT_TIMER)) {
+					parse->EventItem(EVENT_TIMER, this, a_inst, nullptr, it_iter->first, 0);
+				}
 			}
 			++it_iter;
 		}
