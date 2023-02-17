@@ -1053,6 +1053,13 @@ void MobMovementManager::FillCommandStruct(
 	position_update->delta_z       = FloatToEQ13(delta_z);
 	position_update->delta_heading = FloatToEQ10(delta_heading);
 	position_update->animation     = (mob->IsBot() ? (int) ((float) anim / 1.785714f) : anim);
+
+	if (RuleB(Map, MobPathingVisualDebug)) {
+		mob->DrawDebugCoordinateNode(
+			fmt::format("{} position update", mob->GetCleanName()),
+			mob->GetPosition()
+		);
+	}
 }
 
 /**
@@ -1507,5 +1514,19 @@ void MobMovementManager::HandleStuckBehavior(Mob *who, float x, float y, float z
 		case EvadeCombat:
 			PushEvadeCombat(ent.second);
 			break;
+	}
+}
+
+void Mob::DrawDebugCoordinateNode(std::string node_name, const glm::vec4 vec)
+{
+	NPC* node = nullptr;
+	for (const auto& n : entity_list.GetNPCList()) {
+		if (n.second->GetCleanName() == node_name) {
+			node = n.second;
+			break;
+		}
+	}
+	if (!node) {
+		node = NPC::SpawnNodeNPC(node_name, "", GetPosition());
 	}
 }
