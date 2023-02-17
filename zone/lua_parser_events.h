@@ -200,6 +200,16 @@ void handle_npc_payload(
 	std::vector<std::any> *extra_pointers
 );
 
+void handle_npc_despawn_zone(
+	QuestInterface *parse,
+	lua_State* L,
+	NPC* npc,
+	Mob *init,
+	std::string data,
+	uint32 extra_data,
+	std::vector<std::any> *extra_pointers
+);
+
 void handle_npc_damage(
 	QuestInterface *parse,
 	lua_State* L,
@@ -653,6 +663,15 @@ void handle_player_augment_remove(
 );
 
 void handle_player_damage(
+	QuestInterface *parse,
+	lua_State* L,
+	Client* client,
+	std::string data,
+	uint32 extra_data,
+	std::vector<std::any> *extra_pointers
+);
+
+void handle_player_item_click(
 	QuestInterface *parse,
 	lua_State* L,
 	Client* client,
