@@ -3692,6 +3692,104 @@ int8 lua_does_augment_fit(Lua_ItemInst inst, uint32 augment_id)
 	return quest_manager.DoesAugmentFit(inst, augment_id);
 }
 
+luabind::object lua_get_recipe_component_item_ids(lua_State* L, uint32 recipe_id)
+{
+	auto lua_table = luabind::newtable(L);
+
+	const auto& l = content_db.GetRecipeComponentItemIDs(RecipeCountType::Component, recipe_id);
+	if (!l.empty()) {
+		int index = 1;
+		for (const auto& i : l) {
+			lua_table[index] = i;
+			index++;
+		}
+	}
+
+	return lua_table;
+}
+
+luabind::object lua_get_recipe_container_item_ids(lua_State* L, uint32 recipe_id)
+{
+	auto lua_table = luabind::newtable(L);
+
+	const auto& l = content_db.GetRecipeComponentItemIDs(RecipeCountType::Container, recipe_id);
+	if (!l.empty()) {
+		int index = 1;
+		for (const auto& i : l) {
+			lua_table[index] = i;
+			index++;
+		}
+	}
+
+	return lua_table;
+}
+
+luabind::object lua_get_recipe_fail_item_ids(lua_State* L, uint32 recipe_id)
+{
+	auto lua_table = luabind::newtable(L);
+
+	const auto& l = content_db.GetRecipeComponentItemIDs(RecipeCountType::Fail, recipe_id);
+	if (!l.empty()) {
+		int index = 1;
+		for (const auto& i : l) {
+			lua_table[index] = i;
+			index++;
+		}
+	}
+
+	return lua_table;
+}
+
+luabind::object lua_get_recipe_salvage_item_ids(lua_State* L, uint32 recipe_id) {
+	auto lua_table = luabind::newtable(L);
+
+	const auto& l = content_db.GetRecipeComponentItemIDs(RecipeCountType::Salvage, recipe_id);
+	if (!l.empty()) {
+		int index = 1;
+		for (const auto& i : l) {
+			lua_table[index] = i;
+			index++;
+		}
+	}
+
+	return lua_table;
+}
+
+luabind::object lua_get_recipe_success_item_ids(lua_State* L, uint32 recipe_id) {
+	auto lua_table = luabind::newtable(L);
+
+	const auto& l = content_db.GetRecipeComponentItemIDs(RecipeCountType::Success, recipe_id);
+	if (!l.empty()) {
+		int index = 1;
+		for (const auto& i : l) {
+			lua_table[index] = i;
+			index++;
+		}
+	}
+
+	return lua_table;
+}
+
+int8 lua_get_recipe_component_count(uint32 recipe_id, uint32 item_id)
+{
+	return content_db.GetRecipeComponentCount(RecipeCountType::Component, recipe_id, item_id);
+}
+
+int8 lua_get_recipe_fail_count(uint32 recipe_id, uint32 item_id)
+{
+	return content_db.GetRecipeComponentCount(RecipeCountType::Fail, recipe_id, item_id);
+}
+
+int8 lua_get_recipe_salvage_count(uint32 recipe_id, uint32 item_id)
+{
+	return content_db.GetRecipeComponentCount(RecipeCountType::Salvage, recipe_id, item_id);
+}
+
+int8 lua_get_recipe_success_count(uint32 recipe_id, uint32 item_id)
+{
+	return content_db.GetRecipeComponentCount(RecipeCountType::Success, recipe_id, item_id);
+}
+
 #define LuaCreateNPCParse(name, c_type, default_value) do { \
 	cur = table[#name]; \
 	if(luabind::type(cur) != LUA_TNIL) { \
@@ -4208,6 +4306,15 @@ luabind::scope lua_register_general() {
 		luabind::def("do_anim", (void(*)(int,int,bool))&lua_do_anim),
 		luabind::def("do_anim", (void(*)(int,int,bool,int))&lua_do_anim),
 		luabind::def("do_augment_slots_match", &lua_do_augment_slots_match),
+		luabind::def("get_recipe_component_item_ids", (luabind::object(*)(lua_State*,uint32))&lua_get_recipe_component_item_ids),
+		luabind::def("get_recipe_container_item_ids", (luabind::object(*)(lua_State*,uint32))&lua_get_recipe_container_item_ids),
+		luabind::def("get_recipe_fail_item_ids", (luabind::object(*)(lua_State*,uint32))&lua_get_recipe_fail_item_ids),
+		luabind::def("get_recipe_salvage_item_ids", (luabind::object(*)(lua_State*,uint32))&lua_get_recipe_salvage_item_ids),
+		luabind::def("get_recipe_success_item_ids", (luabind::object(*)(lua_State*,uint32))&lua_get_recipe_success_item_ids),
+		luabind::def("get_recipe_component_count", (int8(*)(uint32,uint32))&lua_get_recipe_component_count),
+		luabind::def("get_recipe_fail_count", (int8(*)(uint32,uint32))&lua_get_recipe_fail_count),
+		luabind::def("get_recipe_salvage_count", (int8(*)(uint32,uint32))&lua_get_recipe_salvage_count),
+		luabind::def("get_recipe_success_count", (int8(*)(uint32,uint32))&lua_get_recipe_success_count),
 		luabind::def("does_augment_fit", &lua_does_augment_fit),
 
 		/*
