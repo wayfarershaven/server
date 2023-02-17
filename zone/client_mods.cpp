@@ -923,7 +923,7 @@ int Client::CalcHaste()
 		h += spellbonuses.hastetype2 > 10 ? 10 : spellbonuses.hastetype2;
 	}
 	// 26+ no cap, 1-25 10
-	if (level > 25) { // 26+
+	if (level > 25 || RuleB(Character, IgnoreLevelBasedHasteCaps)) { // 26+
 		h += itembonuses.haste;
 	}
 	else {   // 1-25
@@ -933,7 +933,7 @@ int Client::CalcHaste()
 	if (level > 59) { // 60+
 		cap = RuleI(Character, HasteCap);
 	}
-	else if (level > 50) {  // 51-59
+	if (level > 59 || RuleB(Character, IgnoreLevelBasedHasteCaps)) { // 60+
 		cap = 85;
 	}
 	else {   // 1-50
@@ -944,7 +944,7 @@ int Client::CalcHaste()
 		h = cap;
 	}
 	// 51+ 25 (despite there being higher spells...), 1-50 10
-	if (level > 50) { // 51+
+	if (level > 50 || RuleB(Character, IgnoreLevelBasedHasteCaps)) { // 51+
 		cap = RuleI(Character, Hastev3Cap);
 		if (spellbonuses.hastetype3 > cap) {
 			h += cap;
