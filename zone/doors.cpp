@@ -447,7 +447,6 @@ void Doors::HandleClick(Client *sender, uint8 trigger)
 	entity_list.QueueClients(sender, outapp, false);
 	if (!IsDoorOpen() || (m_open_type == 58)) {
 		if (!m_disable_timer) {
-			LogDoorsDetail("door_id [{}] starting timer", md->doorid);
 			m_close_timer.Start();
 		}
 
@@ -456,7 +455,6 @@ void Doors::HandleClick(Client *sender, uint8 trigger)
 		}
 	}
 	else {
-		LogDoorsDetail("door_id [{}] disable timer", md->doorid);
 		m_close_timer.Disable();
 		if (!m_disable_timer) {
 			SetOpenState(false);
@@ -631,11 +629,13 @@ void Doors::ForceOpen(Mob *sender, bool alt_mode)
 	if (!alt_mode) { // original function
 		if (!m_is_open) {
 			if (!m_disable_timer) {
+				LogDoorsDetail("door_id [{}] starting timer", md->doorid);
 				m_close_timer.Start();
 			}
 			m_is_open = true;
 		}
 		else {
+			LogDoorsDetail("door_id [{}] disable timer", md->doorid);
 			m_close_timer.Disable();
 			if (!m_disable_timer) {
 				m_is_open = false;
@@ -644,6 +644,7 @@ void Doors::ForceOpen(Mob *sender, bool alt_mode)
 	}
 	else { // alternative function
 		if (!m_disable_timer) {
+			LogDoorsDetail("door_id [{}] alt starting timer", md->doorid);
 			m_close_timer.Start();
 		}
 		m_is_open = true;
