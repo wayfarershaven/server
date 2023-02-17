@@ -4122,7 +4122,13 @@ void Client::DiscoverItem(uint32 itemid) {
 									itemid, GetName(), Admin());
 	auto results = database.QueryDatabase(query);
 
-	parse->EventPlayer(EVENT_DISCOVER_ITEM, this, "", itemid);
+	auto* inst = database.CreateItem(itemid);
+
+	std::vector<std::any> args;
+
+	args.emplace_back(inst);
+
+	parse->EventPlayer(EVENT_DISCOVER_ITEM, this, "", itemid, &args);
 }
 
 void Client::UpdateLFP() {
