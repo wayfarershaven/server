@@ -3964,6 +3964,7 @@ void Mob::CommonDamage(Mob* attacker, int64 &damage, const uint16 spell_id, cons
 				parse->HasQuestSub(CastToNPC()->GetNPCTypeID(), EVENT_DAMAGE_GIVEN)
 			) ||
 			(
+				attacker &&
 				attacker->IsNPC() &&
 				parse->HasQuestSub(attacker->CastToNPC()->GetNPCTypeID(), EVENT_DAMAGE_GIVEN)
 			)
@@ -3975,6 +3976,7 @@ void Mob::CommonDamage(Mob* attacker, int64 &damage, const uint16 spell_id, cons
 				parse->HasQuestSub(CastToNPC()->GetNPCTypeID(), EVENT_DAMAGE_TAKEN)
 			) ||
 			(
+				attacker &&
 				attacker->IsNPC() &&
 				parse->HasQuestSub(attacker->CastToNPC()->GetNPCTypeID(), EVENT_DAMAGE_TAKEN)
 			)
@@ -4104,7 +4106,7 @@ void Mob::CommonDamage(Mob* attacker, int64 &damage, const uint16 spell_id, cons
 
 			bool is_immune_to_frontal_stun = false;
 
-			if (IsBot() || IsClient() || IsMerc()) {
+			if (IsOfClientBotMerc()) {
 				if (
 						IsPlayerClass(GetClass()) &&
 						RuleI(Combat, FrontalStunImmunityClasses) & GetPlayerClassBit(GetClass())
