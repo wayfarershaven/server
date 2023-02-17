@@ -121,6 +121,7 @@ Doors::~Doors()
 bool Doors::Process()
 {
 	if (m_close_timer.Enabled() && m_close_timer.Check() && IsDoorOpen()) {
+		LogDoorsDetail("door open and timer triggered door_id [{}] open_type [{}]", GetDoorID(), m_open_type);
 		if (m_open_type == 40 || GetTriggerType() == 1) {
 			auto            outapp = new EQApplicationPacket(OP_MoveDoor, sizeof(MoveDoor_Struct));
 			MoveDoor_Struct *md    = (MoveDoor_Struct *) outapp->pBuffer;
@@ -446,6 +447,7 @@ void Doors::HandleClick(Client *sender, uint8 trigger)
 	entity_list.QueueClients(sender, outapp, false);
 	if (!IsDoorOpen() || (m_open_type == 58)) {
 		if (!m_disable_timer) {
+			LogDoorsDetail("door_id [{}] starting timer", md->doorid);
 			m_close_timer.Start();
 		}
 
@@ -454,6 +456,7 @@ void Doors::HandleClick(Client *sender, uint8 trigger)
 		}
 	}
 	else {
+		LogDoorsDetail("door_id [{}] disable timer", md->doorid);
 		m_close_timer.Disable();
 		if (!m_disable_timer) {
 			SetOpenState(false);
@@ -608,6 +611,7 @@ void Doors::Open(Mob *sender, bool alt_mode)
 		}
 		else { // alternative function
 			if (!m_disable_timer) {
+				LogDoorsDetail("door_id [{}] alt starting timer", md->doorid);
 				m_close_timer.Start();
 			}
 			m_is_open = true;
