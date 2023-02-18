@@ -468,6 +468,10 @@ void Object::HandleCombine(Client* user, const NewCombine_Struct* in_combine, Ob
 	// Check if Combine would result in Lore conflict
 	for (const auto& e : spec.onsuccess) {
 		auto success_item_inst = database.GetItem(e.first);
+		if (success_item_inst->LoreGroup > 0) {
+			continue;
+		}
+		
 		if (user->CheckLoreConflict(success_item_inst)) {
 			EQ::SayLinkEngine linker;
 			linker.SetLinkType(EQ::saylink::SayLinkItemData);
@@ -745,7 +749,7 @@ void Object::HandleAutoCombine(Client* user, const RecipeAutoCombine_Struct* rac
 			return;
 		}
 	}
-	
+
 	//otherwise, we found it all...
 	outp->reply_code = 0x00000000;	//success for finding it...
 	user->QueuePacket(outapp);
