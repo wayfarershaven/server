@@ -776,12 +776,12 @@ int Client::GroupLeadershipAAOffenseEnhancement()
 	return 0;
 }
 
-void Client::InspectBuffs(Client* Inspector, int Rank)
-{
+void Client::InspectBuffs(Client* Inspector, int Rank) {
 	// At some point the removed the restriction of being a group member for this to work
 	// not sure when, but the way it's coded now, it wouldn't work with mobs.
-	if (!Inspector || Rank == 0)
+	if (!Inspector || Rank == 0) {
 		return;
+	}
 
 	auto outapp = new EQApplicationPacket(OP_InspectBuffs, sizeof(InspectBuffs_Struct));
 	InspectBuffs_Struct *ib = (InspectBuffs_Struct *)outapp->pBuffer;
@@ -789,14 +789,15 @@ void Client::InspectBuffs(Client* Inspector, int Rank)
 	uint32 buff_count = GetMaxTotalSlots();
 	uint32 packet_index = 0;
 	for (uint32 i = 0; i < buff_count; i++) {
-		if (buffs[i].spellid == SPELL_UNKNOWN)
+		if (!IsValidSpell(buffs[i].spellid)) {
 			continue;
+		}
 		ib->spell_id[packet_index] = buffs[i].spellid;
-		if (Rank > 1)
+		if (Rank > 1) {
 			ib->tics_remaining[packet_index] = spells[buffs[i].spellid].buff_duration_formula == DF_Permanent ? 0xFFFFFFFF : buffs[i].ticsremaining;
+		}
 		packet_index++;
 	}
-
 	Inspector->FastQueuePacket(&outapp);
 }
 

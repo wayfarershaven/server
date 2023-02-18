@@ -1925,15 +1925,17 @@ void Client::DoEnduranceUpkeep() {
 	uint32 buffs_i;
 	uint32 buff_count = GetMaxTotalSlots();
 	for (buffs_i = 0; buffs_i < buff_count; buffs_i++) {
-		if (buffs[buffs_i].spellid != SPELL_UNKNOWN) {
+		if (IsValidSpell(buffs[buffs_i].spellid)) {
 			int upkeep = spells[buffs[buffs_i].spellid].endurance_upkeep;
 			if(upkeep > 0) {
 				has_effect = true;
 				if(cost_redux > 0) {
-					if(upkeep <= cost_redux)
+					if(upkeep <= cost_redux) {
 						continue;	//reduced to 0
+					}
 					upkeep -= cost_redux;
 				}
+
 				if((upkeep+upkeep_sum) > GetEndurance()) {
 					//they do not have enough to keep this one going.
 					BuffFadeBySlot(buffs_i);
@@ -1949,8 +1951,9 @@ void Client::DoEnduranceUpkeep() {
 		TryTriggerOnCastRequirement();
 	}
 
-	if (!has_effect)
+	if (!has_effect) {
 		SetEndurUpkeep(false);
+	}
 }
 
 void Client::CalcRestState()
@@ -1978,24 +1981,22 @@ void Client::CalcRestState()
 
 	uint32 buff_count = GetMaxTotalSlots();
 	for (unsigned int j = 0; j < buff_count; j++) {
-		if(buffs[j].spellid != SPELL_UNKNOWN) {
-			if(IsDetrimentalSpell(buffs[j].spellid) && (buffs[j].ticsremaining > 0))
-				if(!DetrimentalSpellAllowsRest(buffs[j].spellid))
+		if(IsValidSpell(buffs[j].spellid)) {
+			if(IsDetrimentalSpell(buffs[j].spellid) && (buffs[j].ticsremaining > 0)) {
+				if(!DetrimentalSpellAllowsRest(buffs[j].spellid)) {
 					return;
+				}
+			}
 		}
 	}
-
 	RestRegenHP = (GetMaxHP() * RuleI(Character, RestRegenPercent) / 100);
-
 	RestRegenMana = (GetMaxMana() * RuleI(Character, RestRegenPercent) / 100);
-
 	if(RuleB(Character, RestRegenEndurance)) {
 		RestRegenEndurance = (GetMaxEndurance() * RuleI(Character, RestRegenPercent) / 100);
 	}
 }
 
-void Client::DoTracking()
-{
+void Client::DoTracking() {
 	if (!TrackingID) {
 		return;
 	}

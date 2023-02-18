@@ -1857,29 +1857,33 @@ void Mob::CalcSpellBonuses(StatBonuses* newbon)
 	newbon->AssistRange = -1;
 
 	int buff_count = GetMaxTotalSlots();
-	for(i = 0; i < buff_count; i++) {
-		if(buffs[i].spellid != SPELL_UNKNOWN){
+	for (i = 0; i < buff_count; i++) {
+		if (IsValidSpell(buffs[i].spellid)) {
 			ApplySpellsBonuses(buffs[i].spellid, buffs[i].casterlevel, newbon, buffs[i].casterid, 0, buffs[i].ticsremaining, i, buffs[i].instrument_mod);
 
-			if (buffs[i].hit_number > 0)
+			if (buffs[i].hit_number > 0) {
 				Numhits(true);
+			}
 		}
 	}
 
 	//Applies any perma NPC spell bonuses from npc_spells_effects table.
-	if (IsNPC())
+	if (IsNPC()) {
 		CastToNPC()->ApplyAISpellEffects(newbon);
+	}
 
 	//Disables a specific spell effect bonus completely, can also be limited to negate only item, AA or spell bonuses.
 	if (spellbonuses.NegateEffects){
 		for(i = 0; i < buff_count; i++) {
-			if( (buffs[i].spellid != SPELL_UNKNOWN) && (IsEffectInSpell(buffs[i].spellid, SE_NegateSpellEffect)) )
+			if (IsValidSpell(buffs[i].spellid) && (IsEffectInSpell(buffs[i].spellid, SE_NegateSpellEffect))) {
 				NegateSpellEffectBonuses(buffs[i].spellid);
+			}
 		}
 	}
 
-	if (GetClass() == BARD)
+	if (GetClass() == BARD) {
 		newbon->ManaRegen = 0; // Bards do not get mana regen from spells.
+	}
 }
 
 void Mob::ApplySpellsBonuses(uint16 spell_id, uint8 casterlevel, StatBonuses *new_bonus, uint16 casterId,

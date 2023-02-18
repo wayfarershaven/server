@@ -1453,14 +1453,15 @@ void Client::Handle_Connect_OP_ZoneEntry(const EQApplicationPacket *app)
 
 	if (SPDAT_RECORDS > 0) {
 		for (uint32 z = 0; z < EQ::spells::SPELL_GEM_COUNT; z++) {
-			if (m_pp.mem_spells[z] >= (uint32)SPDAT_RECORDS)
+			if (m_pp.mem_spells[z] >= (uint32)SPDAT_RECORDS) {
 				UnmemSpell(z, false);
+			}
 		}
 
 		database.LoadBuffs(this);
 		uint32 max_slots = GetMaxBuffSlots();
 		for (int i = 0; i < BUFF_COUNT; i++) {
-			if (buffs[i].spellid != SPELL_UNKNOWN) {
+			if (IsValidSpell(buffs[i].spellid)) {
 				m_pp.buffs[i].spellid = buffs[i].spellid;
 				m_pp.buffs[i].bard_modifier = buffs[i].instrument_mod;
 				m_pp.buffs[i].effect_type = 2;
@@ -1470,8 +1471,7 @@ void Client::Handle_Connect_OP_ZoneEntry(const EQApplicationPacket *app)
 				m_pp.buffs[i].duration = buffs[i].ticsremaining;
 				m_pp.buffs[i].counters = buffs[i].counters;
 				m_pp.buffs[i].num_hits = buffs[i].hit_number;
-			}
-			else {
+			} else {
 				m_pp.buffs[i].spellid = SPELLBOOK_UNKNOWN;
 				m_pp.buffs[i].bard_modifier = 10;
 				m_pp.buffs[i].effect_type = 0;
@@ -1495,24 +1495,23 @@ void Client::Handle_Connect_OP_ZoneEntry(const EQApplicationPacket *app)
 		group = entity_list.GetGroupByID(groupid);
 		if (!group) {	//nobody from our is here... start a new group
 			group = new Group(groupid);
-			if (group->GetID() != 0)
+			if (group->GetID() != 0) {
 				entity_list.AddGroup(group, groupid);
-			else	//error loading group members...
-			{
+			} else { //error loading group members...
 				delete group;
 				group = nullptr;
 			}
-		}	//else, somebody from our group is already here...
+		} //else, somebody from our group is already here...
 
-		if (!group)
+		if (!group) {
 			database.SetGroupID(GetName(), 0, CharacterID(), false);	//cannot re-establish group, kill it
-
-	}
-	else {	//no group id
+		}
+	} else {	//no group id
 			//clear out the group junk in our PP
 		uint32 xy = 0;
-		for (xy = 0; xy < MAX_GROUP_MEMBERS; xy++)
+		for (xy = 0; xy < MAX_GROUP_MEMBERS; xy++) {
 			memset(m_pp.groupMembers[xy], 0, 64);
+		}
 	}
 
 	if (group) {
@@ -1529,9 +1528,9 @@ void Client::Handle_Connect_OP_ZoneEntry(const EQApplicationPacket *app)
 			memset(ln, 0, 64);
 			database.GetGroupLeadershipInfo(group->GetID(), ln, MainTankName, AssistName, PullerName, NPCMarkerName, mentoree_name, &mentor_percent, &GLAA);
 			Client *c = entity_list.GetClientByName(ln);
-			if (c)
+			if (c) {
 				group->SetLeader(c);
-
+			}
 			group->SetMainTank(MainTankName);
 			group->SetMainAssist(AssistName);
 			group->SetPuller(PullerName);
@@ -1545,8 +1544,9 @@ void Client::Handle_Connect_OP_ZoneEntry(const EQApplicationPacket *app)
 
 			// If we are the leader, force an update of our group AAs to other members in the zone, in case
 			// we purchased a new one while out-of-zone.
-			if (group->IsLeader(this))
+			if (group->IsLeader(this)) {
 				group->SendLeadershipAAUpdate();
+			}
 		}
 		JoinGroupXTargets(group);
 		group->UpdatePlayer(this);
@@ -1568,15 +1568,18 @@ void Client::Handle_Connect_OP_ZoneEntry(const EQApplicationPacket *app)
 		m_pp.endurance = GetMaxEndurance();
 	}
 
-	if (m_pp.cur_hp <= 0)
+	if (m_pp.cur_hp <= 0) {
 		m_pp.cur_hp = GetMaxHP();
+	}
 
 	SetHP(m_pp.cur_hp);
 	Mob::SetMana(m_pp.mana); // mob function doesn't send the packet
 	SetEndurance(m_pp.endurance);
 
 	/* Update LFP in case any (or all) of our group disbanded while we were zoning. */
-	if (IsLFP()) { UpdateLFP(); }
+	if (IsLFP()) {
+		UpdateLFP();
+	}
 
 	p_timers.SetCharID(CharacterID());
 	if (!p_timers.Load(&database)) {
@@ -1584,21 +1587,27 @@ void Client::Handle_Connect_OP_ZoneEntry(const EQApplicationPacket *app)
 	}
 
 	/* Load Spell Slot Refresh from Currently Memoried Spells */
-	for (unsigned int i = 0; i < EQ::spells::SPELL_GEM_COUNT; ++i)
-		if (IsValidSpell(m_pp.mem_spells[i]))
+	for (unsigned int i = 0; i < EQ::spells::SPELL_GEM_COUNT; ++i) {
+		if (IsValidSpell(m_pp.mem_spells[i])) {
 			m_pp.spellSlotRefresh[i] = p_timers.GetRemainingTime(pTimerSpellStart + m_pp.mem_spells[i]) * 1000;
+		}
+	}
 
 	/* Ability slot refresh send SK/PAL */
 	if (m_pp.class_ == SHADOWKNIGHT || m_pp.class_ == PALADIN) {
 		uint32 abilitynum = 0;
-		if (m_pp.class_ == SHADOWKNIGHT) { abilitynum = pTimerHarmTouch; }
-		else { abilitynum = pTimerLayHands; }
+		if (m_pp.class_ == SHADOWKNIGHT) {
+			abilitynum = pTimerHarmTouch;
+		} else {
+			abilitynum = pTimerLayHands;
+		}
 
 		uint32 remaining = p_timers.GetRemainingTime(abilitynum);
-		if (remaining > 0 && remaining < 15300)
+		if (remaining > 0 && remaining < 15300) {
 			m_pp.abilitySlotRefresh = remaining * 1000;
-		else
+		} else {
 			m_pp.abilitySlotRefresh = 0;
+		}
 	}
 
 #ifdef _EQDEBUG
@@ -1609,13 +1618,15 @@ void Client::Handle_Connect_OP_ZoneEntry(const EQApplicationPacket *app)
 	/* Reset to max so they dont drown on zone in if its underwater */
 	m_pp.air_remaining = 60;
 	/* Check for PVP Zone status*/
-	if (zone->IsPVPZone())
+	if (zone->IsPVPZone()) {
 		m_pp.pvp = 1;
+	}
 	/* Time entitled on Account: Move to account */
 	m_pp.timeentitledonaccount = database.GetTotalTimeEntitledOnAccount(AccountID()) / 1440;
 	/* Reset rest timer if the durations have been lowered in the database */
-	if ((m_pp.RestTimer > RuleI(Character, RestRegenTimeToActivate)) && (m_pp.RestTimer > RuleI(Character, RestRegenRaidTimeToActivate)))
+	if ((m_pp.RestTimer > RuleI(Character, RestRegenTimeToActivate)) && (m_pp.RestTimer > RuleI(Character, RestRegenRaidTimeToActivate))) {
 		m_pp.RestTimer = 0;
+	}
 
 	/* This checksum should disappear once dynamic structs are in... each struct strategy will do it */ // looks to be in place now
 	//CRC32::SetEQChecksum((unsigned char*)&m_pp, sizeof(PlayerProfile_Struct) - sizeof(m_pp.m_player_profile_version) - 4);
@@ -1696,15 +1707,16 @@ void Client::Handle_Connect_OP_ZoneEntry(const EQApplicationPacket *app)
 	this is not quite where live sends inventory, they do it after tribute
 	*/
 	if (loaditems) { /* Don't load if a length error occurs */
-		if (admin >= minStatusToBeGM)
+		if (admin >= minStatusToBeGM) {
 			m_inv.SetGMInventory(true); // set to true to allow expansion-restricted packets through
-
+		}
 		BulkSendInventoryItems();
 		/* Send stuff on the cursor which isn't sent in bulk */
 		for (auto iter = m_inv.cursor_cbegin(); iter != m_inv.cursor_cend(); ++iter) {
 			/* First item cursor is sent in bulk inventory packet */
-			if (iter == m_inv.cursor_cbegin())
+			if (iter == m_inv.cursor_cbegin()) {
 				continue;
+			}
 			const EQ::ItemInstance *inst = *iter;
 			SendItemPacket(EQ::invslot::slotCursor, inst, ItemPacketLimbo);
 		}
@@ -1718,16 +1730,14 @@ void Client::Handle_Connect_OP_ZoneEntry(const EQApplicationPacket *app)
 	auto dynamic_zone_member_entries = DynamicZoneMembersRepository::GetWhere(database,
 		fmt::format("character_id = {}", CharacterID()));
 
-	for (const auto& entry : dynamic_zone_member_entries)
-	{
+	for (const auto& entry : dynamic_zone_member_entries) {
 		m_dynamic_zone_ids.emplace_back(entry.dynamic_zone_id);
 	}
 
 	m_expedition_id = ExpeditionsRepository::GetIDByMemberID(database, CharacterID());
 
 	auto dz = zone->GetDynamicZone();
-	if (dz && dz->GetSafeReturnLocation().zone_id != 0)
-	{
+	if (dz && dz->GetSafeReturnLocation().zone_id != 0) {
 		auto safereturn = dz->GetSafeReturnLocation();
 
 		auto safereturn_entry = CharacterInstanceSafereturnsRepository::NewEntity();
@@ -1741,9 +1751,7 @@ void Client::Handle_Connect_OP_ZoneEntry(const EQApplicationPacket *app)
 		safereturn_entry.safe_heading     = safereturn.heading;
 
 		CharacterInstanceSafereturnsRepository::InsertOneOrUpdate(database, safereturn_entry);
-	}
-	else
-	{
+	} else {
 		CharacterInstanceSafereturnsRepository::DeleteWhere(database,
 			fmt::format("character_id = {}", character_id));
 	}
