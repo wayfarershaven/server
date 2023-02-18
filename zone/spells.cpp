@@ -3225,8 +3225,10 @@ int Mob::CheckStackConflict(uint16 spellid1, int caster_level1, uint16 spellid2,
 // 66+ Group Spells 62, Single Target 61
 bool Mob::CheckSpellLevelRestriction(Mob *caster, uint16 spell_id)
 {
-	bool check_for_restrictions = false;
-	bool can_cast = true;
+	if (spells[spell_id].target_type == ST_Self) {
+		LogSpells("[CheckSpellLevelRestriction] Self Only spell - no restrictions");
+		return true;
+	}
 
 	if (!caster) {
 		LogSpells("[CheckSpellLevelRestriction] No caster");
@@ -3238,6 +3240,8 @@ bool Mob::CheckSpellLevelRestriction(Mob *caster, uint16 spell_id)
 		return true;
 	}
 
+	bool check_for_restrictions = false;
+	bool can_cast = true;
 	// NON GM clients might be restricted by rule setting
 	if (caster->IsClient()) {
 		if (IsClient()) { // Only restrict client on client for this rule
