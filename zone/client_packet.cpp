@@ -5142,8 +5142,6 @@ void Client::Handle_OP_Consider(const EQApplicationPacket *app)
 		con->faction = FACTION_DUBIOUSLY;
 	}
 
-	mod_consider(t, con);
-
 	QueuePacket(outapp);
 	// only wanted to check raid target once
 	// and need con to still be around so, do it here!
@@ -6232,10 +6230,10 @@ void Client::Handle_OP_EnvDamage(const EQApplicationPacket *app)
 	}
 
 	if (GetHP() <= 0) {
-		mod_client_death_env();
 		Death(0, 32000, SPELL_UNKNOWN, EQ::skills::SkillHandtoHand);
 		return;
 	}
+
 	SendHPUpdate();
 	return;
 }
@@ -8767,19 +8765,12 @@ void Client::Handle_OP_ItemLinkClick(const EQApplicationPacket *app)
 		}
 
 		if (!response.empty()) {
-			if (!mod_saylink(response, silentsaylink)) {
-				return;
-			}
-
 			ChannelMessageReceived(ChatChannel_Say, 0, 100, response.c_str(), nullptr, true);
-
 			if (!silentsaylink) {
 				Message(Chat::LightGray, "You say, '%s'", response.c_str());
 			}
-
 			return;
-		}
-		else {
+		} else {
 			Message(Chat::Red, "Error: Say Link not found or is too long.");
 			return;
 		}

@@ -1121,31 +1121,22 @@ bool Client::TradeskillExecute(DBTradeskillRecipe_Struct *spec) {
 
 	const EQ::ItemData* item = nullptr;
 
-	chance = mod_tradeskill_chance(chance, spec);
-
 	if (((spec->tradeskill==75) || GetGM() || (chance > res)) || zone->random.Roll(aa_chance)) {
-
 		success_modifier = 1;
-
 		if (over_trivial < 0) {
 			CheckIncreaseTradeskill(bonusstat, stat_modifier, skillup_modifier, success_modifier, spec->tradeskill);
 		}
-
 		MessageString(Chat::LightBlue, TRADESKILL_SUCCEED, spec->name.c_str());
-
 		LogTradeskills("Tradeskill success");
-
 		itr = spec->onsuccess.begin();
 		while(itr != spec->onsuccess.end() && !spec->quest) {
-
 			item = database.GetItem(itr->first);
 			if (item) {
 				SummonItem(itr->first, itr->second);
 				if (GetGroup()) {
 					entity_list.MessageGroup(this, true, Chat::Skills, "%s has successfully fashioned %s!", GetName(), item->Name);
 				}
-			}
-			else {
+			} else {
 				Log(
 					Logs::General,
 					Logs::Tradeskills,
@@ -1268,8 +1259,6 @@ void Client::CheckIncreaseTradeskill(int16 bonusstat, int16 stat_modifier, float
 			chance_stage2 = 12.5 - (.08 * (current_raw_skill - 175));
 		}
 	}
-
-	chance_stage2 = mod_tradeskill_skillup(chance_stage2);
 
 	if (chance_stage2 > zone->random.Real(0, 99)) {
 		//Only if stage1 and stage2 succeeded you get a skillup.

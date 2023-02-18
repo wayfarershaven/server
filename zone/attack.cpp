@@ -1828,8 +1828,6 @@ bool Client::Death(Mob* killerMob, int64 damage, uint16 spell, EQ::skills::Skill
 				parse->EventNPC(EVENT_SLAY, killerMob->CastToNPC(), this, "", 0);
 			}
 
-			mod_client_death_npc(killerMob);
-
 			auto emote_id = killerMob->GetEmoteID();
 			if (emote_id) {
 				killerMob->CastToNPC()->DoNPCEmote(EQ::constants::EmoteEventTypes::KilledPC, emoteid);
@@ -1858,11 +1856,7 @@ bool Client::Death(Mob* killerMob, int64 damage, uint16 spell, EQ::skills::Skill
 				killerMob->CastToClient()->SetDueling(false);
 				killerMob->CastToClient()->SetDuelTarget(0);
 				entity_list.DuelMessage(killerMob, this, false);
-
-				mod_client_death_duel(killerMob);
-
-			}
-			else {
+			} else {
 				//otherwise, we just died, end the duel.
 				Mob* who = entity_list.GetMob(GetDuelTarget());
 				if (who && who->IsClient()) {
@@ -2239,8 +2233,6 @@ bool NPC::Attack(Mob* other, int Hand, bool bRiposte, bool IsStrikethrough, bool
 		otherlevel = otherlevel ? otherlevel : 1;
 		mylevel = mylevel ? mylevel : 1;
 
-		//damage = mod_npc_damage(damage, skillinuse, Hand, weapon, other);
-
 		my_hit.base_damage = GetBaseDamage() + eleBane;
 		my_hit.min_damage = GetMinDamage();
 		int32 hate = my_hit.base_damage + my_hit.min_damage;
@@ -2570,11 +2562,9 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 						parse->EventNPC(EVENT_KILLED_MERIT, this, c, "killed", 0);
 					}
 
-					if (RuleB(NPC, EnableMeritBasedFaction))
+					if (RuleB(NPC, EnableMeritBasedFaction)) {
 						c->SetFactionLevel(c->CharacterID(), GetNPCFactionID(), c->GetBaseClass(), c->GetBaseRace(), c->GetDeity());
-
-					mod_npc_killed_merit(kr->members[i].member);
-
+					}
 					PlayerCount++;
 				}
 			}
@@ -2622,10 +2612,9 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 						parse->EventNPC(EVENT_KILLED_MERIT, this, c, "killed", 0);
 					}
 
-					if (RuleB(NPC, EnableMeritBasedFaction))
+					if (RuleB(NPC, EnableMeritBasedFaction)) {
 						c->SetFactionLevel(c->CharacterID(), GetNPCFactionID(), c->GetBaseClass(), c->GetBaseRace(), c->GetDeity());
-
-					mod_npc_killed_merit(c);
+					}
 
 					PlayerCount++;
 				}
@@ -2674,11 +2663,10 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 				parse->EventNPC(EVENT_KILLED_MERIT, this, give_exp_client, "killed", 0);
 			}
 
-			if (RuleB(NPC, EnableMeritBasedFaction))
+			if (RuleB(NPC, EnableMeritBasedFaction)) {
 				give_exp_client->SetFactionLevel(give_exp_client->CharacterID(), GetNPCFactionID(), give_exp_client->GetBaseClass(),
 												 give_exp_client->GetBaseRace(), give_exp_client->GetDeity());
-
-			mod_npc_killed_merit(give_exp_client);
+			}
 
 			// QueryServ Logging - Solo
 			if (RuleB(QueryServ, PlayerLogNPCKills)) {
@@ -2814,8 +2802,6 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 
 	// Parse quests even if we're killed by an NPC
 	if (oos) {
-		mod_npc_killed(oos);
-
 		if (IsNPC()) {
 			auto emote_id = GetEmoteID();
 			if (emote_id) {
@@ -2846,9 +2832,10 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 	WipeHateList();
 	p_depop = true;
 
-	if (killer_mob && killer_mob->GetTarget() == this) //we can kill things without having them targeted
+	if (killer_mob && killer_mob->GetTarget() == this) { //we can kill things without having them targeted
 		killer_mob->SetTarget(nullptr); //via AE effects and such..
-
+	}
+	
 	entity_list.UpdateFindableNPCState(this, true);
 
 	m_combat_record.Stop();

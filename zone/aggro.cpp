@@ -352,10 +352,9 @@ bool Mob::CheckWillAggro(Mob *mob) {
                 )
         ))
     {
-        //FatherNiwtit: make sure we can see them. last since it is very expensive
         if (CheckLosFN(mob)) {
             LogAggro("Check aggro for [{}] target [{}]", GetName(), mob->GetName());
-            return (mod_will_aggro(mob, this));
+            return true;
         }
     }
 

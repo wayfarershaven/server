@@ -59,7 +59,7 @@ void Mob::TemporaryPets(uint16 spell_id, Mob *targ, const char *name_override, u
 	if (IsOfClientBot()) {
 		act_power = GetFocusEffect(focusPetPower, spell_id);
 		if (IsClient()) {
-			act_power = CastToClient()->mod_pet_power(act_power, spell_id);
+			act_power = CastToClient()->GetFocusEffect(focusPetPower, spell_id);
 		}
 	}
 

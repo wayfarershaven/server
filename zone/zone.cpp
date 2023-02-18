@@ -1199,12 +1199,9 @@ bool Zone::Init(bool is_static) {
 	{
 		LogError("Loading World Objects failed. continuing");
 	}
-
 	database.QueryDatabase("DELETE FROM `respawn_times` WHERE (`start` + `duration`) < UNIX_TIMESTAMP(NOW())");
-
 	LoadZoneDoors();
 	LoadZoneBlockedSpells();
-
 	//clear trader items if we are loading the bazaar
 	if (strncasecmp(short_name, "bazaar", 6) == 0) {
 		database.DeleteTraderItem(0);
@@ -1216,11 +1213,8 @@ bool Zone::Init(bool is_static) {
 	LoadVeteranRewards();
 	LoadAlternateCurrencies();
 	LoadNPCEmotes(&NPCEmoteList);
-
 	LoadAlternateAdvancement();
-
 	content_db.LoadGlobalLoot();
-
 	//Load merchant data
 	GetMerchantDataForZoneLoad();
 
@@ -1239,23 +1233,14 @@ bool Zone::Init(bool is_static) {
 
 	petition_list.ClearPetitions();
 	petition_list.ReadDatabase();
-
 	LoadDynamicZoneTemplates();
-
 	DynamicZone::CacheAllFromDatabase();
-
 	Expedition::CacheAllFromDatabase();
-
 	LogInfo("Loading timezone data");
 	zone_time.setEQTimeZone(content_db.GetZoneTZ(zoneid, GetInstanceVersion()));
-
 	LogInfo("Zone booted successfully zone_id [{}] time_offset [{}]", zoneid, zone_time.getEQTimeZone());
-
 	LoadGrids();
 	LoadTickItems();
-
-	//MODDING HOOK FOR ZONE INIT
-	mod_init();
 
 	// logging origination information
 	LogSys.origination_info.zone_short_name = zone->short_name;
@@ -1933,18 +1918,14 @@ void Zone::Repop()
 	}
 
 	LinkedListIterator<Spawn2 *> iterator(spawn2_list);
-
 	iterator.Reset();
 	while (iterator.MoreElements()) {
 		iterator.RemoveCurrent();
 	}
 
 	npc_scale_manager->LoadScaleData();
-
 	entity_list.ClearTrapPointers();
-
 	quest_manager.ClearAllTimers();
-
 	LogInfo("Loading spawn groups");
 	if (!content_db.LoadSpawnGroups(short_name, GetInstanceVersion(), &spawn_group_list)) {
 		LogError("Loading spawn groups failed");
@@ -1957,15 +1938,9 @@ void Zone::Repop()
 	if (!content_db.PopulateZoneSpawnList(zoneid, spawn2_list, GetInstanceVersion())) {
 		LogDebug("Error in Zone::Repop: database.PopulateZoneSpawnList failed");
 	}
-
 	LoadGrids();
-
 	initgrids_timer.Start();
-
 	entity_list.UpdateAllTraps(true, true);
-
-	//MODDING HOOK FOR REPOP
-	mod_repop();
 }
 
 void Zone::GetTimeSync()

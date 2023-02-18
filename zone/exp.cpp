@@ -913,7 +913,6 @@ uint64 Client::GetEXPForLevel(uint16 check_level, bool aa)
 		aaxp = finalxp - GetEXPForLevel(51);
 		return aaxp;
 	}
-	finalxp = mod_client_xp_for_level(finalxp, check_level);
 	return finalxp;
 }
 

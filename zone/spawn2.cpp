@@ -247,20 +247,16 @@ bool Spawn2::Process() {
 
 		glm::vec4 loc(x, y, z, heading);
 		int starting_wp = 0;
-		if (spawn_group->wp_spawns && grid_ > 0)
-		{
+		if (spawn_group->wp_spawns && grid_ > 0) {
 			glm::vec4 wploc;
 			starting_wp = content_db.GetRandomWaypointLocFromGrid(wploc, zone->GetZoneID(), grid_);
-			if (wploc.x != 0.0f || wploc.y != 0.0f || wploc.z != 0.0f)
-			{
+			if (wploc.x != 0.0f || wploc.y != 0.0f || wploc.z != 0.0f) {
 				loc = wploc;
 				Log(Logs::General, Logs::Spawns, "spawning at random waypoint #%i loc: (%.3f, %.3f, %.3f).", starting_wp , loc.x, loc.y, loc.z);
 			}
 		}
 
 		NPC *npc = new NPC(tmp, this, glm::vec4(x, y, z, heading), GravityBehavior::Water);
-
-		npc->mod_prespawn(this);
 
 		npcthis = npc;
 		npc->AddLootTable();

@@ -901,48 +901,53 @@ int Client::CalcHaste()
 	if (spellbonuses.haste < 0) {
 		if (-spellbonuses.haste <= spellbonuses.inhibitmelee) {
 			Haste = 100 - spellbonuses.inhibitmelee;
-		}
-		else {
+		} else {
 			Haste = 100 + spellbonuses.haste;
 		}
 		return Haste;
 	}
+
 	// No haste and inhibit, kills all other hastes
 	if (spellbonuses.haste == 0 && spellbonuses.inhibitmelee) {
 		Haste = 100 - spellbonuses.inhibitmelee;
 		return Haste;
 	}
+
 	int h = 0;
 	int cap = 0;
 	int level = GetLevel();
+
 	// we know we have a haste spell and not slowed, no extra inhibit melee checks needed
 	if (spellbonuses.haste) {
 		h += spellbonuses.haste - spellbonuses.inhibitmelee;
 	}
+
 	if (spellbonuses.hastetype2 && level > 49) { // type 2 is capped at 10% and only available to 50+
 		h += spellbonuses.hastetype2 > 10 ? 10 : spellbonuses.hastetype2;
 	}
+
 	// 26+ no cap, 1-25 10
 	if (level > 25 || RuleB(Character, IgnoreLevelBasedHasteCaps)) { // 26+
 		h += itembonuses.haste;
-	}
-	else {   // 1-25
+	} else {   // 1-25
 		h += itembonuses.haste > 10 ? 10 : itembonuses.haste;
 	}
+
 	// 60+ 100, 51-59 85, 1-50 level+25
 	if (level > 59) { // 60+
 		cap = RuleI(Character, HasteCap);
 	}
+
 	if (level > 59 || RuleB(Character, IgnoreLevelBasedHasteCaps)) { // 60+
 		cap = 85;
-	}
-	else {   // 1-50
+	} else {   // 1-50
 		cap = level + 25;
 	}
-	cap = mod_client_haste_cap(cap);
+
 	if (h > cap) {
 		h = cap;
 	}
+
 	// 51+ 25 (despite there being higher spells...), 1-50 10
 	if (level > 50 || RuleB(Character, IgnoreLevelBasedHasteCaps)) { // 51+
 		cap = RuleI(Character, Hastev3Cap);
@@ -951,12 +956,10 @@ int Client::CalcHaste()
 		} else {
 			h += spellbonuses.hastetype3;
 		}
-	}
-	else {   // 1-50
+	} else {   // 1-50
 		h += spellbonuses.hastetype3 > 10 ? 10 : spellbonuses.hastetype3;
 	}
 	h += ExtraHaste;	//GM granted haste.
-	h = mod_client_haste(h);
 	Haste = 100 + h;
 	return Haste;
 }
