@@ -4266,6 +4266,10 @@ void Mob::SetTarget(Mob *mob)
 		parse->BotHasQuestSub(EVENT_TARGET_CHANGE)
 	);
 
+	if (IsClient() && CastToClient()->admin > AccountStatus::GMMgmt) {
+		DisplayInfo(mob);
+	}
+
 	if (has_target_change_event) {
 		std::vector<std::any> args;
 		args.emplace_back(mob);
@@ -4278,11 +4282,6 @@ void Mob::SetTarget(Mob *mob)
 			if (parse->PlayerHasQuestSub(EVENT_TARGET_CHANGE)) {
 				parse->EventPlayer(EVENT_TARGET_CHANGE, CastToClient(), "", 0, &args);
 			}
-
-			if (CastToClient()->admin > AccountStatus::GMMgmt) {
-				DisplayInfo(mob);
-			}
-
 			CastToClient()->SetBotPrecombat(false); // Any change in target will nullify this flag (target == mob checked above)
 		} else if (IsBot()) {
 			if (parse->BotHasQuestSub(EVENT_TARGET_CHANGE)) {
