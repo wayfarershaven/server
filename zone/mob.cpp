@@ -4655,7 +4655,7 @@ void Mob::TryTwincast(Mob *caster, Mob *target, uint32 spell_id)
 		return;
 	}
 
-	if (IsClient() || IsBot())
+	if (IsOfClientBot())
 	{
 		int focus = GetFocusEffect(focusTwincast, spell_id);
 
@@ -4944,42 +4944,41 @@ bool Mob::TryFadeEffect(int slot)
 	return false;
 }
 
-void Mob::TrySympatheticProc(Mob *target, uint32 spell_id)
-{
-	if(target == nullptr || !IsValidSpell(spell_id) || !IsClient())
+void Mob::TrySympatheticProc(Mob *target, uint32 spell_id) {
+	if(target == nullptr || !IsValidSpell(spell_id) || !IsClient()) {
 		return;
+	}
 
-	uint16 focus_spell = CastToClient()->GetSympatheticFocusEffect(focusSympatheticProc,spell_id);
+	uint16 focus_spell = GetSympatheticFocusEffect(focusSympatheticProc,spell_id);
 
-	if(!IsValidSpell(focus_spell))
+	if(!IsValidSpell(focus_spell)) {
 		return;
+	}
 
 	uint16 focus_trigger = GetSympatheticSpellProcID(focus_spell);
 
-	if(!IsValidSpell(focus_trigger))
+	if(!IsValidSpell(focus_trigger)) {
 		return;
+	}
 
 	// For beneficial spells, if the triggered spell is also beneficial then proc it on the target
 	// if the triggered spell is detrimental, then it will trigger on the caster(ie cursed items)
-	if(IsBeneficialSpell(spell_id))
-	{
-		if(IsBeneficialSpell(focus_trigger))
+	if(IsBeneficialSpell(spell_id)) {
+		if(IsBeneficialSpell(focus_trigger)) {
 			SpellFinished(focus_trigger, target);
-
-		else
+		} else {
 			SpellFinished(focus_trigger, this, EQ::spells::CastingSlot::Item, 0, -1, spells[focus_trigger].resist_difficulty);
+		}
 	}
 	// For detrimental spells, if the triggered spell is beneficial, then it will land on the caster
 	// if the triggered spell is also detrimental, then it will land on the target
-	else
-	{
-		if(IsBeneficialSpell(focus_trigger))
+	else {
+		if(IsBeneficialSpell(focus_trigger)) {
 			SpellFinished(focus_trigger, this);
-
-		else
+		} else {
 			SpellFinished(focus_trigger, target, EQ::spells::CastingSlot::Item, 0, -1, spells[focus_trigger].resist_difficulty);
+		}
 	}
-
 	CheckNumHitsRemaining(NumHit::MatchingSpells, -1, focus_spell);
 }
 
