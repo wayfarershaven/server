@@ -71,6 +71,8 @@ Object::Object(uint32 id, uint32 type, uint32 icon, const Object_Struct& object,
 	m_data.size = object.size;
 	m_data.tilt_x = object.tilt_x;
 	m_data.tilt_y = object.tilt_y;
+
+	FixZ();
 }
 
 //creating a re-ocurring ground spawn.
@@ -99,6 +101,8 @@ Object::Object(const EQ::ItemInstance* inst, char* name,float max_x,float min_x,
 	respawn_timer.Disable();
 	strcpy(m_data.object_name, name);
 	RandomSpawn(false);
+
+	FixZ();
 
 	// Hardcoded portion for unknown members
 	m_data.unknown024	= 0x7f001194;
@@ -167,6 +171,8 @@ Object::Object(Client* client, const EQ::ItemInstance* inst)
 			strcpy(m_data.object_name, DEFAULT_OBJECT_NAME);
 		}
 	}
+
+	FixZ();
 }
 
 Object::Object(const EQ::ItemInstance *inst, float x, float y, float z, float heading, uint32 decay_time)
@@ -223,6 +229,8 @@ Object::Object(const EQ::ItemInstance *inst, float x, float y, float z, float he
 			strcpy(m_data.object_name, DEFAULT_OBJECT_NAME);
 		}
 	}
+
+	FixZ();
 }
 
 Object::Object(const char *model, float x, float y, float z, float heading, uint8 type, uint32 decay_time)
@@ -247,8 +255,11 @@ Object::Object(const char *model, float x, float y, float z, float heading, uint
 	m_data.z = z;
 	m_data.zone_id = zone->GetZoneID();
 
-	if (decay_time)
+	FixZ();
+
+	if (decay_time) {
 		decay_timer.Start();
+	}
 
 	respawn_timer.Disable();
 
@@ -257,10 +268,11 @@ Object::Object(const char *model, float x, float y, float z, float heading, uint
 	m_data.unknown076	= 0x0000d5fe;
 	m_data.unknown084	= 0xFFFFFFFF;
 
-	if(model)
+	if(model) {
 		strcpy(m_data.object_name, model);
-	else
+	} else {
 		strcpy(m_data.object_name, "IT64_ACTORDEF"); //default object name if model isn't specified for some unknown reason
+	}
 
 	safe_delete(inst);
 }
@@ -1173,4 +1185,15 @@ void Object::SetEntityVariable(std::string variable_name, std::string variable_v
 	}
 
 	o_EntityVariables[variable_name] = variable_value;
+}
+
+void Object::FixZ() {
+	float best_z = BEST_Z_INVALID;
+	if (zone->zonemap != nullptr) {
+		auto dest = glm::vec3(m_data.x, m_data.y, m_data.z + 5);
+		best_z = zone->zonemap->FindBestZ(dest, nullptr);
+		if (best_z != BEST_Z_INVALID) {
+			m_data.z = best_z;
+		}
+	}
 }
