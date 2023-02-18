@@ -114,7 +114,7 @@ int main() {
 	Timer ChannelListProcessTimer(60000);
 	Timer ClientConnectionPruneTimer(60000);
 
-	Timer InterserverTimer(INTERSERVER_TIMER); // does auto-reconnect
+	Timer keepalive(INTERSERVER_TIMER); // does auto-reconnect
 
 	LogInfo("Starting EQEmu Universal Chat Server");
 
@@ -188,7 +188,11 @@ int main() {
 //	crash_test.detach();
 
 	auto loop_fn = [&](EQ::Timer* t) {
-
+		if (keepalive.Check()) {
+			keepalive.Start();
+			database.ping();
+		}
+		
 		Timer::SetCurrentTime();
 
 		g_Clientlist->Process();
