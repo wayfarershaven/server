@@ -2989,6 +2989,28 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 				MakeAura(spell_id);
 				break;
 
+			case SE_Invisibility:
+			case SE_Invisibility2:
+			{
+				SetInvisible(Invisibility::Invisible);
+				break;
+			}
+
+			case SE_InvisVsAnimals:
+			{
+				invisible_animals = true;
+				SetInvisible(Invisibility::Invisible);
+				break;
+			}
+
+			case SE_InvisVsUndead2:
+			case SE_InvisVsUndead:
+			{
+				invisible_undead = true;
+				SetInvisible(Invisibility::Invisible);
+				break;
+			}
+
 			// Handled Elsewhere
 			case SE_ImmuneFleeing:
 			case SE_NegateSpellEffect:
@@ -3274,12 +3296,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 			case SE_FFItemClass:
 			case SE_SpellEffectResistChance:
 			case SE_SeeInvis:
-			case SE_Invisibility:
-			case SE_Invisibility2:
-			case SE_InvisVsAnimals:
 			case SE_ImprovedInvisAnimals:
-			case SE_InvisVsUndead:
-			case SE_InvisVsUndead2:
 			{
 				break;
 			}

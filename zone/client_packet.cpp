@@ -4291,6 +4291,14 @@ void Client::Handle_OP_CastSpell(const EQApplicationPacket *app)
 	SetInvisible(Invisibility::Visible);
 	BreakInvisibleSpells();
 
+	// Hack for broken RoF2 which allows casting after a zoned IVU/IVA
+	if (invisible_undead || invisible_animals) {
+		BuffFadeByEffect(SE_InvisVsAnimals);
+		BuffFadeByEffect(SE_InvisVsUndead);
+		BuffFadeByEffect(SE_InvisVsUndead2);
+		BuffFadeByEffect(SE_Invisibility);  // Included per JJ for completeness - client handles this one atm
+	}
+	
 	CastSpell_Struct* castspell = (CastSpell_Struct*)app->pBuffer;
 
 	m_TargetRing = glm::vec3(castspell->x_pos, castspell->y_pos, castspell->z_pos);
