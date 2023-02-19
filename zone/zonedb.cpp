@@ -171,34 +171,6 @@ void ZoneDatabase::UpdateSpawn2Status(uint32 id, uint8 new_status)
 	QueryDatabase(query);
 }
 
-bool ZoneDatabase::logevents(const char* accountname,uint32 accountid,uint8 status,const char* charname, const char* target,const char* descriptiontype, const char* description,int event_nid){
-
-	uint32 len = strlen(description);
-	uint32 len2 = strlen(target);
-	auto descriptiontext = new char[2 * len + 1];
-	auto targetarr = new char[2 * len2 + 1];
-	memset(descriptiontext, 0, 2*len+1);
-	memset(targetarr, 0, 2*len2+1);
-	DoEscapeString(descriptiontext, description, len);
-	DoEscapeString(targetarr, target, len2);
-
-	std::string query = StringFormat("INSERT INTO eventlog (accountname, accountid, status, "
-                                    "charname, target, descriptiontype, description, event_nid) "
-                                    "VALUES('%s', %i, %i, '%s', '%s', '%s', '%s', '%i')",
-                                    accountname, accountid, status, charname, targetarr,
-                                    descriptiontype, descriptiontext, event_nid);
-    safe_delete_array(descriptiontext);
-	safe_delete_array(targetarr);
-	auto results = QueryDatabase(query);
-	if (!results.Success())	{
-		return false;
-	}
-
-	return true;
-}
-
-
-
 bool ZoneDatabase::SetSpecialAttkFlag(uint8 id, const char* flag) {
 
 	std::string query = StringFormat("UPDATE npc_types SET npcspecialattks='%s' WHERE id = %i;", flag, id);
@@ -2573,8 +2545,9 @@ void ZoneDatabase::SaveMercBuffs(Merc *merc) {
 	}
 
 	for (int buffCount = 0; buffCount <= BUFF_COUNT; buffCount++) {
-		if(buffs[buffCount].spellid == 0 || buffs[buffCount].spellid == SPELL_UNKNOWN)
-            continue;
+		if (!IsValidSpell(buffs[buffCount].spellid)) {
+			continue;
+		}
 
         int IsPersistent = buffs[buffCount].persistant_buff? 1: 0;
 
@@ -3115,8 +3088,9 @@ void ZoneDatabase::SaveBuffs(Client *client) {
 	Buffs_Struct *buffs = client->GetBuffs();
 
 	for (int index = 0; index < buff_count; index++) {
-		if(buffs[index].spellid == SPELL_UNKNOWN)
-            continue;
+		if (!IsValidSpell(buffs[index].spellid)) {
+			continue;
+		}
 
 		query = StringFormat("INSERT INTO `character_buffs` (character_id, slot_id, spell_id, "
                             "caster_level, caster_name, ticsremaining, counters, numhits, melee_rune, "
@@ -3261,24 +3235,26 @@ void ZoneDatabase::LoadAuras(Client *c)
 		c->MakeAura(atoi(row[0]));
 }
 
-void ZoneDatabase::SavePetInfo(Client *client)
-{
+void ZoneDatabase::SavePetInfo(Client *client) {
 	PetInfo *petinfo = nullptr;
 
 	std::string query = StringFormat("DELETE FROM `character_pet_buffs` WHERE `char_id` = %u", client->CharacterID());
 	auto results = database.QueryDatabase(query);
-	if (!results.Success())
+	if (!results.Success()) {
 		return;
+	}
 
 	query = StringFormat("DELETE FROM `character_pet_inventory` WHERE `char_id` = %u", client->CharacterID());
 	results = database.QueryDatabase(query);
-	if (!results.Success())
+	if (!results.Success()) {
 		return;
+	}
 
 	for (int pet = 0; pet < 2; pet++) {
 		petinfo = client->GetPetInfo(pet);
-		if (!petinfo)
+		if (!petinfo) {
 			continue;
+		}
 
 		query = StringFormat("INSERT INTO `character_pet_info` "
 				"(`char_id`, `pet`, `petname`, `petpower`, `spell_id`, `hp`, `mana`, `size`, `taunting`) "
@@ -3290,16 +3266,19 @@ void ZoneDatabase::SavePetInfo(Client *client)
 				// and now the ON DUPLICATE ENTRIES
 				petinfo->Name, petinfo->petpower, petinfo->SpellID, petinfo->HP, petinfo->Mana, petinfo->size, (petinfo->taunting) ? 1 : 0);
 		results = database.QueryDatabase(query);
-		if (!results.Success())
+		if (!results.Success()) {
 			return;
+		}
 		query.clear();
 
 		// pet buffs!
 		int max_slots = RuleI(Spells, MaxTotalSlotsPET);
 		for (int index = 0; index < max_slots; index++) {
-			if (petinfo->Buffs[index].spellid == SPELL_UNKNOWN || petinfo->Buffs[index].spellid == 0)
+			if (!IsValidSpell(petinfo->Buffs[index].spellid)) {
 				continue;
-			if (query.length() == 0)
+			}
+
+			if (query.length() == 0) {
 				query = StringFormat("INSERT INTO `character_pet_buffs` "
 						"(`char_id`, `pet`, `slot`, `spell_id`, `caster_level`, "
 						"`ticsremaining`, `counters`, `instrument_mod`) "
@@ -3307,27 +3286,30 @@ void ZoneDatabase::SavePetInfo(Client *client)
 						client->CharacterID(), pet, index, petinfo->Buffs[index].spellid,
 						petinfo->Buffs[index].level, petinfo->Buffs[index].duration,
 						petinfo->Buffs[index].counters, petinfo->Buffs[index].bard_modifier);
-			else
+			} else {
 				query += StringFormat(", (%u, %u, %u, %u, %u, %d, %d, %u)",
 						client->CharacterID(), pet, index, petinfo->Buffs[index].spellid,
 						petinfo->Buffs[index].level, petinfo->Buffs[index].duration,
 						petinfo->Buffs[index].counters, petinfo->Buffs[index].bard_modifier);
+			}
 		}
 		database.QueryDatabase(query);
 		query.clear();
 
 		// pet inventory!
 		for (int index = EQ::invslot::EQUIPMENT_BEGIN; index <= EQ::invslot::EQUIPMENT_END; index++) {
-			if (!petinfo->Items[index])
+			if (!petinfo->Items[index]) {
 				continue;
+			}
 
-			if (query.length() == 0)
+			if (query.length() == 0) {
 				query = StringFormat("INSERT INTO `character_pet_inventory` "
 						"(`char_id`, `pet`, `slot`, `item_id`) "
 						"VALUES (%u, %u, %u, %u)",
 						client->CharacterID(), pet, index, petinfo->Items[index]);
-			else
+			} else {
 				query += StringFormat(", (%u, %u, %u, %u)", client->CharacterID(), pet, index, petinfo->Items[index]);
+			}
 		}
 		database.QueryDatabase(query);
 	}

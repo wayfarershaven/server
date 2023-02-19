@@ -1102,8 +1102,9 @@ void Merc::SetEndurance(int32 newEnd)
 
 void Merc::DoEnduranceUpkeep() {
 
-	if (!HasEndurUpkeep())
+	if (!HasEndurUpkeep()) {
 		return;
+	}
 
 	int upkeep_sum = 0;
 	int cost_redux = spellbonuses.EnduranceReduction + itembonuses.EnduranceReduction;
@@ -1112,13 +1113,14 @@ void Merc::DoEnduranceUpkeep() {
 	uint32 buffs_i;
 	uint32 buff_count = GetMaxTotalSlots();
 	for (buffs_i = 0; buffs_i < buff_count; buffs_i++) {
-		if (buffs[buffs_i].spellid != SPELL_UNKNOWN) {
+		if (IsValidSpell(buffs[buffs_i].spellid)) {
 			int upkeep = spells[buffs[buffs_i].spellid].endurance_upkeep;
 			if(upkeep > 0) {
 				has_effect = true;
 				if(cost_redux > 0) {
-					if(upkeep <= cost_redux)
+					if(upkeep <= cost_redux) {
 						continue;       //reduced to 0
+					}
 					upkeep -= cost_redux;
 				}
 				if((upkeep+upkeep_sum) > GetEndurance()) {
@@ -1131,11 +1133,13 @@ void Merc::DoEnduranceUpkeep() {
 		}
 	}
 
-	if(upkeep_sum != 0)
+	if(upkeep_sum != 0) {
 		SetEndurance(GetEndurance() - upkeep_sum);
+	}
 
-	if (!has_effect)
+	if (!has_effect) {
 		SetEndurUpkeep(false);
+	}
 }
 
 void Merc::CalcRestState() {
@@ -1144,30 +1148,36 @@ void Merc::CalcRestState() {
 	// The bot must have been out of combat for RuleI(Character, RestRegenTimeToActivate) seconds,
 	// must be sitting down, and must not have any detrimental spells affecting them.
 	//
-	if(!RuleI(Character, RestRegenPercent))
+	if(!RuleI(Character, RestRegenPercent)) {
 		return;
+	}
 
 	RestRegenHP = RestRegenMana = RestRegenEndurance = 0;
 
-	if(IsEngaged() || !IsSitting())
+	if(IsEngaged() || !IsSitting()) {
 		return;
+	}
 
-	if(!rest_timer.Check(false))
+	if(!rest_timer.Check(false)) {
 		return;
+	}
 
 	uint32 buff_count = GetMaxTotalSlots();
 	for (unsigned int j = 0; j < buff_count; j++) {
-		if(buffs[j].spellid != SPELL_UNKNOWN) {
-			if(IsDetrimentalSpell(buffs[j].spellid) && (buffs[j].ticsremaining > 0))
-				if(!DetrimentalSpellAllowsRest(buffs[j].spellid))
+		if(IsValidSpell(buffs[j].spellid)) {
+			if(IsDetrimentalSpell(buffs[j].spellid) && (buffs[j].ticsremaining > 0)) {
+				if(!DetrimentalSpellAllowsRest(buffs[j].spellid)) {
 					return;
+				}
+			}
 		}
 	}
 
 	RestRegenHP = (GetMaxHP() * RuleI(Character, RestRegenPercent) / 100);
 	RestRegenMana = (GetMaxMana() * RuleI(Character, RestRegenPercent) / 100);
-	if(RuleB(Character, RestRegenEndurance))
+	if(RuleB(Character, RestRegenEndurance)) {
 		RestRegenEndurance = (GetMaxEndurance() * RuleI(Character, RestRegenPercent) / 100);
+	}
 }
 
 bool Merc::HasSkill(EQ::skills::SkillType skill_id) const {
@@ -2564,7 +2574,6 @@ int64 Merc::GetFocusEffect(focusType type, uint16 spell_id, bool from_buff_tic) 
 
 	//Check if item focus effect exists for the client.
 	if (itembonuses.FocusEffects[type]){
-
 		const EQ::ItemData* TempItem = nullptr;
 		const EQ::ItemData* UsedItem = nullptr;
 		int32 UsedFocusID = 0;
@@ -2573,13 +2582,12 @@ int64 Merc::GetFocusEffect(focusType type, uint16 spell_id, bool from_buff_tic) 
 		int32 focus_max_real = 0;
 
 		//item focus
-		for (int x = EQ::invslot::EQUIPMENT_BEGIN; x <= EQ::invslot::EQUIPMENT_END; ++x)
-		{
+		for (int x = EQ::invslot::EQUIPMENT_BEGIN; x <= EQ::invslot::EQUIPMENT_END; ++x) {
 			TempItem = nullptr;
 			if (equipment[x] == 0)
 				continue;
 			TempItem = database.GetItem(equipment[x]);
-			if (TempItem && TempItem->Focus.Effect > 0 && TempItem->Focus.Effect != SPELL_UNKNOWN) {
+			if (TempItem && IsValidSpell(TempItem->Focus.Effect)) {
 				if(rand_effectiveness) {
 					focus_max = CalcFocusEffect(type, TempItem->Focus.Effect, spell_id, true);
 					if (focus_max > 0 && focus_max_real >= 0 && focus_max > focus_max_real) {
@@ -2591,8 +2599,7 @@ int64 Merc::GetFocusEffect(focusType type, uint16 spell_id, bool from_buff_tic) 
 						UsedItem = TempItem;
 						UsedFocusID = TempItem->Focus.Effect;
 					}
-				}
-				else {
+				} else {
 					Total = CalcFocusEffect(type, TempItem->Focus.Effect, spell_id);
 					if (Total > 0 && realTotal >= 0 && Total > realTotal) {
 						realTotal = Total;
@@ -2607,21 +2614,21 @@ int64 Merc::GetFocusEffect(focusType type, uint16 spell_id, bool from_buff_tic) 
 			}
 		}
 
-		if(UsedItem && rand_effectiveness && focus_max_real != 0)
+		if(UsedItem && rand_effectiveness && focus_max_real != 0) {
 			realTotal = CalcFocusEffect(type, UsedFocusID, spell_id);
+		}
 
-		if (realTotal != 0 && UsedItem)
+		if (realTotal != 0 && UsedItem) {
 			MessageString(Chat::FocusEffect, BEGINS_TO_GLOW, UsedItem->Name);
+		}
 	}
 
 	//Check if spell focus effect exists for the client.
 	if (spellbonuses.FocusEffects[type]){
-
 		//Spell Focus
 		int32 Total2 = 0;
 		int32 focus_max2 = 0;
 		int32 focus_max_real2 = 0;
-
 		int buff_tracker = -1;
 		int buff_slot = 0;
 		int32 focusspellid = 0;
@@ -2629,8 +2636,9 @@ int64 Merc::GetFocusEffect(focusType type, uint16 spell_id, bool from_buff_tic) 
 		uint32 buff_max = GetMaxTotalSlots();
 		for (buff_slot = 0; buff_slot < buff_max; buff_slot++) {
 			focusspellid = buffs[buff_slot].spellid;
-			if (focusspellid == 0 || focusspellid >= SPDAT_RECORDS)
+			if (focusspellid == 0 || focusspellid >= SPDAT_RECORDS) {
 				continue;
+			}
 
 			if(rand_effectiveness) {
 				focus_max2 = CalcFocusEffect(type, focusspellid, spell_id, true);
@@ -2643,8 +2651,7 @@ int64 Merc::GetFocusEffect(focusType type, uint16 spell_id, bool from_buff_tic) 
 					buff_tracker = buff_slot;
 					focusspell_tracker = focusspellid;
 				}
-			}
-			else {
+			} else {
 				Total2 = CalcFocusEffect(type, focusspellid, spell_id);
 				if (Total2 > 0 && realTotal2 >= 0 && Total2 > realTotal2) {
 					realTotal2 = Total2;
@@ -2658,8 +2665,9 @@ int64 Merc::GetFocusEffect(focusType type, uint16 spell_id, bool from_buff_tic) 
 			}
 		}
 
-		if(focusspell_tracker && rand_effectiveness && focus_max_real2 != 0)
+		if(focusspell_tracker && rand_effectiveness && focus_max_real2 != 0) {
 			realTotal2 = CalcFocusEffect(type, focusspell_tracker, spell_id);
+		}
 
 		if (!from_buff_tic && buff_tracker >= 0 && buffs[buff_tracker].hit_number > 0) {
 			CheckNumHitsRemaining(NumHit::MatchingSpells, buff_tracker);
@@ -3895,7 +3903,7 @@ bool Merc::GetNeedsCured(Mob *tar) {
 			needCured = true;
 
 			for (unsigned int j = 0; j < buff_count; j++) {
-				if(tar->GetBuffs()[j].spellid != SPELL_UNKNOWN) {
+				if (IsValidSpell(tar->GetBuffs()[j].spellid)) {
 					if(CalculateCounters(tar->GetBuffs()[j].spellid) > 0) {
 						buffsWithCounters++;
 
@@ -4298,7 +4306,7 @@ void Merc::Stand() {
 	SetAppearance(eaStanding);
 }
 
-bool Merc::IsSitting() {
+bool Merc::IsSitting() const {
 	bool result = false;
 
 	if(GetAppearance() == eaSitting && !IsMoving())

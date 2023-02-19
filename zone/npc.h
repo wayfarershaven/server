@@ -447,7 +447,7 @@ public:
 	/* Only allows players that killed corpse to loot */
 	const bool HasPrivateCorpse() const { return NPCTypedata_ours ? NPCTypedata_ours->private_corpse : NPCTypedata->private_corpse; }
 
-	virtual const bool IsUnderwaterOnly() const { return NPCTypedata_ours ? NPCTypedata_ours->underwater : NPCTypedata->underwater; }
+	virtual const bool IsUnderwaterOnly() const { return m_is_underwater_only; }
 	const char* GetRawNPCTypeName() const { return NPCTypedata_ours ? NPCTypedata_ours->name : NPCTypedata->name; }
 
 	void ChangeLastName(std::string last_name);
@@ -485,10 +485,6 @@ public:
 
 	uint32	GetSpawnKillCount();
 	int	GetScore();
-	void	mod_prespawn(Spawn2 *sp);
-	int	mod_npc_damage(int64 damage, EQ::skills::SkillType skillinuse, int hand, const EQ::ItemData* weapon, Mob* other);
-	void	mod_npc_killed_merit(Mob* c);
-	void	mod_npc_killed(Mob* oos);
 	void	AISpellsList(Client *c);
 	uint16 GetInnateProcSpellID() const { return innate_proc_spell_id; }
 
@@ -683,6 +679,8 @@ protected:
 	bool ldon_trap_detected;
 	QGlobalCache *qGlobals;
 	uint32 adventure_template_id;
+
+	bool m_is_underwater_only = false;
 
 	//mercenary stuff
 	std::list<MercType> mercTypeList;
