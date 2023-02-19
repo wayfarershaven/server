@@ -2999,7 +2999,10 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 			case SE_InvisVsAnimals:
 			{
 				invisible_animals = true;
-				SetInvisible(Invisibility::Invisible);
+				auto pet = GetPet();
+				if (pet && pet->GetPetType() == petCharmed) {
+					pet->BuffFadeByEffect(SE_Charm);
+				}
 				break;
 			}
 
@@ -3007,7 +3010,10 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 			case SE_InvisVsUndead:
 			{
 				invisible_undead = true;
-				SetInvisible(Invisibility::Invisible);
+				auto pet = GetPet();
+				if (pet && pet->GetPetType() == petCharmed) {
+					pet->BuffFadeByEffect(SE_Charm);
+				}
 				break;
 			}
 
