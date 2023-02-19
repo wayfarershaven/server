@@ -23,6 +23,7 @@ Copyright (C) 2001-2016 EQEMu Development Team (http://eqemulator.net)
 #include "../common/races.h"
 #include "../common/spdat.h"
 #include "../common/strings.h"
+#include "../common/events/player_event_logs.h"
 #include "aa.h"
 #include "client.h"
 #include "corpse.h"
@@ -35,8 +36,11 @@ Copyright (C) 2001-2016 EQEMu Development Team (http://eqemulator.net)
 #include "titles.h"
 #include "zonedb.h"
 #include "../common/zone_store.h"
+#include "worldserver.h"
+
 #include "bot.h"
 
+extern WorldServer worldserver;
 extern QueryServ* QServ;
 
 void Mob::TemporaryPets(uint16 spell_id, Mob *targ, const char *name_override, uint32 duration_override, bool followme, bool sticktarg, uint16 *eye_id) {
@@ -52,9 +56,11 @@ void Mob::TemporaryPets(uint16 spell_id, Mob *targ, const char *name_override, u
 	// yep, even these need pet power!
 	int act_power = 0;
 
-	if (IsClient()) {
-		act_power = CastToClient()->GetFocusEffect(focusPetPower, spell_id);
-		act_power = CastToClient()->mod_pet_power(act_power, spell_id);
+	if (IsOfClientBot()) {
+		act_power = GetFocusEffect(focusPetPower, spell_id);
+		if (IsClient()) {
+			act_power = CastToClient()->GetFocusEffect(focusPetPower, spell_id);
+		}
 	}
 
 	PetRecord record;
@@ -770,12 +776,12 @@ int Client::GroupLeadershipAAOffenseEnhancement()
 	return 0;
 }
 
-void Client::InspectBuffs(Client* Inspector, int Rank)
-{
+void Client::InspectBuffs(Client* Inspector, int Rank) {
 	// At some point the removed the restriction of being a group member for this to work
 	// not sure when, but the way it's coded now, it wouldn't work with mobs.
-	if (!Inspector || Rank == 0)
+	if (!Inspector || Rank == 0) {
 		return;
+	}
 
 	auto outapp = new EQApplicationPacket(OP_InspectBuffs, sizeof(InspectBuffs_Struct));
 	InspectBuffs_Struct *ib = (InspectBuffs_Struct *)outapp->pBuffer;
@@ -783,14 +789,15 @@ void Client::InspectBuffs(Client* Inspector, int Rank)
 	uint32 buff_count = GetMaxTotalSlots();
 	uint32 packet_index = 0;
 	for (uint32 i = 0; i < buff_count; i++) {
-		if (buffs[i].spellid == SPELL_UNKNOWN)
+		if (!IsValidSpell(buffs[i].spellid)) {
 			continue;
+		}
 		ib->spell_id[packet_index] = buffs[i].spellid;
-		if (Rank > 1)
+		if (Rank > 1) {
 			ib->tics_remaining[packet_index] = spells[buffs[i].spellid].buff_duration_formula == DF_Permanent ? 0xFFFFFFFF : buffs[i].ticsremaining;
+		}
 		packet_index++;
 	}
-
 	Inspector->FastQueuePacket(&outapp);
 }
 
@@ -1134,6 +1141,17 @@ void Client::FinishAlternateAdvancementPurchase(AA::Rank *rank, bool ignore_cost
 	SendAlternateAdvancementPoints();
 	SendAlternateAdvancementStats();
 
+	if (player_event_logs.IsEventEnabled(PlayerEvent::AA_PURCHASE)) {
+		auto e = PlayerEvent::AAPurchasedEvent{
+			.aa_id = rank->id,
+			.aa_cost = cost,
+			.aa_previous_id = rank->prev_id,
+			.aa_next_id = rank->next_id
+		};
+
+		RecordPlayerEventLog(PlayerEvent::AA_PURCHASE, e);
+	}
+
 	if (rank->prev) {
 		MessageString(
 			Chat::Yellow,
@@ -1179,15 +1197,17 @@ void Client::FinishAlternateAdvancementPurchase(AA::Rank *rank, bool ignore_cost
 		}
 	}
 
-	const auto export_string = fmt::format(
-		"{} {} {} {}",
-		cost,
-		rank->id,
-		rank->prev_id,
-		rank->next_id
-	);
+	if (parse->PlayerHasQuestSub(EVENT_AA_BUY)) {
+		const auto& export_string = fmt::format(
+			"{} {} {} {}",
+			cost,
+			rank->id,
+			rank->prev_id,
+			rank->next_id
+		);
 
-	parse->EventPlayer(EVENT_AA_BUY, this, export_string, 0);
+		parse->EventPlayer(EVENT_AA_BUY, this, export_string, 0);
+	}
 
 	CalcBonuses();
 

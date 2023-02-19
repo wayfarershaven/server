@@ -66,7 +66,10 @@ void HateList::WipeHateList(bool npc_only) {
 			iterator++;
 		} else {
 			if (m) {
-				parse->EventNPC(EVENT_HATE_LIST, hate_owner->CastToNPC(), m, "0", 0);
+				if (parse->HasQuestSub(hate_owner->GetNPCTypeID(), EVENT_HATE_LIST)) {
+					parse->EventNPC(EVENT_HATE_LIST, hate_owner->CastToNPC(), m, "0", 0);
+				}
+
 				if (m->IsClient()) {
 					m->CastToClient()->DecrementAggroCount();
 					m->CastToClient()->RemoveXTarget(hate_owner, true);
@@ -226,7 +229,9 @@ void HateList::AddEntToHateList(Mob *in_entity, int64 in_hate, int64 in_damage, 
 		entity->oor_count = 0;
 		entity->last_modified = Timer::GetCurrentTime();
 		list.push_back(entity);
-		parse->EventNPC(EVENT_HATE_LIST, hate_owner->CastToNPC(), in_entity, "1", 0);
+		if (parse->HasQuestSub(hate_owner->GetNPCTypeID(), EVENT_HATE_LIST)) {
+			parse->EventNPC(EVENT_HATE_LIST, hate_owner->CastToNPC(), in_entity, "1", 0);
+		}
 
 		if (in_entity->IsClient()) {
 			in_entity->CastToClient()->IncrementAggroCount(hate_owner->CastToNPC()->IsRaidTarget());
@@ -255,9 +260,10 @@ bool HateList::RemoveEntFromHateList(Mob *in_entity)
 			iterator = list.erase(iterator);
 
 			if (in_entity) {
-				parse->EventNPC(EVENT_HATE_LIST, hate_owner->CastToNPC(), in_entity, "0", 0);
+				if (parse->HasQuestSub(hate_owner->GetNPCTypeID(), EVENT_HATE_LIST)) {
+					parse->EventNPC(EVENT_HATE_LIST, hate_owner->CastToNPC(), in_entity, "0", 0);
+				}
 			}
-
 		} else {
 			++iterator;
 		}
@@ -897,7 +903,9 @@ void HateList::RemoveStaleEntries(int time_ms, float dist)
 			}
 
 			if (remove) {
-				parse->EventNPC(EVENT_HATE_LIST, hate_owner->CastToNPC(), m, "0", 0);
+				if (parse->HasQuestSub(hate_owner->GetNPCTypeID(), EVENT_HATE_LIST)) {
+					parse->EventNPC(EVENT_HATE_LIST, hate_owner->CastToNPC(), m, "0", 0);
+				}
 
 				if (m->IsClient()) {
 					m->CastToClient()->DecrementAggroCount();

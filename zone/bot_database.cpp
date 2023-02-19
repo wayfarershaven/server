@@ -962,7 +962,10 @@ bool BotDatabase::SaveTimers(Bot* bot_inst)
 		if (bot_timers[timer_index] <= Timer::GetCurrentTime())
 			continue;
 
-		query = StringFormat("INSERT INTO `bot_timers` (`bot_id`, `timer_id`, `timer_value`) VALUES ('%u', '%u', '%u')", bot_inst->GetBotID(), (timer_index + 1), bot_timers[timer_index]);
+		query = fmt::format(
+				"REPLACE INTO `bot_timers` (`bot_id`, `timer_id`, `timer_value`) VALUES ('{}', '{}', '{}')",
+				bot_inst->GetBotID(), (timer_index + 1), bot_timers[timer_index]
+		);
 		auto results = database.QueryDatabase(query);
 		if (!results.Success()) {
 			DeleteTimers(bot_inst->GetBotID());
@@ -1497,25 +1500,30 @@ bool BotDatabase::LoadPetBuffs(const uint32 bot_id, SpellBuff_Struct* pet_buffs)
 	return true;
 }
 
-bool BotDatabase::SavePetBuffs(const uint32 bot_id, const SpellBuff_Struct* pet_buffs, bool delete_flag)
-{
+bool BotDatabase::SavePetBuffs(const uint32 bot_id, const SpellBuff_Struct* pet_buffs, bool delete_flag) {
 	// Only use 'delete_flag' if not invoked after a botdb.SavePetStats() call
 
-	if (!bot_id || !pet_buffs)
+	if (!bot_id || !pet_buffs) {
 		return false;
+	}
 
-	if (delete_flag && !DeletePetBuffs(bot_id))
+	if (delete_flag && !DeletePetBuffs(bot_id)) {
 		return false;
+	}
 
 	uint32 saved_pet_index = 0;
-	if (!LoadPetIndex(bot_id, saved_pet_index))
+	if (!LoadPetIndex(bot_id, saved_pet_index)) {
 		return false;
-	if (!saved_pet_index)
+	}
+	
+	if (!saved_pet_index) {
 		return true;
+	}
 
 	for (int buff_index = 0; buff_index < PET_BUFF_COUNT; ++buff_index) {
-		if (!pet_buffs[buff_index].spellid || pet_buffs[buff_index].spellid == SPELL_UNKNOWN)
+		if (!IsValidSpell(pet_buffs[buff_index].spellid)) {
 			continue;
+		}
 
 		query = StringFormat(
 			"INSERT INTO `bot_pet_buffs` ("

@@ -58,10 +58,10 @@ int64 Mob::GetActSpellDamage(uint16 spell_id, int64 value, Mob* target) {
 	chance += itembonuses.FrenziedDevastation + spellbonuses.FrenziedDevastation + aabonuses.FrenziedDevastation;
 
 	//Crtical Hit Calculation pathway
-	if (chance > 0 || ((IsClient() || IsBot()) && GetClass() == WIZARD && GetLevel() >= RuleI(Spells, WizCritLevel))) {
+	if (chance > 0 || (IsOfClientBot() && GetClass() == WIZARD && GetLevel() >= RuleI(Spells, WizCritLevel))) {
 		 int32 ratio = RuleI(Spells, BaseCritRatio); //Critical modifier is applied from spell effects only. Keep at 100 for live like criticals.
 		//Improved Harm Touch is a guaranteed crit if you have at least one level of SCF.
-		if (spell_id == SPELL_IMP_HARM_TOUCH && (IsClient() || IsBot()) && (GetAA(aaSpellCastingFury) > 0) && (GetAA(aaUnholyTouch) > 0)) {
+		if (spell_id == SPELL_IMP_HARM_TOUCH && IsOfClientBot() && (GetAA(aaSpellCastingFury) > 0) && (GetAA(aaUnholyTouch) > 0)) {
 			 chance = 100;
 		}
 
@@ -73,7 +73,7 @@ int64 Mob::GetActSpellDamage(uint16 spell_id, int64 value, Mob* target) {
 			Critical = true;
 			ratio += itembonuses.SpellCritDmgIncrease + spellbonuses.SpellCritDmgIncrease + aabonuses.SpellCritDmgIncrease;
 			ratio += itembonuses.SpellCritDmgIncNoStack + spellbonuses.SpellCritDmgIncNoStack + aabonuses.SpellCritDmgIncNoStack;
-		} else if (((IsClient() || IsBot()) && GetClass() == WIZARD) || (IsMerc() && GetClass() == CASTERDPS)) {
+		} else if ((IsOfClientBot() && GetClass() == WIZARD) || (IsMerc() && GetClass() == CASTERDPS)) {
 			if ((GetLevel() >= RuleI(Spells, WizCritLevel)) && zone->random.Roll(RuleI(Spells, WizCritChance))){
 				//Wizard innate critical chance is calculated seperately from spell effect and is not a set ratio. (20-70 is parse confirmed)
 				ratio += zone->random.Int(20,70);
@@ -81,7 +81,7 @@ int64 Mob::GetActSpellDamage(uint16 spell_id, int64 value, Mob* target) {
 			}
 		}
 
-		if ((IsClient() || IsBot()) && GetClass() == WIZARD) {
+		if (IsOfClientBot() && GetClass() == WIZARD) {
 			ratio += RuleI(Spells, WizCritRatio); //Default is zero
 		}
 
@@ -981,116 +981,155 @@ void EntityList::AETaunt(Client *taunter, float range, int32 bonus_hate)
 }
 
 void EntityList::AESpell(Mob *caster, Mob *center, uint16 spell_id, bool affect_caster, int16 resist_adjust, int *max_targets) {
-    Mob *curmob = nullptr;
+	Mob *current_mob = nullptr;
 
-    float dist = caster->GetAOERange(spell_id);
-    float dist2 = dist * dist;
-    float min_range2 = spells[spell_id].min_range * spells[spell_id].min_range;
-    float dist_targ = 0;
+	float dist = caster->GetAOERange(spell_id);
+	float dist2 = dist * dist;
+	float min_range2 = spells[spell_id].min_range * spells[spell_id].min_range;
+	float dist_targ = 0;
 
-    const auto &position = spells[spell_id].target_type == ST_Ring ? caster->GetTargetRingLocation()
-                                                                  : static_cast<glm::vec3>(center->GetPosition());
-    glm::vec2 min = {position.x - dist, position.y - dist};
-    glm::vec2 max = {position.x + dist, position.y + dist};
+	const auto &position = spells[spell_id].target_type == ST_Ring ? caster->GetTargetRingLocation()
+																  : static_cast<glm::vec3>(center->GetPosition());
+	glm::vec2 min = {position.x - dist, position.y - dist};
+	glm::vec2 max = {position.x + dist, position.y + dist};
 
-    bool bad = IsDetrimentalSpell(spell_id);
-    bool isnpc = caster->IsNPC();
+	bool bad = IsDetrimentalSpell(spell_id);
+	bool isnpc = caster->IsNPC();
 
-    if (RuleB(Spells, OldRainTargets))
-        max_targets = nullptr; // ignore it!
+	if (RuleB(Spells, OldRainTargets)) {
+		max_targets = nullptr; // ignore it!
+	}
 
-    // if we have a passed in value, use it, otherwise default to data
-    // detrimental Target AEs have a default value of 4 for PCs and unlimited for NPCs
+	// if we have a passed in value, use it, otherwise default to data
+	// detrimental Target AEs have a default value of 4 for PCs and unlimited for NPCs
 	
-    int max_targets_allowed = 0; // unlimited
-    if (max_targets) // rains pass this in since they need to preserve the count through waves
-        max_targets_allowed = *max_targets;
-    else if (spells[spell_id].aoe_max_targets)
-        max_targets_allowed = spells[spell_id].aoe_max_targets;
-    else if (IsTargetableAESpell(spell_id) && bad) {
-        caster->SpellOnTarget(spell_id, center, false, true, resist_adjust);
-        if (!isnpc)
-            max_targets_allowed = 3;
-    }
+	int max_targets_allowed = 0; // unlimited
+	if (max_targets) { // rains pass this in since they need to preserve the count through waves
+		max_targets_allowed = *max_targets;
+	} else if (spells[spell_id].aoe_max_targets) {
+		max_targets_allowed = spells[spell_id].aoe_max_targets;
+	} else if (IsTargetableAESpell(spell_id) && bad) {
+		caster->SpellOnTarget(spell_id, center, false, true, resist_adjust);
+		if (!isnpc) {
+			max_targets_allowed = 3;
+		}
+	}
 
-    int iCounter = 0;
+	int iCounter = 0;
 
-    for (auto it = mob_list.begin(); it != mob_list.end(); ++it) {
-        curmob = it->second;
-        // test to fix possible cause of random zone crashes..external methods accessing client properties before they're initialized
-        if (curmob->IsClient() && !curmob->CastToClient()->ClientFinishedLoading())
-            continue;
-     	if (curmob == center)    //do not affect center
-            continue;
-        if (curmob == caster && !affect_caster)    //watch for caster too
-            continue;
-        if (spells[spell_id].target_type == ST_TargetAENoPlayersPets && curmob->IsPetOwnerClient())
-            continue;
-        if (spells[spell_id].target_type == ST_AreaClientOnly && !curmob->IsClient())
-            continue;
-        if (spells[spell_id].target_type == ST_AreaNPCOnly && !curmob->IsNPC())
-            continue;
-        // untargetable mobs like horses don't get hit by AoEs
-        if (!curmob->IsTargetable() || curmob->IsHorse())
-            continue;
-       	// check PC/NPC only flag 1 = PCs, 2 = NPCs
-        if (spells[spell_id].pcnpc_only_flag == 1 && !curmob->IsClient() && !curmob->IsMerc())
-            continue;
-        if (spells[spell_id].pcnpc_only_flag == 2 && (curmob->IsClient() || curmob->IsMerc()))
-            continue;
-        if (!IsWithinAxisAlignedBox(static_cast<glm::vec2>(curmob->GetPosition()), min, max))
-            continue;
+	for (auto it = mob_list.begin(); it != mob_list.end(); ++it) {
+		current_mob = it->second;
+		// test to fix possible cause of random zone crashes..external methods accessing client properties before they're initialized
+		if (current_mob->IsClient() && !current_mob->CastToClient()->ClientFinishedLoading()) {
+			continue;
+		}
 
-        dist_targ = DistanceSquared(curmob->GetPosition(), position);
+	 	if (current_mob == center) { //do not affect center
+			continue;
+		}
 
-        if (dist_targ > dist2)    //make sure they are in range
-            continue;
-        if (dist_targ < min_range2)    //make sure they are in range
-            continue;
-        if (isnpc && curmob->IsNPC() && spells[spell_id].target_type != ST_AreaNPCOnly) {    //check npc->npc casting
-            FACTION_VALUE f = curmob->GetReverseFactionCon(caster);
-            if (bad) {
-                //affect mobs that are on our hate list, or
-                //which have bad faction with us
-                if (!(caster->CheckAggro(curmob) || f == FACTION_THREATENINGLY || f == FACTION_SCOWLS))
-                    continue;
-            } else {
-                //only affect mobs we would assist.
-                if (!(f <= FACTION_AMIABLY))
-                    continue;
-            }
-        }
-        //finally, make sure they are within range
-        if (bad) {
-            if (!caster->IsAttackAllowed(curmob, true))
-                continue;
-            if (center && !spells[spell_id].npc_no_los && !center->CheckLosFN(curmob))
-                continue;
-            if (!center && !spells[spell_id].npc_no_los &&
-                !caster->CheckLosFN(caster->GetTargetRingX(), caster->GetTargetRingY(), caster->GetTargetRingZ(),
-                                    curmob->GetSize()))
-                continue;
-        } else { // check to stop casting beneficial ae buffs (to wit: bard songs) on enemies...
-            // This does not check faction for beneficial AE buffs..only agro and attackable.
-            // I've tested for spells that I can find without problem, but a faction-based
-            // check may still be needed. Any changes here should also reflect in BardAEPulse()
-            if (caster->IsAttackAllowed(curmob, true))
-                continue;
-            if (caster->CheckAggro(curmob))
-                continue;
-        }
+		if (current_mob == caster && !affect_caster) { //watch for caster too
+			continue;
+		}
 
-        curmob->CalcSpellPowerDistanceMod(spell_id, dist_targ);
-        caster->SpellOnTarget(spell_id, curmob, false, true, resist_adjust);
+		if (spells[spell_id].target_type == ST_TargetAENoPlayersPets && current_mob->IsPetOwnerClient()) {
+			continue;
+		}
 
-        if (max_targets_allowed) { // if we have a limit, increment count
-            iCounter++;
-            if (iCounter >= max_targets_allowed) // we done
-                break;
-        }
-    }
-	if (max_targets && max_targets_allowed)
+		if (spells[spell_id].target_type == ST_AreaClientOnly && !current_mob->IsOfClientBot()) {
+			continue;
+		}
+
+		if (spells[spell_id].target_type == ST_AreaNPCOnly && !current_mob->IsNPC()) {
+			continue;
+		}
+
+		// untargetable mobs like horses don't get hit by AoEs
+		if (!current_mob->IsTargetable() || current_mob->IsHorse()) {
+			continue;
+		}
+
+	   	// check PC/NPC only flag 1 = PCs, 2 = NPCs
+		if (spells[spell_id].pcnpc_only_flag == 1 && !current_mob->IsOfClientBotMerc()) {
+			continue;
+		}
+
+		if (spells[spell_id].pcnpc_only_flag == 2 && current_mob->IsOfClientBotMerc()) {
+			continue;
+		}
+
+		if (!IsWithinAxisAlignedBox(static_cast<glm::vec2>(current_mob->GetPosition()), min, max)) {
+			continue;
+		}
+
+		dist_targ = DistanceSquared(current_mob->GetPosition(), position);
+
+		if (dist_targ > dist2) { //make sure they are in range
+			continue;
+		}
+
+		if (dist_targ < min_range2) { //make sure they are in range
+			continue;
+		}
+
+		if (isnpc && current_mob->IsNPC() && spells[spell_id].target_type != ST_AreaNPCOnly) {    //check npc->npc casting
+			FACTION_VALUE f = current_mob->GetReverseFactionCon(caster);
+			if (bad) {
+				//affect mobs that are on our hate list, or
+				//which have bad faction with us
+				if (!(caster->CheckAggro(current_mob) || f == FACTION_THREATENINGLY || f == FACTION_SCOWLS)) {
+					continue;
+				}
+			} else {
+				//only affect mobs we would assist.
+				if (!(f <= FACTION_AMIABLY)) {
+					continue;
+				}
+			}
+		}
+		//finally, make sure they are within range
+		if (bad) {
+			if (!caster->IsAttackAllowed(current_mob, true)) {
+				continue;
+			}
+
+			if (center && !spells[spell_id].npc_no_los && !center->CheckLosFN(current_mob)) {
+				continue;
+			}
+
+			if (!center && !spells[spell_id].npc_no_los &&
+				!caster->CheckLosFN(caster->GetTargetRingX(), caster->GetTargetRingY(), caster->GetTargetRingZ(),
+									current_mob->GetSize())) {
+				continue;
+			}
+		} else { // check to stop casting beneficial ae buffs (to wit: bard songs) on enemies...
+			// This does not check faction for beneficial AE buffs..only agro and attackable.
+			// I've tested for spells that I can find without problem, but a faction-based
+			// check may still be needed. Any changes here should also reflect in BardAEPulse()
+			
+			if (caster->IsAttackAllowed(current_mob, true)) {
+				continue;
+			}
+
+			if (caster->CheckAggro(current_mob)) {
+				continue;
+			}
+		}
+
+		current_mob->CalcSpellPowerDistanceMod(spell_id, dist_targ);
+		caster->SpellOnTarget(spell_id, current_mob, false, true, resist_adjust);
+
+		if (max_targets_allowed) { // if we have a limit, increment count
+			iCounter++;
+			if (iCounter >= max_targets_allowed) { // we done
+				break;
+			}
+		}
+	}
+
+	if (max_targets && max_targets_allowed) {
 		*max_targets = *max_targets - iCounter;
+	}
 }
 
 /**
@@ -1140,7 +1179,7 @@ void EntityList::MassGroupBuff(
 		if (current_mob->IsNPC()) {
 			Mob *owner = current_mob->GetOwner();
 			if (owner) {
-				if (!owner->IsClient()) {
+				if (!owner->IsOfClientBot()) {
 					continue;
 				}
 			}

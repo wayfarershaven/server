@@ -33,6 +33,10 @@
 #include "string_ids.h"
 
 #include "bot.h"
+#include "../common/events/player_event_logs.h"
+#include "worldserver.h"
+
+extern WorldServer worldserver;
 
 extern QueryServ* QServ;
 
@@ -524,14 +528,28 @@ void Client::SetEXP(uint64 set_exp, uint64 set_aaxp, bool isrezzexp) {
 		//set_aaxp = m_pp.expAA % max_AAXP;
 
 		//figure out how many points were actually gained
-		/*uint32 gained = m_pp.aapoints - last_unspentAA;*/	//unused
+		uint32 gained = (m_pp.aapoints - last_unspentAA);
 
 		//Message(Chat::Yellow, "You have gained %d skill points!!", m_pp.aapoints - last_unspentAA);
-		char val1[20]={0};
-		MessageString(Chat::Experience, GAIN_ABILITY_POINT, ConvertArray(m_pp.aapoints, val1),m_pp.aapoints == 1 ? "" : "(s)");	//You have gained an ability point! You now have %1 ability point%2.
+		char val1[20] = { 0 };
+		char val2[20] = { 0 };
+		if (gained == 1 && m_pp.aapoints == 1) {
+			MessageString(Chat::Experience, GAIN_SINGLE_AA_SINGLE_AA, ConvertArray(m_pp.aapoints, val1)); //You have gained an ability point!  You now have %1 ability point.
+		} else if (gained == 1 && m_pp.aapoints > 1) {
+			MessageString(Chat::Experience, GAIN_SINGLE_AA_MULTI_AA, ConvertArray(m_pp.aapoints, val1)); //You have gained an ability point!  You now have %1 ability points.
+		} else {
+			MessageString(Chat::Experience, GAIN_MULTI_AA_MULTI_AA, ConvertArray(gained, val1), ConvertArray(m_pp.aapoints, val2)); //You have gained %1 ability point(s)!  You now have %2 ability point(s).You now have %1 ability point%2.
+		}
+		
 		if (RuleB(AA, SoundForAAEarned)) {
 			SendSound();
 		}
+
+		if (parse->PlayerHasQuestSub(EVENT_AA_GAIN)) {
+			parse->EventPlayer(EVENT_AA_GAIN, this, std::to_string(gained), 0);
+		}
+
+		RecordPlayerEventLog(PlayerEvent::AA_GAIN, PlayerEvent::AAGainedEvent{gained});
 
 		/* QS: PlayerLogAARate */
 		if (RuleB(QueryServ, PlayerLogAARate)) {
@@ -618,14 +636,23 @@ void Client::SetEXP(uint64 set_exp, uint64 set_aaxp, bool isrezzexp) {
 		}
 	}
 
+	if (parse->PlayerHasQuestSub(EVENT_EXP_GAIN) && m_pp.exp != set_exp) {
+		parse->EventPlayer(EVENT_EXP_GAIN, this, std::to_string(set_exp - m_pp.exp), 0);
+	}
+
+	if (parse->PlayerHasQuestSub(EVENT_AA_EXP_GAIN) && m_pp.expAA != set_aaxp) {
+		parse->EventPlayer(EVENT_AA_EXP_GAIN, this, std::to_string(set_aaxp - m_pp.expAA), 0);
+	}
+
 	//set the client's EXP and AAEXP
 	m_pp.exp = set_exp;
 	m_pp.expAA = set_aaxp;
 
 	if (GetLevel() < 51) {
 		m_epp.perAA = 0;	// turn off aa exp if they drop below 51
-	} else
-		SendAlternateAdvancementStats();	//otherwise, send them an AA update
+	} else {
+		SendAlternateAdvancementStats();    //otherwise, send them an AA update
+	}
 
 	//send the expdata in any case so the xp bar isnt stuck after leveling
 	uint64 tmpxp1 = GetEXPForLevel(GetLevel()+1);
@@ -688,8 +715,20 @@ void Client::SetLevel(uint8 set_level, bool command)
 	}
 
 	if (set_level > m_pp.level) {
-		const auto export_string = fmt::format("{}", (set_level - m_pp.level));
-		parse->EventPlayer(EVENT_LEVEL_UP, this, export_string, 0);
+		int levels_gained = (set_level - m_pp.level);
+		if (parse->PlayerHasQuestSub(EVENT_LEVEL_UP)) {
+			parse->EventPlayer(EVENT_LEVEL_UP, this, std::to_string(levels_gained), 0);
+		}
+
+		if (player_event_logs.IsEventEnabled(PlayerEvent::LEVEL_GAIN)) {
+			auto e = PlayerEvent::LevelGainedEvent{
+				.from_level = m_pp.level,
+				.to_level = set_level,
+				.levels_gained = levels_gained
+			};
+
+			RecordPlayerEventLog(PlayerEvent::LEVEL_GAIN, e);
+		}
 
 		if (RuleB(QueryServ, PlayerLogLevels)) {
 			const auto event_desc = fmt::format(
@@ -702,8 +741,20 @@ void Client::SetLevel(uint8 set_level, bool command)
 			QServ->PlayerLogEvent(Player_Log_Levels, CharacterID(), event_desc);
 		}
 	} else if (set_level < m_pp.level) {
-		const auto export_string = fmt::format("{}", (m_pp.level - set_level));
-		parse->EventPlayer(EVENT_LEVEL_DOWN, this, export_string, 0);
+		int levels_lost = (m_pp.level - set_level);
+		if (parse->PlayerHasQuestSub(EVENT_LEVEL_DOWN)) {
+			parse->EventPlayer(EVENT_LEVEL_DOWN, this, std::to_string(levels_lost), 0);
+		}
+		
+		if (player_event_logs.IsEventEnabled(PlayerEvent::LEVEL_LOSS)) {
+			auto e = PlayerEvent::LevelLostEvent{
+				.from_level = m_pp.level,
+				.to_level = set_level,
+				.levels_lost = levels_lost
+			};
+
+			RecordPlayerEventLog(PlayerEvent::LEVEL_LOSS, e);
+		}
 
 		if (RuleB(QueryServ, PlayerLogLevels)) {
 			const auto event_desc = fmt::format(
@@ -862,7 +913,6 @@ uint64 Client::GetEXPForLevel(uint16 check_level, bool aa)
 		aaxp = finalxp - GetEXPForLevel(51);
 		return aaxp;
 	}
-	finalxp = mod_client_xp_for_level(finalxp, check_level);
 	return finalxp;
 }
 

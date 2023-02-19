@@ -1,6 +1,10 @@
 #include "cheat_manager.h"
 #include "client.h"
 #include "quest_parser_collection.h"
+#include "../common/events/player_event_logs.h"
+#include "worldserver.h"
+
+extern WorldServer worldserver;
 
 void CheatManager::SetClient(Client *cli)
 {
@@ -36,20 +40,20 @@ void CheatManager::CheatDetected(CheatTypes type, glm::vec3 position1, glm::vec3
 					position2.z,
 					Distance(position1, position2)
 				);
-				database.SetMQDetectionFlag(
-					m_target->AccountName(),
-					m_target->GetName(),
-					message.c_str(),
-					zone->GetShortName()
-				);
+
+				RecordPlayerEventLogWithClient(m_target, PlayerEvent::POSSIBLE_HACK, PlayerEvent::PossibleHackEvent{.message = message});
+
 				LogCheat(fmt::runtime(message));
-				std::string export_string = fmt::format(
-					"{} {} {}",
-					position1.x,
-					position1.y,
-					position1.z
-				);
-				parse->EventPlayer(EVENT_WARP, m_target, export_string, 0);
+				if (parse->PlayerHasQuestSub(EVENT_WARP)) {
+					const auto& export_string = fmt::format(
+						"{} {} {}",
+						position1.x,
+						position1.y,
+						position1.z
+					);
+
+					parse->EventPlayer(EVENT_WARP, m_target, export_string, 0);
+				}
 			}
 			break;
 		case MQWarpAbsolute:
@@ -65,20 +69,19 @@ void CheatManager::CheatDetected(CheatTypes type, glm::vec3 position1, glm::vec3
 					position2.z,
 					Distance(position1, position2)
 				);
-				database.SetMQDetectionFlag(
-					m_target->AccountName(),
-					m_target->GetName(),
-					message.c_str(),
-					zone->GetShortName()
-				);
+				RecordPlayerEventLogWithClient(m_target, PlayerEvent::POSSIBLE_HACK, PlayerEvent::PossibleHackEvent{.message = message});
 				LogCheat(fmt::runtime(message));
-				std::string export_string = fmt::format(
-					"{} {} {}",
-					position1.x,
-					position1.y,
-					position1.z
-				);
-				parse->EventPlayer(EVENT_WARP, m_target, export_string, 0);
+				if (parse->PlayerHasQuestSub(EVENT_WARP)) {
+					const auto& export_string = fmt::format(
+						"{} {} {}",
+						position1.x,
+						position1.y,
+						position1.z
+					);
+
+					parse->EventPlayer(EVENT_WARP, m_target, export_string, 0);
+				}
+
 				m_time_since_last_warp_detection.Start(2500);
 			}
 			break;
@@ -91,12 +94,7 @@ void CheatManager::CheatDetected(CheatTypes type, glm::vec3 position1, glm::vec3
 					position1.y,
 					position1.z
 				);
-				database.SetMQDetectionFlag(
-					m_target->AccountName(),
-					m_target->GetName(),
-					message.c_str(),
-					zone->GetShortName()
-				);
+				RecordPlayerEventLogWithClient(m_target, PlayerEvent::POSSIBLE_HACK, PlayerEvent::PossibleHackEvent{.message = message});
 				LogCheat(fmt::runtime(message));
 			}
 			break;
@@ -109,12 +107,7 @@ void CheatManager::CheatDetected(CheatTypes type, glm::vec3 position1, glm::vec3
 					position1.y,
 					position1.z
 				);
-				database.SetMQDetectionFlag(
-					m_target->AccountName(),
-					m_target->GetName(),
-					message.c_str(),
-					zone->GetShortName()
-				);
+				RecordPlayerEventLogWithClient(m_target, PlayerEvent::POSSIBLE_HACK, PlayerEvent::PossibleHackEvent{.message = message});
 				LogCheat(fmt::runtime(message));
 			}
 			break;
@@ -129,12 +122,7 @@ void CheatManager::CheatDetected(CheatTypes type, glm::vec3 position1, glm::vec3
 						position1.y,
 						position1.z
 					);
-					database.SetMQDetectionFlag(
-						m_target->AccountName(),
-						m_target->GetName(),
-						message.c_str(),
-						zone->GetShortName()
-					);
+					RecordPlayerEventLogWithClient(m_target, PlayerEvent::POSSIBLE_HACK, PlayerEvent::PossibleHackEvent{.message = message});
 					LogCheat(fmt::runtime(message));
 				}
 			}
@@ -149,12 +137,7 @@ void CheatManager::CheatDetected(CheatTypes type, glm::vec3 position1, glm::vec3
 					position1.y,
 					position1.z
 				);
-				database.SetMQDetectionFlag(
-					m_target->AccountName(),
-					m_target->GetName(),
-					message.c_str(),
-					zone->GetShortName()
-				);
+				RecordPlayerEventLogWithClient(m_target, PlayerEvent::POSSIBLE_HACK, PlayerEvent::PossibleHackEvent{.message = message});
 				LogCheat(fmt::runtime(message));
 			}
 			break;
@@ -167,12 +150,7 @@ void CheatManager::CheatDetected(CheatTypes type, glm::vec3 position1, glm::vec3
 					position1.y,
 					position1.z
 				);
-				database.SetMQDetectionFlag(
-					m_target->AccountName(),
-					m_target->GetName(),
-					message.c_str(),
-					zone->GetShortName()
-				);
+				RecordPlayerEventLogWithClient(m_target, PlayerEvent::POSSIBLE_HACK, PlayerEvent::PossibleHackEvent{.message = message});
 				LogCheat(fmt::runtime(message));
 			}
 			break;
@@ -185,12 +163,7 @@ void CheatManager::CheatDetected(CheatTypes type, glm::vec3 position1, glm::vec3
 					position1.y,
 					position1.z
 				);
-				database.SetMQDetectionFlag(
-					m_target->AccountName(),
-					m_target->GetName(),
-					message.c_str(),
-					zone->GetShortName()
-				);
+				RecordPlayerEventLogWithClient(m_target, PlayerEvent::POSSIBLE_HACK, PlayerEvent::PossibleHackEvent{.message = message});
 				LogCheat(fmt::runtime(message));
 			}
 			break;
@@ -199,17 +172,13 @@ void CheatManager::CheatDetected(CheatTypes type, glm::vec3 position1, glm::vec3
 			if (RuleB(Cheat, EnableMQGhostDetector) &&
 				((m_target->Admin() < RuleI(Cheat, MQGhostExemptStatus) ||
 				  (RuleI(Cheat, MQGhostExemptStatus)) == -1))) {
-				database.SetMQDetectionFlag(
-					m_target->AccountName(),
-					m_target->GetName(),
-					"Packet blocking detected.",
-					zone->GetShortName()
-				);
-				LogCheat(
+				std::string message = fmt::format(
 					"[MQGhost] [{}] [{}] was caught not sending the proper packets as regularly as they were suppose to.",
 					m_target->AccountName(),
 					m_target->GetName()
 				);
+				RecordPlayerEventLogWithClient(m_target, PlayerEvent::POSSIBLE_HACK, PlayerEvent::PossibleHackEvent{.message = message});
+				LogCheat("{}", message);
 			}
 			break;
 		case MQFastMem:
@@ -222,12 +191,7 @@ void CheatManager::CheatDetected(CheatTypes type, glm::vec3 position1, glm::vec3
 					position1.y,
 					position1.z
 				);
-				database.SetMQDetectionFlag(
-					m_target->AccountName(),
-					m_target->GetName(),
-					message.c_str(),
-					zone->GetShortName()
-				);
+				RecordPlayerEventLogWithClient(m_target, PlayerEvent::POSSIBLE_HACK, PlayerEvent::PossibleHackEvent{.message = message});
 				LogCheat(fmt::runtime(message));
 			}
 			break;
@@ -238,12 +202,7 @@ void CheatManager::CheatDetected(CheatTypes type, glm::vec3 position1, glm::vec3
 				position1.y,
 				position1.z
 			);
-			database.SetMQDetectionFlag(
-				m_target->AccountName(),
-				m_target->GetName(),
-				message.c_str(),
-				zone->GetShortName()
-			);
+			RecordPlayerEventLogWithClient(m_target, PlayerEvent::POSSIBLE_HACK, PlayerEvent::PossibleHackEvent{.message = message});
 			LogCheat(fmt::runtime(message));
 			break;
 	}

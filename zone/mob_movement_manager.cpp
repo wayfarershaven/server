@@ -1053,6 +1053,13 @@ void MobMovementManager::FillCommandStruct(
 	position_update->delta_z       = FloatToEQ13(delta_z);
 	position_update->delta_heading = FloatToEQ10(delta_heading);
 	position_update->animation     = (mob->IsBot() ? (int) ((float) anim / 1.785714f) : anim);
+
+	if (RuleB(Map, MobPathingVisualDebug)) {
+		mob->DrawDebugCoordinateNode(
+			fmt::format("{} position update", mob->GetCleanName()),
+			mob->GetPosition()
+		);
+	}
 }
 
 /**

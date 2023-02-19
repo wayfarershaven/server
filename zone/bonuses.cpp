@@ -127,7 +127,7 @@ void Client::CalcBonuses()
 		consume_food_timer.SetTimer(timer);
 }
 
-int Client::CalcRecommendedLevelBonus(uint8 level, uint8 reclevel, int basestat)
+int Mob::CalcRecommendedLevelBonus(uint8 level, uint8 reclevel, int basestat)
 {
 	if( (reclevel > 0) && (level < reclevel) )
 	{
@@ -1857,29 +1857,33 @@ void Mob::CalcSpellBonuses(StatBonuses* newbon)
 	newbon->AssistRange = -1;
 
 	int buff_count = GetMaxTotalSlots();
-	for(i = 0; i < buff_count; i++) {
-		if(buffs[i].spellid != SPELL_UNKNOWN){
+	for (i = 0; i < buff_count; i++) {
+		if (IsValidSpell(buffs[i].spellid)) {
 			ApplySpellsBonuses(buffs[i].spellid, buffs[i].casterlevel, newbon, buffs[i].casterid, 0, buffs[i].ticsremaining, i, buffs[i].instrument_mod);
 
-			if (buffs[i].hit_number > 0)
+			if (buffs[i].hit_number > 0) {
 				Numhits(true);
+			}
 		}
 	}
 
 	//Applies any perma NPC spell bonuses from npc_spells_effects table.
-	if (IsNPC())
+	if (IsNPC()) {
 		CastToNPC()->ApplyAISpellEffects(newbon);
+	}
 
 	//Disables a specific spell effect bonus completely, can also be limited to negate only item, AA or spell bonuses.
 	if (spellbonuses.NegateEffects){
 		for(i = 0; i < buff_count; i++) {
-			if( (buffs[i].spellid != SPELL_UNKNOWN) && (IsEffectInSpell(buffs[i].spellid, SE_NegateSpellEffect)) )
+			if (IsValidSpell(buffs[i].spellid) && (IsEffectInSpell(buffs[i].spellid, SE_NegateSpellEffect))) {
 				NegateSpellEffectBonuses(buffs[i].spellid);
+			}
 		}
 	}
 
-	if (GetClass() == BARD)
+	if (GetClass() == BARD) {
 		newbon->ManaRegen = 0; // Bards do not get mana regen from spells.
+	}
 }
 
 void Mob::ApplySpellsBonuses(uint16 spell_id, uint8 casterlevel, StatBonuses *new_bonus, uint16 casterId,
@@ -4025,7 +4029,9 @@ bool Client::CalcItemScale(uint32 slot_x, uint32 slot_y) {
 		if(inst->IsScaling())
 		{
 			uint16 oldexp = inst->GetExp();
-			parse->EventItem(EVENT_SCALE_CALC, this, inst, nullptr, "", 0);
+			if (parse->ItemHasQuestSub(inst, EVENT_SCALE_CALC)) {
+				parse->EventItem(EVENT_SCALE_CALC, this, inst, nullptr, "", 0);
+			}
 
 			if (inst->GetExp() != oldexp) {	// if the scaling factor changed, rescale the item and update the client
 				inst->ScaleItem();
@@ -4044,7 +4050,9 @@ bool Client::CalcItemScale(uint32 slot_x, uint32 slot_y) {
 			if(a_inst->IsScaling())
 			{
 				uint16 oldexp = a_inst->GetExp();
-				parse->EventItem(EVENT_SCALE_CALC, this, a_inst, nullptr, "", 0);
+				if (parse->ItemHasQuestSub(a_inst, EVENT_SCALE_CALC)) {
+					parse->EventItem(EVENT_SCALE_CALC, this, a_inst, nullptr, "", 0);
+				}
 
 				if (a_inst->GetExp() != oldexp)
 				{
@@ -4112,9 +4120,14 @@ bool Client::DoItemEnterZone(uint32 slot_x, uint32 slot_y) {
 		{
 			uint16 oldexp = inst->GetExp();
 
-			parse->EventItem(EVENT_ITEM_ENTER_ZONE, this, inst, nullptr, "", 0);
+			if (parse->ItemHasQuestSub(inst, EVENT_ITEM_ENTER_ZONE)) {
+				parse->EventItem(EVENT_ITEM_ENTER_ZONE, this, inst, nullptr, "", 0);
+			}
+
 			if (i <= EQ::invslot::EQUIPMENT_END) {
-				parse->EventItem(EVENT_EQUIP_ITEM, this, inst, nullptr, "", i);
+				if (parse->ItemHasQuestSub(inst, EVENT_EQUIP_ITEM)) {
+					parse->EventItem(EVENT_EQUIP_ITEM, this, inst, nullptr, "", i);
+				}
 			}
 
 			if (inst->GetExp() != oldexp) {	// if the scaling factor changed, rescale the item and update the client
@@ -4124,10 +4137,14 @@ bool Client::DoItemEnterZone(uint32 slot_x, uint32 slot_y) {
 			}
 		} else {
 			if (i <= EQ::invslot::EQUIPMENT_END) {
-				parse->EventItem(EVENT_EQUIP_ITEM, this, inst, nullptr, "", i);
+				if (parse->ItemHasQuestSub(inst, EVENT_EQUIP_ITEM)) {
+					parse->EventItem(EVENT_EQUIP_ITEM, this, inst, nullptr, "", i);
+				}
 			}
 
-			parse->EventItem(EVENT_ITEM_ENTER_ZONE, this, inst, nullptr, "", 0);
+			if (parse->ItemHasQuestSub(inst, EVENT_ITEM_ENTER_ZONE)) {
+				parse->EventItem(EVENT_ITEM_ENTER_ZONE, this, inst, nullptr, "", 0);
+			}
 		}
 
 		//iterate all augments
@@ -4141,7 +4158,9 @@ bool Client::DoItemEnterZone(uint32 slot_x, uint32 slot_y) {
 			{
 				uint16 oldexp = a_inst->GetExp();
 
-				parse->EventItem(EVENT_ITEM_ENTER_ZONE, this, a_inst, nullptr, "", 0);
+				if (parse->ItemHasQuestSub(a_inst, EVENT_ITEM_ENTER_ZONE)) {
+					parse->EventItem(EVENT_ITEM_ENTER_ZONE, this, a_inst, nullptr, "", 0);
+				}
 
 				if (a_inst->GetExp() != oldexp)
 				{
@@ -4150,7 +4169,9 @@ bool Client::DoItemEnterZone(uint32 slot_x, uint32 slot_y) {
 					update_slot = true;
 				}
 			} else {
-				parse->EventItem(EVENT_ITEM_ENTER_ZONE, this, a_inst, nullptr, "", 0);
+				if (parse->ItemHasQuestSub(a_inst, EVENT_ITEM_ENTER_ZONE)) {
+					parse->EventItem(EVENT_ITEM_ENTER_ZONE, this, a_inst, nullptr, "", 0);
+				}
 			}
 		}
 

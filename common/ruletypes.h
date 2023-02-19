@@ -228,6 +228,7 @@ RULE_INT(Character, EnchanterTrackingDistanceMultiplier, 0, "If you want enchant
 RULE_INT(Character, BeastlordTrackingDistanceMultiplier, 0, "If you want beastlords to be able to track, increase this above 0.  0 disables tracking packets.")
 RULE_INT(Character, BerserkerTrackingDistanceMultiplier, 0, "If you want berserkers to be able to track, increase this above 0.  0 disables tracking packets.")
 RULE_BOOL(Character, OnInviteReceiveAlreadyinGroupMessage, true, "If you want clients to receive a message when trying to invite a player into a group that is currently in another group.")
+RULE_BOOL(Character, IgnoreLevelBasedHasteCaps, false, "Ignores hard coded level based haste caps.")
 RULE_CATEGORY_END()
 
 RULE_CATEGORY(Mercs)
@@ -360,6 +361,7 @@ RULE_BOOL(Map, FixPathingZOnSendTo, false, "Try to repair Z coordinates in the S
 RULE_BOOL(Map, FixZWhenPathing, true, "Automatically fix NPC Z coordinates when moving/pathing/engaged (Far less CPU intensive than its predecessor)")
 RULE_REAL(Map, DistanceCanTravelBeforeAdjustment, 10.0, "Distance a mob can path before FixZ is called, depends on FixZWhenPathing")
 RULE_BOOL(Map, MobZVisualDebug, false, "Displays spell effects determining whether or not NPC is hitting Best Z calcs (blue for hit, red for miss)")
+RULE_BOOL(Map, MobPathingVisualDebug, false, "Displays nodes in pathing points in realtime to help with visual debugging")
 RULE_REAL(Map, FixPathingZMaxDeltaSendTo, 20, "At runtime in SendTo: maximum change in Z to allow the BestZ code to apply")
 RULE_INT(Map, FindBestZHeightAdjust, 1, "Adds this to the current Z before seeking the best Z position")
 RULE_CATEGORY_END()
@@ -674,6 +676,7 @@ RULE_INT(Range, SongMessages, 75, "The packet range in which song messages are s
 RULE_INT(Range, ClientPositionUpdates, 300, "Distance in which the own changed position is communicated to other clients")
 RULE_INT(Range, CriticalDamage, 80, "The packet range in which critical hit messages are sent")
 RULE_INT(Range, MobCloseScanDistance, 600, "Close scan distance")
+RULE_INT(Range, MaxDistanceToClickDoors, 100, "Max distance that a client can click a door from (Client says 'You can't reach that' at roughly 25-50 for most doors)")
 RULE_CATEGORY_END()
 
 RULE_CATEGORY(Bots)
@@ -838,6 +841,7 @@ RULE_BOOL(Inventory, DeleteTransformationMold, true, "False if you want mold to 
 RULE_BOOL(Inventory, AllowAnyWeaponTransformation, false, "Weapons can use any weapon transformation")
 RULE_BOOL(Inventory, TransformSummonedBags, false, "Transforms summoned bags into disenchanted ones instead of deleting")
 RULE_BOOL(Inventory, AllowMultipleOfSameAugment, false, "Allows multiple of the same augment to be placed in an item via #augmentitem or MQ2, set to true to allow")
+RULE_INT(Inventory, AlternateAugmentationSealer, 53, "Allows RoF+ clients to augment items from a special container type")
 RULE_CATEGORY_END()
 
 RULE_CATEGORY(Client)
@@ -867,6 +871,9 @@ RULE_CATEGORY_END()
 RULE_CATEGORY(Logging)
 RULE_BOOL(Logging, PrintFileFunctionAndLine, false, "Ex: [World Server] [net.cpp::main:309] Loading variables...")
 RULE_BOOL(Logging, WorldGMSayLogging, true, "Relay worldserver logging to zone processes via GM say output")
+RULE_BOOL(Logging, PlayerEventsQSProcess, false, "Have query server process player events instead of world. Useful when wanting to use a dedicated server and database for processing player events on separate disk")
+RULE_INT(Logging, BatchPlayerEventProcessIntervalSeconds, 5, "This is the interval in which player events are processed in world or qs")
+RULE_INT(Logging, BatchPlayerEventProcessChunkSize, 10000, "This is the cap of events that can be inserted into the queue before a force flush. This is to keep from hitting MySQL max_allowed_packet and killing the connection")
 RULE_CATEGORY_END()
 
 RULE_CATEGORY(HotReload)

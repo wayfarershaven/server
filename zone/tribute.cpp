@@ -241,14 +241,12 @@ void Client::SendTributeDetails(uint32 client_id, uint32 tribute_id) {
 int32 Client::TributeItem(uint32 slot, uint32 quantity) {
 	const EQ::ItemInstance*inst = m_inv[slot];
 
-	if(inst == nullptr)
+	if(inst == nullptr) {
 		return(0);
+	}
 
 	//figure out what its worth
 	int32 pts = inst->GetItem()->Favor;
-
-	pts = mod_tribute_item_value(pts, m_inv[slot]);
-
 	if(pts < 1) {
 		Message(Chat::Red, "This item is worthless for favor.");
 		return(0);
@@ -259,16 +257,15 @@ int32 Client::TributeItem(uint32 slot, uint32 quantity) {
 		and remove it from inventory
 	*/
 	if(inst->IsStackable()) {
-		if(inst->GetCharges() < (int32)quantity)	//dont have enough....
+		if(inst->GetCharges() < (int32)quantity) { //dont have enough....
 			return(0);
+		}
 		DeleteItemInInventory(slot, quantity);
 	} else {
 		quantity = 1;
 		DeleteItemInInventory(slot);
 	}
-
 	pts *= quantity;
-
 	/* Add the tribute value in points */
 	AddTributePoints(pts);
 	return(pts);
