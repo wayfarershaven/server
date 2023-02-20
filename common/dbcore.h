@@ -12,6 +12,7 @@
 
 #include <mysql.h>
 #include <string.h>
+#include <mutex>
 
 class DBcore {
 public:
@@ -58,6 +59,7 @@ private:
 	Mutex   MDatabase;
 	eStatus pStatus;
 
+	std::mutex m_query_lock{};
 	std::string origin_host;
 
 	char   *pHost;
