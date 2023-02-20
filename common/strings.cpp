@@ -777,6 +777,13 @@ std::string Strings::Random(size_t length)
 	return str;
 }
 
+// a wrapper for stoi which will return a fallback if the string
+// fails to cast to a number
+int Strings::ToInt(const std::string &s, int fallback)
+{
+	return Strings::IsNumber(s) ? std::stoi(s) : fallback;
+}
+
 std::string Strings::RemoveNumbers(std::string s)
 {
 	int      current = 0;
