@@ -1344,42 +1344,42 @@ int Perl__getlevel(uint8 type)
 	return quest_manager.getlevel(type);
 }
 
-int Perl__CreateGroundObject(uint32_t item_id, float x, float y, float z, float heading)
+uint16 Perl__CreateGroundObject(uint32_t item_id, float x, float y, float z, float heading)
 {
 	return quest_manager.CreateGroundObject(item_id, glm::vec4(x, y, z, heading));
 }
 
-int Perl__CreateGroundObject(uint32_t item_id, float x, float y, float z, float heading, uint32_t decay_time_ms)
+uint16 Perl__CreateGroundObject(uint32_t item_id, float x, float y, float z, float heading, uint32_t decay_time_ms)
 {
 	return quest_manager.CreateGroundObject(item_id, glm::vec4(x, y, z, heading), decay_time_ms);
 }
 
-int Perl__CreateGroundObjectFromModel(const char* modelname, float x, float y, float z, float heading)
+uint16 Perl__CreateGroundObjectFromModel(const char* modelname, float x, float y, float z, float heading)
 {
 	return quest_manager.CreateGroundObjectFromModel(modelname, glm::vec4(x, y, z, heading));
 }
 
-int Perl__CreateGroundObjectFromModel(const char* modelname, float x, float y, float z, float heading, uint8_t object_type)
+uint16 Perl__CreateGroundObjectFromModel(const char* modelname, float x, float y, float z, float heading, uint8_t object_type)
 {
 	return quest_manager.CreateGroundObjectFromModel(modelname, glm::vec4(x, y, z, heading), object_type);
 }
 
-int Perl__CreateGroundObjectFromModel(const char* modelname, float x, float y, float z, float heading, uint8_t object_type, uint32_t decay_time_ms)
+uint16 Perl__CreateGroundObjectFromModel(const char* modelname, float x, float y, float z, float heading, uint8_t object_type, uint32_t decay_time_ms)
 {
 	return quest_manager.CreateGroundObjectFromModel(modelname, glm::vec4(x, y, z, heading), object_type, decay_time_ms);
 }
 
-int Perl__CreateDoor(const char* modelname, float x, float y, float z, float heading)
+uint16 Perl__CreateDoor(const char* modelname, float x, float y, float z, float heading)
 {
 	return quest_manager.CreateDoor(modelname, x, y, z, heading, 58, 100);
 }
 
-int Perl__CreateDoor(const char* modelname, float x, float y, float z, float heading, uint8_t object_type)
+uint16 Perl__CreateDoor(const char* modelname, float x, float y, float z, float heading, uint8_t object_type)
 {
 	return quest_manager.CreateDoor(modelname, x, y, z, heading, object_type, 100);
 }
 
-int Perl__CreateDoor(const char* modelname, float x, float y, float z, float heading, uint8_t object_type, uint16_t size)
+uint16 Perl__CreateDoor(const char* modelname, float x, float y, float z, float heading, uint8_t object_type, uint16_t size)
 {
 	return quest_manager.CreateDoor(modelname, x, y, z, heading, object_type, size);
 }
@@ -3981,7 +3981,7 @@ int8 Perl__does_augment_fit(EQ::ItemInstance* inst, uint32 augment_id)
 	return quest_manager.DoesAugmentFit(inst, augment_id);
 }
 
-int8 Perl__does_augment_fit(EQ::ItemInstance* inst, uint32 augment_id, uint8 augment_slot)
+int8 Perl__does_augment_fit_slot(EQ::ItemInstance* inst, uint32 augment_id, uint8 augment_slot)
 {
 	return quest_manager.DoesAugmentFit(inst, augment_id, augment_slot);
 }
@@ -4194,14 +4194,14 @@ void perl_register_quest()
 	package.add("completedtasksinset", &Perl__completedtasksinset);
 	package.add("countitem", &Perl__countitem);
 	package.add("countspawnednpcs", &Perl__countspawnednpcs);
-	package.add("createdoor", (int(*)(const char*, float, float, float, float))&Perl__CreateDoor);
-	package.add("createdoor", (int(*)(const char*, float, float, float, float, uint8_t))&Perl__CreateDoor);
-	package.add("createdoor", (int(*)(const char*, float, float, float, float, uint8_t, uint16_t))&Perl__CreateDoor);
-	package.add("creategroundobject", (int(*)(uint32_t, float, float, float, float))&Perl__CreateGroundObject);
-	package.add("creategroundobject", (int(*)(uint32_t, float, float, float, float, uint32_t))&Perl__CreateGroundObject);
-	package.add("creategroundobjectfrommodel", (int(*)(const char*, float, float, float, float))&Perl__CreateGroundObjectFromModel);
-	package.add("creategroundobjectfrommodel", (int(*)(const char*, float, float, float, float, uint8_t))&Perl__CreateGroundObjectFromModel);
-	package.add("creategroundobjectfrommodel", (int(*)(const char*, float, float, float, float, uint8_t, uint32_t))&Perl__CreateGroundObjectFromModel);
+	package.add("createdoor", (uint16(*)(const char*, float, float, float, float))&Perl__CreateDoor);
+	package.add("createdoor", (uint16(*)(const char*, float, float, float, float, uint8_t))&Perl__CreateDoor);
+	package.add("createdoor", (uint16(*)(const char*, float, float, float, float, uint8_t, uint16_t))&Perl__CreateDoor);
+	package.add("creategroundobject", (uint16(*)(uint32_t, float, float, float, float))&Perl__CreateGroundObject);
+	package.add("creategroundobject", (uint16(*)(uint32_t, float, float, float, float, uint32_t))&Perl__CreateGroundObject);
+	package.add("creategroundobjectfrommodel", (uint16(*)(const char*, float, float, float, float))&Perl__CreateGroundObjectFromModel);
+	package.add("creategroundobjectfrommodel", (uint16(*)(const char*, float, float, float, float, uint8_t))&Perl__CreateGroundObjectFromModel);
+	package.add("creategroundobjectfrommodel", (uint16(*)(const char*, float, float, float, float, uint8_t, uint32_t))&Perl__CreateGroundObjectFromModel);
 	package.add("createguild", &Perl__createguild);
 	package.add("createitem", (EQ::ItemInstance*(*)(uint32))&Perl__createitem);
 	package.add("createitem", (EQ::ItemInstance*(*)(uint32, int16))&Perl__createitem);
@@ -4442,7 +4442,7 @@ void perl_register_quest()
 	package.add("doanim", (void(*)(int, int, bool, int))&Perl__doanim);
 	package.add("do_augment_slots_match", &Perl__do_augment_slots_match);
 	package.add("does_augment_fit", (int8(*)(EQ::ItemInstance*, uint32))&Perl__does_augment_fit);
-	package.add("does_augment_fit", (int8(*)(EQ::ItemInstance*, uint32, uint8))&Perl__does_augment_fit);
+	package.add("does_augment_fit_slot", (int8(*)(EQ::ItemInstance*, uint32, uint8))&Perl__does_augment_fit_slot);
 	package.add("echo", &Perl__echo);
 	package.add("emote", &Perl__emote);
 	package.add("enable_proximity_say", &Perl__enable_proximity_say);

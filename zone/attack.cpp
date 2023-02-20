@@ -2840,19 +2840,16 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 	entity_list.UpdateFindableNPCState(this, true);
 
 	m_combat_record.Stop();
-	if (parse->HasQuestSub(GetNPCTypeID(), EVENT_DEATH_COMPLETE)) {
-		const auto& export_string = fmt::format(
-			"{} {} {} {}",
-			killer_mob ? killer_mob->GetID() : 0,
-			damage,
-			spell,
-			static_cast<int>(attack_skill)
-		);
+	const auto& export_string = fmt::format(
+		"{} {} {} {}",
+		killer_mob ? killer_mob->GetID() : 0,
+		damage,
+		spell,
+		static_cast<int>(attack_skill)
+	);
 
-		std::vector<std::any> args = { corpse };
-
-		parse->EventNPC(EVENT_DEATH_COMPLETE, this, oos, export_string, 0, &args);
-	}
+	std::vector<std::any> args = { corpse };
+	parse->EventNPC(EVENT_DEATH_COMPLETE, this, oos, export_string, 0, &args);
 
 	/* Zone controller process EVENT_DEATH_ZONE (Death events) */
 	if (parse->HasQuestSub(ZONE_CONTROLLER_NPC_ID, EVENT_DEATH_ZONE)) {
