@@ -87,13 +87,19 @@ void QuestManager::Process() {
 	end = QTimerList.end();
 	while (cur != end) {
 		if (cur->Timer_.Enabled() && cur->Timer_.Check()) {
-			if(entity_list.IsMobInZone(cur->mob)) {
-				if(cur->mob->IsNPC()) {
+			if (cur->mob && entity_list.IsMobInZone(cur->mob)) {
+				if (cur->mob->IsNPC()) {
 					if (parse->HasQuestSub(cur->mob->GetNPCTypeID(), EVENT_TIMER)) {
 						parse->EventNPC(EVENT_TIMER, cur->mob->CastToNPC(), nullptr, cur->name, 0);
 					}
 				} else if (cur->mob->IsEncounter()) {
-					parse->EventEncounter(EVENT_TIMER, cur->mob->CastToEncounter()->GetEncounterName(), cur->name, 0, nullptr);
+					parse->EventEncounter(
+						EVENT_TIMER,
+						cur->mob->CastToEncounter()->GetEncounterName(),
+						cur->name,
+						0,
+						nullptr
+					);
 				} else if (cur->mob->IsClient()) {
 					if (parse->PlayerHasQuestSub(EVENT_TIMER)) {
 						//this is inheriently unsafe if we ever make it so more than npc/client start timers
@@ -108,12 +114,13 @@ void QuestManager::Process() {
 				//we MUST reset our iterator since the quest could have removed/added any
 				//number of timers... worst case we have to check a bunch of timers twice
 				cur = QTimerList.begin();
-				end = QTimerList.end();	//dunno if this is needed, cant hurt...
+				end = QTimerList.end();    //dunno if this is needed, cant hurt...
 			} else {
 				cur = QTimerList.erase(cur);
 			}
-		} else
+		} else {
 			++cur;
+		}
 	}
 
 	auto cur_iter = STimerList.begin();
