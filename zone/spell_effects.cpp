@@ -637,6 +637,43 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 				break;
 			}
 
+			case SE_Invisibility:
+			case SE_Invisibility2:
+			{
+#ifdef SPELL_EFFECT_SPAM
+				snprintf(effect_desc, _EDLEN, "Invisibility");
+#endif
+				SetInvisible(spell.base_value[i], 0);
+				break;
+			}
+
+			case SE_InvisVsAnimals:
+			{
+#ifdef SPELL_EFFECT_SPAM
+				snprintf(effect_desc, _EDLEN, "Invisibility to Animals");
+#endif
+				SetInvisible(1, 2);
+				break;
+			}
+
+			case SE_InvisVsUndead2:
+			case SE_InvisVsUndead:
+			{
+#ifdef SPELL_EFFECT_SPAM
+				snprintf(effect_desc, _EDLEN, "Invisibility to Undead");
+#endif
+				SetInvisible(1, 1);
+				break;
+			}
+			case SE_SeeInvis:
+			{
+#ifdef SPELL_EFFECT_SPAM
+				snprintf(effect_desc, _EDLEN, "See Invisible");
+#endif
+				see_invis = spell.base_value[i];
+				break;
+			}
+
 			case SE_FleshToBone:
 			{
 #ifdef SPELL_EFFECT_SPAM
@@ -2195,46 +2232,14 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 
 			case SE_FadingMemories:		//Dook- escape etc
 			{
-#ifdef SPELL_EFFECT_SPAM
-				snprintf(effect_desc, _EDLEN, "Fading Memories");
-#endif
-				int max_level = 0;
-
-				if (RuleB(Spells, UseFadingMemoriesMaxLevel)) {
-					//handle ROF2 era where limit value determines max level
-					if (spells[spell_id].limit_value[i]) {
-						max_level = spells[spell_id].limit_value[i];
-					}
-					//handle modern client era where max value determines max level or range above client.
-					else if (spells[spell_id].max_value[i]) {
-						if (spells[spell_id].max_value[i] >= 1000) {
-							max_level = 1000 - spells[spell_id].max_value[i];
-						}
-						else {
-							max_level = GetLevel() + spells[spell_id].max_value[i];
-						}
-					}
-				}
-
 				if(zone->random.Roll(spells[spell_id].base_value[i])) {
-					if (IsClient()) {
-						int pre_aggro_count = CastToClient()->GetAggroCount();
-						entity_list.RemoveFromTargetsFadingMemories(this, true, max_level);
-						SetInvisible(Invisibility::Invisible);
-						int post_aggro_count = CastToClient()->GetAggroCount();
-						if (RuleB(Spells, UseFadingMemoriesMaxLevel)) {
-							if (pre_aggro_count == post_aggro_count) {
-								Message(Chat::SpellFailure, "You failed to escape from all your opponents.");
-								break;
-							}
-							else if (post_aggro_count) {
-								Message(Chat::SpellFailure, "You failed to escape from combat but you evade some of your opponents.");
-								break;
-							}
+					if(caster && caster->IsClient()) {
+						if (caster->spellbonuses.ShroudofStealth || caster->aabonuses.ShroudofStealth || caster->itembonuses.ShroudofStealth) {
+							caster->CastToClient()->Escape(1);
+						} else {
+							caster->CastToClient()->Escape(0);
 						}
-						MessageString(Chat::Skills, ESCAPE);
-					}
-					else{
+					} else {
 						entity_list.RemoveFromTargets(caster);
 						SetInvisible(Invisibility::Invisible);
 					}
@@ -2989,34 +2994,6 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 				MakeAura(spell_id);
 				break;
 
-			case SE_Invisibility:
-			case SE_Invisibility2:
-			{
-				SetInvisible(Invisibility::Invisible);
-				break;
-			}
-
-			case SE_InvisVsAnimals:
-			{
-				invisible_animals = true;
-				auto pet = GetPet();
-				if (pet && pet->GetPetType() == petCharmed) {
-					pet->BuffFadeByEffect(SE_Charm);
-				}
-				break;
-			}
-
-			case SE_InvisVsUndead2:
-			case SE_InvisVsUndead:
-			{
-				invisible_undead = true;
-				auto pet = GetPet();
-				if (pet && pet->GetPetType() == petCharmed) {
-					pet->BuffFadeByEffect(SE_Charm);
-				}
-				break;
-			}
-
 			// Handled Elsewhere
 			case SE_ImmuneFleeing:
 			case SE_NegateSpellEffect:
@@ -3301,7 +3278,6 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 			case SE_Proc_Timer_Modifier:
 			case SE_FFItemClass:
 			case SE_SpellEffectResistChance:
-			case SE_SeeInvis:
 			case SE_ImprovedInvisAnimals:
 			{
 				break;
@@ -4246,6 +4222,32 @@ void Mob::BuffFadeBySlot(int slot, bool iRecalcBonuses)
 			{
 				if (!AffectedBySpellExcludingSlot(slot, SE_Levitate))
 					SendAppearancePacket(AT_Levitate, 0);
+				break;
+			}
+
+			case SE_Invisibility2:
+			case SE_Invisibility:
+			{
+				SetInvisible(Invisibility::Visible);
+				break;
+			}
+
+			case SE_InvisVsUndead2:
+			case SE_InvisVsUndead:
+			{
+				invisible_undead = false;	// Mongrel: No longer IVU
+				break;
+			}
+
+			case SE_InvisVsAnimals:
+			{
+				invisible_animals = false;
+				break;
+			}
+
+			case SE_SeeInvis:
+			{
+				see_invis = 0;
 				break;
 			}
 
@@ -9615,20 +9617,18 @@ void Mob::CalcSpellPowerDistanceMod(uint16 spell_id, float range, Mob* caster)
 void Mob::BreakInvisibleSpells()
 {
 	if(invisible) {
-		nobuff_invisible = 0;
-		SetInvisible(Invisibility::Visible);
 		BuffFadeByEffect(SE_Invisibility);
 		BuffFadeByEffect(SE_Invisibility2);
+		invisible = false;
 	}
 	if(invisible_undead) {
-		ZeroInvisibleVars(InvisType::T_INVISIBLE_VERSE_UNDEAD);
 		BuffFadeByEffect(SE_InvisVsUndead);
 		BuffFadeByEffect(SE_InvisVsUndead2);
+		invisible_undead = false;
 	}
 	if(invisible_animals){
-		ZeroInvisibleVars(InvisType::T_INVISIBLE_VERSE_ANIMAL);
-		BuffFadeByEffect(SE_ImprovedInvisAnimals);
 		BuffFadeByEffect(SE_InvisVsAnimals);
+		invisible_animals = false;
 	}
 }
 

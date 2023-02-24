@@ -6288,8 +6288,26 @@ void Mob::DoShieldDamageOnShielder(Mob *shield_target, int64 hit_damage_done, EQ
 void Mob::CommonBreakInvisibleFromCombat()
 {
 	//break invis when you attack
-	BreakInvisibleSpells();
+	if (invisible) {
+		LogCombat("Removing invisibility due to melee attack");
+		BuffFadeByEffect(SE_Invisibility);
+		BuffFadeByEffect(SE_Invisibility2);
+		invisible = false;
+	}
+	if (invisible_undead) {
+		LogCombat("Removing invisibility vs. undead due to melee attack");
+		BuffFadeByEffect(SE_InvisVsUndead);
+		BuffFadeByEffect(SE_InvisVsUndead2);
+		invisible_undead = false;
+	}
+	if (invisible_animals) {
+		LogCombat("Removing invisibility vs. animals due to melee attack");
+		BuffFadeByEffect(SE_InvisVsAnimals);
+		invisible_animals = false;
+	}
+
 	CancelSneakHide();
+	SetInvisible(0);
 
 	if (spellbonuses.NegateIfCombat) {
 		BuffFadeByEffect(SE_NegateIfCombat);

@@ -4288,9 +4288,6 @@ void Client::Handle_OP_CastSpell(const EQApplicationPacket *app)
 		return;
 	}
 
-	SetInvisible(Invisibility::Visible);
-	BreakInvisibleSpells();
-
 	// Hack for broken RoF2 which allows casting after a zoned IVU/IVA
 	if (invisible_undead || invisible_animals) {
 		BuffFadeByEffect(SE_InvisVsAnimals);
@@ -8545,10 +8542,9 @@ void Client::Handle_OP_Hide(const EQApplicationPacket *app)
 		entity_list.QueueClients(this, outapp, true);
 		safe_delete(outapp);
 		if (spellbonuses.ShroudofStealth || aabonuses.ShroudofStealth || itembonuses.ShroudofStealth) {
-			improved_hidden = true;
-			hidden = true;
+			SetInvisible(1, 4);
 		} else {
-			hidden = true;
+			SetInvisible(1, 3);
 		}
 		tmHidden = Timer::GetCurrentTime();
 	}
