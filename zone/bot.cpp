@@ -3544,45 +3544,6 @@ void Bot::AI_Process()
 				m_auto_defend_timer.Start(zone->random.Int(250, 1250)); // random timer to simulate 'awareness' (cuts down on scanning overhead)
 				return;
 			}
-
-			if (m_auto_defend_timer.Check() && bot_owner->GetAggroCount()) {
-
-				if (NOT_HOLDING && NOT_PASSIVE) {
-
-					auto xhaters = bot_owner->GetXTargetAutoMgr();
-					if (xhaters && !xhaters->empty()) {
-
-						for (auto hater_iter : xhaters->get_list()) {
-
-							if (!hater_iter.spawn_id) {
-								continue;
-							}
-
-							if (bot_owner->GetBotPulling() && bot_owner->GetTarget() && hater_iter.spawn_id == bot_owner->GetTarget()->GetID()) {
-								continue;
-							}
-
-							auto hater = entity_list.GetMob(hater_iter.spawn_id);
-							if (hater && !hater->IsMezzed() && DistanceSquared(hater->GetPosition(), bot_owner->GetPosition()) <= leash_distance) {
-
-								// This is roughly equivilent to npc attacking a client pet owner
-								AddToHateList(hater, 1);
-								SetTarget(hater);
-								SetAttackingFlag();
-								if (HasPet() && (GetClass() != ENCHANTER || GetPet()->GetPetType() != petAnimation || GetAA(aaAnimationEmpathy) >= 2)) {
-
-									GetPet()->AddToHateList(hater, 1);
-									GetPet()->SetTarget(hater);
-								}
-
-								m_auto_defend_timer.Disable();
-
-								return;
-							}
-						}
-					}
-				}
-			}
 		}
 
 //#pragma endregion
