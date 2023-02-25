@@ -562,14 +562,13 @@ void Mob::SetPet(Mob* newpet) {
 }
 
 void Mob::SetPetID(uint16 NewPetID) {
-	if (NewPetID == GetID() && NewPetID != 0)
+	if (NewPetID == GetID() && NewPetID != 0) {
 		return;
+	}
 	petid = NewPetID;
 
-	if(IsClient())
-	{
+	if(IsClient()) {
 		Mob* NewPet = entity_list.GetMob(NewPetID);
-		CastToClient()->UpdateXTargetType(MyPet, NewPet);
 	}
 }
 

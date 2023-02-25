@@ -1245,9 +1245,6 @@ void Mob::ClearFeignMemory() {
 	while (remembered_feigned_mobid != feign_memory_list.end())
 	{
 		Mob* remembered_mob = entity_list.GetMob(*remembered_feigned_mobid);
-		if (remembered_mob->IsClient() && remembered_mob != nullptr) { //Still in zone
-			remembered_mob->CastToClient()->RemoveXTarget(this, false);
-		}
 		++remembered_feigned_mobid;
 	}
 
