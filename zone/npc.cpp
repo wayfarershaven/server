@@ -158,6 +158,10 @@ NPC::NPC(const NPCType *npc_type_data, Spawn2 *in_respawn, const glm::vec4 &posi
 		size = 5;
 	}
 
+	if (race == RACE_WURM_158) {
+		size = 15;
+	}
+
 	taunting             = false;
 	proximity            = nullptr;
 	copper               = 0;
