@@ -315,17 +315,6 @@ void Perl_Mob_SetInvisible(Mob* self, uint8_t state) // @categories Script Utili
 	self->SetInvisible(state);
 }
 
-void Perl_Mob_SetSeeInvisibleLevel(Mob* self, uint8 see_invis_level) // @categories Script Utility
-{
-	self->SetInnateSeeInvisible(see_invis_level);
-	self->CalcSeeInvisibleLevel();
-}
-
-void Perl_Mob_SetSeeInvisibleUndeadLevel(Mob* self, uint8 see_invis_undead_level) // @categories Script Utility
-{
-	self->SetSeeInvisibleUndead(see_invis_undead_level);
-}
-
 bool Perl_Mob_FindBuff(Mob* self, uint16 spell_id) // @categories Spells and Disciplines, Script Utility
 {
 	return self->FindBuff(spell_id);
@@ -3259,8 +3248,6 @@ void perl_register_mob()
 	package.add("SetRace", &Perl_Mob_SetRace);
 	package.add("SetRunAnimSpeed", &Perl_Mob_SetRunAnimSpeed);
 	package.add("SetRunning", &Perl_Mob_SetRunning);
-	package.add("SetSeeInvisibleLevel", &Perl_Mob_SetSeeInvisibleLevel);
-	package.add("SetSeeInvisibleUndeadLevel", &Perl_Mob_SetSeeInvisibleUndeadLevel);
 	package.add("SetSlotTint", &Perl_Mob_SetSlotTint);
 	package.add("SetSpecialAbility", &Perl_Mob_SetSpecialAbility);
 	package.add("SetSpecialAbilityParam", &Perl_Mob_SetSpecialAbilityParam);
