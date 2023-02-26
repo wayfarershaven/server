@@ -493,8 +493,11 @@ bool Mob::AvoidDamage(Mob *other, DamageHitInfo &hit)
 			LogCombat("I am enraged, riposting frontal attack");
 			return true;
 		}
-		if (IsClient())
+
+		if (IsClient()) {
 			CastToClient()->CheckIncreaseSkill(EQ::skills::SkillRiposte, other, -10);
+		}
+		
 		// check auto discs ... I guess aa/items too :P
 		if (spellbonuses.RiposteChance == 10000 || aabonuses.RiposteChance == 10000 || itembonuses.RiposteChance == 10000) {
 			hit.damage_done = DMG_RIPOSTED;
@@ -511,9 +514,14 @@ bool Mob::AvoidDamage(Mob *other, DamageHitInfo &hit)
 		// AA Slippery Attacks
 		if (hit.hand == EQ::invslot::slotSecondary) {
 			int slip = aabonuses.OffhandRiposteFail + itembonuses.OffhandRiposteFail + spellbonuses.OffhandRiposteFail;
-			chance += chance * slip / 100;
+			if (slip == -100) { // Has Max Slippery Attacks or 100% chance to avoic offhand Rips
+				chance == 0;
+			} else {
+				chance += chance * slip / 100;
+			}
 		}
-		if (chance > 0 && zone->random.Roll(chance)) { // could be <0 from offhand stuff
+
+		if (chance > 0 && zone->random.Roll(chance)) {
 			hit.damage_done = DMG_RIPOSTED;
 			return true;
 		}
