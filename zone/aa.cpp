@@ -1292,8 +1292,9 @@ void Client::ActivateAlternateAdvancementAbility(int rank_id, int target_id) {
 		timer_duration = 0;
 	}
 
-	if (!IsCastWhileInvis(rank->spell))
+	if (!IsCastWhileInvis(rank->spell)) {
 		CommonBreakInvisible();
+	}
 
 	if (spells[rank->spell].sneak && (!hidden || (hidden && (Timer::GetCurrentTime() - tmHidden) < 4000))) {
 		MessageString(Chat::SpellFailure, SNEAK_RESTRICT);

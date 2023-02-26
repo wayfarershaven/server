@@ -1062,22 +1062,15 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 					group->GetGroupAAs(&outgj->leader_aas);
 					Inviter->CastToClient()->QueuePacket(outapp);
 					safe_delete(outapp);
-				}
-				else
-				{
+				} else {
 					// SoD and later
 					Inviter->CastToClient()->SendGroupCreatePacket();
 					Inviter->CastToClient()->SendGroupLeaderChangePacket(Inviter->GetName());
 					Inviter->CastToClient()->SendGroupJoinAcknowledge();
 				}
-
-				group->GetXTargetAutoMgr()->merge(*Inviter->CastToClient()->GetXTargetAutoMgr());
-				Inviter->CastToClient()->GetXTargetAutoMgr()->clear();
-				Inviter->CastToClient()->SetXTargetAutoMgr(group->GetXTargetAutoMgr());
 			}
 
-			if (!group)
-			{
+			if (!group) {
 				break;
 			}
 
@@ -1186,11 +1179,8 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 				group->SetNPCMarker(NPCMarkerName);
 				group->SetGroupAAs(&GLAA);
 				group->SetGroupMentor(mentor_percent, mentoree_name);
-				client->JoinGroupXTargets(group);
 			}
-		}
-		else if (client->GetMerc())
-		{
+		} else if (client->GetMerc())	{
 			client->GetMerc()->MercJoinClientGroup();
 		}
 		break;
@@ -1283,7 +1273,6 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 				r->SendRaidRemoveAll(rga->playername);
 				Client *rem = entity_list.GetClientByName(rga->playername);
 				if (rem) {
-					rem->LeaveRaidXTargets(r);
 					r->SendRaidDisband(rem);
 				}
 				r->LearnMembers();
