@@ -787,6 +787,11 @@ void Lua_NPC::SetLDoNTrapDetected(bool is_detected) {
 	self->SetLDoNTrapDetected(is_detected);
 }
 
+bool Lua_NPC::HasSpecialAbilities() {
+	Lua_Safe_Call_Bool();
+	return self->HasSpecialAbilities();
+}
+
 luabind::scope lua_register_npc() {
 	return luabind::class_<Lua_NPC, Lua_Mob>("NPC")
 	.def(luabind::constructor<>())

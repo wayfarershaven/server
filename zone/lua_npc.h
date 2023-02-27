@@ -177,6 +177,7 @@ public:
 	void SetLDoNLockedSkill(uint16 skill_value);
 	bool IsLDoNTrapDetected();
 	void SetLDoNTrapDetected(bool is_detected);
+	bool HasSpecialAbilities();
 };
 
 #endif
