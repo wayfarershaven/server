@@ -579,6 +579,18 @@ void Lua_NPC::ScaleNPC(uint8 npc_level)
 	self->ScaleNPC(npc_level);
 }
 
+void Lua_NPC::ScaleNPC(uint8 npc_level, bool always_scale_stats)
+{
+	Lua_Safe_Call_Void();
+	self->ScaleNPC(npc_level, always_scale_stats);
+}
+
+void Lua_NPC::ScaleNPC(uint8 npc_level, bool always_scale_stats, bool always_scale_special_abilities)
+{
+	Lua_Safe_Call_Void();
+	self->ScaleNPC(npc_level, always_scale_stats, always_scale_special_abilities);
+}
+
 bool Lua_NPC::IsRaidTarget()
 {
 	Lua_Safe_Call_Bool();
@@ -904,6 +916,8 @@ luabind::scope lua_register_npc() {
 	.def("SaveGuardSpot", (void(Lua_NPC::*)(bool))&Lua_NPC::SaveGuardSpot)
 	.def("SaveGuardSpot", (void(Lua_NPC::*)(float,float,float,float))&Lua_NPC::SaveGuardSpot)
 	.def("ScaleNPC", (void(Lua_NPC::*)(uint8))&Lua_NPC::ScaleNPC)
+	.def("ScaleNPC", (void(Lua_NPC::*)(uint8,bool))&Lua_NPC::ScaleNPC)
+	.def("ScaleNPC", (void(Lua_NPC::*)(uint8,bool,bool))&Lua_NPC::ScaleNPC)
 	.def("SendPayload", (void(Lua_NPC::*)(int))&Lua_NPC::SendPayload)
 	.def("SendPayload", (void(Lua_NPC::*)(int,std::string))&Lua_NPC::SendPayload)
 	.def("SetCopper", (void(Lua_NPC::*)(uint32))&Lua_NPC::SetCopper)
