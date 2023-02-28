@@ -3774,6 +3774,7 @@ void Mob::WipeHateList(bool npc_only) {
 		}
 	} else {
 		hate_list.WipeHateList(npc_only);
+		ClearRampage();
 	}
 }
 
