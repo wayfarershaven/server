@@ -1795,9 +1795,20 @@ bool Client::Death(Mob* killerMob, int64 damage, uint16 spell, EQ::skills::Skill
 	EQApplicationPacket app2(OP_BecomeCorpse, sizeof(BecomeCorpse_Struct));
 	BecomeCorpse_Struct* bc = (BecomeCorpse_Struct*)app2.pBuffer;
 	bc->spawn_id = GetID();
-	bc->x = GetX();
-	bc->y = GetY();
-	bc->z = GetZ();
+
+	glm::vec3 position;
+	position.x = GetX();
+	position.y = GetY();
+	position.z = GetZ();
+
+	if (zone->HasMap()) {
+		position.z = zone->zonemap->FindBestZ(position, nullptr);
+	}
+
+	bc->x = position.x;
+	bc->y = position.y;
+	bc->z = position.z;
+
 	QueuePacket(&app2);
 
 	/* Make Death Packet */
