@@ -41,7 +41,6 @@ char* strn0cpy(char* dest, const char* source, uint32 size);
 
 #define MAX_SPECIAL_ATTACK_PARAMS 8
 
-class EGNode;
 class Client;
 class EQApplicationPacket;
 class Group;
@@ -330,29 +329,18 @@ public:
 
 	//Invisible
 	bool IsInvisible(Mob* other = 0) const;
-	void SetInvisible(uint8 state, bool set_on_bonus_calc = false);
-
-	void CalcSeeInvisibleLevel();
-	void CalcInvisibleLevel();
-	void ZeroInvisibleVars(uint8 invisible_type);
-
-	inline uint8 GetSeeInvisibleLevelFromNPCStat(uint16 in_see_invis);
+	void SetInvisible(uint8 state = 0, uint8 type = 0);
 
 	void BreakInvisibleSpells();
 	virtual void CancelSneakHide();
 	void CommonBreakInvisible();
 	void CommonBreakInvisibleFromCombat();
 
-	inline uint8 GetInvisibleLevel() const { return invisible; }
-	inline uint8 GetInvisibleUndeadLevel() const { return invisible_undead; }
-
+	inline bool GetSeeInvisible(uint8 see_invis);
 	inline bool SeeHide() const { return see_hide; }
 	inline bool SeeImprovedHide() const { return see_improved_hide; }
 	inline uint8 SeeInvisibleUndead() const { return see_invis_undead; }
 	inline uint8 SeeInvisible() const { return see_invis; }
-
-	inline void SetInnateSeeInvisible(uint8 val) { innate_see_invis = val; }
-	inline void SetSeeInvisibleUndead(uint8 val) { see_invis_undead = val; }
 
 	uint32 tmHidden; // timestamp of hide, only valid while hidden == true
 	uint8 invisible, nobuff_invisible, invisible_undead, invisible_animals;

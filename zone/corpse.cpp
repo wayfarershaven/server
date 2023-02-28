@@ -626,6 +626,8 @@ bool Corpse::Save() {
 		memcpy((char*)&dbpc->items[x++], (char*)item, sizeof(player_lootitem::ServerLootItem_Struct));
 	}
 
+	FixZ();
+
 	/* Create New Corpse*/
 	if (corpse_db_id == 0) {
 		corpse_db_id = database.SaveCharacterCorpse(char_id, corpse_name, zone->GetZoneID(), zone->GetInstanceID(), dbpc, m_Position, consented_guild_id, RuleB(Character, UsePlayerCorpseBackups));

@@ -328,16 +328,6 @@ Client::Client(EQStreamInterface* ieqs)
 	adv_requested_theme = LDoNThemes::Unused;
 	adv_requested_id = 0;
 	adv_requested_member_count = 0;
-
-	for(int i = 0; i < XTARGET_HARDCAP; ++i)
-	{
-		XTargets[i].Type = Auto;
-		XTargets[i].ID = 0;
-		XTargets[i].Name[0] = 0;
-		XTargets[i].dirty = false;
-	}
-	MaxXTargets = 5;
-	XTargetAutoAddHaters = true;
 	m_autohatermgr.SetOwner(this, nullptr, nullptr);
 	m_activeautohatermgr = &m_autohatermgr;
 	LoadAccountFlags();
@@ -1953,7 +1943,6 @@ void Client::CheckManaEndUpdate() {
 			if ((ClientVersionBit() & EQ::versions::ClientVersionBitmask::maskSoDAndLater) != 0) {
 				QueuePacket(mana_packet); // do we need this with the OP_ManaChange packet above?
 			}
-			entity_list.QueueClientsByXTarget(this, mana_packet, false, EQ::versions::ClientVersionBitmask::maskSoDAndLater);
 			safe_delete(mana_packet);
 
 			last_reported_mana_percent = GetManaPercent();
@@ -1979,7 +1968,6 @@ void Client::CheckManaEndUpdate() {
 			if ((ClientVersionBit() & EQ::versions::ClientVersionBitmask::maskSoDAndLater) != 0) {
 				QueuePacket(endurance_packet); // do we need this with the OP_ManaChange packet above?
 			}
-			entity_list.QueueClientsByXTarget(this, endurance_packet, false, EQ::versions::ClientVersionBitmask::maskSoDAndLater);
 			safe_delete(endurance_packet);
 
 			last_reported_endurance_percent = GetEndurancePercent();
@@ -3561,10 +3549,15 @@ uint8 Client::SlotConvert2(uint8 slot){
 	return slot2;
 }
 
-void Client::Escape()
+void Client::Escape(uint8 type /* = 0*/)
 {
 	entity_list.RemoveFromTargets(this, true);
-	SetInvisible(Invisibility::Invisible);
+	if (type == 1) {
+		SetInvisible(1, 4);
+	} else {
+		SetInvisible(1, 3);
+	}
+
 	MessageString(Chat::Skills, ESCAPE);
 }
 
@@ -4234,20 +4227,8 @@ bool Client::GroupFollow(Client* inviter) {
 				}
 				return false;
 			}
-			if (raid->RaidCount() < MAX_RAID_MEMBERS)
-			{
-				// okay, so we now have a single client (this) joining a group in a raid
-				// And they're not already in the raid (which is above and doesn't need xtarget shit)
-				if (!GetXTargetAutoMgr()->empty()) {
-					raid->GetXTargetAutoMgr()->merge(*GetXTargetAutoMgr());
-					GetXTargetAutoMgr()->clear();
-					RemoveAutoXTargets();
-				}
 
-				SetXTargetAutoMgr(raid->GetXTargetAutoMgr());
-				if (!GetXTargetAutoMgr()->empty())
-					SetDirtyAutoHaters();
-
+			if (raid->RaidCount() < MAX_RAID_MEMBERS) {
 				if (raid->GroupCount(groupToUse) < 6)
 				{
 					raid->SendRaidCreate(this);
@@ -4323,9 +4304,6 @@ bool Client::GroupFollow(Client* inviter) {
 				inviter->SendGroupLeaderChangePacket(inviter->GetName());
 				inviter->SendGroupJoinAcknowledge();
 			}
-			group->GetXTargetAutoMgr()->merge(*inviter->GetXTargetAutoMgr());
-			inviter->GetXTargetAutoMgr()->clear();
-			inviter->SetXTargetAutoMgr(group->GetXTargetAutoMgr());
 		}
 
 		if (!group)
@@ -7018,413 +6996,37 @@ void Client::OpenLFGuildWindow()
 	FastQueuePacket(&outapp);
 }
 
-bool Client::IsXTarget(const Mob *m) const
-{
-	if(!XTargettingAvailable() || !m || (m->GetID() == 0))
-		return false;
+bool Client::IsXTarget(const Mob *m) const { return false; }
 
-	for(int i = 0; i < GetMaxXTargets(); ++i)
-	{
-		if(XTargets[i].ID == m->GetID())
-			return true;
-	}
-	return false;
-}
+bool Client::IsClientXTarget(const Client *c) const { return false; }
 
-bool Client::IsClientXTarget(const Client *c) const
-{
-	if(!XTargettingAvailable() || !c)
-		return false;
+void Client::UpdateClientXTarget(Client *c) {}
 
-	for(int i = 0; i < GetMaxXTargets(); ++i)
-	{
-		if(!strcasecmp(XTargets[i].Name, c->GetName()))
-			return true;
-	}
-	return false;
-}
+void Client::AddAutoXTarget(Mob *m, bool send) {}
 
+void Client::RemoveXTarget(Mob *m, bool OnlyAutoSlots) {}
 
-void Client::UpdateClientXTarget(Client *c)
-{
-	if(!XTargettingAvailable() || !c)
-		return;
+void Client::UpdateXTargetType(XTargetType Type, Mob *m, const char *Name) {}
 
-	for(int i = 0; i < GetMaxXTargets(); ++i)
-	{
-		if(!strcasecmp(XTargets[i].Name, c->GetName()))
-		{
-			XTargets[i].ID = c->GetID();
-			SendXTargetPacket(i, c);
-		}
-	}
-}
+void Client::SendXTargetPacket(uint32 Slot, Mob *m) {}
 
-// IT IS NOT SAFE TO CALL THIS IF IT'S NOT INITIAL AGGRO
-void Client::AddAutoXTarget(Mob *m, bool send)
-{
-	m_activeautohatermgr->increment_count(m);
+void Client::SendXTargetUpdates() {}
 
-	if (!XTargettingAvailable() || !XTargetAutoAddHaters || IsXTarget(m))
-		return;
+void Client::RemoveGroupXTargets() {}
 
-	for(int i = 0; i < GetMaxXTargets(); ++i)
-	{
-		if((XTargets[i].Type == Auto) && (XTargets[i].ID == 0))
-		{
-			XTargets[i].ID = m->GetID();
-			if (send) // if we don't send we're bulk sending updates later on
-				SendXTargetPacket(i, m);
-			else
-				XTargets[i].dirty = true;
-			break;
-		}
-	}
-}
+void Client::RemoveAutoXTargets() {}
 
-void Client::RemoveXTarget(Mob *m, bool OnlyAutoSlots)
-{
-	m_activeautohatermgr->decrement_count(m);
-	// now we may need to clean up our CurrentTargetNPC entries
-	for (int i = 0; i < GetMaxXTargets(); ++i) {
-		if (XTargets[i].Type == CurrentTargetNPC && XTargets[i].ID == m->GetID()) {
-			XTargets[i].Type = Auto;
-			XTargets[i].ID = 0;
-			XTargets[i].dirty = true;
-		}
-	}
-}
+void Client::ShowXTargets(Client *c) {}
 
-void Client::UpdateXTargetType(XTargetType Type, Mob *m, const char *Name)
-{
-	if(!XTargettingAvailable())
-		return;
+void Client::ProcessXTargetAutoHaters() {}
 
-	for(int i = 0; i < GetMaxXTargets(); ++i)
-	{
-		if(XTargets[i].Type == Type)
-		{
-			if(m)
-				XTargets[i].ID = m->GetID();
-			else
-				XTargets[i].ID = 0;
+void Client::JoinGroupXTargets(Group *g) {}
 
-			if(Name)
-				strncpy(XTargets[i].Name, Name, 64);
+void Client::LeaveGroupXTargets(Group *g) {}
 
-			SendXTargetPacket(i, m);
-		}
-	}
-}
+void Client::LeaveRaidXTargets(Raid *r) {}
 
-void Client::SendXTargetPacket(uint32 Slot, Mob *m)
-{
-	if(!XTargettingAvailable())
-		return;
-
-	uint32 PacketSize = 18;
-
-	if(m)
-		PacketSize += strlen(m->GetCleanName());
-	else
-	{
-		PacketSize += strlen(XTargets[Slot].Name);
-	}
-
-	auto outapp = new EQApplicationPacket(OP_XTargetResponse, PacketSize);
-	outapp->WriteUInt32(GetMaxXTargets());
-	outapp->WriteUInt32(1);
-	outapp->WriteUInt32(Slot);
-	if(m)
-	{
-		outapp->WriteUInt8(1);
-	}
-	else
-	{
-		if (strlen(XTargets[Slot].Name) && ((XTargets[Slot].Type == CurrentTargetPC) ||
-			(XTargets[Slot].Type == GroupTank) ||
-			(XTargets[Slot].Type == GroupAssist) ||
-			(XTargets[Slot].Type == Puller) ||
-			(XTargets[Slot].Type == RaidAssist1) ||
-			(XTargets[Slot].Type == RaidAssist2) ||
-			(XTargets[Slot].Type == RaidAssist3)))
-		{
-			outapp->WriteUInt8(2);
-		}
-		else
-		{
-			outapp->WriteUInt8(0);
-		}
-	}
-	outapp->WriteUInt32(XTargets[Slot].ID);
-	outapp->WriteString(m ? m->GetCleanName() : XTargets[Slot].Name);
-	FastQueuePacket(&outapp);
-}
-
-// This is a bulk packet, we use it when we remove something since we need to reorder the xtargets and maybe
-// add new mobs! Currently doesn't check if there is a dirty flag set, so it should only be called when there is
-void Client::SendXTargetUpdates()
-{
-	if (!XTargettingAvailable())
-		return;
-
-	int count = 0;
-	// header is 4 bytes max xtargets, 4 bytes count
-	// entry is 4 bytes slot, 1 byte unknown, 4 bytes ID, 65 char name
-	auto outapp = new EQApplicationPacket(OP_XTargetResponse, 8 + 74 * GetMaxXTargets()); // fuck it max size
-	outapp->WriteUInt32(GetMaxXTargets());
-	outapp->WriteUInt32(1); // we will correct this later
-	for (int i = 0; i < GetMaxXTargets(); ++i) {
-		if (XTargets[i].dirty) {
-			outapp->WriteUInt32(i);
-			// MQ2 checks this for valid mobs, so 0 is bad here at least ...
-			outapp->WriteUInt8(XTargets[i].ID ? 1 : 0);
-			outapp->WriteUInt32(XTargets[i].ID);
-			outapp->WriteString(XTargets[i].Name);
-			count++;
-			XTargets[i].dirty = false;
-		}
-	}
-
-	// RemoveXTarget probably got called with a mob not on our xtargets
-	if (count == 0) {
-		safe_delete(outapp);
-		return;
-	}
-
-	auto newbuff = new uchar[outapp->GetWritePosition()];
-	memcpy(newbuff, outapp->pBuffer, outapp->GetWritePosition());
-	safe_delete_array(outapp->pBuffer);
-	outapp->pBuffer = newbuff;
-	outapp->size = outapp->GetWritePosition();
-	outapp->SetWritePosition(4);
-	outapp->WriteUInt32(count);
-	FastQueuePacket(&outapp);
-}
-
-void Client::RemoveGroupXTargets()
-{
-	if(!XTargettingAvailable())
-		return;
-
-	for(int i = 0; i < GetMaxXTargets(); ++i)
-	{
-		if ((XTargets[i].Type == GroupTank) ||
-			(XTargets[i].Type == GroupAssist) ||
-			(XTargets[i].Type == Puller) ||
-			(XTargets[i].Type == RaidAssist1) ||
-			(XTargets[i].Type == RaidAssist2) ||
-			(XTargets[i].Type == RaidAssist3) ||
-			(XTargets[i].Type == GroupMarkTarget1) ||
-			(XTargets[i].Type == GroupMarkTarget2) ||
-			(XTargets[i].Type == GroupMarkTarget3))
-		{
-			XTargets[i].ID = 0;
-			XTargets[i].Name[0] = 0;
-			SendXTargetPacket(i, nullptr);
-		}
-	}
-}
-
-void Client::RemoveAutoXTargets()
-{
-	if(!XTargettingAvailable())
-		return;
-
-	for(int i = 0; i < GetMaxXTargets(); ++i)
-	{
-		if(XTargets[i].Type == Auto)
-		{
-			XTargets[i].ID = 0;
-			XTargets[i].Name[0] = 0;
-			SendXTargetPacket(i, nullptr);
-		}
-	}
-}
-
-void Client::ShowXTargets(Client *c)
-{
-	if (!c) {
-		return;
-	}
-
-	auto xtarget_count = 0;
-
-	for (int i = 0; i < GetMaxXTargets(); ++i) {
-		c->Message(
-			Chat::White,
-			fmt::format(
-				"xtarget slot [{}] type [{}] ID [{}] name [{}]",
-				i,
-				XTargets[i].Type,
-				XTargets[i].ID,
-				strlen(XTargets[i].Name) ? XTargets[i].Name : "No Name"
-			).c_str()
-		);
-
-		xtarget_count++;
-	}
-
-	auto &list = GetXTargetAutoMgr()->get_list();
-	 // yeah, I kept having to do something for debugging to tell if managers were the same object or not :P
-	 // so lets use the address as an "ID"
-	c->Message(
-		Chat::White,
-		fmt::format(
-			"XTargetAutoMgr ID [{}] size [{}]",
-			fmt::ptr(GetXTargetAutoMgr()),
-			list.size()
-		).c_str()
-	);
-
-	int count = 0;
-	for (auto &e : list) {
-		c->Message(
-			Chat::White,
-			fmt::format(
-				"Spawn ID: {} Count: {}",
-				e.spawn_id,
-				e.count
-			).c_str()
-		);
-
-		count++;
-
-		if (count == 20) {
-			break;
-		}
-	}
-}
-
-void Client::ProcessXTargetAutoHaters()
-{
-	if (!XTargettingAvailable())
-		return;
-
-	// move shit up! If the removed NPC was in a CurrentTargetNPC slot it becomes Auto
-	// and we need to potentially fill it
-	std::queue<int> empty_slots;
-	for (int i = 0; i < GetMaxXTargets(); ++i) {
-		if (XTargets[i].Type != Auto)
-			continue;
-
-		if (XTargets[i].ID != 0 && !GetXTargetAutoMgr()->contains_mob(XTargets[i].ID)) {
-			XTargets[i].ID = 0;
-			XTargets[i].dirty = true;
-		}
-
-		if (XTargets[i].ID == 0) {
-			empty_slots.push(i);
-			continue;
-		}
-
-		if (XTargets[i].ID != 0 && !empty_slots.empty()) {
-			int temp = empty_slots.front();
-			std::swap(XTargets[i], XTargets[temp]);
-			XTargets[i].dirty = XTargets[temp].dirty = true;
-			empty_slots.pop();
-			empty_slots.push(i);
-		}
-	}
-	// okay, now we need to check if we have any empty slots and if we have aggro
-	// We make the assumption that if we shuffled the NPCs up that they're still on the aggro
-	// list in the same order. We could probably do this better and try to calc if
-	// there are new NPCs for our empty slots on the manager, but ahhh fuck it.
-	if (!empty_slots.empty() && !GetXTargetAutoMgr()->empty() && XTargetAutoAddHaters) {
-		auto &haters = GetXTargetAutoMgr()->get_list();
-		for (auto &e : haters) {
-			auto *mob = entity_list.GetMob(e.spawn_id);
-			if (mob && !IsXTarget(mob)) {
-				auto slot = empty_slots.front();
-				empty_slots.pop();
-				XTargets[slot].dirty = true;
-				XTargets[slot].ID = mob->GetID();
-				strn0cpy(XTargets[slot].Name, mob->GetCleanName(), 64);
-			}
-			if (empty_slots.empty())
-				break;
-		}
-	}
-
-	m_dirtyautohaters = false;
-	SendXTargetUpdates();
-}
-
-// This function is called when a client is added to a group
-// Group leader joining isn't handled by this function
-void Client::JoinGroupXTargets(Group *g)
-{
-	if (!g)
-		return;
-
-	if (!GetXTargetAutoMgr()->empty()) {
-		g->GetXTargetAutoMgr()->merge(*GetXTargetAutoMgr());
-		GetXTargetAutoMgr()->clear();
-		RemoveAutoXTargets();
-	}
-
-	SetXTargetAutoMgr(g->GetXTargetAutoMgr());
-
-	if (!GetXTargetAutoMgr()->empty())
-		SetDirtyAutoHaters();
-}
-
-// This function is called when a client leaves a group
-void Client::LeaveGroupXTargets(Group *g)
-{
-	if (!g)
-		return;
-
-	SetXTargetAutoMgr(nullptr); // this will set it back to our manager
-	RemoveAutoXTargets();
-	entity_list.RefreshAutoXTargets(this); // this will probably break the temporal ordering, but whatever
-	// We now have a rebuilt, valid auto hater manager, so we need to demerge from the groups
-	if (!GetXTargetAutoMgr()->empty()) {
-		GetXTargetAutoMgr()->demerge(*g->GetXTargetAutoMgr()); // this will remove entries where we only had aggro
-		SetDirtyAutoHaters();
-	}
-}
-
-// This function is called when a client leaves a group
-void Client::LeaveRaidXTargets(Raid *r)
-{
-	if (!r)
-		return;
-
-	SetXTargetAutoMgr(nullptr); // this will set it back to our manager
-	RemoveAutoXTargets();
-	entity_list.RefreshAutoXTargets(this); // this will probably break the temporal ordering, but whatever
-	// We now have a rebuilt, valid auto hater manager, so we need to demerge from the groups
-	if (!GetXTargetAutoMgr()->empty()) {
-		GetXTargetAutoMgr()->demerge(*r->GetXTargetAutoMgr()); // this will remove entries where we only had aggro
-		SetDirtyAutoHaters();
-	}
-}
-
-void Client::SetMaxXTargets(uint8 NewMax)
-{
-	if(!XTargettingAvailable())
-		return;
-
-	if(NewMax > XTARGET_HARDCAP)
-		return;
-
-	MaxXTargets = NewMax;
-
-	Save(0);
-
-	for(int i = MaxXTargets; i < XTARGET_HARDCAP; ++i)
-	{
-		XTargets[i].Type = Auto;
-		XTargets[i].ID = 0;
-		XTargets[i].Name[0] = 0;
-	}
-
-	auto outapp = new EQApplicationPacket(OP_XTargetResponse, 8);
-	outapp->WriteUInt32(GetMaxXTargets());
-	outapp->WriteUInt32(0);
-	FastQueuePacket(&outapp);
-}
+void Client::SetMaxXTargets(uint8 NewMax) {}
 
 const char* Client::GetRacePlural(Client* client) {
 
@@ -8933,24 +8535,6 @@ void Client::ProcessAggroMeter()
 			add_entry(AggroMeter::AT_Group4);
 		if (m_aggrometer.set_pct(AggroMeter::AT_Group5, 0))
 			add_entry(AggroMeter::AT_Group5);
-	}
-
-	// now to go over our xtargets
-	// if the entry is an NPC it's our hate relative to the NPCs current tank
-	// if it's a PC, it's their hate relative to our current target
-	for (int i = 0; i < GetMaxXTargets(); ++i) {
-		if (XTargets[i].ID) {
-			auto mob = entity_list.GetMob(XTargets[i].ID);
-			if (mob) {
-				int ratio = 0;
-				if (mob->IsNPC())
-					ratio = mob->GetHateRatio(mob->GetTarget(), this);
-				else if (cur_tar)
-					ratio = cur_tar->GetHateRatio(cur_tar->GetTarget(), mob);
-				if (m_aggrometer.set_pct(static_cast<AggroMeter::AggroTypes>(AggroMeter::AT_XTarget1 + i), ratio))
-					add_entry(static_cast<AggroMeter::AggroTypes>(AggroMeter::AT_XTarget1 + i));
-			}
-		}
 	}
 
 	if (send || count) {

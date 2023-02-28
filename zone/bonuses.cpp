@@ -44,8 +44,6 @@ void Mob::CalcBonuses()
 	CalcMaxMana();
 	SetAttackTimer();
 	CalcAC();
-	CalcSeeInvisibleLevel();
-	CalcInvisibleLevel();
 
 	/* Fast walking NPC's are prone to disappear into walls/hills
 		We set this here because NPC's can cast spells to change walkspeed/runspeed
@@ -79,9 +77,6 @@ void Client::CalcBonuses()
 	CalcEdibleBonuses(&itembonuses);
 	CalcSpellBonuses(&spellbonuses);
 	CalcAABonuses(&aabonuses);
-
-	CalcSeeInvisibleLevel();
-	CalcInvisibleLevel();
 	
 	ProcessItemCaps(); // caps that depend on spell/aa bonuses
 
@@ -115,9 +110,6 @@ void Client::CalcBonuses()
 	rooted = FindType(SE_Root);
 
 	XPRate = 100 + spellbonuses.XPRateMod;
-
-	if (GetMaxXTargets() != 5 + aabonuses.extra_xtargets)
-		SetMaxXTargets(5 + aabonuses.extra_xtargets);
 
 	// hmm maybe a better way to do this
 	int metabolism = spellbonuses.Metabolism + itembonuses.Metabolism + aabonuses.Metabolism;

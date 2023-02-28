@@ -1305,8 +1305,7 @@ bool Bot::AI_IdleCastCheck() {
 
 		if (HasGroup() && GetGroup()->GetLeader() && GetGroup()->GetLeader()->IsClient()) {
 			test_against = GetGroup()->GetLeader()->CastToClient();
-		}
-		else if (GetOwner() && GetOwner()->IsClient()) {
+		} else if (GetOwner() && GetOwner()->IsClient()) {
 			test_against = GetOwner()->CastToClient();
 		}
 
@@ -1319,17 +1318,12 @@ bool Bot::AI_IdleCastCheck() {
 		// Healers WITHOUT pets will check if a heal is needed before buffing.
 		case CLERIC:
 		case PALADIN:
-		case RANGER:
-		case MONK:
-		case ROGUE:
-		case WARRIOR:
-		case BERSERKER: {
+		case RANGER: {
 			if (!entity_list.Bot_AICheckCloseBeneficialSpells(this, 100, BotAISpellRange, SpellType_Cure)) {
 				if (!AICastSpell(this, 100, SpellType_Heal)) {
 					if (!entity_list.Bot_AICheckCloseBeneficialSpells(this, 100, BotAISpellRange, SpellType_Heal)) {
 						if (!AICastSpell(this, 100, SpellType_Buff)) {
 							if (!entity_list.Bot_AICheckCloseBeneficialSpells(this, 100, BotAISpellRange, SpellType_Buff)) {
-								//
 							}
 						}
 					}
@@ -1339,13 +1333,46 @@ bool Bot::AI_IdleCastCheck() {
 			result = true;
 			break;
 		}
+		case MONK:
+		case ROGUE:
+		case WARRIOR:
+		case BERSERKER: {
+			if (!AICastSpell(this, 100, SpellType_Cure)) {
+				if (!AICastSpell(this, 100, SpellType_Heal)) {
+					if (!AICastSpell(this, 100, SpellType_Buff)) {
+						if (!entity_list.Bot_AICheckCloseBeneficialSpells(this, 100, BotAISpellRange, SpellType_Buff)) {
+						}
+					}
+				}
+			}
+
+			result = true;
+			break;
+		}
 		// Pets class will first cast their pet, then buffs
-		case DRUID:
+
 		case MAGICIAN:
 		case SHADOWKNIGHT:
-		case SHAMAN:
 		case NECROMANCER:
-		case ENCHANTER:
+		case ENCHANTER: {
+			if (!AICastSpell(this, 100, SpellType_Pet)) {
+				if (!AICastSpell(this, 100, SpellType_Cure)) {
+					if (!AICastSpell(GetPet(), 100, SpellType_Cure)) {
+						if (!AICastSpell(this, 100, SpellType_Buff)) {
+							if (!AICastSpell(GetPet(), 100, SpellType_Heal)) {
+								if (!entity_list.Bot_AICheckCloseBeneficialSpells(this, 100, BotAISpellRange, SpellType_Buff)) {
+								}
+							}
+						}
+					}
+				}
+			}
+
+			result = true;
+			break;
+		}
+		case DRUID:
+		case SHAMAN:
 		case BEASTLORD: {
 			if (!entity_list.Bot_AICheckCloseBeneficialSpells(this, 100, BotAISpellRange, SpellType_Cure)) {
 				if (!AICastSpell(this, 100, SpellType_Pet)) {
@@ -1367,16 +1394,12 @@ bool Bot::AI_IdleCastCheck() {
 		}
 		case WIZARD: { // This can eventually be move into the BEASTLORD case handler once pre-combat is fully implemented
 			if (pre_combat) {
-				if (!entity_list.Bot_AICheckCloseBeneficialSpells(this, 100, BotAISpellRange, SpellType_Cure)) {
-					if (!AICastSpell(this, 100, SpellType_Pet)) {
+				if (!AICastSpell(this, 100, SpellType_Pet)) {
+					if (!AICastSpell(this, 100, SpellType_Cure)) {
 						if (!AICastSpell(this, 100, SpellType_Heal)) {
-							if (!entity_list.Bot_AICheckCloseBeneficialSpells(this, 100, BotAISpellRange, SpellType_Heal)) {
-								if (!AICastSpell(this, 100, SpellType_Buff)) {
-									if (!AICastSpell(GetPet(), 100, SpellType_Heal)) {
-										if (!entity_list.Bot_AICheckCloseBeneficialSpells(this, 100, BotAISpellRange, SpellType_PreCombatBuff)) {
-											if (!entity_list.Bot_AICheckCloseBeneficialSpells(this, 100, BotAISpellRange, SpellType_Buff)) {
-											}
-										}
+							if (!AICastSpell(this, 100, SpellType_Buff)) {
+								if (!entity_list.Bot_AICheckCloseBeneficialSpells(this, 100, BotAISpellRange, SpellType_PreCombatBuff)) {
+									if (!entity_list.Bot_AICheckCloseBeneficialSpells(this, 100, BotAISpellRange, SpellType_Buff)) {
 									}
 								}
 							}
@@ -1385,15 +1408,11 @@ bool Bot::AI_IdleCastCheck() {
 				}
 			}
 			else {
-				if (!entity_list.Bot_AICheckCloseBeneficialSpells(this, 100, BotAISpellRange, SpellType_Cure)) {
+				if (!AICastSpell(this, 100, SpellType_Cure)) {
 					if (!AICastSpell(this, 100, SpellType_Pet)) {
 						if (!AICastSpell(this, 100, SpellType_Heal)) {
-							if (!entity_list.Bot_AICheckCloseBeneficialSpells(this, 100, BotAISpellRange, SpellType_Heal)) {
-								if (!AICastSpell(this, 100, SpellType_Buff)) {
-									if (!AICastSpell(GetPet(), 100, SpellType_Heal)) {
-										if (!entity_list.Bot_AICheckCloseBeneficialSpells(this, 100, BotAISpellRange, SpellType_Buff)) {
-										}
-									}
+							if (!AICastSpell(this, 100, SpellType_Buff)) {
+								if (!entity_list.Bot_AICheckCloseBeneficialSpells(this, 100, BotAISpellRange, SpellType_Buff)) {
 								}
 							}
 						}

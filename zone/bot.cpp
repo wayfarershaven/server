@@ -2240,16 +2240,16 @@ void Bot::AI_Bot_Init()
 	AIautocastspell_timer.reset(nullptr);
 	casting_spell_AIindex = static_cast<uint8>(AIBot_spells.size());
 
-	roambox_max_x = 0;
-	roambox_max_y = 0;
-	roambox_min_x = 0;
-	roambox_min_y = 0;
-	roambox_distance = 0;
-	roambox_destination_x = 0;
-	roambox_destination_y = 0;
-	roambox_destination_z = 0;
-	roambox_min_delay = 2500;
-	roambox_delay = 2500;
+	m_roambox.max_x     = 0;
+	m_roambox.max_y     = 0;
+	m_roambox.min_x     = 0;
+	m_roambox.min_y     = 0;
+	m_roambox.distance  = 0;
+	m_roambox.dest_x    = 0;
+	m_roambox.dest_y    = 0;
+	m_roambox.dest_z    = 0;
+	m_roambox.delay     = 2500;
+	m_roambox.min_delay = 2500;
 }
 
 void Bot::SpellProcess() {
@@ -2469,6 +2469,7 @@ void Bot::AI_Process()
 	}
 
 	// We also need a leash owner and follow mob (subset of primary AI criteria)
+	bot_group->VerifyGroup();
 	Client* leash_owner = (bot_group->GetLeader() && bot_group->GetLeader()->IsClient() ? bot_group->GetLeader()->CastToClient() : bot_owner);
 	if (!leash_owner) {
 		return;
@@ -3543,45 +3544,6 @@ void Bot::AI_Process()
 
 				m_auto_defend_timer.Start(zone->random.Int(250, 1250)); // random timer to simulate 'awareness' (cuts down on scanning overhead)
 				return;
-			}
-
-			if (m_auto_defend_timer.Check() && bot_owner->GetAggroCount()) {
-
-				if (NOT_HOLDING && NOT_PASSIVE) {
-
-					auto xhaters = bot_owner->GetXTargetAutoMgr();
-					if (xhaters && !xhaters->empty()) {
-
-						for (auto hater_iter : xhaters->get_list()) {
-
-							if (!hater_iter.spawn_id) {
-								continue;
-							}
-
-							if (bot_owner->GetBotPulling() && bot_owner->GetTarget() && hater_iter.spawn_id == bot_owner->GetTarget()->GetID()) {
-								continue;
-							}
-
-							auto hater = entity_list.GetMob(hater_iter.spawn_id);
-							if (hater && !hater->IsMezzed() && DistanceSquared(hater->GetPosition(), bot_owner->GetPosition()) <= leash_distance) {
-
-								// This is roughly equivilent to npc attacking a client pet owner
-								AddToHateList(hater, 1);
-								SetTarget(hater);
-								SetAttackingFlag();
-								if (HasPet() && (GetClass() != ENCHANTER || GetPet()->GetPetType() != petAnimation || GetAA(aaAnimationEmpathy) >= 2)) {
-
-									GetPet()->AddToHateList(hater, 1);
-									GetPet()->SetTarget(hater);
-								}
-
-								m_auto_defend_timer.Disable();
-
-								return;
-							}
-						}
-					}
-				}
 			}
 		}
 

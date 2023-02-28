@@ -1104,6 +1104,9 @@ int32 Mob::CheckAggroAmount(uint16 spell_id, Mob *target, bool isproc)
 				dispel = true;
 				break;
 			case SE_ReduceHate:
+				nonModifiedAggro = (1+ (~ (std::abs(CalcSpellEffectValue_formula(spells[spell_id].formula[o], spells[spell_id].base_value[o], spells[spell_id].max_value[o], slevel, spell_id)))));
+				LogAggro("Non Modified Aggro via SE_ReduceHate = [{}]", nonModifiedAggro);
+				break;
 			case SE_InstantHate:
 				nonModifiedAggro = CalcSpellEffectValue_formula(spells[spell_id].formula[o], spells[spell_id].base_value[o], spells[spell_id].max_value[o], slevel, spell_id);
 				break;
@@ -1245,9 +1248,6 @@ void Mob::ClearFeignMemory() {
 	while (remembered_feigned_mobid != feign_memory_list.end())
 	{
 		Mob* remembered_mob = entity_list.GetMob(*remembered_feigned_mobid);
-		if (remembered_mob->IsClient() && remembered_mob != nullptr) { //Still in zone
-			remembered_mob->CastToClient()->RemoveXTarget(this, false);
-		}
 		++remembered_feigned_mobid;
 	}
 

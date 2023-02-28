@@ -72,7 +72,6 @@ void HateList::WipeHateList(bool npc_only) {
 
 				if (m->IsClient()) {
 					m->CastToClient()->DecrementAggroCount();
-					m->CastToClient()->RemoveXTarget(hate_owner, true);
 				}
 				delete (*iterator);
 				iterator = list.erase(iterator);
@@ -909,7 +908,6 @@ void HateList::RemoveStaleEntries(int time_ms, float dist)
 
 				if (m->IsClient()) {
 					m->CastToClient()->DecrementAggroCount();
-					m->CastToClient()->RemoveXTarget(hate_owner, true);
 				}
 
 				delete (*it);

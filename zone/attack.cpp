@@ -493,8 +493,11 @@ bool Mob::AvoidDamage(Mob *other, DamageHitInfo &hit)
 			LogCombat("I am enraged, riposting frontal attack");
 			return true;
 		}
-		if (IsClient())
+
+		if (IsClient()) {
 			CastToClient()->CheckIncreaseSkill(EQ::skills::SkillRiposte, other, -10);
+		}
+		
 		// check auto discs ... I guess aa/items too :P
 		if (spellbonuses.RiposteChance == 10000 || aabonuses.RiposteChance == 10000 || itembonuses.RiposteChance == 10000) {
 			hit.damage_done = DMG_RIPOSTED;
@@ -511,9 +514,14 @@ bool Mob::AvoidDamage(Mob *other, DamageHitInfo &hit)
 		// AA Slippery Attacks
 		if (hit.hand == EQ::invslot::slotSecondary) {
 			int slip = aabonuses.OffhandRiposteFail + itembonuses.OffhandRiposteFail + spellbonuses.OffhandRiposteFail;
-			chance += chance * slip / 100;
+			if (slip == -100) { // Has Max Slippery Attacks or 100% chance to avoic offhand Rips
+				chance == 0;
+			} else {
+				chance += chance * slip / 100;
+			}
 		}
-		if (chance > 0 && zone->random.Roll(chance)) { // could be <0 from offhand stuff
+
+		if (chance > 0 && zone->random.Roll(chance)) {
 			hit.damage_done = DMG_RIPOSTED;
 			return true;
 		}
@@ -1790,6 +1798,7 @@ bool Client::Death(Mob* killerMob, int64 damage, uint16 spell, EQ::skills::Skill
 	bc->x = GetX();
 	bc->y = GetY();
 	bc->z = GetZ();
+
 	QueuePacket(&app2);
 
 	/* Make Death Packet */
@@ -1870,7 +1879,6 @@ bool Client::Death(Mob* killerMob, int64 damage, uint16 spell, EQ::skills::Skill
 
 	entity_list.RemoveFromTargets(this, true);
 	hate_list.RemoveEntFromHateList(this);
-	RemoveAutoXTargets();
 
 	//remove ourself from all proximities
 	ClearAllProximities();
@@ -2122,8 +2130,6 @@ bool NPC::Attack(Mob* other, int Hand, bool bRiposte, bool IsStrikethrough, bool
 		if (GetOwnerID())
 			SayString(NOT_LEGAL_TARGET);
 		if (other) {
-			if (other->IsClient())
-				other->CastToClient()->RemoveXTarget(this, false);
 			RemoveFromHateList(other);
 			LogCombat("I am not allowed to attack [{}]", other->GetName());
 		}
@@ -2706,8 +2712,6 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 				CheckTrivialMinMaxLevelDrop(killer);
 		}
 
-		entity_list.RemoveFromAutoXTargets(this);
-
 		uint32 emoteid = GetEmoteID();
 		corpse = new Corpse(this, &itemlist, GetNPCTypeID(), &NPCTypedata,
 							level > 54 ? RuleI(NPC, MajorNPCCorpseDecayTimeMS)
@@ -2797,8 +2801,6 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 				}
 			}
 		}
-	} else {
-		entity_list.RemoveFromXTargets(this);
 	}
 
 	// Parse quests even if we're killed by an NPC
@@ -2994,10 +2996,6 @@ void Mob::AddToHateList(Mob* other, int64 hate /*= 0*/, int64 damage /*= 0*/, bo
 
 	hate_list.AddEntToHateList(other, hate, damage, bFrenzy, !iBuffTic);
 
-	if (other->IsClient() && !on_hatelist && !IsOnFeignMemory(other)) {
-		other->CastToClient()->AddAutoXTarget(this);
-	}
-
 	// if other is a bot, add the bots client to the hate list
 	if (RuleB(Bots, Enabled)) {
 		while (other->IsBot()) {
@@ -3008,7 +3006,7 @@ void Mob::AddToHateList(Mob* other, int64 hate /*= 0*/, int64 damage /*= 0*/, bo
 
 			auto owner_ = other_->GetBotOwner()->CastToClient();
 			if (!owner_ || owner_->IsDead() ||
-				!owner_->InZone()) { // added isdead and inzone checks to avoid issues in AddAutoXTarget(...) below
+				!owner_->InZone()) {
 				break;
 			}
 
@@ -3016,7 +3014,6 @@ void Mob::AddToHateList(Mob* other, int64 hate /*= 0*/, int64 damage /*= 0*/, bo
 				AddFeignMemory(owner_);
 			} else if (!hate_list.IsEntOnHateList(owner_)) {
 				hate_list.AddEntToHateList(owner_, 0, 0, false, true);
-				owner_->AddAutoXTarget(this); // this was being called on dead/out-of-zone clients
 			}
 
 			break;
@@ -3031,7 +3028,6 @@ void Mob::AddToHateList(Mob* other, int64 hate /*= 0*/, int64 damage /*= 0*/, bo
 			if (!hate_list.IsEntOnHateList(other->CastToMerc()->GetMercOwner())) {
 				hate_list.AddEntToHateList(other->CastToMerc()->GetMercOwner(), 0, 0, false, true);
 			}
-			// if mercs are reworked to include adding 'this' to owner's xtarget list, this should reflect bots code above
 		}
 	} //MERC
 
@@ -3049,9 +3045,6 @@ void Mob::AddToHateList(Mob* other, int64 hate /*= 0*/, int64 damage /*= 0*/, bo
 					!(GetSpecialAbility(IMMUNE_AGGRO_CLIENT) && owner->IsClient()) &&
 					!(GetSpecialAbility(IMMUNE_AGGRO_NPC) && owner->IsNPC())
 					) {
-				if (owner->IsClient() && !CheckAggro(owner)) {
-					owner->CastToClient()->AddAutoXTarget(this);
-				}
 				hate_list.AddEntToHateList(owner, 0, 0, false, !iBuffTic);
 			}
 		}
@@ -6288,8 +6281,26 @@ void Mob::DoShieldDamageOnShielder(Mob *shield_target, int64 hit_damage_done, EQ
 void Mob::CommonBreakInvisibleFromCombat()
 {
 	//break invis when you attack
-	BreakInvisibleSpells();
+	if (invisible) {
+		LogCombat("Removing invisibility due to melee attack");
+		BuffFadeByEffect(SE_Invisibility);
+		BuffFadeByEffect(SE_Invisibility2);
+		invisible = false;
+	}
+	if (invisible_undead) {
+		LogCombat("Removing invisibility vs. undead due to melee attack");
+		BuffFadeByEffect(SE_InvisVsUndead);
+		BuffFadeByEffect(SE_InvisVsUndead2);
+		invisible_undead = false;
+	}
+	if (invisible_animals) {
+		LogCombat("Removing invisibility vs. animals due to melee attack");
+		BuffFadeByEffect(SE_InvisVsAnimals);
+		invisible_animals = false;
+	}
+
 	CancelSneakHide();
+	SetInvisible(0);
 
 	if (spellbonuses.NegateIfCombat) {
 		BuffFadeByEffect(SE_NegateIfCombat);

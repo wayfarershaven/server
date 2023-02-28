@@ -315,17 +315,6 @@ void Perl_Mob_SetInvisible(Mob* self, uint8_t state) // @categories Script Utili
 	self->SetInvisible(state);
 }
 
-void Perl_Mob_SetSeeInvisibleLevel(Mob* self, uint8 see_invis_level) // @categories Script Utility
-{
-	self->SetInnateSeeInvisible(see_invis_level);
-	self->CalcSeeInvisibleLevel();
-}
-
-void Perl_Mob_SetSeeInvisibleUndeadLevel(Mob* self, uint8 see_invis_undead_level) // @categories Script Utility
-{
-	self->SetSeeInvisibleUndead(see_invis_undead_level);
-}
-
 bool Perl_Mob_FindBuff(Mob* self, uint16 spell_id) // @categories Spells and Disciplines, Script Utility
 {
 	return self->FindBuff(spell_id);
@@ -2771,6 +2760,11 @@ Bot* Perl_Mob_GetHateRandomBot(Mob* self) // @categories Hate and Aggro
 	return self->GetHateRandomBot();
 }
 
+float Perl_Mob_GetDefaultRaceSize(Mob* self) // @categories Script Utility
+{
+	return self->GetDefaultRaceSize();
+}
+
 void perl_register_mob()
 {
 	perl::interpreter perl(PERL_GET_THX);
@@ -2954,6 +2948,7 @@ void perl_register_mob()
 	package.add("GetClassName", &Perl_Mob_GetClassName);
 	package.add("GetCleanName", &Perl_Mob_GetCleanName);
 	package.add("GetCorruption", &Perl_Mob_GetCorruption);
+	package.add("GetDefaultRaceSize", &Perl_Mob_GetDefaultRaceSize);
 	package.add("GetDEX", &Perl_Mob_GetDEX);
 	package.add("GetDR", &Perl_Mob_GetDR);
 	package.add("GetDamageAmount", &Perl_Mob_GetDamageAmount);
@@ -3259,8 +3254,6 @@ void perl_register_mob()
 	package.add("SetRace", &Perl_Mob_SetRace);
 	package.add("SetRunAnimSpeed", &Perl_Mob_SetRunAnimSpeed);
 	package.add("SetRunning", &Perl_Mob_SetRunning);
-	package.add("SetSeeInvisibleLevel", &Perl_Mob_SetSeeInvisibleLevel);
-	package.add("SetSeeInvisibleUndeadLevel", &Perl_Mob_SetSeeInvisibleUndeadLevel);
 	package.add("SetSlotTint", &Perl_Mob_SetSlotTint);
 	package.add("SetSpecialAbility", &Perl_Mob_SetSpecialAbility);
 	package.add("SetSpecialAbilityParam", &Perl_Mob_SetSpecialAbilityParam);
