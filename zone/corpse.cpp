@@ -626,14 +626,7 @@ bool Corpse::Save() {
 		memcpy((char*)&dbpc->items[x++], (char*)item, sizeof(player_lootitem::ServerLootItem_Struct));
 	}
 
-	glm::vec3 position;
-	position.x = m_Position.x;
-	position.y = m_Position.y;
-	position.z = m_Position.z;
-
-	if (zone->HasMap()) {
-		m_Position.z = zone->zonemap->FindBestZ(position, nullptr);
-	}
+	FixZ();
 
 	/* Create New Corpse*/
 	if (corpse_db_id == 0) {
