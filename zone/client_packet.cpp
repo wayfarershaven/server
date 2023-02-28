@@ -3889,11 +3889,17 @@ void Client::Handle_OP_Begging(const EQApplicationPacket *app)
 		return;
 	}
 
-	if (!HasSkill(EQ::skills::SkillBegging) || !GetTarget())
+	if (!HasSkill(EQ::skills::SkillBegging) || !GetTarget()) {
 		return;
+	}
 
-	if (GetTarget()->GetClass() == LDON_TREASURE)
+	if (GetTarget()->GetClass() == LDON_TREASURE) {
 		return;
+	}
+
+	if (GetTarget()->IsPet()) {
+		return;
+	}
 
 	p_timers.Start(pTimerBeggingPickPocket, 8);
 
@@ -3901,8 +3907,7 @@ void Client::Handle_OP_Begging(const EQApplicationPacket *app)
 	BeggingResponse_Struct *brs = (BeggingResponse_Struct*)outapp->pBuffer;
 
 	brs->Result = 0; // Default, Fail.
-	if (GetTarget() == this)
-	{
+	if (GetTarget() == this) {
 		FastQueuePacket(&outapp);
 		return;
 	}
