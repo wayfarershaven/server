@@ -760,6 +760,11 @@ void Perl_NPC_ScaleNPC(NPC* self, uint8 npc_level, bool always_scale_stats, bool
 	return self->ScaleNPC(npc_level, always_scale_stats, always_scale_special_abilities);
 }
 
+bool Perl_NPC_IsUnderwaterOnly(NPC* self) // @categories Script Utility
+{
+	return self->IsUnderwaterOnly();
+}
+
 bool Perl_NPC_HasSpecialAbilities(NPC* self) // @categories Script Utility
 {
 	return self->HasSpecialAbilities();
@@ -862,6 +867,7 @@ void perl_register_npc()
 	package.add("IsRaidTarget", &Perl_NPC_IsRaidTarget);
 	package.add("IsRareSpawn", &Perl_NPC_IsRareSpawn);
 	package.add("IsTaunting", &Perl_NPC_IsTaunting);
+	package.add("IsUnderwaterOnly", (bool(*)(NPC*))&Perl_NPC_IsUnderwaterOnly);
 	package.add("MerchantCloseShop", &Perl_NPC_MerchantCloseShop);
 	package.add("MerchantOpenShop", &Perl_NPC_MerchantOpenShop);
 	package.add("ModifyNPCStat", &Perl_NPC_ModifyNPCStat);

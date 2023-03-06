@@ -799,6 +799,11 @@ void Lua_NPC::SetLDoNTrapDetected(bool is_detected) {
 	self->SetLDoNTrapDetected(is_detected);
 }
 
+bool Lua_NPC::IsUnderwaterOnly() {
+	Lua_Safe_Call_Bool();
+	return self->IsUnderwaterOnly();
+}
+
 bool Lua_NPC::HasSpecialAbilities() {
 	Lua_Safe_Call_Bool();
 	return self->HasSpecialAbilities();
@@ -896,6 +901,7 @@ luabind::scope lua_register_npc() {
 	.def("IsRaidTarget", (bool(Lua_NPC::*)(void))&Lua_NPC::IsRaidTarget)
 	.def("IsRareSpawn", (bool(Lua_NPC::*)(void))&Lua_NPC::IsRareSpawn)
 	.def("IsTaunting", (bool(Lua_NPC::*)(void))&Lua_NPC::IsTaunting)
+	.def("IsUnderwaterOnly", (bool(Lua_NPC::*)(void))&Lua_NPC::IsUnderwaterOnly)
 	.def("MerchantCloseShop", (void(Lua_NPC::*)(void))&Lua_NPC::MerchantCloseShop)
 	.def("MerchantOpenShop", (void(Lua_NPC::*)(void))&Lua_NPC::MerchantOpenShop)
 	.def("ModifyNPCStat", (void(Lua_NPC::*)(std::string,std::string))&Lua_NPC::ModifyNPCStat)

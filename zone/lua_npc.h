@@ -179,6 +179,7 @@ public:
 	void ScaleNPC(uint8 npc_level);
 	void ScaleNPC(uint8 npc_level, bool always_scale_stats);
 	void ScaleNPC(uint8 npc_level, bool always_scale_stats, bool always_scale_special_abilities);
+	bool IsUnderwaterOnly();
 	bool HasSpecialAbilities();
 };
 
