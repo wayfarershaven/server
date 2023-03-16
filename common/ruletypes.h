@@ -229,6 +229,7 @@ RULE_INT(Character, BeastlordTrackingDistanceMultiplier, 0, "If you want beastlo
 RULE_INT(Character, BerserkerTrackingDistanceMultiplier, 0, "If you want berserkers to be able to track, increase this above 0.  0 disables tracking packets.")
 RULE_BOOL(Character, OnInviteReceiveAlreadyinGroupMessage, true, "If you want clients to receive a message when trying to invite a player into a group that is currently in another group.")
 RULE_BOOL(Character, IgnoreLevelBasedHasteCaps, false, "Ignores hard coded level based haste caps.")
+RULE_BOOL(Character, LeaveCursorMoneyOnCorpse, false, "Enable or disable leaving cursor money on player corpses")
 RULE_CATEGORY_END()
 
 RULE_CATEGORY(Mercs)
