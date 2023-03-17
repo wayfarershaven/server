@@ -2083,9 +2083,15 @@ void Client::Handle_OP_AdventureMerchantPurchase(const EQApplicationPacket *app)
 	{
 		SetEbonCrystals(GetEbonCrystals() - (int32)item->LDoNPrice);
 	}
+
 	int16 charges = 1;
-	if (item->MaxCharges != 0)
+	if (item->MaxCharges != 0) {
 		charges = item->MaxCharges;
+	}
+
+	if (RuleB(Character, EnableDiscoveredItems) && !GetGM() && !IsDiscovered(item->ID)) {
+		DiscoverItem(item->ID);
+	}
 
 	EQ::ItemInstance *inst = database.CreateItem(item, charges);
 	if (!AutoPutLootInInventory(*inst, true, true))
@@ -2633,6 +2639,10 @@ void Client::Handle_OP_AltCurrencyPurchase(const EQApplicationPacket *app)
 			RecordPlayerEventLog(PlayerEvent::MERCHANT_PURCHASE, e);
 		}
 
+		if (RuleB(Character, EnableDiscoveredItems) && !GetGM() && !IsDiscovered(item->ID)) {
+			DiscoverItem(item->ID);
+		}
+		
 		EQ::ItemInstance *inst = database.CreateItem(item, charges);
 		if (!AutoPutLootInInventory(*inst, true, true))
 		{
@@ -3889,11 +3899,17 @@ void Client::Handle_OP_Begging(const EQApplicationPacket *app)
 		return;
 	}
 
-	if (!HasSkill(EQ::skills::SkillBegging) || !GetTarget())
+	if (!HasSkill(EQ::skills::SkillBegging) || !GetTarget()) {
 		return;
+	}
 
-	if (GetTarget()->GetClass() == LDON_TREASURE)
+	if (GetTarget()->GetClass() == LDON_TREASURE) {
 		return;
+	}
+
+	if (GetTarget()->IsPet()) {
+		return;
+	}
 
 	p_timers.Start(pTimerBeggingPickPocket, 8);
 
@@ -3901,8 +3917,7 @@ void Client::Handle_OP_Begging(const EQApplicationPacket *app)
 	BeggingResponse_Struct *brs = (BeggingResponse_Struct*)outapp->pBuffer;
 
 	brs->Result = 0; // Default, Fail.
-	if (GetTarget() == this)
-	{
+	if (GetTarget() == this) {
 		FastQueuePacket(&outapp);
 		return;
 	}

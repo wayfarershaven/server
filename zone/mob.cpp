@@ -519,6 +519,8 @@ Mob::Mob(
 
 Mob::~Mob()
 {
+	quest_manager.stopalltimers(this);
+	
 	mMovementManager->RemoveMob(this);
 
 	AI_Stop();
@@ -3774,6 +3776,7 @@ void Mob::WipeHateList(bool npc_only) {
 		}
 	} else {
 		hate_list.WipeHateList(npc_only);
+		ClearRampage();
 	}
 }
 
