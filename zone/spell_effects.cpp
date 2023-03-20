@@ -10161,14 +10161,16 @@ void Mob::ApplySpellEffectIllusion(int32 spell_id, Mob *caster, int buffslot, in
 		// Specific Gender Illusions
 		if (spell_id == SPELL_ILLUSION_MALE || spell_id == SPELL_ILLUSION_FEMALE) {
 			int specific_gender = -1;
-			// Male
-			if (spell_id == SPELL_ILLUSION_MALE)
+			
+			if (spell_id == SPELL_ILLUSION_MALE) { // Male
 				specific_gender = 0;
-			// Female
-			else if (spell_id == SPELL_ILLUSION_FEMALE)
+			} else if (spell_id == SPELL_ILLUSION_FEMALE) { // Female
 				specific_gender = 1;
+			}
+
 			if (specific_gender > -1) {
 				if (caster && caster->GetTarget()) {
+
 					SendIllusionPacket
 					(
 						caster->GetTarget()->GetBaseRace(),
@@ -10177,13 +10179,12 @@ void Mob::ApplySpellEffectIllusion(int32 spell_id, Mob *caster, int buffslot, in
 					);
 				}
 			}
-		}
-		// Change Gender Illusions
-		else {
+		} else { // Change Gender Illusions
 			if (caster && caster->GetTarget()) {
 				int opposite_gender = 0;
-				if (caster->GetTarget()->GetGender() == 0)
+				if (caster->GetTarget()->GetGender() == 0) {
 					opposite_gender = 1;
+				}
 
 				SendIllusionPacket
 				(
@@ -10193,9 +10194,7 @@ void Mob::ApplySpellEffectIllusion(int32 spell_id, Mob *caster, int buffslot, in
 				);
 			}
 		}
-	}
-	// Racial Illusions
-	else {
+	} else { // Racial Illusions
 		auto gender_id = (
 			max > 0 &&
 			(
@@ -10211,15 +10210,14 @@ void Mob::ApplySpellEffectIllusion(int32 spell_id, Mob *caster, int buffslot, in
 			gender_id
 		);
 
-		if (base != RACE_ELEMENTAL_75) {
+		if (base != RACE_ELEMENTAL_75 && base != RACE_DRAKKIN_522) {
 			if (max > 0) {
 				if (limit == 0) {
 					SendIllusionPacket(
 						base,
 						gender_id
 					);
-				}
-				else {
+				} else {
 					if (max != 3) {
 						SendIllusionPacket(
 							base,
@@ -10227,8 +10225,7 @@ void Mob::ApplySpellEffectIllusion(int32 spell_id, Mob *caster, int buffslot, in
 							limit,
 							max
 						);
-					}
-					else {
+					} else {
 						SendIllusionPacket(
 							base,
 							gender_id,
@@ -10237,8 +10234,7 @@ void Mob::ApplySpellEffectIllusion(int32 spell_id, Mob *caster, int buffslot, in
 						);
 					}
 				}
-			}
-			else {
+			} else {
 				SendIllusionPacket(
 					base,
 					gender_id,
@@ -10246,9 +10242,23 @@ void Mob::ApplySpellEffectIllusion(int32 spell_id, Mob *caster, int buffslot, in
 					max
 				);
 			}
-
-		}
-		else {
+		} else if (base == RACE_DRAKKIN_522) {
+			SendIllusionPacket(
+					base,
+					gender_id,
+					0xFF,
+					0xFF,
+					0xFF,
+					0xFF,
+					0xFF,
+					0xFF,
+					0xFF,
+					0xFF,
+					0xFF,
+					0xFF,
+					limit
+				);
+		} else {
 			SendIllusionPacket(
 				base,
 				gender_id,
@@ -10275,8 +10285,7 @@ void Mob::ApplySpellEffectIllusion(int32 spell_id, Mob *caster, int buffslot, in
 			)
 		) {
 			buffs[buffslot].persistant_buff = 1;
-		}
-		else {
+		} else {
 			buffs[buffslot].persistant_buff = 0;
 		}
 	}
