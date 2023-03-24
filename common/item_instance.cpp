@@ -609,7 +609,7 @@ bool EQ::ItemInstance::UpdateOrnamentationInfo() {
 			SetOrnamentHeroModel(ornamentItem->HerosForgeModel);
 			if (strlen(ornamentItem->IDFile) > 2)
 			{
-				SetOrnamentationIDFile(atoi(&ornamentItem->IDFile[2]));
+				SetOrnamentationIDFile(Strings::ToInt(&ornamentItem->IDFile[2]));
 			}
 			else
 			{

@@ -23,7 +23,7 @@ void DataBucket::SetData(std::string bucket_key, std::string bucket_value, std::
 		if (isalpha(expires_time[0]) || isalpha(expires_time[expires_time.length() - 1])) {
 			expires_time_unix = (long long) std::time(nullptr) + Strings::TimeToSeconds(expires_time);
 		} else {
-			expires_time_unix = (long long) std::time(nullptr) + atoi(expires_time.c_str());
+			expires_time_unix = (long long) std::time(nullptr) + Strings::ToInt(expires_time.c_str());
 		}
 	}
 
@@ -143,10 +143,11 @@ uint64 DataBucket::DoesBucketExist(std::string bucket_key) {
 	}
 
 	auto row = results.begin();
-	if (results.RowCount() != 1)
+	if (results.RowCount() != 1) {
 		return 0;
+	}
 
-	return std::stoull(row[0]);
+	return Strings::ToUnsignedBigInt(row[0]);
 }
 
 /**

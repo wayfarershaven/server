@@ -1232,17 +1232,17 @@ void Client::Handle_Connect_OP_ZoneEntry(const EQApplicationPacket *app)
 	);
 	auto results = database.QueryDatabase(query);
 	for (auto row : results) {
-		if (row[4] && atoi(row[4]) > 0) {
-			guild_id = atoi(row[4]);
-			guildrank = row[5] ? atoi(row[5]) : GUILD_RANK_NONE;
+		if (row[4] && Strings::ToInt(row[4]) > 0) {
+			guild_id = Strings::ToInt(row[4]);
+			guildrank = row[5] ? Strings::ToInt(row[5]) : GUILD_RANK_NONE;
 		}
 
 		SetEXPEnabled(atobool(row[6]));
 		
-		if (LFP) { LFP = atoi(row[0]); }
-		if (LFG) { LFG = atoi(row[1]); }
+		if (LFP) { LFP = Strings::ToInt(row[0]); }
+		if (LFG) { LFG = Strings::ToInt(row[1]); }
 		if (row[3]) {
-			firstlogon = atoi(row[3]);
+			firstlogon = Strings::ToInt(row[3]);
 		}
 	}
 
@@ -4391,6 +4391,7 @@ void Client::Handle_OP_CastSpell(const EQApplicationPacket *app)
 								args.emplace_back(p_inst);
 								i = parse->EventPlayer(EVENT_ITEM_CLICK_CAST_CLIENT, this, std::to_string(castspell->inventoryslot), 0, &args);
 							}
+
 							if (i == 0) {
 								CastSpell(item->Click.Effect, castspell->target_id, slot, item->CastTime, 0, 0, castspell->inventoryslot);
 							}
@@ -4442,25 +4443,25 @@ void Client::Handle_OP_CastSpell(const EQApplicationPacket *app)
 				}
 				else
 				{
-					Message(Chat::White, "Error: unknown item->Click.Type (0x%02x)", item->Click.Type);
+					Message(Chat::Red, "Error: unknown item->Click.Type (0x%02x)", item->Click.Type);
 				}
 			}
 			else
 			{
-				Message(Chat::White, "Error: item not found in inventory slot #%i", castspell->inventoryslot);
+				Message(Chat::Red, "Error: item not found in inventory slot #%i", castspell->inventoryslot);
 				InterruptSpell(castspell->spell_id);
 			}
 		}
 		else
 		{
-			Message(Chat::White, "Error: castspell->inventoryslot >= %i (0x%04x)", EQ::invslot::slotCursor, castspell->inventoryslot);
+			Message(Chat::Red, "Error: castspell->inventoryslot >= %i (0x%04x)", EQ::invslot::slotCursor, castspell->inventoryslot);
 			InterruptSpell(castspell->spell_id);
 		}
 	}
 	/* Discipline -- older clients use the same slot as items, but we translate to it's own */
 	else if (slot == CastingSlot::Discipline) {
 		if (!UseDiscipline(castspell->spell_id, castspell->target_id)) {
-			LogSpells("Unknown ability being used by [{}], spell being cast is: [{}]\n", GetName(), castspell->spell_id);
+			LogSpells("Unknown ability being used by [{}] spell being cast is: [{}]\n", GetName(), castspell->spell_id);
 			InterruptSpell(castspell->spell_id);
 			return;
 		}
@@ -4564,7 +4565,7 @@ void Client::Handle_OP_ClickDoor(const EQApplicationPacket *app)
 	Doors* currentdoor = entity_list.FindDoor(cd->doorid);
 	if (!currentdoor)
 	{
-		Message(Chat::White, "Unable to find door, please notify a GM (DoorID: %i).", cd->doorid);
+		Message(Chat::Red, "Unable to find door, please notify a GM (DoorID: %i).", cd->doorid);
 		return;
 	}
 
@@ -6233,6 +6234,7 @@ void Client::Handle_OP_EnvDamage(const EQApplicationPacket *app)
 		return;
 	} else {
 		SetHP(GetHP() - (damage * RuleR(Character, EnvironmentDamageMulipliter)));
+
 		if (parse->PlayerHasQuestSub(EVENT_ENVIRONMENTAL_DAMAGE)) {
 			int         final_damage  = (damage * RuleR(Character, EnvironmentDamageMulipliter));
 			const auto& export_string = fmt::format(
@@ -6552,7 +6554,7 @@ void Client::Handle_OP_GMGoto(const EQApplicationPacket *app)
 		MovePC(zone->GetZoneID(), zone->GetInstanceID(), gt->GetX(), gt->GetY(), gt->GetZ(), gt->GetHeading());
 	}
 	else if (!worldserver.Connected())
-		Message(Chat::White, "Error: World server disconnected.");
+		Message(Chat::Red, "Error: World server disconnected.");
 	else {
 		auto pack = new ServerPacket(ServerOP_GMGoto, sizeof(ServerGMGoto_Struct));
 		memset(pack->pBuffer, 0, pack->size);
@@ -6598,7 +6600,7 @@ void Client::Handle_OP_GMKick(const EQApplicationPacket *app)
 	Client* client = entity_list.GetClientByName(gmk->name);
 	if (client == 0) {
 		if (!worldserver.Connected())
-			Message(Chat::White, "Error: World server disconnected");
+			Message(Chat::Red, "Error: World server disconnected");
 		else {
 			auto pack = new ServerPacket(ServerOP_KickPlayer, sizeof(ServerKickPlayer_Struct));
 			ServerKickPlayer_Struct* skp = (ServerKickPlayer_Struct*)pack->pBuffer;
@@ -6640,7 +6642,7 @@ void Client::Handle_OP_GMKill(const EQApplicationPacket *app)
 	}
 	else {
 		if (!worldserver.Connected())
-			Message(Chat::White, "Error: World server disconnected");
+			Message(Chat::Red, "Error: World server disconnected");
 		else {
 			auto pack = new ServerPacket(ServerOP_KillPlayer, sizeof(ServerKillPlayer_Struct));
 			ServerKillPlayer_Struct* skp = (ServerKillPlayer_Struct*)pack->pBuffer;
@@ -6781,15 +6783,15 @@ void Client::Handle_OP_GMSearchCorpse(const EQApplicationPacket *app)
 
 		strn0cpy(charName, row[0], sizeof(charName));
 
-		uint32 ZoneID = atoi(row[1]);
-		float CorpseX = atof(row[2]);
-		float CorpseY = atof(row[3]);
-		float CorpseZ = atof(row[4]);
+		uint32 ZoneID = Strings::ToInt(row[1]);
+		float CorpseX = Strings::ToFloat(row[2]);
+		float CorpseY = Strings::ToFloat(row[3]);
+		float CorpseZ = Strings::ToFloat(row[4]);
 
 		strn0cpy(time_of_death, row[5], sizeof(time_of_death));
 
-		bool corpseRezzed = atoi(row[6]);
-		bool corpseBuried = atoi(row[7]);
+		bool corpseRezzed = Strings::ToInt(row[6]);
+		bool corpseBuried = Strings::ToInt(row[7]);
 
 		popupText += StringFormat("<tr><td>%s</td><td>%s</td><td>%8.0f</td><td>%8.0f</td><td>%8.0f</td><td>%s</td><td>%s</td><td>%s</td></tr>",
 			charName, StaticGetZoneName(ZoneID), CorpseX, CorpseY, CorpseZ, time_of_death,
@@ -6811,7 +6813,7 @@ void Client::Handle_OP_GMSearchCorpse(const EQApplicationPacket *app)
 void Client::Handle_OP_GMServers(const EQApplicationPacket *app)
 {
 	if (!worldserver.Connected())
-		Message(Chat::White, "Error: World server disconnected");
+		Message(Chat::Red, "Error: World server disconnected");
 	else {
 		auto pack = new ServerPacket(ServerOP_ZoneStatus, strlen(GetName()) + 2);
 		memset(pack->pBuffer, (uint8)admin, 1);
@@ -7668,7 +7670,7 @@ void Client::Handle_OP_GuildBank(const EQApplicationPacket *app)
 		}
 		else
 		{
-			Message(Chat::White, "Unable to withdraw 0 quantity of %s", inst->GetItem()->Name);
+			Message(Chat::Red, "Unable to withdraw 0 quantity of %s", inst->GetItem()->Name);
 		}
 
 		safe_delete(inst);
@@ -7805,11 +7807,11 @@ void Client::Handle_OP_GuildDelete(const EQApplicationPacket *app)
 	LogGuilds("Received OP_GuildDelete");
 
 	if (!IsInAGuild() || !guild_mgr.IsGuildLeader(GuildID(), CharacterID()))
-		Message(Chat::White, "You are not a guild leader or not in a guild.");
+		Message(Chat::Red, "You are not a guild leader or not in a guild.");
 	else {
 		LogGuilds("Deleting guild [{}] ([{}])", guild_mgr.GetGuildName(GuildID()), GuildID());
 		if (!guild_mgr.DeleteGuild(GuildID()))
-			Message(Chat::White, "Guild delete failed.");
+			Message(Chat::Red, "Guild delete failed.");
 		else {
 			Message(Chat::White, "Guild successfully deleted.");
 		}
@@ -7826,26 +7828,26 @@ void Client::Handle_OP_GuildDemote(const EQApplicationPacket *app)
 	}
 
 	if (!IsInAGuild())
-		Message(Chat::White, "Error: You arent in a guild!");
+		Message(Chat::Red, "Error: You aren't in a guild!");
 	else if (!guild_mgr.CheckPermission(GuildID(), GuildRank(), GUILD_DEMOTE))
-		Message(Chat::White, "You dont have permission to invite.");
+		Message(Chat::Red, "You don't have permission to demote.");
 	else if (!worldserver.Connected())
-		Message(Chat::White, "Error: World server disconnected");
+		Message(Chat::Red, "Error: World server disconnected");
 	else {
 		GuildDemoteStruct* demote = (GuildDemoteStruct*)app->pBuffer;
 
 		CharGuildInfo gci;
 		if (!guild_mgr.GetCharInfo(demote->target, gci)) {
-			Message(Chat::White, "Unable to find '%s'", demote->target);
+			Message(Chat::Red, "Unable to find '%s'", demote->target);
 			return;
 		}
 		if (gci.guild_id != GuildID()) {
-			Message(Chat::White, "You aren't in the same guild, what do you think you are doing?");
+			Message(Chat::Red, "You aren't in the same guild, what do you think you are doing?");
 			return;
 		}
 
 		if (gci.rank < 1) {
-			Message(Chat::White, "%s cannot be demoted any further!", demote->target);
+			Message(Chat::Red, "%s cannot be demoted any further!", demote->target);
 			return;
 		}
 		uint8 rank = gci.rank - 1;
@@ -7879,11 +7881,11 @@ void Client::Handle_OP_GuildInvite(const EQApplicationPacket *app)
 	GuildCommand_Struct* gc = (GuildCommand_Struct*)app->pBuffer;
 
 	if (!IsInAGuild())
-		Message(Chat::White, "Error: You are not in a guild!");
+		Message(Chat::Red, "Error: You are not in a guild!");
 	else if (gc->officer > GUILD_MAX_RANK)
 		Message(Chat::Red, "Invalid rank.");
 	else if (!worldserver.Connected())
-		Message(Chat::White, "Error: World server disconnected");
+		Message(Chat::Red, "Error: World server disconnected");
 	else {
 
 		//ok, the invite is also used for changing rank as well.
@@ -7903,7 +7905,7 @@ void Client::Handle_OP_GuildInvite(const EQApplicationPacket *app)
 				if (gc->officer < client->GuildRank()) {
 					//demotion
 					if (!guild_mgr.CheckPermission(GuildID(), GuildRank(), GUILD_DEMOTE)) {
-						Message(Chat::Red, "You dont have permission to demote.");
+						Message(Chat::Red, "You don't have permission to demote.");
 						return;
 					}
 
@@ -7925,7 +7927,7 @@ void Client::Handle_OP_GuildInvite(const EQApplicationPacket *app)
 				else if (gc->officer > client->GuildRank()) {
 					//promotion
 					if (!guild_mgr.CheckPermission(GuildID(), GuildRank(), GUILD_PROMOTE)) {
-						Message(Chat::Red, "You dont have permission to demote.");
+						Message(Chat::Red, "You don't have permission to demote.");
 						return;
 					}
 
@@ -7960,7 +7962,7 @@ void Client::Handle_OP_GuildInvite(const EQApplicationPacket *app)
 				}
 
 				if (!guild_mgr.CheckPermission(GuildID(), GuildRank(), GUILD_INVITE)) {
-					Message(Chat::Red, "You dont have permission to invite.");
+					Message(Chat::Red, "You don't have permission to invite.");
 					return;
 				}
 
@@ -8048,9 +8050,9 @@ void Client::Handle_OP_GuildInviteAccept(const EQApplicationPacket *app)
 
 	//uint32 tmpeq = gj->guildeqid;
 	if (IsInAGuild() && gj->response == GuildRank())
-		Message(Chat::White, "Error: You're already in a guild!");
+		Message(Chat::Red, "Error: You're already in a guild!");
 	else if (!worldserver.Connected())
-		Message(Chat::White, "Error: World server disconnected");
+		Message(Chat::Red, "Error: World server disconnected");
 	else {
 		LogGuilds("Guild Invite Accept: guild [{}], response [{}], inviter [{}], person [{}]",
 			gj->guildeqid, gj->response, gj->inviter, gj->newmember);
@@ -8141,11 +8143,11 @@ void Client::Handle_OP_GuildLeader(const EQApplicationPacket *app)
 	app->pBuffer[app->size - 1] = 0;
 	GuildMakeLeader* gml = (GuildMakeLeader*)app->pBuffer;
 	if (!IsInAGuild())
-		Message(Chat::White, "Error: You arent in a guild!");
+		Message(Chat::Red, "Error: You aren't in a guild!");
 	else if (GuildRank() != GUILD_LEADER)
-		Message(Chat::White, "Error: You arent the guild leader!");
+		Message(Chat::Red, "Error: You aren't the guild leader!");
 	else if (!worldserver.Connected())
-		Message(Chat::White, "Error: World server disconnected");
+		Message(Chat::Red, "Error: World server disconnected");
 	else {
 
 		//NOTE: we could do cross-zone lookups here...
@@ -8162,10 +8164,10 @@ void Client::Handle_OP_GuildLeader(const EQApplicationPacket *app)
 				newleader->Message(Chat::Yellow, "%s has transfered the guild leadership into your hands.", GetName());
 			}
 			else
-				Message(Chat::White, "Could not change leadership at this time.");
+				Message(Chat::Red, "Could not change leadership at this time.");
 		}
 		else
-			Message(Chat::White, "Failed to change leader, could not find target.");
+			Message(Chat::Red, "Failed to change leader, could not find target.");
 	}
 	//	SendGuildMembers(GuildID(), true);
 	return;
@@ -8190,7 +8192,7 @@ void Client::Handle_OP_GuildManageBanker(const EQApplicationPacket *app)
 
 	if (!guild_mgr.GetCharInfo(gmb->member, gci))
 	{
-		Message(Chat::White, "Unable to find '%s'", gmb->member);
+		Message(Chat::Red, "Unable to find '%s'", gmb->member);
 		return;
 	}
 	bool IsCurrentlyABanker = guild_mgr.GetBankerFlag(gci.char_id);
@@ -8219,7 +8221,7 @@ void Client::Handle_OP_GuildManageBanker(const EQApplicationPacket *app)
 	}
 
 	if (gci.guild_id != GuildID()) {
-		Message(Chat::White, "You aren't in the same guild, what do you think you are doing?");
+		Message(Chat::Red, "You aren't in the same guild, what do you think you are doing?");
 		return;
 	}
 
@@ -8265,21 +8267,21 @@ void Client::Handle_OP_GuildPromote(const EQApplicationPacket *app)
 	}
 
 	if (!IsInAGuild())
-		Message(Chat::White, "Error: You arent in a guild!");
+		Message(Chat::Red, "Error: You aren't in a guild!");
 	else if (!guild_mgr.CheckPermission(GuildID(), GuildRank(), GUILD_PROMOTE))
-		Message(Chat::White, "You dont have permission to invite.");
+		Message(Chat::Red, "You don't have permission to promote.");
 	else if (!worldserver.Connected())
-		Message(Chat::White, "Error: World server disconnected");
+		Message(Chat::Red, "Error: World server disconnected");
 	else {
 		GuildPromoteStruct* promote = (GuildPromoteStruct*)app->pBuffer;
 
 		CharGuildInfo gci;
 		if (!guild_mgr.GetCharInfo(promote->target, gci)) {
-			Message(Chat::White, "Unable to find '%s'", promote->target);
+			Message(Chat::Red, "Unable to find '%s'", promote->target);
 			return;
 		}
 		if (gci.guild_id != GuildID()) {
-			Message(Chat::White, "You aren't in the same guild, what do you think you are doing?");
+			Message(Chat::Red, "You aren't in the same guild, what do you think you are doing?");
 			return;
 		}
 
@@ -8287,7 +8289,7 @@ void Client::Handle_OP_GuildPromote(const EQApplicationPacket *app)
 
 		if (rank > GUILD_OFFICER)
 		{
-			Message(Chat::White, "You cannot promote someone to be guild leader. You must use /guildleader.");
+			Message(Chat::Red, "You cannot promote someone to be guild leader. You must use /guildleader.");
 			return;
 		}
 
@@ -8320,11 +8322,11 @@ void Client::Handle_OP_GuildPublicNote(const EQApplicationPacket *app)
 
 	CharGuildInfo gci;
 	if (!guild_mgr.GetCharInfo(gpn->target, gci)) {
-		Message(Chat::White, "Unable to find '%s'", gpn->target);
+		Message(Chat::Red, "Unable to find '%s'", gpn->target);
 		return;
 	}
 	if (gci.guild_id != GuildID()) {
-		Message(Chat::White, "You aren't in the same guild, what do you think you are doing?");
+		Message(Chat::Red, "You aren't in the same guild, what do you think you are doing?");
 		return;
 	}
 
@@ -9047,20 +9049,20 @@ void Client::Handle_OP_ItemVerifyRequest(const EQApplicationPacket *app)
 	}
 
 	if (slot_id < 0) {
-		LogDebug("Unknown slot being used by [{}], slot being used is: [{}]", GetName(), request->slot);
+		LogDebug("Unknown slot being used by [{}] slot being used is [{}]", GetName(), request->slot);
 		return;
 	}
 
 	const EQ::ItemInstance* inst = m_inv[slot_id];
 	if (!inst) {
-		Message(Chat::White, "Error: item not found in inventory slot #%i", slot_id);
+		Message(Chat::Red, "Error: item not found in inventory slot #%i", slot_id);
 		DeleteItemInInventory(slot_id, 0, true);
 		return;
 	}
 
 	const EQ::ItemData* item = inst->GetItem();
 	if (!item) {
-		Message(Chat::White, "Error: item not found in inventory slot #%i", slot_id);
+		Message(Chat::Red, "Error: item not found in inventory slot #%i", slot_id);
 		DeleteItemInInventory(slot_id, 0, true);
 		return;
 	}
@@ -9105,7 +9107,7 @@ void Client::Handle_OP_ItemVerifyRequest(const EQApplicationPacket *app)
 		target_id = GetPetID();
 	}
 
-	LogDebug("OP ItemVerifyRequest: spell=[{}], target=[{}], inv=[{}]", spell_id, target_id, slot_id);
+	LogDebug("OP ItemVerifyRequest: spell=[{}] target=[{}] inv=[{}]", spell_id, target_id, slot_id);
 
 	if (m_inv.SupportsClickCasting(slot_id) || ((item->ItemType == EQ::item::ItemTypePotion || item->PotionBelt) && m_inv.SupportsPotionBeltCasting(slot_id))) // sanity check
 	{
@@ -9326,10 +9328,10 @@ void Client::Handle_OP_ItemVerifyRequest(const EQApplicationPacket *app)
 				}
 			}
 		} else {
-			Message(Chat::White, "Error: item not found in inventory slot #%i", slot_id);
+			Message(Chat::Red, "Error: item not found in inventory slot #%i", slot_id);
 		}
 	} else {
-		Message(Chat::White, "Error: Invalid inventory slot for using effects (inventory slot #%i)", slot_id);
+		Message(Chat::Red, "Error: Invalid inventory slot for using effects (inventory slot #%i)", slot_id);
 	}
 	return;
 }
@@ -9553,7 +9555,7 @@ void Client::Handle_OP_LFGCommand(const EQApplicationPacket *app)
 		strn0cpy(LFGComments, lfg->Comments, sizeof(LFGComments));
 		break;
 	default:
-		Message(Chat::White, "Error: unknown LFG value %i", lfg->value);
+		Message(Chat::Red, "Error: unknown LFG value %i", lfg->value);
 	}
 
 	UpdateWho();
@@ -9580,7 +9582,7 @@ void Client::Handle_OP_LFGGetMatchesRequest(const EQApplicationPacket *app)
 	LFGGetMatchesRequest_Struct* gmrs = (LFGGetMatchesRequest_Struct*)app->pBuffer;
 
 	if (!worldserver.Connected())
-		Message(Chat::White, "Error: World server disconnected");
+		Message(Chat::Red, "Error: World server disconnected");
 	else {
 		auto pack = new ServerPacket(ServerOP_LFGMatches, sizeof(ServerLFGMatchesRequest_Struct));
 		ServerLFGMatchesRequest_Struct* smrs = (ServerLFGMatchesRequest_Struct*)pack->pBuffer;
@@ -9804,7 +9806,7 @@ void Client::Handle_OP_LFPGetMatchesRequest(const EQApplicationPacket *app)
 	LFPGetMatchesRequest_Struct* gmrs = (LFPGetMatchesRequest_Struct*)app->pBuffer;
 
 	if (!worldserver.Connected())
-		Message(Chat::White, "Error: World server disconnected");
+		Message(Chat::Red, "Error: World server disconnected");
 	else {
 		auto pack = new ServerPacket(ServerOP_LFPMatches, sizeof(ServerLFPMatchesRequest_Struct));
 		ServerLFPMatchesRequest_Struct* smrs = (ServerLFPMatchesRequest_Struct*)pack->pBuffer;
@@ -11221,7 +11223,7 @@ void Client::Handle_OP_Petition(const EQApplicationPacket *app)
 	}
 
 	if (!worldserver.Connected()) {
-		Message(Chat::White, "Error: World server disconnected");
+		Message(Chat::Red, "Error: World server disconnected");
 	}
 	/*else if(petition_list.FindPetitionByAccountName(AccountName()))
 	{
@@ -11297,7 +11299,7 @@ void Client::Handle_OP_PetitionCheckout(const EQApplicationPacket *app)
 		return;
 	}
 	if (!worldserver.Connected())
-		Message(Chat::White, "Error: World server disconnected");
+		Message(Chat::Red, "Error: World server disconnected");
 	else {
 		uint32 getpetnum = *((uint32*)app->pBuffer);
 		Petition* getpet = petition_list.GetPetitionByID(getpetnum);
@@ -11367,9 +11369,9 @@ void Client::Handle_OP_PetitionUnCheckout(const EQApplicationPacket *app)
 		std::cout << "Wrong size: OP_PetitionUnCheckout, size=" << app->size << ", expected " << sizeof(uint32) << std::endl;
 		return;
 	}
-	if (!worldserver.Connected())
-		Message(Chat::White, "Error: World server disconnected");
-	else {
+	if (!worldserver.Connected()) {
+		Message(Chat::Red, "Error: World server disconnected");
+	} else {
 		uint32 getpetnum = *((uint32*)app->pBuffer);
 		Petition* getpet = petition_list.GetPetitionByID(getpetnum);
 		if (getpet != 0) {
@@ -11474,8 +11476,8 @@ void Client::Handle_OP_PopupResponse(const EQApplicationPacket *app)
 	std::string response;
 	switch (popup_response->popupid) {
 		case POPUPID_REPLACE_SPELLWINDOW:
-			DeleteItemInInventory(std::stoi(GetEntityVariable("slot_id")), 1, true);
-			MemorizeSpellFromItem(std::stoi(GetEntityVariable("spell_id")));
+			DeleteItemInInventory(Strings::ToInt(GetEntityVariable("slot_id")), 1, true);
+			MemorizeSpellFromItem(Strings::ToInt(GetEntityVariable("spell_id")));
 			return;
 			break;
 
@@ -12592,7 +12594,7 @@ void Client::Handle_OP_RecipesSearch(const EQApplicationPacket *app)
 	p_recipes_search_struct->query[55] = '\0';	//just to be sure.
 
 	LogTradeskills(
-		"[Handle_OP_RecipesSearch] Requested search recipes for object_type [{}] some_id [{}]",
+		"Requested search recipes for object_type [{}] some_id [{}]",
 		p_recipes_search_struct->object_type,
 		p_recipes_search_struct->some_id
 	);
@@ -13125,7 +13127,7 @@ void Client::Handle_OP_SetGuildMOTD(const EQApplicationPacket *app)
 		guild_mgr.GetGuildName(GuildID()), GuildID(), GetName(), gmotd->motd);
 
 	if (!guild_mgr.SetGuildMOTD(GuildID(), gmotd->motd, GetName())) {
-		Message(Chat::White, "Motd update failed.");
+		Message(Chat::Red, "Motd update failed.");
 	}
 
 	return;
@@ -13201,19 +13203,21 @@ void Client::Handle_OP_SetStartCity(const EQApplicationPacket *app)
 
 	bool valid_city = false;
 	for (auto row = results.begin(); row != results.end(); ++row) {
-		if (atoi(row[1]) != 0)
-			zone_id = atoi(row[1]);
-		else
-			zone_id = atoi(row[0]);
-
-		if (zone_id != start_city)
+		if (Strings::ToInt(row[1]) != 0) {
+			zone_id = Strings::ToInt(row[1]);
+		} else {
+			zone_id = Strings::ToInt(row[0]);
+		}
+		
+		if (zone_id != start_city) {
 			continue;
+		}
 
 		valid_city = true;
-		x = atof(row[2]);
-		y = atof(row[3]);
-		z = atof(row[4]);
-		heading = atof(row[5]);
+		x = Strings::ToFloat(row[2]);
+		y = Strings::ToFloat(row[3]);
+		z = Strings::ToFloat(row[4]);
+		heading = Strings::ToFloat(row[5]);
 	}
 
 	if (valid_city) {
@@ -13246,10 +13250,11 @@ void Client::Handle_OP_SetStartCity(const EQApplicationPacket *app)
 	Message(Chat::Yellow, "Use \"/setstartcity #\" to choose a home city from the following list:");
 
 	for (auto row = results.begin(); row != results.end(); ++row) {
-		if (atoi(row[1]) != 0)
-			zone_id = atoi(row[1]);
-		else
-			zone_id = atoi(row[0]);
+		if (Strings::ToInt(row[1]) != 0) {
+			zone_id = Strings::ToInt(row[1]);
+		} else {
+			zone_id = Strings::ToInt(row[0]);
+		}
 
 		std::string zone_long_name = ZoneLongName(zone_id);
 		Message(Chat::Yellow, "%d - %s", zone_id, zone_long_name.c_str());
@@ -14862,7 +14867,7 @@ void Client::Handle_OP_Trader(const EQApplicationPacket *app)
 		{
 		case BazaarTrader_EndTraderMode: {
 			Trader_EndTrader();
-			LogTrading("Client::Handle_OP_Trader: End Trader Session");
+			LogTrading("End Trader Session");
 			break;
 		}
 		case BazaarTrader_EndTransaction: {
@@ -14871,16 +14876,16 @@ void Client::Handle_OP_Trader(const EQApplicationPacket *app)
 			if (c)
 			{
 				c->WithCustomer(0);
-				LogTrading("Client::Handle_OP_Trader: End Transaction");
+				LogTrading("End Transaction");
 			}
 			else
-				LogTrading("Client::Handle_OP_Trader: Null Client Pointer");
+				LogTrading("Null Client Pointer");
 
 			break;
 		}
 		case BazaarTrader_ShowItems: {
 			Trader_ShowItems();
-			LogTrading("Client::Handle_OP_Trader: Show Trader Items");
+			LogTrading("Show Trader Items");
 			break;
 		}
 		default: {
@@ -14903,7 +14908,7 @@ void Client::Handle_OP_Trader(const EQApplicationPacket *app)
 		{
 			GetItems_Struct* gis = GetTraderItems();
 
-			LogTrading("Client::Handle_OP_Trader: Start Trader Mode");
+			LogTrading("Start Trader Mode");
 			// Verify there are no NODROP or items with a zero price
 			bool TradeItemsValid = true;
 
@@ -14973,7 +14978,7 @@ void Client::Handle_OP_Trader(const EQApplicationPacket *app)
 			}
 		}
 		else {
-			LogTrading("Client::Handle_OP_Trader: Unknown TraderStruct code of: [{}]\n",
+			LogTrading("Unknown TraderStruct code of: [{}]\n",
 				ints->Code);
 
 			LogError("Unknown TraderStruct code of: [{}]\n", ints->Code);
@@ -14983,18 +14988,18 @@ void Client::Handle_OP_Trader(const EQApplicationPacket *app)
 	{
 		TraderStatus_Struct* tss = (TraderStatus_Struct*)app->pBuffer;
 
-		LogTrading("Client::Handle_OP_Trader: Trader Status Code: [{}]", tss->Code);
+		LogTrading("Trader Status Code: [{}]", tss->Code);
 
 		switch (tss->Code)
 		{
 		case BazaarTrader_EndTraderMode: {
 			Trader_EndTrader();
-			LogTrading("Client::Handle_OP_Trader: End Trader Session");
+			LogTrading("End Trader Session");
 			break;
 		}
 		case BazaarTrader_ShowItems: {
 			Trader_ShowItems();
-			LogTrading("Client::Handle_OP_Trader: Show Trader Items");
+			LogTrading("Show Trader Items");
 			break;
 		}
 		default: {
@@ -15007,7 +15012,7 @@ void Client::Handle_OP_Trader(const EQApplicationPacket *app)
 	}
 	else if (app->size == sizeof(TraderPriceUpdate_Struct))
 	{
-		LogTrading("Client::Handle_OP_Trader: Trader Price Update");
+		LogTrading("Trader Price Update");
 		HandleTraderPriceUpdate(app);
 	}
 	else {
@@ -15078,7 +15083,7 @@ void Client::Handle_OP_TradeRequest(const EQApplicationPacket *app) {
 		// Note that this work as intended, if the NPC is charmed
 		// you can still trade with it.
 		if (tradee->IsEngaged()) {
-			Message(Chat::White, "Your target cannot trade with you at this moment.");
+			Message(Chat::Red, "Your target cannot trade with you at this moment.");
 		}
 
 		// If it not engaged, it will automatically accept the trade.
@@ -15216,18 +15221,18 @@ void Client::Handle_OP_TraderShop(const EQApplicationPacket *app)
 			if (c)
 			{
 				c->WithCustomer(0);
-				LogTrading("Client::Handle_OP_Trader: End Transaction - Code [{}]", Command);
+				LogTrading("End Transaction - Code [{}]", Command);
 			}
 			else
 			{
-				LogTrading("Client::Handle_OP_Trader: Null Client Pointer for Trader - Code [{}]", Command);
+				LogTrading("Null Client Pointer for Trader - Code [{}]", Command);
 			}
 			EQApplicationPacket empty(OP_ShopEndConfirm);
 			QueuePacket(&empty);
 		}
 		else
 		{
-			LogTrading("Client::Handle_OP_Trader: Unhandled Code [{}]", Command);
+			LogTrading("Unhandled Code [{}]", Command);
 		}
 	}
 	else

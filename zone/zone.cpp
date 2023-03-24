@@ -115,7 +115,7 @@ bool Zone::Bootup(uint32 iZoneID, uint32 iInstanceID, bool is_static) {
 	std::string tmp;
 	if (database.GetVariable("loglevel", tmp)) {
 		int log_levels[4];
-		int tmp_i = atoi(tmp.c_str());
+		int tmp_i = Strings::ToInt(tmp.c_str());
 		if (tmp_i>9){ //Server is using the new code
 			for(int i=0;i<4;i++){
 				if (((int)tmp[i]>=48) && ((int)tmp[i]<=57))
@@ -194,9 +194,9 @@ bool Zone::LoadZoneObjects()
 	}
 
 	for (auto row = results.begin(); row != results.end(); ++row) {
-		if (atoi(row[9]) == 0) {
+		if (Strings::ToInt(row[9]) == 0) {
 			// Type == 0 - Static Object
-			const char *shortname = ZoneName(atoi(row[1]), false); // zoneid -> zone_shortname
+			const char *shortname = ZoneName(Strings::ToInt(row[1]), false); // zoneid -> zone_shortname
 
 			if (!shortname)
 				continue;
@@ -205,12 +205,12 @@ bool Zone::LoadZoneObjects()
 			auto d = DoorsRepository::NewEntity();
 
 			d.zone = shortname;
-			d.id = 1000000000 + atoi(row[0]); // Out of range of normal use for doors.id
+			d.id = 1000000000 + Strings::ToInt(row[0]); // Out of range of normal use for doors.id
 			d.doorid = -1; // Client doesn't care if these are all the same door_id
-			d.pos_x = atof(row[2]);		     // xpos
-			d.pos_y = atof(row[3]);		     // ypos
-			d.pos_z = atof(row[4]);		     // zpos
-			d.heading = atof(row[5]);	    // heading
+			d.pos_x = Strings::ToFloat(row[2]);		     // xpos
+			d.pos_y = Strings::ToFloat(row[3]);		     // ypos
+			d.pos_z = Strings::ToFloat(row[4]);		     // zpos
+			d.heading = Strings::ToFloat(row[5]);	    // heading
 
 			d.name = row[8]; // objectname
 
@@ -223,10 +223,10 @@ bool Zone::LoadZoneObjects()
 
 			d.dest_zone = "NONE";
 
-			if ((d.size = atoi(row[11])) == 0) // unknown08 = optional size percentage
+			if ((d.size = Strings::ToInt(row[11])) == 0) // unknown08 = optional size percentage
 				d.size = 100;
 
-			switch (d.opentype = atoi(row[12])) // unknown10 = optional request_nonsolid (0 or 1 or experimental number)
+			switch (d.opentype = Strings::ToInt(row[12])) // unknown10 = optional request_nonsolid (0 or 1 or experimental number)
 			{
 			case 0:
 				d.opentype = 31;
@@ -236,7 +236,7 @@ bool Zone::LoadZoneObjects()
 				break;
 			}
 
-			d.incline = atoi(row[13]);	  // unknown20 = optional model incline value
+			d.incline = Strings::ToInt(row[13]);	  // unknown20 = optional model incline value
 			d.client_version_mask = 0xFFFFFFFF; // We should load the mask from the zone.
 
 			auto door = new Doors(d);
@@ -251,28 +251,28 @@ bool Zone::LoadZoneObjects()
 		uint32 idx = 0;
 		int16 charges = 0;
 
-		id = (uint32)atoi(row[0]);
-		data.zone_id = atoi(row[1]);
-		data.x = atof(row[2]);
-		data.y = atof(row[3]);
-		data.z = atof(row[4]);
-		data.heading = atof(row[5]);
-		itemid = (uint32)atoi(row[6]);
-		charges = (int16)atoi(row[7]);
+		id = (uint32)Strings::ToInt(row[0]);
+		data.zone_id = Strings::ToInt(row[1]);
+		data.x = Strings::ToFloat(row[2]);
+		data.y = Strings::ToFloat(row[3]);
+		data.z = Strings::ToFloat(row[4]);
+		data.heading = Strings::ToFloat(row[5]);
+		itemid = (uint32)Strings::ToInt(row[6]);
+		charges = (int16)Strings::ToInt(row[7]);
 		strcpy(data.object_name, row[8]);
-		type = (uint8)atoi(row[9]);
-		icon = (uint32)atoi(row[10]);
+		type = (uint8)Strings::ToInt(row[9]);
+		icon = (uint32)Strings::ToInt(row[10]);
 		data.object_type = type;
 		data.linked_list_addr[0] = 0;
 		data.linked_list_addr[1] = 0;
 
-		data.solidtype = (uint32)atoi(row[12]);
-		data.unknown020 = (uint32)atoi(row[13]);
-		data.unknown024 = (uint32)atoi(row[14]);
-		data.unknown076 = (uint32)atoi(row[15]);
-		data.size = atof(row[16]);
-		data.tilt_x = atof(row[17]);
-		data.tilt_y = atof(row[18]);
+		data.solidtype = (uint32)Strings::ToInt(row[12]);
+		data.unknown020 = (uint32)Strings::ToInt(row[13]);
+		data.unknown024 = (uint32)Strings::ToInt(row[14]);
+		data.unknown076 = (uint32)Strings::ToInt(row[15]);
+		data.size = Strings::ToFloat(row[16]);
+		data.tilt_x = Strings::ToFloat(row[17]);
+		data.tilt_y = Strings::ToFloat(row[18]);
 		data.unknown084 = 0;
 
 
@@ -594,7 +594,7 @@ void Zone::LoadTempMerchantData()
 	uint32 npc_id = 0;
 	for (auto row = results.begin(); row != results.end(); ++row) {
 		TempMerchantList temp_merchant_list;
-		temp_merchant_list.npcid = atoul(row[0]);
+		temp_merchant_list.npcid = Strings::ToUnsignedInt(row[0]);
 		if (npc_id != temp_merchant_list.npcid) {
 			temp_merchant_table_entry = tmpmerchanttable.find(temp_merchant_list.npcid);
 			if (temp_merchant_table_entry == tmpmerchanttable.end()) {
@@ -605,11 +605,11 @@ void Zone::LoadTempMerchantData()
 			npc_id = temp_merchant_list.npcid;
 		}
 
-		temp_merchant_list.slot     = atoul(row[1]);
-		temp_merchant_list.charges  = atoul(row[2]);
-		temp_merchant_list.item     = atoul(row[3]);
-		temp_merchant_list.itemcharges	= atoul(row[4]);
-		temp_merchant_list.origslot = temp_merchant_list.slot;
+		temp_merchant_list.slot     	= Strings::ToUnsignedInt(row[1]);
+		temp_merchant_list.charges  	= Strings::ToUnsignedInt(row[2]);
+		temp_merchant_list.item     	= Strings::ToUnsignedInt(row[3]);
+		temp_merchant_list.itemcharges	= Strings::ToUnsignedInt(row[4]);
+		temp_merchant_list.origslot 	= temp_merchant_list.slot;
 
 		LogMerchants(
 			"Loading merchant temp items npc_id [{}] slot [{}] charges [{}] item [{}] origslot [{}]",
@@ -730,7 +730,7 @@ void Zone::GetMerchantDataForZoneLoad() {
 	}
 	for (auto row = results.begin(); row != results.end(); ++row) {
 		MerchantList merchant_list_entry{};
-		merchant_list_entry.id = atoul(row[0]);
+		merchant_list_entry.id = Strings::ToUnsignedInt(row[0]);
 		if (npc_id != merchant_list_entry.id) {
 			merchant_list = merchanttable.find(merchant_list_entry.id);
 			if (merchant_list == merchanttable.end()) {
@@ -756,13 +756,13 @@ void Zone::GetMerchantDataForZoneLoad() {
 			continue;
 		}
 
-		merchant_list_entry.slot              = atoul(row[1]);
-		merchant_list_entry.item              = atoul(row[2]);
-		merchant_list_entry.faction_required  = atoul(row[3]);
-		merchant_list_entry.level_required    = atoul(row[4]);
-		merchant_list_entry.alt_currency_cost = atoul(row[5]);
-		merchant_list_entry.classes_required  = atoul(row[6]);
-		merchant_list_entry.probability       = atoul(row[7]);
+		merchant_list_entry.slot              = Strings::ToUnsignedInt(row[1]);
+		merchant_list_entry.item              = Strings::ToUnsignedInt(row[2]);
+		merchant_list_entry.faction_required  = Strings::ToUnsignedInt(row[3]);
+		merchant_list_entry.level_required    = Strings::ToUnsignedInt(row[4]);
+		merchant_list_entry.alt_currency_cost = Strings::ToUnsignedInt(row[5]);
+		merchant_list_entry.classes_required  = Strings::ToUnsignedInt(row[6]);
+		merchant_list_entry.probability       = Strings::ToUnsignedInt(row[7]);
 
 		merchant_list->second.push_back(merchant_list_entry);
 	}
@@ -783,10 +783,10 @@ void Zone::LoadMercTemplates(){
 		for (auto row = results.begin(); row != results.end(); ++row) {
 			MercStanceInfo tempMercStanceInfo;
 
-			tempMercStanceInfo.ClassID       = atoi(row[0]);
-			tempMercStanceInfo.ProficiencyID = atoi(row[1]);
-			tempMercStanceInfo.StanceID      = atoi(row[2]);
-			tempMercStanceInfo.IsDefault     = atoi(row[3]);
+			tempMercStanceInfo.ClassID       = Strings::ToInt(row[0]);
+			tempMercStanceInfo.ProficiencyID = Strings::ToInt(row[1]);
+			tempMercStanceInfo.StanceID      = Strings::ToInt(row[2]);
+			tempMercStanceInfo.IsDefault     = Strings::ToInt(row[3]);
 
 			merc_stances.push_back(tempMercStanceInfo);
 		}
@@ -809,16 +809,16 @@ void Zone::LoadMercTemplates(){
 
         MercTemplate tempMercTemplate;
 
-        tempMercTemplate.MercTemplateID = atoi(row[0]);
-        tempMercTemplate.MercType = atoi(row[1]);
-        tempMercTemplate.MercSubType = atoi(row[2]);
-        tempMercTemplate.RaceID = atoi(row[3]);
-        tempMercTemplate.ClassID = atoi(row[4]);
-        tempMercTemplate.ProficiencyID = atoi(row[5]);
-        tempMercTemplate.TierID = atoi(row[6]);
-        tempMercTemplate.CostFormula = atoi(row[7]);
-        tempMercTemplate.ClientVersion = atoi(row[8]);
-        tempMercTemplate.MercNPCID = atoi(row[9]);
+        tempMercTemplate.MercTemplateID = Strings::ToInt(row[0]);
+        tempMercTemplate.MercType = Strings::ToInt(row[1]);
+        tempMercTemplate.MercSubType = Strings::ToInt(row[2]);
+        tempMercTemplate.RaceID = Strings::ToInt(row[3]);
+        tempMercTemplate.ClassID = Strings::ToInt(row[4]);
+        tempMercTemplate.ProficiencyID = Strings::ToInt(row[5]);
+        tempMercTemplate.TierID = Strings::ToInt(row[6]);
+        tempMercTemplate.CostFormula = Strings::ToInt(row[7]);
+        tempMercTemplate.ClientVersion = Strings::ToInt(row[8]);
+        tempMercTemplate.MercNPCID = Strings::ToInt(row[9]);
 
         for(int i = 0; i < MaxMercStanceID; i++)
             tempMercTemplate.Stances[i] = 0;
@@ -850,9 +850,9 @@ void Zone::LoadLevelEXPMods(){
     }
 
     for (auto row = results.begin(); row != results.end(); ++row) {
-        uint32 index = atoi(row[0]);
-		float exp_mod = atof(row[1]);
-		float aa_exp_mod = atof(row[2]);
+        uint32 index = Strings::ToInt(row[0]);
+		float exp_mod = Strings::ToFloat(row[1]);
+		float aa_exp_mod = Strings::ToFloat(row[2]);
 		level_exp_mod[index].ExpMod = exp_mod;
 		level_exp_mod[index].AAExpMod = aa_exp_mod;
     }
@@ -877,15 +877,15 @@ void Zone::LoadMercSpells(){
         uint32 classid;
         MercSpellEntry tempMercSpellEntry;
 
-        classid = atoi(row[0]);
-        tempMercSpellEntry.proficiencyid = atoi(row[1]);
-        tempMercSpellEntry.spellid = atoi(row[2]);
-        tempMercSpellEntry.type = atoi(row[3]);
-        tempMercSpellEntry.stance = atoi(row[4]);
-        tempMercSpellEntry.minlevel = atoi(row[5]);
-        tempMercSpellEntry.maxlevel = atoi(row[6]);
-        tempMercSpellEntry.slot = atoi(row[7]);
-        tempMercSpellEntry.proc_chance = atoi(row[8]);
+        classid = Strings::ToInt(row[0]);
+        tempMercSpellEntry.proficiencyid = Strings::ToInt(row[1]);
+        tempMercSpellEntry.spellid = Strings::ToInt(row[2]);
+        tempMercSpellEntry.type = Strings::ToInt(row[3]);
+        tempMercSpellEntry.stance = Strings::ToInt(row[4]);
+        tempMercSpellEntry.minlevel = Strings::ToInt(row[5]);
+        tempMercSpellEntry.maxlevel = Strings::ToInt(row[6]);
+        tempMercSpellEntry.slot = Strings::ToInt(row[7]);
+        tempMercSpellEntry.proc_chance = Strings::ToInt(row[8]);
 
         merc_spells_list[classid].push_back(tempMercSpellEntry);
     }
@@ -1252,6 +1252,8 @@ bool Zone::Init(bool is_static) {
 
 void Zone::ReloadStaticData() {
 	LogInfo("Reloading Zone Static Data");
+	entity_list.RemoveAllObjects(); //Ground spawns are also objects we clear list then fill it
+	entity_list.RemoveAllDoors(); //Some objects are also doors so clear list before filling
 
 	if (!content_db.LoadStaticZonePoints(&zone_point_list, GetShortName(), GetInstanceVersion())) {
 		LogError("Loading static zone points failed");
@@ -1270,14 +1272,12 @@ void Zone::ReloadStaticData() {
 		LogError("Reloading ground spawns failed. continuing");
 	}
 
-	entity_list.RemoveAllObjects();
 	LogInfo("Reloading World Objects from DB");
 	if (!LoadZoneObjects())
 	{
 		LogError("Reloading World Objects failed. continuing");
 	}
 
-	entity_list.RemoveAllDoors();
 	LoadZoneDoors();
 	entity_list.RespawnAllDoors();
 
@@ -2183,10 +2183,10 @@ bool ZoneDatabase::GetDecayTimes(npcDecayTimes_Struct *npcCorpseDecayTimes)
 	int index = 0;
 	for (auto row = results.begin(); row != results.end(); ++row, ++index) {
 		Seperator sep(row[0]);
-		npcCorpseDecayTimes[index].minlvl = atoi(sep.arg[1]);
-		npcCorpseDecayTimes[index].maxlvl = atoi(sep.arg[2]);
+		npcCorpseDecayTimes[index].minlvl = Strings::ToInt(sep.arg[1]);
+		npcCorpseDecayTimes[index].maxlvl = Strings::ToInt(sep.arg[2]);
 
-		npcCorpseDecayTimes[index].seconds = std::min(24 * 60 * 60, atoi(row[1]));
+		npcCorpseDecayTimes[index].seconds = std::min(24 * 60 * 60, Strings::ToInt(row[1]));
 	}
 
 	LogInfo("Loaded [{}] decay timers", Strings::Commify(results.RowCount()));
@@ -2354,11 +2354,11 @@ void Zone::LoadLDoNTraps()
 
 	for (auto row = results.begin(); row != results.end(); ++row) {
 		auto lt = new LDoNTrapTemplate;
-		lt->id       = atoi(row[0]);
-		lt->type     = (LDoNChestTypes) atoi(row[1]);
-		lt->spell_id = atoi(row[2]);
-		lt->skill    = atoi(row[3]);
-		lt->locked   = atoi(row[4]);
+		lt->id       = Strings::ToInt(row[0]);
+		lt->type     = (LDoNChestTypes) Strings::ToInt(row[1]);
+		lt->spell_id = Strings::ToInt(row[2]);
+		lt->skill    = Strings::ToInt(row[3]);
+		lt->locked   = Strings::ToInt(row[4]);
 		ldon_trap_list[lt->id] = lt;
 	}
 
@@ -2374,8 +2374,8 @@ void Zone::LoadLDoNTrapEntries()
 
     for (auto row = results.begin(); row != results.end(); ++row)
     {
-        uint32 id = atoi(row[0]);
-        uint32 trap_id = atoi(row[1]);
+        uint32 id = Strings::ToInt(row[0]);
+        uint32 trap_id = Strings::ToInt(row[1]);
 
         LDoNTrapTemplate *trapTemplate = nullptr;
         auto it = ldon_trap_list.find(trap_id);
@@ -2418,7 +2418,7 @@ void Zone::LoadVeteranRewards()
 	int index = 0;
     for (auto row = results.begin(); row != results.end(); ++row, ++index)
     {
-        uint32 claim = atoi(row[0]);
+        uint32 claim = Strings::ToInt(row[0]);
 
         if(claim != current_reward.claim_id)
         {
@@ -2435,8 +2435,8 @@ void Zone::LoadVeteranRewards()
         }
 
         strcpy(current_reward.items[index].item_name, row[1]);
-        current_reward.items[index].item_id = atoi(row[2]);
-        current_reward.items[index].charges = atoi(row[3]);
+        current_reward.items[index].item_id = Strings::ToInt(row[2]);
+        current_reward.items[index].charges = Strings::ToInt(row[3]);
     }
 
     if(current_reward.claim_id != 0)
@@ -2461,8 +2461,8 @@ void Zone::LoadAlternateCurrencies()
     }
 
     for (auto row : results) {
-        current_currency.id = std::stoul(row[0]);
-        current_currency.item_id = std::stoul(row[1]);
+        current_currency.id = Strings::ToUnsignedInt(row[0]);
+        current_currency.item_id = Strings::ToUnsignedInt(row[1]);
         AlternateCurrencies.push_back(current_currency);
     }
 	LogInfo("Loaded [{}] alternate currencies", Strings::Commify(results.RowCount()));
@@ -2507,7 +2507,7 @@ void Zone::LoadAdventureFlavor()
 	}
 
     for (auto row = results.begin(); row != results.end(); ++row) {
-        uint32 id = atoi(row[0]);
+        uint32 id = Strings::ToInt(row[0]);
         adventure_entry_list_flavor[id] = row[1];
     }
 	LogInfo("Loaded [{}] adventure text entries", Strings::Commify(results.RowCount()));
@@ -2585,9 +2585,9 @@ void Zone::LoadNPCEmotes(LinkedList<NPC_Emote_Struct*>* NPCEmoteList)
     for (auto row = results.begin(); row != results.end(); ++row)
     {
 	    auto nes = new NPC_Emote_Struct;
-	    nes->emoteid = atoi(row[0]);
-	    nes->event_ = atoi(row[1]);
-	    nes->type = atoi(row[2]);
+	    nes->emoteid = Strings::ToInt(row[0]);
+	    nes->event_ = Strings::ToInt(row[1]);
+	    nes->type = Strings::ToInt(row[2]);
 	    strn0cpy(nes->text, row[3], sizeof(nes->text));
 	    NPCEmoteList->Insert(nes);
     }
@@ -2668,16 +2668,16 @@ void Zone::LoadTickItems()
 
 
     for (auto row = results.begin(); row != results.end(); ++row) {
-        if(atoi(row[0]) == 0)
+        if(Strings::ToInt(row[0]) == 0)
             continue;
 
         item_tick_struct ti_tmp;
-		ti_tmp.itemid = atoi(row[0]);
-		ti_tmp.chance = atoi(row[1]);
-		ti_tmp.level = atoi(row[2]);
-		ti_tmp.bagslot = (int16)atoi(row[4]);
+		ti_tmp.itemid = Strings::ToInt(row[0]);
+		ti_tmp.chance = Strings::ToInt(row[1]);
+		ti_tmp.level = Strings::ToInt(row[2]);
+		ti_tmp.bagslot = (int16)Strings::ToInt(row[4]);
 		ti_tmp.qglobal = std::string(row[3]);
-		tick_items[atoi(row[0])] = ti_tmp;
+		tick_items[Strings::ToInt(row[0])] = ti_tmp;
 
     }
 	LogInfo("Loaded [{}] item_tick entries", Strings::Commify(results.RowCount()));
@@ -3022,7 +3022,7 @@ bool Zone::CheckDataBucket(uint8 bucket_comparison, std::string bucket_value, st
 				break;
 			}
 
-			if (std::stoll(player_value) < std::stoll(bucket_value)) {
+			if (Strings::ToBigInt(player_value) < Strings::ToBigInt(bucket_value)) {
 				break;
 			}
 
@@ -3035,7 +3035,7 @@ bool Zone::CheckDataBucket(uint8 bucket_comparison, std::string bucket_value, st
 				break;
 			}
 
-			if (std::stoll(player_value) > std::stoll(bucket_value)) {
+			if (Strings::ToBigInt(player_value) > Strings::ToBigInt(bucket_value)) {
 				break;
 			}
 
@@ -3048,7 +3048,7 @@ bool Zone::CheckDataBucket(uint8 bucket_comparison, std::string bucket_value, st
 				break;
 			}
 
-			if (std::stoll(player_value) <= std::stoll(bucket_value)) {
+			if (Strings::ToBigInt(player_value) <= Strings::ToBigInt(bucket_value)) {
 				break;
 			}
 
@@ -3061,7 +3061,7 @@ bool Zone::CheckDataBucket(uint8 bucket_comparison, std::string bucket_value, st
 				break;
 			}
 
-			if (std::stoll(player_value) >= std::stoll(bucket_value)) {
+			if (Strings::ToBigInt(player_value) >= Strings::ToBigInt(bucket_value)) {
 				break;
 			}
 
@@ -3122,9 +3122,9 @@ bool Zone::CheckDataBucket(uint8 bucket_comparison, std::string bucket_value, st
 
 			if (
 				!EQ::ValueWithin(
-					std::stoll(player_value),
-					std::stoll(bucket_checks[0]),
-					std::stoll(bucket_checks[1])
+					Strings::ToBigInt(player_value),
+					Strings::ToBigInt(bucket_checks[0]),
+					Strings::ToBigInt(bucket_checks[1])
 				)
 			) {
 				break;
@@ -3150,9 +3150,9 @@ bool Zone::CheckDataBucket(uint8 bucket_comparison, std::string bucket_value, st
 
 			if (
 				EQ::ValueWithin(
-					std::stoll(player_value),
-					std::stoll(bucket_checks[0]),
-					std::stoll(bucket_checks[1])
+					Strings::ToBigInt(player_value),
+					Strings::ToBigInt(bucket_checks[0]),
+					Strings::ToBigInt(bucket_checks[1])
 				)
 			) {
 				break;

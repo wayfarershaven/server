@@ -254,7 +254,7 @@ void NPC::MoveTo(const glm::vec4 &position, bool saveguardspot)
 void NPC::UpdateWaypoint(int wp_index)
 {
 	if (wp_index >= static_cast<int>(Waypoints.size())) {
-		LogAI("Update to waypoint [{}] failed. Not found", wp_index);
+		LogAIDetail("Update to waypoint [{}] failed. Not found", wp_index);
 		return;
 	}
 	std::vector<wplist>::iterator cur;
@@ -569,7 +569,7 @@ void NPC::SaveGuardSpot(bool ClearGuardSpot) {
 		if (m_GuardPoint.w == 0) {
 			m_GuardPoint.w = 0.0001; //hack to make IsGuarding simpler
 		}
-		LogAI("Setting guard position to {0}", to_string(static_cast<glm::vec3>(m_GuardPoint)));
+		LogAIDetail("Setting guard position to [{}]", to_string(static_cast<glm::vec3>(m_GuardPoint)));
 	}
 }
 
@@ -579,7 +579,7 @@ void NPC::SaveGuardSpot(const glm::vec4 &pos)
 
 	if (m_GuardPoint.w == 0)
 		m_GuardPoint.w = 0.0001;		//hack to make IsGuarding simpler
-	LogAI("Setting guard position to {0}", to_string(static_cast<glm::vec3>(m_GuardPoint)));
+	LogAIDetail("Setting guard position to [{}]", to_string(static_cast<glm::vec3>(m_GuardPoint)));
 }
 
 void NPC::NextGuardPosition() {
@@ -1051,7 +1051,7 @@ int	ZoneDatabase::GetHighestGrid(uint32 zoneid) {
 		return 0;
 
 	auto row = results.begin();
-	return atoi(row[0]);
+	return Strings::ToInt(row[0]);
 }
 
 uint8 ZoneDatabase::GetGridType2(uint32 grid, uint16 zoneid) {
@@ -1068,7 +1068,7 @@ uint8 ZoneDatabase::GetGridType2(uint32 grid, uint16 zoneid) {
 
 	auto row = results.begin();
 
-	return atoi(row[0]);
+	return Strings::ToInt(row[0]);
 }
 
 bool ZoneDatabase::GetWaypoints(uint32 grid, uint16 zoneid, uint32 num, wplist* wp) {
@@ -1088,11 +1088,11 @@ bool ZoneDatabase::GetWaypoints(uint32 grid, uint16 zoneid, uint32 num, wplist* 
 
 	auto row = results.begin();
 
-	wp->x = atof(row[0]);
-	wp->y = atof(row[1]);
-	wp->z = atof(row[2]);
-	wp->pause = atoi(row[3]);
-	wp->heading = atof(row[4]);
+	wp->x = Strings::ToFloat(row[0]);
+	wp->y = Strings::ToFloat(row[1]);
+	wp->z = Strings::ToFloat(row[2]);
+	wp->pause = Strings::ToInt(row[3]);
+	wp->heading = Strings::ToFloat(row[4]);
 
 	return true;
 }
@@ -1233,7 +1233,7 @@ uint32 ZoneDatabase::AddWPForSpawn(Client *client, uint32 spawn2id, const glm::v
 		return 0;
 
 	auto row = results.begin();
-	grid_num = atoi(row[0]);
+	grid_num = Strings::ToInt(row[0]);
 
 	if (grid_num == 0)
 	{ // Our spawn doesn't have a grid assigned to it -- we need to create a new grid and assign it to the spawn
@@ -1263,7 +1263,7 @@ uint32 ZoneDatabase::AddWPForSpawn(Client *client, uint32 spawn2id, const glm::v
 
 	row = results.begin();
 	if (row[0] != 0)
-		next_wp_num = atoi(row[0]) + 1;
+		next_wp_num = Strings::ToInt(row[0]) + 1;
 	else	// No waypoints in this grid yet
 		next_wp_num = 1;
 
@@ -1287,7 +1287,7 @@ uint32 ZoneDatabase::GetFreeGrid(uint16 zoneid) {
 		return 0;
 
 	auto row = results.begin();
-	uint32 freeGridID = row[0] ? atoi(row[0]) + 1 : 1;
+	uint32 freeGridID = row[0] ? Strings::ToInt(row[0]) + 1 : 1;
 
 	return freeGridID;
 }
@@ -1305,7 +1305,7 @@ int ZoneDatabase::GetHighestWaypoint(uint32 zoneid, uint32 gridid) {
 		return 0;
 
 	auto row = results.begin();
-	return atoi(row[0]);
+	return Strings::ToInt(row[0]);
 }
 
 int ZoneDatabase::GetRandomWaypointLocFromGrid(glm::vec4 &loc, uint16 zoneid, int grid)
@@ -1330,10 +1330,10 @@ int ZoneDatabase::GetRandomWaypointLocFromGrid(glm::vec4 &loc, uint16 zoneid, in
 			row++;
 			i++;
 		}
-		loc.x = atof(row[0]);
-		loc.y = atof(row[1]);
-		loc.z = atof(row[2]);
-		loc.w = atof(row[3]);
+		loc.x = Strings::ToFloat(row[0]);
+		loc.y = Strings::ToFloat(row[1]);
+		loc.z = Strings::ToFloat(row[2]);
+		loc.w = Strings::ToFloat(row[3]);
 		return i;
 	}
 	return 0;

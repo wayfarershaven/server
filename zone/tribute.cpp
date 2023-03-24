@@ -241,12 +241,12 @@ void Client::SendTributeDetails(uint32 client_id, uint32 tribute_id) {
 int32 Client::TributeItem(uint32 slot, uint32 quantity) {
 	const EQ::ItemInstance*inst = m_inv[slot];
 
-	if(inst == nullptr) {
+	if(inst == nullptr)
 		return(0);
-	}
 
 	//figure out what its worth
 	int32 pts = inst->GetItem()->Favor;
+
 	if(pts < 1) {
 		Message(Chat::Red, "This item is worthless for favor.");
 		return(0);
@@ -257,15 +257,16 @@ int32 Client::TributeItem(uint32 slot, uint32 quantity) {
 		and remove it from inventory
 	*/
 	if(inst->IsStackable()) {
-		if(inst->GetCharges() < (int32)quantity) { //dont have enough....
+		if(inst->GetCharges() < (int32)quantity)	//dont have enough....
 			return(0);
-		}
 		DeleteItemInInventory(slot, quantity);
 	} else {
 		quantity = 1;
 		DeleteItemInInventory(slot);
 	}
+
 	pts *= quantity;
+
 	/* Add the tribute value in points */
 	AddTributePoints(pts);
 	return(pts);
@@ -391,7 +392,7 @@ bool ZoneDatabase::LoadTributes() {
 	}
 
     for (auto row = results.begin(); row != results.end(); ++row) {
-        uint32 id = atoul(row[0]);
+        uint32 id = Strings::ToUnsignedInt(row[0]);
 		tributeData.name = row[1];
 		tributeData.description = row[2];
 		tributeData.unknown = strtoul(row[3], nullptr, 10);
@@ -409,7 +410,7 @@ bool ZoneDatabase::LoadTributes() {
 	}
 
 	for (auto row = results.begin(); row != results.end(); ++row) {
-		uint32 id = atoul(row[0]);
+		uint32 id = Strings::ToUnsignedInt(row[0]);
 
 		if (tribute_list.count(id) != 1) {
 			LogError("Error in LoadTributes: unknown tribute [{}] in tribute_levels", (unsigned long) id);
@@ -425,14 +426,14 @@ bool ZoneDatabase::LoadTributes() {
 
 		TributeLevel_Struct &s = cur.tiers[cur.tier_count];
 
-		s.level           = atoul(row[1]);
-		s.cost            = atoul(row[2]);
-		s.tribute_item_id = atoul(row[3]);
+		s.level           = Strings::ToUnsignedInt(row[1]);
+		s.cost            = Strings::ToUnsignedInt(row[2]);
+		s.tribute_item_id = Strings::ToUnsignedInt(row[3]);
 		cur.tier_count++;
 	}
 
 	LogInfo("Loaded [{}] tribute levels", Strings::Commify(results.RowCount()));
-	
+
 	return true;
 }
 
@@ -695,7 +696,6 @@ Deactivate Tribute:
    0: C0 27 09 00                                        | .'..
 
 */
-
 
 
 

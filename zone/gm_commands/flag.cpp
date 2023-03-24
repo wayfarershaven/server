@@ -40,7 +40,7 @@ void command_flag(Client *c, const Seperator *sep)
 		return;
 	}
 
-	auto status = std::stoi(sep->arg[1]);
+	auto status = Strings::ToInt(sep->arg[1]);
 	if (status < -2 || status > 255) {
 		c->Message(Chat::White, "The lowest a status level can go is -2 and the highest a status level can go is 255.");
 		return;

@@ -4216,19 +4216,30 @@ bool Mob::SpellOnTarget(
 		spelltar->DamageShield(this, true);
 	}
 
-	if (spelltar->IsAIControlled() && IsDetrimentalSpell(spell_id) && !IsHarmonySpell(spell_id)) {
-		int32 aggro_amount = CheckAggroAmount(spell_id, spelltar, isproc);
-		LogSpells("Spell %d cast on [{}] generated [{}] hate", spell_id,
+	if (
+		spelltar->IsAIControlled() &&
+		IsDetrimentalSpell(spell_id) &&
+		!IsHarmonySpell(spell_id)
+	) {
+		auto aggro_amount = CheckAggroAmount(spell_id, spelltar, isproc);
+		LogSpells("Spell [{}] cast on [{}] generated [{}] hate", spell_id,
 			spelltar->GetName(), aggro_amount);
 		if (aggro_amount > 0) {
 			spelltar->AddToHateList(this, aggro_amount);
 		} else {
-			int32 newhate = spelltar->GetHateAmount(this) + aggro_amount;
-			spelltar->SetHateAmountOnEnt(this, std::max(newhate, 1));
+			int64 newhate = spelltar->GetHateAmount(this) + aggro_amount;
+			spelltar->SetHateAmountOnEnt(this, std::max(newhate, static_cast<int64>(1)));
 		}
 	} else if (IsBeneficialSpell(spell_id) && !IsSummonPCSpell(spell_id)) {
-		entity_list.AddHealAggro(spelltar, this,
-								 CheckHealAggroAmount(spell_id, spelltar, (spelltar->GetMaxHP() - spelltar->GetHP())));	
+		entity_list.AddHealAggro(
+			spelltar,
+			this,
+			CheckHealAggroAmount(
+				spell_id,
+				spelltar,
+				(spelltar->GetMaxHP() - spelltar->GetHP())
+			)
+		);
 	}
 
 	// make sure spelltar is high enough level for the buff
@@ -4816,7 +4827,7 @@ bool Mob::IsImmuneToSpell(uint16 spell_id, Mob *caster)
 			if(GetLevel() > spells[spell_id].max_value[effect_index] && spells[spell_id].max_value[effect_index] != 0)
 			{
 				LogSpells("Our level ([{}]) is higher than the limit of this Charm spell ([{}])", GetLevel(), spells[spell_id].max_value[effect_index]);
-				int32 aggro = caster->CheckAggroAmount(spell_id, this);
+				int64 aggro = caster->CheckAggroAmount(spell_id, this);
 				aggro > 0 ? AddToHateList(caster, aggro) : AddToHateList(caster, 1, 0, true, false, false, spell_id);
 				caster->MessageString(Chat::SpellFailure, TARGET_RESISTED, spells[spell_id].name);
 				return true;
@@ -5848,7 +5859,7 @@ std::unordered_map<uint32, std::vector<uint16>> Client::LoadSpellGroupCache(uint
 	}
 
 	for (auto row : results) {
-		spell_group_cache[std::stoul(row[0])].push_back(static_cast<uint16>(std::stoul(row[1])));
+		spell_group_cache[Strings::ToUnsignedInt(row[0])].push_back(static_cast<uint16>(Strings::ToUnsignedInt(row[1])));
 	}
 
 	return spell_group_cache;
@@ -5909,7 +5920,7 @@ bool Client::SpellGlobalCheck(uint16 spell_id, uint32 character_id) {
 	row = results.begin();
 	std::string global_value = row[0];
 	if (Strings::IsNumber(global_value) && Strings::IsNumber(spell_global_value)) {
-		if (std::stoi(global_value) >= std::stoi(spell_global_value)) {
+		if (Strings::ToInt(global_value) >= Strings::ToInt(spell_global_value)) {
 			return true; // If value is greater than or equal to spell global value, allow scribing.
 		}
 	} else {
@@ -5963,7 +5974,7 @@ bool Client::SpellBucketCheck(uint16 spell_id, uint32 character_id) {
 	auto bucket_value = DataBucket::GetData(new_bucket_name);
 	if (!bucket_value.empty()) {
 		if (Strings::IsNumber(bucket_value) && Strings::IsNumber(spell_bucket_value)) {
-			if (std::stoi(bucket_value) >= std::stoi(spell_bucket_value)) {
+			if (Strings::ToInt(bucket_value) >= Strings::ToInt(spell_bucket_value)) {
 				return true; // If value is greater than or equal to spell bucket value, allow scribing.
 			}
 		} else {
@@ -5982,7 +5993,7 @@ bool Client::SpellBucketCheck(uint16 spell_id, uint32 character_id) {
 	bucket_value = DataBucket::GetData(old_bucket_name);
 	if (!bucket_value.empty()) {
 		if (Strings::IsNumber(bucket_value) && Strings::IsNumber(spell_bucket_value)) {
-			if (std::stoi(bucket_value) >= std::stoi(spell_bucket_value)) {
+			if (Strings::ToInt(bucket_value) >= Strings::ToInt(spell_bucket_value)) {
 				return true; // If value is greater than or equal to spell bucket value, allow scribing.
 			}
 		} else {
@@ -6055,7 +6066,7 @@ bool Mob::IsCombatProc(uint16 spell_id) {
 		return false;
 	}
 
-	if (spell_id == SPELL_UNKNOWN) {
+	if (!IsValidSpell(spell_id)) {
 		return(false);
 	}
 	/*
