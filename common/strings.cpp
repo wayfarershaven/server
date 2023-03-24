@@ -115,7 +115,7 @@ Strings::SearchDelim(const std::string &haystack, const std::string &needle, con
 }
 
 
-std::string Strings::Implode(std::string glue, std::vector<std::string> src)
+std::string Strings::Implode(const std::string& glue, std::vector<std::string> src)
 {
 	if (src.empty()) {
 		return {};
@@ -272,7 +272,7 @@ std::string Strings::Repeat(std::string s, int n)
 	return s;
 }
 
-bool Strings::Contains(std::vector<std::string> container, std::string element)
+bool Strings::Contains(std::vector<std::string> container, const std::string& element)
 {
 	return std::find(container.begin(), container.end(), element) != container.end();
 }
@@ -316,7 +316,7 @@ const std::string Strings::ToUpper(std::string s)
 	);
 	return s;
 }
-const std::string Strings::UcFirst(std::string s)
+const std::string Strings::UcFirst(const std::string& s)
 {
 	std::string output = s;
 	if (!s.empty()) {
@@ -327,7 +327,7 @@ const std::string Strings::UcFirst(std::string s)
 }
 
 
-std::vector<std::string> Strings::Wrap(std::vector<std::string> &src, std::string character)
+std::vector<std::string> Strings::Wrap(std::vector<std::string> &src, const std::string& character)
 {
 	std::vector<std::string> new_vector;
 	new_vector.reserve(src.size());
@@ -659,7 +659,7 @@ std::string Strings::SecondsToTime(int duration, bool is_milliseconds)
 	return time_string;
 }
 
-std::string &Strings::LTrim(std::string &str, const std::string &chars)
+std::string &Strings::LTrim(std::string &str, std::string_view chars)
 {
 	str.erase(0, str.find_first_not_of(chars));
 	return str;
@@ -670,7 +670,7 @@ std::string Strings::MillisecondsToTime(int duration)
 	return SecondsToTime(duration, true);
 }
 
-std::string &Strings::RTrim(std::string &str, const std::string &chars)
+std::string &Strings::RTrim(std::string &str, std::string_view chars)
 {
 	str.erase(str.find_last_not_of(chars) + 1);
 	return str;
@@ -682,7 +682,7 @@ std::string &Strings::Trim(std::string &str, const std::string &chars)
 }
 
 // Function to convert single digit or two digit number into words
-std::string Strings::ConvertToDigit(int n, std::string suffix)
+std::string Strings::ConvertToDigit(int n, const std::string& suffix)
 {
 	// if n is zero
 	if (n == 0) {
@@ -745,7 +745,7 @@ uint32 Strings::TimeToSeconds(std::string time_string)
 	return duration;
 }
 
-bool Strings::ToBool(std::string bool_string)
+bool Strings::ToBool(const std::string& bool_string)
 {
 	if (
 		Strings::Contains(bool_string, "true") ||
@@ -781,27 +781,72 @@ std::string Strings::Random(size_t length)
 // fails to cast to a number
 int Strings::ToInt(const std::string &s, int fallback)
 {
-	return Strings::IsNumber(s) ? std::stoi(s) : fallback;
+	if (!Strings::IsNumber(s)) {
+		return fallback;
+	}
+
+	try {
+		return std::stoi(s);
+	}
+	catch (std::exception &) {
+		return fallback;
+	}
 }
 
 int64 Strings::ToBigInt(const std::string &s, int64 fallback)
 {
-	return Strings::IsNumber(s) ? std::stoll(s) : fallback;
+	if (!Strings::IsNumber(s)) {
+		return fallback;
+	}
+
+	try {
+		return std::stoll(s);
+	}
+	catch (std::exception &) {
+		return fallback;
+	}
 }
 
 uint32 Strings::ToUnsignedInt(const std::string &s, uint32 fallback)
 {
-	return Strings::IsNumber(s) ? std::stoul(s) : fallback;
+	if (!Strings::IsNumber(s)) {
+		return fallback;
+	}
+
+	try {
+		return std::stoul(s);
+	}
+	catch (std::exception &) {
+		return fallback;
+	}
 }
 
 uint64 Strings::ToUnsignedBigInt(const std::string &s, uint64 fallback)
 {
-	return Strings::IsNumber(s) ? std::stoull(s) : fallback;
+	if (!Strings::IsNumber(s)) {
+		return fallback;
+	}
+
+	try {
+		return std::stoull(s);
+	}
+	catch (std::exception &) {
+		return fallback;
+	}
 }
 
 float Strings::ToFloat(const std::string &s, float fallback)
 {
-	return Strings::IsFloat(s) ? std::stof(s) : fallback;
+	if (!Strings::IsFloat(s)) {
+		return fallback;
+	}
+
+	try {
+		return std::stof(s);
+	}
+	catch (std::exception &) {
+		return fallback;
+	}
 }
 
 std::string Strings::RemoveNumbers(std::string s)
