@@ -82,8 +82,6 @@ namespace EQ
 #include <deque>
 #include <ctime>
 
-
-#define CLIENT_TIMEOUT 90000
 #define CLIENT_LD_TIMEOUT 30000 // length of time client stays in zone after LDing
 #define TARGETING_RANGE 200 // range for /assist and /target
 #define XTARGET_HARDCAP 20
