@@ -399,7 +399,6 @@ Mob::Mob(
 	stunned        = false;
 	silenced       = false;
 	amnesiad       = false;
-	inWater        = false;
 
 	shield_timer.Disable();
 	m_shield_target_id = 0;
