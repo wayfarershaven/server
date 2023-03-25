@@ -1170,7 +1170,7 @@ void Mob::AI_Process() {
 			}
 		}
 		
-		if (!(GetPlayerState() & static_cast<uint32>(PlayerState::Aggressive)))
+		if (!(GetPlayerState() & static_cast<uint32>(PlayerState::Aggressive))) {
 			SendAddPlayerState(PlayerState::Aggressive);
 		}
 
