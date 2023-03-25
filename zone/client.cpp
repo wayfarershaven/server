@@ -735,9 +735,6 @@ bool Client::Save(uint8 iCommitNow) {
 	return true;
 }
 
-void Client::SaveBackup() {
-}
-
 CLIENTPACKET::CLIENTPACKET()
 {
 	app = nullptr;
