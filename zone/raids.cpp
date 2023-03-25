@@ -1472,8 +1472,9 @@ bool Raid::LearnMembers()
                                     "FROM raid_members WHERE raidid = %lu",
                                     (unsigned long)GetID());
     auto results = database.QueryDatabase(query);
-    if (!results.Success())
+    if (!results.Success()) {
         return false;
+	}
 
 	if(results.RowCount() == 0) {
 		LogError("Error getting raid members for raid [{}]: [{}]", (unsigned long)GetID(), results.ErrorMessage().c_str());
@@ -1483,16 +1484,18 @@ bool Raid::LearnMembers()
 
     int index = 0;
     for(auto row = results.begin(); row != results.end(); ++row) {
-        if(!row[0])
+        if(!row[0]) {
             continue;
+		}
 
         members[index].member = nullptr;
         strn0cpy(members[index].membername, row[0], 64);
-        int groupNum = Strings::ToInt(row[1]);
-        if(groupNum > 11)
+        uint32 groupNum = Strings::ToUnsignedInt(row[1]);
+        if(groupNum > 11) {
             members[index].GroupNumber = 0xFFFFFFFF;
-        else
+		} else {
             members[index].GroupNumber = groupNum;
+		}
 
         members[index]._class = Strings::ToInt(row[2]);
         members[index].level = Strings::ToInt(row[3]);
