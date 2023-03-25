@@ -244,8 +244,6 @@ Client::Client(EQStreamInterface* ieqs)
 	autosave_timer.Disable();
 	GetMercTimer()->Disable();
 	instalog = false;
-	pLastUpdate = 0;
-	pLastUpdateWZ = 0;
 	m_pp.autosplit = false;
 	// initialise haste variable
 	m_tradeskill_object = nullptr;

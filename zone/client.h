@@ -1703,8 +1703,6 @@ private:
 	void DoStaminaHungerUpdate();
 	void CalcRestState();
 
-	uint32 pLastUpdate;
-	uint32 pLastUpdateWZ;
 	uint8 playeraction;
 
 	EQStreamInterface* eqs;
