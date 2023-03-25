@@ -4660,11 +4660,6 @@ void Mob::BuffFadeByEffect(int effect_id, int slot_to_skip)
 	}
 }
 
-bool Mob::IsAffectedByBuff(uint16 spell_id)
-{
-	return FindBuff(spell_id);
-}
-
 bool Mob::IsAffectedByBuffByGlobalGroup(GlobalGroup group)
 {
 	int buff_count = GetMaxTotalSlots();
