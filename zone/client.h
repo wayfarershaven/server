@@ -1757,7 +1757,6 @@ private:
 	bool Trader;
 	bool Buyer;
 	std::string BuyerWelcomeMessage;
-	bool AbilityTimer;
 	int Haste; //precalced value
 
 	int32 environment_damage_modifier;
