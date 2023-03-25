@@ -2988,7 +2988,7 @@ void Bot::AI_Process()
 			return;
 		}
 
-		if (!(m_PlayerState & static_cast<uint32>(PlayerState::Aggressive))) {
+		if (!(GetPlayerState() & static_cast<uint32>(PlayerState::Aggressive))) {
 			SendAddPlayerState(PlayerState::Aggressive);
 		}
 
@@ -3557,7 +3557,7 @@ void Bot::AI_Process()
 			GetPet()->SetTarget(nullptr);
 		}
 
-		if (m_PlayerState & static_cast<uint32>(PlayerState::Aggressive)) {
+		if (GetPlayerState() & static_cast<uint32>(PlayerState::Aggressive)) {
 			SendRemovePlayerState(PlayerState::Aggressive);
 		}
 
