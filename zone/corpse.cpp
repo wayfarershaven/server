@@ -990,30 +990,32 @@ void Corpse::AllowPlayerLoot(Mob *them, uint8 slot) {
 }
 
 void Corpse::MakeLootRequestPackets(Client* client, const EQApplicationPacket* app) {
-	if (!client)
+	if (!client) {
 		return;
+	}
 
 	// Added 12/08. Started compressing loot struct on live.
-	if(player_corpse_depop) {
+	if (player_corpse_depop) {
 		SendLootReqErrorPacket(client, LootResponse::SomeoneElse);
 		return;
 	}
 
-	if(IsPlayerCorpse() && !corpse_db_id) { // really should try to resave in this case
+	if (IsPlayerCorpse() && !corpse_db_id) { // really should try to resave in this case
 		// SendLootReqErrorPacket(client, 0);
 		client->Message(Chat::Red, "Warning: Corpse's dbid = 0! Corpse will not survive zone shutdown!");
 		std::cout << "Error: PlayerCorpse::MakeLootRequestPackets: dbid = 0!" << std::endl;
 		// return;
 	}
 
-	if(is_locked && client->Admin() < AccountStatus::GMAdmin) {
+	if (is_locked && client->Admin() < AccountStatus::GMAdmin) {
 		SendLootReqErrorPacket(client, LootResponse::SomeoneElse);
 		client->Message(Chat::Red, "Error: Corpse locked by GM.");
 		return;
 	}
 
-	if(!being_looted_by || (being_looted_by != 0xFFFFFFFF && !entity_list.GetID(being_looted_by)))
+	if (!being_looted_by || (being_looted_by != 0xFFFFFFFF && !entity_list.GetID(being_looted_by))) {
 		being_looted_by = 0xFFFFFFFF;
+	}
 
 	if (DistanceSquaredNoZ(client->GetPosition(), m_Position) > 625) {
 		SendLootReqErrorPacket(client, LootResponse::TooFar);
@@ -1030,26 +1032,25 @@ void Corpse::MakeLootRequestPackets(Client* client, const EQApplicationPacket* a
 
 	// loot_request_type is scoped to class Corpse and reset on a per-loot session basis
 	if (client->GetGM()) {
-		if (client->Admin() >= AccountStatus::GMAdmin)
+		if (client->Admin() >= AccountStatus::GMAdmin) {
 			loot_request_type = LootRequestType::GMAllowed;
-		else
+		} else {
 			loot_request_type = LootRequestType::GMPeek;
-	}
-	else {
+		}
+	} else {
 		if (IsPlayerCorpse()) {
 			if (char_id == client->CharacterID()) {
 				loot_request_type = LootRequestType::Self;
-			}
-			else if (CanPlayerLoot(client->CharacterID())) {
-				if (GetPlayerKillItem() == -1)
+			} else if (CanPlayerLoot(client->CharacterID())) {
+				if (GetPlayerKillItem() == -1) {
 					loot_request_type = LootRequestType::AllowedPVPAll;
-				else if (GetPlayerKillItem() == 1)
+				} else if (GetPlayerKillItem() == 1) {
 					loot_request_type = LootRequestType::AllowedPVPSingle;
-				else if (GetPlayerKillItem() > 1)
+				} else if (GetPlayerKillItem() > 1) {
 					loot_request_type = LootRequestType::AllowedPVPDefined;
+				}
 			}
-		}
-		else if ((IsNPCCorpse() || become_npc) && CanPlayerLoot(client->CharacterID())) {
+		} else if ((IsNPCCorpse() || become_npc) && CanPlayerLoot(client->CharacterID())) {
 			loot_request_type = LootRequestType::AllowedPVE;
 		}
 
@@ -1068,8 +1069,9 @@ void Corpse::MakeLootRequestPackets(Client* client, const EQApplicationPacket* a
 	// process coin
 	bool loot_coin = false;
 	std::string tmp;
-	if (database.GetVariable("LootCoin", tmp))
+	if (database.GetVariable("LootCoin", tmp)) {
 		loot_coin = (tmp[0] == 1 && tmp[1] == '\0');
+	}
 
 	if (loot_request_type == LootRequestType::GMPeek || loot_request_type == LootRequestType::GMAllowed) {
 		if (
@@ -1260,8 +1262,10 @@ void Corpse::LootItem(Client *client, const EQApplicationPacket *app)
 		client->QueuePacket(app);
 		SendEndLootErrorPacket(client);
 		// unlock corpse for others
-		if (IsBeingLootedBy(client))
+
+		if (IsBeingLootedBy(client)) {
 			ResetLooter();
+		}
 		return;
 	}
 
@@ -1269,8 +1273,10 @@ void Corpse::LootItem(Client *client, const EQApplicationPacket *app)
 		client->QueuePacket(app);
 		SendEndLootErrorPacket(client);
 		// unlock corpse for others
-		if (IsBeingLootedBy(client))
+
+		if (IsBeingLootedBy(client)) {
 			ResetLooter();
+		}
 		return;
 	}
 
@@ -1280,8 +1286,10 @@ void Corpse::LootItem(Client *client, const EQApplicationPacket *app)
 		client->QueuePacket(app);
 		SendEndLootErrorPacket(client);
 		/* Unlock corpse for others */
-		if (IsBeingLootedBy(client))
+
+		if (IsBeingLootedBy(client)) {
 			ResetLooter();
+		}
 		return;
 	}
 

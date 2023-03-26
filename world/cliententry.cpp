@@ -108,31 +108,29 @@ ClientListEntry::ClientListEntry(uint32 in_id, ZoneServer *iZS, ServerClientList
 
 	if (iOnline >= CLE_Status::Zoning) {
 		Update(iZS, scl, iOnline);
-	}
-	else {
+	} else {
 		SetOnline(iOnline);
 	}
 }
 
-ClientListEntry::~ClientListEntry()
-{
+ClientListEntry::~ClientListEntry() {
 	if (RunLoops) {
 		Camp(); // updates zoneserver's numplayers
 		client_list.RemoveCLEReferances(this);
 	}
-	for (auto &elem : tell_queue)
+
+	for (auto& elem : tell_queue) {
 		safe_delete_array(elem);
+	}
 	tell_queue.clear();
 }
 
-void ClientListEntry::SetChar(uint32 iCharID, const char *iCharName)
-{
+void ClientListEntry::SetChar(uint32 iCharID, const char *iCharName) {
 	pcharid = iCharID;
 	strn0cpy(pname, iCharName, sizeof(pname));
 }
 
-void ClientListEntry::SetOnline(CLE_Status iOnline)
-{
+void ClientListEntry::SetOnline(CLE_Status iOnline) {
 	LogClientLogin(
 		"Online status [{}] ({}) status [{}] ({})",
 		AccountName(),
@@ -282,16 +280,17 @@ void ClientListEntry::ClearVars(bool iAll)
 	pLFG           = 0;
 	gm             = 0;
 	pClientVersion = 0;
-	for (auto &elem : tell_queue)
+	for (auto& elem : tell_queue) {
 		safe_delete_array(elem);
+	}
 	tell_queue.clear();
 }
 
-void ClientListEntry::Camp(ZoneServer *iZS)
-{
+void ClientListEntry::Camp(ZoneServer *iZS) {
 	if (iZS != 0 && iZS != pzoneserver) {
 		return;
 	}
+
 	if (pzoneserver) {
 		pzoneserver->RemovePlayer();
 		LSUpdate(pzoneserver);

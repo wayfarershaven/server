@@ -379,7 +379,7 @@ bool NPC::AICastSpell(Mob* tar, uint8 iChance, uint32 iSpellTypes, bool bInnates
 	return false;
 }
 
-bool NPC::AIDoSpellCast(uint8 i, Mob* tar, int32 mana_cost, uint32* oDontDoAgainBefore) {
+bool NPC::AIDoSpellCast(int32 i, Mob* tar, int32 mana_cost, uint32* oDontDoAgainBefore) {
 #if MobAI_DEBUG_Spells >= 1
 	LogAI("Mob::AIDoSpellCast: spellid = [{}], tar = [{}], mana = [{}], Name: [{}]", AIspells[i].spellid, tar->GetName(), mana_cost, spells[AIspells[i].spellid].name);
 #endif
@@ -2161,16 +2161,19 @@ bool Mob::Flurry(ExtraAttackOptions *opts)
 
 bool Mob::AddRampage(Mob *mob)
 {
-	if (!mob)
+	if (!mob) {
 		return false;
+	}
 
-	if (!GetSpecialAbility(SPECATK_RAMPAGE))
+	if (!GetSpecialAbility(SPECATK_RAMPAGE)) {
 		return false;
+	}
 
 	for (int i = 0; i < RampageArray.size(); i++) {
 		// if Entity ID is already on the list don't add it again
-		if (mob->GetID() == RampageArray[i])
+		if (mob->GetID() == RampageArray[i]) {
 			return false;
+		}
 	}
 	RampageArray.push_back(mob->GetID());
 	return true;

@@ -389,9 +389,6 @@ void EntityList::GroupProcess()
 	for (auto &group : group_list)
 		group->Process();
 
-#if EQDEBUG >= 5
-	CheckGroupList (__FILE__, __LINE__);
-#endif
 }
 
 void EntityList::QueueToGroupsForNPCHealthAA(Mob *sender, const EQApplicationPacket *app)
@@ -599,8 +596,9 @@ void EntityList::EncounterProcess()
 
 void EntityList::AddGroup(Group *group)
 {
-	if (group == nullptr)	//this seems to be happening somehow...
+	if (group == nullptr) { //this seems to be happening somehow...
 		return;
+	}
 
 	uint32 gid = worldserver.NextGroupID();
 	if (gid == 0) {
@@ -609,26 +607,22 @@ void EntityList::AddGroup(Group *group)
 	}
 
 	AddGroup(group, gid);
-#if EQDEBUG >= 5
-	CheckGroupList (__FILE__, __LINE__);
-#endif
 }
 
 void EntityList::AddGroup(Group *group, uint32 gid)
 {
 	group->SetID(gid);
 	group_list.push_back(group);
-	if (!group_timer.Enabled())
+	if (!group_timer.Enabled()) {
 		group_timer.Start();
-#if EQDEBUG >= 5
-	CheckGroupList(__FILE__, __LINE__);
-#endif
+	}
 }
 
 void EntityList::AddRaid(Raid *raid)
 {
-	if (raid == nullptr)
+	if (raid == nullptr) {
 		return;
+	}
 
 	uint32 gid = worldserver.NextGroupID();
 	if (gid == 0) {
@@ -2070,13 +2064,11 @@ Group *EntityList::GetGroupByMob(Mob *mob)
 	iterator = group_list.begin();
 
 	while (iterator != group_list.end()) {
-		if ((*iterator)->IsGroupMember(mob))
+		if ((*iterator)->IsGroupMember(mob)) {
 			return *iterator;
+		}
 		++iterator;
 	}
-#if EQDEBUG >= 5
-	CheckGroupList (__FILE__, __LINE__);
-#endif
 	return nullptr;
 }
 
@@ -2087,13 +2079,11 @@ Group *EntityList::GetGroupByLeaderName(const char *leader)
 	iterator = group_list.begin();
 
 	while (iterator != group_list.end()) {
-		if (!strcmp((*iterator)->GetLeaderName(), leader))
+		if (!strcmp((*iterator)->GetLeaderName(), leader)) {
 			return *iterator;
+		}
 		++iterator;
 	}
-#if EQDEBUG >= 5
-	CheckGroupList (__FILE__, __LINE__);
-#endif
 	return nullptr;
 }
 
@@ -2104,13 +2094,11 @@ Group *EntityList::GetGroupByID(uint32 group_id)
 	iterator = group_list.begin();
 
 	while (iterator != group_list.end()) {
-		if ((*iterator)->GetID() == group_id)
+		if ((*iterator)->GetID() == group_id) {
 			return *iterator;
+		}
 		++iterator;
 	}
-#if EQDEBUG >= 5
-	CheckGroupList (__FILE__, __LINE__);
-#endif
 	return nullptr;
 }
 
@@ -2129,13 +2117,11 @@ Group *EntityList::GetGroupByClient(Client *client)
 	iterator = group_list.begin();
 
 	while (iterator != group_list.end()) {
-		if ((*iterator)->IsGroupMember(client->CastToMob()))
+		if ((*iterator)->IsGroupMember(client->CastToMob())) {
 			return *iterator;
+		}
 		++iterator;
 	}
-#if EQDEBUG >= 5
-	CheckGroupList (__FILE__, __LINE__);
-#endif
 	return nullptr;
 }
 
@@ -2146,9 +2132,9 @@ Raid *EntityList::GetRaidByLeaderName(const char *leader)
 	iterator = raid_list.begin();
 
 	while (iterator != raid_list.end()) {
-		if ((*iterator)->GetLeader())
-			if(strcmp((*iterator)->GetLeader()->GetName(), leader) == 0)
-				return *iterator;
+		if ((*iterator)->GetLeader() && strcmp((*iterator)->GetLeader()->GetName(), leader) == 0) {
+			return *iterator;
+		}
 		++iterator;
 	}
 	return nullptr;
@@ -2161,35 +2147,77 @@ Raid *EntityList::GetRaidByID(uint32 id)
 	iterator = raid_list.begin();
 
 	while (iterator != raid_list.end()) {
-		if ((*iterator)->GetID() == id)
+		if ((*iterator)->GetID() == id) {
 			return *iterator;
+		}
 		++iterator;
 	}
 	return nullptr;
 }
 
-Raid *EntityList::GetRaidByClient(Client* client)
+Raid* EntityList::GetRaidByClient(Client* client)
 {
 	if (client->p_raid_instance) {
 		return client->p_raid_instance;
 	}
 
-	std::list<Raid *>::iterator iterator;
+	std::list<Raid*>::iterator iterator;
 	iterator = raid_list.begin();
 
 	while (iterator != raid_list.end()) {
-		for (auto &member : (*iterator)->members) {
-			if (member.member) {
-				if (member.member == client) {
-					client->p_raid_instance = *iterator;
-					return *iterator;
-				}
+		for (const auto& member : (*iterator)->members) {
+			if (member.member && member.member == client) {
+				client->p_raid_instance = *iterator;
+				return *iterator;
 			}
 		}
 
 		++iterator;
 	}
 
+	return nullptr;
+}
+
+Raid* EntityList::GetRaidByBotName(const char* name) {
+	std::list<RaidMember> rm;
+	auto GetMembersWithNames = [&rm](Raid const* r) -> std::list<RaidMember> {
+		for (const auto& m : r->members) {
+			if (strlen(m.member_name) > 0) {
+				rm.push_back(m);
+			}
+		}
+		return rm;
+	};
+
+	for (const auto& r : raid_list) {
+		for (const auto& m : GetMembersWithNames(r)) {
+			if (strcmp(m.member_name, name) == 0) {
+				return r;
+			}
+		}
+	}
+	return nullptr;
+}
+
+Raid* EntityList::GetRaidByBot(const Bot* bot)
+{
+	std::list<RaidMember> rm;
+	auto GetMembersWhoAreBots = [&rm](Raid* r) -> std::list<RaidMember> {
+		for (auto const& m : r->members) {
+			if (m.is_bot) {
+				rm.push_back(m);
+			}
+		}
+		return rm;
+	};
+
+	for (const auto& r : raid_list) {
+		for (const auto& m : GetMembersWhoAreBots(r)) {
+			if (m.member->CastToBot() == bot) {
+				return r;
+			}
+		}
+	}
 	return nullptr;
 }
 
@@ -2617,6 +2645,12 @@ void EntityList::RemoveAllNPCs()
 	npc_limit_list.clear();
 }
 
+void EntityList::RemoveAllBots()
+{
+	// doesn't clear the data
+	bot_list.clear();
+}
+
 void EntityList::RemoveAllMercs()
 {
 	// doesn't clear the data
@@ -2630,9 +2664,6 @@ void EntityList::RemoveAllGroups()
 		group_list.pop_front();
 		safe_delete(group);
 	}
-#if EQDEBUG >= 5
-	CheckGroupList (__FILE__, __LINE__);
-#endif
 }
 
 void EntityList::RemoveAllRaids()
@@ -3013,9 +3044,6 @@ bool EntityList::RemoveGroup(uint32 delete_id)
 	auto it = std::find_if(group_list.begin(), group_list.end(),
 			[delete_id](const Group *a) { return a->GetID() == delete_id; });
 	if (it == group_list.end()) {
-#if EQDEBUG >= 5
-		CheckGroupList (__FILE__, __LINE__);
-#endif
 		return false;
 	}
 	auto group = *it;
@@ -3028,8 +3056,9 @@ bool EntityList::RemoveRaid(uint32 delete_id)
 {
 	auto it = std::find_if(raid_list.begin(), raid_list.end(),
 			[delete_id](const Raid *a) { return a->GetID() == delete_id; });
-	if (it == raid_list.end())
+	if (it == raid_list.end()) {
 		return false;
+	}
 	auto raid = *it;
 	raid_list.erase(it);
 	safe_delete(raid);
@@ -3040,6 +3069,8 @@ void EntityList::Clear()
 {
 	RemoveAllClients();
 	entity_list.RemoveAllTraps(); //we can have child npcs so we go first
+	entity_list.RemoveAllMercs();
+	entity_list.RemoveAllBots();
 	entity_list.RemoveAllNPCs();
 	entity_list.RemoveAllMobs();
 	entity_list.RemoveAllCorpses();
@@ -4809,8 +4840,9 @@ void EntityList::SendZoneAppearance(Client *c)
 
 void EntityList::SendNimbusEffects(Client *c)
 {
-	if (!c)
+	if (!c) {
 		return;
+	}
 
 	auto it = mob_list.begin();
 	while (it != mob_list.end()) {
@@ -4837,8 +4869,9 @@ void EntityList::SendNimbusEffects(Client *c)
 
 void EntityList::SendUntargetable(Client *c)
 {
-	if (!c)
+	if (!c) {
 		return;
+	}
 
 	auto it = mob_list.begin();
 	while (it != mob_list.end()) {
@@ -4849,8 +4882,9 @@ void EntityList::SendUntargetable(Client *c)
 				++it;
 				continue;
 			}
-			if (!cur->IsTargetable())
+			if (!cur->IsTargetable()) {
 				cur->SendTargetable(false, c);
+			}
 		}
 		++it;
 	}
@@ -4858,8 +4892,9 @@ void EntityList::SendUntargetable(Client *c)
 
 void EntityList::SendAppearanceEffects(Client *c)
 {
-	if (!c)
+	if (!c) {
 		return;
+	}
 
 	auto it = mob_list.begin();
 	while (it != mob_list.end()) {
@@ -5348,8 +5383,9 @@ void EntityList::DeleteQGlobal(std::string name, uint32 npcID, uint32 charID, ui
 
 void EntityList::SendFindableNPCList(Client *c)
 {
-	if (!c)
+	if (!c) {
 		return;
+	}
 
 	auto outapp = new EQApplicationPacket(OP_SendFindableNPCs, sizeof(FindableNPC_Struct));
 
@@ -5415,8 +5451,9 @@ void EntityList::UpdateFindableNPCState(NPC *n, bool Remove)
 
 void EntityList::HideCorpses(Client *c, uint8 CurrentMode, uint8 NewMode)
 {
-	if (!c)
+	if (!c) {
 		return;
+	}
 
 	if (NewMode == HideCorpseNone) {
 		SendZoneCorpses(c);
@@ -5428,8 +5465,9 @@ void EntityList::HideCorpses(Client *c, uint8 CurrentMode, uint8 NewMode)
 	if (NewMode == HideCorpseAllButGroup) {
 		g = c->GetGroup();
 
-		if (!g)
+		if (!g) {
 			NewMode = HideCorpseAll;
+		}
 	}
 
 	auto it = corpse_list.begin();

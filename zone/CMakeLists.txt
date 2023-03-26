@@ -13,6 +13,7 @@ SET(zone_sources
     bot.cpp
     bot_command.cpp
     bot_database.cpp
+    bot_raid.cpp
     botspellsai.cpp
     cheat_manager.cpp
     client.cpp

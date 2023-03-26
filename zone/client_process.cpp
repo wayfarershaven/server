@@ -202,6 +202,11 @@ bool Client::Process() {
 		}
 
 		if (camp_timer.Check()) {
+			Raid* raid = entity_list.GetRaidByClient(this);
+			if (raid) {
+				raid->RemoveMember(this->GetName());
+			}
+			
 			LeaveGroup();
 			Save();
 			if (GetMerc())
@@ -605,11 +610,13 @@ bool Client::Process() {
 		for (auto & close_mob : close_mobs) {
 			Mob *mob = close_mob.second;
 
-			if (!mob)
+			if (!mob) {
 				continue;
+			}
 
-			if (mob->IsClient())
+			if (mob->IsClient()) {
 				continue;
+			}
 
 			if (mob->CheckWillAggro(this) && !mob->CheckAggro(this)) {
 				mob->AddToHateList(this, 0);

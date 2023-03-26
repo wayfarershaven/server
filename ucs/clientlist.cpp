@@ -571,26 +571,22 @@ void Clientlist::CheckForStaleConnectionsAll()
 
 void Clientlist::CheckForStaleConnections(Client *c) {
 
-	if (!c) return;
+	if (!c) {
+		return;
+	}
 
 	std::list<Client*>::iterator Iterator;
 
 	for (Iterator = ClientChatConnections.begin(); Iterator != ClientChatConnections.end(); ++Iterator) {
-
 		if (((*Iterator) != c) && ((c->GetName() == (*Iterator)->GetName())
 			&& (c->GetConnectionType() == (*Iterator)->GetConnectionType()))) {
 
 			LogInfo("Removing old connection for [{}]", c->GetName().c_str());
-
 			struct in_addr in;
-
 			in.s_addr = (*Iterator)->ClientStream->GetRemoteIP();
-
 			LogInfo("Client connection from [{}]:[{}] closed", inet_ntoa(in),
 				ntohs((*Iterator)->ClientStream->GetRemotePort()));
-
 			safe_delete((*Iterator));
-
 			Iterator = ClientChatConnections.erase(Iterator);
 		}
 	}

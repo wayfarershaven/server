@@ -794,20 +794,18 @@ void Client::QueuePacket(const EQApplicationPacket* app, bool ack_req, CLIENT_CO
 		if(GetFilter(filter) == FilterHide)
 			return; //Client has this filter on, no need to send packet
 	}
-	if(client_state != CLIENT_CONNECTED && required_state == CLIENT_CONNECTED){
+	if (client_state != CLIENT_CONNECTED && required_state == CLIENT_CONNECTED) {
 		AddPacket(app, ack_req);
 		return;
 	}
 
 	// if the program doesnt care about the status or if the status isnt what we requested
-	if (required_state != CLIENT_CONNECTINGALL && client_state != required_state)
-	{
+	if (required_state != CLIENT_CONNECTINGALL && client_state != required_state) {
 		// todo: save packets for later use
 		AddPacket(app, ack_req);
+	} else if (eqs) {
+		eqs->QueuePacket(app, ack_req);
 	}
-	else
-		if(eqs)
-			eqs->QueuePacket(app, ack_req);
 }
 
 void Client::FastQueuePacket(EQApplicationPacket** app, bool ack_req, CLIENT_CONN_STATUS required_state) {
@@ -816,12 +814,12 @@ void Client::FastQueuePacket(EQApplicationPacket** app, bool ack_req, CLIENT_CON
 		// todo: save packets for later use
 		AddPacket(app, ack_req);
 		return;
-	}
-	else {
-		if(eqs)
+	} else {
+		if(eqs) {
 			eqs->FastQueuePacket((EQApplicationPacket **)app, ack_req);
-		else if (app && (*app))
+		} else if (app && (*app)) {
 			delete *app;
+		}
 		*app = nullptr;
 	}
 	return;
@@ -4206,7 +4204,7 @@ bool Client::GroupFollow(Client* inviter) {
 				{
 					//this assumes the inviter is in the zone
 					if (raid->members[x].member == inviter){
-						groupToUse = raid->members[x].GroupNumber;
+						groupToUse = raid->members[x].group_number;
 						break;
 					}
 				}
@@ -8495,7 +8493,7 @@ void Client::ProcessAggroMeter()
 				if (gid < 12) {
 					int at_id = AggroMeter::AT_Group1;
 					for (int i = 0; i < MAX_RAID_MEMBERS; ++i) {
-						if (raid->members[i].member && raid->members[i].member != this && raid->members[i].GroupNumber == gid) {
+						if (raid->members[i].member && raid->members[i].member != this && raid->members[i].group_number == gid) {
 							if (m_aggrometer.set_pct(static_cast<AggroMeter::AggroTypes>(at_id), cur_tar->GetHateRatio(cur_tar->GetTarget(), raid->members[i].member)))
 								add_entry(static_cast<AggroMeter::AggroTypes>(at_id));
 							at_id++;

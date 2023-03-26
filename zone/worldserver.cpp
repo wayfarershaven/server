@@ -1114,51 +1114,45 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 
 		Client *client = entity_list.GetClientByName(sgfas->Name);
 
-		if (!client)
+		if (!client) {
 			break;
+		}
 
 		uint32 groupid = database.GetGroupID(client->GetName());
 
 		Group* group = nullptr;
 
-		if (groupid > 0)
-		{
+		if (groupid > 0) {
 			group = entity_list.GetGroupByID(groupid);
 
-			if (!group)
-			{	//nobody from our group is here... start a new group
+			if (!group) {	//nobody from our group is here... start a new group
 				group = new Group(groupid);
 
-				if (group->GetID() != 0)
+				if (group->GetID() != 0) {
 					entity_list.AddGroup(group, groupid);
-				else
+				} else {
 					safe_delete(group);
+				}
 			}
 
-			if (group)
+			if (group) {
 				group->UpdatePlayer(client);
-			else
-			{
-				if (client->GetMerc())
+			} else {
+				if (client->GetMerc()) {
 					database.SetGroupID(client->GetMerc()->GetCleanName(), 0, client->CharacterID(), true);
+				}
 				database.SetGroupID(client->GetName(), 0, client->CharacterID(), false);	//cannot re-establish group, kill it
 			}
-
 		}
 
-		if (group)
-		{
-			if (client->GetMerc())
-			{
+		if (group) {
+			if (client->GetMerc()) {
 				client->GetMerc()->MercJoinClientGroup();
 			}
 			database.RefreshGroupFromDB(client);
-
 			group->SendHPManaEndPacketsTo(client);
-
 			// If the group leader is not set, pull the group leader information from the database.
-			if (!group->GetLeader())
-			{
+			if (!group->GetLeader()) {
 				char ln[64];
 				char MainTankName[64];
 				char AssistName[64];
@@ -1170,9 +1164,9 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 				memset(ln, 0, 64);
 				database.GetGroupLeadershipInfo(group->GetID(), ln, MainTankName, AssistName, PullerName, NPCMarkerName, mentoree_name, &mentor_percent, &GLAA);
 				Client *lc = entity_list.GetClientByName(ln);
-				if (lc)
+				if (lc) {
 					group->SetLeader(lc);
-
+				}
 				group->SetMainTank(MainTankName);
 				group->SetMainAssist(AssistName);
 				group->SetPuller(PullerName);
@@ -1428,14 +1422,10 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 				GroupJoin_Struct* gj = (GroupJoin_Struct*)outapp->pBuffer;
 				strn0cpy(gj->membername, rga->membername, 64);
 				gj->action = groupActJoin;
-
-				for (int x = 0; x < MAX_RAID_MEMBERS; x++)
-				{
-					if (r->members[x].member)
-					{
+				for (int x = 0; x < MAX_RAID_MEMBERS; x++) {
+					if (r->members[x].member) {
 						if (strcmp(r->members[x].member->GetName(), rga->membername) != 0) {
-							if ((rga->gid < 12) && rga->gid == r->members[x].GroupNumber)
-							{
+							if ((rga->gid < 12) && rga->gid == r->members[x].group_number) {
 								strn0cpy(gj->yourname, r->members[x].member->GetName(), 64);
 								r->members[x].member->QueuePacket(outapp);
 							}
@@ -1458,14 +1448,10 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 				GroupJoin_Struct* gj = (GroupJoin_Struct*)outapp->pBuffer;
 				strn0cpy(gj->membername, rga->membername, 64);
 				gj->action = groupActLeave;
-
-				for (int x = 0; x < MAX_RAID_MEMBERS; x++)
-				{
-					if (r->members[x].member)
-					{
+				for (int x = 0; x < MAX_RAID_MEMBERS; x++) {
+					if (r->members[x].member) {
 						if (strcmp(r->members[x].member->GetName(), rga->membername) != 0) {
-							if ((rga->gid < 12) && rga->gid == r->members[x].GroupNumber)
-							{
+							if ((rga->gid < 12) && rga->gid == r->members[x].group_number) {
 								strn0cpy(gj->yourname, r->members[x].member->GetName(), 64);
 								r->members[x].member->QueuePacket(outapp);
 							}
@@ -1481,16 +1467,12 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 		ServerRaidMessage_Struct* rmsg = (ServerRaidMessage_Struct*)pack->pBuffer;
 		if (zone) {
 			Raid *r = entity_list.GetRaidByID(rmsg->rid);
-			if (r)
-			{
-				for (int x = 0; x < MAX_RAID_MEMBERS; x++)
-				{
+			if (r) {
+				for (int x = 0; x < MAX_RAID_MEMBERS; x++) {
 					if (r->members[x].member) {
-						if (strcmp(rmsg->from, r->members[x].member->GetName()) != 0)
-						{
-							if (r->members[x].GroupNumber == rmsg->gid) {
-								if (r->members[x].member->GetFilter(FilterGroupChat) != 0)
-								{
+						if (strcmp(rmsg->from, r->members[x].member->GetName()) != 0) {
+							if (r->members[x].group_number == rmsg->gid) {
+								if (!r->members[x].is_bot && r->members[x].member->GetFilter(FilterGroupChat) != 0) {
 									r->members[x].member->ChannelMessageSend(rmsg->from, r->members[x].member->GetName(), ChatChannel_Group, rmsg->language, rmsg->lang_skill, rmsg->message);
 								}
 							}
@@ -1503,18 +1485,13 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 	}
 	case ServerOP_RaidSay: {
 		ServerRaidMessage_Struct* rmsg = (ServerRaidMessage_Struct*)pack->pBuffer;
-		if (zone)
-		{
+		if (zone) {
 			Raid *r = entity_list.GetRaidByID(rmsg->rid);
-			if (r)
-			{
-				for (int x = 0; x < MAX_RAID_MEMBERS; x++)
-				{
+			if (r) {
+				for (int x = 0; x < MAX_RAID_MEMBERS; x++) {
 					if (r->members[x].member) {
-						if (strcmp(rmsg->from, r->members[x].member->GetName()) != 0)
-						{
-							if (r->members[x].member->GetFilter(FilterGroupChat) != 0)
-							{
+						if (strcmp(rmsg->from, r->members[x].member->GetName()) != 0) {
+							if (!r->members[x].is_bot && r->members[x].member->GetFilter(FilterGroupChat) != 0) {
 								r->members[x].member->ChannelMessageSend(rmsg->from, r->members[x].member->GetName(), ChatChannel_Raid, rmsg->language, rmsg->lang_skill, rmsg->message);
 							}
 						}
