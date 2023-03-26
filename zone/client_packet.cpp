@@ -12228,7 +12228,7 @@ void Client::Handle_OP_RaidCommand(const EQApplicationPacket* app)
 					}
 					raid->SendGroupDisband(c_to_disband);
 					raid->GroupUpdate(group);
-					if (!raid->RaidCount() || !raid->GetLeader()) {
+					if (!raid->RaidCount()) {
 						raid->DisbandRaid();
 					}
 					break;
