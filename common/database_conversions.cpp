@@ -915,14 +915,14 @@ bool Database::CheckDatabaseConvertPPDeblob(){
 			auto row2 = results2.begin();
 			pp = (Convert::PlayerProfile_Struct*)row2[1];
 			e_pp = (ExtendedProfile_Struct*)row2[11];
-			character_id = Strings::ToInt(row[0]);
+			character_id = Strings::ToUnsignedInt(row[0]);
 			account_id = Strings::ToInt(row2[4]);
 			/* Convert some data from the character_ table that is still relevant */
-			firstlogon = Strings::ToInt(row2[5]);
-			lfg = Strings::ToInt(row2[6]);
-			lfp = Strings::ToInt(row2[7]);
+			firstlogon = Strings::ToUnsignedInt(row2[5]);
+			lfg = Strings::ToUnsignedInt(row2[6]);
+			lfp = Strings::ToUnsignedInt(row2[7]);
 			mailkey = row2[8];
-			xtargets = Strings::ToInt(row2[9]);
+			xtargets = Strings::ToUnsignedInt(row2[9]);
 			inspectmessage = row2[10];
 
 			/* Verify PP Integrity */
@@ -1549,7 +1549,7 @@ bool Database::CheckDatabaseConvertCorpseDeblob(){
 		rquery = StringFormat("SELECT DISTINCT charid FROM character_corpses");
 		results = QueryDatabase(rquery);
 		for (auto row = results.begin(); row != results.end(); ++row) {
-			std::string squery = StringFormat("SELECT id, charname, data, time_of_death, is_rezzed FROM character_corpses WHERE `charid` = %i", Strings::ToInt(row[0]));
+			std::string squery = StringFormat("SELECT id, charname, data, time_of_death, is_rezzed FROM character_corpses WHERE `charid` = %i", Strings::ToUnsignedInt(row[0]));
 			auto results2 = QueryDatabase(squery);
 			for (auto row2 = results2.begin(); row2 != results2.end(); ++row2) {
 				in_datasize = results2.LengthOfColumn(2);
@@ -1581,7 +1581,7 @@ bool Database::CheckDatabaseConvertCorpseDeblob(){
 					c_type = "NULL";
 					continue;
 				}
-				std::cout << "Converting Corpse: [OK] [" << c_type << "]: " << "ID: " << Strings::ToInt(row2[0]) << std::endl;
+				std::cout << "Converting Corpse: [OK] [" << c_type << "]: " << "ID: " << Strings::ToUnsignedInt(row2[0]) << std::endl;
 
 				if (is_sof){
 					scquery = StringFormat("UPDATE `character_corpses` SET \n"
@@ -1652,7 +1652,7 @@ bool Database::CheckDatabaseConvertCorpseDeblob(){
 						dbpc->item_tint[6].color,
 						dbpc->item_tint[7].color,
 						dbpc->item_tint[8].color,
-						Strings::ToInt(row2[0])
+						Strings::ToUnsignedInt(row2[0])
 						);
 					if (scquery != ""){ auto sc_results = QueryDatabase(scquery); }
 
@@ -1664,7 +1664,7 @@ bool Database::CheckDatabaseConvertCorpseDeblob(){
 							scquery = StringFormat("REPLACE INTO `character_corpse_items` \n"
 								" (corpse_id, equip_slot, item_id, charges, aug_1, aug_2, aug_3, aug_4, aug_5, aug_6, attuned) \n"
 								" VALUES (%u, %u, %u, %u, %u, %u, %u, %u, %u, %u, %u) \n",
-								Strings::ToInt(row2[0]),
+								Strings::ToUnsignedInt(row2[0]),
 								dbpc->items[i].equipSlot,
 								dbpc->items[i].item_id,
 								dbpc->items[i].charges,
@@ -1680,7 +1680,7 @@ bool Database::CheckDatabaseConvertCorpseDeblob(){
 						}
 						else{
 							scquery = scquery + StringFormat(", (%u, %u, %u, %u, %u, %u, %u, %u, %u, %u, %u) \n",
-								Strings::ToInt(row2[0]),
+								Strings::ToUnsignedInt(row2[0]),
 								dbpc->items[i].equipSlot,
 								dbpc->items[i].item_id,
 								dbpc->items[i].charges,
@@ -1760,7 +1760,7 @@ bool Database::CheckDatabaseConvertCorpseDeblob(){
 						dbpc_c->item_tint[6].color,
 						dbpc_c->item_tint[7].color,
 						dbpc_c->item_tint[8].color,
-						Strings::ToInt(row2[0])
+						Strings::ToUnsignedInt(row2[0])
 						);
 					if (scquery != ""){ auto sc_results = QueryDatabase(scquery); }
 
@@ -1773,7 +1773,7 @@ bool Database::CheckDatabaseConvertCorpseDeblob(){
 							scquery = StringFormat("REPLACE INTO `character_corpse_items` \n"
 								" (corpse_id, equip_slot, item_id, charges, aug_1, aug_2, aug_3, aug_4, aug_5, aug_6, attuned) \n"
 								" VALUES (%u, %u, %u, %u, %u, %u, %u, %u, %u, %u, %u) \n",
-								Strings::ToInt(row2[0]),
+								Strings::ToUnsignedInt(row2[0]),
 								dbpc_c->items[i].equipSlot,
 								dbpc_c->items[i].item_id,
 								dbpc_c->items[i].charges,
@@ -1789,7 +1789,7 @@ bool Database::CheckDatabaseConvertCorpseDeblob(){
 						}
 						else{
 							scquery = scquery + StringFormat(", (%u, %u, %u, %u, %u, %u, %u, %u, %u, %u, %u) \n",
-								Strings::ToInt(row2[0]),
+								Strings::ToUnsignedInt(row2[0]),
 								dbpc_c->items[i].equipSlot,
 								dbpc_c->items[i].item_id,
 								dbpc_c->items[i].charges,
