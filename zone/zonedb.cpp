@@ -4321,10 +4321,10 @@ void ZoneDatabase::ListCharacterCorpses(Client *target, Client *c, bool buried, 
 
 		if (backup) {
 			c->Message(Chat::Yellow, " %s:	%s, %s, %s, %s, Item Count: %s, Backup Summon Count: %s", row[0],
-					   StaticGetZoneName(Strings::ToInt(row[1])), row[2], row[3], row[4], ic_row[0], row[6]);
+					   zone_store.GetZoneName(Strings::ToInt(row[1]),true), row[2], row[3], row[4], ic_row[0], row[6]);
 		} else {
 			c->Message(Chat::Yellow, " %s:	%s, %s, %s, %s, Item Count: %s, Buried: %s", row[0],
-					   StaticGetZoneName(Strings::ToInt(row[1])), row[2], row[3], row[4], ic_row[0],
+					   zone_store.GetZoneName(Strings::ToInt(row[1]),true), row[2], row[3], row[4], ic_row[0],
 					   strcmp(row[5], "1") == 0 ? "yes" : "no");
 		}
 	}
@@ -4348,7 +4348,7 @@ void ZoneDatabase::ListCharacterCorpseBackups(Client *target, Client *c) {
 		auto ic_results = database.QueryDatabase(ic_query);
 		auto ic_row = ic_results.begin();
 
-		c->Message(Chat::Yellow, " %s:	%s, %s, %s, %s, (%s)", row[0], StaticGetZoneName(Strings::ToInt(row[1])), row[2], row[3], row[4], ic_row[0]);
+		c->Message(Chat::Yellow, " %s:	%s, %s, %s, %s, (%s)", row[0], zone_store.GetZoneName(Strings::ToInt(row[1]),true), row[2], row[3], row[4], ic_row[0]);
 	}
 }
 
