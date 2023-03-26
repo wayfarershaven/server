@@ -544,11 +544,11 @@ bool Group::UpdatePlayer(Mob* update) {
 void Group::MemberZoned(Mob* removemob) {
 	uint32 i;
 
-	if (removemob == nullptr) {
+	if (!removemob) {
 		return;
 	}
 
-	if(removemob == GetLeader()) {
+	if (removemob == GetLeader()) {
 		SetLeader(nullptr);
 	}
 
@@ -564,11 +564,11 @@ void Group::MemberZoned(Mob* removemob) {
 		SetGroupAssistTarget(0);
 	}
 
-	if(removemob->IsClient() && HasRole(removemob, RoleTank)) {
+	if (removemob->IsClient() && HasRole(removemob, RoleTank)) {
 		SetGroupTankTarget(0);
 	}
 
-	if(removemob->IsClient() && HasRole(removemob, RolePuller)) {
+	if (removemob->IsClient() && HasRole(removemob, RolePuller)) {
 		SetGroupPullerTarget(0);
 	}
 
