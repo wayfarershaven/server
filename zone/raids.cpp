@@ -589,8 +589,7 @@ void Raid::RaidGroupSay(const char *msg, Client *c, uint8 language, uint8 lang_s
 
 uint32 Raid::GetPlayerIndex(const char *name)
 {
-	for(int x = 0; x < MAX_RAID_MEMBERS; x++)
-	{
+	for (int x = 0; x < MAX_RAID_MEMBERS; x++) {
 		if(strcmp(name, members[x].member_name) == 0) {
 			return x;
 		}
@@ -810,6 +809,10 @@ void Raid::BalanceMana(int32 penalty, uint32 gid, float range, Mob* caster, int3
 	manataken /= numMem;
 
 	for (const auto& m : members) {
+		if (m.is_bot) {
+			continue;
+		}
+
 		if (m.member && m.group_number == gid) {
 			distance = DistanceSquared(caster->GetPosition(), m.member->GetPosition());
 
@@ -853,6 +856,10 @@ void Raid::SplitMoney(uint32 gid, uint32 copper, uint32 silver, uint32 gold, uin
 
 	uint8 member_count = 0;
 	for (const auto& m : members) {
+		if (m.is_bot) {
+			continue;
+		}
+
 		if (m.member && m.group_number == gid && m.member->IsClient()) {
 			member_count++;
 		}
@@ -892,6 +899,10 @@ void Raid::SplitMoney(uint32 gid, uint32 copper, uint32 silver, uint32 gold, uin
 	auto platinum_split = platinum / member_count;
 
 	for (const auto& m : members) {
+		if (m.is_bot) {
+			continue;
+		}
+
 		if (m.member && m.group_number == gid && m.member->IsClient()) { // If Group Member is Client
 			m.member->AddMoneyToPP(
 				copper_split,
@@ -930,6 +941,10 @@ void Raid::SplitMoney(uint32 gid, uint32 copper, uint32 silver, uint32 gold, uin
 void Raid::TeleportGroup(Mob* sender, uint32 zoneID, uint16 instance_id, float x, float y, float z, float heading, uint32 gid)
 {
 	for (const auto& m : members) {
+		if (m.is_bot) {
+			continue;
+		}
+
 		if (m.member && m.group_number == gid && m.member->IsClient()) {
 			m.member->MovePC(zoneID, instance_id, x, y, z, heading, 0, ZoneSolicited);
 		}
@@ -939,6 +954,10 @@ void Raid::TeleportGroup(Mob* sender, uint32 zoneID, uint16 instance_id, float x
 void Raid::TeleportRaid(Mob* sender, uint32 zoneID, uint16 instance_id, float x, float y, float z, float heading)
 {
 	for (const auto& m : members) {
+		if (m.is_bot) {
+			continue;
+		}
+
 		if (m.member && m.member->IsClient()) {
 			m.member->MovePC(zoneID, instance_id, x, y, z, heading, 0, ZoneSolicited);
 		}
@@ -959,6 +978,10 @@ void Raid::AddRaidLooter(const char* looter)
 	auto results = database.QueryDatabase(query);
 
 	for (auto& m : members) {
+		if (m.is_bot) {
+			continue;
+		}
+
 		if (strcmp(looter, m.member_name) == 0) {
 			m.is_looter = true;
 			break;
@@ -980,6 +1003,10 @@ void Raid::RemoveRaidLooter(const char* looter)
 	auto results = database.QueryDatabase(query);
 
 	for (auto& m: members) {
+		if (m.is_bot) {
+			continue;
+		}
+
 		if (strcmp(looter, m.member_name) == 0) {
 			m.is_looter = false;
 			break;
@@ -1236,6 +1263,10 @@ void Raid::SendBulkRaid(Client *to)
 void Raid::QueuePacket(const EQApplicationPacket *app, bool ack_req)
 {
 	for (const auto& m : members) {
+		if (m.is_bot) {
+			continue;
+		}
+
 		if (m.member && m.member->IsClient()) {
 			m.member->QueuePacket(app, ack_req);
 		}
@@ -1310,7 +1341,7 @@ void Raid::SendGroupUpdate(Client *to)
 	gu->action = groupActUpdate;
 	int i = 0;
 	uint32 grp = GetGroup(to->GetName());
-	if (grp >= MAX_RAID_MEMBERS) {
+	if (grp >= MAX_RAID_GROUPS) {
 		safe_delete(outapp);
 		return;
 	}
@@ -1480,6 +1511,10 @@ void Raid::SendRaidMOTD()
 	}
 
 	for (const auto& m: members) {
+		if (m.is_bot) {
+			continue;
+		}
+
 		if (m.member) {
 			SendRaidMOTD(m.member);
 		}
@@ -1681,11 +1716,10 @@ void Raid::VerifyRaid()
 				//attribute before calling a client function or casting to client.
 				b = entity_list.GetBotByBotName(m.member_name);
 				m.member = b->CastToClient();
-				m.is_bot = true; //Used to identify those members who are Bots
+				m.is_bot = true;
 			}
 			else {
 				m.member = nullptr;
-				m.is_bot = false;
 			}
 		}
 
@@ -1890,6 +1924,10 @@ const char *Raid::GetClientNameByIndex(uint8 index)
 void Raid::RaidMessageString(Mob* sender, uint32 type, uint32 string_id, const char* message,const char* message2,const char* message3,const char* message4,const char* message5,const char* message6,const char* message7,const char* message8,const char* message9, uint32 distance)
 {
 	for (const auto& m : members) {
+		if (m.is_bot) {
+			continue;
+		}
+
 		if (m.member && m.member->IsClient() && m.member != sender) {
 			m.member->MessageString(type, string_id, message, message2, message3, message4, message5, message6,
 									message7, message8, message9, distance);
@@ -2136,7 +2174,7 @@ void Raid::SetNewRaidLeader(uint32 i)
 				continue;
 			}
 
-			if (m.member && strlen(m.member_name) > 0 && strcmp(m.member_name, m.member_name) != 0) {
+			if (m.member && strlen(m.member_name) > 0 && strcmp(m.member_name, members[i].member_name) != 0) {
 				SetRaidLeader(members[i].member_name, m.member_name);
 				UpdateRaidAAs();
 				SendAllRaidLeadershipAA();
