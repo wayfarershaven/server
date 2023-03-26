@@ -4,7 +4,6 @@
 #include "../common/item_instance.h"
 #include "../common/rulesys.h"
 #include "../common/strings.h"
-#include "../common/zone_numbers.h"
 
 #include "client.h"
 #include "corpse.h"
