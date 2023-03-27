@@ -834,21 +834,22 @@ uint32 Database::GetAccountIDByChar(const char* charname, uint32* oCharID) {
 
 	auto results = QueryDatabase(query);
 
-	if (!results.Success())
-	{
+	if (!results.Success()) {
 		return 0;
 	}
 
-	if (results.RowCount() != 1)
+	if (results.RowCount() != 1) {
 		return 0;
+	}
 
 	auto row = results.begin();
 
-	uint32 accountId = Strings::ToInt(row[0]);
+	uint32 accountId = Strings::ToUnsignedInt(row[0]);
 
-	if (oCharID)
+	if (oCharID) {
 		*oCharID = Strings::ToUnsignedInt(row[1]);
-
+	}
+	
 	return accountId;
 }
 
