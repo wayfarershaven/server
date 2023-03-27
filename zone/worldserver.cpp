@@ -294,12 +294,19 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 			case VoiceMacroRaid: {
 				Raid *r = entity_list.GetRaidByID(svm->RaidID);
 
-				if (!r)
+				if (!r) {
 					break;
+				}
 
-				for (int i = 0; i < MAX_RAID_MEMBERS; i++)
-					if (r->members[i].member)
-						r->members[i].member->QueuePacket(outapp);
+				for (const auto& m: r->members) {
+					if (m.is_bot) {
+						continue;
+					}
+
+					if (m.member) {
+						m.member->QueuePacket(outapp);
+					}
+				}
 
 				break;
 			}
@@ -870,7 +877,7 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 				//pendingrezexp is the amount of XP on the corpse. Setting it to a value >= 0
 				//also serves to inform Client::OPRezzAnswer to expect a packet.
 				client->SetPendingRezzData(srs->exp, srs->dbid, srs->rez.spellid, srs->rez.corpse_name);
-				LogSpells("OP_RezzRequest in zone [{}] for [{}], spellid:[{}]",
+				LogSpells("[WorldServer::HandleMessage] OP_RezzRequest in zone [{}] for [{}] spellid [{}]",
 					zone->GetShortName(), client->GetName(), srs->rez.spellid);
 				auto outapp = new EQApplicationPacket(OP_RezzRequest,
 					sizeof(Resurrect_Struct));
@@ -885,10 +892,10 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 			// to the zone that the corpse is in.
 			Corpse* corpse = entity_list.GetCorpseByName(srs->rez.corpse_name);
 			if (corpse && corpse->IsCorpse()) {
-				LogSpells("OP_RezzComplete received in zone [{}] for corpse [{}]",
+				LogSpells("[WorldServer::HandleMessage] OP_RezzComplete received in zone [{}] for corpse [{}]",
 					zone->GetShortName(), srs->rez.corpse_name);
 
-				LogSpells("Found corpse. Marking corpse as rezzed if needed");
+				LogSpells("[WorldServer::HandleMessage] Found corpse. Marking corpse as rezzed if needed");
 				// I don't know why Rezzed is not set to true in CompleteRezz().
 				if (!IsEffectInSpell(srs->rez.spellid, SE_SummonToCorpse)) {
 					corpse->IsRezzed(true);
@@ -1055,7 +1062,7 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 				{
 					auto outapp =
 						new EQApplicationPacket(OP_GroupUpdate, sizeof(GroupJoin_Struct));
-					GroupJoin_Struct* outgj = (GroupJoin_Struct*)outapp->pBuffer;
+					auto outgj = (GroupJoin_Struct*)outapp->pBuffer;
 					strcpy(outgj->membername, Inviter->GetName());
 					strcpy(outgj->yourname, Inviter->GetName());
 					outgj->action = groupActInviteInitial; // 'You have formed the group'.
@@ -1088,7 +1095,7 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 				Inviter->CastToClient()->UpdateLFP();
 
 			auto pack2 = new ServerPacket(ServerOP_GroupJoin, sizeof(ServerGroupJoin_Struct));
-			ServerGroupJoin_Struct* gj = (ServerGroupJoin_Struct*)pack2->pBuffer;
+			auto gj = (ServerGroupJoin_Struct*)pack2->pBuffer;
 			gj->gid = group->GetID();
 			gj->zoneid = zone->GetZoneID();
 			gj->instance_id = zone->GetInstanceID();
@@ -1196,7 +1203,7 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 		break;
 	}
 	case ServerOP_GroupJoin: {
-		ServerGroupJoin_Struct* gj = (ServerGroupJoin_Struct*)pack->pBuffer;
+		auto gj = (ServerGroupJoin_Struct*)pack->pBuffer;
 		if (zone) {
 			if (gj->zoneid == zone->GetZoneID() && gj->instance_id == zone->GetInstanceID())
 				break;
@@ -1242,7 +1249,7 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 		break;
 	}
 	case ServerOP_RaidAdd: {
-		ServerRaidGeneralAction_Struct* rga = (ServerRaidGeneralAction_Struct*)pack->pBuffer;
+		auto rga = (ServerRaidGeneralAction_Struct*)pack->pBuffer;
 		if (zone) {
 			if (rga->zoneid == zone->GetZoneID() && rga->instance_id == zone->GetInstanceID())
 				break;
@@ -1257,7 +1264,7 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 		break;
 	}
 	case ServerOP_RaidRemove: {
-		ServerRaidGeneralAction_Struct* rga = (ServerRaidGeneralAction_Struct*)pack->pBuffer;
+		auto rga = (ServerRaidGeneralAction_Struct*)pack->pBuffer;
 		if (zone) {
 			if (rga->zoneid == zone->GetZoneID() && rga->instance_id == zone->GetInstanceID())
 				break;
@@ -1276,7 +1283,7 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 		break;
 	}
 	case ServerOP_RaidDisband: {
-		ServerRaidGeneralAction_Struct* rga = (ServerRaidGeneralAction_Struct*)pack->pBuffer;
+		auto rga = (ServerRaidGeneralAction_Struct*)pack->pBuffer;
 		if (zone) {
 			if (rga->zoneid == zone->GetZoneID() && rga->instance_id == zone->GetInstanceID())
 				break;
@@ -1291,7 +1298,7 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 		break;
 	}
 	case ServerOP_RaidLockFlag: {
-		ServerRaidGeneralAction_Struct* rga = (ServerRaidGeneralAction_Struct*)pack->pBuffer;
+		auto rga = (ServerRaidGeneralAction_Struct*)pack->pBuffer;
 		if (zone) {
 			if (rga->zoneid == zone->GetZoneID() && rga->instance_id == zone->GetInstanceID())
 				break;
@@ -1308,7 +1315,7 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 		break;
 	}
 	case ServerOP_RaidChangeGroup: {
-		ServerRaidGeneralAction_Struct* rga = (ServerRaidGeneralAction_Struct*)pack->pBuffer;
+		auto rga = (ServerRaidGeneralAction_Struct*)pack->pBuffer;
 		if (zone) {
 			if (rga->zoneid == zone->GetZoneID() && rga->instance_id == zone->GetInstanceID())
 				break;
@@ -1336,7 +1343,7 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 		break;
 	}
 	case ServerOP_UpdateGroup: {
-		ServerRaidGeneralAction_Struct* rga = (ServerRaidGeneralAction_Struct*)pack->pBuffer;
+		auto rga = (ServerRaidGeneralAction_Struct*)pack->pBuffer;
 		if (zone) {
 			if (rga->zoneid == zone->GetZoneID() && rga->instance_id == zone->GetInstanceID())
 				break;
@@ -1349,7 +1356,7 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 		break;
 	}
 	case ServerOP_RaidGroupLeader: {
-		ServerRaidGeneralAction_Struct* rga = (ServerRaidGeneralAction_Struct*)pack->pBuffer;
+		auto rga = (ServerRaidGeneralAction_Struct*)pack->pBuffer;
 		if (zone) {
 			if (rga->zoneid == zone->GetZoneID() && rga->instance_id == zone->GetInstanceID())
 				break;
@@ -1357,7 +1364,7 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 		break;
 	}
 	case ServerOP_RaidLeader: {
-		ServerRaidGeneralAction_Struct* rga = (ServerRaidGeneralAction_Struct*)pack->pBuffer;
+		auto rga = (ServerRaidGeneralAction_Struct*)pack->pBuffer;
 		if (zone) {
 			if (rga->zoneid == zone->GetZoneID() && rga->instance_id == zone->GetInstanceID())
 				break;
@@ -1377,7 +1384,7 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 		break;
 	}
 	case ServerOP_DetailsChange: {
-		ServerRaidGeneralAction_Struct* rga = (ServerRaidGeneralAction_Struct*)pack->pBuffer;
+		auto rga = (ServerRaidGeneralAction_Struct*)pack->pBuffer;
 		if (zone) {
 			if (rga->zoneid == zone->GetZoneID() && rga->instance_id == zone->GetInstanceID())
 				break;
@@ -1392,7 +1399,7 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 		break;
 	}
 	case ServerOP_RaidGroupDisband: {
-		ServerRaidGeneralAction_Struct* rga = (ServerRaidGeneralAction_Struct*)pack->pBuffer;
+		auto rga = (ServerRaidGeneralAction_Struct*)pack->pBuffer;
 		if (zone) {
 			if (rga->zoneid == zone->GetZoneID() && rga->instance_id == zone->GetInstanceID())
 				break;
@@ -1402,7 +1409,7 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 			{
 				auto outapp =
 					new EQApplicationPacket(OP_GroupUpdate, sizeof(GroupUpdate_Struct));
-				GroupUpdate_Struct* gu = (GroupUpdate_Struct*)outapp->pBuffer;
+				auto gu = (GroupUpdate_Struct*)outapp->pBuffer;
 				gu->action = groupActDisband;
 				strn0cpy(gu->leadersname, c->GetName(), 64);
 				strn0cpy(gu->yourname, c->GetName(), 64);
@@ -1412,23 +1419,26 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 		break;
 	}
 	case ServerOP_RaidGroupAdd: {
-		ServerRaidGroupAction_Struct* rga = (ServerRaidGroupAction_Struct*)pack->pBuffer;
+		auto rga = (ServerRaidGroupAction_Struct*)pack->pBuffer;
 		if (zone) {
 			Raid *r = entity_list.GetRaidByID(rga->rid);
 			if (r) {
 				r->LearnMembers();
 				r->VerifyRaid();
 				auto outapp = new EQApplicationPacket(OP_GroupUpdate, sizeof(GroupJoin_Struct));
-				GroupJoin_Struct* gj = (GroupJoin_Struct*)outapp->pBuffer;
+				auto gj = (GroupJoin_Struct*)outapp->pBuffer;
 				strn0cpy(gj->membername, rga->membername, 64);
 				gj->action = groupActJoin;
-				for (int x = 0; x < MAX_RAID_MEMBERS; x++) {
-					if (r->members[x].member) {
-						if (strcmp(r->members[x].member->GetName(), rga->membername) != 0) {
-							if ((rga->gid < 12) && rga->gid == r->members[x].group_number) {
-								strn0cpy(gj->yourname, r->members[x].member->GetName(), 64);
-								r->members[x].member->QueuePacket(outapp);
-							}
+
+				for (const auto& m : r->members) {
+					if (m.is_bot) {
+						continue;
+					}
+
+					if (m.member && strcmp(m.member->GetName(), rga->membername) != 0) {
+						if ((rga->gid < MAX_RAID_GROUPS) && rga->gid == m.group_number) {
+							strn0cpy(gj->yourname, m.member->GetName(), 64);
+							m.member->QueuePacket(outapp);
 						}
 					}
 				}
@@ -1438,23 +1448,26 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 		break;
 	}
 	case ServerOP_RaidGroupRemove: {
-		ServerRaidGroupAction_Struct* rga = (ServerRaidGroupAction_Struct*)pack->pBuffer;
+		auto rga = (ServerRaidGroupAction_Struct*)pack->pBuffer;
 		if (zone) {
 			Raid *r = entity_list.GetRaidByID(rga->rid);
 			if (r) {
 				r->LearnMembers();
 				r->VerifyRaid();
 				auto outapp = new EQApplicationPacket(OP_GroupUpdate, sizeof(GroupJoin_Struct));
-				GroupJoin_Struct* gj = (GroupJoin_Struct*)outapp->pBuffer;
+				auto gj = (GroupJoin_Struct*)outapp->pBuffer;
 				strn0cpy(gj->membername, rga->membername, 64);
 				gj->action = groupActLeave;
-				for (int x = 0; x < MAX_RAID_MEMBERS; x++) {
-					if (r->members[x].member) {
-						if (strcmp(r->members[x].member->GetName(), rga->membername) != 0) {
-							if ((rga->gid < 12) && rga->gid == r->members[x].group_number) {
-								strn0cpy(gj->yourname, r->members[x].member->GetName(), 64);
-								r->members[x].member->QueuePacket(outapp);
-							}
+
+				for (const auto& m : r->members) {
+					if (m.is_bot) {
+						continue;
+					}
+
+					if (m.member && strcmp(m.member->GetName(), rga->membername) != 0) {
+						if ((rga->gid < MAX_RAID_GROUPS) && rga->gid == m.group_number) {
+							strn0cpy(gj->yourname, m.member->GetName(), 64);
+							m.member->QueuePacket(outapp);
 						}
 					}
 				}
@@ -1464,17 +1477,19 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 		break;
 	}
 	case ServerOP_RaidGroupSay: {
-		ServerRaidMessage_Struct* rmsg = (ServerRaidMessage_Struct*)pack->pBuffer;
+		auto rmsg = (ServerRaidMessage_Struct*)pack->pBuffer;
 		if (zone) {
 			Raid *r = entity_list.GetRaidByID(rmsg->rid);
 			if (r) {
-				for (int x = 0; x < MAX_RAID_MEMBERS; x++) {
-					if (r->members[x].member) {
-						if (strcmp(rmsg->from, r->members[x].member->GetName()) != 0) {
-							if (r->members[x].group_number == rmsg->gid) {
-								if (!r->members[x].is_bot && r->members[x].member->GetFilter(FilterGroupChat) != 0) {
-									r->members[x].member->ChannelMessageSend(rmsg->from, r->members[x].member->GetName(), ChatChannel_Group, rmsg->language, rmsg->lang_skill, rmsg->message);
-								}
+				for (const auto& m :r->members) {
+					if (m.is_bot) {
+						continue;
+					}
+
+					if (m.member && strcmp(m.member->GetName(), rmsg->from) != 0) {
+						if (m.group_number == rmsg->gid) {
+							if (m.member->GetFilter(FilterGroupChat) != 0) {
+								m.member->ChannelMessageSend(rmsg->from, m.member->GetName(), ChatChannel_Group, rmsg->language, rmsg->lang_skill, rmsg->message);
 							}
 						}
 					}
@@ -1484,15 +1499,20 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 		break;
 	}
 	case ServerOP_RaidSay: {
-		ServerRaidMessage_Struct* rmsg = (ServerRaidMessage_Struct*)pack->pBuffer;
+		auto rmsg = (ServerRaidMessage_Struct*)pack->pBuffer;
 		if (zone) {
 			Raid *r = entity_list.GetRaidByID(rmsg->rid);
+
 			if (r) {
-				for (int x = 0; x < MAX_RAID_MEMBERS; x++) {
-					if (r->members[x].member) {
-						if (strcmp(rmsg->from, r->members[x].member->GetName()) != 0) {
-							if (!r->members[x].is_bot && r->members[x].member->GetFilter(FilterGroupChat) != 0) {
-								r->members[x].member->ChannelMessageSend(rmsg->from, r->members[x].member->GetName(), ChatChannel_Raid, rmsg->language, rmsg->lang_skill, rmsg->message);
+				for (const auto& m :r->members) {
+					if (m.is_bot) {
+						continue;
+					}
+
+					if (m.member) {
+						if (strcmp(rmsg->from, m.member->GetName()) != 0) {
+							if (!m.is_bot && m.member->GetFilter(FilterGroupChat) != 0) {
+								m.member->ChannelMessageSend(rmsg->from, m.member->GetName(), ChatChannel_Raid, rmsg->language, rmsg->lang_skill, rmsg->message);
 							}
 						}
 					}
@@ -2133,10 +2153,13 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 		} else if (update_type == CZUpdateType_Raid) {
 			auto client_raid = entity_list.GetRaidByID(update_identifier);
 			if (client_raid) {
-				for (int member_index = 0; member_index < MAX_RAID_MEMBERS; member_index++) {
-					if (client_raid->members[member_index].member && client_raid->members[member_index].member->IsClient()) {
-						auto raid_member = client_raid->members[member_index].member->CastToClient();
-						DialogueWindow::Render(raid_member, message);
+				for (const auto& m : client_raid->members) {
+					if (m.is_bot) {
+						continue;
+					}
+
+					if (m.member && m.member->IsClient()) {
+						DialogueWindow::Render( m.member->CastToClient(), message);
 					}
 				}
 			}
@@ -2224,24 +2247,27 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 		} else if (update_type == CZUpdateType_Raid) {
 			auto client_raid = entity_list.GetRaidByID(update_identifier);
 			if (client_raid) {
-				for (int member_index = 0; member_index < MAX_RAID_MEMBERS; member_index++) {
-					auto client_raid_member = client_raid->members[member_index].member;
-					if (client_raid_member && client_raid_member->IsClient()) {
+				for (const auto& m : client_raid->members) {
+					if (m.is_bot) {
+						continue;
+					}
+
+					if (m.member && m.member->IsClient()) {
 						switch (update_subtype) {
 							case CZLDoNUpdateSubtype_AddLoss:
-								client_raid_member->UpdateLDoNWinLoss(theme_id, false);
+								m.member->UpdateLDoNWinLoss(theme_id, false);
 								break;
 							case CZLDoNUpdateSubtype_AddPoints:
-								client_raid_member->UpdateLDoNPoints(theme_id, points);
+								m.member->UpdateLDoNPoints(theme_id, points);
 								break;
 							case CZLDoNUpdateSubtype_AddWin:
-								client_raid_member->UpdateLDoNWinLoss(theme_id, true);
+								m.member->UpdateLDoNWinLoss(theme_id, true);
 								break;
 							case CZLDoNUpdateSubtype_RemoveLoss:
-								client_raid_member->UpdateLDoNWinLoss(theme_id, false, true);
+								m.member->UpdateLDoNWinLoss(theme_id, false, true);
 								break;
 							case CZLDoNUpdateSubtype_RemoveWin:
-								client_raid_member->UpdateLDoNWinLoss(theme_id, true, true);
+								m.member->UpdateLDoNWinLoss(theme_id, true, true);
 								break;
 							default:
 								break;
@@ -2354,9 +2380,13 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 		} else if (update_type == CZUpdateType_Raid) {
 			auto client_raid = entity_list.GetRaidByID(update_identifier);
 			if (client_raid) {
-				for (int member_index = 0; member_index < MAX_RAID_MEMBERS; member_index++) {
-					if (client_raid->members[member_index].member && client_raid->members[member_index].member->IsClient()) {
-						auto raid_member = client_raid->members[member_index].member->CastToClient();
+				for (const auto& m : client_raid->members) {
+					if (m.is_bot) {
+						continue;
+					}
+
+					if (m.member && m.member->IsClient()) {
+						auto raid_member = m.member->CastToClient();
 						raid_member->SendMarqueeMessage(type, priority, fade_in, fade_out, duration, message);
 					}
 				}
@@ -2407,9 +2437,13 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 		} else if (update_type == CZUpdateType_Raid) {
 			auto client_raid = entity_list.GetRaidByID(update_identifier);
 			if (client_raid) {
-				for (int member_index = 0; member_index < MAX_RAID_MEMBERS; member_index++) {
-					if (client_raid->members[member_index].member && client_raid->members[member_index].member->IsClient()) {
-						auto raid_member = client_raid->members[member_index].member->CastToClient();
+				for (const auto& m : client_raid->members) {
+					if (m.is_bot) {
+						continue;
+					}
+
+					if (m.member && m.member->IsClient()) {
+						auto raid_member = m.member->CastToClient();
 						raid_member->Message(type, message);
 					}
 				}
@@ -2475,9 +2509,13 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 		} else if (update_type == CZUpdateType_Raid) {
 			auto client_raid = entity_list.GetRaidByID(update_identifier);
 			if (client_raid) {
-				for (int member_index = 0; member_index < MAX_RAID_MEMBERS; member_index++) {
-					if (client_raid->members[member_index].member && client_raid->members[member_index].member->IsClient()) {
-						auto raid_member = client_raid->members[member_index].member->CastToClient();
+				for (const auto& m : client_raid->members) {
+					if (m.is_bot) {
+						continue;
+					}
+
+					if (m.member && m.member->IsClient()) {
+						auto raid_member = m.member->CastToClient();
 						switch (update_subtype) {
 							case CZMoveUpdateSubtype_MoveZone:
 								raid_member->MoveZone(zone_short_name);
@@ -2556,9 +2594,13 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 		} else if (update_type == CZUpdateType_Raid) {
 			auto client_raid = entity_list.GetRaidByID(update_identifier);
 			if (client_raid) {
-				for (int member_index = 0; member_index < MAX_RAID_MEMBERS; member_index++) {
-					if (client_raid->members[member_index].member && client_raid->members[member_index].member->IsClient()) {
-						auto raid_member = client_raid->members[member_index].member->CastToClient();
+				for (const auto& m : client_raid->members) {
+					if (m.is_bot) {
+						continue;
+					}
+
+					if (m.member && m.member->IsClient()) {
+						auto raid_member = m.member->CastToClient();
 						raid_member->SetEntityVariable(variable_name, variable_value);
 					}
 				}
@@ -2590,7 +2632,7 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 	}
 	case ServerOP_CZSignal:
 	{
-		CZSignal_Struct* CZS = (CZSignal_Struct*) pack->pBuffer;
+		auto CZS = (CZSignal_Struct*) pack->pBuffer;
 		uint8 update_type = CZS->update_type;
 		int update_identifier = CZS->update_identifier;
 		int signal_id = CZS->signal_id;
@@ -2613,10 +2655,13 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 		} else if (update_type == CZUpdateType_Raid) {
 			auto client_raid = entity_list.GetRaidByID(update_identifier);
 			if (client_raid) {
-				for (int member_index = 0; member_index < MAX_RAID_MEMBERS; member_index++) {
-					if (client_raid->members[member_index].member && client_raid->members[member_index].member->IsClient()) {
-						auto raid_member = client_raid->members[member_index].member->CastToClient();
-						raid_member->Signal(signal_id);
+				for (const auto& m : client_raid->members) {
+					if (m.is_bot) {
+						continue;
+					}
+
+					if (m.member && m.member->IsClient()) {
+						m.member->CastToClient()->Signal(signal_id);
 					}
 				}
 			}
@@ -2685,9 +2730,13 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 		} else if (update_type == CZUpdateType_Raid) {
 			auto client_raid = entity_list.GetRaidByID(update_identifier);
 			if (client_raid) {
-				for (int member_index = 0; member_index < MAX_RAID_MEMBERS; member_index++) {
-					if (client_raid->members[member_index].member && client_raid->members[member_index].member->IsClient()) {
-						auto raid_member = client_raid->members[member_index].member->CastToClient();
+				for (const auto& m : client_raid->members) {
+					if (m.is_bot) {
+						continue;
+					}
+
+					if (m.member && m.member->IsClient()) {
+						auto raid_member = m.member->CastToClient();
 						switch (update_subtype) {
 							case CZSpellUpdateSubtype_Cast:
 								raid_member->ApplySpellBuff(spell_id);
@@ -2814,9 +2863,12 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 		} else if (update_type == CZUpdateType_Raid) {
 			auto client_raid = entity_list.GetRaidByID(update_identifier);
 			if (client_raid) {
-				for (int member_index = 0; member_index < MAX_RAID_MEMBERS; member_index++) {
-					if (client_raid->members[member_index].member && client_raid->members[member_index].member->IsClient()) {
-						auto raid_member = client_raid->members[member_index].member->CastToClient();
+				for (const auto& m : client_raid->members) {
+					if (m.is_bot) {
+						continue;
+					}
+					if (m.member && m.member->IsClient()) {
+						auto raid_member = m.member->CastToClient();
 						switch (update_subtype) {
 							case CZTaskUpdateSubtype_ActivityReset:
 								raid_member->ResetTaskActivity(task_identifier, task_subidentifier);
@@ -3421,7 +3473,7 @@ bool WorldServer::SendVoiceMacro(Client* From, uint32 Type, char* Target, uint32
 
 bool WorldServer::RezzPlayer(EQApplicationPacket* rpack, uint32 rezzexp, uint32 dbid, uint16 opcode)
 {
-	LogSpells("WorldServer::RezzPlayer rezzexp is [{}] (0 is normal for RezzComplete", rezzexp);
+	LogSpells("rezzexp is [{}] (0 is normal for RezzComplete", rezzexp);
 	auto pack = new ServerPacket(ServerOP_RezzPlayer, sizeof(RezzPlayer_Struct));
 	RezzPlayer_Struct* sem = (RezzPlayer_Struct*)pack->pBuffer;
 	sem->rezzopcode = opcode;
@@ -3677,4 +3729,3 @@ void WorldServer::SetScheduler(ZoneEventScheduler *scheduler)
 {
 	WorldServer::m_zone_scheduler = scheduler;
 }
-

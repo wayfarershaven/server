@@ -2503,8 +2503,10 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 		bool ownerInGroup = false;
 		if ((give_exp->HasGroup() && give_exp->GetGroup()->IsGroupMember(give_exp->GetUltimateOwner()))
 			|| (give_exp->IsPet() && (give_exp->GetOwner()->IsClient()
-									  || (give_exp->GetOwner()->HasGroup() && give_exp->GetOwner()->GetGroup()->IsGroupMember(give_exp->GetOwner()->GetUltimateOwner())))))
+									  || (give_exp->GetOwner()->HasGroup() && give_exp->GetOwner()->GetGroup()->IsGroupMember(give_exp->GetOwner()->GetUltimateOwner()))))
+		) {
 			ownerInGroup = true;
+		}
 
 		give_exp = give_exp->GetUltimateOwner();
 
@@ -2560,9 +2562,13 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 			}
 
 			/* Send the EVENT_KILLED_MERIT event for all raid members */
-			for (int i = 0; i < MAX_RAID_MEMBERS; i++) {
-				if (kr->members[i].member != nullptr && kr->members[i].member->IsClient()) { // If Group Member is Client
-					Client *c = kr->members[i].member;
+			for (const auto& m : kr->members) {
+				if (m.is_bot) {
+					continue;
+				}
+
+				if (m.member && m.member->IsClient()) { // If Group Member is Client
+					Client *c = m.member;
 					c->RecordKilledNPCEvent(this);
 
 					if (parse->HasQuestSub(GetNPCTypeID(), EVENT_KILLED_MERIT)) {
@@ -2588,9 +2594,13 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 				QS->s1.ZoneID = GetZoneID();
 				QS->s1.InstanceID = zone->GetInstanceID();
 				QS->s1.Type = 2; // Raid Fight
-				for (int i = 0; i < MAX_RAID_MEMBERS; i++) {
-					if (kr->members[i].member != nullptr && kr->members[i].member->IsClient()) { // If Group Member is Client
-						Client *c = kr->members[i].member;
+				for (const auto& m : kr->members) {
+					if (m.is_bot) {
+						continue;
+					}
+
+					if (m.member && m.member->IsClient()) { // If Group Member is Client
+						Client *c = m.member;
 						QS->Chars[PlayerCount].char_id = c->CharacterID();
 						PlayerCount++;
 					}
@@ -2748,33 +2758,33 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 					Raid* r = entity_list.GetRaidByClient(killer->CastToClient());
 					if (r) {
 						int i = 0;
-						for (int x = 0; x < MAX_RAID_MEMBERS; x++) {
+						for (const auto& m : r->members) {
+							if (m.is_bot) {
+								continue;
+							}
 							switch (r->GetLootType()) {
 								case 0:
 								case 1:
-									if (r->members[x].member && r->members[x].is_raid_leader) {
-										corpse->AllowPlayerLoot(r->members[x].member, i);
+									if (m.member && m.is_raid_leader) {
+										corpse->AllowPlayerLoot(m.member, i);
 										i++;
 									}
 									break;
 								case 2:
-									if (r->members[x].member && r->members[x].is_raid_leader) {
-										corpse->AllowPlayerLoot(r->members[x].member, i);
-										i++;
-									} else if (r->members[x].member && r->members[x].is_group_leader) {
-										corpse->AllowPlayerLoot(r->members[x].member, i);
+									if (m.member && (m.is_raid_leader || m.is_group_leader)) {
+										corpse->AllowPlayerLoot(m.member, i);
 										i++;
 									}
 									break;
 								case 3:
-									if (r->members[x].member && r->members[x].is_looter) {
-										corpse->AllowPlayerLoot(r->members[x].member, i);
+									if (m.member && m.is_looter) {
+										corpse->AllowPlayerLoot(m.member, i);
 										i++;
 									}
 									break;
 								case 4:
-									if (r->members[x].member) {
-										corpse->AllowPlayerLoot(r->members[x].member, i);
+									if (m.member) {
+										corpse->AllowPlayerLoot(m.member, i);
 										i++;
 									}
 									break;
