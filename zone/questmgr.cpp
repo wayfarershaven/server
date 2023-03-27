@@ -452,7 +452,7 @@ void QuestManager::ZoneRaid(const char *zone_name) {
 	}
 }
 
-void QuestManager::settimer(const char *timer_name, int seconds) {
+void QuestManager::settimer(const char* timer_name, int seconds, Mob* mob) {
 	QuestManagerCurrentQuestVars();
 
 	if(questitem) {
@@ -463,9 +463,11 @@ void QuestManager::settimer(const char *timer_name, int seconds) {
 	std::list<QuestTimer>::iterator cur = QTimerList.begin(), end;
 
 	end = QTimerList.end();
+
+	const auto m = mob ? mob : owner;
+
 	while (cur != end) {
-		if(cur->mob && cur->mob == owner && cur->name == timer_name)
-		{
+		if (cur->mob && cur->mob == m && cur->name == timer_name) {
 			cur->Timer_.Enable();
 			cur->Timer_.Start(seconds * 1000, false);
 			return;
@@ -500,13 +502,13 @@ void QuestManager::settimerMS(const char *timer_name, int milliseconds) {
 	QTimerList.push_back(QuestTimer(milliseconds, owner, timer_name));
 }
 
-void QuestManager::settimerMS(const char *timer_name, int milliseconds, EQ::ItemInstance *inst) {
+void QuestManager::settimerMS(const char* timer_name, int milliseconds, EQ::ItemInstance *inst) {
 	if (inst) {
 		inst->SetTimer(timer_name, milliseconds);
 	}
 }
 
-void QuestManager::settimerMS(const char *timer_name, int milliseconds, Mob *mob) {
+void QuestManager::settimerMS(const char* timer_name, int milliseconds, Mob *mob) {
 	std::list<QuestTimer>::iterator cur = QTimerList.begin(), end;
 
 	end = QTimerList.end();
@@ -523,7 +525,7 @@ void QuestManager::settimerMS(const char *timer_name, int milliseconds, Mob *mob
 	QTimerList.push_back(QuestTimer(milliseconds, mob, timer_name));
 }
 
-void QuestManager::stoptimer(const char *timer_name) {
+void QuestManager::stoptimer(const char* timer_name) {
 	QuestManagerCurrentQuestVars();
 
 	if (questitem) {
@@ -543,13 +545,13 @@ void QuestManager::stoptimer(const char *timer_name) {
 	}
 }
 
-void QuestManager::stoptimer(const char *timer_name, EQ::ItemInstance *inst) {
+void QuestManager::stoptimer(const char* timer_name, EQ::ItemInstance *inst) {
 	if (inst) {
 		inst->StopTimer(timer_name);
 	}
 }
 
-void QuestManager::stoptimer(const char *timer_name, Mob *mob) {
+void QuestManager::stoptimer(const char* timer_name, Mob *mob) {
 	std::list<QuestTimer>::iterator cur = QTimerList.begin(), end;
 
 	end = QTimerList.end();
@@ -599,7 +601,7 @@ void QuestManager::stopalltimers(Mob *mob) {
 	}
 }
 
-void QuestManager::pausetimer(const char *timer_name) {
+void QuestManager::pausetimer(const char* timer_name, Mob* mob) {
 	QuestManagerCurrentQuestVars();
 
 	std::list<QuestTimer>::iterator cur = QTimerList.begin(), end;
@@ -607,11 +609,11 @@ void QuestManager::pausetimer(const char *timer_name) {
 	PausedTimer pt;
 	uint32 milliseconds = 0;
 
+	const auto m = mob ? mob : owner;
+
 	pend = PTimerList.end();
-	while (pcur != pend)
-	{
-		if (pcur->owner && pcur->owner == owner && pcur->name == timer_name)
-		{
+	while (pcur != pend) {
+		if (pcur->owner && pcur->owner == m && pcur->name == timer_name) {
 			LogQuestDebug("Timer [{}] is already paused for [{}]. Returning", timer_name, owner->GetName());
 			return;
 		}
@@ -619,10 +621,8 @@ void QuestManager::pausetimer(const char *timer_name) {
 	}
 
 	end = QTimerList.end();
-	while (cur != end)
-	{
-		if (cur->mob && cur->mob == owner && cur->name == timer_name)
-		{
+	while (cur != end) {
+		if (cur->mob && cur->mob == m && cur->name == timer_name) {
 			milliseconds = cur->Timer_.GetRemainingTime();
 			QTimerList.erase(cur);
 			break;
@@ -638,7 +638,7 @@ void QuestManager::pausetimer(const char *timer_name) {
 	PTimerList.push_back(pt);
 }
 
-void QuestManager::resumetimer(const char *timer_name) {
+void QuestManager::resumetimer(const char* timer_name, Mob* mob) {
 	QuestManagerCurrentQuestVars();
 
 	std::list<QuestTimer>::iterator cur = QTimerList.begin(), end;
@@ -646,11 +646,11 @@ void QuestManager::resumetimer(const char *timer_name) {
 	PausedTimer pt;
 	uint32 milliseconds = 0;
 
+	const auto m = mob ? mob : owner;
+
 	pend = PTimerList.end();
-	while (pcur != pend)
-	{
-		if (pcur->owner && pcur->owner == owner && pcur->name == timer_name)
-		{
+	while (pcur != pend) {
+		if (pcur->owner && pcur->owner == m && pcur->name == timer_name) {
 			milliseconds = pcur->time;
 			PTimerList.erase(pcur);
 			break;
@@ -658,40 +658,40 @@ void QuestManager::resumetimer(const char *timer_name) {
 		++pcur;
 	}
 
-	if (milliseconds == 0)
-	{
+	if (milliseconds == 0) {
 		LogQuestDebug("Paused timer [{}] not found or has expired. Returning", timer_name);
 		return;
 	}
 
 	end = QTimerList.end();
-	while (cur != end)
-	{
-		if (cur->mob && cur->mob == owner && cur->name == timer_name)
-		{
+	while (cur != end) {
+		if (cur->mob && cur->mob == m && cur->name == timer_name) {
 			cur->Timer_.Enable();
 			cur->Timer_.Start(milliseconds, false);
-			LogQuestDebug("Resuming timer [{}] for [{}] with [{}] ms remaining", timer_name, owner->GetName(), milliseconds);
+			LogQuests("Resuming timer [{}] for [{}] with [{}] ms remaining",
+					  timer_name,
+					  owner->GetName(),
+					  milliseconds);
 			return;
 		}
 		++cur;
 	}
 
-	QTimerList.push_back(QuestTimer(milliseconds, owner, timer_name));
+	QTimerList.push_back(QuestTimer(milliseconds, m, timer_name));
 	LogQuestDebug("Creating a new timer and resuming [{}] for [{}] with [{}] ms remaining", timer_name, owner->GetName(), milliseconds);
 
 }
 
-bool QuestManager::ispausedtimer(const char *timer_name) {
+bool QuestManager::ispausedtimer(const char* timer_name, Mob* mob) {
 	QuestManagerCurrentQuestVars();
 
 	std::list<PausedTimer>::iterator pcur = PTimerList.begin(), pend;
 
+	const auto m = mob ? mob : owner;
+
 	pend = PTimerList.end();
-	while (pcur != pend)
-	{
-		if (pcur->owner && pcur->owner == owner && pcur->name == timer_name)
-		{
+	while (pcur != pend) {
+		if (pcur->owner && pcur->owner == m && pcur->name == timer_name) {
 			return true;
 		}
 		++pcur;
@@ -700,18 +700,17 @@ bool QuestManager::ispausedtimer(const char *timer_name) {
 	return false;
 }
 
-bool QuestManager::hastimer(const char *timer_name) {
+bool QuestManager::hastimer(const char* timer_name, Mob* mob) {
 	QuestManagerCurrentQuestVars();
 
 	std::list<QuestTimer>::iterator cur = QTimerList.begin(), end;
 
+	const auto m = mob ? mob : owner;
+
 	end = QTimerList.end();
-	while (cur != end)
-	{
-		if (cur->mob && cur->mob == owner && cur->name == timer_name)
-		{
-			if (cur->Timer_.Enabled())
-			{
+	while (cur != end) {
+		if (cur->mob && cur->mob == m && cur->name == timer_name) {
+			if (cur->Timer_.Enabled()) {
 				return true;
 			}
 		}
@@ -720,18 +719,17 @@ bool QuestManager::hastimer(const char *timer_name) {
 	return false;
 }
 
-uint32 QuestManager::getremainingtimeMS(const char *timer_name) {
+uint32 QuestManager::getremainingtimeMS(const char* timer_name, Mob* mob) {
 	QuestManagerCurrentQuestVars();
 
 	std::list<QuestTimer>::iterator cur = QTimerList.begin(), end;
 
+	const auto m = mob ? mob : owner;
+
 	end = QTimerList.end();
-	while (cur != end)
-	{
-		if (cur->mob && cur->mob == owner && cur->name == timer_name)
-		{
-			if (cur->Timer_.Enabled())
-			{
+	while (cur != end) {
+		if (cur->mob && cur->mob == m && cur->name == timer_name) {
+			if (cur->Timer_.Enabled()) {
 				return cur->Timer_.GetRemainingTime();
 			}
 		}
@@ -740,18 +738,17 @@ uint32 QuestManager::getremainingtimeMS(const char *timer_name) {
 	return 0;
 }
 
-uint32 QuestManager::gettimerdurationMS(const char *timer_name) {
+uint32 QuestManager::gettimerdurationMS(const char* timer_name, Mob* mob) {
 	QuestManagerCurrentQuestVars();
 
 	std::list<QuestTimer>::iterator cur = QTimerList.begin(), end;
 
+	const auto m = mob ? mob : owner;
+
 	end = QTimerList.end();
-	while (cur != end)
-	{
-		if (cur->mob && cur->mob == owner && cur->name == timer_name)
-		{
-			if (cur->Timer_.Enabled())
-			{
+	while (cur != end) {
+		if (cur->mob && cur->mob == m && cur->name == timer_name) {
+			if (cur->Timer_.Enabled()) {
 				return cur->Timer_.GetDuration();
 			}
 		}

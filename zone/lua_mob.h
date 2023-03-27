@@ -180,8 +180,6 @@ public:
 	void Say(const char* message, int language);
 	void QuestSay(Lua_Client client, const char *message);
 	void QuestSay(Lua_Client client, const char *message, luabind::adl::object opts);
-	void SetTimer(const char *timer, int time_ms);
-	void StopTimer(const char *timer);
 	void Shout(const char *message);
 	void Shout(const char* message, int language);
 	void Emote(const char *message);
@@ -525,6 +523,16 @@ public:
 	int64 GetActSpellHealing(uint16 spell_id, int64 value, Lua_Mob target);
 	int64 GetActSpellHealing(uint16 spell_id, int64 value, Lua_Mob target, bool from_buff_tic);
 	float GetActSpellRange(uint16 spell_id, float range);
+	uint32 GetRemainingTimeMS(const char* timer_name);
+	uint32 GetTimerDurationMS(const char* timer_name);
+	bool HasTimer(const char* timer_name);
+	bool IsPausedTimer(const char* timer_name);
+	void PauseTimer(const char* timer_name);
+	void ResumeTimer(const char* timer_name);
+	void SetTimer(const char* timer_name, int seconds);
+	void SetTimerMS(const char* timer_name, int milliseconds);
+	void StopAllTimers();
+	void StopTimer(const char* timer_name);
 };
 
 #endif
