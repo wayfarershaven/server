@@ -129,36 +129,39 @@ Mob::Mob(
 	mMovementManager = &MobMovementManager::Get();
 	mMovementManager->AddMob(this);
 
-	targeted = 0;
+	targeted          = 0;
 	currently_fleeing = false;
 
 	AI_Init();
 	SetMoving(false);
-	moved            = false;
-	turning = false;
-	m_RewindLocation = glm::vec3();
+	moved              = false;
+	turning            = false;
+	m_RewindLocation   = glm::vec3();
 	m_RelativePosition = glm::vec4();
 
-	name[0] = 0;
+	name[0]      = 0;
 	orig_name[0] = 0;
 
 	clean_name[0] = 0;
 	lastname[0]   = 0;
+
 	if (in_name) {
 		strn0cpy(name, in_name, 64);
 		strn0cpy(orig_name, in_name, 64);
 	}
+
 	if (in_lastname) {
 		strn0cpy(lastname, in_lastname, 64);
 	}
-	current_hp        = in_cur_hp;
+
+	current_hp    = in_cur_hp;
 	max_hp        = in_max_hp;
 	base_hp       = in_max_hp;
 	gender        = in_gender;
 	race          = in_race;
 	base_gender   = in_gender;
 	base_race     = in_race;
-	use_model	  = in_usemodel;
+	use_model     = in_usemodel;
 	class_        = in_class;
 	bodytype      = in_bodytype;
 	orig_bodytype = in_bodytype;
@@ -183,8 +186,7 @@ Mob::Mob(
 		fearspeed      = 0.625f;
 		base_fearspeed = 25;
 		// npcs
-	}
-	else {
+	} else {
 		base_walkspeed = base_runspeed * 100 / 265;
 		walkspeed      = ((float) base_walkspeed) * 0.025f;
 		base_fearspeed = base_runspeed * 100 / 127;
@@ -197,7 +199,6 @@ Mob::Mob(
 	current_speed = base_runspeed;
 
 	m_PlayerState = 0;
-
 
 	// sanity check
 	if (runspeed < 0 || runspeed > 20) {
@@ -218,38 +219,33 @@ Mob::Mob(
 	feettexture   = in_feettexture;
 	multitexture  = (armtexture || bracertexture || handtexture || legtexture || feettexture);
 
-	haircolor               = in_haircolor;
-	beardcolor              = in_beardcolor;
-	eyecolor1               = in_eyecolor1;
-	eyecolor2               = in_eyecolor2;
-	hairstyle               = in_hairstyle;
-	luclinface              = in_luclinface;
-	beard                   = in_beard;
-	drakkin_heritage        = in_drakkin_heritage;
-	drakkin_tattoo          = in_drakkin_tattoo;
-	drakkin_details         = in_drakkin_details;
-	attack_speed            = 0;
-	attack_delay            = 0;
-	slow_mitigation         = 0;
-	findable                = false;
-	trackable               = true;
-	has_shieldequiped       = false;
-	has_twohandbluntequiped = false;
-	has_twohanderequipped   = false;
-	has_duelweaponsequiped  = false;
-	can_facestab            = false;
-	has_numhits             = false;
-	has_MGB                 = false;
-	has_ProjectIllusion     = false;
-	SpellPowerDistanceMod   = 0;
-	last_los_check          = false;
+	haircolor                   = in_haircolor;
+	beardcolor                  = in_beardcolor;
+	eyecolor1                   = in_eyecolor1;
+	eyecolor2                   = in_eyecolor2;
+	hairstyle                   = in_hairstyle;
+	luclinface                  = in_luclinface;
+	beard                       = in_beard;
+	drakkin_heritage            = in_drakkin_heritage;
+	drakkin_tattoo              = in_drakkin_tattoo;
+	drakkin_details             = in_drakkin_details;
+	attack_speed                = 0;
+	attack_delay                = 0;
+	slow_mitigation             = 0;
+	findable                    = false;
+	trackable                   = true;
+	has_shield_equipped         = false;
+	has_two_hand_blunt_equipped = false;
+	has_two_hander_equipped     = false;
+	has_dual_weapons_equipped   = false;
+	can_facestab                = false;
+	has_numhits                 = false;
+	has_MGB                     = false;
+	has_ProjectIllusion         = false;
+	SpellPowerDistanceMod       = 0;
+	last_los_check              = false;
 
-	if (in_aa_title > 0) {
-		aa_title = in_aa_title;
-	}
-	else {
-		aa_title = 0xFF;
-	}
+	aa_title = in_aa_title > 0 ? in_aa_title : 0xFF;
 
 	AC                  = in_ac;
 	ATK                 = in_atk;
@@ -425,19 +421,18 @@ Mob::Mob(
 	permarooted = (runspeed > 0) ? false : true;
 
 	pause_timer_complete = false;
-	ForcedMovement = 0;
-	resisted = 0;
-	roamer = false;
-	rooted = false;
-	charmed = false;
+	ForcedMovement       = 0;
+	roamer               = false;
+	rooted               = false;
+	charmed              = false;
 
-	weaponstance.enabled = false;
-	weaponstance.spellbonus_enabled = false;	//Set when bonus is applied
-	weaponstance.itembonus_enabled = false;		//Set when bonus is applied
-	weaponstance.aabonus_enabled = false;		//Controlled by function TogglePassiveAA
+	weaponstance.enabled                  = false;
+	weaponstance.spellbonus_enabled       = false; //Set when bonus is applied
+	weaponstance.itembonus_enabled        = false; //Set when bonus is applied
+	weaponstance.aabonus_enabled          = false; //Controlled by function TogglePassiveAA
 	weaponstance.spellbonus_buff_spell_id = 0;
-	weaponstance.itembonus_buff_spell_id = 0;
-	weaponstance.aabonus_buff_spell_id = 0;
+	weaponstance.itembonus_buff_spell_id  = 0;
+	weaponstance.aabonus_buff_spell_id    = 0;
 
 	pStandingPetOrder = SPO_Follow;
 	pseudo_rooted     = false;
@@ -487,20 +482,20 @@ Mob::Mob(
 	}
 
 	for (int i = 0; i < MAX_APPEARANCE_EFFECTS; i++) {
-		appearance_effects_id[i] = 0;
+		appearance_effects_id[i]   = 0;
 		appearance_effects_slot[i] = 0;
 	}
 
 	emoteid              = 0;
 	endur_upkeep         = false;
 	degenerating_effects = false;
-	PrimaryAggro = false;
-	AssistAggro = false;
-	npc_assist_cap = 0;
-	dire_charmed = false;
-	player_damage = 0;
-	dire_pet_damage = 0;
-	total_damage = 0;
+	PrimaryAggro         = false;
+	AssistAggro          = false;
+	npc_assist_cap       = 0;
+	dire_charmed         = false;
+	player_damage        = 0;
+	dire_pet_damage      = 0;
+	total_damage         = 0;
 
 	use_double_melee_round_dmg_bonus = false;
 	dw_same_delay = 0;

@@ -1112,7 +1112,7 @@ void Bot::GenerateAppearance() {
 
 uint16 Bot::GetPrimarySkillValue() {
 	EQ::skills::SkillType skill = EQ::skills::HIGHEST_SKILL; //because nullptr == 0, which is 1H Slashing, & we want it to return 0 from GetSkill
-	if (bool equiped = m_inv.GetItem(EQ::invslot::slotPrimary); !equiped) {
+	if (bool equipped = m_inv.GetItem(EQ::invslot::slotPrimary); !equipped) {
 		skill = EQ::skills::SkillHandtoHand;
 	} else {
 		uint8 type = m_inv.GetItem(EQ::invslot::slotPrimary)->GetItem()->ItemType; //is this the best way to do this?
@@ -4861,24 +4861,33 @@ int Bot::GetBaseSkillDamage(EQ::skills::SkillType skill, Mob *target)
 		float skill_bonus = skill_level / 10.0f;
 		float ac_bonus = 0.0f;
 		auto inst = GetBotItem(EQ::invslot::slotFeet);
-		if (inst)
+		if (inst) {
 			ac_bonus = inst->GetItemArmorClass(true) / 25.0f;
-		if (ac_bonus > skill_bonus)
+		}
+
+		if (ac_bonus > skill_bonus) {
 			ac_bonus = skill_bonus;
+		}
 		return static_cast<int>(ac_bonus + skill_bonus);
 	}
 	case EQ::skills::SkillBash: {
 		float skill_bonus = skill_level / 10.0f;
 		float ac_bonus = 0.0f;
 		const EQ::ItemInstance *inst = nullptr;
-		if (HasShieldEquiped())
+		if (HasShieldEquipped()) {
 			inst = GetBotItem(EQ::invslot::slotSecondary);
-		else if (HasTwoHanderEquipped())
+		} else if (HasTwoHanderEquipped()) {
 			inst = GetBotItem(EQ::invslot::slotPrimary);
-		if (inst)
+		}
+
+		if (inst) {
 			ac_bonus = inst->GetItemArmorClass(true) / 25.0f;
-		if (ac_bonus > skill_bonus)
+		}
+
+		if (ac_bonus > skill_bonus) {
 			ac_bonus = skill_bonus;
+		}
+
 		return static_cast<int>(ac_bonus + skill_bonus);
 	}
 	case EQ::skills::SkillBackstab: {

@@ -145,10 +145,10 @@ void Client::CalcItemBonuses(StatBonuses* newbon) {
 
 	// Clear item faction mods
 	ClearItemFactionBonuses();
-	SetShieldEquiped(false);
-	SetTwoHandBluntEquiped(false);
+	SetShieldEquipped(false);
+	SetTwoHandBluntEquipped(false);
 	SetTwoHanderEquipped(false);
-	SetDuelWeaponsEquiped(false);
+	SetDualWeaponsEquipped(false);
 
 	unsigned int i;
 	// Update: MainAmmo should only calc skill mods (TODO: Check for other cases)
@@ -161,9 +161,9 @@ void Client::CalcItemBonuses(StatBonuses* newbon) {
 		//These are given special flags due to how often they are checked for various spell effects.
 		const EQ::ItemData *item = inst->GetItem();
 		if (i == EQ::invslot::slotSecondary && (item && item->ItemType == EQ::item::ItemTypeShield))
-			SetShieldEquiped(true);
+			SetShieldEquipped(true);
 		else if (i == EQ::invslot::slotPrimary && (item && item->ItemType == EQ::item::ItemType2HBlunt)) {
-			SetTwoHandBluntEquiped(true);
+			SetTwoHandBluntEquipped(true);
 			SetTwoHanderEquipped(true);
 		}
 		else if (i == EQ::invslot::slotPrimary && (item && (item->ItemType == EQ::item::ItemType2HSlash || item->ItemType == EQ::item::ItemType2HPiercing))) {
@@ -172,7 +172,7 @@ void Client::CalcItemBonuses(StatBonuses* newbon) {
 	}
 
 	if (CanThisClassDualWield()) {
-		SetDuelWeaponsEquiped(true);
+		SetDualWeaponsEquipped(true);
 	}
 
 	//tribute items

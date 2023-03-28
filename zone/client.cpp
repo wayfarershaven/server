@@ -4353,13 +4353,11 @@ bool Client::GroupFollow(Client* inviter) {
 uint16 Client::GetPrimarySkillValue()
 {
 	EQ::skills::SkillType skill = EQ::skills::HIGHEST_SKILL; //because nullptr == 0, which is 1H Slashing, & we want it to return 0 from GetSkill
-	bool equiped = m_inv.GetItem(EQ::invslot::slotPrimary);
+	bool equipped = m_inv.GetItem(EQ::invslot::slotPrimary);
 
-	if (!equiped)
+	if (!equipped) {
 		skill = EQ::skills::SkillHandtoHand;
-
-	else {
-
+	} else {
 		uint8 type = m_inv.GetItem(EQ::invslot::slotPrimary)->GetItem()->ItemType; //is this the best way to do this?
 
 		switch (type) {
@@ -10126,32 +10124,27 @@ void Client::ApplyWeaponsStance()
 			if (!HasTwoHanderEquipped() && IsBuffSpell(spellbonuses.WeaponStance[WEAPON_STANCE_TYPE_2H]) &&
 				FindBuff(spellbonuses.WeaponStance[WEAPON_STANCE_TYPE_2H])) {
 				BuffFadeBySpellID(spellbonuses.WeaponStance[WEAPON_STANCE_TYPE_2H]);
-			}
-			else if (!HasShieldEquiped() && IsBuffSpell(spellbonuses.WeaponStance[WEAPON_STANCE_TYPE_SHIELD]) &&
+			} else if (!HasShieldEquipped() && IsBuffSpell(spellbonuses.WeaponStance[WEAPON_STANCE_TYPE_SHIELD]) &&
 					 FindBuff(spellbonuses.WeaponStance[WEAPON_STANCE_TYPE_SHIELD])) {
 				BuffFadeBySpellID(spellbonuses.WeaponStance[WEAPON_STANCE_TYPE_SHIELD]);
-			}
-			else if (!HasDualWeaponsEquiped() &&
+			} else if (!HasDualWeaponsEquipped() &&
 					 IsBuffSpell(spellbonuses.WeaponStance[WEAPON_STANCE_TYPE_DUAL_WIELD]) &&
 					 FindBuff(spellbonuses.WeaponStance[WEAPON_STANCE_TYPE_DUAL_WIELD])) {
 				BuffFadeBySpellID(spellbonuses.WeaponStance[WEAPON_STANCE_TYPE_DUAL_WIELD]);
 			}
+
 			// If you have correct combination of weapon type and bonus, and do not already have buff, then apply buff.
 			if (HasTwoHanderEquipped() && IsBuffSpell(spellbonuses.WeaponStance[WEAPON_STANCE_TYPE_2H])) {
 				if (!FindBuff(spellbonuses.WeaponStance[WEAPON_STANCE_TYPE_2H])) {
 					SpellOnTarget(spellbonuses.WeaponStance[WEAPON_STANCE_TYPE_2H], this);
 				}
 				weaponstance.spellbonus_buff_spell_id = spellbonuses.WeaponStance[WEAPON_STANCE_TYPE_2H];
-			}
-			else if (HasShieldEquiped() && IsBuffSpell(spellbonuses.WeaponStance[WEAPON_STANCE_TYPE_SHIELD])) {
-
+			} else if (HasShieldEquipped() && IsBuffSpell(spellbonuses.WeaponStance[WEAPON_STANCE_TYPE_SHIELD])) {
 				if (!FindBuff(spellbonuses.WeaponStance[WEAPON_STANCE_TYPE_SHIELD])) {
 					SpellOnTarget(spellbonuses.WeaponStance[WEAPON_STANCE_TYPE_SHIELD], this);
 				}
 				weaponstance.spellbonus_buff_spell_id = spellbonuses.WeaponStance[WEAPON_STANCE_TYPE_SHIELD];
-			}
-			else if (HasDualWeaponsEquiped() && IsBuffSpell(spellbonuses.WeaponStance[WEAPON_STANCE_TYPE_DUAL_WIELD])) {
-
+			} else if (HasDualWeaponsEquipped() && IsBuffSpell(spellbonuses.WeaponStance[WEAPON_STANCE_TYPE_DUAL_WIELD])) {
 				if (!FindBuff(spellbonuses.WeaponStance[WEAPON_STANCE_TYPE_DUAL_WIELD])) {
 					SpellOnTarget(spellbonuses.WeaponStance[WEAPON_STANCE_TYPE_DUAL_WIELD], this);
 				}
@@ -10163,7 +10156,6 @@ void Client::ApplyWeaponsStance()
 	// Spellbonus effect removal is checked in BuffFadeBySlot(int slot, bool iRecalcBonuses) in spell_effects.cpp when the buff is clicked off or fades.
 
 	if (weaponstance.itembonus_enabled) {
-
 		if (itembonuses.WeaponStance[WEAPON_STANCE_TYPE_2H] || itembonuses.WeaponStance[WEAPON_STANCE_TYPE_SHIELD] ||
 			itembonuses.WeaponStance[WEAPON_STANCE_TYPE_DUAL_WIELD]) {
 
@@ -10192,32 +10184,26 @@ void Client::ApplyWeaponsStance()
 			if (!HasTwoHanderEquipped() && IsBuffSpell(itembonuses.WeaponStance[WEAPON_STANCE_TYPE_2H]) &&
 				FindBuff(itembonuses.WeaponStance[WEAPON_STANCE_TYPE_2H])) {
 				BuffFadeBySpellID(itembonuses.WeaponStance[WEAPON_STANCE_TYPE_2H]);
-			}
-			else if (!HasShieldEquiped() && IsBuffSpell(itembonuses.WeaponStance[WEAPON_STANCE_TYPE_SHIELD]) &&
+			} else if (!HasShieldEquipped() && IsBuffSpell(itembonuses.WeaponStance[WEAPON_STANCE_TYPE_SHIELD]) &&
 					 FindBuff(itembonuses.WeaponStance[WEAPON_STANCE_TYPE_SHIELD])) {
 				BuffFadeBySpellID(itembonuses.WeaponStance[WEAPON_STANCE_TYPE_SHIELD]);
-			}
-			else if (!HasDualWeaponsEquiped() && IsBuffSpell(itembonuses.WeaponStance[WEAPON_STANCE_TYPE_DUAL_WIELD]) &&
+			} else if (!HasDualWeaponsEquipped() && IsBuffSpell(itembonuses.WeaponStance[WEAPON_STANCE_TYPE_DUAL_WIELD]) &&
 					 FindBuff(itembonuses.WeaponStance[WEAPON_STANCE_TYPE_DUAL_WIELD])) {
 				BuffFadeBySpellID(itembonuses.WeaponStance[WEAPON_STANCE_TYPE_DUAL_WIELD]);
 			}
 
 			// If you have correct combination of weapon type and bonus, and do not already have buff, then apply buff.
 			if (HasTwoHanderEquipped() && IsBuffSpell(itembonuses.WeaponStance[WEAPON_STANCE_TYPE_2H])) {
-
 				if (!FindBuff(itembonuses.WeaponStance[WEAPON_STANCE_TYPE_2H])) {
 					SpellOnTarget(itembonuses.WeaponStance[WEAPON_STANCE_TYPE_2H], this);
 				}
 				weaponstance.itembonus_buff_spell_id = itembonuses.WeaponStance[WEAPON_STANCE_TYPE_2H];
-			}
-			else if (HasShieldEquiped() && IsBuffSpell(itembonuses.WeaponStance[WEAPON_STANCE_TYPE_SHIELD])) {
-
+			} else if (HasShieldEquipped() && IsBuffSpell(itembonuses.WeaponStance[WEAPON_STANCE_TYPE_SHIELD])) {
 				if (!FindBuff(itembonuses.WeaponStance[WEAPON_STANCE_TYPE_SHIELD])) {
 					SpellOnTarget(itembonuses.WeaponStance[WEAPON_STANCE_TYPE_SHIELD], this);
 				}
 				weaponstance.itembonus_buff_spell_id = itembonuses.WeaponStance[WEAPON_STANCE_TYPE_SHIELD];
-			}
-			else if (HasDualWeaponsEquiped() && IsBuffSpell(itembonuses.WeaponStance[WEAPON_STANCE_TYPE_DUAL_WIELD])) {
+			} else if (HasDualWeaponsEquipped() && IsBuffSpell(itembonuses.WeaponStance[WEAPON_STANCE_TYPE_DUAL_WIELD])) {
 				if (!FindBuff(itembonuses.WeaponStance[WEAPON_STANCE_TYPE_DUAL_WIELD])) {
 					SpellOnTarget(itembonuses.WeaponStance[WEAPON_STANCE_TYPE_DUAL_WIELD], this);
 				}
@@ -10248,14 +10234,10 @@ void Client::ApplyWeaponsStance()
 			if (!HasTwoHanderEquipped() && IsBuffSpell(aabonuses.WeaponStance[WEAPON_STANCE_TYPE_2H]) &&
 				FindBuff(aabonuses.WeaponStance[WEAPON_STANCE_TYPE_2H])) {
 				BuffFadeBySpellID(aabonuses.WeaponStance[WEAPON_STANCE_TYPE_2H]);
-			}
-
-			else if (!HasShieldEquiped() && IsBuffSpell(aabonuses.WeaponStance[WEAPON_STANCE_TYPE_SHIELD]) &&
+			} else if (!HasShieldEquipped() && IsBuffSpell(aabonuses.WeaponStance[WEAPON_STANCE_TYPE_SHIELD]) &&
 					 FindBuff(aabonuses.WeaponStance[WEAPON_STANCE_TYPE_SHIELD])) {
 				BuffFadeBySpellID(aabonuses.WeaponStance[WEAPON_STANCE_TYPE_SHIELD]);
-			}
-
-			else if (!HasDualWeaponsEquiped() && IsBuffSpell(aabonuses.WeaponStance[WEAPON_STANCE_TYPE_DUAL_WIELD]) &&
+			} else if (!HasDualWeaponsEquipped() && IsBuffSpell(aabonuses.WeaponStance[WEAPON_STANCE_TYPE_DUAL_WIELD]) &&
 					 FindBuff(aabonuses.WeaponStance[WEAPON_STANCE_TYPE_DUAL_WIELD])) {
 				BuffFadeBySpellID(aabonuses.WeaponStance[WEAPON_STANCE_TYPE_DUAL_WIELD]);
 			}
@@ -10266,17 +10248,12 @@ void Client::ApplyWeaponsStance()
 					SpellOnTarget(aabonuses.WeaponStance[WEAPON_STANCE_TYPE_2H], this);
 				}
 				weaponstance.aabonus_buff_spell_id = aabonuses.WeaponStance[WEAPON_STANCE_TYPE_2H];
-			}
-
-			else if (HasShieldEquiped() && IsBuffSpell(aabonuses.WeaponStance[WEAPON_STANCE_TYPE_SHIELD])) {
+			} else if (HasShieldEquipped() && IsBuffSpell(aabonuses.WeaponStance[WEAPON_STANCE_TYPE_SHIELD])) {
 				if (!FindBuff(aabonuses.WeaponStance[WEAPON_STANCE_TYPE_SHIELD])) {
 					SpellOnTarget(aabonuses.WeaponStance[WEAPON_STANCE_TYPE_SHIELD], this);
 				}
 				weaponstance.aabonus_buff_spell_id = aabonuses.WeaponStance[WEAPON_STANCE_TYPE_SHIELD];
-			}
-
-			else if (HasDualWeaponsEquiped() && IsBuffSpell(aabonuses.WeaponStance[WEAPON_STANCE_TYPE_DUAL_WIELD])) {
-
+			} else if (HasDualWeaponsEquipped() && IsBuffSpell(aabonuses.WeaponStance[WEAPON_STANCE_TYPE_DUAL_WIELD])) {
 				if (!FindBuff(aabonuses.WeaponStance[WEAPON_STANCE_TYPE_DUAL_WIELD])) {
 					SpellOnTarget(aabonuses.WeaponStance[WEAPON_STANCE_TYPE_DUAL_WIELD], this);
 				}
