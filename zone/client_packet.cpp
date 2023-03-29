@@ -844,11 +844,13 @@ void Client::CompleteConnect()
 	CalcItemScale();
 	DoItemEnterZone();
 
-	if (zone->GetZoneID() == RuleI(World, GuildBankZoneID) && GuildBanks)
+	if (zone->GetZoneID() == Zones::GUILDHALL && GuildBanks) {
 		GuildBanks->SendGuildBank(this);
+	}
 
-	if (ClientVersion() >= EQ::versions::ClientVersion::SoD)
+	if (ClientVersion() >= EQ::versions::ClientVersion::SoD) {
 		entity_list.SendFindableNPCList(this);
+	}
 
 	if (IsInAGuild()) {
 		SendGuildRanks();
@@ -1402,13 +1404,13 @@ void Client::Handle_Connect_OP_ZoneEntry(const EQApplicationPacket *app)
 			}
 		}
 		m_pp.guildrank = rank;
-		if (zone->GetZoneID() == RuleI(World, GuildBankZoneID))
+		if (zone->GetZoneID() == Zones::GUILDHALL) {
 			GuildBanker = (guild_mgr.IsGuildLeader(GuildID(), CharacterID()) || guild_mgr.GetBankerFlag(CharacterID()));
+		}
 	}
 	m_pp.guildbanker = GuildBanker;
 
-	switch (race)
-	{
+	switch (race) {
 	case OGRE:
 		size = 9; break;
 	case TROLL:
@@ -7458,13 +7460,12 @@ void Client::Handle_OP_GroupUpdate(const EQApplicationPacket *app)
 
 void Client::Handle_OP_GuildBank(const EQApplicationPacket *app)
 {
-	if (!GuildBanks)
+	if (!GuildBanks) {
 		return;
+	}
 
-	if ((int)zone->GetZoneID() != RuleI(World, GuildBankZoneID))
-	{
+	if ((int)zone->GetZoneID() != Zones::GUILDHALL) {
 		Message(Chat::Red, "The Guild Bank is not available in this zone.");
-
 		return;
 	}
 
@@ -7773,10 +7774,8 @@ void Client::Handle_OP_GuildCreate(const EQApplicationPacket *app)
 		return;
 	}
 
-	for (unsigned int i = 0; i < strlen(GuildName); ++i)
-	{
-		if (!isalpha(GuildName[i]) && (GuildName[i] != ' '))
-		{
+	for (unsigned int i = 0; i < strlen(GuildName); ++i) {
+		if (!isalpha(GuildName[i]) && (GuildName[i] != ' ')) {
 			Message(Chat::Red, "Invalid character in Guild name.");
 			return;
 		}
@@ -7784,14 +7783,12 @@ void Client::Handle_OP_GuildCreate(const EQApplicationPacket *app)
 
 	int32 GuildCount = guild_mgr.DoesAccountContainAGuildLeader(AccountID());
 
-	if (GuildCount >= RuleI(Guild, PlayerCreationLimit))
-	{
+	if (GuildCount >= RuleI(Guild, PlayerCreationLimit)) {
 		Message(Chat::Red, "You cannot create this guild because this account may only be leader of %i guilds.", RuleI(Guild, PlayerCreationLimit));
 		return;
 	}
 
-	if (guild_mgr.GetGuildIDByName(GuildName) != GUILD_NONE)
-	{
+	if (guild_mgr.GetGuildIDByName(GuildName) != GUILD_NONE) {
 		MessageString(Chat::Red, GUILD_NAME_IN_USE);
 		return;
 	}
@@ -7801,18 +7798,17 @@ void Client::Handle_OP_GuildCreate(const EQApplicationPacket *app)
 	LogGuilds("[{}]: Creating guild [{}] with leader [{}] via UF+ GUI. It was given id [{}]", GetName(),
 		GuildName, CharacterID(), (unsigned long)NewGuildID);
 
-	if (NewGuildID == GUILD_NONE)
+	if (NewGuildID == GUILD_NONE) {
 		Message(Chat::Red, "Guild creation failed.");
-	else
-	{
-		if (!guild_mgr.SetGuild(CharacterID(), NewGuildID, GUILD_LEADER))
+	} else {
+		if (!guild_mgr.SetGuild(CharacterID(), NewGuildID, GUILD_LEADER)) {
 			Message(Chat::Red, "Unable to set guild leader's guild in the database. Contact a GM.");
-		else
-		{
+		} else {
 			Message(Chat::Yellow, "You are now the leader of %s", GuildName);
 
-			if (zone->GetZoneID() == RuleI(World, GuildBankZoneID) && GuildBanks)
+			if (zone->GetZoneID() == Zones::GUILDHALL && GuildBanks) {
 				GuildBanks->SendGuildBank(this);
+			}
 			SendGuildRanks();
 		}
 	}
@@ -8117,22 +8113,17 @@ void Client::Handle_OP_GuildInviteAccept(const EQApplicationPacket *app)
 				Message(Chat::Red, "There was an error during the rank change, DB may now be inconsistent.");
 				return;
 			}
-		}
-		else {
-
+		} else {
 			LogGuilds("Adding [{}] ([{}]) to guild [{}] ([{}]) at rank [{}]",
 				GetName(), CharacterID(),
 				guild_mgr.GetGuildName(gj->guildeqid), gj->guildeqid,
 				gj->response);
 
 			//change guild and rank
-
 			guildrank = gj->response;
 
-			if (ClientVersion() >= EQ::versions::ClientVersion::RoF)
-			{
-				if (gj->response == 8)
-				{
+			if (ClientVersion() >= EQ::versions::ClientVersion::RoF) {
+				if (gj->response == 8) {
 					guildrank = 0;
 				}
 			}
@@ -8141,8 +8132,10 @@ void Client::Handle_OP_GuildInviteAccept(const EQApplicationPacket *app)
 				Message(Chat::Red, "There was an error during the invite, DB may now be inconsistent.");
 				return;
 			}
-			if (zone->GetZoneID() == RuleI(World, GuildBankZoneID) && GuildBanks)
+
+			if (zone->GetZoneID() == Zones::GUILDHALL && GuildBanks) {
 				GuildBanks->SendGuildBank(this);
+			}
 		}
 	}
 }

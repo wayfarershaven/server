@@ -1072,20 +1072,16 @@ Zone::Zone(uint32 in_zoneid, uint32 in_instanceid, const char* in_short_name)
 	{
 		uint32 rem = database.GetTimeRemainingInstance(instanceid, is_perma);
 
-		if(!is_perma)
-		{
-			if(rem < 150) //give some leeway to people who are zoning in 2.5 minutes to finish zoning in and get ported out
+		if(!is_perma){
+			if(rem < 150) { //give some leeway to people who are zoning in 2.5 minutes to finish zoning in and get ported out
 				rem = 150;
+			}
 			Instance_Timer = new Timer(rem * 1000);
-		}
-		else
-		{
+		} else {
 			pers_instance = true;
 			Instance_Timer = nullptr;
 		}
-	}
-	else
-	{
+	} else {
 		Instance_Timer = nullptr;
 	}
 	adv_data = nullptr;
@@ -1094,10 +1090,11 @@ Zone::Zone(uint32 in_zoneid, uint32 in_instanceid, const char* in_short_name)
 	did_adventure_actions = false;
 	database.QGlobalPurge();
 
-	if(zoneid == RuleI(World, GuildBankZoneID))
+	if(zoneid == Zones::GUILDHALL) {
 		GuildBanks = new GuildBankManager;
-	else
+	} else {
 		GuildBanks = nullptr;
+	}
 
 	m_ucss_available = false;
 	m_last_ucss_update = 0;
