@@ -1092,7 +1092,6 @@ void Mob::SetSpawnLastNameByClass(NewSpawn_Struct* ns)
 			strcpy(ns->spawn.lastName, "Mercenary Liaison");
 			break;
 		default:
-			strcpy(ns->spawn.lastName, ns->spawn.lastName);
 			break;
 	}
 }
