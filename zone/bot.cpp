@@ -3837,6 +3837,7 @@ bool Bot::RemoveBotFromGroup(Bot* bot, Group* group) {
 		if (!group->IsLeader(bot)) {
 			bot->SetFollowID(0);
 			if (group->DelMember(bot)) {
+				group->DelMemberOOZ(bot->GetName());
 				database.SetGroupID(bot->GetCleanName(), 0, bot->GetBotID());
 				if (group->GroupCount() < 1) {
 					group->DisbandGroup();
@@ -3859,21 +3860,26 @@ bool Bot::RemoveBotFromGroup(Bot* bot, Group* group) {
 }
 
 bool Bot::AddBotToGroup(Bot* bot, Group* group) {
-	bool Result = false;
-	if (bot && group && group->AddMember(bot)) {
-			if (group->GetLeader()) {
-				bot->SetFollowID(group->GetLeader()->GetID());
-				// Need to send this only once when a group is formed with a bot so the client knows it is also the group leader
-				if (group->GroupCount() == 2 && group->GetLeader()->IsClient()) {
-					group->UpdateGroupAAs();
-					Mob *TempLeader = group->GetLeader();
-					group->SendUpdate(groupActUpdate, TempLeader);
-				}
-			}
-			group->VerifyGroup();
-			Result = true;
+	bool result = false;
+	if (!group || group->GroupCount() >= MAX_GROUP_MEMBERS) {
+		return result;
 	}
-	return Result;
+
+	if (bot && group->AddMember(bot)) {
+		if (group->GetLeader()) {
+			bot->SetFollowID(group->GetLeader()->GetID());
+			// Need to send this only once when a group is formed with a bot so the client knows it is also the group leader
+			if (group->GroupCount() == 2 && group->GetLeader()->IsClient()) {
+				group->UpdateGroupAAs();
+				Mob *TempLeader = group->GetLeader();
+				group->SendUpdate(groupActUpdate, TempLeader);
+			}
+		}
+		group->VerifyGroup();
+		group->SendGroupJoinOOZ(bot);
+		result = true;
+	}
+	return result;
 }
 
 // Completes a trade with a client bot owner
@@ -6880,8 +6886,9 @@ void Bot::ProcessBotGroupInvite(Client* c, std::string const& botName) {
 					delete g;
 				}
 			} else {
-				AddBotToGroup(invitedBot, c->GetGroup());
-				database.SetGroupID(invitedBot->GetCleanName(), c->GetGroup()->GetID(), invitedBot->GetBotID());
+				if (AddBotToGroup(invitedBot, c->GetGroup())) {
+					database.SetGroupID(invitedBot->GetCleanName(), c->GetGroup()->GetID(), invitedBot->GetBotID());
+				}
 			}
 			if (c->HasRaid() && c->HasGroup()) {
 				Raid* raid = entity_list.GetRaidByClient(c);

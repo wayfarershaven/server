@@ -4182,19 +4182,17 @@ void Client::UpdateLFP() {
 }
 
 bool Client::GroupFollow(Client* inviter) {
-
-	if (inviter)
-	{
+	if (inviter) {
 		isgrouped = true;
 		Raid* raid = entity_list.GetRaidByClient(inviter);
 		Raid* iraid = entity_list.GetRaidByClient(this);
 
 		//inviter has a raid don't do group stuff instead do raid stuff!
-		if (raid)
-		{
+		if (raid) {
 			// Suspend the merc while in a raid (maybe a rule could be added for this)
-			if (GetMerc())
+			if (GetMerc()) {
 				GetMerc()->Suspend();
+			}
 
 			uint32 groupToUse = 0xFFFFFFFF;
 			for (const auto& m : raid->members) {
@@ -4207,7 +4205,7 @@ bool Client::GroupFollow(Client* inviter) {
 			if (iraid == raid) {
 				//both in same raid
 				uint32 ngid = raid->GetGroup(inviter->GetName());
-				if (raid->GroupCount(ngid) < 6) {
+				if (raid->GroupCount(ngid) < MAX_GROUP_MEMBERS) {
 					raid->MoveMember(GetName(), ngid);
 					raid->SendGroupDisband(this);
 					raid->GroupUpdate(ngid);
@@ -4216,8 +4214,7 @@ bool Client::GroupFollow(Client* inviter) {
 			}
 
 			if (raid->RaidCount() < MAX_RAID_MEMBERS) {
-				if (raid->GroupCount(groupToUse) < 6)
-				{
+				if (raid->GroupCount(groupToUse) < MAX_GROUP_MEMBERS) {
 					raid->SendRaidCreate(this);
 					raid->SendMakeLeaderPacketTo(raid->leadername, this);
 					raid->AddMember(this, groupToUse);
@@ -4225,20 +4222,16 @@ bool Client::GroupFollow(Client* inviter) {
 					//raid->SendRaidGroupAdd(GetName(), groupToUse);
 					//raid->SendGroupUpdate(this);
 					raid->GroupUpdate(groupToUse); //break
-					if (raid->IsLocked())
-					{
+					if (raid->IsLocked()) {
 						raid->SendRaidLockTo(this);
 					}
 					return false;
-				}
-				else
-				{
+				} else {
 					raid->SendRaidCreate(this);
 					raid->SendMakeLeaderPacketTo(raid->leadername, this);
 					raid->AddMember(this);
 					raid->SendBulkRaid(this);
-					if (raid->IsLocked())
-					{
+					if (raid->IsLocked()) {
 						raid->SendRaidLockTo(this);
 					}
 					return false;
@@ -4248,20 +4241,17 @@ bool Client::GroupFollow(Client* inviter) {
 
 		Group* group = entity_list.GetGroupByClient(inviter);
 
-		if (!group)
-		{
+		if (!group) {
 			//Make new group
 			group = new Group(inviter);
 
-			if (!group)
-			{
+			if (!group) {
 				return false;
 			}
 
 			entity_list.AddGroup(group);
 
-			if (group->GetID() == 0)
-			{
+			if (group->GetID() == 0) {
 				Message(Chat::Red, "Unable to get new group id. Cannot create group.");
 				inviter->Message(Chat::Red, "Unable to get new group id. Cannot create group.");
 				return false;
@@ -4273,8 +4263,7 @@ bool Client::GroupFollow(Client* inviter) {
 			group->UpdateGroupAAs();
 
 			//Invite the inviter into the group first.....dont ask
-			if (inviter->ClientVersion() < EQ::versions::ClientVersion::SoD)
-			{
+			if (inviter->ClientVersion() < EQ::versions::ClientVersion::SoD) {
 				auto outapp = new EQApplicationPacket(OP_GroupUpdate, sizeof(GroupJoin_Struct));
 				GroupJoin_Struct* outgj = (GroupJoin_Struct*)outapp->pBuffer;
 				strcpy(outgj->membername, inviter->GetName());
@@ -4283,9 +4272,7 @@ bool Client::GroupFollow(Client* inviter) {
 				group->GetGroupAAs(&outgj->leader_aas);
 				inviter->QueuePacket(outapp);
 				safe_delete(outapp);
-			}
-			else
-			{
+			} else {
 				// SoD and later
 				inviter->SendGroupCreatePacket();
 				inviter->SendGroupLeaderChangePacket(inviter->GetName());
@@ -4293,50 +4280,40 @@ bool Client::GroupFollow(Client* inviter) {
 			}
 		}
 
-		if (!group)
-		{
+		if (!group) {
 			return false;
 		}
 
 		// Remove merc from old group before adding client to the new one
-		if (GetMerc() && GetMerc()->HasGroup())
-		{
+		if (GetMerc() && GetMerc()->HasGroup()) {
 			GetMerc()->RemoveMercFromGroup(GetMerc(), GetMerc()->GetGroup());
 		}
 
-		if (!group->AddMember(this))
-		{
+		if (!group->AddMember(this)) {
 			// If failed to add client to new group, regroup with merc
-			if (GetMerc())
-			{
+			if (GetMerc()) {
 				GetMerc()->MercJoinClientGroup();
-			}
-			else
-			{
+			} else {
 				isgrouped = false;
 			}
 			return false;
 		}
 
-		if (ClientVersion() >= EQ::versions::ClientVersion::SoD)
-		{
+		if (ClientVersion() >= EQ::versions::ClientVersion::SoD) {
 			SendGroupJoinAcknowledge();
 		}
 
 		// Temporary hack for SoD, as things seem to work quite differently
-		if (inviter->IsClient() && inviter->ClientVersion() >= EQ::versions::ClientVersion::SoD)
-		{
+		if (inviter->IsClient() && inviter->ClientVersion() >= EQ::versions::ClientVersion::SoD) {
 			database.RefreshGroupFromDB(inviter);
 		}
 
 		// Add the merc back into the new group if possible
-		if (GetMerc())
-		{
+		if (GetMerc()) {
 			GetMerc()->MercJoinClientGroup();
 		}
 
-		if (inviter->IsLFP())
-		{
+		if (inviter->IsLFP()) {
 			// If the player who invited us to a group is LFP, have them update world now that we have joined their group.
 			inviter->UpdateLFP();
 		}
