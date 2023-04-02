@@ -1260,9 +1260,8 @@ bool Client::ChecksumVerificationCRC1EQGame(uint64 checksum)
 	// Get checksum variable for eqgame.exe
 	std::string checksumvar;
 	uint64_t checksumint;
-	if (database.GetVariable("checksum_crc1_eqgame", checksumvar))
-	{
-		checksumint = Strings::ToBigInt(checksumvar.c_str());
+	if (database.GetVariable("checksum_crc1_eqgame", checksumvar)) {
+		checksumint = Strings::ToBigInt(checksumvar);
 	} else {
 
 		// If checksum_crc1_eqgame not set exit function and return true because we have nothing to verify against
@@ -1271,8 +1270,7 @@ bool Client::ChecksumVerificationCRC1EQGame(uint64 checksum)
 	}
 
 	// Verify checksums match
-	if(checksumint == checksum)
-	{
+	if(checksumint == checksum) {
 		return true;
 	}
 
@@ -1288,9 +1286,8 @@ bool Client::ChecksumVerificationCRC2SkillCaps(uint64 checksum)
 	// Get checksum variable for eqgame.exe
 	std::string checksumvar;
 	uint64_t checksumint;
-	if (database.GetVariable("checksum_crc2_skillcaps", checksumvar))
-	{
-		checksumint = Strings::ToBigInt(checksumvar.c_str());
+	if (database.GetVariable("checksum_crc2_skillcaps", checksumvar)) {
+		checksumint = Strings::ToBigInt(checksumvar);
 	} else {
 
 		// If checksum_crc2_skillcaps not set exit function and return true because we have nothing to verify against
@@ -1299,8 +1296,7 @@ bool Client::ChecksumVerificationCRC2SkillCaps(uint64 checksum)
 	}
 
 	// Verify checksums match
-	if(checksumint == checksum)
-	{
+	if(checksumint == checksum) {
 		return true;
 	}
 
@@ -1316,9 +1312,8 @@ bool Client::ChecksumVerificationCRC3BaseData(uint64 checksum)
 	// Get checksum variable for skill_caps.txt
 	std::string checksumvar;
 	uint64_t checksumint;
-	if (database.GetVariable("checksum_crc3_basedata", checksumvar))
-	{
-		checksumint = Strings::ToBigInt(checksumvar.c_str());
+	if (database.GetVariable("checksum_crc3_basedata", checksumvar)) {
+		checksumint = Strings::ToBigInt(checksumvar);
 	} else {
 
 		// If checksum_crc3_basedata not set exit function and return true because we have nothing to verify against
@@ -1327,8 +1322,7 @@ bool Client::ChecksumVerificationCRC3BaseData(uint64 checksum)
 	}
 
 	// Verify checksums match
-	if(checksumint == checksum)
-	{
+	if(checksumint == checksum) {
 		return true;
 	}
 
