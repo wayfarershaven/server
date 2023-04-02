@@ -20,7 +20,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include "../common/eq_constants.h"
 #include "../common/eq_packet_structs.h"
 #include "../common/rulesys.h"
-#include "../common/skills.h"
 #include "../common/spdat.h"
 #include "../common/strings.h"
 #include "../common/data_verification.h"
@@ -37,7 +36,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include "mob.h"
 #include "npc.h"
 
-#include <stdlib.h>
 #include <boost/concept_check.hpp>
 #include "bot.h"
 

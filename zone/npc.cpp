@@ -27,7 +27,6 @@
 #include "../common/emu_versions.h"
 #include "../common/features.h"
 #include "../common/item_instance.h"
-#include "../common/item_data.h"
 #include "../common/linked_list.h"
 #include "../common/servertalk.h"
 #include "../common/say_link.h"
@@ -44,7 +43,6 @@
 #include "npc_scale_manager.h"
 #include "bot.h"
 
-#include <cctype>
 #include <stdio.h>
 #include <string>
 
