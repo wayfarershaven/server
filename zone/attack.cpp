@@ -2831,7 +2831,9 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 				oos->CastToNPC()->DoNPCEmote(EQ::constants::EmoteEventTypes::KilledNPC, emote_id);
 			}
 
-			killer_mob->TrySpellOnKill(killed_level, spell);
+			if (killer_mob) {
+				killer_mob->TrySpellOnKill(killed_level, spell);
+			}
 		}
 	}
 

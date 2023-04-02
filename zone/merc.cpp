@@ -3650,42 +3650,41 @@ MercSpell Merc::GetBestMercSpellForTargetedAENuke(Merc* caster, Mob* tar) {
 	result.proc_chance = 0;
 	result.time_cancast = 0;
 
-	switch(caster->GetStance())
-	{
-	case EQ::constants::stanceBurnAE:
-		numTargetsCheck = 1;
-		break;
-	case EQ::constants::stanceBalanced:
-	case EQ::constants::stanceBurn:
-		numTargetsCheck = 2;
-		break;
+	if (!caster) {
+		return result;
 	}
 
-	if(caster) {
-		std::list<MercSpell> mercSpellList = GetMercSpellsBySpellType(caster, SpellType_Nuke);
+	switch(caster->GetStance()) {
+		case EQ::constants::stanceBurnAE:
+			numTargetsCheck = 1;
+			break;
+		case EQ::constants::stanceBalanced:
+		case EQ::constants::stanceBurn:
+			numTargetsCheck = 2;
+			break;
+	}
 
-		for (auto mercSpellListItr = mercSpellList.begin(); mercSpellListItr != mercSpellList.end();
-		     ++mercSpellListItr) {
-			// Assuming all the spells have been loaded into this list by level and in descending order
-			if(IsAENukeSpell(mercSpellListItr->spellid) && !IsAERainNukeSpell(mercSpellListItr->spellid)
-				&& !IsPBAENukeSpell(mercSpellListItr->spellid) && CheckSpellRecastTimers(caster, mercSpellListItr->spellid)) {
-					uint8 numTargets = 0;
-					if(CheckAENuke(caster, tar, mercSpellListItr->spellid, numTargets)) {
-						if(numTargets >= numTargetsCheck && zone->random.Roll(castChance)) {
-							result.spellid = mercSpellListItr->spellid;
-							result.stance = mercSpellListItr->stance;
-							result.type = mercSpellListItr->type;
-							result.slot = mercSpellListItr->slot;
-							result.proc_chance = mercSpellListItr->proc_chance;
-							result.time_cancast = mercSpellListItr->time_cancast;
-						}
+	std::list<MercSpell> mercSpellList = GetMercSpellsBySpellType(caster, SpellType_Nuke);
+
+	for (auto mercSpellListItr = mercSpellList.begin(); mercSpellListItr != mercSpellList.end();
+		    ++mercSpellListItr) {
+		// Assuming all the spells have been loaded into this list by level and in descending order
+		if(IsAENukeSpell(mercSpellListItr->spellid) && !IsAERainNukeSpell(mercSpellListItr->spellid)
+			&& !IsPBAENukeSpell(mercSpellListItr->spellid) && CheckSpellRecastTimers(caster, mercSpellListItr->spellid)) {
+				uint8 numTargets = 0;
+				if(CheckAENuke(caster, tar, mercSpellListItr->spellid, numTargets)) {
+					if(numTargets >= numTargetsCheck && zone->random.Roll(castChance)) {
+						result.spellid = mercSpellListItr->spellid;
+						result.stance = mercSpellListItr->stance;
+						result.type = mercSpellListItr->type;
+						result.slot = mercSpellListItr->slot;
+						result.proc_chance = mercSpellListItr->proc_chance;
+						result.time_cancast = mercSpellListItr->time_cancast;
 					}
-
-					break;
-			}
+				}
+			break;
 		}
 	}
-
 	return result;
 }
 
@@ -3702,38 +3701,39 @@ MercSpell Merc::GetBestMercSpellForPBAENuke(Merc* caster, Mob* tar) {
 	result.proc_chance = 0;
 	result.time_cancast = 0;
 
-	switch(caster->GetStance())
-	{
-	case EQ::constants::stanceBurnAE:
-		numTargetsCheck = 2;
-		break;
-	case EQ::constants::stanceBalanced:
-	case EQ::constants::stanceBurn:
-		numTargetsCheck = 3;
-		break;
+	if (!caster) {
+		return result;
 	}
 
-	if(caster) {
-		std::list<MercSpell> mercSpellList = GetMercSpellsBySpellType(caster, SpellType_Nuke);
+	switch(caster->GetStance()) {
+		case EQ::constants::stanceBurnAE:
+			numTargetsCheck = 2;
+			break;
+		case EQ::constants::stanceBalanced:
+		case EQ::constants::stanceBurn:
+			numTargetsCheck = 3;
+			break;
+	}
 
-		for (auto mercSpellListItr = mercSpellList.begin(); mercSpellListItr != mercSpellList.end();
-		     ++mercSpellListItr) {
-			// Assuming all the spells have been loaded into this list by level and in descending order
-			if(IsPBAENukeSpell(mercSpellListItr->spellid) && CheckSpellRecastTimers(caster, mercSpellListItr->spellid)) {
-				uint8 numTargets = 0;
-				if(CheckAENuke(caster, caster, mercSpellListItr->spellid, numTargets)) {
-					if(numTargets >= numTargetsCheck && zone->random.Roll(castChance)) {
-						result.spellid = mercSpellListItr->spellid;
-						result.stance = mercSpellListItr->stance;
-						result.type = mercSpellListItr->type;
-						result.slot = mercSpellListItr->slot;
-						result.proc_chance = mercSpellListItr->proc_chance;
-						result.time_cancast = mercSpellListItr->time_cancast;
-					}
+	std::list<MercSpell> mercSpellList = GetMercSpellsBySpellType(caster, SpellType_Nuke);
+
+	for (auto mercSpellListItr = mercSpellList.begin(); mercSpellListItr != mercSpellList.end();
+		    ++mercSpellListItr) {
+		// Assuming all the spells have been loaded into this list by level and in descending order
+		if(IsPBAENukeSpell(mercSpellListItr->spellid) && CheckSpellRecastTimers(caster, mercSpellListItr->spellid)) {
+			uint8 numTargets = 0;
+			if(CheckAENuke(caster, caster, mercSpellListItr->spellid, numTargets)) {
+				if(numTargets >= numTargetsCheck && zone->random.Roll(castChance)) {
+					result.spellid = mercSpellListItr->spellid;
+					result.stance = mercSpellListItr->stance;
+					result.type = mercSpellListItr->type;
+					result.slot = mercSpellListItr->slot;
+					result.proc_chance = mercSpellListItr->proc_chance;
+					result.time_cancast = mercSpellListItr->time_cancast;
 				}
-
-				break;
 			}
+
+			break;
 		}
 	}
 
@@ -3753,41 +3753,40 @@ MercSpell Merc::GetBestMercSpellForAERainNuke(Merc* caster, Mob* tar) {
 	result.proc_chance = 0;
 	result.time_cancast = 0;
 
-	switch(caster->GetStance())
-	{
-	case EQ::constants::stanceBurnAE:
-		numTargetsCheck = 1;
-		break;
-	case EQ::constants::stanceBalanced:
-	case EQ::constants::stanceBurn:
-		numTargetsCheck = 2;
-		break;
+	if (!caster) {
+		return result;
 	}
 
-	if(caster) {
-		std::list<MercSpell> mercSpellList = GetMercSpellsBySpellType(caster, SpellType_Nuke);
+	switch(caster->GetStance()) {
+		case EQ::constants::stanceBurnAE:
+			numTargetsCheck = 1;
+			break;
+		case EQ::constants::stanceBalanced:
+		case EQ::constants::stanceBurn:
+			numTargetsCheck = 2;
+			break;
+	}
 
-		for (auto mercSpellListItr = mercSpellList.begin(); mercSpellListItr != mercSpellList.end();
-		     ++mercSpellListItr) {
-			// Assuming all the spells have been loaded into this list by level and in descending order
-			if(IsAERainNukeSpell(mercSpellListItr->spellid) && zone->random.Roll(castChance) && CheckSpellRecastTimers(caster, mercSpellListItr->spellid)) {
-				uint8 numTargets = 0;
-				if(CheckAENuke(caster, tar, mercSpellListItr->spellid, numTargets)) {
-					if(numTargets >= numTargetsCheck) {
-						result.spellid = mercSpellListItr->spellid;
-						result.stance = mercSpellListItr->stance;
-						result.type = mercSpellListItr->type;
-						result.slot = mercSpellListItr->slot;
-						result.proc_chance = mercSpellListItr->proc_chance;
-						result.time_cancast = mercSpellListItr->time_cancast;
+	std::list<MercSpell> mercSpellList = GetMercSpellsBySpellType(caster, SpellType_Nuke);
+
+	for (auto mercSpellListItr = mercSpellList.begin(); mercSpellListItr != mercSpellList.end();
+		    ++mercSpellListItr) {
+		// Assuming all the spells have been loaded into this list by level and in descending order
+		if(IsAERainNukeSpell(mercSpellListItr->spellid) && zone->random.Roll(castChance) && CheckSpellRecastTimers(caster, mercSpellListItr->spellid)) {
+			uint8 numTargets = 0;
+			if(CheckAENuke(caster, tar, mercSpellListItr->spellid, numTargets)) {
+				if(numTargets >= numTargetsCheck) {
+					result.spellid = mercSpellListItr->spellid;
+					result.stance = mercSpellListItr->stance;
+					result.type = mercSpellListItr->type;
+					result.slot = mercSpellListItr->slot;
+					result.proc_chance = mercSpellListItr->proc_chance;
+					result.time_cancast = mercSpellListItr->time_cancast;
 					}
 				}
-
 				break;
-			}
 		}
 	}
-
 	return result;
 }
 
@@ -4697,17 +4696,17 @@ Merc* Merc::LoadMerc(Client *c, MercTemplate* merc_template, uint32 merchant_id,
 	if(merc_template)
 	{
 		//TODO: Maybe add a way of updating client merc stats in a seperate function? like, for example, on leveling up.
-		const NPCType* npc_type_to_copy = content_db.GetMercType(merc_template->MercNPCID, merc_template->RaceID, c->GetLevel());
-		if(npc_type_to_copy != nullptr)
-		{
+		const NPCType* npc_type_to_copy = nullptr;
+		if (c) {
+			const NPCType* npc_type_to_copy = content_db.GetMercType(merc_template->MercNPCID, merc_template->RaceID, c->GetLevel());
+		}
+		if(npc_type_to_copy != nullptr) {
 			//This is actually a very terrible method of assigning stats, and should be changed at some point. See the comment in merc's deconstructor.
 			auto npc_type = new NPCType;
 			memset(npc_type, 0, sizeof(NPCType));
 			memcpy(npc_type, npc_type_to_copy, sizeof(NPCType));
-			if(c && !updateFromDB)
-			{
-				if(c->GetMercInfo().merc_name[0] == 0)
-				{
+			if(c && !updateFromDB) {
+				if(c->GetMercInfo().merc_name[0] == 0) {
 					snprintf(c->GetMercInfo().merc_name, 64, "%s", GetRandomName()); //sanity check.
 				}
 				snprintf(npc_type->name, 64, "%s", c->GetMercInfo().merc_name);
@@ -4718,22 +4717,15 @@ Merc* Merc::LoadMerc(Client *c, MercTemplate* merc_template, uint32 merchant_id,
 			// Use the Gender and Size of the Merchant if possible
 			uint8 tmpgender = 0;
 			float tmpsize = 6.0f;
-			if(merchant_id > 0)
-			{
+			if(merchant_id > 0) {
 				NPC* tar = entity_list.GetNPCByID(merchant_id);
-				if(tar)
-				{
+				if(tar) {
 					tmpgender = tar->GetGender();
 					tmpsize = tar->GetSize();
-				}
-				else
-				{
+				} else {
 					tmpgender = Mob::GetDefaultGender(npc_type->race, c->GetMercInfo().Gender);
 				}
-
-			}
-			else
-			{
+			} else {
 				tmpgender = c->GetMercInfo().Gender;
 				tmpsize = c->GetMercInfo().MercSize;
 			}
@@ -4755,14 +4747,12 @@ Merc* Merc::LoadMerc(Client *c, MercTemplate* merc_template, uint32 merchant_id,
 			auto merc = new Merc(npc_type, c->GetX(), c->GetY(), c->GetZ(), 0);
 			merc->GiveNPCTypeData(npc_type); // for clean up, works a bit like pets
 
-			if(merc)
-			{
+			if(merc) {
 				merc->SetMercData( merc_template->MercTemplateID );
 				database.LoadMercEquipment(merc);
 				merc->UpdateMercStats(c, true);
 
-				if(updateFromDB)
-				{
+				if(updateFromDB) {
 					database.LoadCurrentMerc(c);
 
 					merc->SetMercID(c->GetMercInfo().mercid);
@@ -4783,9 +4773,7 @@ Merc* Merc::LoadMerc(Client *c, MercTemplate* merc_template, uint32 merchant_id,
 					merc->drakkin_heritage = c->GetMercInfo().drakkinHeritage;
 					merc->drakkin_tattoo = c->GetMercInfo().drakkinTattoo;
 					merc->drakkin_details = c->GetMercInfo().drakkinDetails;
-				}
-				else
-				{
+				} else {
 					// Give Random Features to newly hired Mercs
 					merc->RandomizeFeatures(false, true);
 				}

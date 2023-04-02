@@ -201,16 +201,13 @@ void Trap::Trigger(Mob* trigger)
 			}
 			break;
 		case trapTypeDamage:
-			if (message.empty())
-			{
+			if (message.empty()) {
 				entity_list.MessageClose(trigger,false,100,13,"%s triggers a trap!",trigger->GetName());
-			}
-			else
-			{
+			} else {
 				entity_list.MessageClose(trigger,false,100,13,"%s",message.c_str());
 			}
-			if(trigger->IsClient())
-			{
+
+			if (trigger && trigger->IsClient()) {
 				auto outapp = new EQApplicationPacket(OP_Damage, sizeof(CombatDamage_Struct));
 				CombatDamage_Struct* a = (CombatDamage_Struct*)outapp->pBuffer;
 				int64 dmg = zone->random.Int(effectvalue, effectvalue2);
@@ -226,34 +223,29 @@ void Trap::Trigger(Mob* trigger)
 			}
 	}
 
-	if (trigger && trigger->IsClient())
-	{
+	if (trigger && trigger->IsClient()) {
 		trigger->CastToClient()->trapid = trap_id;
 		charid = trigger->CastToClient()->CharacterID();
 	}
 
 	bool update = false;
-	if (despawn_when_triggered)
-	{
+	if (despawn_when_triggered) {
 		Log(Logs::General, Logs::Traps, "Trap %d is despawning after being triggered.", trap_id);
 		update = true;
-	}
-	else
-	{
+	} else {
 		reset_timer.Start(5000);
 	}
 
-	if (triggered_number > 0)
+	if (triggered_number > 0) {
 		++times_triggered;
+	}
 
-	if (triggered_number > 0 && triggered_number <= times_triggered)
-	{
+	if (triggered_number > 0 && triggered_number <= times_triggered) {
 		Log(Logs::General, Logs::Traps, "Triggered number for trap %d reached. %d/%d", trap_id, times_triggered, triggered_number);
 		update = true;
 	}
 
-	if (update)
-	{
+	if (update) {
 		UpdateTrap();
 	}
 }

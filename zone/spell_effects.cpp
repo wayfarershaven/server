@@ -145,8 +145,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 		}
 #endif
 
-	if(buffslot >= 0)
-	{
+	if(buffslot >= 0) {
 		buffs[buffslot].melee_rune = 0;
 		buffs[buffslot].magic_rune = 0;
 		buffs[buffslot].hit_number = 0;
@@ -155,16 +154,18 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 
 			int numhit = spells[spell_id].hit_number;
 
-			numhit += numhit * caster->GetFocusEffect(focusFcLimitUse, spell_id) / 100;
-			numhit += caster->GetFocusEffect(focusIncreaseNumHits, spell_id);
+			if (caster) {
+				numhit += numhit * caster->GetFocusEffect(focusFcLimitUse, spell_id) / 100;
+				numhit += caster->GetFocusEffect(focusIncreaseNumHits, spell_id);
+			}
 			buffs[buffslot].hit_number = numhit;
 		}
 
-		if (spells[spell_id].endurance_upkeep > 0)
+		if (spells[spell_id].endurance_upkeep > 0) {
 			SetEndurUpkeep(true);
+		}
 
-		if (IsClient() && CastToClient()->ClientVersionBit() & EQ::versions::maskUFAndLater)
-		{
+		if (IsClient() && CastToClient()->ClientVersionBit() & EQ::versions::maskUFAndLater) {
 			EQApplicationPacket *outapp = MakeBuffsPacket(false);
 			CastToClient()->FastQueuePacket(&outapp);
 		}
@@ -272,7 +273,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 				// SE_CurrentHP is calculated at first tick if its a dot/buff
 				if (buffslot >= 0) {
 					//This is here so dots with hit counters tic down on initial cast.
-					if (effect_value < 0) {
+					if (caster && effect_value < 0) {
 						caster->GetActDoTDamage(spell_id, effect_value, this, false);
 					}
 					break;
@@ -1796,7 +1797,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 			{
 				if (IsClient()) {
 					Client* client_target = CastToClient();
-					if (client_target->IsGrouped()) {
+					if (client_target && client_target->IsGrouped()) {
 						Group* group = client_target->GetGroup();
 						if (!group->IsGroupMember(caster)) {
 							if (caster != this) {
@@ -1809,7 +1810,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 							Raid *raid = caster->GetRaid();
 							uint32 group_id = raid->GetGroup(caster->GetName());
 							if (group_id > 0 && group_id < MAX_RAID_GROUPS) {
-								if (raid->GetGroup(client_target->GetName()) != group_id) {
+								if (client_target && raid->GetGroup(client_target->GetName()) != group_id) {
 									caster->MessageString(Chat::Red, SUMMON_ONLY_GROUP_CORPSE);
 									break;
 								}
@@ -2914,46 +2915,51 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 			}
 
 			case SE_Trigger_Best_in_Spell_Grp: {
-
-				if (caster && !caster->IsClient())
+				if (caster && !caster->IsClient()) {
 					break;
+				}
 
-				if (zone->random.Roll(spells[spell_id].base_value[i])) {
+				if (caster && zone->random.Roll(spells[spell_id].base_value[i])) {
 					uint32 best_spell_id = caster->CastToClient()->GetHighestScribedSpellinSpellGroup(spells[spell_id].limit_value[i]);
 
-					if (caster && IsValidSpell(best_spell_id))
+					if (IsValidSpell(best_spell_id)) {
 						caster->SpellFinished(best_spell_id, this, EQ::spells::CastingSlot::Item, 0, -1, spells[best_spell_id].resist_difficulty);
+					}
 				}
 				break;
 			}
 
 			case SE_Trigger_Spell_Non_Item: {
 				//Only trigger if not from item
-				if (caster && caster->IsClient() && GetCastedSpellInvSlot() > 0)
+				if (caster && caster->IsClient() && GetCastedSpellInvSlot() > 0) {
 					break;
+				}
 
-				if (zone->random.Roll(spells[spell_id].base_value[i]) && IsValidSpell(spells[spell_id].limit_value[i]))
+				if (zone->random.Roll(spells[spell_id].base_value[i]) && IsValidSpell(spells[spell_id].limit_value[i])) {
 						caster->SpellFinished(spells[spell_id].limit_value[i], this, EQ::spells::CastingSlot::Item, 0, -1, spells[spells[spell_id].limit_value[i]].resist_difficulty);
-
+				}
 				break;
 			}
 
 			case SE_Hatelist_To_Tail_Index: {
-				if (caster && zone->random.Roll(spells[spell_id].base_value[i]))
+				if (caster && zone->random.Roll(spells[spell_id].base_value[i])) {
 					caster->SetBottomRampageList();
+				}
 				break;
 			}
 
 			case SE_Hatelist_To_Top_Index: {
-				if (caster && zone->random.Roll(spells[spell_id].base_value[i]))
+				if (caster && zone->random.Roll(spells[spell_id].base_value[i])) {
 					caster->SetTopRampageList();
+				}
 				break;
 			}
 
 			case SE_Fearstun: {
 				//Normal 'stun' restrictions do not apply. base1=duration, base2=PC duration, max =lv restrict
-				if (!caster)
+				if (!caster) {
 					break;
+				}
 
 				if (IsNPC() && GetSpecialAbility(UNSTUNABLE)) {
 					caster->MessageString(Chat::SpellFailure, IMMUNE_STUN);
@@ -2964,22 +2970,23 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 					caster->MessageString(Chat::SpellFailure, IMMUNE_FEAR);
 					break;
 				}
+
 				int max_level = 0;
 				if (spells[spell_id].max_value[i] >= 1000) {
 					max_level = spells[spell_id].max_value[i] - 1000;
-				}
-				else {
+				} else {
 					max_level = caster->GetLevel() + spells[spell_id].max_value[i];
 				}
 
 				if (spells[spell_id].max_value[i] == 0 || GetLevel() <= max_level) {
-					if (IsClient() && spells[spell_id].limit_value[i])
+					if (IsClient() && spells[spell_id].limit_value[i]) {
 						Stun(spells[spell_id].limit_value[i]);
-					else
+					} else {
 						Stun(spells[spell_id].base_value[i]);
-				}
-				else
+					}
+				} else {
 					caster->MessageString(Chat::SpellFailure, FEAR_TOO_HIGH);
+				}
 				break;
 			}
 

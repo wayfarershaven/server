@@ -2013,8 +2013,7 @@ ZonePoint* Zone::GetClosestZonePoint(const glm::vec3& location, uint32 to, Clien
 	float closest_dist = FLT_MAX;
 	float max_distance2 = max_distance * max_distance;
 	iterator.Reset();
-	while(iterator.MoreElements())
-	{
+	while(iterator.MoreElements()) {
 		ZonePoint* zp = iterator.GetData();
 		uint32 mask_test = client->ClientVersionBit();
 		if (!(zp->client_version_mask & mask_test)) {
@@ -2022,14 +2021,13 @@ ZonePoint* Zone::GetClosestZonePoint(const glm::vec3& location, uint32 to, Clien
 			continue;
 		}
 
-		if (zp->target_zone_id == to)
-		{
+		if (zp->target_zone_id == to) {
             auto dist = Distance(glm::vec2(zp->x, zp->y), glm::vec2(location));
-			if ((zp->x == 999999 || zp->x == -999999) && (zp->y == 999999 || zp->y == -999999))
+			if ((zp->x == 999999 || zp->x == -999999) && (zp->y == 999999 || zp->y == -999999)) {
 				dist = 0;
+			}
 
-			if (dist < closest_dist)
-			{
+			if (dist < closest_dist) {
 				closest_zp = zp;
 				closest_dist = dist;
 			}
@@ -2039,29 +2037,30 @@ ZonePoint* Zone::GetClosestZonePoint(const glm::vec3& location, uint32 to, Clien
 
 	// if we have a water map and it says we're in a zoneline, lets assume it's just a really big zone line
 	// this shouldn't open up any exploits since those situations are detected later on
-	if ((zone->HasWaterMap() && !zone->watermap->InZoneLine(glm::vec3(client->GetPosition()))) || (!zone->HasWaterMap() && closest_dist > 400.0f && closest_dist < max_distance2))
-	{
-		if (client) {
-			if (!client->cheat_manager.GetExemptStatus(Port)) {
-				client->cheat_manager.CheatDetected(MQZoneUnknownDest, location);
-			}
+	if ((client && zone->HasWaterMap() && !zone->watermap->InZoneLine(glm::vec3(client->GetPosition()))) || (!zone->HasWaterMap() && closest_dist > 400.0f && closest_dist < max_distance2)) {
+		if (!client->cheat_manager.GetExemptStatus(Port)) {
+			client->cheat_manager.CheatDetected(MQZoneUnknownDest, location);
 		}
+
 		LogInfo("WARNING: Closest zone point for zone id [{}] is [{}], you might need to update your zone_points table if you dont arrive at the right spot", to, closest_dist);
 		LogInfo("<Real Zone Points>. [{}]", to_string(location).c_str());
 	}
 
-	if(closest_dist > max_distance2)
+	if(closest_dist > max_distance2) {
 		closest_zp = nullptr;
+	}
 
-	if(!closest_zp)
+	if(!closest_zp) {
 		closest_zp = GetClosestZonePointWithoutZone(location.x, location.y, location.z, client);
+	}
 
 	return closest_zp;
 }
 
 ZonePoint* Zone::GetClosestZonePoint(const glm::vec3& location, const char* to_name, Client* client, float max_distance) {
-	if(to_name == nullptr)
+	if(to_name == nullptr) {
 		return GetClosestZonePointWithoutZone(location.x, location.y, location.z, client, max_distance);
+	}
 	return GetClosestZonePoint(location, ZoneID(to_name), client, max_distance);
 }
 

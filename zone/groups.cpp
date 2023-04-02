@@ -298,28 +298,22 @@ bool Group::AddMember(Mob* newmember, const char *NewMemberName, uint32 Characte
 			}
 
 			//put existing group member(s) into the new member's list
-			if(InZone && newmember->IsClient())
-			{
-				if(IsLeader(members[i]))
-				{
+			if(InZone && newmember && newmember->IsClient()) {
+				if(IsLeader(members[i])) {
 					strcpy(newmember->CastToClient()->GetPP().groupMembers[0], members[i]->GetCleanName());
-				}
-				else
-				{
+				} else {
 					strcpy(newmember->CastToClient()->GetPP().groupMembers[x], members[i]->GetCleanName());
-					x++;
+					++x;
 				}
 			}
 		}
 	}
 
-	if(InZone)
-	{
+	if(InZone && newmember) {
 		//put new member in his own list.
 		newmember->SetGrouped(true);
 
-		if(newmember->IsClient())
-		{
+		if(newmember->IsClient()) {
 			strcpy(newmember->CastToClient()->GetPP().groupMembers[x], NewMemberName);
 			newmember->CastToClient()->Save();
 			database.SetGroupID(NewMemberName, GetID(), newmember->CastToClient()->CharacterID(), false);
@@ -330,11 +324,9 @@ bool Group::AddMember(Mob* newmember, const char *NewMemberName, uint32 Characte
 			NotifyPuller(newmember->CastToClient(), 1);
 		}
 
-		if(newmember->IsMerc())
-		{
+		if(newmember->IsMerc()) {
 			Client* owner = newmember->CastToMerc()->GetMercOwner();
-			if(owner)
-			{
+			if(owner) {
 				database.SetGroupID(NewMemberName, GetID(), owner->CharacterID(), true);
 			}
 		}
@@ -344,7 +336,6 @@ bool Group::AddMember(Mob* newmember, const char *NewMemberName, uint32 Characte
 			group->SendHPManaEndPacketsTo(newmember);
 			group->SendHPPacketsFrom(newmember);
 		}
-
 	} else {
 		database.SetGroupID(NewMemberName, GetID(), CharacterID, ismerc);
 	}

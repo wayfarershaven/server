@@ -520,9 +520,6 @@ bool PerlembParser::SpellHasQuestSub(uint32 spell_id, QuestEventID evt)
 
 bool PerlembParser::ItemHasQuestSub(EQ::ItemInstance *itm, QuestEventID evt)
 {
-	std::stringstream package_name;
-	package_name << "qst_item_" << itm->GetID();
-
 	if (!perl) {
 		return false;
 	}
@@ -535,6 +532,9 @@ bool PerlembParser::ItemHasQuestSub(EQ::ItemInstance *itm, QuestEventID evt)
 		return false;
 	}
 
+	std::stringstream package_name;
+	package_name << "qst_item_" << itm->GetID();
+	
 	const char *subname = QuestEventSubroutines[evt];
 
 	auto iter = item_quest_status_.find(itm->GetID());
