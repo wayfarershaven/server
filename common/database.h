@@ -242,7 +242,7 @@ public:
 	/* Database Variables */
 
 	bool	GetVariable(std::string varname, std::string &varvalue);
-	bool	SetVariable(const std::string varname, const std::string &varvalue);
+	bool	SetVariable(const std::string& varname, const std::string &varvalue);
 	bool	LoadVariables();
 
 	/* General Queries */
