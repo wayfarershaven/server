@@ -655,11 +655,13 @@ bool Mob::IsBeneficialAllowed(Mob *target)
 	Client *c1 = nullptr, *c2 = nullptr;
 	int reverse;
 
-	if(!target)
+	if(!target) {
 		return false;
+	}
 
-	if (target->GetAllowBeneficial())
+	if (target->GetAllowBeneficial()) {
 		return true;
+	}
 
 	// see IsAttackAllowed for notes
 
@@ -669,106 +671,71 @@ bool Mob::IsBeneficialAllowed(Mob *target)
 	mob2 = target->GetOwnerID() ? target->GetOwner() : target;
 
 	// if it's self target or our own pet it's ok
-	if(mob1 == mob2)
+	if(mob1 == mob2) {
 		return true;
+	}
 
 	reverse = 0;
-	do
-	{
-		if(_CLIENT(mob1))
-		{
-			if(_CLIENT(mob2))					// client to client
-			{
+	do {
+		if(_CLIENT(mob1)) {
+			if(_CLIENT(mob2)) { // client to client
 				c1 = mob1->CastToClient();
 				c2 = mob2->CastToClient();
 
-				if(c1->GetPVP() == c2->GetPVP())
+				if(c1->GetPVP() == c2->GetPVP()) {
 					return true;
-				else if	// if they're dueling they can heal each other too
+				} else if	// if they're dueling they can heal each other too
 				(
 					c1->IsDueling() &&
 					c2->IsDueling() &&
 					c1->GetDuelTarget() == c2->GetID() &&
 					c2->GetDuelTarget() == c1->GetID()
-				)
+				) {
 					return true;
-				else
+				} else {
 					return false;
-			}
-			else if(_NPC(mob2))				// client to npc
-			{
+				}
+			} else if(_NPC(mob2)) { // client to npc
 				/* fall through and swap positions */
-			}
-			else if(_BECOMENPC(mob2))	// client to becomenpc
-			{
+			} else if(_BECOMENPC(mob2)) { // client to becomenpc
 				return false;
-			}
-			else if(_CLIENTCORPSE(mob2))	// client to client corpse
-			{
+			} else if(_CLIENTCORPSE(mob2)) { // client to client corpse
+				return true;
+			} else if(_NPCCORPSE(mob2)) { // client to npc corpse
+				return false;
+			} else if (mob2 && mob2->IsBot()) {
 				return true;
 			}
-			else if(_NPCCORPSE(mob2))	// client to npc corpse
-			{
+		} else if(_NPC(mob1)) {
+			if(_CLIENT(mob2)) {
 				return false;
 			}
-			else if(mob2->IsBot())
-			{
+
+			if(_NPC(mob2)) { // npc to npc
 				return true;
-			}
-		}
-		else if(_NPC(mob1))
-		{
-			if(_CLIENT(mob2))
-			{
-				return false;
-			}
-			if(_NPC(mob2))						// npc to npc
-			{
+			} else if(_BECOMENPC(mob2)) { // npc to becomenpc
 				return true;
+			} else if(_CLIENTCORPSE(mob2)) { // npc to client corpse
+				return false;
+			} else if(_NPCCORPSE(mob2)) { // npc to npc corpse
+				return false;
 			}
-			else if(_BECOMENPC(mob2))	// npc to becomenpc
-			{
+		} else if(_BECOMENPC(mob1)) {
+			if(_BECOMENPC(mob2)) { // becomenpc to becomenpc
 				return true;
-			}
-			else if(_CLIENTCORPSE(mob2))	// npc to client corpse
-			{
+			} else if(_CLIENTCORPSE(mob2)) { // becomenpc to client corpse
+				return false;
+			} else if(_NPCCORPSE(mob2)) { // becomenpc to npc corpse
 				return false;
 			}
-			else if(_NPCCORPSE(mob2))	// npc to npc corpse
-			{
+		} else if(_CLIENTCORPSE(mob1)) {
+			if(_CLIENTCORPSE(mob2)) { // client corpse to client corpse
+				return false;
+			} else if(_NPCCORPSE(mob2)) { // client corpse to npc corpse
 				return false;
 			}
-		}
-		else if(_BECOMENPC(mob1))
-		{
-			if(_BECOMENPC(mob2))			// becomenpc to becomenpc
-			{
-				return true;
-			}
-			else if(_CLIENTCORPSE(mob2))	// becomenpc to client corpse
-			{
-				return false;
-			}
-			else if(_NPCCORPSE(mob2))	// becomenpc to npc corpse
-			{
-				return false;
-			}
-		}
-		else if(_CLIENTCORPSE(mob1))
-		{
-			if(_CLIENTCORPSE(mob2))		// client corpse to client corpse
-			{
-				return false;
-			}
-			else if(_NPCCORPSE(mob2))	// client corpse to npc corpse
-			{
-				return false;
-			}
-		}
-		else if(_NPCCORPSE(mob1))
-		{
-			if(_NPCCORPSE(mob2))			// npc corpse to npc corpse
-			{
+		} else if(_NPCCORPSE(mob1)) {
+			if(_NPCCORPSE(mob2)) { // npc corpse to npc corpse
 				return false;
 			}
 		}

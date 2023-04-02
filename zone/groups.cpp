@@ -533,8 +533,6 @@ bool Group::UpdatePlayer(Mob* update) {
 
 
 void Group::MemberZoned(Mob* removemob) {
-	uint32 i;
-
 	if (!removemob) {
 		return;
 	}
@@ -543,24 +541,22 @@ void Group::MemberZoned(Mob* removemob) {
 		SetLeader(nullptr);
 	}
 
-	for (i = 0; i < MAX_GROUP_MEMBERS; i++) {
-		if (members[i] == removemob) {
-			members[i] = nullptr;
-			//should NOT clear the name, it is used for world communication.
-			break;
+	for (auto & m : members) {
+		if (m && (m == removemob || (m->IsBot() && m->CastToBot()->GetBotOwner() == removemob))) {
+			m = nullptr;
 		}
 	}
 
 	if(removemob->IsClient() && HasRole(removemob, RoleAssist)) {
-		SetGroupAssistTarget(0);
+		SetGroupAssistTarget(nullptr);
 	}
 
 	if (removemob->IsClient() && HasRole(removemob, RoleTank)) {
-		SetGroupTankTarget(0);
+		SetGroupTankTarget(nullptr);
 	}
 
 	if (removemob->IsClient() && HasRole(removemob, RolePuller)) {
-		SetGroupPullerTarget(0);
+		SetGroupPullerTarget(nullptr);
 	}
 
 	if (removemob->IsClient() && removemob == mentoree) {

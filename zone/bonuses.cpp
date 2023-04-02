@@ -1612,31 +1612,34 @@ void Mob::ApplyAABonuses(const AA::Rank &rank, StatBonuses *newbon)
 		case SE_Damage_Taken_Position_Mod:
 		{
 			//Mitigate if damage taken from behind base2 = 0, from front base2 = 1
-			if (limit_value < 0 || limit_value > 2)
+			if (limit_value < 0 || limit_value >= 2) {
 				break;
-			else if (base_value < 0 && newbon->Damage_Taken_Position_Mod[limit_value] > base_value)
+			} else if (base_value < 0 && newbon->Damage_Taken_Position_Mod[limit_value] > base_value) {
 				newbon->Damage_Taken_Position_Mod[limit_value] = base_value;
-			else if (base_value > 0 && newbon->Damage_Taken_Position_Mod[limit_value] < base_value)
+			} else if (base_value > 0 && newbon->Damage_Taken_Position_Mod[limit_value] < base_value) {
 				newbon->Damage_Taken_Position_Mod[limit_value] = base_value;
+			}
 			break;
 		}
 
 		case SE_Melee_Damage_Position_Mod:
 		{
-			if (limit_value < 0 || limit_value > 2)
+			if (limit_value < 0 || limit_value >= 2) {
 				break;
-			else if (base_value < 0 && newbon->Melee_Damage_Position_Mod[limit_value] > base_value)
+			} else if (base_value < 0 && newbon->Melee_Damage_Position_Mod[limit_value] > base_value) {
 				newbon->Melee_Damage_Position_Mod[limit_value] = base_value;
-			else if (base_value > 0 && newbon->Melee_Damage_Position_Mod[limit_value] < base_value)
+			} else if (base_value > 0 && newbon->Melee_Damage_Position_Mod[limit_value] < base_value) {
 				newbon->Melee_Damage_Position_Mod[limit_value] = base_value;
+			}
 			break;
 		}
 
 		case SE_Damage_Taken_Position_Amt:
 		{
 			//Mitigate if damage taken from behind base2 = 0, from front base2 = 1
-			if (limit_value < 0 || limit_value > 2)
+			if (limit_value < 0 || limit_value >= 2) {
 				break;
+			}
 
 			newbon->Damage_Taken_Position_Amt[limit_value] += base_value;
 			break;
@@ -1645,8 +1648,9 @@ void Mob::ApplyAABonuses(const AA::Rank &rank, StatBonuses *newbon)
 		case SE_Melee_Damage_Position_Amt:
 		{
 			//Mitigate if damage taken from behind base2 = 0, from front base2 = 1
-			if (limit_value < 0 || limit_value > 2)
+			if (limit_value < 0 || limit_value >= 2) {
 				break;
+			}
 
 			newbon->Melee_Damage_Position_Amt[limit_value] += base_value;
 			break;
@@ -3714,8 +3718,10 @@ void Mob::ApplySpellsBonuses(uint16 spell_id, uint8 casterlevel, StatBonuses *ne
 			case SE_Damage_Taken_Position_Mod:
 			{
 				//Mitigate if damage taken from behind base2 = 0, from front base2 = 1
-				if (limit_value < 0 || limit_value > 2)
+				if (limit_value < 0 || limit_value >= 2) {
 					break;
+				}
+
 				if (AdditiveWornBonus)
 					new_bonus->Damage_Taken_Position_Mod[limit_value] += effect_value;
 				else if (effect_value < 0 && new_bonus->Damage_Taken_Position_Mod[limit_value] > effect_value)
@@ -3728,8 +3734,10 @@ void Mob::ApplySpellsBonuses(uint16 spell_id, uint8 casterlevel, StatBonuses *ne
 			case SE_Melee_Damage_Position_Mod:
 			{
 				//Increase damage by percent from behind base2 = 0, from front base2 = 1
-				if (limit_value < 0 || limit_value > 2)
+				if (limit_value < 0 || limit_value >= 2) {
 					break;
+				}
+
 				if (AdditiveWornBonus)
 					new_bonus->Melee_Damage_Position_Mod[limit_value] += effect_value;
 				else if (effect_value < 0 && new_bonus->Melee_Damage_Position_Mod[limit_value] > effect_value)
@@ -3742,8 +3750,9 @@ void Mob::ApplySpellsBonuses(uint16 spell_id, uint8 casterlevel, StatBonuses *ne
 			case SE_Damage_Taken_Position_Amt:
 			{
 				//Mitigate if damage taken from behind base2 = 0, from front base2 = 1
-				if (limit_value < 0 || limit_value > 2)
+				if (limit_value < 0 || limit_value >= 2) {
 					break;
+				}
 
 				new_bonus->Damage_Taken_Position_Amt[limit_value] += effect_value;
 				break;
@@ -3752,8 +3761,9 @@ void Mob::ApplySpellsBonuses(uint16 spell_id, uint8 casterlevel, StatBonuses *ne
 			case SE_Melee_Damage_Position_Amt:
 			{
 				//Mitigate if damage taken from behind base2 = 0, from front base2 = 1
-				if (limit_value < 0 || limit_value > 2)
+				if (limit_value < 0 || limit_value >= 2) {
 					break;
+				}
 
 				new_bonus->Melee_Damage_Position_Amt[limit_value] += effect_value;
 				break;

@@ -327,8 +327,7 @@ Corpse::Corpse(Client* client, int32 in_rezexp) : Mob (
 	SetPlayerKillItemID(0);
 
 	/* Check Rule to see if we can leave corpses */
-	if(!RuleB(Character, LeaveNakedCorpses) ||
-		RuleB(Character, LeaveCorpses) &&
+	if((!RuleB(Character, LeaveNakedCorpses) || RuleB(Character, LeaveCorpses)) &&
 		GetLevel() >= RuleI(Character, DeathItemLossLevel)) {
 		// cash
 		// Let's not move the cash when 'RespawnFromHover = true' && 'client->GetClientVersion() < EQClientSoF' since the client doesn't.
