@@ -219,7 +219,7 @@ bool NpcScaleManager::LoadScaleData()
 			scale_data.special_abilities = s.special_abilities;
 		}
 
-		npc_global_base_scaling_data.insert(
+		npc_global_base_scaling_data.emplace(
 			std::make_pair(
 				std::make_pair(scale_data.type, scale_data.level),
 				scale_data

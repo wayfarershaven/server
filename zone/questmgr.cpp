@@ -477,7 +477,7 @@ void QuestManager::settimer(const char* timer_name, int seconds, Mob* mob) {
 		++cur;
 	}
 
-	QTimerList.push_back(QuestTimer(seconds * 1000, owner, timer_name));
+	QTimerList.emplace_back(QuestTimer(seconds * 1000, owner, timer_name));
 }
 
 void QuestManager::settimerMS(const char *timer_name, int milliseconds) {
@@ -501,7 +501,7 @@ void QuestManager::settimerMS(const char *timer_name, int milliseconds) {
 		++cur;
 	}
 
-	QTimerList.push_back(QuestTimer(milliseconds, owner, timer_name));
+	QTimerList.emplace_back(QuestTimer(milliseconds, owner, timer_name));
 }
 
 void QuestManager::settimerMS(const char* timer_name, int milliseconds, EQ::ItemInstance *inst) {
@@ -524,7 +524,7 @@ void QuestManager::settimerMS(const char* timer_name, int milliseconds, Mob *mob
 		++cur;
 	}
 
-	QTimerList.push_back(QuestTimer(milliseconds, mob, timer_name));
+	QTimerList.emplace_back(QuestTimer(milliseconds, mob, timer_name));
 }
 
 void QuestManager::stoptimer(const char* timer_name) {
@@ -679,7 +679,7 @@ void QuestManager::resumetimer(const char* timer_name, Mob* mob) {
 		++cur;
 	}
 
-	QTimerList.push_back(QuestTimer(milliseconds, m, timer_name));
+	QTimerList.emplace_back(QuestTimer(milliseconds, m, timer_name));
 	LogQuestDebug("Creating a new timer and resuming [{}] for [{}] with [{}] ms remaining", timer_name, owner->GetName(), milliseconds);
 
 }
@@ -1462,10 +1462,10 @@ void QuestManager::itemlink(int item_id) {
 
 void QuestManager::signalwith(int npc_id, int signal_id, int wait_ms) {
 	if(wait_ms > 0) {
-		STimerList.push_back(SignalTimer(wait_ms, npc_id, signal_id));
+		STimerList.emplace_back(SignalTimer(wait_ms, npc_id, signal_id));
 		return;
 	} else {
-		STimerList.push_back(SignalTimer(0, npc_id, signal_id));
+		STimerList.emplace_back(SignalTimer(0, npc_id, signal_id));
 		return;
 	}
 }
