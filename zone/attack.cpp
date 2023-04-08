@@ -3691,33 +3691,31 @@ bool Mob::HasRangedProcs() const
 
 bool Client::CheckDoubleAttack()
 {
-	int chance = 0;
-	int skill = GetSkill(EQ::skills::SkillDoubleAttack);
 	//Check for bonuses that give you a double attack chance regardless of skill (ie Bestial Frenzy/Harmonious Attack AA)
-	int bonusGiveDA = aabonuses.GiveDoubleAttack + spellbonuses.GiveDoubleAttack + itembonuses.GiveDoubleAttack;
-	if (skill > 0) {
-		chance = skill + GetLevel();
-	} else if (!bonusGiveDA) {
+	uint32 bonusGiveDA = aabonuses.GiveDoubleAttack + spellbonuses.GiveDoubleAttack + itembonuses.GiveDoubleAttack;
+
+	if(!HasSkill(EQ::skills::SkillDoubleAttack) && !bonusGiveDA) {
 		return false;
 	}
 
-	if (bonusGiveDA) {
-		chance += bonusGiveDA / 100.0f * 500; // convert to skill value
-	}
+	float chance = 0.0f;
+	uint16 skill = GetSkill(EQ::skills::SkillDoubleAttack);
 
-	int per_inc = 0;
+	int32 bonusDA = 0;
 	if ((GetClass() == PALADIN || GetClass() == SHADOWKNIGHT) && (!HasTwoHanderEquipped())) {
-		per_inc = 0;
 		LogCombatDetail("Knight class without a 2 hand weapon equipped = No DA Bonus!");
 	} else {
-		per_inc = aabonuses.DoubleAttackChance + spellbonuses.DoubleAttackChance + itembonuses.DoubleAttackChance;
+		bonusDA = aabonuses.DoubleAttackChance + spellbonuses.DoubleAttackChance + itembonuses.DoubleAttackChance;
 	}
 
-	if (per_inc > 0) {
-		chance += chance * per_inc / 100;
+	//Use skill calculations otherwise, if you only have AA applied GiveDoubleAttack chance then use that value as the base.
+	if (skill) {
+		chance = (float(skill + GetLevel()) * (float(100.0f + bonusDA+bonusGiveDA) / 100.0f)) / 500.0f;
+	} else {
+		chance = (float(bonusGiveDA) * (float(100.0f + bonusDA) / 100.0f)) / 100.0f;
 	}
 
-	return zone->random.Int(1, 500) <= chance;
+	return zone->random.Roll(chance);
 }
 
 // Admittedly these parses were short, but this check worked for 3 toons across multiple levels
