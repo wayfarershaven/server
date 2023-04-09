@@ -3715,6 +3715,8 @@ bool Client::CheckDoubleAttack()
 		chance = (float(bonusGiveDA) * (float(100.0f + bonusDA) / 100.0f)) / 100.0f;
 	}
 
+	LogCombatDetail("DA Skill = [{}] - GiveDoubleAttack = [{}] - DoubleAttackChance = [{}] - Final Double Attack Chance = [{}]", bonusGiveDA, skill, bonusDA, chance);
+
 	return zone->random.Roll(chance);
 }
 
