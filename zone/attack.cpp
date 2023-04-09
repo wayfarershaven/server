@@ -3712,7 +3712,7 @@ bool Client::CheckDoubleAttack()
 	if (skill) {
 		chance = (float(skill + GetLevel()) * (float(100.0f + bonusDA+bonusGiveDA) / 100.0f)) / 500.0f;
 	} else {
-		chance = (float(bonusGiveDA) * (float(100.0f + bonusDA) / 100.0f)) / 100.0f;
+		chance = (float(bonusGiveDA + bonusDA) / 100.0f);
 	}
 
 	LogCombatDetail("DA Skill = [{}] - GiveDoubleAttack = [{}] - DoubleAttackChance = [{}] - Final Double Attack Chance = [{}]",skill, bonusGiveDA, bonusDA, chance);
