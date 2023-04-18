@@ -7963,9 +7963,6 @@ void Client::Consume(const EQ::ItemData *item, uint8 type, int16 slot, bool auto
 	}
 
 	if (type == EQ::item::ItemTypeFood) {
-		if (increase < 0) {
-			return;
-		}
 		m_pp.hunger_level += increase;
 		LogFood("Consuming food, points added to hunger_level: [{}] - current_hunger: [{}]", increase, m_pp.hunger_level);
 		DeleteItemInInventory(slot, 1);
@@ -7974,9 +7971,6 @@ void Client::Consume(const EQ::ItemData *item, uint8 type, int16 slot, bool auto
 		}
 		LogFood("Eating from slot: [{}]", (int)slot);
 	} else {
-		if (increase < 0) {
-			return;
-		}
 		m_pp.thirst_level += increase;
 		DeleteItemInInventory(slot, 1);
 		LogFood("Consuming drink, points added to thirst_level: [{}] current_thirst: [{}]", increase, m_pp.thirst_level);
