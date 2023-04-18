@@ -511,6 +511,7 @@ public:
 	void DoGravityEffect();
 	void DamageShield(Mob* other, bool spell_ds = false);
 	int32 RuneAbsorb(int64 damage, uint16 type);
+	std::vector<uint16> GetBuffSpellIDs();
 	bool FindBuff(uint16 spell_id);
 	uint16 FindBuffBySlot(int slot);
 	uint32 GetDetBuffCount();
