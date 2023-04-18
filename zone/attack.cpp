@@ -3019,8 +3019,6 @@ void Mob::AddToHateList(Mob* other, int64 hate /*= 0*/, int64 damage /*= 0*/, bo
 			} else if (!hate_list.IsEntOnHateList(owner_)) {
 				hate_list.AddEntToHateList(owner_, 0, 0, false, true);
 			}
-
-			break;
 		}
 	}
 
