@@ -390,8 +390,6 @@ private:
 	std::list<QuestTimer>	QTimerList;
 	std::list<SignalTimer>	STimerList;
 	std::list<PausedTimer>	PTimerList;
-	size_t item_timers;
-
 };
 
 extern QuestManager quest_manager;
