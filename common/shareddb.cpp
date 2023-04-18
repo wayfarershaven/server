@@ -515,7 +515,8 @@ bool SharedDatabase::GetSharedBank(uint32 id, EQ::InventoryProfile *inv, bool is
 	}
 
 	auto results = QueryDatabase(query);
-	if (!results.Success() || !results.RowCount()) {
+	// If we have no results we still need to return true
+	if (!results.Success()) {
 		return false;
 	}
 
@@ -533,7 +534,7 @@ bool SharedDatabase::GetSharedBank(uint32 id, EQ::InventoryProfile *inv, bool is
 		aug[5] = Strings::ToUnsignedInt(row[8]);
 
 		const EQ::ItemData *item = GetItem(item_id);
-		
+
 		if (!item) {
 			LogError(
 				"Warning: [{}] [{}] has an invalid item_id [{}] in inventory slot [{}]",
