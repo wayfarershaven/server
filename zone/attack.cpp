@@ -3002,16 +3002,17 @@ void Mob::AddToHateList(Mob* other, int64 hate /*= 0*/, int64 damage /*= 0*/, bo
 
 	// if other is a bot, add the bots client to the hate list
 	if (RuleB(Bots, Enabled)) {
-		while (other->IsBot()) {
+		 if (other->IsBot()) {
 			auto other_ = other->CastToBot();
+
 			if (!other_ || !other_->GetBotOwner()) {
-				break;
+				return;
 			}
 
 			auto owner_ = other_->GetBotOwner()->CastToClient();
 			if (!owner_ || owner_->IsDead() ||
 				!owner_->InZone()) {
-				break;
+				return;
 			}
 
 			if (owner_->GetFeigned()) {
