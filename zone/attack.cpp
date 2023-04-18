@@ -1505,7 +1505,7 @@ bool Mob::Attack(Mob* other, int Hand, bool bRiposte, bool IsStrikethrough, bool
 		SetTarget(other);
 	}
 
-	LogCombatDetail("Attacking [{}] with hand [{}] [{}]", other ? other->GetName() : "nullptr", Hand, bRiposte ? "this is a riposte" : "");
+	LogCombatDetail("Attacking [{}] with hand [{}] [{}]", other->GetName(), Hand, bRiposte ? "this is a riposte" : "");
 
 	//SetAttackTimer();
 	if (
@@ -2120,12 +2120,12 @@ bool NPC::Attack(Mob* other, int Hand, bool bRiposte, bool IsStrikethrough, bool
 
 	//Check that we can attack before we calc heading and face our target
 	if (!IsAttackAllowed(other)) {
-		if (GetOwnerID())
+		if (GetOwnerID()) {
 			SayString(NOT_LEGAL_TARGET);
-		if (other) {
-			RemoveFromHateList(other);
-			LogCombat("I am not allowed to attack [{}]", other->GetName());
 		}
+
+		RemoveFromHateList(other);
+		LogCombat("I am not allowed to attack [{}]", other->GetName());
 		return false;
 	}
 
@@ -2139,17 +2139,19 @@ bool NPC::Attack(Mob* other, int Hand, bool bRiposte, bool IsStrikethrough, bool
 		my_hit.skill = static_cast<EQ::skills::SkillType>(GetPrimSkill());
 		OffHandAtk(false);
 	}
+
 	if (Hand == EQ::invslot::slotSecondary) {
 		my_hit.skill = static_cast<EQ::skills::SkillType>(GetSecSkill());
 		OffHandAtk(true);
 	}
 
 	//figure out what weapon they are using, if any
-	const EQ::ItemData* weapon = nullptr;
-	if (Hand == EQ::invslot::slotPrimary && equipment[EQ::invslot::slotPrimary] > 0)
+	const EQ::ItemData *weapon = nullptr;
+	if (Hand == EQ::invslot::slotPrimary && equipment[EQ::invslot::slotPrimary] > 0) {
 		weapon = database.GetItem(equipment[EQ::invslot::slotPrimary]);
-	else if (equipment[EQ::invslot::slotSecondary])
+	} else if (equipment[EQ::invslot::slotSecondary]) {
 		weapon = database.GetItem(equipment[EQ::invslot::slotSecondary]);
+	}
 
 	//We dont factor much from the weapon into the attack.
 	//Just the skill type so it doesn't look silly using punching animations and stuff while wielding weapons
@@ -2907,25 +2909,22 @@ void Mob::AddToHateList(Mob* other, int64 hate /*= 0*/, int64 damage /*= 0*/, bo
 	Mob* targetmob = GetTarget();
 	bool on_hatelist = CheckAggro(other);
 
-	if (other) {
-		bool on_hatelist = CheckAggro(other);
-		AddRampage(other);
-		if (on_hatelist) { // odd reason, if you're not on the hate list, subtlety etc don't apply!
-			// Spell Casting Subtlety etc
-			int64 hatemod = 100 + other->spellbonuses.hatemod + other->itembonuses.hatemod + other->aabonuses.hatemod;
+	AddRampage(other);
+	if (on_hatelist) { // odd reason, if you're not on the hate list, subtlety etc don't apply!
+		// Spell Casting Subtlety etc
+		int64 hatemod = 100 + other->spellbonuses.hatemod + other->itembonuses.hatemod + other->aabonuses.hatemod;
 
-			if (hatemod < 1) {
-				hatemod = 1;
-			}
-			hate = ((hate * (hatemod)) / 100);
+		if (hatemod < 1) {
+			hatemod = 1;
+		}
+		hate = ((hate * (hatemod)) / 100);
+	} else {
+		if (this->IsCharmed()){
+			hate += RuleI(Aggro, InitialPetAggroBonus);
+			Log(Logs::General, Logs::Combat, "InitialPetAggroBonus: %d", RuleI(Aggro, InitialPetAggroBonus));
 		} else {
-			if (this->IsCharmed()){
-				hate += RuleI(Aggro, InitialPetAggroBonus);
-				Log(Logs::General, Logs::Combat, "InitialPetAggroBonus: %d", RuleI(Aggro, InitialPetAggroBonus));
-			} else {
-				hate += RuleI(Aggro, InitialAggroBonus);
-				Log(Logs::General, Logs::Combat, "InitialAggroBonus: %d", RuleI(Aggro, InitialAggroBonus));
-			}
+			hate += RuleI(Aggro, InitialAggroBonus);
+			Log(Logs::General, Logs::Combat, "InitialAggroBonus: %d", RuleI(Aggro, InitialAggroBonus));
 		}
 	}
 
