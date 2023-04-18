@@ -430,17 +430,11 @@ void Database::AssignRaidToInstance(uint32 raid_id, uint32 instance_id)
 void Database::DeleteInstance(uint16 instance_id)
 {
 	MoveCharOutInstance(instance_id);
-	std::string query;
-
 	InstanceListPlayerRepository::DeleteWhere(*this, fmt::format("id = {}", instance_id));
-
 	RespawnTimesRepository::DeleteWhere(*this, fmt::format("instance_id = {}", instance_id));
-
 	SpawnConditionValuesRepository::DeleteWhere(*this, fmt::format("instance_id = {}", instance_id));
-
 	DynamicZoneMembersRepository::DeleteByInstance(*this, instance_id);
 	DynamicZonesRepository::DeleteWhere(*this, fmt::format("instance_id = {}", instance_id));
-
 	CharacterCorpsesRepository::BuryInstance(*this, instance_id);
 }
 
