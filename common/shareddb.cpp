@@ -425,17 +425,13 @@ bool SharedDatabase::DeleteSharedBankSlot(uint32 char_id, int16 slot_id) {
 
 int32 SharedDatabase::GetSharedPlatinum(uint32 CharacterID)
 {
-	std::string query = StringFormat("SELECT platinum_shared FROM character_currency WHERE id = '%i'", CharacterID);
-    auto results = QueryDatabase(query);
-    if (!results.Success()) {
-		return false;
-    }
+	const auto query   = fmt::format("SELECT platinum_shared FROM character_currency WHERE id = {}", CharacterID);
+	auto       results = QueryDatabase(query);
+	if (!results.Success() || !results.RowCount()) {
+		return 0;
+	}
 
-    if (results.RowCount() != 1)
-        return 0;
-
-	auto& row = results.begin();
-
+	auto row = results.begin();
 	return Strings::ToInt(row[0]);
 }
 
