@@ -263,12 +263,13 @@ void ClientList::SendCLEList(const int16& admin, const char* to, WorldTCPConnect
 	int namestrlen = iName == 0 ? 0 : strlen(iName);
 	bool addnewline = false;
 	char newline[3];
-	if (connection->IsConsole())
+	if (connection->IsConsole()) {
 		strcpy(newline, "\r\n");
-	else
+	} else {
 		strcpy(newline, "^");
-	std::vector<char> out;
+	}
 
+	auto out = fmt::memory_buffer();
 	iterator.Reset();
 	while(iterator.MoreElements()) {
 		ClientListEntry* cle = iterator.GetData();
@@ -1042,7 +1043,7 @@ void ClientList::ConsoleSendWhoAll(const char* to, int16 admin, Who_All_Struct* 
 	if (whom)
 		whomlen = strlen(whom->whom);
 
-	std::vector<char> out;
+	auto out = fmt::memory_buffer();
 	fmt::format_to(std::back_inserter(out), "Players on server:");
 	if (connection->IsConsole()) {
 		fmt::format_to(std::back_inserter(out), "\r\n");
