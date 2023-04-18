@@ -1983,7 +1983,7 @@ void Mob::ApplySpellsBonuses(uint16 spell_id, uint8 casterlevel, StatBonuses *ne
 				}
 				else if ((effect_value - 100) < 0) { // Slow
 					int real_slow_value = (100 - effect_value) * -1;
-					real_slow_value -= ((real_slow_value * GetSlowMitigation()/100));
+					real_slow_value -= (real_slow_value * GetSlowMitigation()/100);
 					if (real_slow_value < new_bonus->haste)
 						new_bonus->haste = real_slow_value;
 				}
@@ -2000,7 +2000,7 @@ void Mob::ApplySpellsBonuses(uint16 spell_id, uint8 casterlevel, StatBonuses *ne
 				}
 				else if ((effect_value - 100) < 0) { // Slow
 					int real_slow_value = (100 - effect_value) * -1;
-					real_slow_value -= ((real_slow_value * GetSlowMitigation()/100));
+					real_slow_value -= (real_slow_value * GetSlowMitigation()/100);
 					if (real_slow_value < new_bonus->hastetype2)
 						new_bonus->hastetype2 = real_slow_value;
 				}
@@ -2010,9 +2010,10 @@ void Mob::ApplySpellsBonuses(uint16 spell_id, uint8 casterlevel, StatBonuses *ne
 			case SE_AttackSpeed3:
 			{
 				if (effect_value < 0){ //Slow
-					effect_value -= ((effect_value * GetSlowMitigation()/100));
-					if (effect_value < new_bonus->hastetype3)
+					effect_value -= (effect_value * GetSlowMitigation()/100);
+					if (effect_value < new_bonus->hastetype3) {
 						new_bonus->hastetype3 = effect_value;
+					}
 				}
 
 				else if (effect_value > 0) { // Haste V3 - Stacks and Overcaps
@@ -2034,9 +2035,10 @@ void Mob::ApplySpellsBonuses(uint16 spell_id, uint8 casterlevel, StatBonuses *ne
 					effect_value = effect_value * -1;
 
 				if (effect_value > 0 && effect_value > new_bonus->inhibitmelee) {
-					effect_value -= ((effect_value * GetSlowMitigation()/100));
-					if (effect_value > new_bonus->inhibitmelee)
+					effect_value -= (effect_value * GetSlowMitigation()/100);
+					if (effect_value > new_bonus->inhibitmelee) {
 						new_bonus->inhibitmelee = effect_value;
+					}
 				}
 
 				break;
@@ -5821,7 +5823,7 @@ void Mob::NegateSpellEffectBonuses(uint16 spell_id)
 						aabonuses.PC_Pet_AE_Rampage[SBIndex::PET_RAMPAGE_CHANCE]  = effect_value;
 						aabonuses.PC_Pet_AE_Rampage[SBIndex::PET_RAMPAGE_DMG_MOD] = effect_value;
 					}
-					
+
 					break;
 
 
