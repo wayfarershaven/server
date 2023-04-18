@@ -1029,12 +1029,16 @@ void Mob::ApplyAABonuses(const AA::Rank &rank, StatBonuses *newbon)
 
 		case SE_HitChance: {
 			// Bad data or unsupported new skill
-			if (limit_value > EQ::skills::HIGHEST_SKILL)
+			if (limit_value > EQ::skills::HIGHEST_SKILL) {
 				break;
-			if (limit_value == ALL_SKILLS)
+			}
+
+			if (limit_value == ALL_SKILLS) {
 				newbon->HitChanceEffect[EQ::skills::HIGHEST_SKILL + 1] += base_value;
-			else
+			} else {
 				newbon->HitChanceEffect[limit_value] += base_value;
+			}
+			break;
 		}
 
 		case SE_ProcOnKillShot:
@@ -1215,38 +1219,48 @@ void Mob::ApplyAABonuses(const AA::Rank &rank, StatBonuses *newbon)
 					break;
 				}
 			}
+			break;
 		}
 
 		case SE_DamageModifier: {
 			// Bad data or unsupported new skill
-			if (limit_value > EQ::skills::HIGHEST_SKILL)
+			if (limit_value > EQ::skills::HIGHEST_SKILL) {
 				break;
-			if (limit_value == ALL_SKILLS)
+			}
+
+			if (limit_value == ALL_SKILLS) {
 				newbon->DamageModifier[EQ::skills::HIGHEST_SKILL + 1] += base_value;
-			else
+			} else {
 				newbon->DamageModifier[limit_value] += base_value;
+			}
 			break;
 		}
 
 		case SE_DamageModifier2: {
 			// Bad data or unsupported new skill
-			if (limit_value > EQ::skills::HIGHEST_SKILL)
+			if (limit_value > EQ::skills::HIGHEST_SKILL) {
 				break;
-			if (limit_value == ALL_SKILLS)
+			}
+
+			if (limit_value == ALL_SKILLS) {
 				newbon->DamageModifier2[EQ::skills::HIGHEST_SKILL + 1] += base_value;
-			else
+			} else {
 				newbon->DamageModifier2[limit_value] += base_value;
+			}
 			break;
 		}
 
 		case SE_Skill_Base_Damage_Mod: {
 			// Bad data or unsupported new skill
-			if (limit_value > EQ::skills::HIGHEST_SKILL)
+			if (limit_value > EQ::skills::HIGHEST_SKILL) {
 				break;
-			if (limit_value == ALL_SKILLS)
+			}
+
+			if (limit_value == ALL_SKILLS) {
 				newbon->DamageModifier3[EQ::skills::HIGHEST_SKILL + 1] += base_value;
-			else
+			} else {
 				newbon->DamageModifier3[limit_value] += base_value;
+			}
 			break;
 		}
 
@@ -3365,6 +3379,7 @@ void Mob::ApplySpellsBonuses(uint16 spell_id, uint8 casterlevel, StatBonuses *ne
 			case SE_DoubleRiposte:
 			{
 				new_bonus->DoubleRiposte += effect_value;
+				break;
 			}
 
 			case SE_GiveDoubleRiposte:
@@ -3650,6 +3665,7 @@ void Mob::ApplySpellsBonuses(uint16 spell_id, uint8 casterlevel, StatBonuses *ne
 						break;
 					}
 				}
+				break;
 			}
 
 			case SE_PC_Pet_Rampage: {
@@ -4231,11 +4247,11 @@ uint8 Mob::IsFocusEffect(uint16 spell_id,int effect_index, bool AA,uint32 aa_eff
 		case SE_SpellResistReduction:
 			return focusResistRate;
 		case SE_Fc_ResistIncoming:
-			focusFcResistIncoming;
+			return focusFcResistIncoming;
 		case SE_Fc_Amplify_Mod:
-			focusFcAmplifyMod;
+			return focusFcAmplifyMod;
 		case SE_Fc_Amplify_Amt:
-			focusFcAmplifyAmt;
+			return focusFcAmplifyAmt;
 		case SE_SpellHateMod:
 			return focusSpellHateMod;
 		case SE_ReduceReuseTimer:
