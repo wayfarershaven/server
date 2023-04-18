@@ -2179,16 +2179,18 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 							if (caster->CalculateDistance(GetX(), GetY(), GetZ()) >= RuleR(Spells, CallOfTheHeroAggroClearDist)) {
 								entity_list.ClearAggro(this, true);
 							}
-						}
+						} else if (!RuleB(Combat, SummonMeleeRange) && caster->GetZoneID() == GetZoneID() && caster->CombatRange(this)) {
+							break;
 					}
 
 					CastToClient()->MovePC(zone->GetZoneID(), zone->GetInstanceID(), caster->GetX(),
 							       caster->GetY(), caster->GetZ(), caster->GetHeading(), 2,
 							       SummonPC);
-				} else {
-					caster->Message(Chat::Red, "This spell can only be cast on players.");
+					} else {
+						caster->Message(Chat::Red, "This spell can only be cast on players.");
+					}
+					break;
 				}
-				break;
 			}
 
 			case SE_Silence:
