@@ -2214,7 +2214,7 @@ uint32 Client::GetCarriedPlatinum() {
 
 bool Client::TakePlatinum(uint32 platinum, bool update_client) {
 	if (GetCarriedPlatinum() >= platinum) {
-		auto copper = static_cast<uint64>(platinum * 1000);
+		const auto copper = static_cast<uint64>(platinum) * 1000;
 		return TakeMoneyFromPP(copper, update_client);
 	}
 
@@ -2308,7 +2308,7 @@ bool Client::TakeMoneyFromPP(uint64 copper, bool update_client) {
 }
 
 void Client::AddPlatinum(uint32 platinum, bool update_client) {
-	auto copper = static_cast<uint64>(platinum * 1000);
+	const auto copper = static_cast<uint64>(platinum) * 1000;
 	AddMoneyToPP(copper, update_client);
 }
 
