@@ -5479,7 +5479,6 @@ namespace RoF2
 		/**
 		 * Ornamentation
 		 */
-		int    ornamentation_augment_type = RuleI(Character, OrnamentationAugmentType);
 		uint32 ornamentation_icon         = (inst->GetOrnamentationIcon() ? inst->GetOrnamentationIcon() : 0);
 		uint32 hero_model                 = 0;
 
