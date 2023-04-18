@@ -2393,7 +2393,6 @@ bool Database::CopyCharacter(
 			new_rows.emplace_back(new_values);
 		}
 
-		std::string              insert_values;
 		std::vector<std::string> insert_rows;
 
 		for (auto &r: new_rows) {
