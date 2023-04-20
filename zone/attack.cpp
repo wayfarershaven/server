@@ -1579,8 +1579,10 @@ bool Mob::Attack(Mob* other, int Hand, bool bRiposte, bool IsStrikethrough, bool
 	if (my_hit.base_damage > 0) {
 		// if we revamp this function be more general, we will have to make sure this isn't
 		// executed for anything BUT normal melee damage weapons from auto attack
-		if (Hand == EQ::invslot::slotPrimary || Hand == EQ::invslot::slotSecondary)
+		if (Hand == EQ::invslot::slotPrimary || Hand == EQ::invslot::slotSecondary) {
 			my_hit.base_damage = DoDamageCaps(my_hit.base_damage);
+		}
+
 		auto shield_inc = spellbonuses.ShieldEquipDmgMod + itembonuses.ShieldEquipDmgMod + aabonuses.ShieldEquipDmgMod;
 		if (shield_inc > 0 && HasShieldEquipped() && Hand == EQ::invslot::slotPrimary) {
 			my_hit.base_damage = my_hit.base_damage * (100 + shield_inc) / 100;
@@ -1606,8 +1608,7 @@ bool Mob::Attack(Mob* other, int Hand, bool bRiposte, bool IsStrikethrough, bool
 
 		int ucDamageBonus = 0;
 
-		if (Hand == EQ::invslot::slotPrimary && GetLevel() >= 28 && IsWarriorClass())
-		{
+		if (Hand == EQ::invslot::slotPrimary && GetLevel() >= 28 && IsWarriorClass()) {
 			// Damage bonuses apply only to hits from the main hand (Hand == MainPrimary) by characters level 28 and above
 			// who belong to a melee class. If we're here, then all of these conditions apply.
 
@@ -1649,8 +1650,7 @@ bool Mob::Attack(Mob* other, int Hand, bool bRiposte, bool IsStrikethrough, bool
 		DoAttack(other, my_hit, opts, bRiposte);
 
 		LogCombatDetail("Final damage after all reductions [{}]", my_hit.damage_done);
-	}
-	else {
+	} else {
 		my_hit.damage_done = DMG_INVULNERABLE;
 	}
 
@@ -1678,8 +1678,7 @@ bool Mob::Attack(Mob* other, int Hand, bool bRiposte, bool IsStrikethrough, bool
 
 	if (my_hit.damage_done > 0) {
 		return true;
-	}
-	else {
+	} else {
 		return false;
 	}
 }
@@ -6589,10 +6588,11 @@ bool Client::CheckDualWield()
 	return zone->random.Int(1, 375) <= chance;
 }
 
-void Mob::DoMainHandAttackRounds(Mob *target, ExtraAttackOptions *opts)
+void Mob::DoMainHandAttackRounds(Mob *target, ExtraAttackOptions *opts, bool Rampage)
 {
-	if (!target)
+	if (!target) {
 		return;
+	}
 
 	if (RuleB(Combat, UseLiveCombatRounds)) {
 		// A "quad" on live really is just a successful dual wield where both double attack
@@ -6602,8 +6602,9 @@ void Mob::DoMainHandAttackRounds(Mob *target, ExtraAttackOptions *opts)
 			Attack(target, EQ::invslot::slotPrimary, false, false, false, opts);
 			if ((IsPet() || IsTempPet()) && IsPetOwnerClient()) {
 				int chance = spellbonuses.PC_Pet_Flurry + itembonuses.PC_Pet_Flurry + aabonuses.PC_Pet_Flurry;
-				if (chance && zone->random.Roll(chance))
+				if (chance && zone->random.Roll(chance)) {
 					Flurry(nullptr);
+				}
 			}
 		}
 		return;
@@ -6611,16 +6612,14 @@ void Mob::DoMainHandAttackRounds(Mob *target, ExtraAttackOptions *opts)
 
 	if (IsNPC()) {
 		int16 n_atk = CastToNPC()->GetNumberOfAttacks();
-		if (n_atk <= 1) {
+		if (n_atk <= 1 || Rampage) {
 			Attack(target, EQ::invslot::slotPrimary, false, false, false, opts);
-		}
-		else {
+		} else {
 			for (int i = 0; i < n_atk; ++i) {
 				Attack(target, EQ::invslot::slotPrimary, false, false, false, opts);
 			}
 		}
-	}
-	else {
+	} else {
 		Attack(target, EQ::invslot::slotPrimary, false, false, false, opts);
 	}
 
@@ -6646,10 +6645,12 @@ void Mob::DoMainHandAttackRounds(Mob *target, ExtraAttackOptions *opts)
 	}
 }
 
-void Mob::DoOffHandAttackRounds(Mob *target, ExtraAttackOptions *opts)
+void Mob::DoOffHandAttackRounds(Mob *target, ExtraAttackOptions *opts, bool Rampage)
 {
-	if (!target)
+	if (!target) {
 		return;
+	}
+
 	// Mobs will only dual wield w/ the flag or have a secondary weapon
 	// For now, SPECATK_QUAD means innate DW when Combat:UseLiveCombatRounds is true
 	if ((GetSpecialAbility(SPECATK_INNATE_DW) ||
@@ -6657,13 +6658,14 @@ void Mob::DoOffHandAttackRounds(Mob *target, ExtraAttackOptions *opts)
 		GetEquippedItemFromTextureSlot(EQ::textures::weaponSecondary) != 0) {
 		if (CheckDualWield()) {
 			Attack(target, EQ::invslot::slotSecondary, false, false, false, opts);
-			if (CanThisClassDoubleAttack() && GetLevel() > 35 && CheckDoubleAttack()) {
+			if (CanThisClassDoubleAttack() && GetLevel() > 35 && CheckDoubleAttack() && !Rampage) {
 				Attack(target, EQ::invslot::slotSecondary, false, false, false, opts);
 
 				if ((IsPet() || IsTempPet()) && IsPetOwnerClient()) {
 					int chance = spellbonuses.PC_Pet_Flurry + itembonuses.PC_Pet_Flurry + aabonuses.PC_Pet_Flurry;
-					if (chance && zone->random.Roll(chance))
+					if (chance && zone->random.Roll(chance)) {
 						Flurry(nullptr);
+					}
 				}
 			}
 		}

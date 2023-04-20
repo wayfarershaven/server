@@ -2192,23 +2192,29 @@ bool Mob::Rampage(ExtraAttackOptions *opts)
 		entity_list.MessageCloseString(this, true, 200, Chat::PetFlurry, NPC_RAMPAGE, GetCleanName());
 	}
 	int rampage_targets = GetSpecialAbilityParam(SPECATK_RAMPAGE, 1);
-	if (rampage_targets == 0) // if set to 0 or not set in the DB
+	if (rampage_targets == 0) { // if set to 0 or not set in the DB
 		rampage_targets = RuleI(Combat, DefaultRampageTargets);
-	if (rampage_targets > RuleI(Combat, MaxRampageTargets))
+	}
+
+	if (rampage_targets > RuleI(Combat, MaxRampageTargets)) {
 		rampage_targets = RuleI(Combat, MaxRampageTargets);
+	}
 
 	m_specialattacks = eSpecialAttacks::Rampage;
 	for (int i = 0; i < RampageArray.size(); i++) {
-		if (index_hit >= rampage_targets)
+		if (index_hit >= rampage_targets) {
 			break;
+		}
+
 		// range is important
 		Mob *m_target = entity_list.GetMob(RampageArray[i]);
 		if (m_target) {
 			if (m_target == GetTarget() || !IsAttackAllowed(m_target, false)) {    // make sure it is something you can't attack, ex: corpses.
 				continue;
 			}
+			
 			if ((DistanceSquared(m_Position, m_target->GetPosition()) < (RuleI(Combat, RampageDistance)*RuleI(Combat, RampageDistance))) && !m_target->CastToClient()->GetFeigned()) {
-				ProcessAttackRounds(m_target, opts);
+				ProcessAttackRounds(m_target, opts, true);
 				index_hit++;
 			}
 		}
@@ -2216,7 +2222,7 @@ bool Mob::Rampage(ExtraAttackOptions *opts)
 
 	if (RuleB(Combat, RampageHitsTarget)) {
 		if (index_hit < rampage_targets) {
-			ProcessAttackRounds(GetTarget(), opts);
+			ProcessAttackRounds(GetTarget(), opts, true);
 		}
 	} else { // let's do correct behavior here, if they set above rule we can assume they want non-live like behavior
 		if (index_hit < rampage_targets) {
@@ -2232,7 +2238,7 @@ bool Mob::Rampage(ExtraAttackOptions *opts)
 					if (m_target == GetTarget()) {
 						continue;
 					}
-					ProcessAttackRounds(m_target, opts);
+					ProcessAttackRounds(m_target, opts, true);
 					index_hit++;
 				}
 			}
@@ -2240,7 +2246,7 @@ bool Mob::Rampage(ExtraAttackOptions *opts)
 	}
 
 	if(index_hit == 0) {
-        ProcessAttackRounds(GetTarget(), opts);
+        ProcessAttackRounds(GetTarget(), opts, true);
 	}
 
 	m_specialattacks = eSpecialAttacks::None;
