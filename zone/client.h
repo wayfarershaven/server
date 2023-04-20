@@ -20,7 +20,6 @@
 
 class Client;
 class EQApplicationPacket;
-class EQStream;
 class DynamicZone;
 class Expedition;
 class ExpeditionLockoutTimer;
@@ -83,8 +82,6 @@ namespace EQ
 #include <deque>
 #include <ctime>
 
-
-#define CLIENT_TIMEOUT 90000
 #define CLIENT_LD_TIMEOUT 30000 // length of time client stays in zone after LDing
 #define TARGETING_RANGE 200 // range for /assist and /target
 #define XTARGET_HARDCAP 20
@@ -184,8 +181,8 @@ struct RespawnOption
 	float heading;
 };
 
-const std::string DIAWIND_RESPONSE_ONE_KEY       = "diawind_npc_response_one";
-const std::string DIAWIND_RESPONSE_TWO_KEY       = "diawind_npc_response_two";
+inline const std::string DIAWIND_RESPONSE_ONE_KEY       = "diawind_npc_response_one";
+inline const std::string DIAWIND_RESPONSE_TWO_KEY       = "diawind_npc_response_two";
 const uint32      POPUPID_DIAWIND_ONE            = 99999;
 const uint32      POPUPID_DIAWIND_TWO            = 100000;
 const uint32      POPUPID_UPDATE_SHOWSTATSWINDOW = 1000000;
@@ -332,8 +329,7 @@ public:
 	void UpdateLFP();
 
 	virtual bool Save() { return Save(0); }
-					bool Save(uint8 iCommitNow); // 0 = delayed, 1=async now, 2=sync now
-					void SaveBackup();
+	bool Save(uint8 iCommitNow); // 0 = delayed, 1=async now, 2=sync now
 
 	/* New PP Save Functions */
 	bool SaveCurrency(){ return database.SaveCharacterCurrency(this->CharacterID(), &m_pp); }
@@ -560,7 +556,7 @@ public:
 	//This calculates total Attack Rating to match very close to what the client should show
 	uint32 GetTotalATK();
 	uint32 GetATKRating();
-	//This gets the skill value of the item type equiped in the Primary Slot
+	//This gets the skill value of the item type equipped in the Primary Slot
 	uint16 GetPrimarySkillValue();
 
 	bool Flurry();
@@ -949,7 +945,7 @@ public:
 	inline bool IsTrader() const { return(Trader); }
 	inline bool IsBuyer() const { return(Buyer); }
 	eqFilterMode GetFilter(eqFilterType filter_id) const { return ClientFilters[filter_id]; }
-	void SetFilter(eqFilterType filter_id, eqFilterMode value) { ClientFilters[filter_id]=value; }
+	void SetFilter(eqFilterType filter_id, eqFilterMode filter_mode) { ClientFilters[filter_id] = filter_mode; }
 
 	void CancelSneakHide();
 	void BreakInvis();
@@ -1275,7 +1271,6 @@ public:
 	bool m_requested_shared_task_removal = false;
 
 	std::vector<Client*> GetPartyMembers();
-	void HandleUpdateTasksOnKill(uint32 npc_type_id);
 
 	inline const EQ::versions::ClientVersion ClientVersion() const { return m_ClientVersion; }
 	inline const uint32 ClientVersionBit() const { return m_ClientVersionBit; }
@@ -1705,8 +1700,6 @@ private:
 	void DoStaminaHungerUpdate();
 	void CalcRestState();
 
-	uint32 pLastUpdate;
-	uint32 pLastUpdateWZ;
 	uint8 playeraction;
 
 	EQStreamInterface* eqs;
@@ -1745,7 +1738,6 @@ private:
 	bool medding;
 	uint16 horseId;
 	bool revoked;
-	uint32 pQueuedSaveWorkID;
 	uint16 pClientSideTarget;
 	uint32 weight;
 	bool berserk;
@@ -1762,7 +1754,6 @@ private:
 	bool Trader;
 	bool Buyer;
 	std::string BuyerWelcomeMessage;
-	bool AbilityTimer;
 	int Haste; //precalced value
 
 	int32 environment_damage_modifier;
@@ -1820,9 +1811,6 @@ private:
 	ZoneMode zone_mode;
 
 	WaterRegionType last_region_type;
-
-	// this is used to try to cut back on position update reflections
-	int position_update_same_count;
 
 	PTimerList p_timers; //persistent timers
 	Timer hpupdate_timer;
@@ -2011,6 +1999,7 @@ public:
 	void SetBotSpawnLimit(int new_spawn_limit, uint8 class_id = NO_CLASS);
 
 	void CampAllBots(uint8 class_id = NO_CLASS);
+	void SpawnRaidBotsOnConnect(Raid* raid);
 
 private:
 	bool bot_owner_options[_booCount];

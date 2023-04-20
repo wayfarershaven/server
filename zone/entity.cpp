@@ -17,14 +17,12 @@
 */
 #include "../common/data_verification.h"
 #include "../common/global_define.h"
-#include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
 #include <iostream>
 
 #ifdef _WINDOWS
-#include <process.h>
 #else
 #include <pthread.h>
 #include "../common/unix.h"
@@ -43,7 +41,6 @@
 #include "worldserver.h"
 #include "water_map.h"
 #include "npc_scale_manager.h"
-#include "../common/say_link.h"
 #include "dialogue_window.h"
 
 #ifdef _WINDOWS
@@ -332,8 +329,8 @@ bool EntityList::CanAddHateForMob(Mob *p)
 void EntityList::AddClient(Client *client)
 {
 	client->SetID(GetFreeID());
-	client_list.insert(std::pair<uint16, Client *>(client->GetID(), client));
-	mob_list.insert(std::pair<uint16, Mob *>(client->GetID(), client));
+	client_list.emplace(std::pair<uint16, Client *>(client->GetID(), client));
+	mob_list.emplace(std::pair<uint16, Mob *>(client->GetID(), client));
 }
 
 
@@ -389,9 +386,6 @@ void EntityList::GroupProcess()
 	for (auto &group : group_list)
 		group->Process();
 
-#if EQDEBUG >= 5
-	CheckGroupList (__FILE__, __LINE__);
-#endif
 }
 
 void EntityList::QueueToGroupsForNPCHealthAA(Mob *sender, const EQApplicationPacket *app)
@@ -599,8 +593,9 @@ void EntityList::EncounterProcess()
 
 void EntityList::AddGroup(Group *group)
 {
-	if (group == nullptr)	//this seems to be happening somehow...
+	if (group == nullptr) { //this seems to be happening somehow...
 		return;
+	}
 
 	uint32 gid = worldserver.NextGroupID();
 	if (gid == 0) {
@@ -609,26 +604,22 @@ void EntityList::AddGroup(Group *group)
 	}
 
 	AddGroup(group, gid);
-#if EQDEBUG >= 5
-	CheckGroupList (__FILE__, __LINE__);
-#endif
 }
 
 void EntityList::AddGroup(Group *group, uint32 gid)
 {
 	group->SetID(gid);
 	group_list.push_back(group);
-	if (!group_timer.Enabled())
+	if (!group_timer.Enabled()) {
 		group_timer.Start();
-#if EQDEBUG >= 5
-	CheckGroupList(__FILE__, __LINE__);
-#endif
+	}
 }
 
 void EntityList::AddRaid(Raid *raid)
 {
-	if (raid == nullptr)
+	if (raid == nullptr) {
 		return;
+	}
 
 	uint32 gid = worldserver.NextGroupID();
 	if (gid == 0) {
@@ -659,7 +650,7 @@ void EntityList::AddCorpse(Corpse *corpse, uint32 in_id)
 		corpse->SetID(in_id);
 
 	corpse->CalcCorpseName();
-	corpse_list.insert(std::pair<uint16, Corpse *>(corpse->GetID(), corpse));
+	corpse_list.emplace(std::pair<uint16, Corpse *>(corpse->GetID(), corpse));
 
 	if (!corpse_timer.Enabled())
 		corpse_timer.Start();
@@ -678,8 +669,8 @@ void EntityList::AddNPC(NPC *npc, bool send_spawn_packet, bool dont_queue)
 		}
 	}
 
-	npc_list.insert(std::pair<uint16, NPC *>(npc->GetID(), npc));
-	mob_list.insert(std::pair<uint16, Mob *>(npc->GetID(), npc));
+	npc_list.emplace(std::pair<uint16, NPC *>(npc->GetID(), npc));
+	mob_list.emplace(std::pair<uint16, Mob *>(npc->GetID(), npc));
 
 	if (parse->HasQuestSub(npc->GetNPCTypeID(), EVENT_SPAWN)) {
 		parse->EventNPC(EVENT_SPAWN, npc, nullptr, "", 0);
@@ -755,8 +746,8 @@ void EntityList::AddMerc(Merc *merc, bool SendSpawnPacket, bool dontqueue)
 			}
 		}
 
-		merc_list.insert(std::pair<uint16, Merc *>(merc->GetID(), merc));
-		mob_list.insert(std::pair<uint16, Mob *>(merc->GetID(), merc));
+		merc_list.emplace(std::pair<uint16, Merc *>(merc->GetID(), merc));
+		mob_list.emplace(std::pair<uint16, Mob *>(merc->GetID(), merc));
 	}
 }
 
@@ -773,7 +764,7 @@ void EntityList::AddObject(Object *obj, bool SendSpawnPacket)
 		QueueClients(0, &app,false);
 	}
 
-	object_list.insert(std::pair<uint16, Object *>(obj->GetID(), obj));
+	object_list.emplace(std::pair<uint16, Object *>(obj->GetID(), obj));
 
 	if (!object_timer.Enabled())
 		object_timer.Start();
@@ -782,7 +773,7 @@ void EntityList::AddObject(Object *obj, bool SendSpawnPacket)
 void EntityList::AddDoor(Doors *door)
 {
 	door->SetEntityID(GetFreeID());
-	door_list.insert(std::pair<uint16, Doors *>(door->GetEntityID(), door));
+	door_list.emplace(std::pair<uint16, Doors *>(door->GetEntityID(), door));
 
 	if (!door_timer.Enabled())
 		door_timer.Start();
@@ -791,7 +782,7 @@ void EntityList::AddDoor(Doors *door)
 void EntityList::AddTrap(Trap *trap)
 {
 	trap->SetID(GetFreeID());
-	trap_list.insert(std::pair<uint16, Trap *>(trap->GetID(), trap));
+	trap_list.emplace(std::pair<uint16, Trap *>(trap->GetID(), trap));
 	if (!trap_timer.Enabled())
 		trap_timer.Start();
 }
@@ -799,13 +790,13 @@ void EntityList::AddTrap(Trap *trap)
 void EntityList::AddBeacon(Beacon *beacon)
 {
 	beacon->SetID(GetFreeID());
-	beacon_list.insert(std::pair<uint16, Beacon *>(beacon->GetID(), beacon));
+	beacon_list.emplace(std::pair<uint16, Beacon *>(beacon->GetID(), beacon));
 }
 
 void EntityList::AddEncounter(Encounter *encounter)
 {
 	encounter->SetID(GetFreeID());
-	encounter_list.insert(std::pair<uint16, Encounter *>(encounter->GetID(), encounter));
+	encounter_list.emplace(std::pair<uint16, Encounter *>(encounter->GetID(), encounter));
 }
 
 void EntityList::AddToSpawnQueue(uint16 entityid, NewSpawn_Struct **ns)
@@ -2070,13 +2061,23 @@ Group *EntityList::GetGroupByMob(Mob *mob)
 	iterator = group_list.begin();
 
 	while (iterator != group_list.end()) {
-		if ((*iterator)->IsGroupMember(mob))
+		if ((*iterator)->IsGroupMember(mob)) {
 			return *iterator;
+		}
 		++iterator;
 	}
-#if EQDEBUG >= 5
-	CheckGroupList (__FILE__, __LINE__);
-#endif
+	return nullptr;
+}
+
+Group *EntityList::GetGroupByMobName(const char* name)
+{
+	for (const auto& g : group_list) {
+		for (const auto& m : g->membername) {
+			if (strcmp(m, name) == 0) {
+				return g;
+			}
+		}
+	}
 	return nullptr;
 }
 
@@ -2087,13 +2088,11 @@ Group *EntityList::GetGroupByLeaderName(const char *leader)
 	iterator = group_list.begin();
 
 	while (iterator != group_list.end()) {
-		if (!strcmp((*iterator)->GetLeaderName(), leader))
+		if (!strcmp((*iterator)->GetLeaderName(), leader)) {
 			return *iterator;
+		}
 		++iterator;
 	}
-#if EQDEBUG >= 5
-	CheckGroupList (__FILE__, __LINE__);
-#endif
 	return nullptr;
 }
 
@@ -2104,13 +2103,11 @@ Group *EntityList::GetGroupByID(uint32 group_id)
 	iterator = group_list.begin();
 
 	while (iterator != group_list.end()) {
-		if ((*iterator)->GetID() == group_id)
+		if ((*iterator)->GetID() == group_id) {
 			return *iterator;
+		}
 		++iterator;
 	}
-#if EQDEBUG >= 5
-	CheckGroupList (__FILE__, __LINE__);
-#endif
 	return nullptr;
 }
 
@@ -2129,13 +2126,11 @@ Group *EntityList::GetGroupByClient(Client *client)
 	iterator = group_list.begin();
 
 	while (iterator != group_list.end()) {
-		if ((*iterator)->IsGroupMember(client->CastToMob()))
+		if ((*iterator)->IsGroupMember(client->CastToMob())) {
 			return *iterator;
+		}
 		++iterator;
 	}
-#if EQDEBUG >= 5
-	CheckGroupList (__FILE__, __LINE__);
-#endif
 	return nullptr;
 }
 
@@ -2146,9 +2141,9 @@ Raid *EntityList::GetRaidByLeaderName(const char *leader)
 	iterator = raid_list.begin();
 
 	while (iterator != raid_list.end()) {
-		if ((*iterator)->GetLeader())
-			if(strcmp((*iterator)->GetLeader()->GetName(), leader) == 0)
-				return *iterator;
+		if ((*iterator)->GetLeader() && strcmp((*iterator)->GetLeader()->GetName(), leader) == 0) {
+			return *iterator;
+		}
 		++iterator;
 	}
 	return nullptr;
@@ -2161,35 +2156,77 @@ Raid *EntityList::GetRaidByID(uint32 id)
 	iterator = raid_list.begin();
 
 	while (iterator != raid_list.end()) {
-		if ((*iterator)->GetID() == id)
+		if ((*iterator)->GetID() == id) {
 			return *iterator;
+		}
 		++iterator;
 	}
 	return nullptr;
 }
 
-Raid *EntityList::GetRaidByClient(Client* client)
+Raid* EntityList::GetRaidByClient(Client* client)
 {
 	if (client->p_raid_instance) {
 		return client->p_raid_instance;
 	}
 
-	std::list<Raid *>::iterator iterator;
+	std::list<Raid*>::iterator iterator;
 	iterator = raid_list.begin();
 
 	while (iterator != raid_list.end()) {
-		for (auto &member : (*iterator)->members) {
-			if (member.member) {
-				if (member.member == client) {
-					client->p_raid_instance = *iterator;
-					return *iterator;
-				}
+		for (const auto& member : (*iterator)->members) {
+			if (member.member && member.member == client) {
+				client->p_raid_instance = *iterator;
+				return *iterator;
 			}
 		}
 
 		++iterator;
 	}
 
+	return nullptr;
+}
+
+Raid* EntityList::GetRaidByBotName(const char* name) {
+	std::list<RaidMember> rm;
+	auto GetMembersWithNames = [&rm](Raid const* r) -> std::list<RaidMember> {
+		for (const auto& m : r->members) {
+			if (strlen(m.member_name) > 0) {
+				rm.push_back(m);
+			}
+		}
+		return rm;
+	};
+
+	for (const auto& r : raid_list) {
+		for (const auto& m : GetMembersWithNames(r)) {
+			if (strcmp(m.member_name, name) == 0) {
+				return r;
+			}
+		}
+	}
+	return nullptr;
+}
+
+Raid* EntityList::GetRaidByBot(const Bot* bot)
+{
+	std::list<RaidMember> rm;
+	auto GetMembersWhoAreBots = [&rm](Raid* r) -> std::list<RaidMember> {
+		for (auto const& m : r->members) {
+			if (m.is_bot) {
+				rm.push_back(m);
+			}
+		}
+		return rm;
+	};
+
+	for (const auto& r : raid_list) {
+		for (const auto& m : GetMembersWhoAreBots(r)) {
+			if (m.member->CastToBot() == bot) {
+				return r;
+			}
+		}
+	}
 	return nullptr;
 }
 
@@ -2617,6 +2654,12 @@ void EntityList::RemoveAllNPCs()
 	npc_limit_list.clear();
 }
 
+void EntityList::RemoveAllBots()
+{
+	// doesn't clear the data
+	bot_list.clear();
+}
+
 void EntityList::RemoveAllMercs()
 {
 	// doesn't clear the data
@@ -2630,9 +2673,6 @@ void EntityList::RemoveAllGroups()
 		group_list.pop_front();
 		safe_delete(group);
 	}
-#if EQDEBUG >= 5
-	CheckGroupList (__FILE__, __LINE__);
-#endif
 }
 
 void EntityList::RemoveAllRaids()
@@ -2899,7 +2939,7 @@ void EntityList::ScanCloseMobs(
 
 		float distance = DistanceSquared(scanning_mob->GetPosition(), mob->GetPosition());
 		if (distance <= scan_range || mob->GetAggroRange() >= scan_range) {
-			close_mobs.insert(std::pair<uint16, Mob *>(mob->GetID(), mob));
+			close_mobs.emplace(std::pair<uint16, Mob *>(mob->GetID(), mob));
 
 			if (add_self_to_other_lists && scanning_mob->GetID() > 0) {
 				bool has_mob = false;
@@ -3013,9 +3053,6 @@ bool EntityList::RemoveGroup(uint32 delete_id)
 	auto it = std::find_if(group_list.begin(), group_list.end(),
 			[delete_id](const Group *a) { return a->GetID() == delete_id; });
 	if (it == group_list.end()) {
-#if EQDEBUG >= 5
-		CheckGroupList (__FILE__, __LINE__);
-#endif
 		return false;
 	}
 	auto group = *it;
@@ -3028,8 +3065,9 @@ bool EntityList::RemoveRaid(uint32 delete_id)
 {
 	auto it = std::find_if(raid_list.begin(), raid_list.end(),
 			[delete_id](const Raid *a) { return a->GetID() == delete_id; });
-	if (it == raid_list.end())
+	if (it == raid_list.end()) {
 		return false;
+	}
 	auto raid = *it;
 	raid_list.erase(it);
 	safe_delete(raid);
@@ -3040,6 +3078,8 @@ void EntityList::Clear()
 {
 	RemoveAllClients();
 	entity_list.RemoveAllTraps(); //we can have child npcs so we go first
+	entity_list.RemoveAllMercs();
+	entity_list.RemoveAllBots();
 	entity_list.RemoveAllNPCs();
 	entity_list.RemoveAllMobs();
 	entity_list.RemoveAllCorpses();
@@ -3218,7 +3258,7 @@ char *EntityList::MakeNameUnique(char *name)
 		if (it->second->IsMob()) {
 			if (strncasecmp(it->second->CastToMob()->GetName(), name, len) == 0) {
 				if (Seperator::IsNumber(&it->second->CastToMob()->GetName()[len])) {
-					used[atoi(&it->second->CastToMob()->GetName()[len])] = true;
+					used[Strings::ToInt(&it->second->CastToMob()->GetName()[len])] = true;
 				}
 			}
 		}
@@ -4809,8 +4849,9 @@ void EntityList::SendZoneAppearance(Client *c)
 
 void EntityList::SendNimbusEffects(Client *c)
 {
-	if (!c)
+	if (!c) {
 		return;
+	}
 
 	auto it = mob_list.begin();
 	while (it != mob_list.end()) {
@@ -4837,8 +4878,9 @@ void EntityList::SendNimbusEffects(Client *c)
 
 void EntityList::SendUntargetable(Client *c)
 {
-	if (!c)
+	if (!c) {
 		return;
+	}
 
 	auto it = mob_list.begin();
 	while (it != mob_list.end()) {
@@ -4849,8 +4891,9 @@ void EntityList::SendUntargetable(Client *c)
 				++it;
 				continue;
 			}
-			if (!cur->IsTargetable())
+			if (!cur->IsTargetable()) {
 				cur->SendTargetable(false, c);
+			}
 		}
 		++it;
 	}
@@ -4858,8 +4901,9 @@ void EntityList::SendUntargetable(Client *c)
 
 void EntityList::SendAppearanceEffects(Client *c)
 {
-	if (!c)
+	if (!c) {
 		return;
+	}
 
 	auto it = mob_list.begin();
 	while (it != mob_list.end()) {
@@ -5348,8 +5392,9 @@ void EntityList::DeleteQGlobal(std::string name, uint32 npcID, uint32 charID, ui
 
 void EntityList::SendFindableNPCList(Client *c)
 {
-	if (!c)
+	if (!c) {
 		return;
+	}
 
 	auto outapp = new EQApplicationPacket(OP_SendFindableNPCs, sizeof(FindableNPC_Struct));
 
@@ -5415,8 +5460,9 @@ void EntityList::UpdateFindableNPCState(NPC *n, bool Remove)
 
 void EntityList::HideCorpses(Client *c, uint8 CurrentMode, uint8 NewMode)
 {
-	if (!c)
+	if (!c) {
 		return;
+	}
 
 	if (NewMode == HideCorpseNone) {
 		SendZoneCorpses(c);
@@ -5428,8 +5474,9 @@ void EntityList::HideCorpses(Client *c, uint8 CurrentMode, uint8 NewMode)
 	if (NewMode == HideCorpseAllButGroup) {
 		g = c->GetGroup();
 
-		if (!g)
+		if (!g) {
 			NewMode = HideCorpseAll;
+		}
 	}
 
 	auto it = corpse_list.begin();
@@ -5857,7 +5904,7 @@ void EntityList::DespawnGridNodes(int32 grid_id) {
 			mob->IsNPC() &&
 			mob->GetRace() == RACE_NODE_2254 &&
 			mob->EntityVariableExists("grid_id") &&
-			std::stoi(mob->GetEntityVariable("grid_id")) == grid_id) {
+			Strings::ToInt(mob->GetEntityVariable("grid_id")) == grid_id) {
 			mob->Depop();
 		}
 	}

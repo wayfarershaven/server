@@ -11,7 +11,7 @@ void command_viewrecipe(Client *c, const Seperator *sep)
 		return;
 	}
 
-	auto recipe_id = static_cast<uint16>(std::stoul(sep->arg[1]));
+	auto recipe_id = static_cast<uint16>(Strings::ToUnsignedInt(sep->arg[1]));
 	auto re = TradeskillRecipeEntriesRepository::GetWhere(
 		database,
 		fmt::format("recipe_id = {} ORDER BY id ASC", recipe_id)

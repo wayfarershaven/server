@@ -24,11 +24,9 @@
 
 #include "../common/global_define.h"
 #include "../common/misc_functions.h"
-#include "../common/eqemu_logsys.h"
 
 #include "dialogue_window.h"
 #include "embperl.h"
-#include "embxs.h"
 #include "entity.h"
 #include "expedition.h"
 #include "queryserv.h"
@@ -359,6 +357,11 @@ bool Perl__hastimer(const char* timer_name)
 	return quest_manager.hastimer(timer_name);
 }
 
+bool Perl__ispausedtimer(const char* timer_name)
+{
+	return quest_manager.ispausedtimer(timer_name);
+}
+
 uint32_t Perl__getremainingtimeMS(const char* timer_name)
 {
 	return quest_manager.getremainingtimeMS(timer_name);
@@ -377,6 +380,16 @@ void Perl__settimer(const char* timer_name, int seconds)
 void Perl__settimerMS(const char* timer_name, int milliseconds)
 {
 	quest_manager.settimerMS(timer_name, milliseconds);
+}
+
+void Perl__pausetimer(const char* timer_name)
+{
+	quest_manager.pausetimer(timer_name);
+}
+
+void Perl__resumetimer(const char* timer_name)
+{
+	quest_manager.resumetimer(timer_name);
 }
 
 void Perl__stoptimer(const char* timer_name)
@@ -835,9 +848,19 @@ void Perl__addldonwin(uint32 theme_id)
 	quest_manager.addldonwin(theme_id);
 }
 
+void Perl__removeldonwin(uint32 theme_id)
+{
+	quest_manager.removeldonwin(theme_id);
+}
+
 void Perl__addldonloss(uint32 theme_id)
 {
 	quest_manager.addldonloss(theme_id);
+}
+
+void Perl__removeldonloss(uint32 theme_id)
+{
+	quest_manager.removeldonloss(theme_id);
 }
 
 void Perl__setnexthpevent(int at_mob_percentage)
@@ -4489,7 +4512,6 @@ void perl_register_quest()
 	package.add("getfactionname", &Perl__getfactionname);
 	package.add("getinventoryslotid", &Perl__getinventoryslotid);
 	package.add("getitemname", &Perl__getitemname);
-	package.add("getItemName", &Perl__qc_getItemName);
 	package.add("getitemstat", &Perl__getitemstat);
 	package.add("getlanguagename", &Perl__getlanguagename);
 	package.add("getldonthemename", &Perl__getldonthemename);
@@ -4550,6 +4572,7 @@ void perl_register_quest()
 	package.add("isdooropen", &Perl__isdooropen);
 	package.add("ishotzone", &Perl__ishotzone);
 	package.add("isnpcspawned", &Perl__isnpcspawned);
+	package.add("ispausedtimer", &Perl__ispausedtimer);
 	package.add("istaskactive", &Perl__istaskactive);
 	package.add("istaskactivityactive", &Perl__istaskactivityactive);
 	package.add("istaskappropriate", &Perl__istaskappropriate);
@@ -4579,6 +4602,7 @@ void perl_register_quest()
 	package.add("npcsize", &Perl__npcsize);
 	package.add("npctexture", &Perl__npctexture);
 	package.add("pause", &Perl__pause);
+	package.add("pausetimer", &Perl__pausetimer);
 	package.add("permaclass", &Perl__permaclass);
 	package.add("permagender", &Perl__permagender);
 	package.add("permarace", &Perl__permarace);
@@ -4616,12 +4640,15 @@ void perl_register_quest()
 	package.add("remove_expedition_lockout_by_char_id", &Perl__remove_expedition_lockout_by_char_id);
 	package.add("removeitem", (void(*)(uint32_t))&Perl__removeitem);
 	package.add("removeitem", (void(*)(uint32_t, int))&Perl__removeitem);
+	package.add("removeldonloss", &Perl__removeldonloss);
+	package.add("removeldonwin", &Perl__removeldonwin);
 	package.add("removetitle", &Perl__removetitle);
 	package.add("rename", &Perl__rename);
 	package.add("repopzone", &Perl__repopzone);
 	package.add("resettaskactivity", &Perl__resettaskactivity);
 	package.add("respawn", &Perl__respawn);
 	package.add("resume", &Perl__resume);
+	package.add("resumetimer", &Perl__resumetimer);
 	package.add("rewardfaction", &Perl__rewardfaction);
 	package.add("safemove", &Perl__safemove);
 	package.add("save", &Perl__save);

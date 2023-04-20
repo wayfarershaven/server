@@ -122,7 +122,7 @@ int Mob::GetBaseSkillDamage(EQ::skills::SkillType skill, Mob *target)
 	case EQ::skills::SkillBash: {
 		const EQ::ItemInstance *inst = nullptr;
 		if (IsClient()) {
-			if (HasShieldEquiped()) {
+			if (HasShieldEquipped()) {
 				inst = CastToClient()->GetInv().GetItem(EQ::invslot::slotSecondary);
 			} else if (HasTwoHanderEquipped()) {
 				inst = CastToClient()->GetInv().GetItem(EQ::invslot::slotShoulders);		
@@ -1702,8 +1702,9 @@ void Mob::ProjectileAnimation(Mob* to, int item_id, bool IsArrow, float speed, f
 }
 
 void NPC::DoClassAttacks(Mob *target) {
-	if(target == nullptr)
+	if(target == nullptr) {
 		return;	//gotta have a target for all these
+	}
 
 	bool taunt_time = taunt_timer.Check();
 	bool ca_time = classattack_timer.Check(false);
@@ -1712,8 +1713,9 @@ void NPC::DoClassAttacks(Mob *target) {
 	const EQ::ItemData* boots = database.GetItem(equipment[EQ::invslot::slotFeet]);
 
 	//only check attack allowed if we are going to do something
-	if((taunt_time || ca_time || ka_time) && !IsAttackAllowed(target))
+	if((taunt_time || ca_time || ka_time) && !IsAttackAllowed(target)) {
 		return;
+	}
 
 	if(ka_time){
 		int knightreuse = 1000; //lets give it a small cooldown actually.
@@ -1722,7 +1724,7 @@ void NPC::DoClassAttacks(Mob *target) {
 			case SHADOWKNIGHT: case SHADOWKNIGHTGM:{
 				if (CastSpell(SPELL_NPC_HARM_TOUCH, target->GetID())) {
 					knightreuse = HarmTouchReuseTime * 1000;
-					}
+				}
 				break;
 			}
 			case PALADIN: case PALADINGM:{
@@ -1741,7 +1743,15 @@ void NPC::DoClassAttacks(Mob *target) {
 
 	//general stuff, for all classes....
 	//only gets used when their primary ability get used too
-	if (taunting && HasOwner() && target->IsNPC() && target->GetBodyType() != BT_Undead && taunt_time && typeofpet && typeofpet != petTargetLock) {
+	if (
+		IsTaunting() &&
+		HasOwner() &&
+		target->IsNPC() &&
+		target->GetBodyType() != BT_Undead &&
+		taunt_time &&
+		typeofpet &&
+		typeofpet != petTargetLock
+	) {
 		GetOwner()->MessageString(Chat::PetResponse, PET_TAUNTING);
 		Taunt(target->CastToNPC(), false);
 	}

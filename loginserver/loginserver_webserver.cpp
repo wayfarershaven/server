@@ -480,8 +480,8 @@ namespace LoginserverWebserver {
 		for (auto row         = results.begin(); row != results.end(); ++row) {
 			LoginserverWebserver::TokenManager::token_data token_data;
 			token_data.token     = row[0];
-			token_data.can_write = std::stoi(row[1]) > 0;
-			token_data.can_read  = std::stoi(row[2]) > 0;
+			token_data.can_write = Strings::ToInt(row[1]) > 0;
+			token_data.can_read  = Strings::ToInt(row[2]) > 0;
 
 			LogDebug(
 				"Inserting api token to internal list [{0}] write {1} read {2}",
@@ -490,7 +490,7 @@ namespace LoginserverWebserver {
 				token_data.can_write
 			);
 
-			server.token_manager->loaded_api_tokens.insert(
+			server.token_manager->loaded_api_tokens.emplace(
 				std::make_pair(
 					token_data.token,
 					token_data

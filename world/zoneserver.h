@@ -46,7 +46,6 @@ public:
 	void		IncomingClient(Client* client);
 	void		LSBootUpdate(uint32 zone_id, uint32 instance_id = 0, bool startup = false);
 	void		LSSleepUpdate(uint32 zone_id);
-	void		LSShutDownUpdate(uint32 zone_id);
 	uint32		GetPrevZoneID() { return zone_server_previous_zone_id; }
 	void		ChangeWID(uint32 iCharID, uint32 iWID);
 	void		SendGroupIDs();
@@ -72,12 +71,8 @@ public:
 	inline const char * GetLaunchName() const { return(launcher_name.c_str()); }
 	inline const char * GetLaunchedName() const { return(launched_name.c_str()); }
 	std::string         GetUUID() const { return tcpc->GetUUID(); }
-
 	inline uint32		GetInstanceID() { return instance_id; }
-	inline void			SetInstanceID(uint32 i) { instance_id = i; }
-
 	inline uint32		GetZoneOSProcessID() { return zone_os_process_id; }
-
 private:
 	std::shared_ptr<EQ::Net::ServertalkServerConnection> tcpc;
 	std::unique_ptr<EQ::Timer> boot_timer_obj;
@@ -88,7 +83,6 @@ private:
 	uint16	client_port;
 	bool	is_booting_up;
 	bool	is_static_zone;
-	bool	is_authenticated;
 	uint32	zone_player_count;
 	char	compiled[25];
 	char	zone_name[32];

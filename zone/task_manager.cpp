@@ -1,7 +1,6 @@
 #include "../common/global_define.h"
 #include "../common/misc_functions.h"
 #include "../common/repositories/character_activities_repository.h"
-#include "../common/repositories/character_data_repository.h"
 #include "../common/repositories/character_tasks_repository.h"
 #include "../common/repositories/completed_tasks_repository.h"
 #include "../common/repositories/task_activities_repository.h"
@@ -12,7 +11,6 @@
 #include "string_ids.h"
 #include "task_manager.h"
 #include "../common/repositories/shared_task_activity_state_repository.h"
-#include "../common/repositories/shared_task_dynamic_zones_repository.h"
 #include "../common/repositories/shared_task_members_repository.h"
 #include "../common/shared_tasks.h"
 #include "worldserver.h"
@@ -46,7 +44,6 @@ bool TaskManager::LoadTaskSets()
 bool TaskManager::LoadTasks(int single_task)
 {
 	std::string task_query_filter = fmt::format("id = {}", single_task);
-	std::string query;
 	if (single_task == 0) {
 		if (!LoadTaskSets()) {
 			LogTasks("LoadTaskSets failed");
@@ -199,9 +196,9 @@ bool TaskManager::LoadTasks(int single_task)
 		ad->target_name          = a.target_name;
 		ad->item_list            = a.item_list;
 		ad->skill_list           = a.skill_list;
-		ad->skill_id             = Strings::IsNumber(a.skill_list) ? std::stoi(a.skill_list) : 0; // for older clients
+		ad->skill_id             = Strings::IsNumber(a.skill_list) ? Strings::ToInt(a.skill_list) : 0; // for older clients
 		ad->spell_list           = a.spell_list;
-		ad->spell_id             = Strings::IsNumber(a.spell_list) ? std::stoi(a.spell_list) : 0; // for older clients
+		ad->spell_id             = Strings::IsNumber(a.spell_list) ? Strings::ToInt(a.spell_list) : 0; // for older clients
 		ad->description_override = a.description_override;
 		ad->npc_match_list       = a.npc_match_list;
 		ad->item_id_list         = a.item_id_list;
@@ -233,7 +230,7 @@ bool TaskManager::LoadTasks(int single_task)
 
 		for (auto &&e : zones) {
 			if (Strings::IsNumber(e)) {
-				ad->zone_ids.push_back(std::stoi(e));
+				ad->zone_ids.push_back(Strings::ToInt(e));
 			}
 		}
 
@@ -389,11 +386,15 @@ bool TaskManager::SaveClientState(Client *client, ClientTaskState *cts)
 	const char *completed_task_query = "REPLACE INTO completed_tasks (charid, completedtime, taskid, activityid) "
 									   "VALUES (%i, %i, %i, %i)";
 
-	for (unsigned int task_index = cts->m_last_completed_task_loaded;
+	for (
+		unsigned int task_index = cts->m_last_completed_task_loaded;
 		task_index < cts->m_completed_tasks.size();
-		task_index++) {
+		task_index++
+	) {
 
-		int task_id = cts->m_completed_tasks[task_index].task_id;
+		const auto& t = cts->m_completed_tasks[task_index];
+
+		int task_id = t.task_id;
 
 		const auto task_data = GetTaskData(task_id);
 		if (!task_data) {
@@ -412,7 +413,7 @@ bool TaskManager::SaveClientState(Client *client, ClientTaskState *cts)
 		std::string query = StringFormat(
 			completed_task_query,
 			character_id,
-			cts->m_completed_tasks[task_index].completed_time,
+			t.completed_time,
 			task_id,
 			-1
 		);
@@ -431,14 +432,14 @@ bool TaskManager::SaveClientState(Client *client, ClientTaskState *cts)
 		// Insert one record for each completed optional task.
 		for (int activity_id = 0; activity_id < task_data->activity_count; activity_id++) {
 			if (!task_data->activity_information[activity_id].optional ||
-				!cts->m_completed_tasks[task_index].activity_done[activity_id]) {
+				!t.activity_done[activity_id]) {
 				continue;
 			}
 
 			query = StringFormat(
 				completed_task_query,
 				character_id,
-				cts->m_completed_tasks[task_index].completed_time,
+				t.completed_time,
 				task_id, activity_id
 			);
 
@@ -706,9 +707,9 @@ void TaskManager::SharedTaskSelector(Client* client, Mob* mob, const std::vector
 			validation_failed = true;
 
 			auto it = std::find_if(request.members.begin(), request.members.end(),
-				[&](const SharedTaskMember& member) {
-					return member.character_id == shared_task_members.front().character_id;
-				});
+								   [&](const SharedTaskMember& member) {
+									   return member.character_id == shared_task_members.front().character_id;
+								   });
 
 			if (it != request.members.end()) {
 				if (request.group_type == SharedTaskRequestGroupType::Group) {
@@ -761,14 +762,14 @@ bool TaskManager::CanOfferSharedTask(int task_id, const SharedTaskRequest& reque
 	if (task->min_level > 0 && request.lowest_level < task->min_level)
 	{
 		LogTasksDetail("lowest level [{}] is below task [{}] min level [{}]",
-			request.lowest_level, task_id, task->min_level);
+					   request.lowest_level, task_id, task->min_level);
 		return false;
 	}
 
 	if (task->max_level > 0 && request.highest_level > task->max_level)
 	{
 		LogTasksDetail("highest level [{}] exceeds task [{}] max level [{}]",
-			request.highest_level, task_id, task->max_level);
+					   request.highest_level, task_id, task->max_level);
 		return false;
 	}
 
@@ -1163,8 +1164,7 @@ void TaskManager::SendActiveTaskDescription(
 	//
 	if (!t->reward_id_list.empty() && t->item_link.empty()) {
 		auto items   = Strings::Split(t->reward_id_list, "|");
-		auto item    = items.front();
-		int  item_id = Strings::IsNumber(items.front()) ? std::stoi(items.front()) : 0;
+		int  item_id = Strings::IsNumber(items.front()) ? Strings::ToInt(items.front()) : 0;
 
 		if (item_id) {
 			const EQ::ItemData *reward_item = database.GetItem(item_id);
@@ -1517,7 +1517,7 @@ bool TaskManager::LoadClientState(Client *client, ClientTaskState *cts)
 	auto results = database.QueryDatabase(query);
 	if (results.Success()) {
 		for (auto row = results.begin(); row != results.end(); ++row) {
-			int task_id = atoi(row[0]);
+			int task_id = Strings::ToInt(row[0]);
 			cts->m_enabled_tasks.push_back(task_id);
 			LogTasksDetail("Adding task_id [{}] to enabled tasks", task_id);
 		}
@@ -1752,7 +1752,7 @@ void TaskManager::SyncClientSharedTaskRemoveLocalIfNotExists(Client *c, ClientTa
 			CharacterActivitiesRepository::DeleteWhere(database, delete_where);
 
 			c->MessageString(Chat::Yellow, TaskStr::NO_LONGER_MEMBER_TITLE,
-				m_task_data[cts->m_active_shared_task.task_id].title.c_str());
+							 m_task_data[cts->m_active_shared_task.task_id].title.c_str());
 
 			// remove as active task if doesn't exist
 			cts->m_active_shared_task = {};
@@ -1862,7 +1862,7 @@ bool TaskManager::IsActiveTaskComplete(ClientTaskInformation& client_task)
 	for (int i = 0; i < task_data->activity_count; ++i)
 	{
 		if (client_task.activity[i].activity_state != ActivityCompleted &&
-		    !task_data->activity_information[i].optional)
+			!task_data->activity_information[i].optional)
 		{
 			return false;
 		}

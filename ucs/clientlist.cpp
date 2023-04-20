@@ -122,11 +122,11 @@ std::vector<std::string> ParseRecipients(std::string RecipientString) {
 
 		if (Comma == std::string::npos) {
 
-			RecipientList.push_back(RecipientString.substr(CurrentPos));
+			RecipientList.emplace_back(RecipientString.substr(CurrentPos));
 
 			break;
 		}
-		RecipientList.push_back(RecipientString.substr(CurrentPos, Comma - CurrentPos));
+		RecipientList.emplace_back(RecipientString.substr(CurrentPos, Comma - CurrentPos));
 
 		CurrentPos = Comma + 2;
 	}
@@ -348,7 +348,7 @@ static void ProcessMailTo(Client *c, std::string MailMessage) {
 	}
 }
 
-static void ProcessMailTo(Client *c, std::string from, std::string subject, std::string message) {
+static void ProcessMailTo(Client *c, const std::string& from, const std::string& subject, const std::string& message) {
 }
 
 static void ProcessSetMessageStatus(std::string SetMessageCommand) {
@@ -379,14 +379,14 @@ static void ProcessSetMessageStatus(std::string SetMessageCommand) {
 
 		if (NumEnd == std::string::npos) {
 
-			MessageNumber = atoi(SetMessageCommand.substr(NumStart).c_str());
+			MessageNumber = Strings::ToInt(SetMessageCommand.substr(NumStart));
 
 			database.SetMessageStatus(MessageNumber, Status);
 
 			break;
 		}
 
-		MessageNumber = atoi(SetMessageCommand.substr(NumStart, NumEnd - NumStart).c_str());
+		MessageNumber = Strings::ToInt(SetMessageCommand.substr(NumStart, NumEnd - NumStart));
 
 		database.SetMessageStatus(MessageNumber, Status);
 
@@ -489,7 +489,7 @@ Clientlist::Clientlist(int ChatPort) {
 		exit(1);
 
 	chatsf->OnNewConnection([this](std::shared_ptr<EQ::Net::EQStream> stream) {
-		LogF(Logs::General, Logs::Loginserver, "New Client UDP connection from {0}:{1}", stream->GetRemoteIP(), stream->GetRemotePort());
+		LogInfo("New Client UDP connection from [{0}] [{1}]", stream->GetRemoteIP(), stream->GetRemotePort());
 		stream->SetOpcodeManager(&ChatOpMgr);
 
 		auto c = new Client(stream);
@@ -571,26 +571,22 @@ void Clientlist::CheckForStaleConnectionsAll()
 
 void Clientlist::CheckForStaleConnections(Client *c) {
 
-	if (!c) return;
+	if (!c) {
+		return;
+	}
 
 	std::list<Client*>::iterator Iterator;
 
 	for (Iterator = ClientChatConnections.begin(); Iterator != ClientChatConnections.end(); ++Iterator) {
-
 		if (((*Iterator) != c) && ((c->GetName() == (*Iterator)->GetName())
 			&& (c->GetConnectionType() == (*Iterator)->GetConnectionType()))) {
 
 			LogInfo("Removing old connection for [{}]", c->GetName().c_str());
-
 			struct in_addr in;
-
 			in.s_addr = (*Iterator)->ClientStream->GetRemoteIP();
-
 			LogInfo("Client connection from [{}]:[{}] closed", inet_ntoa(in),
 				ntohs((*Iterator)->ClientStream->GetRemotePort()));
-
 			safe_delete((*Iterator));
-
 			Iterator = ClientChatConnections.erase(Iterator);
 		}
 	}
@@ -876,7 +872,7 @@ void Clientlist::ProcessOPMailCommand(Client *c, std::string command_string, boo
 		break;
 
 	case CommandGetBody:
-		database.SendBody(c, atoi(parameters.c_str()));
+		database.SendBody(c, Strings::ToInt(parameters));
 		break;
 
 	case CommandMailTo:
@@ -891,7 +887,7 @@ void Clientlist::ProcessOPMailCommand(Client *c, std::string command_string, boo
 	case CommandSelectMailBox:
 	{
 		std::string::size_type NumStart = parameters.find_first_of("0123456789");
-		c->ChangeMailBox(atoi(parameters.substr(NumStart).c_str()));
+		c->ChangeMailBox(Strings::ToInt(parameters.substr(NumStart)));
 		break;
 	}
 	case CommandSetMailForwarding:
@@ -981,7 +977,7 @@ void Client::SendMailBoxes() {
 	safe_delete(outapp);
 }
 
-Client *Clientlist::FindCharacter(std::string CharacterName) {
+Client *Clientlist::FindCharacter(const std::string& CharacterName) {
 
 	std::list<Client*>::iterator Iterator;
 
@@ -1241,26 +1237,26 @@ void Client::LeaveAllChannels(bool send_updated_channel_list, bool command_direc
 }
 
 
-void Client::ProcessChannelList(std::string Input) {
+void Client::ProcessChannelList(const std::string& Input) {
 
 	if (Input.length() == 0) {
-
 		SendChannelList();
-
 		return;
 	}
 
 	std::string ChannelName = Input;
 
-	if (isdigit(ChannelName[0]))
-		ChannelName = ChannelSlotName(atoi(ChannelName.c_str()));
+	if (isdigit(ChannelName[0])) {
+		ChannelName = ChannelSlotName(Strings::ToInt(ChannelName));
+	}
 
 	ChatChannel *RequiredChannel = ChannelList->FindChannel(ChannelName);
 
-	if (RequiredChannel)
+	if (RequiredChannel) {
 		RequiredChannel->SendChannelMembers(this);
-	else
+	} else {
 		GeneralChannelMessage("Channel " + Input + " not found.");
+	}
 }
 
 
@@ -1411,37 +1407,31 @@ void Client::SendChannelMessageByNumber(std::string Message) {
 
 	std::string::size_type MessageStart = Message.find_first_of(" ");
 
-	if (MessageStart == std::string::npos)
+	if (MessageStart == std::string::npos) {
 		return;
+	}
 
-	int ChannelNumber = atoi(Message.substr(0, MessageStart).c_str());
+	int ChannelNumber = Strings::ToInt(Message.substr(0, MessageStart));
 
 	if ((ChannelNumber < 1) || (ChannelNumber > MAX_JOINED_CHANNELS)) {
-
 		GeneralChannelMessage("Invalid channel name/number specified.");
-
 		return;
 	}
 
 	ChatChannel *RequiredChannel = JoinedChannels[ChannelNumber - 1];
 
 	if (!RequiredChannel) {
-
 		GeneralChannelMessage("Invalid channel name/number specified.");
-
 		return;
 	}
 
-	if (IsRevoked())
-	{
+	if (IsRevoked()) {
 		GeneralChannelMessage("You are Revoked, you cannot chat in global channels.");
 		return;
 	}
 
-	if (RequiredChannel->GetName().compare("Newplayers") != 0)
-	{
-		if (GetKarma() < RuleI(Chat, KarmaGlobalChatLimit))
-		{
+	if (RequiredChannel->GetName().compare("Newplayers") != 0) {
+		if (GetKarma() < RuleI(Chat, KarmaGlobalChatLimit)) {
 			CharacterEntry *char_ent = nullptr;
 			for (auto &elem : Characters) {
 				if (elem.Name.compare(GetName()) == 0) {
@@ -1449,10 +1439,9 @@ void Client::SendChannelMessageByNumber(std::string Message) {
 					break;
 				}
 			}
-			if (char_ent)
-			{
-				if (char_ent->Level < RuleI(Chat, GlobalChatLevelLimit))
-				{
+
+			if (char_ent) {
+				if (char_ent->Level < RuleI(Chat, GlobalChatLevelLimit)) {
 					GeneralChannelMessage("You are either not high enough level or high enough karma to talk in this channel right now.");
 					return;
 				}
@@ -1519,7 +1508,7 @@ void Client::SendChannelMessageByNumber(std::string Message) {
 
 }
 
-void Client::SendChannelMessage(std::string ChannelName, std::string Message, Client *Sender) {
+void Client::SendChannelMessage(const std::string& ChannelName, const std::string& Message, Client *Sender) {
 
 	if (!Sender) return;
 
@@ -1546,7 +1535,7 @@ void Client::SendChannelMessage(std::string ChannelName, std::string Message, Cl
 	safe_delete(outapp);
 }
 
-void Client::ToggleAnnounce(std::string State)
+void Client::ToggleAnnounce(const std::string& State)
 {
 	if (State == "")
 		Announce = !Announce;
@@ -1613,7 +1602,7 @@ void Client::GeneralChannelMessage(const char *Characters) {
 
 }
 
-void Client::GeneralChannelMessage(std::string Message) {
+void Client::GeneralChannelMessage(const std::string& Message) {
 
 	auto outapp = new EQApplicationPacket(OP_ChannelMessage, Message.length() + 3);
 	char *PacketBuffer = (char *)outapp->pBuffer;
@@ -1656,17 +1645,18 @@ void Client::SetChannelPassword(std::string ChannelPassword) {
 
 	std::string ChannelName = ChannelPassword.substr(ChannelStart);
 
-	if ((ChannelName.length() > 0) && isdigit(ChannelName[0]))
-		ChannelName = ChannelSlotName(atoi(ChannelName.c_str()));
+	if ((ChannelName.length() > 0) && isdigit(ChannelName[0])) {
+		ChannelName = ChannelSlotName(Strings::ToInt(ChannelName));
+	}
 
 	std::string Message;
 
 	if (!strcasecmp(Password.c_str(), "remove")) {
 		Password.clear();
 		Message = "Password REMOVED on channel " + ChannelName;
-	}
-	else
+	} else {
 		Message = "Password change on channel " + ChannelName;
+	}
 
 	LogInfo("Set password of channel [[{}]] to [[{}]] by [{}]", ChannelName.c_str(), Password.c_str(), GetName().c_str());
 
@@ -1721,8 +1711,9 @@ void Client::SetChannelOwner(std::string CommandString) {
 
 	std::string ChannelName = CapitaliseName(CommandString.substr(ChannelStart));
 
-	if ((ChannelName.length() > 0) && isdigit(ChannelName[0]))
-		ChannelName = ChannelSlotName(atoi(ChannelName.c_str()));
+	if ((ChannelName.length() > 0) && isdigit(ChannelName[0])) {
+		ChannelName = ChannelSlotName(Strings::ToInt(ChannelName));
+	}
 
 	LogInfo("Set owner of channel [[{}]] to [[{}]]", ChannelName.c_str(), NewOwner.c_str());
 
@@ -1767,8 +1758,9 @@ void Client::OPList(std::string CommandString) {
 
 	std::string ChannelName = CapitaliseName(CommandString.substr(ChannelStart));
 
-	if ((ChannelName.length() > 0) && isdigit(ChannelName[0]))
-		ChannelName = ChannelSlotName(atoi(ChannelName.c_str()));
+	if ((ChannelName.length() > 0) && isdigit(ChannelName[0])) {
+		ChannelName = ChannelSlotName(Strings::ToInt(ChannelName));
+	}
 
 	ChatChannel *RequiredChannel = ChannelList->FindChannel(ChannelName);
 
@@ -1810,21 +1802,20 @@ void Client::ChannelInvite(std::string CommandString) {
 
 	std::string ChannelName = CapitaliseName(CommandString.substr(ChannelStart));
 
-	if ((ChannelName.length() > 0) && isdigit(ChannelName[0]))
-		ChannelName = ChannelSlotName(atoi(ChannelName.c_str()));
+	if ((ChannelName.length() > 0) && isdigit(ChannelName[0])) {
+		ChannelName = ChannelSlotName(Strings::ToInt(ChannelName));
+	}
 
 	LogInfo("[[{}]] invites [[{}]] to channel [[{}]]", GetName().c_str(), Invitee.c_str(), ChannelName.c_str());
 
 	Client *RequiredClient = g_Clientlist->FindCharacter(Invitee);
 
 	if (!RequiredClient) {
-
 		GeneralChannelMessage(Invitee + " is not online.");
 		return;
 	}
 
 	if (RequiredClient == this) {
-
 		GeneralChannelMessage("You cannot invite yourself to a channel.");
 		return;
 	}
@@ -1871,28 +1862,25 @@ void Client::ChannelModerate(std::string CommandString) {
 	std::string::size_type ChannelStart = CommandString.find_first_not_of(" ");
 
 	if (ChannelStart == std::string::npos) {
-
 		std::string Message = "Incorrect syntax: /chat moderate <channel>";
-
 		GeneralChannelMessage(Message);
 		return;
 	}
 
 	std::string ChannelName = CapitaliseName(CommandString.substr(ChannelStart));
 
-	if ((ChannelName.length() > 0) && isdigit(ChannelName[0]))
-		ChannelName = ChannelSlotName(atoi(ChannelName.c_str()));
+	if ((ChannelName.length() > 0) && isdigit(ChannelName[0])) {
+		ChannelName = ChannelSlotName(Strings::ToInt(ChannelName));
+	}
 
 	ChatChannel *RequiredChannel = ChannelList->FindChannel(ChannelName);
 
 	if (!RequiredChannel) {
-
 		GeneralChannelMessage("Channel " + ChannelName + " not found.");
 		return;
 	}
 
 	if (!RequiredChannel->IsOwner(GetName()) && !RequiredChannel->IsModerator(GetName()) && !IsChannelAdmin()) {
-
 		GeneralChannelMessage("You do not own or have moderator rights to channel " + ChannelName);
 		return;
 	}
@@ -1938,8 +1926,9 @@ void Client::ChannelGrantModerator(std::string CommandString) {
 
 	std::string ChannelName = CapitaliseName(CommandString.substr(ChannelStart));
 
-	if ((ChannelName.length() > 0) && isdigit(ChannelName[0]))
-		ChannelName = ChannelSlotName(atoi(ChannelName.c_str()));
+	if ((ChannelName.length() > 0) && isdigit(ChannelName[0])) {
+		ChannelName = ChannelSlotName(Strings::ToInt(ChannelName));
+	}
 
 	LogInfo("[[{}]] gives [[{}]] moderator rights to channel [[{}]]", GetName().c_str(), Moderator.c_str(), ChannelName.c_str());
 
@@ -2019,8 +2008,9 @@ void Client::ChannelGrantVoice(std::string CommandString) {
 
 	std::string ChannelName = CapitaliseName(CommandString.substr(ChannelStart));
 
-	if ((ChannelName.length() > 0) && isdigit(ChannelName[0]))
-		ChannelName = ChannelSlotName(atoi(ChannelName.c_str()));
+	if ((ChannelName.length() > 0) && isdigit(ChannelName[0])) {
+		ChannelName = ChannelSlotName(Strings::ToInt(ChannelName));
+	}
 
 	LogInfo("[[{}]] gives [[{}]] voice to channel [[{}]]", GetName().c_str(), Voicee.c_str(), ChannelName.c_str());
 
@@ -2107,9 +2097,10 @@ void Client::ChannelKick(std::string CommandString) {
 	}
 	std::string ChannelName = CapitaliseName(CommandString.substr(ChannelStart));
 
-	if ((ChannelName.length() > 0) && isdigit(ChannelName[0]))
-		ChannelName = ChannelSlotName(atoi(ChannelName.c_str()));
-
+	if ((ChannelName.length() > 0) && isdigit(ChannelName[0])) {
+		ChannelName = ChannelSlotName(Strings::ToInt(ChannelName));
+	}
+	
 	LogInfo("[[{}]] kicks [[{}]] from channel [[{}]]", GetName().c_str(), Kickee.c_str(), ChannelName.c_str());
 
 	Client *RequiredClient = g_Clientlist->FindCharacter(Kickee);
@@ -2277,7 +2268,7 @@ void Client::SetConnectionType(char c) {
 	}
 }
 
-Client *Clientlist::IsCharacterOnline(std::string CharacterName) {
+Client *Clientlist::IsCharacterOnline(const std::string& CharacterName) {
 
 	// This method is used to determine if the character we are a sending an email to is connected to the mailserver,
 	// so we can send them a new email notification.
@@ -2305,7 +2296,7 @@ Client *Clientlist::IsCharacterOnline(std::string CharacterName) {
 	return nullptr;
 }
 
-int Client::GetMailBoxNumber(std::string CharacterName) {
+int Client::GetMailBoxNumber(const std::string& CharacterName) {
 
 	for (unsigned int i = 0; i < Characters.size(); i++)
 		if (Characters[i].Name == CharacterName)
@@ -2314,7 +2305,7 @@ int Client::GetMailBoxNumber(std::string CharacterName) {
 	return -1;
 }
 
-void Client::SendNotification(int MailBoxNumber, std::string Subject, std::string From, int MessageID) {
+void Client::SendNotification(int MailBoxNumber, const std::string& Subject, const std::string& From, int MessageID) {
 
 	char TimeStamp[100];
 

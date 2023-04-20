@@ -167,12 +167,14 @@ bool HealRotation::ClearMemberPool()
 	m_casting_target_poke = false;
 	m_active_heal_target = false;
 	
-	if (!ClearTargetPool())
+	if (!ClearTargetPool()) {
 		LogError("failed to clear m_target_pool (size: [{}])", m_target_pool.size());
+	}
 
-	auto clear_list = const_cast<const std::list<Bot*>&>(m_member_pool);
-	for (auto member_iter : clear_list)
+	auto& clear_list = const_cast<const std::list<Bot*>&>(m_member_pool);
+	for (auto member_iter : clear_list) {
 		member_iter->LeaveHealRotationMemberPool();
+	}
 
 	return true;
 }
@@ -183,9 +185,10 @@ bool HealRotation::ClearTargetPool()
 	m_hot_active = false;
 	m_is_active = false;
 	
-	auto clear_list = const_cast<const std::list<Mob*>&>(m_target_pool);
-	for (auto target_iter : clear_list)
+	auto& clear_list = const_cast<const std::list<Mob*>&>(m_target_pool);
+	for (auto target_iter : clear_list) {
 		target_iter->LeaveHealRotationTargetPool();
+	}
 
 	//m_casting_target_poke = false;
 	//bias_targets();
@@ -205,8 +208,9 @@ bool HealRotation::ClearTargetPool()
 
 bool HealRotation::SetHOTTarget(Mob* hot_target)
 {
-	if (!hot_target || !IsTargetInPool(hot_target))
+	if (!hot_target || !IsTargetInPool(hot_target)) {
 		return false;
+	}
 
 	m_hot_target = hot_target;
 	m_hot_active = true;
@@ -247,14 +251,16 @@ bool HealRotation::Stop()
 
 Bot* HealRotation::CastingMember()
 {
-	if (!m_is_active && !m_hot_active)
+	if (!m_is_active && !m_hot_active) {
 		return nullptr;
+	}
 	
 	if (m_cycle_pool.empty()) {
 		cycle_refresh();
 
-		if (m_cycle_pool.empty())
+		if (m_cycle_pool.empty()) {
 			return nullptr;
+		}
 	}
 
 	return m_cycle_pool.front();

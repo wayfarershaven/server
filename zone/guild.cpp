@@ -236,10 +236,8 @@ void Client::RefreshGuildInfo()
 	guild_id = info.guild_id;
 	GuildBanker = info.banker || guild_mgr.IsGuildLeader(GuildID(), CharacterID());
 
-	if(((int)zone->GetZoneID() == RuleI(World, GuildBankZoneID)))
-	{
-		if(WasBanker != GuildBanker)
-		{
+	if(zone->GetZoneID() == Zones::GUILDHALL) {
+		if(WasBanker != GuildBanker) {
 			auto outapp = new EQApplicationPacket(OP_SetGuildRank, sizeof(GuildSetRank_Struct));
 
 			GuildSetRank_Struct *gsrs = (GuildSetRank_Struct*)outapp->pBuffer;
@@ -251,23 +249,25 @@ void Client::RefreshGuildInfo()
 			FastQueuePacket(&outapp);
 		}
 
-		if((guild_id != OldGuildID) && GuildBanks)
-		{
+		if((guild_id != OldGuildID) && GuildBanks) {
 			// Unsure about this for RoF+ ... But they don't have that action anymore so fuck it
-			if (ClientVersion() < EQ::versions::ClientVersion::RoF)
+			if (ClientVersion() < EQ::versions::ClientVersion::RoF) {
 				ClearGuildBank();
+			}
 
-			if(guild_id != GUILD_NONE)
+			if(guild_id != GUILD_NONE) {
 				GuildBanks->SendGuildBank(this);
+			}
 		}
 	}
-
 	SendGuildSpawnAppearance();
 }
 
 void EntityList::SendGuildMOTD(uint32 guild_id) {
-	if(guild_id == GUILD_NONE)
+	if(guild_id == GUILD_NONE) {
 		return;
+	}
+
 	auto it = client_list.begin();
 	while (it != client_list.end()) {
 		Client *client = it->second;
@@ -281,8 +281,10 @@ void EntityList::SendGuildMOTD(uint32 guild_id) {
 }
 
 void EntityList::SendGuildSpawnAppearance(uint32 guild_id) {
-	if(guild_id == GUILD_NONE)
+	if(guild_id == GUILD_NONE) {
 		return;
+	}
+
 	auto it = client_list.begin();
 	while (it != client_list.end()) {
 		Client *client = it->second;
@@ -294,8 +296,10 @@ void EntityList::SendGuildSpawnAppearance(uint32 guild_id) {
 }
 
 void EntityList::RefreshAllGuildInfo(uint32 guild_id) {
-	if(guild_id == GUILD_NONE)
+	if(guild_id == GUILD_NONE) {
 		return;
+	}
+
 	auto it = client_list.begin();
 	while (it != client_list.end()) {
 		Client *client = it->second;
@@ -307,8 +311,9 @@ void EntityList::RefreshAllGuildInfo(uint32 guild_id) {
 }
 
 void EntityList::SendGuildMembers(uint32 guild_id) {
-	if(guild_id == GUILD_NONE)
+	if(guild_id == GUILD_NONE) {
 		return;
+	}
 
 	//this could be optimized a bit to only build the member's packet once
 	//and then keep swapping out the name in the packet on each send.

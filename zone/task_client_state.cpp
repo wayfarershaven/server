@@ -169,13 +169,7 @@ void ClientTaskState::EnableTask(int character_id, int task_count, int *task_lis
 		query_stream << (i ? ", " : "") << StringFormat("(%i, %i)", character_id, tasks_enabled[i]);
 	}
 
-	std::string query = query_stream.str();
-	if (!tasks_enabled.empty()) {
-		database.QueryDatabase(query);
-	}
-	else {
-		LogTasks("Called for character_id [{}] but, no tasks exist", character_id);
-	}
+	database.QueryDatabase(query_stream.str());
 }
 
 void ClientTaskState::DisableTask(int character_id, int task_count, int *task_list)
@@ -228,17 +222,7 @@ void ClientTaskState::DisableTask(int character_id, int task_count, int *task_li
 
 	queryStream << ")";
 
-	std::string query = queryStream.str();
-
-	if (tasks_disabled.size()) {
-		database.QueryDatabase(query);
-	}
-	else {
-		LogTasks(
-			"DisableTask called for character_id [{}] ... but, no tasks exist",
-			character_id
-		);
-	}
+	database.QueryDatabase(queryStream.str());
 }
 
 bool ClientTaskState::IsTaskEnabled(int task_id)
@@ -1048,12 +1032,12 @@ void ClientTaskState::RewardTask(Client *c, const TaskInformation *ti, ClientTas
 		for (const auto &i: Strings::Split(ti->reward_id_list, "|")) {
 			// handle charges
 			int16  charges = -1;
-			uint32 item_id = Strings::IsNumber(i) ? std::stoi(i) : 0;
+			uint32 item_id = Strings::IsNumber(i) ? Strings::ToInt(i) : 0;
 			if (Strings::Contains(i, ",")) {
 				auto s = Strings::Split(i, ",");
 				if (!s.empty() && s.size() == 2) {
-					item_id = Strings::IsNumber(s[0]) ? std::stoi(s[0]) : 0;
-					charges = Strings::IsNumber(s[1]) ? std::stoi(s[1]) : 0;
+					item_id = Strings::IsNumber(s[0]) ? Strings::ToInt(s[0]) : 0;
+					charges = Strings::IsNumber(s[1]) ? Strings::ToInt(s[1]) : 0;
 				}
 			}
 

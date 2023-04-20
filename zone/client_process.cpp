@@ -22,12 +22,8 @@
 #include "../common/eqemu_logsys.h"
 #include "../common/global_define.h"
 #include <iostream>
-#include <stdio.h>
-#include <zlib.h>
 
 #ifdef _WINDOWS
-	#include <winsock2.h>
-	#include <windows.h>
 	#define snprintf	_snprintf
 	#define strncasecmp	_strnicmp
 	#define strcasecmp	_stricmp
@@ -54,7 +50,6 @@
 #include "worldserver.h"
 #include "zone.h"
 #include "zonedb.h"
-#include "../common/zone_store.h"
 #include "../common/events/player_event_logs.h"
 
 extern QueryServ* QServ;
@@ -202,6 +197,11 @@ bool Client::Process() {
 		}
 
 		if (camp_timer.Check()) {
+			Raid* raid = entity_list.GetRaidByClient(this);
+			if (raid) {
+				raid->RemoveMember(this->GetName());
+			}
+			
 			LeaveGroup();
 			Save();
 			if (GetMerc())
@@ -605,11 +605,13 @@ bool Client::Process() {
 		for (auto & close_mob : close_mobs) {
 			Mob *mob = close_mob.second;
 
-			if (!mob)
+			if (!mob) {
 				continue;
+			}
 
-			if (mob->IsClient())
+			if (mob->IsClient()) {
 				continue;
+			}
 
 			if (mob->CheckWillAggro(this) && !mob->CheckAggro(this)) {
 				mob->AddToHateList(this, 0);
@@ -691,61 +693,60 @@ bool Client::Process() {
 
 /* Just a set of actions preformed all over in Client::Process */
 void Client::OnDisconnect(bool hard_disconnect) {
-	if(hard_disconnect)
-	{
+	if (hard_disconnect) {
 		LeaveGroup();
-		if (GetMerc())
-		{
+
+		if (GetMerc()) {
 			GetMerc()->Save();
 			GetMerc()->Depop();
 		}
-		Raid *MyRaid = entity_list.GetRaidByClient(this);
+		auto* r = entity_list.GetRaidByClient(this);
 
-		if (MyRaid)
-			MyRaid->MemberZoned(this);
-
-		RecordPlayerEventLog(PlayerEvent::WENT_OFFLINE, PlayerEvent::EmptyEvent{});
-
-		if (parse->PlayerHasQuestSub(EVENT_DISCONNECT)) {
-			parse->EventPlayer(EVENT_DISCONNECT, this, "", 0);
+		if (r) {
+			r->MemberZoned(this);
 		}
 
 		/* QS: PlayerLogConnectDisconnect */
-		if (RuleB(QueryServ, PlayerLogConnectDisconnect)){
+		if (RuleB(QueryServ, PlayerLogConnectDisconnect)) {
 			std::string event_desc = StringFormat("Disconnect :: in zoneid:%i instid:%i", GetZoneID(), GetInstanceID());
 			QServ->PlayerLogEvent(Player_Log_Connect_State, CharacterID(), event_desc);
 		}
 	}
 
-	if (!bZoning)
-	{
+	if (!bZoning) {
 		SetDynamicZoneMemberStatus(DynamicZoneMemberStatus::Offline);
 	}
 
 	RemoveAllAuras();
 
-	Mob *Other = trade->With();
-	if(Other)
-	{
+	auto* o = trade->With();
+	if (o) {
 		LogTrading("Client disconnected during a trade. Returning their items");
 		FinishTrade(this);
 
-		if(Other->IsClient())
-			Other->CastToClient()->FinishTrade(Other);
+		if (o->IsClient()) {
+			o->CastToClient()->FinishTrade(o);
+		}
 
 		/* Reset both sides of the trade */
 		trade->Reset();
-		Other->trade->Reset();
+		o->trade->Reset();
 	}
 
 	database.SetFirstLogon(CharacterID(), 0); //We change firstlogon status regardless of if a player logs out to zone or not, because we only want to trigger it on their first login from world.
 
-	/* Remove ourself from all proximities */
+	/* Remove from all proximities */
 	ClearAllProximities();
 
 	auto outapp = new EQApplicationPacket(OP_LogoutReply);
 	FastQueuePacket(&outapp);
 
+	RecordPlayerEventLog(PlayerEvent::WENT_OFFLINE, PlayerEvent::EmptyEvent{});
+
+	if (parse->PlayerHasQuestSub(EVENT_DISCONNECT)) {
+		parse->EventPlayer(EVENT_DISCONNECT, this, "", 0);
+	}
+	
 	Disconnect();
 }
 
@@ -1132,6 +1133,7 @@ void Client::OPMemorizeSpell(const EQApplicationPacket* app)
 				const auto* item = inst->GetItem();
 
 				if (
+					item &&
 					RuleB(Character, RestrictSpellScribing) &&
 					!item->IsEquipable(GetRace(), GetClass())
 				) {

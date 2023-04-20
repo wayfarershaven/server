@@ -20,7 +20,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include "../common/eq_constants.h"
 #include "../common/eq_packet_structs.h"
 #include "../common/rulesys.h"
-#include "../common/skills.h"
 #include "../common/spdat.h"
 #include "../common/strings.h"
 #include "../common/data_verification.h"
@@ -37,7 +36,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include "mob.h"
 #include "npc.h"
 
-#include <stdlib.h>
 #include <boost/concept_check.hpp>
 #include "bot.h"
 
@@ -104,20 +102,16 @@ EQ::skills::SkillType Mob::AttackAnimation(int Hand, const EQ::ItemInstance* wea
 	}
 	else if (IsNPC()) {
 		switch (skillinuse) {
+			case EQ::skills::Skill1HBlunt: // 1H Blunt
 			case EQ::skills::Skill1HSlashing: // 1H Slashing
 				type = anim1HWeapon;
 				break;
+			case EQ::skills::Skill2HBlunt: // 2H Blunt
 			case EQ::skills::Skill2HSlashing: // 2H Slashing
 				type = anim2HSlashing;
 				break;
 			case EQ::skills::Skill1HPiercing: // Piercing
 				type = anim1HPiercing;
-				break;
-			case EQ::skills::Skill1HBlunt: // 1H Blunt
-				type = anim1HWeapon;
-				break;
-			case EQ::skills::Skill2HBlunt: // 2H Blunt
-				type = anim2HSlashing; //anim2HWeapon
 				break;
 			case EQ::skills::Skill2HPiercing: // 2H Piercing
 				type = anim2HWeapon;
@@ -608,7 +602,7 @@ bool Mob::AvoidDamage(Mob *other, DamageHitInfo &hit)
 	}
 
 	// Try Shield Block OR TwoHandBluntBlockCheck
-	if (HasShieldEquiped() && (aabonuses.ShieldBlock || spellbonuses.ShieldBlock || itembonuses.ShieldBlock) && (InFront || bBlockFromRear)) {
+	if (HasShieldEquipped() && (aabonuses.ShieldBlock || spellbonuses.ShieldBlock || itembonuses.ShieldBlock) && (InFront || bBlockFromRear)) {
 		int chance = aabonuses.ShieldBlock + spellbonuses.ShieldBlock + itembonuses.ShieldBlock;
 		if (counter_block || counter_all) {
 			float counter = (counter_block + counter_all) / 100.0f;
@@ -620,7 +614,7 @@ bool Mob::AvoidDamage(Mob *other, DamageHitInfo &hit)
 		}
 	}
 
-	if (HasTwoHandBluntEquiped() && (aabonuses.TwoHandBluntBlock || spellbonuses.TwoHandBluntBlock || itembonuses.TwoHandBluntBlock) && (InFront || bBlockFromRear)) {
+	if (HasTwoHandBluntEquipped() && (aabonuses.TwoHandBluntBlock || spellbonuses.TwoHandBluntBlock || itembonuses.TwoHandBluntBlock) && (InFront || bBlockFromRear)) {
 		int chance = aabonuses.TwoHandBluntBlock + itembonuses.TwoHandBluntBlock + spellbonuses.TwoHandBluntBlock;
 		if (counter_block || counter_all) {
 			float counter = (counter_block + counter_all) / 100.0f;
@@ -890,7 +884,7 @@ int Mob::ACSum(bool skip_caps)
 	int ac = 0; // this should be base AC whenever shrouds come around
 	ac += itembonuses.AC; // items + food + tribute
 	int shield_ac = 0;
-	if (HasShieldEquiped() && IsOfClientBot()) {
+	if (HasShieldEquipped() && IsOfClientBot()) {
 		auto inst = (IsClient()) ? GetInv().GetItem(EQ::invslot::slotSecondary) : CastToBot()->GetBotItem(EQ::invslot::slotSecondary);
 		if (inst) {
 			if (inst->GetItemRecommendedLevel(true) <= GetLevel()) {
@@ -1511,12 +1505,11 @@ bool Mob::Attack(Mob* other, int Hand, bool bRiposte, bool IsStrikethrough, bool
 		SetTarget(other);
 	}
 
-	LogCombatDetail("Attacking [{}] with hand [{}] [{}]", other ? other->GetName() : "nullptr", Hand, bRiposte ? "this is a riposte" : "");
+	LogCombatDetail("Attacking [{}] with hand [{}] [{}]", other->GetName(), Hand, bRiposte ? "this is a riposte" : "");
 
 	//SetAttackTimer();
 	if (
 			(IsCasting() && GetClass() != BARD && !IsFromSpell)
-			|| other == nullptr
 			|| ((IsClient() && CastToClient()->dead) || (other->IsClient() && other->CastToClient()->dead))
 			|| (GetHP() < 0)
 			|| (!IsAttackAllowed(other))
@@ -1589,7 +1582,7 @@ bool Mob::Attack(Mob* other, int Hand, bool bRiposte, bool IsStrikethrough, bool
 		if (Hand == EQ::invslot::slotPrimary || Hand == EQ::invslot::slotSecondary)
 			my_hit.base_damage = DoDamageCaps(my_hit.base_damage);
 		auto shield_inc = spellbonuses.ShieldEquipDmgMod + itembonuses.ShieldEquipDmgMod + aabonuses.ShieldEquipDmgMod;
-		if (shield_inc > 0 && HasShieldEquiped() && Hand == EQ::invslot::slotPrimary) {
+		if (shield_inc > 0 && HasShieldEquipped() && Hand == EQ::invslot::slotPrimary) {
 			my_hit.base_damage = my_hit.base_damage * (100 + shield_inc) / 100;
 			hate = hate * (100 + shield_inc) / 100;
 		}
@@ -1979,10 +1972,10 @@ bool Client::Death(Mob* killerMob, int64 damage, uint16 spell, EQ::skills::Skill
 			database.GetVariable("ServerType", tmp);
 			if (tmp[0] == '1' && tmp[1] == '\0' && killerMob && killerMob->IsClient()) {
 				database.GetVariable("PvPreward", tmp);
-				auto reward = atoi(tmp.c_str());
+				auto reward = Strings::ToInt(tmp.c_str());
 				if (reward == 3) {
 					database.GetVariable("PvPitem", tmp);
-					auto pvp_item_id = atoi(tmp.c_str());
+					auto pvp_item_id = Strings::ToInt(tmp.c_str());
 					const auto* item = database.GetItem(pvp_item_id);
 					if (item) {
 						new_corpse->SetPlayerKillItemID(pvp_item_id);
@@ -2127,12 +2120,12 @@ bool NPC::Attack(Mob* other, int Hand, bool bRiposte, bool IsStrikethrough, bool
 
 	//Check that we can attack before we calc heading and face our target
 	if (!IsAttackAllowed(other)) {
-		if (GetOwnerID())
+		if (GetOwnerID()) {
 			SayString(NOT_LEGAL_TARGET);
-		if (other) {
-			RemoveFromHateList(other);
-			LogCombat("I am not allowed to attack [{}]", other->GetName());
 		}
+
+		RemoveFromHateList(other);
+		LogCombat("I am not allowed to attack [{}]", other->GetName());
 		return false;
 	}
 
@@ -2146,17 +2139,19 @@ bool NPC::Attack(Mob* other, int Hand, bool bRiposte, bool IsStrikethrough, bool
 		my_hit.skill = static_cast<EQ::skills::SkillType>(GetPrimSkill());
 		OffHandAtk(false);
 	}
+
 	if (Hand == EQ::invslot::slotSecondary) {
 		my_hit.skill = static_cast<EQ::skills::SkillType>(GetSecSkill());
 		OffHandAtk(true);
 	}
 
 	//figure out what weapon they are using, if any
-	const EQ::ItemData* weapon = nullptr;
-	if (Hand == EQ::invslot::slotPrimary && equipment[EQ::invslot::slotPrimary] > 0)
+	const EQ::ItemData *weapon = nullptr;
+	if (Hand == EQ::invslot::slotPrimary && equipment[EQ::invslot::slotPrimary] > 0) {
 		weapon = database.GetItem(equipment[EQ::invslot::slotPrimary]);
-	else if (equipment[EQ::invslot::slotSecondary])
+	} else if (equipment[EQ::invslot::slotSecondary]) {
 		weapon = database.GetItem(equipment[EQ::invslot::slotSecondary]);
+	}
 
 	//We dont factor much from the weapon into the attack.
 	//Just the skill type so it doesn't look silly using punching animations and stuff while wielding weapons
@@ -2503,8 +2498,10 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 		bool ownerInGroup = false;
 		if ((give_exp->HasGroup() && give_exp->GetGroup()->IsGroupMember(give_exp->GetUltimateOwner()))
 			|| (give_exp->IsPet() && (give_exp->GetOwner()->IsClient()
-									  || (give_exp->GetOwner()->HasGroup() && give_exp->GetOwner()->GetGroup()->IsGroupMember(give_exp->GetOwner()->GetUltimateOwner())))))
+									  || (give_exp->GetOwner()->HasGroup() && give_exp->GetOwner()->GetGroup()->IsGroupMember(give_exp->GetOwner()->GetUltimateOwner()))))
+		) {
 			ownerInGroup = true;
+		}
 
 		give_exp = give_exp->GetUltimateOwner();
 
@@ -2560,9 +2557,13 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 			}
 
 			/* Send the EVENT_KILLED_MERIT event for all raid members */
-			for (int i = 0; i < MAX_RAID_MEMBERS; i++) {
-				if (kr->members[i].member != nullptr && kr->members[i].member->IsClient()) { // If Group Member is Client
-					Client *c = kr->members[i].member;
+			for (const auto& m : kr->members) {
+				if (m.is_bot) {
+					continue;
+				}
+
+				if (m.member && m.member->IsClient()) { // If Group Member is Client
+					Client *c = m.member;
 					c->RecordKilledNPCEvent(this);
 
 					if (parse->HasQuestSub(GetNPCTypeID(), EVENT_KILLED_MERIT)) {
@@ -2588,9 +2589,13 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 				QS->s1.ZoneID = GetZoneID();
 				QS->s1.InstanceID = zone->GetInstanceID();
 				QS->s1.Type = 2; // Raid Fight
-				for (int i = 0; i < MAX_RAID_MEMBERS; i++) {
-					if (kr->members[i].member != nullptr && kr->members[i].member->IsClient()) { // If Group Member is Client
-						Client *c = kr->members[i].member;
+				for (const auto& m : kr->members) {
+					if (m.is_bot) {
+						continue;
+					}
+
+					if (m.member && m.member->IsClient()) { // If Group Member is Client
+						Client *c = m.member;
 						QS->Chars[PlayerCount].char_id = c->CharacterID();
 						PlayerCount++;
 					}
@@ -2748,33 +2753,33 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 					Raid* r = entity_list.GetRaidByClient(killer->CastToClient());
 					if (r) {
 						int i = 0;
-						for (int x = 0; x < MAX_RAID_MEMBERS; x++) {
+						for (const auto& m : r->members) {
+							if (m.is_bot) {
+								continue;
+							}
 							switch (r->GetLootType()) {
 								case 0:
 								case 1:
-									if (r->members[x].member && r->members[x].IsRaidLeader) {
-										corpse->AllowPlayerLoot(r->members[x].member, i);
+									if (m.member && m.is_raid_leader) {
+										corpse->AllowPlayerLoot(m.member, i);
 										i++;
 									}
 									break;
 								case 2:
-									if (r->members[x].member && r->members[x].IsRaidLeader) {
-										corpse->AllowPlayerLoot(r->members[x].member, i);
-										i++;
-									} else if (r->members[x].member && r->members[x].IsGroupLeader) {
-										corpse->AllowPlayerLoot(r->members[x].member, i);
+									if (m.member && (m.is_raid_leader || m.is_group_leader)) {
+										corpse->AllowPlayerLoot(m.member, i);
 										i++;
 									}
 									break;
 								case 3:
-									if (r->members[x].member && r->members[x].IsLooter) {
-										corpse->AllowPlayerLoot(r->members[x].member, i);
+									if (m.member && m.is_looter) {
+										corpse->AllowPlayerLoot(m.member, i);
 										i++;
 									}
 									break;
 								case 4:
-									if (r->members[x].member) {
-										corpse->AllowPlayerLoot(r->members[x].member, i);
+									if (m.member) {
+										corpse->AllowPlayerLoot(m.member, i);
 										i++;
 									}
 									break;
@@ -2821,7 +2826,9 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 				oos->CastToNPC()->DoNPCEmote(EQ::constants::EmoteEventTypes::KilledNPC, emote_id);
 			}
 
-			killer_mob->TrySpellOnKill(killed_level, spell);
+			if (killer_mob) {
+				killer_mob->TrySpellOnKill(killed_level, spell);
+			}
 		}
 	}
 
@@ -2902,25 +2909,22 @@ void Mob::AddToHateList(Mob* other, int64 hate /*= 0*/, int64 damage /*= 0*/, bo
 	Mob* targetmob = GetTarget();
 	bool on_hatelist = CheckAggro(other);
 
-	if (other) {
-		bool on_hatelist = CheckAggro(other);
-		AddRampage(other);
-		if (on_hatelist) { // odd reason, if you're not on the hate list, subtlety etc don't apply!
-			// Spell Casting Subtlety etc
-			int64 hatemod = 100 + other->spellbonuses.hatemod + other->itembonuses.hatemod + other->aabonuses.hatemod;
+	AddRampage(other);
+	if (on_hatelist) { // odd reason, if you're not on the hate list, subtlety etc don't apply!
+		// Spell Casting Subtlety etc
+		int64 hatemod = 100 + other->spellbonuses.hatemod + other->itembonuses.hatemod + other->aabonuses.hatemod;
 
-			if (hatemod < 1) {
-				hatemod = 1;
-			}
-			hate = ((hate * (hatemod)) / 100);
+		if (hatemod < 1) {
+			hatemod = 1;
+		}
+		hate = ((hate * (hatemod)) / 100);
+	} else {
+		if (this->IsCharmed()){
+			hate += RuleI(Aggro, InitialPetAggroBonus);
+			Log(Logs::General, Logs::Combat, "InitialPetAggroBonus: %d", RuleI(Aggro, InitialPetAggroBonus));
 		} else {
-			if (this->IsCharmed()){
-				hate += RuleI(Aggro, InitialPetAggroBonus);
-				Log(Logs::General, Logs::Combat, "InitialPetAggroBonus: %d", RuleI(Aggro, InitialPetAggroBonus));
-			} else {
-				hate += RuleI(Aggro, InitialAggroBonus);
-				Log(Logs::General, Logs::Combat, "InitialAggroBonus: %d", RuleI(Aggro, InitialAggroBonus));
-			}
+			hate += RuleI(Aggro, InitialAggroBonus);
+			Log(Logs::General, Logs::Combat, "InitialAggroBonus: %d", RuleI(Aggro, InitialAggroBonus));
 		}
 	}
 
@@ -2998,16 +3002,17 @@ void Mob::AddToHateList(Mob* other, int64 hate /*= 0*/, int64 damage /*= 0*/, bo
 
 	// if other is a bot, add the bots client to the hate list
 	if (RuleB(Bots, Enabled)) {
-		while (other->IsBot()) {
+		 if (other->IsBot()) {
 			auto other_ = other->CastToBot();
+
 			if (!other_ || !other_->GetBotOwner()) {
-				break;
+				return;
 			}
 
 			auto owner_ = other_->GetBotOwner()->CastToClient();
 			if (!owner_ || owner_->IsDead() ||
 				!owner_->InZone()) {
-				break;
+				return;
 			}
 
 			if (owner_->GetFeigned()) {
@@ -3015,8 +3020,6 @@ void Mob::AddToHateList(Mob* other, int64 hate /*= 0*/, int64 damage /*= 0*/, bo
 			} else if (!hate_list.IsEntOnHateList(owner_)) {
 				hate_list.AddEntToHateList(owner_, 0, 0, false, true);
 			}
-
-			break;
 		}
 	}
 
@@ -3682,33 +3685,33 @@ bool Mob::HasRangedProcs() const
 
 bool Client::CheckDoubleAttack()
 {
-	int chance = 0;
-	int skill = GetSkill(EQ::skills::SkillDoubleAttack);
 	//Check for bonuses that give you a double attack chance regardless of skill (ie Bestial Frenzy/Harmonious Attack AA)
-	int bonusGiveDA = aabonuses.GiveDoubleAttack + spellbonuses.GiveDoubleAttack + itembonuses.GiveDoubleAttack;
-	if (skill > 0) {
-		chance = skill + GetLevel();
-	} else if (!bonusGiveDA) {
+	uint32 bonusGiveDA = aabonuses.GiveDoubleAttack + spellbonuses.GiveDoubleAttack + itembonuses.GiveDoubleAttack;
+
+	if(!HasSkill(EQ::skills::SkillDoubleAttack) && !bonusGiveDA) {
 		return false;
 	}
 
-	if (bonusGiveDA) {
-		chance += bonusGiveDA / 100.0f * 500; // convert to skill value
-	}
+	float chance = 0.0f;
+	uint16 skill = GetSkill(EQ::skills::SkillDoubleAttack);
 
-	int per_inc = 0;
+	int32 bonusDA = 0;
 	if ((GetClass() == PALADIN || GetClass() == SHADOWKNIGHT) && (!HasTwoHanderEquipped())) {
-		per_inc = 0;
-		Log(Logs::General, Logs::Combat, "Knight class without a 2 hand weapon equiped = No DA Bonus!");
+		LogCombatDetail("Knight class without a 2 hand weapon equipped = No DA Bonus!");
 	} else {
-		per_inc = aabonuses.DoubleAttackChance + spellbonuses.DoubleAttackChance + itembonuses.DoubleAttackChance;
+		bonusDA = aabonuses.DoubleAttackChance + spellbonuses.DoubleAttackChance + itembonuses.DoubleAttackChance;
 	}
 
-	if (per_inc > 0) {
-		chance += chance * per_inc / 100;
+	//Use skill calculations otherwise, if you only have AA applied GiveDoubleAttack chance then use that value as the base.
+	if (skill) {
+		chance = (float(skill + GetLevel()) * (float(100.0f + bonusDA+bonusGiveDA) / 100.0f)) / 500.0f;
+	} else {
+		chance = (float(bonusGiveDA + bonusDA) / 100.0f);
 	}
 
-	return zone->random.Int(1, 500) <= chance;
+	LogCombatDetail("DA Skill = [{}] - GiveDoubleAttack = [{}] - DoubleAttackChance = [{}] - Final Double Attack Chance = [{}]",skill, bonusGiveDA, bonusDA, chance);
+
+	return zone->random.Roll(chance);
 }
 
 // Admittedly these parses were short, but this check worked for 3 toons across multiple levels
@@ -3851,29 +3854,27 @@ void Mob::CommonDamage(Mob* attacker, int64 &damage, const uint16 spell_id, cons
 
 		}	//end `if there is some damage being done and theres anattacker person involved`
 
-		Mob *pet = GetPet();
 		// pets that have GHold will never automatically add NPCs
 		// pets that have Hold and no Focus will add NPCs if they're engaged
 		// pets that have Hold and Focus will not add NPCs
-		if (pet && !pet->IsFamiliar() && !pet->GetSpecialAbility(IMMUNE_AGGRO) && !pet->IsEngaged() && attacker && attacker != this && !attacker->IsCorpse() && !pet->IsGHeld() && !attacker->IsTrap()) {
-			if (!pet->IsHeld()) {
-				LogAggro("Sending pet [{}] into battle due to attack", pet->GetName());
-				if (IsClient()) {
-					// if pet was sitting his new mode is follow
-					// following after the battle (live verified)
-					if (pet->GetPetOrder() == SPO_Sit) {
-						pet->SetPetOrder(SPO_Follow);
-					}
-
-					// fix GUI sit button to be unpressed and stop sitting regen
-					CastToClient()->SetPetCommandState(PET_BUTTON_SIT, 0);
-					pet->SetAppearance(eaStanding);
+		if (Mob *pet = GetPet(); pet && !pet->IsFamiliar() && !pet->GetSpecialAbility(IMMUNE_AGGRO) && !pet->IsEngaged() && attacker && attacker != this && !attacker->IsCorpse() && !pet->IsGHeld() && !attacker->IsTrap() &&
+			!pet->IsHeld()) {
+			LogAggro("Sending pet [{}] into battle due to attack", pet->GetName());
+			if (IsClient()) {
+				// if pet was sitting his new mode is follow
+				// following after the battle (live verified)
+				if (pet->GetPetOrder() == SPO_Sit) {
+					pet->SetPetOrder(SPO_Follow);
 				}
 
-				pet->AddToHateList(attacker, 1, 0, true, false, false, spell_id);
-				pet->SetTarget(attacker);
-				MessageString(Chat::NPCQuestSay, PET_ATTACKING, pet->GetCleanName(), attacker->GetCleanName());
+				// fix GUI sit button to be unpressed and stop sitting regen
+				CastToClient()->SetPetCommandState(PET_BUTTON_SIT, 0);
+				pet->SetAppearance(eaStanding);
 			}
+
+			pet->AddToHateList(attacker, 1, 0, true, false, false, spell_id);
+			pet->SetTarget(attacker);
+			MessageString(Chat::NPCQuestSay, PET_ATTACKING, pet->GetCleanName(), attacker->GetCleanName());
 		}
 
 		if (GetTempPetCount()) {
@@ -3891,16 +3892,22 @@ void Mob::CommonDamage(Mob* attacker, int64 &damage, const uint16 spell_id, cons
 			damage = ReduceAllDamage(damage);
 			TryTriggerThreshHold(damage, SE_TriggerMeleeThreshold, attacker);
 
-			if (skill_used) {
-				CheckNumHitsRemaining(NumHit::IncomingHitSuccess);
-			}
+			CheckNumHitsRemaining(NumHit::IncomingHitSuccess);
 		} else {
 			int64 origdmg = damage;
 			damage = AffectMagicalDamage(damage, spell_id, iBuffTic, attacker);
-			if (origdmg != damage && attacker && attacker->IsClient()) {
-				if (attacker->CastToClient()->GetFilter(FilterDamageShields) != FilterHide) {
-					attacker->Message(Chat::Yellow, "The Spellshield absorbed %d of %d points of damage", origdmg - damage, origdmg);
-				}
+			if (
+				origdmg != damage &&
+				attacker &&
+				attacker->IsClient() &&
+				attacker->CastToClient()->GetFilter(FilterDamageShields) != FilterHide
+			) {
+				attacker->Message(
+					Chat::Yellow,
+					"The Spellshield absorbed %d of %d points of damage",
+					origdmg - damage,
+					origdmg
+				);
 			}
 
 			if (damage == 0 && attacker && origdmg != damage && IsClient()) {
@@ -4234,7 +4241,7 @@ void Mob::CommonDamage(Mob* attacker, int64 &damage, const uint16 spell_id, cons
 		//Note: if players can become pets, they will not receive damage messages of their own
 		//this was done to simplify the code here (since we can only effectively skip one mob on queue)
 		eqFilterType filter;
-		Mob *skip = attacker;
+		Mob* skip = attacker;
 		if (attacker && attacker->GetOwnerID()) {
 			//attacker is a pet, let pet owners see their pet's damage
 			Mob* owner = attacker->GetOwner();
@@ -4261,6 +4268,7 @@ void Mob::CommonDamage(Mob* attacker, int64 &damage, const uint16 spell_id, cons
 					}
 				}
 			}
+			
 			skip = owner;
 		} else {
 			//attacker is not a pet, send to the attacker
@@ -4304,7 +4312,6 @@ void Mob::CommonDamage(Mob* attacker, int64 &damage, const uint16 spell_id, cons
 					attacker->CastToClient()->QueuePacket(outapp, true, CLIENT_CONNECTED, filter);
 				}
 			}
-			skip = attacker;
 		}
 
 		//send damage to all clients around except the specified skip mob (attacker or the attacker's owner) and ourself
@@ -4400,7 +4407,7 @@ void Mob::CommonDamage(Mob* attacker, int64 &damage, const uint16 spell_id, cons
 					spells[spell_id].name /* Message4 */
 			);
 		}
-	} //end packet sending
+	}
 }
 
 void Mob::HealDamage(uint64 amount, Mob *caster, uint16 spell_id)
@@ -4453,8 +4460,10 @@ void Mob::HealDamage(uint64 amount, Mob *caster, uint16 spell_id)
 					caster->FilteredMessageString(caster, Chat::NonMelee, FilterSpellDamage,
 												  YOU_HEAL, GetCleanName(), itoa(acthealed));
 			}
-		}
-		else if (CastToClient()->GetFilter(FilterHealOverTime) != (FilterShowSelfOnly || FilterHide)) {
+		} else if (
+			CastToClient()->GetFilter(FilterHealOverTime) != FilterShowSelfOnly ||
+			CastToClient()->GetFilter(FilterHealOverTime) != FilterHide
+		) {
 			Message(Chat::NonMelee, "You have been healed for %d points of damage.", acthealed);
 		}
 	}
@@ -5946,8 +5955,14 @@ void Mob::TryCastOnSkillUse(Mob *on, EQ::skills::SkillType skill) {
 
 	if (spellbonuses.HasSkillAttackProc[skill]) {
 		for (int i = 0; i < MAX_CAST_ON_SKILL_USE; i += 3) {
-			if (spellbonuses.SkillAttackProc[i + SBIndex::SKILLATK_PROC_SPELL_ID] && skill == spellbonuses.SkillAttackProc[i + SBIndex::SKILLATK_PROC_SKILL]) {
-				if (IsValidSpell(spellbonuses.SkillAttackProc[i + SBIndex::SKILLATK_PROC_SPELL_ID]) && zone->random.Int(1, 1000) <= spellbonuses.SkillAttackProc[i + SBIndex::SKILLATK_PROC_CHANCE]) {
+			if (
+				spellbonuses.SkillAttackProc[i + SBIndex::SKILLATK_PROC_SPELL_ID] &&
+				skill == spellbonuses.SkillAttackProc[i + SBIndex::SKILLATK_PROC_SKILL]
+			) {
+				if (
+					IsValidSpell(spellbonuses.SkillAttackProc[i + SBIndex::SKILLATK_PROC_SPELL_ID]) &&
+					zone->random.Int(1, 1000) <= spellbonuses.SkillAttackProc[i + SBIndex::SKILLATK_PROC_CHANCE]
+				) {
 					SpellFinished(spellbonuses.SkillAttackProc[i + SBIndex::SKILLATK_PROC_SPELL_ID], on, EQ::spells::CastingSlot::Item, 0, -1, spells[spellbonuses.SkillAttackProc[i + SBIndex::SKILLATK_PROC_SPELL_ID]].resist_difficulty);
 				}
 			}
@@ -5956,8 +5971,14 @@ void Mob::TryCastOnSkillUse(Mob *on, EQ::skills::SkillType skill) {
 
 	if (itembonuses.HasSkillAttackProc[skill]) {
 		for (int i = 0; i < MAX_CAST_ON_SKILL_USE; i += 3) {
-			if (itembonuses.SkillAttackProc[i + SBIndex::SKILLATK_PROC_SPELL_ID] && skill == itembonuses.SkillAttackProc[i + SBIndex::SKILLATK_PROC_SKILL]) {
-				if (IsValidSpell(itembonuses.SkillAttackProc[i + SBIndex::SKILLATK_PROC_SPELL_ID]) && zone->random.Int(1, 1000) <= spellbonuses.SkillAttackProc[i + SBIndex::SKILLATK_PROC_CHANCE]) {
+			if (
+				itembonuses.SkillAttackProc[i + SBIndex::SKILLATK_PROC_SPELL_ID] &&
+				skill == itembonuses.SkillAttackProc[i + SBIndex::SKILLATK_PROC_SKILL]
+			) {
+				if (
+					IsValidSpell(itembonuses.SkillAttackProc[i + SBIndex::SKILLATK_PROC_SPELL_ID]) &&
+					zone->random.Int(1, 1000) <= itembonuses.SkillAttackProc[i + SBIndex::SKILLATK_PROC_CHANCE]
+				) {
 					SpellFinished(itembonuses.SkillAttackProc[i + SBIndex::SKILLATK_PROC_SPELL_ID], on, EQ::spells::CastingSlot::Item, 0, -1, spells[itembonuses.SkillAttackProc[i + SBIndex::SKILLATK_PROC_SPELL_ID]].resist_difficulty);
 				}
 			}
@@ -5966,7 +5987,11 @@ void Mob::TryCastOnSkillUse(Mob *on, EQ::skills::SkillType skill) {
 
 	if (aabonuses.HasSkillAttackProc[skill]) {
 		for (int i = 0; i < MAX_CAST_ON_SKILL_USE; i += 3) {
-			if (IsValidSpell(aabonuses.SkillAttackProc[i + SBIndex::SKILLATK_PROC_SPELL_ID]) && aabonuses.SkillAttackProc[i + SBIndex::SKILLATK_PROC_SPELL_ID] && skill == aabonuses.SkillAttackProc[i + SBIndex::SKILLATK_PROC_SKILL]) {
+			if (
+				IsValidSpell(aabonuses.SkillAttackProc[i + SBIndex::SKILLATK_PROC_SPELL_ID]) &&
+				aabonuses.SkillAttackProc[i + SBIndex::SKILLATK_PROC_SPELL_ID] &&
+				skill == aabonuses.SkillAttackProc[i + SBIndex::SKILLATK_PROC_SKILL]
+			) {
 				if (zone->random.Int(1, 1000) <= aabonuses.SkillAttackProc[i + SBIndex::SKILLATK_PROC_CHANCE]) {
 					SpellFinished(aabonuses.SkillAttackProc[i + SBIndex::SKILLATK_PROC_SPELL_ID], on, EQ::spells::CastingSlot::Item, 0, -1, spells[aabonuses.SkillAttackProc[i + SBIndex::SKILLATK_PROC_SPELL_ID]].resist_difficulty);
 				}
@@ -6262,7 +6287,7 @@ void Mob::DoShieldDamageOnShielder(Mob *shield_target, int64 hit_damage_done, EQ
 	}
 
 	int mitigation = shielder->GetShielderMitigation(); //Default shielder mitigates 25 pct of damage taken, this can be increased up to max 50 by equipping a shield item
-	if (shielder->IsClient() && shielder->HasShieldEquiped()) {
+	if (shielder->IsClient() && shielder->HasShieldEquipped()) {
 		EQ::ItemInstance* inst = shielder->CastToClient()->GetInv().GetItem(EQ::invslot::slotSecondary);
 		if (inst) {
 			const EQ::ItemData* shield = inst->GetItem();

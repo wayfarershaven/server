@@ -123,7 +123,7 @@ public:
 		Log(Logs::General, Logs::Crash, buffer);
 		StackWalker::OnOutput(szText);
 	}
-	const std::vector<std::string>& const GetLines() { return _lines; }
+	const std::vector<std::string>& GetLines() { return _lines; }
 private:
 	std::vector<std::string> _lines;
 };

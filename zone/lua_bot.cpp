@@ -174,6 +174,26 @@ void Lua_Bot::ApplySpellGroup(int spell_id, int duration, bool allow_pets) {
 	self->ApplySpell(spell_id, duration, ApplySpellType::Group, allow_pets);
 }
 
+void Lua_Bot::ApplySpellRaid(int spell_id) {
+	Lua_Safe_Call_Void();
+	self->ApplySpell(spell_id, 0, ApplySpellType::Raid);
+}
+
+void Lua_Bot::ApplySpellRaid(int spell_id, int duration) {
+	Lua_Safe_Call_Void();
+	self->ApplySpell(spell_id, duration, ApplySpellType::Raid, true, true);
+}
+
+void Lua_Bot::ApplySpellRaid(int spell_id, int duration, bool allow_pets) {
+	Lua_Safe_Call_Void();
+	self->ApplySpell(spell_id, duration, ApplySpellType::Raid, allow_pets, true);
+}
+
+void Lua_Bot::ApplySpellRaid(int spell_id, int duration, bool allow_pets, bool is_raid_group_only) {
+	Lua_Safe_Call_Void();
+	self->ApplySpell(spell_id, duration, ApplySpellType::Raid, allow_pets, is_raid_group_only);
+}
+
 void Lua_Bot::SetSpellDuration(int spell_id) {
 	Lua_Safe_Call_Void();
 	self->SetSpellDuration(spell_id);
@@ -202,6 +222,26 @@ void Lua_Bot::SetSpellDurationGroup(int spell_id, int duration) {
 void Lua_Bot::SetSpellDurationGroup(int spell_id, int duration, bool allow_pets) {
 	Lua_Safe_Call_Void();
 	self->SetSpellDuration(spell_id, duration, ApplySpellType::Group, allow_pets);
+}
+
+void Lua_Bot::SetSpellDurationRaid(int spell_id) {
+	Lua_Safe_Call_Void();
+	self->SetSpellDuration(spell_id, 0, ApplySpellType::Raid);
+}
+
+void Lua_Bot::SetSpellDurationRaid(int spell_id, int duration) {
+	Lua_Safe_Call_Void();
+	self->SetSpellDuration(spell_id, duration, ApplySpellType::Raid);
+}
+
+void Lua_Bot::SetSpellDurationRaid(int spell_id, int duration, bool allow_pets) {
+	Lua_Safe_Call_Void();
+	self->SetSpellDuration(spell_id, duration, ApplySpellType::Raid, allow_pets);
+}
+
+void Lua_Bot::SetSpellDurationRaid(int spell_id, int duration, bool allow_pets, bool is_raid_group_only) {
+	Lua_Safe_Call_Void();
+	self->SetSpellDuration(spell_id, duration, ApplySpellType::Raid, allow_pets, is_raid_group_only);
 }
 
 int Lua_Bot::CountAugmentEquippedByID(uint32 item_id) {
@@ -401,6 +441,10 @@ luabind::scope lua_register_bot() {
 	.def("ApplySpellGroup", (void(Lua_Bot::*)(int))&Lua_Bot::ApplySpellGroup)
 	.def("ApplySpellGroup", (void(Lua_Bot::*)(int,int))&Lua_Bot::ApplySpellGroup)
 	.def("ApplySpellGroup", (void(Lua_Bot::*)(int,int,bool))&Lua_Bot::ApplySpellGroup)
+	.def("ApplySpellRaid", (void(Lua_Bot::*)(int))&Lua_Bot::ApplySpellRaid)
+	.def("ApplySpellRaid", (void(Lua_Bot::*)(int,int))&Lua_Bot::ApplySpellRaid)
+	.def("ApplySpellRaid", (void(Lua_Bot::*)(int,int,bool))&Lua_Bot::ApplySpellRaid)
+	.def("ApplySpellRaid", (void(Lua_Bot::*)(int,int,bool,bool))&Lua_Bot::ApplySpellRaid)
 	.def("CountBotItem", (uint32(Lua_Bot::*)(uint32))&Lua_Bot::CountBotItem)
 	.def("CountItemEquippedByID", (int(Lua_Bot::*)(uint32))&Lua_Bot::CountItemEquippedByID)
 	.def("Escape", (void(Lua_Bot::*)(void))&Lua_Bot::Escape)
@@ -453,6 +497,10 @@ luabind::scope lua_register_bot() {
 	.def("SetSpellDurationGroup", (void(Lua_Bot::*)(int))&Lua_Bot::SetSpellDurationGroup)
 	.def("SetSpellDurationGroup", (void(Lua_Bot::*)(int,int))&Lua_Bot::SetSpellDurationGroup)
 	.def("SetSpellDurationGroup", (void(Lua_Bot::*)(int,int,bool))&Lua_Bot::SetSpellDurationGroup)
+	.def("SetSpellDurationRaid", (void(Lua_Bot::*)(int))&Lua_Bot::SetSpellDurationRaid)
+	.def("SetSpellDurationRaid", (void(Lua_Bot::*)(int,int))&Lua_Bot::SetSpellDurationRaid)
+	.def("SetSpellDurationRaid", (void(Lua_Bot::*)(int,int,bool))&Lua_Bot::SetSpellDurationRaid)
+	.def("SetSpellDurationRaid", (void(Lua_Bot::*)(int,int,bool,bool))&Lua_Bot::SetSpellDurationRaid)
 	.def("SendPayload", (void(Lua_Bot::*)(int))&Lua_Bot::SendPayload)
 	.def("SendPayload", (void(Lua_Bot::*)(int,std::string))&Lua_Bot::SendPayload)
 	.def("Signal", (void(Lua_Bot::*)(int))&Lua_Bot::Signal)
