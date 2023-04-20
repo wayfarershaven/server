@@ -22,8 +22,6 @@
 #include "../common/rulesys.h"
 #include "../common/spdat.h"
 
-#include "../common/data_verification.h"
-
 #include "client.h"
 #include "mob.h"
 #include "bot.h"
@@ -50,7 +48,7 @@ int32 Client::GetMaxStat() const
 	else {
 		base = 330;
 	}
-	return (base);
+	return base;
 }
 
 int32 Client::GetMaxResist() const

@@ -82,7 +82,7 @@ void Adventure::RemovePlayer(std::string character_name)
 	}
 }
 
-bool Adventure::PlayerExists(std::string character_name)
+bool Adventure::PlayerExists(const std::string& character_name)
 {
 	auto iter = players.begin();
 	while(iter != players.end())
@@ -383,8 +383,8 @@ void Adventure::MoveCorpsesToGraveyard()
 	if(!results.Success())
 
 	for(auto row = results.begin(); row != results.end(); ++row) {
-        dbid_list.push_back(atoi(row[0]));
-        charid_list.push_back(atoi(row[1]));
+        dbid_list.push_back(Strings::ToInt(row[0]));
+        charid_list.push_back(Strings::ToInt(row[1]));
     }
 
     for (auto &elem : dbid_list) {

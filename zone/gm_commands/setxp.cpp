@@ -9,10 +9,10 @@ void command_setxp(Client *c, const Seperator *sep) {
 
 	uint32 currentaaXP = t->GetAAXP();
 	if (sep->IsNumber(1)) {
-		if (atoi(sep->arg[1]) > 9999999) {
+		if (Strings::ToInt(sep->arg[1]) > 9999999) {
 			c->Message(Chat::White, "Error: Value too high.");
 		} else {
-			t->AddEXP(atoi(sep->arg[1]), currentaaXP);
+			t->AddEXP(Strings::ToInt(sep->arg[1]));
 		}
 	} else {
 		c->Message(Chat::White, "Usage: #setxp number");

@@ -35,19 +35,15 @@
 #include <vector>
 #include <map>
 
-//atoi is not uint32 or uint32 safe!!!!
-#define atoul(str) strtoul(str, nullptr, 10)
-
 class UCSDatabase : public Database {
 public:
 	int FindAccount(const char *CharacterName, Client *c);
 	int FindCharacter(const char *CharacterName);
-	bool VerifyMailKey(std::string CharacterName, int IPAddress, std::string MailKey);
+	bool VerifyMailKey(const std::string& characterName, int IPAddress, const std::string& MailKey);
 	bool GetVariable(const char* varname, char* varvalue, uint16 varvalue_len);
 	bool LoadChatChannels();
 	void LoadReservedNamesFromDB();
 	void LoadFilteredNamesFromDB();
-	bool IsChatChannelInDB(const std::string& channel_name);
 	bool CheckChannelNameFilter(const std::string& channel_name);
 	void SaveChatChannel(const std::string& channel_name, const std::string& channel_owner, const std::string& channel_password, const uint16& min_status);
 	void DeleteChatChannel(const std::string& channel_name);
@@ -64,12 +60,6 @@ public:
 	void AddFriendOrIgnore(const int& char_id, const int& type, const std::string& name);
 	void RemoveFriendOrIgnore(const int& char_id, const int& type, const std::string& name);
 	void GetFriendsAndIgnore(const int& char_id, std::vector<std::string> &Friends, std::vector<std::string> &Ignorees);
-
-protected:
-	void HandleMysqlError(uint32 errnum);
-private:
-	void DBInitVars();
-
 };
 
 #endif

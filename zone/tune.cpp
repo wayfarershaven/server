@@ -24,13 +24,10 @@
 #include "../common/eq_constants.h"
 #include "../common/eq_packet_structs.h"
 #include "../common/rulesys.h"
-#include "../common/skills.h"
 #include "../common/spdat.h"
 #include "../common/strings.h"
 #include "../common/data_verification.h"
-#include "../common/misc_functions.h"
 #include "queryserv.h"
-#include "quest_parser_collection.h"
 #include "string_ids.h"
 #include "water_map.h"
 #include "worldserver.h"
@@ -38,12 +35,6 @@
 #include "lua_parser.h"
 #include "fastmath.h"
 #include "mob.h"
-#include "npc.h"
-
-#include <assert.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <boost/concept_check.hpp>
 #include "bot.h"
 
 extern QueryServ* QServ;
@@ -921,7 +912,7 @@ int64 Mob::TuneClientAttack(Mob* other, bool no_avoid, bool no_hit_chance, int h
 		if (Hand == EQ::invslot::slotPrimary || Hand == EQ::invslot::slotSecondary)
 			my_hit.base_damage = CastToClient()->DoDamageCaps(my_hit.base_damage);
 		auto shield_inc = spellbonuses.ShieldEquipDmgMod + itembonuses.ShieldEquipDmgMod + aabonuses.ShieldEquipDmgMod;
-		if (shield_inc > 0 && HasShieldEquiped() && Hand == EQ::invslot::slotPrimary) {
+		if (shield_inc > 0 && HasShieldEquipped() && Hand == EQ::invslot::slotPrimary) {
 			my_hit.base_damage = my_hit.base_damage * (100 + shield_inc) / 100;
 			hate = hate * (100 + shield_inc) / 100;
 		}
@@ -1041,7 +1032,7 @@ int64 Mob::TuneACSum(bool skip_caps, int ac_override, int add_ac)
 	}
 
 	int shield_ac = 0;
-	if (HasShieldEquiped() && IsOfClientBot()) {
+	if (HasShieldEquipped() && IsOfClientBot()) {
 		auto inst = (IsClient()) ? GetInv().GetItem(EQ::invslot::slotSecondary) : CastToBot()->GetBotItem(EQ::invslot::slotSecondary);
 		if (inst) {
 			if (inst->GetItemRecommendedLevel(true) <= GetLevel()) {

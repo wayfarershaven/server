@@ -520,9 +520,6 @@ bool PerlembParser::SpellHasQuestSub(uint32 spell_id, QuestEventID evt)
 
 bool PerlembParser::ItemHasQuestSub(EQ::ItemInstance *itm, QuestEventID evt)
 {
-	std::stringstream package_name;
-	package_name << "qst_item_" << itm->GetID();
-
 	if (!perl) {
 		return false;
 	}
@@ -535,6 +532,9 @@ bool PerlembParser::ItemHasQuestSub(EQ::ItemInstance *itm, QuestEventID evt)
 		return false;
 	}
 
+	std::stringstream package_name;
+	package_name << "qst_item_" << itm->GetID();
+	
 	const char *subname = QuestEventSubroutines[evt];
 
 	auto iter = item_quest_status_.find(itm->GetID());
@@ -825,25 +825,6 @@ void PerlembParser::ExportVar(const char *pkgprefix, const char *varname, float 
 	try {
 		perl->setd(std::string(pkgprefix).append("::").append(varname).c_str(), value);
 	} catch (std::string e) {
-		AddError(
-			fmt::format(
-				"Error exporting Perl variable [{}]",
-				e
-			)
-		);
-	}
-}
-
-void PerlembParser::ExportVarComplex(const char *pkgprefix, const char *varname, const char *value)
-{
-
-	if (!perl) {
-		return;
-	}
-	try {
-		perl->eval(std::string("$").append(pkgprefix).append("::").append(varname).append("=").append(value).append(";").c_str());
-	}
-	catch (std::string e) {
 		AddError(
 			fmt::format(
 				"Error exporting Perl variable [{}]",
@@ -1952,7 +1933,7 @@ void PerlembParser::ExportEventVariables(
 		}
 
 		case EVENT_CONSIDER: {
-			ExportVar(package_name.c_str(), "entity_id", std::stoi(data));
+			ExportVar(package_name.c_str(), "entity_id", Strings::ToInt(data));
 			if (extra_pointers && extra_pointers->size() == 1) {
 				ExportVar(package_name.c_str(), "target", "Mob", std::any_cast<Mob*>(extra_pointers->at(0)));
 			}
@@ -1960,7 +1941,7 @@ void PerlembParser::ExportEventVariables(
 		}
 
 		case EVENT_CONSIDER_CORPSE: {
-			ExportVar(package_name.c_str(), "corpse_entity_id", std::stoi(data));
+			ExportVar(package_name.c_str(), "corpse_entity_id", Strings::ToInt(data));
 			if (extra_pointers && extra_pointers->size() == 1) {
 				ExportVar(package_name.c_str(), "corpse", "Corpse", std::any_cast<Corpse*>(extra_pointers->at(0)));
 			}
@@ -1968,7 +1949,7 @@ void PerlembParser::ExportEventVariables(
 		}
 
 		case EVENT_COMBINE: {
-			ExportVar(package_name.c_str(), "container_slot", std::stoi(data));
+			ExportVar(package_name.c_str(), "container_slot", Strings::ToInt(data));
 			break;
 		}
 

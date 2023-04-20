@@ -272,6 +272,8 @@ inline const unsigned char *ASN1_STRING_get0_data(const ASN1_STRING *asn1) {
 #include <brotli/encode.h>
 #endif
 
+#include "../strings.h"
+
 /*
  * Declaration
  */
@@ -3812,12 +3814,12 @@ inline bool brotli_decompressor::decompress(const char *data,
 					if (std::regex_match(b, e, cm, re_another_range)) {
 						ssize_t first = -1;
 						if (!cm.str(1).empty()) {
-							first = static_cast<ssize_t>(std::stoll(cm.str(1)));
+							first = static_cast<ssize_t>(Strings::ToBigInt(cm.str(1)));
 						}
 
 						ssize_t last = -1;
 						if (!cm.str(2).empty()) {
-							last = static_cast<ssize_t>(std::stoll(cm.str(2)));
+							last = static_cast<ssize_t>(Strings::ToBigInt(cm.str(2)));
 						}
 
 						if (first != -1 && last != -1 && first > last) {
@@ -6688,7 +6690,7 @@ static WSInit wsinit_;
 		if (params.empty()) { return Get(path, headers); }
 
 		std::string path_with_query = append_query_params(path, params);
-		return Get(path_with_query.c_str(), headers, progress);
+		return Get(path_with_query, headers, progress);
 	}
 
 	inline Result ClientImpl::Get(const std::string &path, const Params &params,
@@ -6708,7 +6710,7 @@ static WSInit wsinit_;
 		}
 
 		std::string path_with_query = append_query_params(path, params);
-		return Get(path_with_query.c_str(), headers, response_handler,
+		return Get(path_with_query, headers, response_handler,
 				   content_receiver, progress);
 	}
 
@@ -6805,7 +6807,7 @@ static WSInit wsinit_;
 		std::string content_type;
 		const auto &body = detail::serialize_multipart_formdata(
 			items, detail::make_multipart_data_boundary(), content_type);
-		return Post(path, headers, body, content_type.c_str());
+		return Post(path, headers, body, content_type);
 	}
 
 	inline Result ClientImpl::Post(const std::string &path, const Headers &headers,
@@ -6818,7 +6820,7 @@ static WSInit wsinit_;
 		std::string content_type;
 		const auto &body =
 						detail::serialize_multipart_formdata(items, boundary, content_type);
-		return Post(path, headers, body, content_type.c_str());
+		return Post(path, headers, body, content_type);
 	}
 
 	inline Result ClientImpl::Put(const std::string &path) {

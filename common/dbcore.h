@@ -24,7 +24,7 @@ public:
 	~DBcore();
 	eStatus GetStatus() { return pStatus; }
 	MySQLRequestResult QueryDatabase(const char *query, uint32 querylen, bool retryOnFailureOnce = true);
-	MySQLRequestResult QueryDatabase(std::string query, bool retryOnFailureOnce = true);
+	MySQLRequestResult QueryDatabase(const std::string& query, bool retryOnFailureOnce = true);
 	void TransactionBegin();
 	void TransactionCommit();
 	void TransactionRollback();
@@ -35,7 +35,7 @@ public:
 	const std::string &GetOriginHost() const;
 	void SetOriginHost(const std::string &origin_host);
 
-	bool DoesTableExist(std::string table_name);
+	bool DoesTableExist(const std::string& table_name);
 
 	void SetMySQL(const DBcore &o)
 	{

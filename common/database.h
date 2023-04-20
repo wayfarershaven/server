@@ -34,9 +34,6 @@
 #include <vector>
 #include <map>
 
-//atoi is not uint32 or uint32 safe!!!!
-#define atoul(str) strtoul(str, nullptr, 10)
-
 class MySQLRequestResult;
 class Client;
 
@@ -245,7 +242,7 @@ public:
 	/* Database Variables */
 
 	bool	GetVariable(std::string varname, std::string &varvalue);
-	bool	SetVariable(const std::string varname, const std::string &varvalue);
+	bool	SetVariable(const std::string& varname, const std::string &varvalue);
 	bool	LoadVariables();
 
 	/* General Queries */

@@ -84,10 +84,10 @@ void UCSDatabase::GetAccountStatus(Client *client)
 
 	auto row = results.begin();
 
-	client->SetAccountStatus(atoi(row[0]));
-	client->SetHideMe(atoi(row[1]) != 0);
-	client->SetKarma(atoi(row[2]));
-	client->SetRevoked((atoi(row[3]) == 1 ? true : false));
+	client->SetAccountStatus(Strings::ToInt(row[0]));
+	client->SetHideMe(Strings::ToInt(row[1]) != 0);
+	client->SetKarma(Strings::ToInt(row[2]));
+	client->SetRevoked((Strings::ToInt(row[3]) == 1 ? true : false));
 
 	LogDebug(
 		"Set account status to [{}], hideme to [{}] and karma to [{}] for [{}]",
@@ -119,9 +119,9 @@ int UCSDatabase::FindAccount(const char *characterName, Client *client)
 	}
 
 	auto row = results.begin();
-	client->AddCharacter(atoi(row[0]), characterName, atoi(row[2]));
+	client->AddCharacter(Strings::ToInt(row[0]), characterName, Strings::ToInt(row[2]));
 
-	int accountID = atoi(row[1]);
+	int accountID = Strings::ToInt(row[1]);
 
 	LogInfo("Account ID for [{}] is [{}]", characterName, accountID);
 
@@ -137,12 +137,12 @@ int UCSDatabase::FindAccount(const char *characterName, Client *client)
 	}
 
 	for (auto row = results.begin(); row != results.end(); ++row)
-		client->AddCharacter(atoi(row[0]), row[1], atoi(row[2]));
+		client->AddCharacter(Strings::ToInt(row[0]), row[1], Strings::ToInt(row[2]));
 
 	return accountID;
 }
 
-bool UCSDatabase::VerifyMailKey(std::string characterName, int IPAddress, std::string MailKey)
+bool UCSDatabase::VerifyMailKey(const std::string& characterName, int IPAddress, const std::string& MailKey)
 {
 
 	std::string query = StringFormat(
@@ -197,7 +197,7 @@ int UCSDatabase::FindCharacter(const char *characterName)
 
 	auto row = results.begin();
 
-	int characterID = atoi(row[0]);
+	int characterID = Strings::ToInt(row[0]);
 
 	return characterID;
 }
@@ -244,7 +244,7 @@ bool UCSDatabase::LoadChatChannels()
 		auto channel_min_status = row[3];
 
 		if (!ChannelList->FindChannel(channel_name)) {
-			ChannelList->CreateChannel(channel_name, channel_owner, channel_password, true, atoi(channel_min_status), false);
+			ChannelList->CreateChannel(channel_name, channel_owner, channel_password, true, Strings::ToInt(channel_min_status), false);
 		}
 	}
 	return true;
@@ -281,18 +281,6 @@ void UCSDatabase::LoadFilteredNamesFromDB()
 	}
 
 	LogInfo("Loaded [{}] filtered channel name(s)", names.size());
-}
-
-bool UCSDatabase::IsChatChannelInDB(const std::string& channel_name)
-{
-	auto r = ChatchannelsRepository::Count(
-		*this,
-		fmt::format(
-			"name = {}", Strings::Escape(channel_name)
-		)
-	);
-
-	return r > 0;
 }
 
 void UCSDatabase::SaveChatChannel(
@@ -743,7 +731,7 @@ void UCSDatabase::GetFriendsAndIgnore(const int& charID, std::vector<std::string
 	for (auto row = results.begin(); row != results.end(); ++row) {
 		std::string name = row[1];
 
-		if (atoi(row[0]) == 0) {
+		if (Strings::ToInt(row[0]) == 0) {
 			ignorees.push_back(name);
 			LogInfo("Added Ignoree from DB [{}]", name.c_str());
 			continue;

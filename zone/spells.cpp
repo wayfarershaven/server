@@ -72,7 +72,6 @@ Copyright (C) 2001-2002 EQEMu Development Team (http://eqemu.org)
 #include "../common/eqemu_logsys.h"
 #include "../common/item_instance.h"
 #include "../common/rulesys.h"
-#include "../common/skills.h"
 #include "../common/spdat.h"
 #include "../common/strings.h"
 #include "../common/data_verification.h"
@@ -86,7 +85,6 @@ Copyright (C) 2001-2002 EQEMu Development Team (http://eqemu.org)
 #include "fastmath.h"
 
 #include <assert.h>
-#include <math.h>
 #include <algorithm>
 
 #ifndef WIN32
@@ -448,25 +446,16 @@ bool Mob::DoCastSpell(uint16 spell_id, uint16 target_id, CastingSlot slot,
 	// If you're at full mana, let it cast even if you dont have enough mana
 
 	// we calculated this above, now enforce it
-	if (mana_cost > 0 && slot != CastingSlot::Item) {
+	if (mana_cost > 0 && slot != CastingSlot::Item || (IsBot() && !CastToBot()->IsBotNonSpellFighter())) {
 		int my_curmana = GetMana();
 		int my_maxmana = GetMaxMana();
 		if (my_curmana < mana_cost) {// not enough mana
 			//this is a special case for NPCs with no mana...
-			if (IsNPC() && my_curmana == my_maxmana){
+			if (IsNPC() && my_curmana == my_maxmana) {
 				mana_cost = 0;
 			} else {
-				//The client will prevent spell casting if insufficient mana, this is only for serverside enforcement.
-				LogSpells("Spell Error not enough mana spell=[{}] mymana=[{}] cost=[{}]\n", spell_id, my_curmana, mana_cost);
-				if (IsClient()) {
-					//clients produce messages... npcs should not for this case
-					MessageString(Chat::Red, INSUFFICIENT_MANA);
-					InterruptSpell();
-				} else {
-					InterruptSpell(0, 0, 0);	//the 0 args should cause no messages
-				}
-				ZeroCastingVars();
-				return(false);
+				DoSpellInterrupt(spell_id, mana_cost, my_curmana);
+				return false;
 			}
 		}
 	}
@@ -493,7 +482,7 @@ bool Mob::DoCastSpell(uint16 spell_id, uint16 target_id, CastingSlot slot,
 	// cast time is 0, just finish it right now and be done with it
 	if(cast_time == 0) {
 		CastedSpellFinished(spell_id, target_id, slot, mana_cost, item_slot, resist_adjust); //
-		return(true);
+		return true;
 	}
 
 	// ok we know it has a cast time so we can start the timer now
@@ -519,7 +508,20 @@ bool Mob::DoCastSpell(uint16 spell_id, uint16 target_id, CastingSlot slot,
 		}
 	}
 
-	return(true);
+		return true;
+}
+
+void Mob::DoSpellInterrupt(uint16 spell_id, int32 mana_cost, int my_curmana) {
+	//The client will prevent spell casting if insufficient mana, this is only for serverside enforcement.
+	LogSpells("Not enough mana spell [{}] curmana [{}] cost [{}]\n", spell_id, my_curmana, mana_cost);
+	if (IsClient()) {
+		//clients produce messages... npcs should not for this case
+		MessageString(Chat::Red, INSUFFICIENT_MANA);
+		InterruptSpell();
+	} else {
+		InterruptSpell(0, 0, 0);	//the 0 args should cause no messages
+	}
+	ZeroCastingVars();
 }
 
 void Mob::SendBeginCast(uint16 spell_id, uint32 casttime)
@@ -1176,10 +1178,15 @@ void Mob::InterruptSpell(uint16 message, uint16 color, uint16 spellid)
 	uint16 message_other;
 	bool bard_song_mode = false; //has the bard song gone to auto repeat mode
 	if (!IsValidSpell(spellid)) {
-		if(bardsong) {
+		if (bardsong) {
 			spellid = bardsong;
 			bard_song_mode = true;
 		} else {
+			if (IsBot() && !message && !color && !spellid) { // this is to prevent bots from spamming interrupts messages when trying to cast while OOM
+				ZeroCastingVars();	// resets all the state keeping stuff
+				LogSpells("Spell [{}] has been interrupted - Bot [{}] doesn't have enough mana", spellid, GetCleanName());
+				return;
+			}
 			spellid = casting_spell_id;
 		}
 	}
@@ -3194,6 +3201,10 @@ int Mob::CheckStackConflict(uint16 spellid1, int caster_level1, uint16 spellid2,
 		if (sp2_value != sp1_value) {
 			values_equal = false;
 		}
+		if (RuleB(Spells, ResurrectionEffectsBlock) && IsResurrectionEffects(spellid1)) {
+			LogSpells("ResurrectionEffectsBlock triggered -- [{}] is blocked by [{}]", sp2.name, sp1.name);
+			return -1;	// can't stack
+		}
 		//we dont return here... a better value on this one effect dosent mean they are
 		//all better...
 
@@ -4216,19 +4227,30 @@ bool Mob::SpellOnTarget(
 		spelltar->DamageShield(this, true);
 	}
 
-	if (spelltar->IsAIControlled() && IsDetrimentalSpell(spell_id) && !IsHarmonySpell(spell_id)) {
-		int32 aggro_amount = CheckAggroAmount(spell_id, spelltar, isproc);
-		LogSpells("Spell %d cast on [{}] generated [{}] hate", spell_id,
+	if (
+		spelltar->IsAIControlled() &&
+		IsDetrimentalSpell(spell_id) &&
+		!IsHarmonySpell(spell_id)
+	) {
+		auto aggro_amount = CheckAggroAmount(spell_id, spelltar, isproc);
+		LogSpells("Spell [{}] cast on [{}] generated [{}] hate", spell_id,
 			spelltar->GetName(), aggro_amount);
 		if (aggro_amount > 0) {
 			spelltar->AddToHateList(this, aggro_amount);
 		} else {
-			int32 newhate = spelltar->GetHateAmount(this) + aggro_amount;
-			spelltar->SetHateAmountOnEnt(this, std::max(newhate, 1));
+			int64 newhate = spelltar->GetHateAmount(this) + aggro_amount;
+			spelltar->SetHateAmountOnEnt(this, std::max(newhate, static_cast<int64>(1)));
 		}
 	} else if (IsBeneficialSpell(spell_id) && !IsSummonPCSpell(spell_id)) {
-		entity_list.AddHealAggro(spelltar, this,
-								 CheckHealAggroAmount(spell_id, spelltar, (spelltar->GetMaxHP() - spelltar->GetHP())));	
+		entity_list.AddHealAggro(
+			spelltar,
+			this,
+			CheckHealAggroAmount(
+				spell_id,
+				spelltar,
+				(spelltar->GetMaxHP() - spelltar->GetHP())
+			)
+		);
 	}
 
 	// make sure spelltar is high enough level for the buff
@@ -4398,6 +4420,20 @@ void Corpse::CastRezz(uint16 spellid, Mob* Caster)
 	// We send this to world, because it needs to go to the player who may not be in this zone.
 	worldserver.RezzPlayer(outapp, rez_experience, corpse_db_id, OP_RezzRequest);
 	safe_delete(outapp);
+}
+
+std::vector<uint16> Mob::GetBuffSpellIDs()
+{
+	std::vector<uint16> l;
+
+	for (int i = 0; i < GetMaxTotalSlots(); i++) {
+		const auto& e = buffs[i].spellid;
+		if (IsValidSpell(e)) {
+			l.emplace_back(e);
+		}
+	}
+
+	return l;
 }
 
 bool Mob::FindBuff(uint16 spell_id)
@@ -4640,11 +4676,6 @@ void Mob::BuffFadeByEffect(int effect_id, int slot_to_skip)
 	}
 }
 
-bool Mob::IsAffectedByBuff(uint16 spell_id)
-{
-	return FindBuff(spell_id);
-}
-
 bool Mob::IsAffectedByBuffByGlobalGroup(GlobalGroup group)
 {
 	int buff_count = GetMaxTotalSlots();
@@ -4816,7 +4847,7 @@ bool Mob::IsImmuneToSpell(uint16 spell_id, Mob *caster)
 			if(GetLevel() > spells[spell_id].max_value[effect_index] && spells[spell_id].max_value[effect_index] != 0)
 			{
 				LogSpells("Our level ([{}]) is higher than the limit of this Charm spell ([{}])", GetLevel(), spells[spell_id].max_value[effect_index]);
-				int32 aggro = caster->CheckAggroAmount(spell_id, this);
+				int64 aggro = caster->CheckAggroAmount(spell_id, this);
 				aggro > 0 ? AddToHateList(caster, aggro) : AddToHateList(caster, 1, 0, true, false, false, spell_id);
 				caster->MessageString(Chat::SpellFailure, TARGET_RESISTED, spells[spell_id].name);
 				return true;
@@ -5848,7 +5879,7 @@ std::unordered_map<uint32, std::vector<uint16>> Client::LoadSpellGroupCache(uint
 	}
 
 	for (auto row : results) {
-		spell_group_cache[std::stoul(row[0])].push_back(static_cast<uint16>(std::stoul(row[1])));
+		spell_group_cache[Strings::ToUnsignedInt(row[0])].push_back(static_cast<uint16>(Strings::ToUnsignedInt(row[1])));
 	}
 
 	return spell_group_cache;
@@ -5909,7 +5940,7 @@ bool Client::SpellGlobalCheck(uint16 spell_id, uint32 character_id) {
 	row = results.begin();
 	std::string global_value = row[0];
 	if (Strings::IsNumber(global_value) && Strings::IsNumber(spell_global_value)) {
-		if (std::stoi(global_value) >= std::stoi(spell_global_value)) {
+		if (Strings::ToInt(global_value) >= Strings::ToInt(spell_global_value)) {
 			return true; // If value is greater than or equal to spell global value, allow scribing.
 		}
 	} else {
@@ -5963,7 +5994,7 @@ bool Client::SpellBucketCheck(uint16 spell_id, uint32 character_id) {
 	auto bucket_value = DataBucket::GetData(new_bucket_name);
 	if (!bucket_value.empty()) {
 		if (Strings::IsNumber(bucket_value) && Strings::IsNumber(spell_bucket_value)) {
-			if (std::stoi(bucket_value) >= std::stoi(spell_bucket_value)) {
+			if (Strings::ToInt(bucket_value) >= Strings::ToInt(spell_bucket_value)) {
 				return true; // If value is greater than or equal to spell bucket value, allow scribing.
 			}
 		} else {
@@ -5982,7 +6013,7 @@ bool Client::SpellBucketCheck(uint16 spell_id, uint32 character_id) {
 	bucket_value = DataBucket::GetData(old_bucket_name);
 	if (!bucket_value.empty()) {
 		if (Strings::IsNumber(bucket_value) && Strings::IsNumber(spell_bucket_value)) {
-			if (std::stoi(bucket_value) >= std::stoi(spell_bucket_value)) {
+			if (Strings::ToInt(bucket_value) >= Strings::ToInt(spell_bucket_value)) {
 				return true; // If value is greater than or equal to spell bucket value, allow scribing.
 			}
 		} else {
@@ -6055,7 +6086,7 @@ bool Mob::IsCombatProc(uint16 spell_id) {
 		return false;
 	}
 
-	if (spell_id == SPELL_UNKNOWN) {
+	if (!IsValidSpell(spell_id)) {
 		return(false);
 	}
 	/*
@@ -6453,7 +6484,6 @@ void Client::InitializeBuffSlots()
 		buffs[x].spellid = SPELL_UNKNOWN;
 		buffs[x].UpdateClient = false;
 	}
-	current_buff_count = 0;
 }
 
 void Client::UninitializeBuffSlots()
@@ -6469,7 +6499,6 @@ void NPC::InitializeBuffSlots()
 		buffs[x].spellid      = SPELL_UNKNOWN;
 		buffs[x].UpdateClient = false;
 	}
-	current_buff_count = 0;
 }
 
 void NPC::UninitializeBuffSlots()

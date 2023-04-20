@@ -25,6 +25,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include <stdio.h>
 #include <string.h>
 #include <zlib.h>
+#include "bot.h"
 
 #ifdef _WINDOWS
 #define snprintf	_snprintf
@@ -37,24 +38,14 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include <unistd.h>
 #endif
 
-#include "../common/crc32.h"
 #include "../common/data_verification.h"
-#include "../common/faction.h"
-#include "../common/guilds.h"
 #include "../common/rdtsc.h"
-#include "../common/rulesys.h"
-#include "../common/skills.h"
-#include "../common/spdat.h"
-#include "../common/strings.h"
-#include "../common/zone_numbers.h"
 #include "data_bucket.h"
 #include "event_codes.h"
 #include "expedition.h"
-#include "expedition_database.h"
 #include "guild_mgr.h"
 #include "merc.h"
 #include "petitions.h"
-#include "pets.h"
 #include "queryserv.h"
 #include "quest_parser_collection.h"
 #include "string_ids.h"
@@ -69,7 +60,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include "gm_commands/door_manipulation.h"
 #include "client.h"
 #include "../common/repositories/account_repository.h"
-#include "bot.h"
+
 #include "../common/events/player_event_logs.h"
 
 extern QueryServ* QServ;
@@ -605,6 +596,9 @@ void Client::CompleteConnect()
 		if (raid) {
 			SetRaidGrouped(true);
 			raid->LearnMembers();
+			if (RuleB(Bots, Enabled)) {
+				SpawnRaidBotsOnConnect(raid);
+			}
 			raid->VerifyRaid();
 			raid->GetRaidDetails();
 			/*
@@ -839,11 +833,13 @@ void Client::CompleteConnect()
 	CalcItemScale();
 	DoItemEnterZone();
 
-	if (zone->GetZoneID() == RuleI(World, GuildBankZoneID) && GuildBanks)
+	if (zone->GetZoneID() == Zones::GUILDHALL && GuildBanks) {
 		GuildBanks->SendGuildBank(this);
+	}
 
-	if (ClientVersion() >= EQ::versions::ClientVersion::SoD)
+	if (ClientVersion() >= EQ::versions::ClientVersion::SoD) {
 		entity_list.SendFindableNPCList(this);
+	}
 
 	if (IsInAGuild()) {
 		SendGuildRanks();
@@ -1232,17 +1228,17 @@ void Client::Handle_Connect_OP_ZoneEntry(const EQApplicationPacket *app)
 	);
 	auto results = database.QueryDatabase(query);
 	for (auto row : results) {
-		if (row[4] && atoi(row[4]) > 0) {
-			guild_id = atoi(row[4]);
-			guildrank = row[5] ? atoi(row[5]) : GUILD_RANK_NONE;
+		if (row[4] && Strings::ToInt(row[4]) > 0) {
+			guild_id = Strings::ToInt(row[4]);
+			guildrank = row[5] ? Strings::ToInt(row[5]) : GUILD_RANK_NONE;
 		}
 
 		SetEXPEnabled(atobool(row[6]));
 		
-		if (LFP) { LFP = atoi(row[0]); }
-		if (LFG) { LFG = atoi(row[1]); }
+		if (LFP) { LFP = Strings::ToInt(row[0]); }
+		if (LFG) { LFG = Strings::ToInt(row[1]); }
 		if (row[3]) {
-			firstlogon = atoi(row[3]);
+			firstlogon = Strings::ToInt(row[3]);
 		}
 	}
 
@@ -1397,13 +1393,13 @@ void Client::Handle_Connect_OP_ZoneEntry(const EQApplicationPacket *app)
 			}
 		}
 		m_pp.guildrank = rank;
-		if (zone->GetZoneID() == RuleI(World, GuildBankZoneID))
+		if (zone->GetZoneID() == Zones::GUILDHALL) {
 			GuildBanker = (guild_mgr.IsGuildLeader(GuildID(), CharacterID()) || guild_mgr.GetBankerFlag(CharacterID()));
+		}
 	}
 	m_pp.guildbanker = GuildBanker;
 
-	switch (race)
-	{
+	switch (race) {
 	case OGRE:
 		size = 9; break;
 	case TROLL:
@@ -1535,21 +1531,23 @@ void Client::Handle_Connect_OP_ZoneEntry(const EQApplicationPacket *app)
 			//group->NotifyMainTank(this, 1);
 			//group->NotifyMainAssist(this, 1);
 			//group->NotifyPuller(this, 1);
-
-			// If we are the leader, force an update of our group AAs to other members in the zone, in case
-			// we purchased a new one while out-of-zone.
-			if (group->IsLeader(this)) {
-				group->SendLeadershipAAUpdate();
-			}
 		}
+		group->LearnMembers();
 		group->UpdatePlayer(this);
 		LFG = false;
 	}
 
+	/* Load Bots */
 	if (RuleB(Bots, Enabled)) {
 		database.botdb.LoadOwnerOptions(this);
 		// TODO: mod below function for loading spawned botgroups
 		Bot::LoadAndSpawnAllZonedBots(this);
+	}
+	// If we are the leader, force an update of our group AAs to other members in the zone, in case
+	// we purchased a new one while out-of-zone.
+	// needs to be done after spawning bots
+	if (group && group->IsLeader(this)) {
+		group->SendLeadershipAAUpdate();
 	}
 
 	m_inv.SetGMInventory((bool)m_pp.gm); // set to current gm state for calc
@@ -1731,7 +1729,7 @@ void Client::Handle_Connect_OP_ZoneEntry(const EQApplicationPacket *app)
 
 	auto dz = zone->GetDynamicZone();
 	if (dz && dz->GetSafeReturnLocation().zone_id != 0) {
-		auto safereturn = dz->GetSafeReturnLocation();
+		auto& safereturn = dz->GetSafeReturnLocation();
 
 		auto safereturn_entry = CharacterInstanceSafereturnsRepository::NewEntity();
 		safereturn_entry.character_id     = CharacterID();
@@ -2382,7 +2380,7 @@ void Client::Handle_OP_AdventureRequest(const EQApplicationPacket *app)
 	if (IsRaidGrouped())
 	{
 		int i = 0;
-		for (int x = 0; x < 72; ++x)
+		for (int x = 0; x < MAX_RAID_MEMBERS; ++x)
 		{
 			if (i == group_members)
 			{
@@ -2401,7 +2399,7 @@ void Client::Handle_OP_AdventureRequest(const EQApplicationPacket *app)
 	else
 	{
 		int i = 0;
-		for (int x = 0; x < 6; ++x)
+		for (int x = 0; x < MAX_GROUP_MEMBERS; ++x)
 		{
 			if (i == group_members)
 			{
@@ -4204,10 +4202,6 @@ void Client::Handle_OP_Bug(const EQApplicationPacket *app)
 
 void Client::Handle_OP_Camp(const EQApplicationPacket *app)
 {
-	if (RuleB(Bots, Enabled)) {
-		Bot::BotOrderCampAll(this);
-	}
-
 	if (IsLFP()) {
 		worldserver.StopLFP(CharacterID());
 	}
@@ -4391,6 +4385,7 @@ void Client::Handle_OP_CastSpell(const EQApplicationPacket *app)
 								args.emplace_back(p_inst);
 								i = parse->EventPlayer(EVENT_ITEM_CLICK_CAST_CLIENT, this, std::to_string(castspell->inventoryslot), 0, &args);
 							}
+
 							if (i == 0) {
 								CastSpell(item->Click.Effect, castspell->target_id, slot, item->CastTime, 0, 0, castspell->inventoryslot);
 							}
@@ -4442,25 +4437,25 @@ void Client::Handle_OP_CastSpell(const EQApplicationPacket *app)
 				}
 				else
 				{
-					Message(Chat::White, "Error: unknown item->Click.Type (0x%02x)", item->Click.Type);
+					Message(Chat::Red, "Error: unknown item->Click.Type (0x%02x)", item->Click.Type);
 				}
 			}
 			else
 			{
-				Message(Chat::White, "Error: item not found in inventory slot #%i", castspell->inventoryslot);
+				Message(Chat::Red, "Error: item not found in inventory slot #%i", castspell->inventoryslot);
 				InterruptSpell(castspell->spell_id);
 			}
 		}
 		else
 		{
-			Message(Chat::White, "Error: castspell->inventoryslot >= %i (0x%04x)", EQ::invslot::slotCursor, castspell->inventoryslot);
+			Message(Chat::Red, "Error: castspell->inventoryslot >= %i (0x%04x)", EQ::invslot::slotCursor, castspell->inventoryslot);
 			InterruptSpell(castspell->spell_id);
 		}
 	}
 	/* Discipline -- older clients use the same slot as items, but we translate to it's own */
 	else if (slot == CastingSlot::Discipline) {
 		if (!UseDiscipline(castspell->spell_id, castspell->target_id)) {
-			LogSpells("Unknown ability being used by [{}], spell being cast is: [{}]\n", GetName(), castspell->spell_id);
+			LogSpells("Unknown ability being used by [{}] spell being cast is: [{}]\n", GetName(), castspell->spell_id);
 			InterruptSpell(castspell->spell_id);
 			return;
 		}
@@ -4564,7 +4559,7 @@ void Client::Handle_OP_ClickDoor(const EQApplicationPacket *app)
 	Doors* currentdoor = entity_list.FindDoor(cd->doorid);
 	if (!currentdoor)
 	{
-		Message(Chat::White, "Unable to find door, please notify a GM (DoorID: %i).", cd->doorid);
+		Message(Chat::Red, "Unable to find door, please notify a GM (DoorID: %i).", cd->doorid);
 		return;
 	}
 
@@ -5405,7 +5400,7 @@ void Client::Handle_OP_CorpseDrag(const EQApplicationPacket *app)
 	if (!corpse->CastToCorpse()->Summon(this, false, true))
 		return;
 
-	DraggedCorpses.push_back(std::pair<std::string, uint16>(cds->CorpseName, corpse->GetID()));
+	DraggedCorpses.emplace_back(std::pair<std::string, uint16>(cds->CorpseName, corpse->GetID()));
 
 	MessageString(Chat::DefaultText, CORPSEDRAG_BEGIN, cds->CorpseName);
 }
@@ -6233,6 +6228,7 @@ void Client::Handle_OP_EnvDamage(const EQApplicationPacket *app)
 		return;
 	} else {
 		SetHP(GetHP() - (damage * RuleR(Character, EnvironmentDamageMulipliter)));
+
 		if (parse->PlayerHasQuestSub(EVENT_ENVIRONMENTAL_DAMAGE)) {
 			int         final_damage  = (damage * RuleR(Character, EnvironmentDamageMulipliter));
 			const auto& export_string = fmt::format(
@@ -6552,7 +6548,7 @@ void Client::Handle_OP_GMGoto(const EQApplicationPacket *app)
 		MovePC(zone->GetZoneID(), zone->GetInstanceID(), gt->GetX(), gt->GetY(), gt->GetZ(), gt->GetHeading());
 	}
 	else if (!worldserver.Connected())
-		Message(Chat::White, "Error: World server disconnected.");
+		Message(Chat::Red, "Error: World server disconnected.");
 	else {
 		auto pack = new ServerPacket(ServerOP_GMGoto, sizeof(ServerGMGoto_Struct));
 		memset(pack->pBuffer, 0, pack->size);
@@ -6598,7 +6594,7 @@ void Client::Handle_OP_GMKick(const EQApplicationPacket *app)
 	Client* client = entity_list.GetClientByName(gmk->name);
 	if (client == 0) {
 		if (!worldserver.Connected())
-			Message(Chat::White, "Error: World server disconnected");
+			Message(Chat::Red, "Error: World server disconnected");
 		else {
 			auto pack = new ServerPacket(ServerOP_KickPlayer, sizeof(ServerKickPlayer_Struct));
 			ServerKickPlayer_Struct* skp = (ServerKickPlayer_Struct*)pack->pBuffer;
@@ -6640,7 +6636,7 @@ void Client::Handle_OP_GMKill(const EQApplicationPacket *app)
 	}
 	else {
 		if (!worldserver.Connected())
-			Message(Chat::White, "Error: World server disconnected");
+			Message(Chat::Red, "Error: World server disconnected");
 		else {
 			auto pack = new ServerPacket(ServerOP_KillPlayer, sizeof(ServerKillPlayer_Struct));
 			ServerKillPlayer_Struct* skp = (ServerKillPlayer_Struct*)pack->pBuffer;
@@ -6781,18 +6777,18 @@ void Client::Handle_OP_GMSearchCorpse(const EQApplicationPacket *app)
 
 		strn0cpy(charName, row[0], sizeof(charName));
 
-		uint32 ZoneID = atoi(row[1]);
-		float CorpseX = atof(row[2]);
-		float CorpseY = atof(row[3]);
-		float CorpseZ = atof(row[4]);
+		uint32 ZoneID = Strings::ToInt(row[1]);
+		float CorpseX = Strings::ToFloat(row[2]);
+		float CorpseY = Strings::ToFloat(row[3]);
+		float CorpseZ = Strings::ToFloat(row[4]);
 
 		strn0cpy(time_of_death, row[5], sizeof(time_of_death));
 
-		bool corpseRezzed = atoi(row[6]);
-		bool corpseBuried = atoi(row[7]);
+		bool corpseRezzed = Strings::ToInt(row[6]);
+		bool corpseBuried = Strings::ToInt(row[7]);
 
 		popupText += StringFormat("<tr><td>%s</td><td>%s</td><td>%8.0f</td><td>%8.0f</td><td>%8.0f</td><td>%s</td><td>%s</td><td>%s</td></tr>",
-			charName, StaticGetZoneName(ZoneID), CorpseX, CorpseY, CorpseZ, time_of_death,
+			charName, zone_store.GetZoneName(ZoneID, true), CorpseX, CorpseY, CorpseZ, time_of_death,
 			corpseRezzed ? "Yes" : "No", corpseBuried ? "Yes" : "No");
 
 		if (popupText.size() > 4000) {
@@ -6811,7 +6807,7 @@ void Client::Handle_OP_GMSearchCorpse(const EQApplicationPacket *app)
 void Client::Handle_OP_GMServers(const EQApplicationPacket *app)
 {
 	if (!worldserver.Connected())
-		Message(Chat::White, "Error: World server disconnected");
+		Message(Chat::Red, "Error: World server disconnected");
 	else {
 		auto pack = new ServerPacket(ServerOP_ZoneStatus, strlen(GetName()) + 2);
 		memset(pack->pBuffer, (uint8)admin, 1);
@@ -7018,47 +7014,48 @@ void Client::Handle_OP_GroupDisband(const EQApplicationPacket *app)
 	GroupGeneric_Struct* gd = (GroupGeneric_Struct*)app->pBuffer;
 
 	Raid *raid = entity_list.GetRaidByClient(this);
-	if (raid)
-	{
-		Mob* memberToDisband = nullptr;
+	if (raid) {
+		Mob *memberToDisband = nullptr;
 
-		if (!raid->IsGroupLeader(GetName()))
+		if (!raid->IsGroupLeader(GetName())) {
 			memberToDisband = this;
-		else
+		} else {
 			memberToDisband = GetTarget();
+		}
 
-		if (!memberToDisband)
+		if (!memberToDisband) {
 			memberToDisband = entity_list.GetMob(gd->name2);
+		}
 
-		if (!memberToDisband)
+		if (!memberToDisband) {
 			memberToDisband = this;
+		}
 
-		if (!memberToDisband->IsClient())
+		if (!memberToDisband->IsOfClientBot()) {
 			return;
-
+		}
 		//we have a raid.. see if we're in a raid group
 		uint32 grp = raid->GetGroup(memberToDisband->GetName());
-		bool wasGrpLdr = raid->members[raid->GetPlayerIndex(memberToDisband->GetName())].IsGroupLeader;
-		if (grp < 12) {
+		bool wasGrpLdr = raid->members[raid->GetPlayerIndex(memberToDisband->GetName())].is_group_leader;
+		if (grp < MAX_RAID_GROUPS) {
 			if (wasGrpLdr) {
 				raid->SetGroupLeader(memberToDisband->GetName(), false);
-				for (int x = 0; x < MAX_RAID_MEMBERS; x++)
-				{
-					if (raid->members[x].GroupNumber == grp)
-					{
-						if (strlen(raid->members[x].membername) > 0 && strcmp(raid->members[x].membername, memberToDisband->GetName()) != 0)
-						{
-							raid->SetGroupLeader(raid->members[x].membername);
+				for (int x = 0; x < MAX_RAID_MEMBERS; x++) {
+					if (raid->members[x].group_number == grp) {
+						if (strlen(raid->members[x].member_name) > 0 &&
+							strcmp(raid->members[x].member_name, memberToDisband->GetName()) != 0) {
+							raid->SetGroupLeader(raid->members[x].member_name);
 							break;
 						}
 					}
 				}
 			}
-			raid->MoveMember(memberToDisband->GetName(), 0xFFFFFFFF);
-			raid->GroupUpdate(grp); //break
-									//raid->SendRaidGroupRemove(memberToDisband->GetName(), grp);
-									//raid->SendGroupUpdate(memberToDisband->CastToClient());
-			raid->SendGroupDisband(memberToDisband->CastToClient());
+			raid->MoveMember(memberToDisband->GetName(), RAID_GROUPLESS);
+			raid->GroupUpdate(grp);
+
+			if (memberToDisband->IsClient()) {
+				raid->SendGroupDisband(memberToDisband->CastToClient());
+			}
 		}
 		//we're done
 		return;
@@ -7078,13 +7075,17 @@ void Client::Handle_OP_GroupDisband(const EQApplicationPacket *app)
 			}
 			else {
 				Mob* tempMember = entity_list.GetMob(gd->name1); //Name1 is the target you are disbanding
+
 				if (tempMember && tempMember->IsBot()) {
-					tempMember->CastToBot()->RemoveBotFromGroup(tempMember->CastToBot(), group);
+					auto b = tempMember->CastToBot();
+					Bot::RemoveBotFromGroup(b, group);
+
 					if (LFP)
 					{
 						// If we are looking for players, update to show we are on our own now.
 						UpdateLFP();
 					}
+
 					return; //No need to continue from here we were removing a bot from party
 				}
 			}
@@ -7290,7 +7291,15 @@ void Client::Handle_OP_GroupInvite2(const EQApplicationPacket *app)
 			}
 		}
 		else if (Invitee->IsBot()) {
-			Bot::ProcessBotGroupInvite(this, std::string(Invitee->GetName()));
+			Client* inviter = entity_list.GetClientByName(gis->inviter_name);
+			if (inviter && inviter->IsRaidGrouped() && !Invitee->HasRaid()) {
+				Bot::ProcessRaidInvite(Invitee->CastToBot(), inviter, true);
+			}
+			else if (!Invitee->HasRaid()) {
+				Bot::ProcessBotGroupInvite(this, std::string(Invitee->GetName()));
+			} else {
+				MessageString(Chat::LightGray, ALREADY_IN_RAID, Invitee->GetCleanName());
+			}
 		}
 	} else {
 		Message(Chat::White, "Invalid target!");
@@ -7440,13 +7449,12 @@ void Client::Handle_OP_GroupUpdate(const EQApplicationPacket *app)
 
 void Client::Handle_OP_GuildBank(const EQApplicationPacket *app)
 {
-	if (!GuildBanks)
+	if (!GuildBanks) {
 		return;
+	}
 
-	if ((int)zone->GetZoneID() != RuleI(World, GuildBankZoneID))
-	{
+	if ((int)zone->GetZoneID() != Zones::GUILDHALL) {
 		Message(Chat::Red, "The Guild Bank is not available in this zone.");
-
 		return;
 	}
 
@@ -7668,7 +7676,7 @@ void Client::Handle_OP_GuildBank(const EQApplicationPacket *app)
 		}
 		else
 		{
-			Message(Chat::White, "Unable to withdraw 0 quantity of %s", inst->GetItem()->Name);
+			Message(Chat::Red, "Unable to withdraw 0 quantity of %s", inst->GetItem()->Name);
 		}
 
 		safe_delete(inst);
@@ -7755,10 +7763,8 @@ void Client::Handle_OP_GuildCreate(const EQApplicationPacket *app)
 		return;
 	}
 
-	for (unsigned int i = 0; i < strlen(GuildName); ++i)
-	{
-		if (!isalpha(GuildName[i]) && (GuildName[i] != ' '))
-		{
+	for (unsigned int i = 0; i < strlen(GuildName); ++i) {
+		if (!isalpha(GuildName[i]) && (GuildName[i] != ' ')) {
 			Message(Chat::Red, "Invalid character in Guild name.");
 			return;
 		}
@@ -7766,14 +7772,12 @@ void Client::Handle_OP_GuildCreate(const EQApplicationPacket *app)
 
 	int32 GuildCount = guild_mgr.DoesAccountContainAGuildLeader(AccountID());
 
-	if (GuildCount >= RuleI(Guild, PlayerCreationLimit))
-	{
+	if (GuildCount >= RuleI(Guild, PlayerCreationLimit)) {
 		Message(Chat::Red, "You cannot create this guild because this account may only be leader of %i guilds.", RuleI(Guild, PlayerCreationLimit));
 		return;
 	}
 
-	if (guild_mgr.GetGuildIDByName(GuildName) != GUILD_NONE)
-	{
+	if (guild_mgr.GetGuildIDByName(GuildName) != GUILD_NONE) {
 		MessageString(Chat::Red, GUILD_NAME_IN_USE);
 		return;
 	}
@@ -7783,18 +7787,17 @@ void Client::Handle_OP_GuildCreate(const EQApplicationPacket *app)
 	LogGuilds("[{}]: Creating guild [{}] with leader [{}] via UF+ GUI. It was given id [{}]", GetName(),
 		GuildName, CharacterID(), (unsigned long)NewGuildID);
 
-	if (NewGuildID == GUILD_NONE)
+	if (NewGuildID == GUILD_NONE) {
 		Message(Chat::Red, "Guild creation failed.");
-	else
-	{
-		if (!guild_mgr.SetGuild(CharacterID(), NewGuildID, GUILD_LEADER))
+	} else {
+		if (!guild_mgr.SetGuild(CharacterID(), NewGuildID, GUILD_LEADER)) {
 			Message(Chat::Red, "Unable to set guild leader's guild in the database. Contact a GM.");
-		else
-		{
+		} else {
 			Message(Chat::Yellow, "You are now the leader of %s", GuildName);
 
-			if (zone->GetZoneID() == RuleI(World, GuildBankZoneID) && GuildBanks)
+			if (zone->GetZoneID() == Zones::GUILDHALL && GuildBanks) {
 				GuildBanks->SendGuildBank(this);
+			}
 			SendGuildRanks();
 		}
 	}
@@ -7805,11 +7808,11 @@ void Client::Handle_OP_GuildDelete(const EQApplicationPacket *app)
 	LogGuilds("Received OP_GuildDelete");
 
 	if (!IsInAGuild() || !guild_mgr.IsGuildLeader(GuildID(), CharacterID()))
-		Message(Chat::White, "You are not a guild leader or not in a guild.");
+		Message(Chat::Red, "You are not a guild leader or not in a guild.");
 	else {
 		LogGuilds("Deleting guild [{}] ([{}])", guild_mgr.GetGuildName(GuildID()), GuildID());
 		if (!guild_mgr.DeleteGuild(GuildID()))
-			Message(Chat::White, "Guild delete failed.");
+			Message(Chat::Red, "Guild delete failed.");
 		else {
 			Message(Chat::White, "Guild successfully deleted.");
 		}
@@ -7826,26 +7829,26 @@ void Client::Handle_OP_GuildDemote(const EQApplicationPacket *app)
 	}
 
 	if (!IsInAGuild())
-		Message(Chat::White, "Error: You arent in a guild!");
+		Message(Chat::Red, "Error: You aren't in a guild!");
 	else if (!guild_mgr.CheckPermission(GuildID(), GuildRank(), GUILD_DEMOTE))
-		Message(Chat::White, "You dont have permission to invite.");
+		Message(Chat::Red, "You don't have permission to demote.");
 	else if (!worldserver.Connected())
-		Message(Chat::White, "Error: World server disconnected");
+		Message(Chat::Red, "Error: World server disconnected");
 	else {
 		GuildDemoteStruct* demote = (GuildDemoteStruct*)app->pBuffer;
 
 		CharGuildInfo gci;
 		if (!guild_mgr.GetCharInfo(demote->target, gci)) {
-			Message(Chat::White, "Unable to find '%s'", demote->target);
+			Message(Chat::Red, "Unable to find '%s'", demote->target);
 			return;
 		}
 		if (gci.guild_id != GuildID()) {
-			Message(Chat::White, "You aren't in the same guild, what do you think you are doing?");
+			Message(Chat::Red, "You aren't in the same guild, what do you think you are doing?");
 			return;
 		}
 
 		if (gci.rank < 1) {
-			Message(Chat::White, "%s cannot be demoted any further!", demote->target);
+			Message(Chat::Red, "%s cannot be demoted any further!", demote->target);
 			return;
 		}
 		uint8 rank = gci.rank - 1;
@@ -7879,11 +7882,11 @@ void Client::Handle_OP_GuildInvite(const EQApplicationPacket *app)
 	GuildCommand_Struct* gc = (GuildCommand_Struct*)app->pBuffer;
 
 	if (!IsInAGuild())
-		Message(Chat::White, "Error: You are not in a guild!");
+		Message(Chat::Red, "Error: You are not in a guild!");
 	else if (gc->officer > GUILD_MAX_RANK)
 		Message(Chat::Red, "Invalid rank.");
 	else if (!worldserver.Connected())
-		Message(Chat::White, "Error: World server disconnected");
+		Message(Chat::Red, "Error: World server disconnected");
 	else {
 
 		//ok, the invite is also used for changing rank as well.
@@ -7903,7 +7906,7 @@ void Client::Handle_OP_GuildInvite(const EQApplicationPacket *app)
 				if (gc->officer < client->GuildRank()) {
 					//demotion
 					if (!guild_mgr.CheckPermission(GuildID(), GuildRank(), GUILD_DEMOTE)) {
-						Message(Chat::Red, "You dont have permission to demote.");
+						Message(Chat::Red, "You don't have permission to demote.");
 						return;
 					}
 
@@ -7925,7 +7928,7 @@ void Client::Handle_OP_GuildInvite(const EQApplicationPacket *app)
 				else if (gc->officer > client->GuildRank()) {
 					//promotion
 					if (!guild_mgr.CheckPermission(GuildID(), GuildRank(), GUILD_PROMOTE)) {
-						Message(Chat::Red, "You dont have permission to demote.");
+						Message(Chat::Red, "You don't have permission to demote.");
 						return;
 					}
 
@@ -7960,7 +7963,7 @@ void Client::Handle_OP_GuildInvite(const EQApplicationPacket *app)
 				}
 
 				if (!guild_mgr.CheckPermission(GuildID(), GuildRank(), GUILD_INVITE)) {
-					Message(Chat::Red, "You dont have permission to invite.");
+					Message(Chat::Red, "You don't have permission to invite.");
 					return;
 				}
 
@@ -8048,9 +8051,9 @@ void Client::Handle_OP_GuildInviteAccept(const EQApplicationPacket *app)
 
 	//uint32 tmpeq = gj->guildeqid;
 	if (IsInAGuild() && gj->response == GuildRank())
-		Message(Chat::White, "Error: You're already in a guild!");
+		Message(Chat::Red, "Error: You're already in a guild!");
 	else if (!worldserver.Connected())
-		Message(Chat::White, "Error: World server disconnected");
+		Message(Chat::Red, "Error: World server disconnected");
 	else {
 		LogGuilds("Guild Invite Accept: guild [{}], response [{}], inviter [{}], person [{}]",
 			gj->guildeqid, gj->response, gj->inviter, gj->newmember);
@@ -8099,22 +8102,17 @@ void Client::Handle_OP_GuildInviteAccept(const EQApplicationPacket *app)
 				Message(Chat::Red, "There was an error during the rank change, DB may now be inconsistent.");
 				return;
 			}
-		}
-		else {
-
+		} else {
 			LogGuilds("Adding [{}] ([{}]) to guild [{}] ([{}]) at rank [{}]",
 				GetName(), CharacterID(),
 				guild_mgr.GetGuildName(gj->guildeqid), gj->guildeqid,
 				gj->response);
 
 			//change guild and rank
-
 			guildrank = gj->response;
 
-			if (ClientVersion() >= EQ::versions::ClientVersion::RoF)
-			{
-				if (gj->response == 8)
-				{
+			if (ClientVersion() >= EQ::versions::ClientVersion::RoF) {
+				if (gj->response == 8) {
 					guildrank = 0;
 				}
 			}
@@ -8123,8 +8121,10 @@ void Client::Handle_OP_GuildInviteAccept(const EQApplicationPacket *app)
 				Message(Chat::Red, "There was an error during the invite, DB may now be inconsistent.");
 				return;
 			}
-			if (zone->GetZoneID() == RuleI(World, GuildBankZoneID) && GuildBanks)
+
+			if (zone->GetZoneID() == Zones::GUILDHALL && GuildBanks) {
 				GuildBanks->SendGuildBank(this);
+			}
 		}
 	}
 }
@@ -8141,11 +8141,11 @@ void Client::Handle_OP_GuildLeader(const EQApplicationPacket *app)
 	app->pBuffer[app->size - 1] = 0;
 	GuildMakeLeader* gml = (GuildMakeLeader*)app->pBuffer;
 	if (!IsInAGuild())
-		Message(Chat::White, "Error: You arent in a guild!");
+		Message(Chat::Red, "Error: You aren't in a guild!");
 	else if (GuildRank() != GUILD_LEADER)
-		Message(Chat::White, "Error: You arent the guild leader!");
+		Message(Chat::Red, "Error: You aren't the guild leader!");
 	else if (!worldserver.Connected())
-		Message(Chat::White, "Error: World server disconnected");
+		Message(Chat::Red, "Error: World server disconnected");
 	else {
 
 		//NOTE: we could do cross-zone lookups here...
@@ -8162,10 +8162,10 @@ void Client::Handle_OP_GuildLeader(const EQApplicationPacket *app)
 				newleader->Message(Chat::Yellow, "%s has transfered the guild leadership into your hands.", GetName());
 			}
 			else
-				Message(Chat::White, "Could not change leadership at this time.");
+				Message(Chat::Red, "Could not change leadership at this time.");
 		}
 		else
-			Message(Chat::White, "Failed to change leader, could not find target.");
+			Message(Chat::Red, "Failed to change leader, could not find target.");
 	}
 	//	SendGuildMembers(GuildID(), true);
 	return;
@@ -8190,7 +8190,7 @@ void Client::Handle_OP_GuildManageBanker(const EQApplicationPacket *app)
 
 	if (!guild_mgr.GetCharInfo(gmb->member, gci))
 	{
-		Message(Chat::White, "Unable to find '%s'", gmb->member);
+		Message(Chat::Red, "Unable to find '%s'", gmb->member);
 		return;
 	}
 	bool IsCurrentlyABanker = guild_mgr.GetBankerFlag(gci.char_id);
@@ -8219,7 +8219,7 @@ void Client::Handle_OP_GuildManageBanker(const EQApplicationPacket *app)
 	}
 
 	if (gci.guild_id != GuildID()) {
-		Message(Chat::White, "You aren't in the same guild, what do you think you are doing?");
+		Message(Chat::Red, "You aren't in the same guild, what do you think you are doing?");
 		return;
 	}
 
@@ -8265,21 +8265,21 @@ void Client::Handle_OP_GuildPromote(const EQApplicationPacket *app)
 	}
 
 	if (!IsInAGuild())
-		Message(Chat::White, "Error: You arent in a guild!");
+		Message(Chat::Red, "Error: You aren't in a guild!");
 	else if (!guild_mgr.CheckPermission(GuildID(), GuildRank(), GUILD_PROMOTE))
-		Message(Chat::White, "You dont have permission to invite.");
+		Message(Chat::Red, "You don't have permission to promote.");
 	else if (!worldserver.Connected())
-		Message(Chat::White, "Error: World server disconnected");
+		Message(Chat::Red, "Error: World server disconnected");
 	else {
 		GuildPromoteStruct* promote = (GuildPromoteStruct*)app->pBuffer;
 
 		CharGuildInfo gci;
 		if (!guild_mgr.GetCharInfo(promote->target, gci)) {
-			Message(Chat::White, "Unable to find '%s'", promote->target);
+			Message(Chat::Red, "Unable to find '%s'", promote->target);
 			return;
 		}
 		if (gci.guild_id != GuildID()) {
-			Message(Chat::White, "You aren't in the same guild, what do you think you are doing?");
+			Message(Chat::Red, "You aren't in the same guild, what do you think you are doing?");
 			return;
 		}
 
@@ -8287,7 +8287,7 @@ void Client::Handle_OP_GuildPromote(const EQApplicationPacket *app)
 
 		if (rank > GUILD_OFFICER)
 		{
-			Message(Chat::White, "You cannot promote someone to be guild leader. You must use /guildleader.");
+			Message(Chat::Red, "You cannot promote someone to be guild leader. You must use /guildleader.");
 			return;
 		}
 
@@ -8320,11 +8320,11 @@ void Client::Handle_OP_GuildPublicNote(const EQApplicationPacket *app)
 
 	CharGuildInfo gci;
 	if (!guild_mgr.GetCharInfo(gpn->target, gci)) {
-		Message(Chat::White, "Unable to find '%s'", gpn->target);
+		Message(Chat::Red, "Unable to find '%s'", gpn->target);
 		return;
 	}
 	if (gci.guild_id != GuildID()) {
-		Message(Chat::White, "You aren't in the same guild, what do you think you are doing?");
+		Message(Chat::Red, "You aren't in the same guild, what do you think you are doing?");
 		return;
 	}
 
@@ -8648,40 +8648,45 @@ void Client::Handle_OP_InspectAnswer(const EQApplicationPacket *app)
 	}
 
 	//Fills the app sent from client.
-	EQApplicationPacket* outapp = app->Copy();
-	InspectResponse_Struct* insr = (InspectResponse_Struct*)outapp->pBuffer;
-	Mob* tmp = entity_list.GetMob(insr->TargetID);
-	const EQ::ItemData* item = nullptr;
+	auto               outapp = app->Copy();
+	auto               insr   = (InspectResponse_Struct *) outapp->pBuffer;
+	auto               tmp    = entity_list.GetMob(insr->TargetID);
+	const EQ::ItemData *item  = nullptr;
 
-	int ornamentationAugtype = RuleI(Character, OrnamentationAugmentType);
-	for (int16 L = EQ::invslot::EQUIPMENT_BEGIN; L <= EQ::invslot::EQUIPMENT_END; L++) {
-		const EQ::ItemInstance* inst = GetInv().GetItem(L);
+	for (int16 L                    = EQ::invslot::EQUIPMENT_BEGIN; L <= EQ::invslot::EQUIPMENT_END; L++) {
+		const auto inst = GetInv().GetItem(L);
 		item = inst ? inst->GetItem() : nullptr;
 
 		if (item) {
 			strcpy(insr->itemnames[L], item->Name);
-			if (inst && inst->GetOrnamentationAug(ornamentationAugtype)) {
-				const EQ::ItemData *aug_item = inst->GetOrnamentationAug(ornamentationAugtype)->GetItem();
-				insr->itemicons[L] = aug_item->Icon;
-			}
-			else if (inst->GetOrnamentationIcon()) {
-				insr->itemicons[L] = inst->GetOrnamentationIcon();
-			}
-			else {
+			if (inst) {
+				const auto augment = inst->GetOrnamentationAugment();
+
+				if (augment) {
+					insr->itemicons[L] = augment->GetItem()->Icon;
+				} else if (inst->GetOrnamentationIcon()) {
+					insr->itemicons[L] = inst->GetOrnamentationIcon();
+				}
+			} else {
 				insr->itemicons[L] = item->Icon;
 			}
+		} else {
+			insr->itemicons[L] = 0xFFFFFFFF;	
 		}
-		else { insr->itemicons[L] = 0xFFFFFFFF; }
 	}
 
-	InspectMessage_Struct* newmessage = (InspectMessage_Struct*)insr->text;
-	InspectMessage_Struct& playermessage = GetInspectMessage();
-	memcpy(&playermessage, newmessage, sizeof(InspectMessage_Struct));
-	database.SaveCharacterInspectMessage(CharacterID(), &playermessage);
+	auto message         = (InspectMessage_Struct *) insr->text;
+	auto inspect_message = GetInspectMessage();
 
-	if (tmp != 0 && tmp->IsClient()) { tmp->CastToClient()->QueuePacket(outapp); } // Send answer to requester
+	memcpy(&inspect_message, message, sizeof(InspectMessage_Struct));
+	database.SaveCharacterInspectMessage(CharacterID(), &inspect_message);
 
-	return;
+	if (
+		tmp &&
+		tmp->IsClient()
+	) {
+		tmp->CastToClient()->QueuePacket(outapp);
+	} // Send answer to requester
 }
 
 void Client::Handle_OP_InspectMessageUpdate(const EQApplicationPacket *app)
@@ -9047,20 +9052,20 @@ void Client::Handle_OP_ItemVerifyRequest(const EQApplicationPacket *app)
 	}
 
 	if (slot_id < 0) {
-		LogDebug("Unknown slot being used by [{}], slot being used is: [{}]", GetName(), request->slot);
+		LogDebug("Unknown slot being used by [{}] slot being used is [{}]", GetName(), request->slot);
 		return;
 	}
 
 	const EQ::ItemInstance* inst = m_inv[slot_id];
 	if (!inst) {
-		Message(Chat::White, "Error: item not found in inventory slot #%i", slot_id);
+		Message(Chat::Red, "Error: item not found in inventory slot #%i", slot_id);
 		DeleteItemInInventory(slot_id, 0, true);
 		return;
 	}
 
 	const EQ::ItemData* item = inst->GetItem();
 	if (!item) {
-		Message(Chat::White, "Error: item not found in inventory slot #%i", slot_id);
+		Message(Chat::Red, "Error: item not found in inventory slot #%i", slot_id);
 		DeleteItemInInventory(slot_id, 0, true);
 		return;
 	}
@@ -9105,7 +9110,7 @@ void Client::Handle_OP_ItemVerifyRequest(const EQApplicationPacket *app)
 		target_id = GetPetID();
 	}
 
-	LogDebug("OP ItemVerifyRequest: spell=[{}], target=[{}], inv=[{}]", spell_id, target_id, slot_id);
+	LogDebug("OP ItemVerifyRequest: spell=[{}] target=[{}] inv=[{}]", spell_id, target_id, slot_id);
 
 	if (m_inv.SupportsClickCasting(slot_id) || ((item->ItemType == EQ::item::ItemTypePotion || item->PotionBelt) && m_inv.SupportsPotionBeltCasting(slot_id))) // sanity check
 	{
@@ -9326,10 +9331,10 @@ void Client::Handle_OP_ItemVerifyRequest(const EQApplicationPacket *app)
 				}
 			}
 		} else {
-			Message(Chat::White, "Error: item not found in inventory slot #%i", slot_id);
+			Message(Chat::Red, "Error: item not found in inventory slot #%i", slot_id);
 		}
 	} else {
-		Message(Chat::White, "Error: Invalid inventory slot for using effects (inventory slot #%i)", slot_id);
+		Message(Chat::Red, "Error: Invalid inventory slot for using effects (inventory slot #%i)", slot_id);
 	}
 	return;
 }
@@ -9553,7 +9558,7 @@ void Client::Handle_OP_LFGCommand(const EQApplicationPacket *app)
 		strn0cpy(LFGComments, lfg->Comments, sizeof(LFGComments));
 		break;
 	default:
-		Message(Chat::White, "Error: unknown LFG value %i", lfg->value);
+		Message(Chat::Red, "Error: unknown LFG value %i", lfg->value);
 	}
 
 	UpdateWho();
@@ -9580,7 +9585,7 @@ void Client::Handle_OP_LFGGetMatchesRequest(const EQApplicationPacket *app)
 	LFGGetMatchesRequest_Struct* gmrs = (LFGGetMatchesRequest_Struct*)app->pBuffer;
 
 	if (!worldserver.Connected())
-		Message(Chat::White, "Error: World server disconnected");
+		Message(Chat::Red, "Error: World server disconnected");
 	else {
 		auto pack = new ServerPacket(ServerOP_LFGMatches, sizeof(ServerLFGMatchesRequest_Struct));
 		ServerLFGMatchesRequest_Struct* smrs = (ServerLFGMatchesRequest_Struct*)pack->pBuffer;
@@ -9804,7 +9809,7 @@ void Client::Handle_OP_LFPGetMatchesRequest(const EQApplicationPacket *app)
 	LFPGetMatchesRequest_Struct* gmrs = (LFPGetMatchesRequest_Struct*)app->pBuffer;
 
 	if (!worldserver.Connected())
-		Message(Chat::White, "Error: World server disconnected");
+		Message(Chat::Red, "Error: World server disconnected");
 	else {
 		auto pack = new ServerPacket(ServerOP_LFPMatches, sizeof(ServerLFPMatchesRequest_Struct));
 		ServerLFPMatchesRequest_Struct* smrs = (ServerLFPMatchesRequest_Struct*)pack->pBuffer;
@@ -11221,7 +11226,7 @@ void Client::Handle_OP_Petition(const EQApplicationPacket *app)
 	}
 
 	if (!worldserver.Connected()) {
-		Message(Chat::White, "Error: World server disconnected");
+		Message(Chat::Red, "Error: World server disconnected");
 	}
 	/*else if(petition_list.FindPetitionByAccountName(AccountName()))
 	{
@@ -11297,7 +11302,7 @@ void Client::Handle_OP_PetitionCheckout(const EQApplicationPacket *app)
 		return;
 	}
 	if (!worldserver.Connected())
-		Message(Chat::White, "Error: World server disconnected");
+		Message(Chat::Red, "Error: World server disconnected");
 	else {
 		uint32 getpetnum = *((uint32*)app->pBuffer);
 		Petition* getpet = petition_list.GetPetitionByID(getpetnum);
@@ -11367,9 +11372,9 @@ void Client::Handle_OP_PetitionUnCheckout(const EQApplicationPacket *app)
 		std::cout << "Wrong size: OP_PetitionUnCheckout, size=" << app->size << ", expected " << sizeof(uint32) << std::endl;
 		return;
 	}
-	if (!worldserver.Connected())
-		Message(Chat::White, "Error: World server disconnected");
-	else {
+	if (!worldserver.Connected()) {
+		Message(Chat::Red, "Error: World server disconnected");
+	} else {
 		uint32 getpetnum = *((uint32*)app->pBuffer);
 		Petition* getpet = petition_list.GetPetitionByID(getpetnum);
 		if (getpet != 0) {
@@ -11474,8 +11479,8 @@ void Client::Handle_OP_PopupResponse(const EQApplicationPacket *app)
 	std::string response;
 	switch (popup_response->popupid) {
 		case POPUPID_REPLACE_SPELLWINDOW:
-			DeleteItemInInventory(std::stoi(GetEntityVariable("slot_id")), 1, true);
-			MemorizeSpellFromItem(std::stoi(GetEntityVariable("spell_id")));
+			DeleteItemInInventory(Strings::ToInt(GetEntityVariable("slot_id")), 1, true);
+			MemorizeSpellFromItem(Strings::ToInt(GetEntityVariable("spell_id")));
 			return;
 			break;
 
@@ -11780,7 +11785,7 @@ void Client::Handle_OP_QueryUCSServerStatus(const EQApplicationPacket *app)
 	}
 }
 
-void Client::Handle_OP_RaidCommand(const EQApplicationPacket *app)
+void Client::Handle_OP_RaidCommand(const EQApplicationPacket* app)
 {
 	if (app->size < sizeof(RaidGeneral_Struct)) {
 		LogError("Wrong size: OP_RaidCommand, size=[{}], expected at least [{}]", app->size, sizeof(RaidGeneral_Struct));
@@ -11788,18 +11793,38 @@ void Client::Handle_OP_RaidCommand(const EQApplicationPacket *app)
 		return;
 	}
 
-	RaidGeneral_Struct *raid_command_packet = (RaidGeneral_Struct*)app->pBuffer;
+	auto raid_command_packet = (RaidGeneral_Struct*)app->pBuffer;
 	switch (raid_command_packet->action)
 	{
-		case RaidCommandInviteIntoExisting:
-		case RaidCommandInvite: {
-
-			Client *player_to_invite = entity_list.GetClientByName(raid_command_packet->player_name);
-
-			if (!player_to_invite)
+	case RaidCommandInviteIntoExisting:
+	case RaidCommandInvite: {
+		if (RuleB(Bots, Enabled) && entity_list.GetBotByBotName(raid_command_packet->player_name)) {
+			auto player_to_invite = entity_list.GetBotByBotName(raid_command_packet->player_name);
+			if (!player_to_invite) {
 				break;
+			}
 
-			Group *player_to_invite_group = player_to_invite->GetGroup();
+			auto player_to_invite_group = player_to_invite->GetGroup();			
+			if (player_to_invite_group && player_to_invite_group->IsGroupMember(this)) {
+				MessageString(Chat::Red, ALREADY_IN_PARTY);
+				break;
+			}
+
+			if (player_to_invite->IsRaidGrouped()) {
+				MessageString(Chat::White, ALREADY_IN_RAID, player_to_invite->GetCleanName()); //must invite members not in raid...
+				return;
+			}
+
+			Bot::ProcessRaidInvite(player_to_invite, this);
+			break;
+
+		} else {
+			Client* player_to_invite = entity_list.GetClientByName(raid_command_packet->player_name);
+			if (!player_to_invite) {
+				break;
+			}
+
+			Group* player_to_invite_group = player_to_invite->GetGroup();
 
 			if (player_to_invite->HasRaid()) {
 				Message(Chat::Red, "%s is already in a raid.", player_to_invite->GetName());
@@ -11810,7 +11835,7 @@ void Client::Handle_OP_RaidCommand(const EQApplicationPacket *app)
 				MessageString(Chat::Red, ALREADY_IN_PARTY);
 				break;
 			}
-
+			// Not allowed: Invite a client that is in a group but not the groupleader
 			if (player_to_invite_group && !player_to_invite_group->IsLeader(player_to_invite)) {
 				Message(Chat::Red, "You can only invite an ungrouped player or group leader to join your raid.");
 				break;
@@ -11818,7 +11843,7 @@ void Client::Handle_OP_RaidCommand(const EQApplicationPacket *app)
 
 			/* Send out invite to the client */
 			auto outapp = new EQApplicationPacket(OP_RaidUpdate, sizeof(RaidGeneral_Struct));
-			RaidGeneral_Struct *raid_command = (RaidGeneral_Struct*)outapp->pBuffer;
+			RaidGeneral_Struct* raid_command = (RaidGeneral_Struct*)outapp->pBuffer;
 
 			strn0cpy(raid_command->leader_name, raid_command_packet->leader_name, 64);
 			strn0cpy(raid_command->player_name, raid_command_packet->player_name, 64);
@@ -11832,573 +11857,656 @@ void Client::Handle_OP_RaidCommand(const EQApplicationPacket *app)
 
 			break;
 		}
-		case RaidCommandAcceptInvite: {
-			Client *player_accepting_invite = entity_list.GetClientByName(raid_command_packet->player_name);
-			if (player_accepting_invite) {
-				if (IsRaidGrouped()) {
-					player_accepting_invite->MessageString(Chat::White, ALREADY_IN_RAID, GetName()); //group failed, must invite members not in raid...
-					return;
+	}
+
+	case RaidCommandAcceptInvite: {
+		Client* player_sending_invite = entity_list.GetClientByName(raid_command_packet->player_name);
+
+		// If the accepting client is in a group with a Bot or the invitor is in a group with a Bot, send the invite to Bot:ProcessRaidInvite
+		// instead of remaining here.
+		Bot* b = nullptr;
+		Client* invitee = entity_list.GetClientByName(raid_command_packet->leader_name);
+		Client* invitor = entity_list.GetClientByName(raid_command_packet->player_name);
+
+		if (!invitee || !invitor) {
+			return;
+		}
+
+		Group* g_invitee = invitee->GetGroup();
+		Group* g_invitor = invitor->GetGroup();
+
+		if (invitee && invitee->IsRaidGrouped()) {
+			invitor->MessageString(Chat::White, ALREADY_IN_RAID, GetName()); //group failed, must invite members not in raid...
+			return;
+		}
+
+		bool invitor_has_bot = false;
+		bool invitee_has_bot = false;
+
+		if (RuleB(Bots, Enabled)) {
+			if (g_invitor && g_invitor->IsLeader(invitor)) {
+				for (const auto& g_invitor_member : g_invitor->members) {
+					if (g_invitor_member && g_invitor_member->IsBot()) {
+						invitee_has_bot = true;
+					}
 				}
-				Raid *raid = entity_list.GetRaidByClient(player_accepting_invite);
-				if (raid) {
-					raid->VerifyRaid();
-					Group *group = GetGroup();
-					if (group) {
-						if (group->GroupCount() + raid->RaidCount() > MAX_RAID_MEMBERS) {
-							player_accepting_invite->Message(Chat::Red, "Invite failed, group invite would create a raid larger than the maximum number of members allowed.");
-							return;
+			}
+			if (g_invitee && g_invitee->IsLeader(invitee)) {
+				for (const auto& g_invitee_member : g_invitee->members) {
+					if (g_invitee_member && g_invitee_member->IsBot()) {
+						invitee_has_bot = true;
+						break;
+					}
+				}
+			}
+			if (invitor_has_bot || invitee_has_bot) {
+				Bot::ProcessRaidInvite(invitee, invitor);  //two clients with one or both having groups with bots
+				break;
+			}
+		}
+
+		if (player_sending_invite) {
+			if (IsRaidGrouped()) {
+				player_sending_invite->MessageString(Chat::White, ALREADY_IN_RAID, GetName()); //group failed, must invite members not in raid...
+				return;
+			}
+			Raid* raid = entity_list.GetRaidByClient(player_sending_invite);
+			if (raid) {
+				raid->VerifyRaid();
+				Group* group = GetGroup();
+				if (group) {
+					if (group->GroupCount() + raid->RaidCount() > MAX_RAID_MEMBERS) {
+						player_sending_invite->Message(Chat::Red, "Invite failed, group invite would create a raid larger than the maximum number of members allowed.");
+						return;
+					}
+				}
+				else {
+					if (1 + raid->RaidCount() > MAX_RAID_MEMBERS) {
+						player_sending_invite->Message(Chat::Red, "Invite failed, member invite would create a raid larger than the maximum number of members allowed.");
+						return;
+					}
+				}
+				if (group) {//add us all
+					uint32 free_group_id = raid->GetFreeGroup();
+					Client* addClient = nullptr;
+					for (int x = 0; x < MAX_GROUP_MEMBERS; x++) {
+						if (group->members[x]) {
+							Client* c = nullptr;
+							if (group->members[x]->IsClient())
+								c = group->members[x]->CastToClient();
+							else
+								continue;
+
+							if (!addClient)
+							{
+								addClient = c;
+								raid->SetGroupLeader(addClient->GetName());
+							}
+
+							raid->SendRaidCreate(c);
+							if (group->IsLeader(group->members[x]))
+								raid->AddMember(c, free_group_id, false, true);
+							else
+								raid->AddMember(c, free_group_id);
+							raid->SendBulkRaid(c);
+							raid->SendMakeLeaderPacketTo(raid->leadername, c);
+							if (raid->IsLocked()) {
+								raid->SendRaidLockTo(c);
+							}
 						}
+					}
+					group->JoinRaidXTarget(raid);
+					group->DisbandGroup(true);
+					raid->GroupUpdate(free_group_id);
+				}
+				else {
+					raid->SendRaidCreate(this);
+					raid->AddMember(this);
+					raid->SendBulkRaid(this);
+					raid->SendMakeLeaderPacketTo(raid->leadername, this);
+					if (raid->IsLocked()) {
+						raid->SendRaidLockTo(this);
+					}
+				}
+			}
+			else
+			{
+				auto player_sending_invite_group = player_sending_invite->GetGroup();
+				Group* group = GetGroup();
+				if (group) //if our target has a group
+				{
+					raid = new Raid(player_sending_invite);
+					entity_list.AddRaid(raid);
+					raid->SetRaidDetails();
+
+					uint32 raid_free_group_id = raid->GetFreeGroup();
+
+					/* If we already have a group then cycle through adding us... */
+					if (player_sending_invite_group) {
+						Client* client_to_be_leader = nullptr;
+						for (const auto& sending_invite_member : player_sending_invite_group->members) {
+							if (sending_invite_member) {
+								if (!client_to_be_leader) {
+									if (sending_invite_member->IsClient()) {
+										client_to_be_leader = sending_invite_member->CastToClient();
+										raid->SetGroupLeader(client_to_be_leader->GetName());
+									}
+								}
+								if (player_sending_invite_group->IsLeader(sending_invite_member)) {
+									Client* c = nullptr;
+
+									if (sending_invite_member->IsClient())
+										c = sending_invite_member->CastToClient();
+									else
+										continue;
+
+									raid->SendRaidCreate(c);
+									raid->AddMember(c, raid_free_group_id, true, true, true);
+									raid->SendBulkRaid(c);
+									raid->SendMakeLeaderPacketTo(raid->leadername, c);
+									if (raid->IsLocked()) {
+										raid->SendRaidLockTo(c);
+									}
+								}
+								else {
+									Client* c = nullptr;
+
+									if (sending_invite_member->IsClient())
+										c = sending_invite_member->CastToClient();
+									else
+										continue;
+
+									raid->SendRaidCreate(c);
+									raid->AddMember(c, raid_free_group_id);
+									raid->SendBulkRaid(c);
+									raid->SendMakeLeaderPacketTo(raid->leadername, c);
+									if (raid->IsLocked()) {
+										raid->SendRaidLockTo(c);
+									}
+								}
+							}
+						}
+						player_sending_invite_group->JoinRaidXTarget(raid, true);
+						player_sending_invite_group->DisbandGroup(true);
+						raid->GroupUpdate(raid_free_group_id);
+						raid_free_group_id = raid->GetFreeGroup();
 					}
 					else {
-						if (1 + raid->RaidCount() > MAX_RAID_MEMBERS) {
-							player_accepting_invite->Message(Chat::Red, "Invite failed, member invite would create a raid larger than the maximum number of members allowed.");
-							return;
-						}
+						raid->SendRaidCreate(player_sending_invite);
+						raid->AddMember(player_sending_invite, RAID_GROUPLESS, true, false, true);
 					}
-					if (group) {//add us all
-						uint32 free_group_id = raid->GetFreeGroup();
-						Client *addClient = nullptr;
-						for (int x = 0; x < 6; x++) {
-							if (group->members[x]) {
-								Client *c = nullptr;
+
+					Client* client_to_add = nullptr;
+					/* Add client to an existing group */
+					for (int x = 0; x < MAX_GROUP_MEMBERS; x++) {
+						if (group->members[x]) {
+							if (!client_to_add) {
+								if (group->members[x]->IsClient()) {
+									client_to_add = group->members[x]->CastToClient();
+									raid->SetGroupLeader(client_to_add->GetName());
+								}
+							}
+							if (group->IsLeader(group->members[x])) {
+								Client* c = nullptr;
+
 								if (group->members[x]->IsClient())
 									c = group->members[x]->CastToClient();
 								else
 									continue;
 
-								if (!addClient)
-								{
-									addClient = c;
-									raid->SetGroupLeader(addClient->GetName());
+								raid->SendRaidCreate(c);
+								raid->AddMember(c, raid_free_group_id, false, true);
+								raid->SendBulkRaid(c);
+								raid->SendMakeLeaderPacketTo(raid->leadername, c);
+
+								if (raid->IsLocked()) {
+									raid->SendRaidLockTo(c);
 								}
+							}
+							else
+							{
+								Client* c = nullptr;
+
+								if (group->members[x]->IsClient())
+									c = group->members[x]->CastToClient();
+								else
+									continue;
 
 								raid->SendRaidCreate(c);
-								raid->SendMakeLeaderPacketTo(raid->leadername, c);
-								if (group->IsLeader(group->members[x]))
-									raid->AddMember(c, free_group_id, false, true);
-								else
-									raid->AddMember(c, free_group_id);
+								raid->AddMember(c, raid_free_group_id);
 								raid->SendBulkRaid(c);
+								raid->SendMakeLeaderPacketTo(raid->leadername, c);
 								if (raid->IsLocked()) {
 									raid->SendRaidLockTo(c);
 								}
 							}
 						}
-						group->DisbandGroup(true);
-						raid->GroupUpdate(free_group_id);
 					}
-					else {
-						raid->SendRaidCreate(this);
-						raid->SendMakeLeaderPacketTo(raid->leadername, this);
-						raid->AddMember(this);
-						raid->SendBulkRaid(this);
-						if (raid->IsLocked()) {
-							raid->SendRaidLockTo(this);
-						}
-					}
+					group->JoinRaidXTarget(raid);
+					group->DisbandGroup(true);
+
+					raid->GroupUpdate(raid_free_group_id);
 				}
-				else
-				{
-					Group *player_invited_group = player_accepting_invite->GetGroup();
-					Group *group = GetGroup();
-					if (group) //if our target has a group
-					{
-						raid = new Raid(player_accepting_invite);
+				/* Target does not have a group */
+				else {
+					if (player_sending_invite_group) {
+
+						raid = new Raid(player_sending_invite);
+
 						entity_list.AddRaid(raid);
 						raid->SetRaidDetails();
-
-						uint32 raid_free_group_id = raid->GetFreeGroup();
-
-						/* If we already have a group then cycle through adding us... */
-						if (player_invited_group) {
-							Client *client_to_be_leader = nullptr;
-							for (int x = 0; x < 6; x++) {
-								if (player_invited_group->members[x]) {
-									if (!client_to_be_leader) {
-										if (player_invited_group->members[x]->IsClient()) {
-											client_to_be_leader = player_invited_group->members[x]->CastToClient();
-											raid->SetGroupLeader(client_to_be_leader->GetName());
-										}
-									}
-									if (player_invited_group->IsLeader(player_invited_group->members[x])) {
-										Client *c = nullptr;
-
-										if (player_invited_group->members[x]->IsClient())
-											c = player_invited_group->members[x]->CastToClient();
-										else
-											continue;
-
-										raid->SendRaidCreate(c);
-										raid->SendMakeLeaderPacketTo(raid->leadername, c);
-										raid->AddMember(c, raid_free_group_id, true, true, true);
-										raid->SendBulkRaid(c);
-
-										if (raid->IsLocked()) {
-											raid->SendRaidLockTo(c);
-										}
-									}
-									else {
-										Client *c = nullptr;
-
-										if (player_invited_group->members[x]->IsClient())
-											c = player_invited_group->members[x]->CastToClient();
-										else
-											continue;
-
-										raid->SendRaidCreate(c);
-										raid->SendMakeLeaderPacketTo(raid->leadername, c);
-										raid->AddMember(c, raid_free_group_id);
-										raid->SendBulkRaid(c);
-
-										if (raid->IsLocked()) {
-											raid->SendRaidLockTo(c);
-										}
+						Client* addClientig = nullptr;
+						for (int x = 0; x < MAX_GROUP_MEMBERS; x++) {
+							if (player_sending_invite_group->members[x]) {
+								if (!addClientig) {
+									if (player_sending_invite_group->members[x]->IsClient()) {
+										addClientig = player_sending_invite_group->members[x]->CastToClient();
+										raid->SetGroupLeader(addClientig->GetName());
 									}
 								}
-							}
-							player_invited_group->DisbandGroup(true);
-							raid->GroupUpdate(raid_free_group_id);
-							raid_free_group_id = raid->GetFreeGroup();
-						}
-						else {
-							raid->SendRaidCreate(player_accepting_invite);
-							raid->AddMember(player_accepting_invite, 0xFFFFFFFF, true, false, true);
-						}
+								if (player_sending_invite_group->IsLeader(player_sending_invite_group->members[x])) {
+									Client* c = nullptr;
 
-						Client *client_to_add = nullptr;
-						/* Add client to an existing group */
-						for (int x = 0; x < 6; x++) {
-							if (group->members[x]) {
-								if (!client_to_add) {
-									if (group->members[x]->IsClient()) {
-										client_to_add = group->members[x]->CastToClient();
-										raid->SetGroupLeader(client_to_add->GetName());
-									}
-								}
-								if (group->IsLeader(group->members[x])) {
-									Client *c = nullptr;
-
-									if (group->members[x]->IsClient())
-										c = group->members[x]->CastToClient();
+									if (player_sending_invite_group->members[x]->IsClient())
+										c = player_sending_invite_group->members[x]->CastToClient();
 									else
 										continue;
 
 									raid->SendRaidCreate(c);
-									raid->SendMakeLeaderPacketTo(raid->leadername, c);
-									raid->AddMember(c, raid_free_group_id, false, true);
+									raid->AddMember(c, 0, true, true, true);
 									raid->SendBulkRaid(c);
-
+									raid->SendMakeLeaderPacketTo(raid->leadername, c);
 									if (raid->IsLocked()) {
 										raid->SendRaidLockTo(c);
 									}
 								}
 								else
 								{
-									Client *c = nullptr;
-
-									if (group->members[x]->IsClient())
-										c = group->members[x]->CastToClient();
+									Client* c = nullptr;
+									if (player_sending_invite_group->members[x]->IsClient())
+										c = player_sending_invite_group->members[x]->CastToClient();
 									else
 										continue;
 
 									raid->SendRaidCreate(c);
-									raid->SendMakeLeaderPacketTo(raid->leadername, c);
-									raid->AddMember(c, raid_free_group_id);
+									raid->AddMember(c, 0);
 									raid->SendBulkRaid(c);
-
+									raid->SendMakeLeaderPacketTo(raid->leadername, c);
 									if (raid->IsLocked()) {
 										raid->SendRaidLockTo(c);
 									}
 								}
 							}
 						}
-						group->DisbandGroup(true);
-
-						raid->GroupUpdate(raid_free_group_id);
-					}
-					/* Target does not have a group */
-					else {
-						if (player_invited_group) {
-
-							raid = new Raid(player_accepting_invite);
-
-							entity_list.AddRaid(raid);
-							raid->SetRaidDetails();
-							Client *addClientig = nullptr;
-							for (int x = 0; x < 6; x++) {
-								if (player_invited_group->members[x]) {
-									if (!addClientig) {
-										if (player_invited_group->members[x]->IsClient()) {
-											addClientig = player_invited_group->members[x]->CastToClient();
-											raid->SetGroupLeader(addClientig->GetName());
-										}
-									}
-									if (player_invited_group->IsLeader(player_invited_group->members[x])) {
-										Client *c = nullptr;
-
-										if (player_invited_group->members[x]->IsClient())
-											c = player_invited_group->members[x]->CastToClient();
-										else
-											continue;
-
-										raid->SendRaidCreate(c);
-										raid->SendMakeLeaderPacketTo(raid->leadername, c);
-										raid->AddMember(c, 0, true, true, true);
-										raid->SendBulkRaid(c);
-
-										if (raid->IsLocked()) {
-											raid->SendRaidLockTo(c);
-										}
-									}
-									else
-									{
-										Client *c = nullptr;
-										if (player_invited_group->members[x]->IsClient())
-											c = player_invited_group->members[x]->CastToClient();
-										else
-											continue;
-
-										raid->SendRaidCreate(c);
-										raid->SendMakeLeaderPacketTo(raid->leadername, c);
-										raid->AddMember(c, 0);
-										raid->SendBulkRaid(c);
-										if (raid->IsLocked()) {
-											raid->SendRaidLockTo(c);
-										}
-									}
-								}
-							}
-							raid->SendRaidCreate(this);
-							raid->SendMakeLeaderPacketTo(raid->leadername, this);
-							raid->SendBulkRaid(this);
-							raid->AddMember(this);
-							player_invited_group->DisbandGroup(true);
-							raid->GroupUpdate(0);
-							if (raid->IsLocked()) {
-								raid->SendRaidLockTo(this);
-							}
+						raid->SendRaidCreate(this);
+						raid->SendBulkRaid(this);
+						player_sending_invite_group->JoinRaidXTarget(raid, true);
+						raid->AddMember(this);
+						player_sending_invite_group->DisbandGroup(true);
+						raid->GroupUpdate(0);
+						raid->SendMakeLeaderPacketTo(raid->leadername, this);
+						if (raid->IsLocked()) {
+							raid->SendRaidLockTo(this);
 						}
-						else { // neither has a group
-							raid = new Raid(player_accepting_invite);
-							entity_list.AddRaid(raid);
-							raid->SetRaidDetails();
-							raid->SendRaidCreate(player_accepting_invite);
-							raid->SendRaidCreate(this);
-							raid->SendMakeLeaderPacketTo(raid->leadername, this);
-							raid->AddMember(player_accepting_invite, 0xFFFFFFFF, true, false, true);
-							raid->SendBulkRaid(this);
-							raid->AddMember(this);
-							if (raid->IsLocked()) {
-								raid->SendRaidLockTo(this);
-							}
+					}
+					else { // neither has a group
+						raid = new Raid(player_sending_invite);
+						entity_list.AddRaid(raid);
+						raid->SetRaidDetails();
+						raid->SendRaidCreate(player_sending_invite);
+						raid->SendRaidCreate(this);
+						raid->AddMember(player_sending_invite, RAID_GROUPLESS, true, false, true);
+						raid->SendBulkRaid(this);
+						raid->AddMember(this);
+						raid->SendMakeLeaderPacketTo(raid->leadername, this);
+						if (raid->IsLocked()) {
+							raid->SendRaidLockTo(this);
 						}
 					}
 				}
 			}
-			break;
 		}
-		case RaidCommandDisband: {
-			Raid *raid = entity_list.GetRaidByClient(this);
-			if (raid) {
-				uint32 group = raid->GetGroup(raid_command_packet->leader_name);
+		break;
+	}
+	case RaidCommandDisband: {
+		Raid* raid = entity_list.GetRaidByClient(this);
+		Client* c_to_disband = entity_list.GetClientByName(raid_command_packet->leader_name);
+		Client* c_doing_disband = entity_list.GetClientByName(raid_command_packet->player_name);
 
-				if (group < 12) {
+		if (raid) {
+			raid->VerifyRaid();
+			uint32 group = raid->GetGroup(raid_command_packet->leader_name);
+
+			if (RuleB(Bots, Enabled)) {
+				Bot* const b_to_disband = entity_list.GetBotByBotName(raid_command_packet->leader_name);
+
+				//Added to remove all bots if the Bot_Owner is removed from the Raid
+				//Does not camp the Bots, just removes from the raid
+				if (c_to_disband) {
 					uint32 i = raid->GetPlayerIndex(raid_command_packet->leader_name);
-					if (raid->members[i].IsGroupLeader) { //assign group leader to someone else
-						for (int x = 0; x < MAX_RAID_MEMBERS; x++) {
-							if (strlen(raid->members[x].membername) > 0 && i != x) {
-								if (raid->members[x].GroupNumber == group) {
-									raid->SetGroupLeader(raid_command_packet->leader_name, false);
-									raid->SetGroupLeader(raid->members[x].membername);
-									raid->UpdateGroupAAs(group);
-									break;
-								}
-							}
-						}
-
+					raid->SetNewRaidLeader(i);
+					raid->HandleBotGroupDisband(c_to_disband->CharacterID());
+					raid->HandleOfflineBots(c_to_disband->CharacterID());
+					raid->RemoveMember(raid_command_packet->leader_name);
+					raid->SendGroupDisband(c_to_disband);
+					raid->GroupUpdate(group);
+					if (!raid->RaidCount()) {
+						raid->DisbandRaid();
 					}
-					if (raid->members[i].IsRaidLeader) {
-						for (int x = 0; x < MAX_RAID_MEMBERS; x++) {
-							if (strlen(raid->members[x].membername) > 0 && strcmp(raid->members[x].membername, raid->members[i].membername) != 0)
-							{
-								raid->SetRaidLeader(raid->members[i].membername, raid->members[x].membername);
-								raid->UpdateRaidAAs();
-								raid->SendAllRaidLeadershipAA();
-								break;
-							}
-						}
-					}
-				}
+					break;
+				} else if (b_to_disband) {
+					uint32 gid = raid->GetGroup(b_to_disband->GetName());
 
-				raid->RemoveMember(raid_command_packet->leader_name);
-				Client *c = entity_list.GetClientByName(raid_command_packet->leader_name);
-				if (c)
-					raid->SendGroupDisband(c);
-				else {
-					auto pack =
-						new ServerPacket(ServerOP_RaidGroupDisband, sizeof(ServerRaidGeneralAction_Struct));
-					ServerRaidGeneralAction_Struct* rga = (ServerRaidGeneralAction_Struct*)pack->pBuffer;
-					rga->rid = GetID();
-					rga->zoneid = zone->GetZoneID();
-					rga->instance_id = zone->GetInstanceID();
-					strn0cpy(rga->playername, raid_command_packet->leader_name, 64);
-					worldserver.SendPacket(pack);
-					safe_delete(pack);
+					if (gid < 12 && (raid->IsGroupLeader(b_to_disband->GetName()) || raid->GroupCount(gid) < 2)) {
+						uint32 owner_id = b_to_disband->CastToBot()->GetOwner()->CastToClient()->CharacterID();
+						raid->HandleBotGroupDisband(owner_id, gid);
+
+					} else if (b_to_disband && raid->IsRaidMember(b_to_disband->GetName())) {
+						Bot::RemoveBotFromRaid(b_to_disband);
+
+					} else if (gid < 12 && raid->GetGroupLeader(gid) && raid->GetGroupLeader(gid)->IsBot()) {
+						c_doing_disband->Message(
+							Chat::Yellow,
+							fmt::format(
+								"{} is in a Bot Group.  Please disband {} instead to remove the entire Bot group.",
+								raid_command_packet->leader_name,
+								raid->GetGroupLeader(gid)->CastToBot()->GetName()
+							).c_str()
+						);
+					}
+
+					break;
 				}
-				//r->SendRaidGroupRemove(ri->leader_name, grp);
-				raid->GroupUpdate(group);// break
-									//}
 			}
-			break;
-		}
-		case RaidCommandMoveGroup:
-		{
-			Raid *raid = entity_list.GetRaidByClient(this);
-			if (raid) {
-				/* Moving to group */
-				if (raid_command_packet->parameter < 12) {
-					uint8 group_count = raid->GroupCount(raid_command_packet->parameter);
-
-					if (group_count < 6) {
-						Client *c = entity_list.GetClientByName(raid_command_packet->leader_name);
-						uint32 old_group = raid->GetGroup(raid_command_packet->leader_name);
-						if (raid_command_packet->parameter == old_group) //don't rejoin grp if we order to join same group.
-							break;
-
-						if (raid->members[raid->GetPlayerIndex(raid_command_packet->leader_name)].IsGroupLeader) {
-							raid->SetGroupLeader(raid_command_packet->leader_name, false);
-
-							/* We were the leader of our old group */
-							if (old_group < 12) {
-								/* Assign new group leader if we can */
-								for (int x = 0; x < MAX_RAID_MEMBERS; x++) {
-									if (raid->members[x].GroupNumber == old_group) {
-										if (strcmp(raid_command_packet->leader_name, raid->members[x].membername) != 0 && strlen(raid_command_packet->leader_name) > 0) {
-											raid->SetGroupLeader(raid->members[x].membername);
-											raid->UpdateGroupAAs(old_group);
-
-											Client *client_to_update = entity_list.GetClientByName(raid->members[x].membername);
-											if (client_to_update) {
-												raid->SendRaidRemove(raid->members[x].membername, client_to_update);
-												raid->SendRaidCreate(client_to_update);
-												raid->SendMakeLeaderPacketTo(raid->leadername, client_to_update);
-												raid->SendRaidAdd(raid->members[x].membername, client_to_update);
-												raid->SendBulkRaid(client_to_update);
-												if (raid->IsLocked()) {
-													raid->SendRaidLockTo(client_to_update);
-												}
-											}
-											else {
-												auto pack = new ServerPacket(ServerOP_RaidChangeGroup, sizeof(ServerRaidGeneralAction_Struct));
-												ServerRaidGeneralAction_Struct *raid_command_packet = (ServerRaidGeneralAction_Struct*)pack->pBuffer;
-
-												raid_command_packet->rid = raid->GetID();
-												raid_command_packet->zoneid = zone->GetZoneID();
-												raid_command_packet->instance_id = zone->GetInstanceID();
-												strn0cpy(raid_command_packet->playername, raid->members[x].membername, 64);
-
-												worldserver.SendPacket(pack);
-
-												safe_delete(pack);
-											}
-											break;
-										}
-									}
-								}
-							}
-						}
-						if (group_count == 0) {
-							raid->SetGroupLeader(raid_command_packet->leader_name);
-							raid->UpdateGroupAAs(raid_command_packet->parameter);
-						}
-
-						raid->MoveMember(raid_command_packet->leader_name, raid_command_packet->parameter);
-						if (c) {
-							raid->SendGroupDisband(c);
-						}
-						else {
-							auto pack = new ServerPacket(ServerOP_RaidGroupDisband, sizeof(ServerRaidGeneralAction_Struct));
-							ServerRaidGeneralAction_Struct* raid_command = (ServerRaidGeneralAction_Struct*)pack->pBuffer;
-							raid_command->rid = raid->GetID();
-							raid_command->zoneid = zone->GetZoneID();
-							raid_command->instance_id = zone->GetInstanceID();
-							strn0cpy(raid_command->playername, raid_command_packet->leader_name, 64);
-							worldserver.SendPacket(pack);
-							safe_delete(pack);
-						}
-
-						/* Send group update to our new group */
-						raid->GroupUpdate(raid_command_packet->parameter);
-
-						/* If our old was a group send update there too */
-						if (old_group < 12)
-							raid->GroupUpdate(old_group);
-
-					}
-				}
-				/* Move player to ungrouped bank */
-				else {
-					Client *c = entity_list.GetClientByName(raid_command_packet->leader_name);
-					uint32 oldgrp = raid->GetGroup(raid_command_packet->leader_name);
-					if (raid->members[raid->GetPlayerIndex(raid_command_packet->leader_name)].IsGroupLeader) {
-						raid->SetGroupLeader(raid_command_packet->leader_name, false);
-						for (int x = 0; x < MAX_RAID_MEMBERS; x++) {
-							if (raid->members[x].GroupNumber == oldgrp && strlen(raid->members[x].membername) > 0 && strcmp(raid->members[x].membername, raid_command_packet->leader_name) != 0){
-
-								raid->SetGroupLeader(raid->members[x].membername);
-								raid->UpdateGroupAAs(oldgrp);
-
-								Client *client_leaving_group = entity_list.GetClientByName(raid->members[x].membername);
-								if (client_leaving_group) {
-									raid->SendRaidRemove(raid->members[x].membername, client_leaving_group);
-									raid->SendRaidCreate(client_leaving_group);
-									raid->SendMakeLeaderPacketTo(raid->leadername, client_leaving_group);
-									raid->SendRaidAdd(raid->members[x].membername, client_leaving_group);
-									raid->SendBulkRaid(client_leaving_group);
-									if (raid->IsLocked()) {
-										raid->SendRaidLockTo(client_leaving_group);
-									}
-								}
-								else {
-									auto pack = new ServerPacket( ServerOP_RaidChangeGroup, sizeof(ServerRaidGeneralAction_Struct));
-									ServerRaidGeneralAction_Struct *raid_command = (ServerRaidGeneralAction_Struct*)pack->pBuffer;
-
-									raid_command->rid = raid->GetID();
-									strn0cpy(raid_command->playername, raid->members[x].membername, 64);
-									raid_command->zoneid = zone->GetZoneID();
-									raid_command->instance_id = zone->GetInstanceID();
-
-									worldserver.SendPacket(pack);
-									safe_delete(pack);
-								}
+			uint32 i = raid->GetPlayerIndex(raid_command_packet->leader_name);
+			if (group < 12) {
+				if (raid->members[i].is_group_leader) { //assign group leader to someone else
+					for (int x = 0; x < MAX_RAID_MEMBERS; x++) {
+						if (strlen(raid->members[x].member_name) > 0 && i != x) {
+							if (raid->members[x].group_number == group) {
+								raid->SetGroupLeader(raid_command_packet->leader_name, false);
+								raid->SetGroupLeader(raid->members[x].member_name);
+								raid->UpdateGroupAAs(group);
 								break;
 							}
 						}
 					}
-					raid->MoveMember(raid_command_packet->leader_name, 0xFFFFFFFF);
+				}
+			}
+			raid->SetNewRaidLeader(i);
+			raid->RemoveMember(raid_command_packet->leader_name);
+			Client* c = entity_list.GetClientByName(raid_command_packet->leader_name);
+			if (c) {
+
+				raid->SendGroupDisband(c);
+			}
+			else {
+				auto pack =
+					new ServerPacket(ServerOP_RaidGroupDisband, sizeof(ServerRaidGeneralAction_Struct));
+				ServerRaidGeneralAction_Struct* rga = (ServerRaidGeneralAction_Struct*)pack->pBuffer;
+				rga->rid = GetID();
+				rga->zoneid = zone->GetZoneID();
+				rga->instance_id = zone->GetInstanceID();
+				strn0cpy(rga->playername, raid_command_packet->leader_name, 64);
+				worldserver.SendPacket(pack);
+				safe_delete(pack);
+			}
+			raid->GroupUpdate(group);// break
+			if (!raid->RaidCount())
+				raid->DisbandRaid();
+		}
+		break;
+	}
+	case RaidCommandMoveGroup:
+	{
+		Raid* raid = entity_list.GetRaidByClient(this);
+		if (raid) {
+			/* Moving to group */
+			if (raid_command_packet->parameter < 12) {
+				uint8 group_count = raid->GroupCount(raid_command_packet->parameter);
+
+				if (group_count < 6) {
+					Client* c = entity_list.GetClientByName(raid_command_packet->leader_name);
+					uint32 old_group = raid->GetGroup(raid_command_packet->leader_name);
+					if (raid_command_packet->parameter == old_group) //don't rejoin grp if we order to join same group.
+						break;
+
+					if (raid->members[raid->GetPlayerIndex(raid_command_packet->leader_name)].is_group_leader) {
+						raid->SetGroupLeader(raid_command_packet->leader_name, false);
+
+						/* We were the leader of our old group */
+						if (old_group < 12) {
+							/* Assign new group leader if we can */
+							for (int x = 0; x < MAX_RAID_MEMBERS; x++) {
+								if (raid->members[x].group_number == old_group) {
+									if (strcmp(raid_command_packet->leader_name, raid->members[x].member_name) != 0 && strlen(raid_command_packet->leader_name) > 0) {
+										raid->SetGroupLeader(raid->members[x].member_name);
+										raid->UpdateGroupAAs(old_group);
+
+										Client* client_to_update = entity_list.GetClientByName(raid->members[x].member_name);
+										if (client_to_update) {
+											raid->SendRaidRemove(raid->members[x].member_name, client_to_update);
+											raid->SendRaidCreate(client_to_update);
+											raid->SendMakeLeaderPacketTo(raid->leadername, client_to_update);
+											raid->SendRaidAdd(raid->members[x].member_name, client_to_update);
+											raid->SendBulkRaid(client_to_update);
+											if (raid->IsLocked()) {
+												raid->SendRaidLockTo(client_to_update);
+											}
+										}
+										else {
+											auto pack = new ServerPacket(ServerOP_RaidChangeGroup, sizeof(ServerRaidGeneralAction_Struct));
+											ServerRaidGeneralAction_Struct* raid_command_packet = (ServerRaidGeneralAction_Struct*)pack->pBuffer;
+
+											raid_command_packet->rid = raid->GetID();
+											raid_command_packet->zoneid = zone->GetZoneID();
+											raid_command_packet->instance_id = zone->GetInstanceID();
+											strn0cpy(raid_command_packet->playername, raid->members[x].member_name, 64);
+
+											worldserver.SendPacket(pack);
+
+											safe_delete(pack);
+										}
+										break;
+									}
+								}
+							}
+						}
+					}
+					if (group_count == 0) {
+						raid->SetGroupLeader(raid_command_packet->leader_name);
+						raid->UpdateGroupAAs(raid_command_packet->parameter);
+					}
+
+					raid->MoveMember(raid_command_packet->leader_name, raid_command_packet->parameter);
 					if (c) {
 						raid->SendGroupDisband(c);
 					}
 					else {
 						auto pack = new ServerPacket(ServerOP_RaidGroupDisband, sizeof(ServerRaidGeneralAction_Struct));
 						ServerRaidGeneralAction_Struct* raid_command = (ServerRaidGeneralAction_Struct*)pack->pBuffer;
-
 						raid_command->rid = raid->GetID();
 						raid_command->zoneid = zone->GetZoneID();
 						raid_command->instance_id = zone->GetInstanceID();
 						strn0cpy(raid_command->playername, raid_command_packet->leader_name, 64);
-
 						worldserver.SendPacket(pack);
-
 						safe_delete(pack);
 					}
 
-					raid->GroupUpdate(oldgrp);
+					/* Send group update to our new group */
+					raid->GroupUpdate(raid_command_packet->parameter);
+
+					/* If our old was a group send update there too */
+					if (old_group < 12)
+						raid->GroupUpdate(old_group);
+
 				}
 			}
+			/* Move player to ungrouped bank */
+			else {
+				Client* c = entity_list.GetClientByName(raid_command_packet->leader_name);
+				uint32 oldgrp = raid->GetGroup(raid_command_packet->leader_name);
+				if (raid->members[raid->GetPlayerIndex(raid_command_packet->leader_name)].is_group_leader) {
+					raid->SetGroupLeader(raid_command_packet->leader_name, false);
+					for (int x = 0; x < MAX_RAID_MEMBERS; x++) {
+						if (raid->members[x].group_number == oldgrp && strlen(raid->members[x].member_name) > 0 && strcmp(raid->members[x].member_name, raid_command_packet->leader_name) != 0) {
 
-			Client *client_moved = entity_list.GetClientByName(raid_command_packet->leader_name);
+							raid->SetGroupLeader(raid->members[x].member_name);
+							raid->UpdateGroupAAs(oldgrp);
 
-			if (client_moved && client_moved->GetRaid()) {
-				client_moved->GetRaid()->SendHPManaEndPacketsTo(client_moved);
-				client_moved->GetRaid()->SendHPManaEndPacketsFrom(client_moved);
+							Client* client_leaving_group = entity_list.GetClientByName(raid->members[x].member_name);
+							if (client_leaving_group) {
+								raid->SendRaidRemove(raid->members[x].member_name, client_leaving_group);
+								raid->SendRaidCreate(client_leaving_group);
+								raid->SendMakeLeaderPacketTo(raid->leadername, client_leaving_group);
+								raid->SendRaidAdd(raid->members[x].member_name, client_leaving_group);
+								raid->SendBulkRaid(client_leaving_group);
+								if (raid->IsLocked()) {
+									raid->SendRaidLockTo(client_leaving_group);
+								}
+							}
+							else {
+								auto pack = new ServerPacket(ServerOP_RaidChangeGroup, sizeof(ServerRaidGeneralAction_Struct));
+								ServerRaidGeneralAction_Struct* raid_command = (ServerRaidGeneralAction_Struct*)pack->pBuffer;
 
-				Log(Logs::General, Logs::HPUpdate,
-					"Client::Handle_OP_RaidCommand :: %s sending and recieving HP/Mana/End updates",
-					client_moved->GetCleanName()
-				);
-			}
+								raid_command->rid = raid->GetID();
+								strn0cpy(raid_command->playername, raid->members[x].member_name, 64);
+								raid_command->zoneid = zone->GetZoneID();
+								raid_command->instance_id = zone->GetInstanceID();
 
-			break;
-		}
-		case RaidCommandRaidLock:
-		{
-			Raid *raid = entity_list.GetRaidByClient(this);
-			if (raid) {
-				if (!raid->IsLocked())
-					raid->LockRaid(true);
-				else
-					raid->SendRaidLockTo(this);
-			}
-			break;
-		}
-		case RaidCommandRaidUnlock:
-		{
-			Raid *raid = entity_list.GetRaidByClient(this);
-			if (raid)
-			{
-				if (raid->IsLocked())
-					raid->LockRaid(false);
-				else
-					raid->SendRaidUnlockTo(this);
-			}
-			break;
-		}
-		case RaidCommandLootType2:
-		case RaidCommandLootType:
-		{
-			Raid *raid = entity_list.GetRaidByClient(this);
-			if (raid) {
-				Message(Chat::Yellow, "Loot type changed to: %d.", raid_command_packet->parameter);
-				raid->ChangeLootType(raid_command_packet->parameter);
-			}
-			break;
-		}
-
-		case RaidCommandAddLooter2:
-		case RaidCommandAddLooter:
-		{
-			Raid *raid = entity_list.GetRaidByClient(this);
-			if (raid) {
-				Message(Chat::Yellow, "Adding %s as a raid looter.", raid_command_packet->leader_name);
-				raid->AddRaidLooter(raid_command_packet->leader_name);
-			}
-			break;
-		}
-
-		case RaidCommandRemoveLooter2:
-		case RaidCommandRemoveLooter:
-		{
-			Raid *raid = entity_list.GetRaidByClient(this);
-			if (raid) {
-				Message(Chat::Yellow, "Removing %s as a raid looter.", raid_command_packet->leader_name);
-				raid->RemoveRaidLooter(raid_command_packet->leader_name);
-			}
-			break;
-		}
-
-		case RaidCommandMakeLeader:
-		{
-			Raid *raid = entity_list.GetRaidByClient(this);
-			if (raid) {
-				if (strcmp(raid->leadername, GetName()) == 0) {
-					raid->SetRaidLeader(GetName(), raid_command_packet->leader_name);
-					raid->UpdateRaidAAs();
-					raid->SendAllRaidLeadershipAA();
+								worldserver.SendPacket(pack);
+								safe_delete(pack);
+							}
+							break;
+						}
+					}
 				}
+				raid->MoveMember(raid_command_packet->leader_name, RAID_GROUPLESS);
+				if (c) {
+					raid->SendGroupDisband(c);
+				}
+				else {
+					auto pack = new ServerPacket(ServerOP_RaidGroupDisband, sizeof(ServerRaidGeneralAction_Struct));
+					ServerRaidGeneralAction_Struct* raid_command = (ServerRaidGeneralAction_Struct*)pack->pBuffer;
+
+					raid_command->rid = raid->GetID();
+					raid_command->zoneid = zone->GetZoneID();
+					raid_command->instance_id = zone->GetInstanceID();
+					strn0cpy(raid_command->playername, raid_command_packet->leader_name, 64);
+
+					worldserver.SendPacket(pack);
+
+					safe_delete(pack);
+				}
+
+				raid->GroupUpdate(oldgrp);
 			}
-			break;
 		}
 
-		case RaidCommandSetMotd:
+		Client* client_moved = entity_list.GetClientByName(raid_command_packet->leader_name);
+
+		if (client_moved && client_moved->GetRaid()) {
+			client_moved->GetRaid()->SendHPManaEndPacketsTo(client_moved);
+			client_moved->GetRaid()->SendHPManaEndPacketsFrom(client_moved);
+
+			Log(Logs::General, Logs::HPUpdate,
+				"Client::Handle_OP_RaidCommand :: %s sending and recieving HP/Mana/End updates",
+				client_moved->GetCleanName()
+			);
+		}
+
+		break;
+	}
+	case RaidCommandRaidLock:
+	{
+		Raid* raid = entity_list.GetRaidByClient(this);
+		if (raid) {
+			if (!raid->IsLocked())
+				raid->LockRaid(true);
+			else
+				raid->SendRaidLockTo(this);
+		}
+		break;
+	}
+	case RaidCommandRaidUnlock:
+	{
+		Raid* raid = entity_list.GetRaidByClient(this);
+		if (raid)
 		{
-			Raid *raid = entity_list.GetRaidByClient(this);
-			if (!raid)
-				break;
-			// we don't use the RaidGeneral here!
-			RaidMOTD_Struct *motd = (RaidMOTD_Struct *)app->pBuffer;
-			raid->SetRaidMOTD(std::string(motd->motd));
-			raid->SaveRaidMOTD();
-			raid->SendRaidMOTDToWorld();
-			break;
+			if (raid->IsLocked())
+				raid->LockRaid(false);
+			else
+				raid->SendRaidUnlockTo(this);
 		}
+		break;
+	}
+	case RaidCommandLootType2:
+	case RaidCommandLootType:
+	{
+		Raid* raid = entity_list.GetRaidByClient(this);
+		if (raid) {
+			Message(Chat::Yellow, "Loot type changed to: %d.", raid_command_packet->parameter);
+			raid->ChangeLootType(raid_command_packet->parameter);
+		}
+		break;
+	}
 
-		default: {
-			Message(Chat::Red, "Raid command (%d) NYI", raid_command_packet->action);
-			break;
+	case RaidCommandAddLooter2:
+	case RaidCommandAddLooter:
+	{
+		Raid* raid = entity_list.GetRaidByClient(this);
+		if (raid) {
+			Message(Chat::Yellow, "Adding %s as a raid looter.", raid_command_packet->leader_name);
+			raid->AddRaidLooter(raid_command_packet->leader_name);
 		}
+		break;
+	}
+
+	case RaidCommandRemoveLooter2:
+	case RaidCommandRemoveLooter:
+	{
+		Raid* raid = entity_list.GetRaidByClient(this);
+		if (raid) {
+			Message(Chat::Yellow, "Removing %s as a raid looter.", raid_command_packet->leader_name);
+			raid->RemoveRaidLooter(raid_command_packet->leader_name);
+		}
+		break;
+	}
+
+	case RaidCommandMakeLeader:
+	{
+		Raid* raid = entity_list.GetRaidByClient(this);
+		if (raid) {
+			if (strcmp(raid->leadername, GetName()) == 0) {
+				raid->SetRaidLeader(GetName(), raid_command_packet->leader_name);
+				raid->UpdateRaidAAs();
+				raid->SendAllRaidLeadershipAA();
+			}
+		}
+		break;
+	}
+
+	case RaidCommandSetMotd:
+	{
+		Raid* raid = entity_list.GetRaidByClient(this);
+		if (!raid)
+			break;
+		// we don't use the RaidGeneral here!
+		RaidMOTD_Struct* motd = (RaidMOTD_Struct*)app->pBuffer;
+		raid->SetRaidMOTD(std::string(motd->motd));
+		raid->SaveRaidMOTD();
+		raid->SendRaidMOTDToWorld();
+		break;
+	}
+
+	default: {
+		Message(Chat::Red, "Raid command (%d) NYI", raid_command_packet->action);
+		break;
+	}
 	}
 }
+
+
 
 void Client::Handle_OP_RandomReq(const EQApplicationPacket *app)
 {
@@ -12592,7 +12700,7 @@ void Client::Handle_OP_RecipesSearch(const EQApplicationPacket *app)
 	p_recipes_search_struct->query[55] = '\0';	//just to be sure.
 
 	LogTradeskills(
-		"[Handle_OP_RecipesSearch] Requested search recipes for object_type [{}] some_id [{}]",
+		"Requested search recipes for object_type [{}] some_id [{}]",
 		p_recipes_search_struct->object_type,
 		p_recipes_search_struct->some_id
 	);
@@ -13125,7 +13233,7 @@ void Client::Handle_OP_SetGuildMOTD(const EQApplicationPacket *app)
 		guild_mgr.GetGuildName(GuildID()), GuildID(), GetName(), gmotd->motd);
 
 	if (!guild_mgr.SetGuildMOTD(GuildID(), gmotd->motd, GetName())) {
-		Message(Chat::White, "Motd update failed.");
+		Message(Chat::Red, "Motd update failed.");
 	}
 
 	return;
@@ -13201,19 +13309,21 @@ void Client::Handle_OP_SetStartCity(const EQApplicationPacket *app)
 
 	bool valid_city = false;
 	for (auto row = results.begin(); row != results.end(); ++row) {
-		if (atoi(row[1]) != 0)
-			zone_id = atoi(row[1]);
-		else
-			zone_id = atoi(row[0]);
-
-		if (zone_id != start_city)
+		if (Strings::ToInt(row[1]) != 0) {
+			zone_id = Strings::ToInt(row[1]);
+		} else {
+			zone_id = Strings::ToInt(row[0]);
+		}
+		
+		if (zone_id != start_city) {
 			continue;
+		}
 
 		valid_city = true;
-		x = atof(row[2]);
-		y = atof(row[3]);
-		z = atof(row[4]);
-		heading = atof(row[5]);
+		x = Strings::ToFloat(row[2]);
+		y = Strings::ToFloat(row[3]);
+		z = Strings::ToFloat(row[4]);
+		heading = Strings::ToFloat(row[5]);
 	}
 
 	if (valid_city) {
@@ -13246,10 +13356,11 @@ void Client::Handle_OP_SetStartCity(const EQApplicationPacket *app)
 	Message(Chat::Yellow, "Use \"/setstartcity #\" to choose a home city from the following list:");
 
 	for (auto row = results.begin(); row != results.end(); ++row) {
-		if (atoi(row[1]) != 0)
-			zone_id = atoi(row[1]);
-		else
-			zone_id = atoi(row[0]);
+		if (Strings::ToInt(row[1]) != 0) {
+			zone_id = Strings::ToInt(row[1]);
+		} else {
+			zone_id = Strings::ToInt(row[0]);
+		}
 
 		std::string zone_long_name = ZoneLongName(zone_id);
 		Message(Chat::Yellow, "%d - %s", zone_id, zone_long_name.c_str());
@@ -13365,10 +13476,6 @@ void Client::Handle_OP_ShopPlayerBuy(const EQApplicationPacket *app)
 	RDTSC_Timer t1;
 	t1.start();
 	Merchant_Sell_Struct* mp = (Merchant_Sell_Struct*)app->pBuffer;
-#if EQDEBUG >= 5
-	LogDebug("[{}], purchase item", GetName());
-	DumpPacket(app);
-#endif
 
 	int merchantid;
 	bool tmpmer_used = false;
@@ -14862,7 +14969,7 @@ void Client::Handle_OP_Trader(const EQApplicationPacket *app)
 		{
 		case BazaarTrader_EndTraderMode: {
 			Trader_EndTrader();
-			LogTrading("Client::Handle_OP_Trader: End Trader Session");
+			LogTrading("End Trader Session");
 			break;
 		}
 		case BazaarTrader_EndTransaction: {
@@ -14871,16 +14978,16 @@ void Client::Handle_OP_Trader(const EQApplicationPacket *app)
 			if (c)
 			{
 				c->WithCustomer(0);
-				LogTrading("Client::Handle_OP_Trader: End Transaction");
+				LogTrading("End Transaction");
 			}
 			else
-				LogTrading("Client::Handle_OP_Trader: Null Client Pointer");
+				LogTrading("Null Client Pointer");
 
 			break;
 		}
 		case BazaarTrader_ShowItems: {
 			Trader_ShowItems();
-			LogTrading("Client::Handle_OP_Trader: Show Trader Items");
+			LogTrading("Show Trader Items");
 			break;
 		}
 		default: {
@@ -14903,7 +15010,7 @@ void Client::Handle_OP_Trader(const EQApplicationPacket *app)
 		{
 			GetItems_Struct* gis = GetTraderItems();
 
-			LogTrading("Client::Handle_OP_Trader: Start Trader Mode");
+			LogTrading("Start Trader Mode");
 			// Verify there are no NODROP or items with a zero price
 			bool TradeItemsValid = true;
 
@@ -14973,7 +15080,7 @@ void Client::Handle_OP_Trader(const EQApplicationPacket *app)
 			}
 		}
 		else {
-			LogTrading("Client::Handle_OP_Trader: Unknown TraderStruct code of: [{}]\n",
+			LogTrading("Unknown TraderStruct code of: [{}]\n",
 				ints->Code);
 
 			LogError("Unknown TraderStruct code of: [{}]\n", ints->Code);
@@ -14983,18 +15090,18 @@ void Client::Handle_OP_Trader(const EQApplicationPacket *app)
 	{
 		TraderStatus_Struct* tss = (TraderStatus_Struct*)app->pBuffer;
 
-		LogTrading("Client::Handle_OP_Trader: Trader Status Code: [{}]", tss->Code);
+		LogTrading("Trader Status Code: [{}]", tss->Code);
 
 		switch (tss->Code)
 		{
 		case BazaarTrader_EndTraderMode: {
 			Trader_EndTrader();
-			LogTrading("Client::Handle_OP_Trader: End Trader Session");
+			LogTrading("End Trader Session");
 			break;
 		}
 		case BazaarTrader_ShowItems: {
 			Trader_ShowItems();
-			LogTrading("Client::Handle_OP_Trader: Show Trader Items");
+			LogTrading("Show Trader Items");
 			break;
 		}
 		default: {
@@ -15007,7 +15114,7 @@ void Client::Handle_OP_Trader(const EQApplicationPacket *app)
 	}
 	else if (app->size == sizeof(TraderPriceUpdate_Struct))
 	{
-		LogTrading("Client::Handle_OP_Trader: Trader Price Update");
+		LogTrading("Trader Price Update");
 		HandleTraderPriceUpdate(app);
 	}
 	else {
@@ -15078,7 +15185,7 @@ void Client::Handle_OP_TradeRequest(const EQApplicationPacket *app) {
 		// Note that this work as intended, if the NPC is charmed
 		// you can still trade with it.
 		if (tradee->IsEngaged()) {
-			Message(Chat::White, "Your target cannot trade with you at this moment.");
+			Message(Chat::Red, "Your target cannot trade with you at this moment.");
 		}
 
 		// If it not engaged, it will automatically accept the trade.
@@ -15216,18 +15323,18 @@ void Client::Handle_OP_TraderShop(const EQApplicationPacket *app)
 			if (c)
 			{
 				c->WithCustomer(0);
-				LogTrading("Client::Handle_OP_Trader: End Transaction - Code [{}]", Command);
+				LogTrading("End Transaction - Code [{}]", Command);
 			}
 			else
 			{
-				LogTrading("Client::Handle_OP_Trader: Null Client Pointer for Trader - Code [{}]", Command);
+				LogTrading("Null Client Pointer for Trader - Code [{}]", Command);
 			}
 			EQApplicationPacket empty(OP_ShopEndConfirm);
 			QueuePacket(&empty);
 		}
 		else
 		{
-			LogTrading("Client::Handle_OP_Trader: Unhandled Code [{}]", Command);
+			LogTrading("Unhandled Code [{}]", Command);
 		}
 	}
 	else

@@ -15,7 +15,7 @@ void command_reimburse(Client *c, const Seperator *sep) {
 				return;
 			}
 
-			uint32 item_id = atoi(sep->arg[2]);
+			uint32 item_id = Strings::ToInt(sep->arg[2]);
 			std::string item_name = "";
 
 			if(item_id > 0) {

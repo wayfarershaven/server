@@ -2,13 +2,11 @@
 
 #include "../common/data_verification.h"
 
-#include "lua.hpp"
 #include <luabind/luabind.hpp>
 #include <luabind/object.hpp>
 
 #include "masterentity.h"
 #include "lua_raid.h"
-#include "lua_entity.h"
 #include "lua_mob.h"
 #include "lua_client.h"
 #include "lua_npc.h"
@@ -148,12 +146,12 @@ int Lua_Raid::GetGroupNumber(int member_index) {
 
 	if (
 		!EQ::ValueWithin(member_index, 0, 71) ||
-		self->members[member_index].GroupNumber == RAID_GROUPLESS
+		self->members[member_index].group_number == RAID_GROUPLESS
 	) {
 		return -1;
 	}
 
-	return self->members[member_index].GroupNumber;
+	return self->members[member_index].group_number;
 }
 
 bool Lua_Raid::DoesAnyMemberHaveExpeditionLockout(std::string expedition_name, std::string event_name)

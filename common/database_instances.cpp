@@ -167,8 +167,8 @@ bool Database::GetUnusedInstanceID(uint16 &instance_id)
 
 	auto row = results.begin();
 
-	if (atoi(row[0]) <= max) {
-		instance_id = atoi(row[0]);
+	if (Strings::ToInt(row[0]) <= max) {
+		instance_id = Strings::ToInt(row[0]);
 
 		return true;
 	}
@@ -192,8 +192,9 @@ bool Database::GetUnusedInstanceID(uint16 &instance_id)
 	}
 
 	max_reserved_instance_id++;
+
 	for (auto row : results) {
-		if (max_reserved_instance_id < std::stoul(row[0])) {
+		if (max_reserved_instance_id < Strings::ToUnsignedInt(row[0])) {
 			instance_id = max_reserved_instance_id;
 			return true;
 		}
@@ -236,7 +237,6 @@ bool Database::RemoveClientFromInstance(uint16 instance_id, uint32 char_id)
 		)
 	);
 }
-
 
 bool Database::RemoveClientsFromInstance(uint16 instance_id)
 {
@@ -301,7 +301,7 @@ uint16 Database::GetInstanceID(uint32 zone_id, uint32 character_id, int16 versio
 
 	auto row = results.begin();
 
-	return static_cast<uint16>(std::stoul(row[0]));
+	return static_cast<uint16>(Strings::ToUnsignedInt(row[0]));
 }
 
 std::vector<uint16> Database::GetInstanceIDs(uint32 zone_id, uint32 character_id)
@@ -328,7 +328,7 @@ std::vector<uint16> Database::GetInstanceIDs(uint32 zone_id, uint32 character_id
 	}
 
 	for (auto row : results) {
-		l.push_back(static_cast<uint16>(std::stoul(row[0])));
+		l.push_back(static_cast<uint16>(Strings::ToUnsignedInt(row[0])));
 	}
 
 	return l;
@@ -430,17 +430,11 @@ void Database::AssignRaidToInstance(uint32 raid_id, uint32 instance_id)
 void Database::DeleteInstance(uint16 instance_id)
 {
 	MoveCharOutInstance(instance_id);
-	std::string query;
-
 	InstanceListPlayerRepository::DeleteWhere(*this, fmt::format("id = {}", instance_id));
-
 	RespawnTimesRepository::DeleteWhere(*this, fmt::format("instance_id = {}", instance_id));
-
 	SpawnConditionValuesRepository::DeleteWhere(*this, fmt::format("instance_id = {}", instance_id));
-
 	DynamicZoneMembersRepository::DeleteByInstance(*this, instance_id);
 	DynamicZonesRepository::DeleteWhere(*this, fmt::format("instance_id = {}", instance_id));
-
 	CharacterCorpsesRepository::BuryInstance(*this, instance_id);
 }
 
