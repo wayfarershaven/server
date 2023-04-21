@@ -101,7 +101,7 @@ void command_corpse(Client *c, const Seperator *sep)
 			auto deleted_string = (
 				corpses_deleted ?
 				fmt::format(
-					"{} Player corpse{} deleted.",					
+					"{} Player corpse{} deleted.",
 					corpses_deleted,
 					corpses_deleted != 1 ? "s" : ""
 				) :
@@ -124,7 +124,7 @@ void command_corpse(Client *c, const Seperator *sep)
 		}
 
 		if (
-			target->IsNPCCorpse() || 
+			target->IsNPCCorpse() ||
 			c->Admin() >= commandEditPlayerCorpses
 		) {
 			c->Message(
@@ -136,7 +136,7 @@ void command_corpse(Client *c, const Seperator *sep)
 				).c_str()
 			);
 			target->CastToCorpse()->Delete();
-		} 
+		}
 	} else if (is_list_npc) {
 		entity_list.ListNPCCorpses(c);
 	} else if (is_list_player) {
@@ -170,7 +170,7 @@ void command_corpse(Client *c, const Seperator *sep)
 				return;
 			}
 
-			auto character_id = std::stoi(sep->arg[2]);
+			auto character_id = Strings::ToInt(sep->arg[2]);
 			c->Message(
 				Chat::White,
 				fmt::format(
@@ -291,7 +291,7 @@ void command_corpse(Client *c, const Seperator *sep)
 			bool bury_corpse = (
 				sep->IsNumber(2) ?
 				(
-					std::stoi(sep->arg[2]) != 0 ?
+					Strings::ToInt(sep->arg[2]) != 0 ?
 					true :
 					false
 				) :
@@ -322,7 +322,7 @@ void command_corpse(Client *c, const Seperator *sep)
 			bool bury_corpse = (
 				sep->IsNumber(2) ?
 				(
-					std::stoi(sep->arg[2]) != 0 ?
+					Strings::ToInt(sep->arg[2]) != 0 ?
 					true :
 					false
 				) :
@@ -384,7 +384,7 @@ void command_corpse(Client *c, const Seperator *sep)
 
 			if (strlen(sep->arg[2]) > 0) {
 				if (sep->IsNumber(2)) {
-					crps = entity_list.GetCorpseByID(atoi(sep->arg[2]));
+					crps = entity_list.GetCorpseByID(Strings::ToInt(sep->arg[2]));
 					name = crps ? crps->GetOwnerName() : sep->arg[2];
 				} else {
 					name = sep->arg[2];
@@ -438,13 +438,13 @@ void command_corpse(Client *c, const Seperator *sep)
 							c->Message(Chat::White, "Usage: #corpse buried summon [corpse_id].");
 							return;
 						} else {
-							corpseid = atoi(sep->arg[3]);
+							corpseid = Strings::ToInt(sep->arg[3]);
 						}
 
 						if (!database.IsValidCorpse(corpseid)) {
 							c->Message(Chat::Red,
 								   "Corpse %i has been found! Please summon or delete it before attempting to restore trying to unbury it.",
-								   atoi(sep->arg[2]));
+								   Strings::ToInt(sep->arg[2]));
 							return;
 						} else if (!database.IsCorpseOwner(corpseid, t->CharacterID(), false)) {
 							c->Message(Chat::Red, "Targetted player is not the owner of the specified corpse!");
@@ -491,7 +491,7 @@ void command_corpse(Client *c, const Seperator *sep)
 							c->Message(Chat::White, "Usage: #corpse backup summon [corpse_id].");
 							return;
 						} else {
-							corpseid = atoi(sep->arg[3]);
+							corpseid = Strings::ToInt(sep->arg[3]);
 						}
 
 						// Check if backup corpse exists

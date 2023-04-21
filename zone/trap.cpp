@@ -18,7 +18,6 @@
 
 #include "../common/spdat.h"
 #include "../common/strings.h"
-#include "../common/types.h"
 
 #include "client.h"
 #include "entity.h"
@@ -72,8 +71,7 @@ Trap::Trap() :
 	disarmed = false;
 	respawn_time = 0;
 	respawn_var = 0;
-	hiddenTrigger = nullptr;
-	ownHiddenTrigger = false;
+	SetHiddenTrigger(nullptr);
 	chance = 0;
 	triggered_number = 0;
 	times_triggered = 0;
@@ -202,16 +200,13 @@ void Trap::Trigger(Mob* trigger)
 			}
 			break;
 		case trapTypeDamage:
-			if (message.empty())
-			{
+			if (message.empty()) {
 				entity_list.MessageClose(trigger,false,100,13,"%s triggers a trap!",trigger->GetName());
-			}
-			else
-			{
+			} else {
 				entity_list.MessageClose(trigger,false,100,13,"%s",message.c_str());
 			}
-			if(trigger->IsClient())
-			{
+
+			if (trigger && trigger->IsClient()) {
 				auto outapp = new EQApplicationPacket(OP_Damage, sizeof(CombatDamage_Struct));
 				CombatDamage_Struct* a = (CombatDamage_Struct*)outapp->pBuffer;
 				int64 dmg = zone->random.Int(effectvalue, effectvalue2);
@@ -227,34 +222,29 @@ void Trap::Trigger(Mob* trigger)
 			}
 	}
 
-	if (trigger && trigger->IsClient())
-	{
+	if (trigger && trigger->IsClient()) {
 		trigger->CastToClient()->trapid = trap_id;
 		charid = trigger->CastToClient()->CharacterID();
 	}
 
 	bool update = false;
-	if (despawn_when_triggered)
-	{
+	if (despawn_when_triggered) {
 		Log(Logs::General, Logs::Traps, "Trap %d is despawning after being triggered.", trap_id);
 		update = true;
-	}
-	else
-	{
+	} else {
 		reset_timer.Start(5000);
 	}
 
-	if (triggered_number > 0)
+	if (triggered_number > 0) {
 		++times_triggered;
+	}
 
-	if (triggered_number > 0 && triggered_number <= times_triggered)
-	{
+	if (triggered_number > 0 && triggered_number <= times_triggered) {
 		Log(Logs::General, Logs::Traps, "Triggered number for trap %d reached. %d/%d", trap_id, times_triggered, triggered_number);
 		update = true;
 	}
 
-	if (update)
-	{
+	if (update) {
 		UpdateTrap();
 	}
 }
@@ -460,8 +450,8 @@ bool ZoneDatabase::LoadTraps(const char* zonename, int16 version) {
 	}
 
 	for (auto row = results.begin(); row != results.end(); ++row) {
-		uint32 tid = atoi(row[0]);
-		uint8 grp = atoi(row[15]);
+		uint32 tid = Strings::ToInt(row[0]);
+		uint8 grp = Strings::ToInt(row[15]);
 
 		if (grp > 0)
 		{
@@ -474,20 +464,20 @@ bool ZoneDatabase::LoadTraps(const char* zonename, int16 version) {
 		auto trap = new Trap();
 		trap->trap_id = tid;
 		trap->db_id = tid;
-		trap->m_Position = glm::vec3(atof(row[1]), atof(row[2]), atof(row[3]));
-		trap->effect = atoi(row[4]);
-		trap->effectvalue = atoi(row[5]);
-		trap->effectvalue2 = atoi(row[6]);
-		trap->skill = atoi(row[7]);
-		trap->maxzdiff = atof(row[8]);
-		trap->radius = atof(row[9]);
-		trap->chance = atoi(row[10]);
+		trap->m_Position = glm::vec3(Strings::ToFloat(row[1]), Strings::ToFloat(row[2]), Strings::ToFloat(row[3]));
+		trap->effect = Strings::ToInt(row[4]);
+		trap->effectvalue = Strings::ToInt(row[5]);
+		trap->effectvalue2 = Strings::ToInt(row[6]);
+		trap->skill = Strings::ToInt(row[7]);
+		trap->maxzdiff = Strings::ToFloat(row[8]);
+		trap->radius = Strings::ToFloat(row[9]);
+		trap->chance = Strings::ToInt(row[10]);
 		trap->message = row[11];
-		trap->respawn_time = atoi(row[12]);
-		trap->respawn_var = atoi(row[13]);
-		trap->level = atoi(row[14]);
+		trap->respawn_time = Strings::ToInt(row[12]);
+		trap->respawn_var = Strings::ToInt(row[13]);
+		trap->level = Strings::ToInt(row[14]);
 		trap->group = grp;
-		trap->triggered_number = atoi(row[16]);
+		trap->triggered_number = Strings::ToInt(row[16]);
 		trap->despawn_when_triggered = atobool(row[17]);
 		trap->undetectable = atobool(row[18]);
 		entity_list.AddTrap(trap);
@@ -496,7 +486,7 @@ bool ZoneDatabase::LoadTraps(const char* zonename, int16 version) {
 	}
 
 	LogInfo("Loaded [{}] trap(s)", Strings::Commify(results.RowCount()));
-	
+
 	return true;
 }
 
@@ -526,9 +516,9 @@ void Trap::CreateHiddenTrigger()
 	npca->GiveNPCTypeData(make_npc);
 	entity_list.AddNPC(npca);
 
-	hiddenTrigger = npca;
-	ownHiddenTrigger = true;
+	SetHiddenTrigger(npca);
 }
+
 bool ZoneDatabase::SetTrapData(Trap* trap, bool repopnow) {
 
 	uint32 dbid = trap->db_id;
@@ -555,20 +545,20 @@ bool ZoneDatabase::SetTrapData(Trap* trap, bool repopnow) {
 
 	for (auto row = results.begin(); row != results.end(); ++row) {
 
-		trap->db_id = atoi(row[0]);
-		trap->m_Position = glm::vec3(atof(row[1]), atof(row[2]), atof(row[3]));
-		trap->effect = atoi(row[4]);
-		trap->effectvalue = atoi(row[5]);
-		trap->effectvalue2 = atoi(row[6]);
-		trap->skill = atoi(row[7]);
-		trap->maxzdiff = atof(row[8]);
-		trap->radius = atof(row[9]);
-		trap->chance = atoi(row[10]);
+		trap->db_id = Strings::ToInt(row[0]);
+		trap->m_Position = glm::vec3(Strings::ToFloat(row[1]), Strings::ToFloat(row[2]), Strings::ToFloat(row[3]));
+		trap->effect = Strings::ToInt(row[4]);
+		trap->effectvalue = Strings::ToInt(row[5]);
+		trap->effectvalue2 = Strings::ToInt(row[6]);
+		trap->skill = Strings::ToInt(row[7]);
+		trap->maxzdiff = Strings::ToFloat(row[8]);
+		trap->radius = Strings::ToFloat(row[9]);
+		trap->chance = Strings::ToInt(row[10]);
 		trap->message = row[11];
-		trap->respawn_time = atoi(row[12]);
-		trap->respawn_var = atoi(row[13]);
-		trap->level = atoi(row[14]);
-		trap->triggered_number = atoi(row[15]);
+		trap->respawn_time = Strings::ToInt(row[12]);
+		trap->respawn_var = Strings::ToInt(row[13]);
+		trap->level = Strings::ToInt(row[14]);
+		trap->triggered_number = Strings::ToInt(row[15]);
 		trap->despawn_when_triggered = atobool(row[16]);
 		trap->undetectable = atobool(row[17]);
 		trap->CreateHiddenTrigger();
@@ -599,7 +589,7 @@ void Trap::UpdateTrap(bool respawn, bool repopnow)
 	if (hiddenTrigger)
 	{
 		hiddenTrigger->Depop();
-		hiddenTrigger = nullptr;
+		SetHiddenTrigger(nullptr);
 	}
 	times_triggered = 0;
 	Client* trigger = entity_list.GetClientByCharID(charid);

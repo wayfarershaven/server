@@ -144,8 +144,8 @@ void Aura::ProcessOnAllGroupMembers(Mob *owner)
 			if (c->GetID() == m_owner) {
 				return DistanceSquared(GetPosition(), c->GetPosition()) <= distance;
 			}
-			else if (idx == 0xFFFFFFFF || raid->members[idx].GroupNumber != group_id ||
-					 raid->members[idx].GroupNumber == 0xFFFFFFFF) {
+			else if (idx == 0xFFFFFFFF || raid->members[idx].group_number != group_id ||
+					 raid->members[idx].group_number == 0xFFFFFFFF) {
 				return false;
 			}
 			else if (DistanceSquared(GetPosition(), c->GetPosition()) > distance) {
@@ -159,8 +159,8 @@ void Aura::ProcessOnAllGroupMembers(Mob *owner)
 			if (m->GetOwner()->GetID() == m_owner) {
 				return DistanceSquared(GetPosition(), m->GetPosition()) <= distance;
 			}
-			else if (idx == 0xFFFFFFFF || raid->members[idx].GroupNumber != group_id ||
-					 raid->members[idx].GroupNumber == 0xFFFFFFFF) {
+			else if (idx == 0xFFFFFFFF || raid->members[idx].group_number != group_id ||
+					 raid->members[idx].group_number == 0xFFFFFFFF) {
 				return false;
 			}
 			else if (DistanceSquared(GetPosition(), m->GetPosition()) > distance) {
@@ -178,8 +178,8 @@ void Aura::ProcessOnAllGroupMembers(Mob *owner)
 			if (owner->GetID() == m_owner) {
 				return DistanceSquared(GetPosition(), n->GetPosition()) <= distance;
 			}
-			else if (idx == 0xFFFFFFFF || raid->members[idx].GroupNumber != group_id ||
-					 raid->members[idx].GroupNumber == 0xFFFFFFFF) {
+			else if (idx == 0xFFFFFFFF || raid->members[idx].group_number != group_id ||
+					 raid->members[idx].group_number == 0xFFFFFFFF) {
 				return false;
 			}
 			else if (DistanceSquared(GetPosition(), n->GetPosition()) > distance) {
@@ -389,8 +389,8 @@ void Aura::ProcessOnGroupMembersPets(Mob *owner)
 			if (m->GetOwner()->GetID() == group_member->GetID()) {
 				return DistanceSquared(GetPosition(), m->GetPosition()) <= distance;
 			}
-			else if (idx == 0xFFFFFFFF || raid->members[idx].GroupNumber != group_id ||
-					 raid->members[idx].GroupNumber == 0xFFFFFFFF) {
+			else if (idx == 0xFFFFFFFF || raid->members[idx].group_number != group_id ||
+					 raid->members[idx].group_number == 0xFFFFFFFF) {
 				return false;
 			}
 			else if (DistanceSquared(GetPosition(), m->GetPosition()) > distance) {
@@ -408,8 +408,8 @@ void Aura::ProcessOnGroupMembersPets(Mob *owner)
 			if (owner->GetID() == group_member->GetID()) {
 				return DistanceSquared(GetPosition(), n->GetPosition()) <= distance;
 			}
-			else if (idx == 0xFFFFFFFF || raid->members[idx].GroupNumber != group_id ||
-					 raid->members[idx].GroupNumber == 0xFFFFFFFF) {
+			else if (idx == 0xFFFFFFFF || raid->members[idx].group_number != group_id ||
+					 raid->members[idx].group_number == 0xFFFFFFFF) {
 				return false;
 			}
 			else if (DistanceSquared(GetPosition(), n->GetPosition()) > distance) {
@@ -819,7 +819,7 @@ bool Aura::ShouldISpawnFor(Client *c)
 			return false;
 		}
 
-		if (raid->members[idx].GroupNumber != group_id) { // in our raid, but not our group
+		if (raid->members[idx].group_number != group_id) { // in our raid, but not our group
 			return false;
 		}
 
@@ -946,23 +946,27 @@ bool ZoneDatabase::GetAuraEntry(uint16 spell_id, AuraRecord &record)
 
 	auto row = results.begin();
 
-	record.npc_type = atoi(row[0]);
+	record.npc_type = Strings::ToInt(row[0]);
 	strn0cpy(record.name, row[1], 64);
-	record.spell_id   = atoi(row[2]);
-	record.distance   = atoi(row[3]);
+	record.spell_id   = Strings::ToInt(row[2]);
+	record.distance   = Strings::ToInt(row[3]);
 	record.distance *= record.distance; // so we can avoid sqrt
-	record.aura_type  = atoi(row[4]);
-	record.spawn_type = atoi(row[5]);
-	record.movement   = atoi(row[6]);
-	record.duration   = atoi(row[7]) * 1000; // DB is in seconds
-	record.icon       = atoi(row[8]);
-	record.cast_time  = atoi(row[9]) * 1000; // DB is in seconds
+	record.aura_type  = Strings::ToInt(row[4]);
+	record.spawn_type = Strings::ToInt(row[5]);
+	record.movement   = Strings::ToInt(row[6]);
+	record.duration   = Strings::ToInt(row[7]) * 1000; // DB is in seconds
+	record.icon       = Strings::ToInt(row[8]);
+	record.cast_time  = Strings::ToInt(row[9]) * 1000; // DB is in seconds
 
 	return true;
 }
 
 void Mob::AddAura(Aura *aura, AuraRecord &record)
 {
+	if (!aura) {
+		return;
+	}
+
 	LogAura(
 		"aura owner [{}] spawn_id [{}] aura_name [{}]",
 		GetCleanName(),
@@ -971,7 +975,6 @@ void Mob::AddAura(Aura *aura, AuraRecord &record)
 	);
 
 	// this is called only when it's safe
-	assert(aura != nullptr);
 	strn0cpy(aura_mgr.auras[aura_mgr.count].name, aura->GetCleanName(), 64);
 	aura_mgr.auras[aura_mgr.count].spawn_id = aura->GetID();
 	aura_mgr.auras[aura_mgr.count].aura     = aura;
@@ -998,6 +1001,10 @@ void Mob::AddAura(Aura *aura, AuraRecord &record)
 
 void Mob::AddTrap(Aura *aura, AuraRecord &record)
 {
+	if (!aura) {
+		return;
+	}
+
 	LogAura(
 		"aura owner [{}] spawn_id [{}] aura_name [{}]",
 		GetCleanName(),
@@ -1006,7 +1013,6 @@ void Mob::AddTrap(Aura *aura, AuraRecord &record)
 	);
 
 	// this is called only when it's safe
-	assert(aura != nullptr);
 	strn0cpy(trap_mgr.auras[trap_mgr.count].name, aura->GetCleanName(), 64);
 	trap_mgr.auras[trap_mgr.count].spawn_id = aura->GetID();
 	trap_mgr.auras[trap_mgr.count].aura     = aura;
@@ -1146,4 +1152,3 @@ void Mob::RemoveAura(int spawn_id, bool skip_strip, bool expired)
 	}
 
 }
-

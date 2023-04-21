@@ -20,13 +20,10 @@
 #include "../common/eqemu_logsys.h"
 #include "expedition.h"
 #include "masterentity.h"
-#include "npc_ai.h"
-#include "../common/packet_functions.h"
-#include "../common/packet_dump.h"
-#include "../common/strings.h"
 #include "worldserver.h"
 #include "string_ids.h"
 #include "../common/events/player_event_logs.h"
+#include "../common/repositories/group_id_repository.h"
 
 extern EntityList entity_list;
 extern WorldServer worldserver;
@@ -35,7 +32,7 @@ extern WorldServer worldserver;
 note about how groups work:
 A group contains 2 list, a list of pointers to members and a
 list of member names. All members of a group should have their
-name in the membername array, whether they are in the zone or not.
+name in the member_name array, whether they are in the zone or not.
 Only members in this zone will have non-null pointers in the
 members array.
 */
@@ -247,7 +244,7 @@ bool Group::AddMember(Mob* newmember, const char *NewMemberName, uint32 Characte
 	uint32 i = 0;
 	for (i = 0; i < MAX_GROUP_MEMBERS; ++i)
 	{
-		if(!strcasecmp(membername[i], NewMemberName))
+		if (!strcasecmp(membername[i], NewMemberName))
 		{
 			return false;
 		}
@@ -298,28 +295,22 @@ bool Group::AddMember(Mob* newmember, const char *NewMemberName, uint32 Characte
 			}
 
 			//put existing group member(s) into the new member's list
-			if(InZone && newmember->IsClient())
-			{
-				if(IsLeader(members[i]))
-				{
+			if(InZone && newmember && newmember->IsClient()) {
+				if(IsLeader(members[i])) {
 					strcpy(newmember->CastToClient()->GetPP().groupMembers[0], members[i]->GetCleanName());
-				}
-				else
-				{
+				} else {
 					strcpy(newmember->CastToClient()->GetPP().groupMembers[x], members[i]->GetCleanName());
-					x++;
+					++x;
 				}
 			}
 		}
 	}
 
-	if(InZone)
-	{
+	if(InZone && newmember) {
 		//put new member in his own list.
 		newmember->SetGrouped(true);
 
-		if(newmember->IsClient())
-		{
+		if(newmember->IsClient()) {
 			strcpy(newmember->CastToClient()->GetPP().groupMembers[x], NewMemberName);
 			newmember->CastToClient()->Save();
 			database.SetGroupID(NewMemberName, GetID(), newmember->CastToClient()->CharacterID(), false);
@@ -330,11 +321,9 @@ bool Group::AddMember(Mob* newmember, const char *NewMemberName, uint32 Characte
 			NotifyPuller(newmember->CastToClient(), 1);
 		}
 
-		if(newmember->IsMerc())
-		{
+		if(newmember->IsMerc()) {
 			Client* owner = newmember->CastToMerc()->GetMercOwner();
-			if(owner)
-			{
+			if(owner) {
 				database.SetGroupID(NewMemberName, GetID(), owner->CharacterID(), true);
 			}
 		}
@@ -344,7 +333,6 @@ bool Group::AddMember(Mob* newmember, const char *NewMemberName, uint32 Characte
 			group->SendHPManaEndPacketsTo(newmember);
 			group->SendHPPacketsFrom(newmember);
 		}
-
 	} else {
 		database.SetGroupID(NewMemberName, GetID(), CharacterID, ismerc);
 	}
@@ -491,7 +479,7 @@ void Group::SendEndurancePacketFrom(Mob* member)
 
 //updates a group member's client pointer when they zone in
 //if the group was in the zone already
-bool Group::UpdatePlayer(Mob* update){
+bool Group::UpdatePlayer(Mob* update) {
 
 	if (!update)
 		return false;
@@ -542,34 +530,30 @@ bool Group::UpdatePlayer(Mob* update){
 
 
 void Group::MemberZoned(Mob* removemob) {
-	uint32 i;
-
-	if (removemob == nullptr) {
+	if (!removemob) {
 		return;
 	}
 
-	if(removemob == GetLeader()) {
+	if (removemob == GetLeader()) {
 		SetLeader(nullptr);
 	}
 
-	for (i = 0; i < MAX_GROUP_MEMBERS; i++) {
-		if (members[i] == removemob) {
-			members[i] = nullptr;
-			//should NOT clear the name, it is used for world communication.
-			break;
+	for (auto & m : members) {
+		if (m && (m == removemob || (m->IsBot() && m->CastToBot()->GetBotOwner() == removemob))) {
+			m = nullptr;
 		}
 	}
 
 	if(removemob->IsClient() && HasRole(removemob, RoleAssist)) {
-		SetGroupAssistTarget(0);
+		SetGroupAssistTarget(nullptr);
 	}
 
-	if(removemob->IsClient() && HasRole(removemob, RoleTank)) {
-		SetGroupTankTarget(0);
+	if (removemob->IsClient() && HasRole(removemob, RoleTank)) {
+		SetGroupTankTarget(nullptr);
 	}
 
-	if(removemob->IsClient() && HasRole(removemob, RolePuller)) {
-		SetGroupPullerTarget(0);
+	if (removemob->IsClient() && HasRole(removemob, RolePuller)) {
+		SetGroupPullerTarget(nullptr);
 	}
 
 	if (removemob->IsClient() && removemob == mentoree) {
@@ -1139,30 +1123,39 @@ void Group::TeleportGroup(Mob* sender, uint32 zoneID, uint16 instance_id, float 
 }
 
 bool Group::LearnMembers() {
-	std::string query = StringFormat("SELECT name FROM group_id WHERE groupid = %lu", (unsigned long)GetID());
-	auto results = database.QueryDatabase(query);
-	if (!results.Success())
-        return false;
+	auto rows = GroupIdRepository::GetWhere(
+		database,
+		fmt::format(
+			"groupid = {}",
+			GetID()
+		)
+	);
 
-	if (results.RowCount() == 0) {
+	if (rows.empty()) {
 		LogError(
-			"Error getting group members for group [{}]: [{}]",
-			(unsigned long) GetID(),
-			results.ErrorMessage().c_str()
+			"Error getting group members for group [{}]",
+			GetID()
 		);
-
-		return false;
 	}
 
 	int memberIndex = 0;
-    for(auto row = results.begin(); row != results.end(); ++row) {
-		if(!row[0])
-			continue;
+	for (const auto& member : rows) {
+		if (memberIndex >= MAX_GROUP_MEMBERS) {
+			LogError(
+				"Too many members in group [{}]",
+				GetID()
+			);
+			break;
+		}
 
-		members[memberIndex] = nullptr;
-		strn0cpy(membername[memberIndex], row[0], 64);
-
-		memberIndex++;
+		if (member.name.empty()) {
+			members[memberIndex] = nullptr;
+			membername[memberIndex][0] = '\0';
+		} else {
+			members[memberIndex] = nullptr;
+			strn0cpy(membername[memberIndex], member.name.c_str(), 64);
+		}
+		++memberIndex;
 	}
 
 	return true;
@@ -1175,36 +1168,22 @@ void Group::VerifyGroup() {
 		Only called every once in a while (on member re-join for now).
 	*/
 
-	uint32 i;
-	for (i = 0; i < MAX_GROUP_MEMBERS; i++) {
+	for (uint32 i = 0; i < MAX_GROUP_MEMBERS; i++) {
 		if (membername[i][0] == '\0') {
-#if EQDEBUG >= 7
-	LogDebug("Group [{}]: Verify [{}]: Empty.\n", (unsigned long)GetID(), i);
-#endif
 			members[i] = nullptr;
 			continue;
 		}
 
 		Mob *them = entity_list.GetMob(membername[i]);
-		if(them == nullptr && members[i] != nullptr) {	//they aren't in zone
-#if EQDEBUG >= 6
-		LogDebug("Member of group [{}] named [{}] has disappeared!!", (unsigned long)GetID(), membername[i]);
-#endif
-			membername[i][0] = '\0';
+		if (!them && members[i]) {	//they aren't in zone
 			members[i] = nullptr;
 			continue;
 		}
 
-		if(them != nullptr && members[i] != them) {	//our pointer is out of date... not so good.
-#if EQDEBUG >= 5
-		LogDebug("Member of group [{}] named [{}] had an out of date pointer!!", (unsigned long)GetID(), membername[i]);
-#endif
+		if (them != nullptr && members[i] != them) {	//our pointer is out of date... not so good.
 			members[i] = them;
 			continue;
 		}
-#if EQDEBUG >= 8
-		LogDebug("Member of group [{}] named [{}] is valid", (unsigned long)GetID(), membername[i]);
-#endif
 	}
 }
 

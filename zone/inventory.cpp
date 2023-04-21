@@ -23,11 +23,8 @@
 #include "quest_parser_collection.h"
 #include "worldserver.h"
 #include "zonedb.h"
-#include "../common/zone_store.h"
 #include "../common/events/player_event_logs.h"
-
 #include "bot.h"
-#include "../common/events/player_event_logs.h"
 
 extern WorldServer worldserver;
 
@@ -724,12 +721,14 @@ bool Client::SummonItem(uint32 item_id, int16 charges, uint32 aug1, uint32 aug2,
 
 	EQ::ItemInstance* inst = database.CreateItem(item, charges);
 	auto timestamps = database.GetItemRecastTimestamps(CharacterID());
-	const auto* d = inst->GetItem();
-	if (d->RecastDelay) {
-		if (d->RecastType != RECAST_TYPE_UNLINKED_ITEM) {
-			inst->SetRecastTimestamp(timestamps.count(d->RecastType) ? timestamps.at(d->RecastType) : 0);
-		} else {
-			inst->SetRecastTimestamp(timestamps.count(d->ID) ? timestamps.at(d->ID) : 0);
+	if (inst) {
+		const auto* d = inst->GetItem();
+		if (d->RecastDelay) {
+			if (d->RecastType != RECAST_TYPE_UNLINKED_ITEM) {
+				inst->SetRecastTimestamp(timestamps.count(d->RecastType) ? timestamps.at(d->RecastType) : 0);
+			} else {
+				inst->SetRecastTimestamp(timestamps.count(d->ID) ? timestamps.at(d->ID) : 0);
+			}
 		}
 	}
 	
@@ -1393,7 +1392,11 @@ void Client::PutLootInInventory(int16 slot_id, const EQ::ItemInstance &inst, Ser
 				bag_item_data[index]->aug_4,
 				bag_item_data[index]->aug_5,
 				bag_item_data[index]->aug_6,
-				bag_item_data[index]->attuned
+				bag_item_data[index]->attuned,
+				bag_item_data[index]->custom_data,
+				bag_item_data[index]->ornamenticon,
+				bag_item_data[index]->ornamentidfile,
+				bag_item_data[index]->ornament_hero_model
 				);
 
 			// Dump bag contents to cursor in the event that owning bag is not the first cursor item
@@ -2043,8 +2046,8 @@ bool Client::SwapItem(MoveItem_Struct* move_in) {
 		}
 		if ((srcbagid && srcbag->GetItem()->BagType == EQ::item::BagTypeTradersSatchel) ||
 		    (dstbagid && dstbag->GetItem()->BagType == EQ::item::BagTypeTradersSatchel) ||
-		    (srcitemid && src_inst->GetItem()->BagType == EQ::item::BagTypeTradersSatchel) ||
-		    (dstitemid && dst_inst->GetItem()->BagType == EQ::item::BagTypeTradersSatchel)) {
+		    (srcitemid && src_inst && src_inst->GetItem()->BagType == EQ::item::BagTypeTradersSatchel) ||
+		    (dstitemid && dst_inst && dst_inst->GetItem()->BagType == EQ::item::BagTypeTradersSatchel)) {
 			Trader_EndTrader();
 			Message(Chat::Red,"You cannot move your Trader Satchels, or items inside them, while Trading.");
 		}
@@ -3976,7 +3979,7 @@ bool Client::InterrogateInventory_error(int16 head, int16 index, const EQ::ItemI
 	return false;
 }
 
-void EQ::InventoryProfile::SetCustomItemData(uint32 character_id, int16 slot_id, std::string identifier, std::string value) {
+void EQ::InventoryProfile::SetCustomItemData(uint32 character_id, int16 slot_id, const std::string &identifier, const std::string &value) {
 	EQ::ItemInstance *inst = GetItem(slot_id);
 	if(inst) {
 		inst->SetCustomData(identifier, value);
@@ -3984,7 +3987,7 @@ void EQ::InventoryProfile::SetCustomItemData(uint32 character_id, int16 slot_id,
 	}
 }
 
-void EQ::InventoryProfile::SetCustomItemData(uint32 character_id, int16 slot_id, std::string identifier, int value) {
+void EQ::InventoryProfile::SetCustomItemData(uint32 character_id, int16 slot_id, const std::string &identifier, int value) {
 	EQ::ItemInstance *inst = GetItem(slot_id);
 	if(inst) {
 		inst->SetCustomData(identifier, value);
@@ -3992,7 +3995,7 @@ void EQ::InventoryProfile::SetCustomItemData(uint32 character_id, int16 slot_id,
 	}
 }
 
-void EQ::InventoryProfile::SetCustomItemData(uint32 character_id, int16 slot_id, std::string identifier, float value) {
+void EQ::InventoryProfile::SetCustomItemData(uint32 character_id, int16 slot_id, const std::string &identifier, float value) {
 	EQ::ItemInstance *inst = GetItem(slot_id);
 	if(inst) {
 		inst->SetCustomData(identifier, value);
@@ -4000,7 +4003,7 @@ void EQ::InventoryProfile::SetCustomItemData(uint32 character_id, int16 slot_id,
 	}
 }
 
-void EQ::InventoryProfile::SetCustomItemData(uint32 character_id, int16 slot_id, std::string identifier, bool value) {
+void EQ::InventoryProfile::SetCustomItemData(uint32 character_id, int16 slot_id, const std::string &identifier, bool value) {
 	EQ::ItemInstance *inst = GetItem(slot_id);
 	if(inst) {
 		inst->SetCustomData(identifier, value);
@@ -4008,7 +4011,7 @@ void EQ::InventoryProfile::SetCustomItemData(uint32 character_id, int16 slot_id,
 	}
 }
 
-std::string EQ::InventoryProfile::GetCustomItemData(int16 slot_id, std::string identifier) {
+std::string EQ::InventoryProfile::GetCustomItemData(int16 slot_id, const std::string &identifier) {
 	EQ::ItemInstance *inst = GetItem(slot_id);
 	if(inst) {
 		return inst->GetCustomData(identifier);
@@ -4016,7 +4019,7 @@ std::string EQ::InventoryProfile::GetCustomItemData(int16 slot_id, std::string i
 	return "";
 }
 
-const int EQ::InventoryProfile::GetItemStatValue(uint32 item_id, std::string identifier) {
+const int EQ::InventoryProfile::GetItemStatValue(uint32 item_id, const std::string &identifier) {
 	if (identifier.empty()) {
 		return 0;
 	}
@@ -4042,7 +4045,7 @@ const int EQ::InventoryProfile::GetItemStatValue(uint32 item_id, std::string ide
 	}
 
 	if (Strings::EqualFold(identifier, "idfile")) {
-		stat = Strings::IsNumber(&item->IDFile[2]) ? std::stoi(&item->IDFile[2]) : 0;
+		stat = Strings::IsNumber(&item->IDFile[2]) ? Strings::ToInt(&item->IDFile[2]) : 0;
 	}
 
 	if (Strings::EqualFold(identifier, "weight")) {

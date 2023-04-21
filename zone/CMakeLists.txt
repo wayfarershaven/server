@@ -13,6 +13,7 @@ SET(zone_sources
     bot.cpp
     bot_command.cpp
     bot_database.cpp
+    bot_raid.cpp
     botspellsai.cpp
     cheat_manager.cpp
     client.cpp
@@ -31,7 +32,6 @@ SET(zone_sources
     embparser.cpp
     embparser_api.cpp
     embperl.cpp
-    embxs.cpp
     encounter.cpp
     entity.cpp
     exp.cpp
@@ -76,7 +76,6 @@ SET(zone_sources
     lua_spell.cpp
     lua_stat_bonuses.cpp
     embperl.cpp
-    embxs.cpp
     entity.cpp
     exp.cpp
     fearpath.cpp
@@ -98,7 +97,6 @@ SET(zone_sources
     mob_movement_manager.cpp
     mob_info.cpp
     npc.cpp
-    npc_ai.cpp
     npc_scale_manager.cpp
     object.cpp
     oriented_bounding_box.cpp
@@ -186,7 +184,6 @@ SET(zone_headers
     dynamic_zone.h
     embparser.h
     embperl.h
-    embxs.h
     encounter.h
     entity.h
     errmsg.h
@@ -236,7 +233,6 @@ SET(zone_headers
     mob.h
     mob_movement_manager.h
     npc.h
-    npc_ai.h
     npc_scale_manager.h
     object.h
     oriented_bounding_box.h

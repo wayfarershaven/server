@@ -27,11 +27,8 @@
 #include "quest_parser_collection.h"
 #include "worldserver.h"
 #include "zonedb.h"
-#include "../common/zone_store.h"
 #include "../common/repositories/criteria/content_filter_criteria.h"
 #include "../common/events/player_event_logs.h"
-
-#include <iostream>
 
 const char DEFAULT_OBJECT_NAME[] = "IT63_ACTORDEF";
 const char DEFAULT_OBJECT_NAME_SUFFIX[] = "_ACTORDEF";
@@ -53,7 +50,6 @@ Object::Object(uint32 id, uint32 type, uint32 icon, const Object_Struct& object,
 	m_id = id;
 	m_type = type;
 	m_icon = icon;
-	m_inuse = false;
 	m_inst = nullptr;
 	m_ground_spawn=false;
 	// Copy object data
@@ -90,7 +86,6 @@ Object::Object(const EQ::ItemInstance* inst, char* name,float max_x,float min_x,
 	m_inst	= (inst) ? inst->Clone() : nullptr;
 	m_type	= OT_DROPPEDITEM;
 	m_icon	= 0;
-	m_inuse	= false;
 	m_ground_spawn = true;
 	decay_timer.Disable();
 	// Set as much struct data as we can
@@ -122,7 +117,6 @@ Object::Object(Client* client, const EQ::ItemInstance* inst)
 	m_inst	= (inst) ? inst->Clone() : nullptr;
 	m_type	= OT_DROPPEDITEM;
 	m_icon	= 0;
-	m_inuse	= false;
 	m_ground_spawn = false;
 	// Set as much struct data as we can
 	memset(&m_data, 0, sizeof(Object_Struct));
@@ -186,7 +180,6 @@ Object::Object(const EQ::ItemInstance *inst, float x, float y, float z, float he
 	m_inst	= (inst) ? inst->Clone() : nullptr;
 	m_type	= OT_DROPPEDITEM;
 	m_icon	= 0;
-	m_inuse	= false;
 	m_ground_spawn = false;
 	// Set as much struct data as we can
 	memset(&m_data, 0, sizeof(Object_Struct));
@@ -245,7 +238,6 @@ Object::Object(const char *model, float x, float y, float z, float heading, uint
 	m_inst	= (inst) ? inst->Clone() : nullptr;
 	m_type	= type;
 	m_icon	= 0;
-	m_inuse	= false;
 	m_ground_spawn = false;
 	// Set as much struct data as we can
 	memset(&m_data, 0, sizeof(Object_Struct));
@@ -374,7 +366,6 @@ void Object::PutItem(uint8 index, const EQ::ItemInstance* inst)
 }
 
 void Object::Close() {
-	m_inuse = false;
 	if(user != nullptr)
 	{
 		last_user = user;
@@ -464,7 +455,6 @@ bool Object::Process(){
 	}
 
 	if (user != nullptr && !entity_list.GetClientByCharID(user->CharacterID())) {
-		m_inuse = false;
 		last_user = user;
 		user->SetTradeskillObject(nullptr);
 		user = nullptr;
@@ -647,7 +637,6 @@ bool Object::HandleClick(Client* sender, const ClickObject_Struct* click_object)
 			return(false);
 
 		// Starting to use this object
-		m_inuse = true;
 		sender->SetTradeskillObject(this);
 
 		user = sender;
@@ -778,16 +767,16 @@ Ground_Spawns* ZoneDatabase::LoadGroundSpawns(uint32 zone_id, int16 version, Gro
 
 	int spawnIndex=0;
     for (auto row = results.begin(); row != results.end(); ++row, ++spawnIndex) {
-        gs->spawn[spawnIndex].max_x=atof(row[0]);
-        gs->spawn[spawnIndex].max_y=atof(row[1]);
-        gs->spawn[spawnIndex].max_z=atof(row[2]);
-        gs->spawn[spawnIndex].min_x=atof(row[3]);
-        gs->spawn[spawnIndex].min_y=atof(row[4]);
-        gs->spawn[spawnIndex].heading=atof(row[5]);
+        gs->spawn[spawnIndex].max_x=Strings::ToFloat(row[0]);
+        gs->spawn[spawnIndex].max_y=Strings::ToFloat(row[1]);
+        gs->spawn[spawnIndex].max_z=Strings::ToFloat(row[2]);
+        gs->spawn[spawnIndex].min_x=Strings::ToFloat(row[3]);
+        gs->spawn[spawnIndex].min_y=Strings::ToFloat(row[4]);
+        gs->spawn[spawnIndex].heading=Strings::ToFloat(row[5]);
         strcpy(gs->spawn[spawnIndex].name,row[6]);
-        gs->spawn[spawnIndex].item=atoi(row[7]);
-        gs->spawn[spawnIndex].max_allowed=atoi(row[8]);
-        gs->spawn[spawnIndex].respawntimer=atoi(row[9]);
+        gs->spawn[spawnIndex].item=Strings::ToInt(row[7]);
+        gs->spawn[spawnIndex].max_allowed=Strings::ToInt(row[8]);
+        gs->spawn[spawnIndex].respawntimer=Strings::ToInt(row[9]);
     }
 	return gs;
 }

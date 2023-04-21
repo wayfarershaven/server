@@ -17,7 +17,6 @@
 #include "lua_packet.h"
 #include "dialogue_window.h"
 #include "titles.h"
-#include "../common/expedition_lockout_timer.h"
 
 struct InventoryWhere { };
 
@@ -34,11 +33,6 @@ void Lua_Client::Save() {
 void Lua_Client::Save(int commit_now) {
 	Lua_Safe_Call_Void();
 	self->Save(commit_now);
-}
-
-void Lua_Client::SaveBackup() {
-	Lua_Safe_Call_Void();
-	self->SaveBackup();
 }
 
 bool Lua_Client::Connected() {
@@ -2785,7 +2779,7 @@ luabind::object Lua_Client::GetPEQZoneFlags(lua_State* L) {
 	if (d_) {
 		auto self = reinterpret_cast<NativeType*>(d_);
 		auto l = self->GetPEQZoneFlags();
-		auto i = 0;
+		auto i = 1;
 		for (const auto& f : l) {
 			t[i] = f;
 			i++;
@@ -2800,7 +2794,7 @@ luabind::object Lua_Client::GetZoneFlags(lua_State* L) {
 	if (d_) {
 		auto self = reinterpret_cast<NativeType*>(d_);
 		auto l = self->GetZoneFlags();
-		auto i = 0;
+		auto i = 1;
 		for (const auto& f : l) {
 			t[i] = f;
 			i++;
@@ -3342,7 +3336,6 @@ luabind::scope lua_register_client() {
 	.def("RewardFaction", (void(Lua_Client::*)(int,int))&Lua_Client::RewardFaction)
 	.def("Save", (void(Lua_Client::*)(int))&Lua_Client::Save)
 	.def("Save", (void(Lua_Client::*)(void))&Lua_Client::Save)
-	.def("SaveBackup", (void(Lua_Client::*)(void))&Lua_Client::SaveBackup)
 	.def("ScribeSpell", (void(Lua_Client::*)(int,int))&Lua_Client::ScribeSpell)
 	.def("ScribeSpell", (void(Lua_Client::*)(int,int,bool))&Lua_Client::ScribeSpell)
 	.def("ScribeSpells", (uint16(Lua_Client::*)(uint8,uint8))&Lua_Client::ScribeSpells)

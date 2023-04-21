@@ -64,7 +64,7 @@ void ZSList::ShowUpTime(WorldTCPConnection* con, const char* adminname) {
 }
 
 void ZSList::Add(ZoneServer* zoneserver) {
-	zone_server_list.push_back(std::unique_ptr<ZoneServer>(zoneserver));
+	zone_server_list.emplace_back(std::unique_ptr<ZoneServer>(zoneserver));
 	zoneserver->SendGroupIDs();
 }
 
@@ -306,23 +306,21 @@ void ZSList::SendZoneStatus(const char* to, int16 admin, WorldTCPConnection* con
 	char locked[4];
 	if (WorldConfig::get()->Locked == true) {
 		strcpy(locked, "Yes");
-	}
-	else {
+	} else {
 		strcpy(locked, "No");
 	}
 
-	std::vector<char> out;
+	auto out = fmt::memory_buffer();
 
 	if (connection->IsConsole()) {
 		fmt::format_to(std::back_inserter(out), "World Locked: {}\r\n", locked);
-	}
-	else {
+	} else {
 		fmt::format_to(std::back_inserter(out), "World Locked: {}^", locked);
 	}
+
 	if (connection->IsConsole()) {
 		fmt::format_to(std::back_inserter(out), "Zoneservers online:\r\n");
-	}
-	else {
+	} else {
 		fmt::format_to(std::back_inserter(out), "Zoneservers online:^");
 	}
 

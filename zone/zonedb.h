@@ -284,6 +284,55 @@ struct ClientMercEntry {
 	uint32 npcid;
 };
 
+struct CharacterCorpseItemEntry
+{
+	uint32 item_id;
+	int16 equip_slot;
+	uint16 charges;
+	uint16 lootslot;
+	uint32 aug_1;
+	uint32 aug_2;
+	uint32 aug_3;
+	uint32 aug_4;
+	uint32 aug_5;
+	uint32 aug_6;
+	bool attuned;
+	std::string custom_data;
+	uint32 ornamenticon;
+	uint32 ornamentidfile;
+	uint32 ornament_hero_model;
+};
+
+struct CharacterCorpseEntry 
+{
+	bool locked;
+	uint32 exp;
+	float size;
+	uint8 level;
+	uint32 race;
+	uint8 gender;
+	uint8 class_;
+	uint8 deity;
+	uint8 texture;
+	uint8 helmtexture;
+	uint32 copper;
+	uint32 silver;
+	uint32 gold;
+	uint32 plat;
+	EQ::TintProfile item_tint;
+	uint8 haircolor;
+	uint8 beardcolor;
+	uint8 eyecolor1;
+	uint8 eyecolor2;
+	uint8 hairstyle;
+	uint8 face;
+	uint8 beard;
+	uint32 drakkin_heritage;
+	uint32 drakkin_tattoo;
+	uint32 drakkin_details;
+	std::vector<CharacterCorpseItemEntry> items;
+};
+
 namespace BeastlordPetData {
 	struct PetStruct {
 		uint16 race_id = WOLF;
@@ -430,8 +479,7 @@ public:
 	void		ListCharacterCorpses(Client *target, Client *c, bool buried, bool backup);
 	void		ListCharacterCorpseBackups(Client *target, Client *c);
 	bool		DeleteItemOffCharacterCorpse(uint32 db_id, uint32 equip_slot, uint32 item_id);
-	uint32		GetCharacterCorpseItemCount(uint32 corpse_id);
-	bool		LoadCharacterCorpseData(uint32 corpse_id, PlayerCorpse_Struct* pcs);
+	bool		LoadCharacterCorpseData(uint32 corpse_id, CharacterCorpseEntry &corpse);
 	Corpse*		LoadCharacterCorpse(uint32 player_corpse_id);
 	Corpse*		SummonBuriedCharacterCorpses(uint32 char_id, uint32 dest_zoneid, uint16 dest_instanceid, const glm::vec4& position);
 	void		MarkCorpseAsRezzed(uint32 dbid);
@@ -447,8 +495,8 @@ public:
 	uint32		GetCharacterCorpseDecayTimer(uint32 corpse_db_id);
 	uint32		GetCharacterBuriedCorpseCount(uint32 char_id);
 	uint32		SendCharacterCorpseToGraveyard(uint32 dbid, uint32 zoneid, uint16 instanceid, const glm::vec4& position);
-	uint32		SaveCharacterCorpse(uint32 charid, const char* charname, uint32 zoneid, uint16 instanceid, PlayerCorpse_Struct* dbpc, const glm::vec4& position, uint32 guildid, bool backup);
-	uint32		UpdateCharacterCorpse(uint32 dbid, uint32 charid, const char* charname, uint32 zoneid, uint16 instanceid, PlayerCorpse_Struct* dbpc, const glm::vec4& position, uint32 guildid, bool rezzed = false, bool backup = false);
+	uint32		SaveCharacterCorpse(uint32 charid, const char* charname, uint32 zoneid, uint16 instanceid, const CharacterCorpseEntry& corpse, const glm::vec4& position, uint32 guildid, bool backup);
+	uint32		UpdateCharacterCorpse(uint32 dbid, uint32 charid, const char* charname, uint32 zoneid, uint16 instanceid, const CharacterCorpseEntry& corpse, const glm::vec4& position, uint32 guildid, bool rezzed = false, bool backup = false);
 	uint32		UpdateCharacterCorpseConsent(uint32 charid, uint32 guildid);
 	uint32		GetFirstCorpseID(uint32 char_id);
 	uint32		GetCharacterCorpseCount(uint32 char_id);
@@ -622,9 +670,6 @@ public:
 	*/
 	uint32	GetKarma(uint32 acct_id);
 	void	UpdateKarma(uint32 acct_id, uint32 amount);
-
-	/* Things which really dont belong here... */
-	int16	CommandRequirement(const char* commandname);
 
 	// bot database add-on to eliminate the need for a second database connection
 	BotDatabase botdb;

@@ -37,7 +37,6 @@ extern LauncherList launcher_list;
 LauncherLink::LauncherLink(int id, std::shared_ptr<EQ::Net::ServertalkServerConnection> c)
 	: ID(id),
 	tcpc(c),
-	authenticated(false),
 	m_name(""),
 	m_bootTimer(2000)
 {
@@ -107,7 +106,7 @@ void LauncherLink::ProcessMessage(uint16 opcode, EQ::Net::Packet &p)
 		cur = result.begin();
 		end = result.end();
 		ZoneState zs;
-		for (; cur != end; cur++) {
+		for (; cur != end; ++cur) {
 			zs.port = cur->port;
 			zs.up = false;
 			zs.starts = 0;
@@ -233,7 +232,7 @@ void LauncherLink::BootDynamics(uint8 new_count) {
 		std::map<std::string, ZoneState>::iterator cur, end;
 		cur = m_states.begin();
 		end = m_states.end();
-		for (; cur != end; cur++) {
+		for (; cur != end; ++cur) {
 			StopZone(cur->first.c_str());
 		}
 	}
@@ -245,7 +244,7 @@ void LauncherLink::BootDynamics(uint8 new_count) {
 		std::map<std::string, ZoneState>::iterator cur, end;
 		cur = m_states.begin();
 		end = m_states.end();
-		for (; cur != end; cur++) {
+		for (; cur != end; ++cur) {
 			if (cur->first.find("dynamic_") == 0) {
 				if (found >= new_count) {
 					//this zone exceeds the number of allowed booted zones.
@@ -267,7 +266,7 @@ void LauncherLink::GetZoneList(std::vector<std::string> &l) {
 	std::map<std::string, ZoneState>::iterator cur, end;
 	cur = m_states.begin();
 	end = m_states.end();
-	for (; cur != end; cur++) {
+	for (; cur != end; ++cur) {
 		l.push_back(cur->first.c_str());
 	}
 }

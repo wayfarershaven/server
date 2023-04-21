@@ -453,7 +453,7 @@ bool Client::HandleSendLoginInfoPacket(const EQApplicationPacket *app)
 
 	is_player_zoning = (login_info->zoning == 1);
 
-	uint32 id = std::stoi(name);
+	uint32 id = Strings::ToInt(name);
 	if (id == 0) {
 		LogWarning("Receiving Login Info Packet from Client | account_id is 0 - disconnecting");
 		return false;
@@ -818,7 +818,7 @@ bool Client::HandleEnterWorldPacket(const EQApplicationPacket *app) {
 				if (!strcasecmp(row[1], char_name)) {
 					if (RuleB(World, EnableReturnHomeButton)) {
 						int now = time(nullptr);
-						if ((now - atoi(row[3])) >= RuleI(World, MinOfflineTimeToReturnHome)) {
+						if ((now - Strings::ToInt(row[3])) >= RuleI(World, MinOfflineTimeToReturnHome)) {
 							home_enabled = true;
 							break;
 						}
@@ -844,7 +844,7 @@ bool Client::HandleEnterWorldPacket(const EQApplicationPacket *app) {
 				if (!strcasecmp(row[1], char_name)) {
 					if (
 						RuleB(World, EnableTutorialButton) &&
-						std::stoi(row[2]) <= RuleI(World, MaxLevelForTutorial)
+						Strings::ToInt(row[2]) <= RuleI(World, MaxLevelForTutorial)
 					) {
 						tutorial_enabled = true;
 						break;
@@ -1260,9 +1260,8 @@ bool Client::ChecksumVerificationCRC1EQGame(uint64 checksum)
 	// Get checksum variable for eqgame.exe
 	std::string checksumvar;
 	uint64_t checksumint;
-	if (database.GetVariable("checksum_crc1_eqgame", checksumvar))
-	{
-		checksumint = atoll(checksumvar.c_str());
+	if (database.GetVariable("checksum_crc1_eqgame", checksumvar)) {
+		checksumint = Strings::ToBigInt(checksumvar);
 	} else {
 
 		// If checksum_crc1_eqgame not set exit function and return true because we have nothing to verify against
@@ -1271,8 +1270,7 @@ bool Client::ChecksumVerificationCRC1EQGame(uint64 checksum)
 	}
 
 	// Verify checksums match
-	if(checksumint == checksum)
-	{
+	if(checksumint == checksum) {
 		return true;
 	}
 
@@ -1288,9 +1286,8 @@ bool Client::ChecksumVerificationCRC2SkillCaps(uint64 checksum)
 	// Get checksum variable for eqgame.exe
 	std::string checksumvar;
 	uint64_t checksumint;
-	if (database.GetVariable("checksum_crc2_skillcaps", checksumvar))
-	{
-		checksumint = atoll(checksumvar.c_str());
+	if (database.GetVariable("checksum_crc2_skillcaps", checksumvar)) {
+		checksumint = Strings::ToBigInt(checksumvar);
 	} else {
 
 		// If checksum_crc2_skillcaps not set exit function and return true because we have nothing to verify against
@@ -1299,8 +1296,7 @@ bool Client::ChecksumVerificationCRC2SkillCaps(uint64 checksum)
 	}
 
 	// Verify checksums match
-	if(checksumint == checksum)
-	{
+	if(checksumint == checksum) {
 		return true;
 	}
 
@@ -1316,9 +1312,8 @@ bool Client::ChecksumVerificationCRC3BaseData(uint64 checksum)
 	// Get checksum variable for skill_caps.txt
 	std::string checksumvar;
 	uint64_t checksumint;
-	if (database.GetVariable("checksum_crc3_basedata", checksumvar))
-	{
-		checksumint = atoll(checksumvar.c_str());
+	if (database.GetVariable("checksum_crc3_basedata", checksumvar)) {
+		checksumint = Strings::ToBigInt(checksumvar);
 	} else {
 
 		// If checksum_crc3_basedata not set exit function and return true because we have nothing to verify against
@@ -1327,8 +1322,7 @@ bool Client::ChecksumVerificationCRC3BaseData(uint64 checksum)
 	}
 
 	// Verify checksums match
-	if(checksumint == checksum)
-	{
+	if(checksumint == checksum) {
 		return true;
 	}
 

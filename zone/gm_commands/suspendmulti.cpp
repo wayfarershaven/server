@@ -16,10 +16,10 @@ void command_suspendmulti(Client *c, const Seperator *sep)
 	const auto& n = Strings::Split(sep->arg[1], "|");
 	std::vector<std::string> v;
 	for (const auto& c : n) {
-		v.push_back(fmt::format("'{}'", Strings::ToLower(c)));
+		v.emplace_back(fmt::format("'{}'", Strings::ToLower(c)));
 	}
 
-	auto days = std::stoul(sep->arg[2]);
+	auto days = Strings::ToUnsignedInt(sep->arg[2]);
 
 	const std::string reason = sep->arg[3] ? sep->argplus[3] : "";
 

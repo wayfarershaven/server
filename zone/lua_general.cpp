@@ -9,10 +9,8 @@
 
 #include "../common/content/world_content_service.h"
 #include "../common/timer.h"
-#include "../common/eqemu_logsys.h"
 #include "../common/classes.h"
 #include "../common/rulesys.h"
-#include "lua_parser.h"
 #include "lua_item.h"
 #include "lua_iteminst.h"
 #include "lua_client.h"
@@ -899,12 +897,12 @@ std::string lua_say_link(const char *phrase) {
 }
 
 void lua_set_rule(std::string rule_name, std::string rule_value) {
-	RuleManager::Instance()->SetRule(rule_name.c_str(), rule_value.c_str());
+	RuleManager::Instance()->SetRule(rule_name, rule_value);
 }
 
 std::string lua_get_rule(std::string rule_name) {
 	std::string rule_value;
-	RuleManager::Instance()->GetRule(rule_name.c_str(), rule_value);
+	RuleManager::Instance()->GetRule(rule_name, rule_value);
 	return rule_value;
 }
 
@@ -1009,7 +1007,7 @@ luabind::adl::object lua_get_instance_ids(lua_State* L, std::string zone_name) {
 
 	auto instance_ids = quest_manager.GetInstanceIDs(zone_name);
 	for (int i = 0; i < instance_ids.size(); i++) {
-		ret[i] = instance_ids[i];
+		ret[i + 1] = instance_ids[i];
 	}
 
 	return ret;
@@ -1020,7 +1018,7 @@ luabind::adl::object lua_get_instance_ids_by_char_id(lua_State* L, std::string z
 
 	auto instance_ids = quest_manager.GetInstanceIDs(zone_name, character_id);
 	for (int i = 0; i < instance_ids.size(); i++) {
-		ret[i] = instance_ids[i];
+		ret[i + 1] = instance_ids[i];
 	}
 
 	return ret;
@@ -1981,7 +1979,7 @@ void lua_remove_ldon_loss(uint32 theme_id) {
 }
 
 void lua_remove_ldon_win(uint32 theme_id) {
-	quest_manager.addldonwin(theme_id);
+	quest_manager.removeldonwin(theme_id);
 }
 
 std::string lua_get_clean_npc_name_by_id(uint32 npc_id) {
@@ -4172,7 +4170,7 @@ luabind::scope lua_register_general() {
 		luabind::def("get_instance_id", &lua_get_instance_id),
 		luabind::def("get_instance_id_by_char_id", &lua_get_instance_id_by_char_id),
 		luabind::def("get_instance_ids", &lua_get_instance_ids),
-		luabind::def("get_instance_ids_by_char_id", &lua_get_instance_id_by_char_id),
+		luabind::def("get_instance_ids_by_char_id", &lua_get_instance_ids_by_char_id),
 		luabind::def("get_instance_timer", &lua_get_instance_timer),
 		luabind::def("get_instance_timer_by_id", &lua_get_instance_timer_by_id),
 		luabind::def("get_instance_version_by_id", &lua_get_instance_version_by_id),
@@ -4259,6 +4257,8 @@ luabind::scope lua_register_general() {
 		luabind::def("add_ldon_loss", &lua_add_ldon_loss),
 		luabind::def("add_ldon_points", &lua_add_ldon_points),
 		luabind::def("add_ldon_win", &lua_add_ldon_win),
+		luabind::def("remove_ldon_loss", &lua_remove_ldon_loss),
+		luabind::def("remove_ldon_win", &lua_remove_ldon_win),
 		luabind::def("get_gender_name", &lua_get_gender_name),
 		luabind::def("get_deity_name", &lua_get_deity_name),
 		luabind::def("get_inventory_slot_name", &lua_get_inventory_slot_name),
@@ -4515,6 +4515,12 @@ luabind::scope lua_register_general() {
 		luabind::def("world_wide_move_instance", (void(*)(uint16))&lua_world_wide_move_instance),
 		luabind::def("world_wide_move_instance", (void(*)(uint16,uint8))&lua_world_wide_move_instance),
 		luabind::def("world_wide_move_instance", (void(*)(uint16,uint8,uint8))&lua_world_wide_move_instance),
+		luabind::def("world_wide_remove_ldon_loss", (void(*)(uint32))&lua_world_wide_remove_ldon_loss),
+		luabind::def("world_wide_remove_ldon_loss", (void(*)(uint32,uint8))&lua_world_wide_remove_ldon_loss),
+		luabind::def("world_wide_remove_ldon_loss", (void(*)(uint32,uint8,uint8))&lua_world_wide_remove_ldon_loss),
+		luabind::def("world_wide_remove_ldon_win", (void(*)(uint32))&lua_world_wide_remove_ldon_win),
+		luabind::def("world_wide_remove_ldon_win", (void(*)(uint32,uint8))&lua_world_wide_remove_ldon_win),
+		luabind::def("world_wide_remove_ldon_win", (void(*)(uint32,uint8,uint8))&lua_world_wide_remove_ldon_win),
 		luabind::def("world_wide_remove_spell", (void(*)(uint32))&lua_world_wide_remove_spell),
 		luabind::def("world_wide_remove_spell", (void(*)(uint32,uint8))&lua_world_wide_remove_spell),
 		luabind::def("world_wide_remove_spell", (void(*)(uint32,uint8,uint8))&lua_world_wide_remove_spell),

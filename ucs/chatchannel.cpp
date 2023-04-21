@@ -32,7 +32,7 @@ void ServerToClient45SayLink(std::string& clientSayLink, const std::string& serv
 void ServerToClient50SayLink(std::string& clientSayLink, const std::string& serverSayLink);
 void ServerToClient55SayLink(std::string& clientSayLink, const std::string& serverSayLink);
 
-ChatChannel::ChatChannel(std::string inName, std::string inOwner, std::string inPassword, bool inPermanent, int inMinimumStatus) :
+ChatChannel::ChatChannel(const std::string& inName, const std::string& inOwner, const std::string& inPassword, bool inPermanent, int inMinimumStatus) :
 	m_delete_timer(0) {
 
 	m_name = inName;
@@ -137,7 +137,7 @@ ChatChannel *ChatChannelList::CreateChannel(
 	return new_channel;
 }
 
-ChatChannel* ChatChannelList::FindChannel(std::string Name) {
+ChatChannel* ChatChannelList::FindChannel(const std::string& Name) {
 
 	std::string normalized_name = CapitaliseName(Name);
 
@@ -283,7 +283,7 @@ void ChatChannel::SetPassword(const std::string& in_password) {
 	}
 }
 
-void ChatChannel::SetOwner(std::string& in_owner) {
+void ChatChannel::SetOwner(const std::string& in_owner) {
 
 	m_owner = in_owner;
 
@@ -343,89 +343,72 @@ void ChatChannel::AddClient(Client *c) {
 }
 
 bool ChatChannel::RemoveClient(Client *c) {
-
-	if(!c) return false;
-
+	if (!c) {
+		return false;
+	}
 	LogDebug("Remove client [{}] from channel [{}]", c->GetName().c_str(), GetName().c_str());
-
 	bool hide_me = c->GetHideMe();
-
 	int account_status = c->GetAccountStatus();
-
 	int players_in_channel = 0;
-
 	LinkedListIterator<Client*> iterator(m_clients_in_channel);
-
 	iterator.Reset();
 
 	while(iterator.MoreElements()) {
-
 		auto *current_client = iterator.GetData();
-
-		if(current_client == c) {
+		if (current_client == c) {
 			iterator.RemoveCurrent(false);
-		}
-		else if(current_client) {
-
+		} else if(current_client) {
 			players_in_channel++;
-
-			if(current_client->IsAnnounceOn())
-				if(!hide_me || (current_client->GetAccountStatus() > account_status))
+			if (current_client->IsAnnounceOn()) {
+				if (!hide_me || (current_client->GetAccountStatus() > account_status)) {
 					current_client->AnnounceLeave(this, c);
+				}
+			}
 
 			iterator.Advance();
 		}
-
 	}
 
-	if((players_in_channel == 0) && !m_permanent) {
-
-		if((m_password.length() == 0) || (RuleI(Channels, DeleteTimer) == 0))
+	if ((players_in_channel == 0) && !m_permanent) {
+		if ((m_password.length() == 0) || (RuleI(Channels, DeleteTimer) == 0)) {
 			return false;
+		}
 
 		LogDebug("Starting delete timer for empty password protected channel [{}]", m_name.c_str());
-
 		m_delete_timer.Start(RuleI(Channels, DeleteTimer) * 60000);
 	}
-
 	return true;
 }
 
 void ChatChannel::SendOPList(Client *c)
 {
-	if (!c)
+	if (!c) {
 		return;
+	}
 
 	c->GeneralChannelMessage("Channel " + m_name + " op-list: (Owner=" + m_owner + ")");
 
-	for (auto &&m : m_moderators)
+	for (auto &&m : m_moderators) {
 		c->GeneralChannelMessage(m);
+	}
 }
 
 void ChatChannel::SendChannelMembers(Client *c) {
 
-	if(!c) return;
+	if (!c) {
+		return;
+	}
 
 	char CountString[10];
-
 	sprintf(CountString, "(%i)", MemberCount(c->GetAccountStatus()));
-
 	std::string Message = "Channel " + GetName();
-
 	Message += CountString;
-
 	Message += " members:";
-
 	c->GeneralChannelMessage(Message);
-
 	int AccountStatus = c->GetAccountStatus();
-
 	Message.clear();
-
 	int MembersInLine = 0;
-
 	LinkedListIterator<Client*> iterator(m_clients_in_channel);
-
 	iterator.Reset();
 
 	while(iterator.MoreElements()) {
@@ -433,34 +416,28 @@ void ChatChannel::SendChannelMembers(Client *c) {
 		Client *ChannelClient = iterator.GetData();
 
 		// Don't list hidden characters with status higher or equal than the character requesting the list.
-		//
-		if(!ChannelClient || (ChannelClient->GetHideMe() && (ChannelClient->GetAccountStatus() >= AccountStatus))) {
+		if (!ChannelClient || (ChannelClient->GetHideMe() && (ChannelClient->GetAccountStatus() >= AccountStatus))) {
 			iterator.Advance();
 			continue;
 		}
 
-		if(MembersInLine > 0)
+		if(MembersInLine > 0) {
 			Message += ", ";
-
-		Message += ChannelClient->GetName();
-
-		MembersInLine++;
-
-		if(MembersInLine == 6) {
-
-			c->GeneralChannelMessage(Message);
-
-			MembersInLine = 0;
-
-			Message.clear();
 		}
 
+		Message += ChannelClient->GetName();
+		MembersInLine++;
+		if (MembersInLine == 6) {
+			c->GeneralChannelMessage(Message);
+			MembersInLine = 0;
+			Message.clear();
+		}
 		iterator.Advance();
 	}
 
-	if(MembersInLine > 0)
+	if (MembersInLine > 0) {
 		c->GeneralChannelMessage(Message);
-
+	}
 }
 
 void ChatChannel::SendMessageToChannel(const std::string& Message, Client* Sender) {
@@ -657,7 +634,7 @@ ChatChannel *ChatChannelList::RemoveClientFromChannel(const std::string& in_chan
 	std::string channel_name = in_channel_name;
 
 	if (in_channel_name.length() > 0 && isdigit(channel_name[0])) {
-		channel_name = c->ChannelSlotName(atoi(in_channel_name.c_str()));
+		channel_name = c->ChannelSlotName(Strings::ToInt(in_channel_name));
 	}
 
 	auto *required_channel = FindChannel(channel_name);
@@ -782,7 +759,7 @@ bool ChatChannel::HasVoice(std::string inVoiced)
 	return std::find(std::begin(m_voiced), std::end(m_voiced), inVoiced) != std::end(m_voiced);
 }
 
-std::string CapitaliseName(std::string inString) {
+std::string CapitaliseName(const std::string& inString) {
 
 	std::string NormalisedName = inString;
 
