@@ -662,33 +662,25 @@ ChatChannel *ChatChannelList::RemoveClientFromChannel(const std::string& in_chan
 }
 
 void ChatChannelList::Process() {
-
 	LinkedListIterator<ChatChannel*> iterator(ChatChannels);
-
 	iterator.Reset();
 
 	while(iterator.MoreElements()) {
-
 		ChatChannel *CurrentChannel = iterator.GetData();
-
 		if(CurrentChannel && CurrentChannel->ReadyToDelete()) {
-
 			LogDebug("Empty temporary password protected channel [{}] being destroyed",
 				CurrentChannel->GetName().c_str());
 
-			RemoveChannel(CurrentChannel);
+			iterator.RemoveCurrent();
+		} else {
+			iterator.Advance();
 		}
-
-		iterator.Advance();
-
 	}
 }
 
-void ChatChannel::AddInvitee(const std::string &Invitee)
-{
+void ChatChannel::AddInvitee(const std::string &Invitee) {
 	if (!IsInvitee(Invitee)) {
 		m_invitees.push_back(Invitee);
-
 		LogDebug("Added [{}] as invitee to channel [{}]", Invitee.c_str(), m_name.c_str());
 	}
 
