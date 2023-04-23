@@ -1190,9 +1190,11 @@ uint8 Client::GetCharMaxLevelFromQGlobal() {
 	auto char_cache = GetQGlobals();
 
 	std::list<QGlobal> global_map;
+	
+	const uint32 zone_id = zone ? zone->GetZoneID() : 0;
 
 	if (char_cache) {
-		QGlobalCache::Combine(global_map, char_cache->GetBucket(), 0, CharacterID(), zone->GetZoneID());
+		QGlobalCache::Combine(global_map, char_cache->GetBucket(), 0, CharacterID(), zone_id);
 	}
 
 	for (const auto& global : global_map) {
