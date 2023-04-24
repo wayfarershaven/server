@@ -794,6 +794,25 @@
         OutF(LogSys, Logs::Detail, Logs::PlayerEvents, __FILE__, __func__, __LINE__, message, ##__VA_ARGS__);\
 } while (0)
 
+#define LogAccountEvents(message, ...) do {\
+    if (LogSys.IsLogEnabled(Logs::General, Logs::AccountEvents))\
+        OutF(LogSys, Logs::General, Logs::AccountEvents, __FILE__, __func__, __LINE__, message, ##__VA_ARGS__);\
+} while (0)
+#define LogAccountEventsDetail(message, ...) do {\
+    if (LogSys.IsLogEnabled(Logs::Detail, Logs::AccountEvents))\
+        OutF(LogSys, Logs::Detail, Logs::AccountEvents, __FILE__, __func__, __LINE__, message, ##__VA_ARGS__);\
+} while (0)
+
+#define LogPetitions(message, ...) do {\
+    if (LogSys.IsLogEnabled(Logs::General, Logs::Petitions))\
+        OutF(LogSys, Logs::General, Logs::Petitions, __FILE__, __func__, __LINE__, message, ##__VA_ARGS__);\
+} while (0)
+
+#define LogPetitionsDetail(message, ...) do {\
+    if (LogSys.IsLogEnabled(Logs::Detail, Logs::Petitions))\
+        OutF(LogSys, Logs::Detail, Logs::Petitions, __FILE__, __func__, __LINE__, message, ##__VA_ARGS__);\
+} while (0)
+
 #define Log(debug_level, log_category, message, ...) do {\
     if (LogSys.IsLogEnabled(debug_level, log_category))\
         LogSys.Out(debug_level, log_category, __FILE__, __func__, __LINE__, message, ##__VA_ARGS__);\

@@ -208,13 +208,13 @@ void PetitionList::UpdatePetition(Petition* pet) {
 }
 
 void ZoneDatabase::DeletePetitionFromDB(Petition* wpet) {
-
     std::string query = StringFormat("DELETE FROM petitions WHERE petid = %i", wpet->GetID());
     auto results = QueryDatabase(query);
+
+	LogPetitions("Petition Closed: Petition Number [{}] - GM: [{}]: GM Response [{}]", wpet->GetID(), wpet->GetLastGM(), wpet->GetGMText());
 }
 
 void ZoneDatabase::UpdatePetitionToDB(Petition* wpet) {
-
 	std::string query = StringFormat("UPDATE petitions SET gmtext = '%s', lastgm = '%s', urgency = %i, "
                                     "checkouts = %i, unavailables = %i, ischeckedout = %i "
                                     "WHERE petid = %i",
@@ -222,11 +222,11 @@ void ZoneDatabase::UpdatePetitionToDB(Petition* wpet) {
                                     wpet->GetCheckouts(), wpet->GetUnavails(),
                                     wpet->CheckedOut() ? 1: 0, wpet->GetID());
     auto results = QueryDatabase(query);
+
+	LogPetitions("Petition Updated: https://admin.wayfarershaven.com/petitions.php?a=vp&pid={} - GM: [{}]: GM Response [{}]", wpet->GetID(), wpet->GetLastGM(), wpet->GetGMText());
 }
 
-void ZoneDatabase::InsertPetitionToDB(Petition* wpet)
-{
-
+void ZoneDatabase::InsertPetitionToDB(Petition* wpet) {
 	uint32 len = strlen(wpet->GetPetitionText());
 	auto petitiontext = new char[2 * len + 1];
 	memset(petitiontext, 0, 2*len+1);
@@ -244,11 +244,14 @@ void ZoneDatabase::InsertPetitionToDB(Petition* wpet)
                                     petitiontext, wpet->GetZone(), wpet->GetUrgency(), wpet->GetCharClass(),
                                     wpet->GetCharRace(), wpet->GetCharLevel(), wpet->GetCheckouts(), wpet->GetUnavails(),
                                     wpet->CheckedOut()? 1: 0, wpet->GetSentTime(), wpet->GetGMText());
-    safe_delete_array(petitiontext);
     auto results = QueryDatabase(query);
 	if (!results.Success()) {
 		return;
 	}
+
+	uint32 last_insert_id = results.LastInsertedID();
+	LogPetitions("New Petition Created: https://admin.wayfarershaven.com/petitions.php?a=vp&pid={} - [{}]: [{}]", last_insert_id, wpet->GetCharName(), petitiontext);
+	safe_delete_array(petitiontext);
 
 #if EQDEBUG >= 5
 		LogDebug("New petition created");
