@@ -729,8 +729,6 @@ public:
 	inline int32 GetHeroicStrikethrough() const  { return heroic_strikethrough; }
 
 	virtual bool IsSitting() const { return false; }
-
-	int CalcRecommendedLevelBonus(uint8 level, uint8 reclevel, int basestat);
 	
 	void CopyHateList(Mob* to);
 	
@@ -1029,7 +1027,7 @@ public:
 	int16 GetMeleeDmgPositionMod(Mob* defender);
 	int16 GetSkillReuseTime(uint16 skill);
 	int GetCriticalChanceBonus(uint16 skill);
-	int GetSkillDmgAmt(uint16 skill);
+	int GetSkillDmgAmt(int skill_id);
 	int16 GetPositionalDmgAmt(Mob* defender);
 	inline bool CanBlockSpell() const { return(spellbonuses.FocusEffects[focusBlockNextSpell]); }
 	bool DoHPToManaCovert(int32 mana_cost = 0);
@@ -1461,6 +1459,11 @@ public:
 	void ApplyAABonuses(const AA::Rank &rank, StatBonuses* newbon);
 	bool CheckAATimer(int timer);
 
+	void CalcItemBonuses(StatBonuses* b);
+	void AddItemBonuses(const EQ::ItemInstance* inst, StatBonuses* b, bool is_augment = false, bool is_tribute = false, int recommended_level_override = 0, bool is_ammo_item = false);
+	void AdditiveWornBonuses(const EQ::ItemInstance* inst, StatBonuses* b, bool is_augment = false);
+	int CalcRecommendedLevelBonus(uint8 current_level, uint8 recommended_level, int base_stat);
+	
 	int NPCAssistCap() { return npc_assist_cap; }
 	void AddAssistCap() { ++npc_assist_cap; }
 	void DelAssistCap() { --npc_assist_cap; }
