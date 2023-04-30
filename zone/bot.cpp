@@ -4499,7 +4499,7 @@ void Bot::PerformTradeWithClient(int16 begin_slot_id, int16 end_slot_id, Client*
 	}
 }
 
-bool Bot::Death(Mob *killerMob, int64 damage, uint16 spell_id, EQ::skills::SkillType attack_skill) {
+bool Bot::Death(Mob *killerMob, int64 damage, uint16 spell_id, EQ::skills::SkillType attack_skill, uint8 killedby) {
 	if (!NPC::Death(killerMob, damage, spell_id, attack_skill))
 		return false;
 

@@ -1729,8 +1729,7 @@ void Client::Damage(Mob* other, int64 damage, uint16 spell_id, EQ::skills::Skill
 	}
 }
 
-bool Client::Death(Mob* killerMob, int64 damage, uint16 spell, EQ::skills::SkillType attack_skill)
-{
+bool Client::Death(Mob* killerMob, int64 damage, uint16 spell, EQ::skills::SkillType attack_skill, uint8 killedby) {
 	if (!ClientFinishedLoading()) {
 		return false;
 	}
@@ -1830,6 +1829,8 @@ bool Client::Death(Mob* killerMob, int64 damage, uint16 spell, EQ::skills::Skill
 				parse->EventNPC(EVENT_SLAY, killerMob->CastToNPC(), this, "", 0);
 			}
 
+			killedby = Killed_NPC;
+
 			auto emote_id = killerMob->GetEmoteID();
 			if (emote_id) {
 				killerMob->CastToNPC()->DoNPCEmote(EQ::constants::EmoteEventTypes::KilledPC, emoteid);
@@ -1858,6 +1859,8 @@ bool Client::Death(Mob* killerMob, int64 damage, uint16 spell, EQ::skills::Skill
 				killerMob->CastToClient()->SetDueling(false);
 				killerMob->CastToClient()->SetDuelTarget(0);
 				entity_list.DuelMessage(killerMob, this, false);
+
+				killedby = Killed_DUEL;
 			} else {
 				//otherwise, we just died, end the duel.
 				Mob* who = entity_list.GetMob(GetDuelTarget());
@@ -1866,6 +1869,8 @@ bool Client::Death(Mob* killerMob, int64 damage, uint16 spell, EQ::skills::Skill
 					who->CastToClient()->SetDuelTarget(0);
 				}
 			}
+		} else if(killerMob->IsClient()) {
+			killedby = Killed_PVP;
 		}
 	}
 
@@ -1965,7 +1970,7 @@ bool Client::Death(Mob* killerMob, int64 damage, uint16 spell, EQ::skills::Skill
 				RuleB(Character, LeaveNakedCorpses)
 				) {
 			// creating the corpse takes the cash/items off the player too
-			new_corpse = new Corpse(this, exploss);
+			new_corpse = new Corpse(this, exploss, killedby);
 
 			std::string tmp;
 			database.GetVariable("ServerType", tmp);
@@ -2355,7 +2360,7 @@ void NPC::Damage(Mob* other, int64 damage, uint16 spell_id, EQ::skills::SkillTyp
 	}
 }
 
-bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillType attack_skill) {
+bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillType attack_skill, uint8 killedby) {
 	bool charmedNoXp = false;	// using if charmed pet dies, shouldn't give player experience.
 	if (HasOwner()) {
 		Mob *clientOwner = GetOwnerOrSelf();

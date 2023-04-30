@@ -1365,6 +1365,21 @@ void ZoneServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p) {
 			zoneserver_list.SendPacket(pack);
 			break;
 		}
+		case ServerOP_IsOwnerOnline: {
+			if (pack->size != sizeof(ServerIsOwnerOnline_Struct)) {
+				break;
+			}
+
+			ServerIsOwnerOnline_Struct* online = (ServerIsOwnerOnline_Struct*) pack->pBuffer;
+			ClientListEntry* cle = client_list.FindCharacter(online->name);
+			if (cle) {
+				online->online = 1;
+			} else {
+				online->online = 0;
+			}
+			zoneserver_list.FindByZoneID(online->zoneid)->SendPacket(pack);
+			break;
+		}
 		case ServerOP_ReloadContentFlags: {
 			zoneserver_list.SendPacket(pack);
 			content_service.SetExpansionContext()->ReloadContentFlags();
