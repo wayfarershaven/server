@@ -2776,13 +2776,6 @@ void Client::GMKill() {
 	safe_delete(outapp);
 }
 
-bool Client::CheckAccess(int16 iDBLevel, int16 iDefaultLevel) {
-	if ((admin >= iDBLevel) || (iDBLevel == AccountStatus::Max && admin >= iDefaultLevel))
-		return true;
-	else
-		return false;
-}
-
 void Client::MemorizeSpell(uint32 slot,uint32 spellid,uint32 scribing, uint32 reduction){
 	if (slot < 0 || slot >= EQ::spells::DynamicLookup(ClientVersion(), GetGM())->SpellbookSize)
 		return;
@@ -8202,7 +8195,7 @@ void Client::QuestReward(Mob* target, const QuestReward_Struct &reward, bool fac
 	if (reward.exp_reward > 0) {
 		AddEXP(reward.exp_reward);
 	}
-	
+
 	QueuePacket(outapp, true, Client::CLIENT_CONNECTED);
 	safe_delete(outapp);
 }
