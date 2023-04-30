@@ -4308,7 +4308,7 @@ Merc* Merc::LoadMerc(Client *c, MercTemplate* merc_template, uint32 merchant_id,
 		//TODO: Maybe add a way of updating client merc stats in a seperate function? like, for example, on leveling up.
 		const NPCType* npc_type_to_copy = nullptr;
 		if (c) {
-			const NPCType* npc_type_to_copy = content_db.GetMercType(merc_template->MercNPCID, merc_template->RaceID, c->GetLevel());
+			npc_type_to_copy = content_db.GetMercType(merc_template->MercNPCID, merc_template->RaceID, c->GetLevel());
 		}
 		if(npc_type_to_copy != nullptr) {
 			//This is actually a very terrible method of assigning stats, and should be changed at some point. See the comment in merc's deconstructor.
