@@ -536,6 +536,7 @@ public:
 	void StopAllTimers();
 	void StopTimer(const char* timer_name);
 	luabind::object GetBuffSpellIDs(lua_State* L);
+	bool HasSpellEffect(int effect_id);
 };
 
 #endif
