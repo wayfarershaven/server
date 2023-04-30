@@ -4386,7 +4386,7 @@ bool Mob::SpellOnTarget(
 
 void Corpse::CastRezz(uint16 spellid, Mob* Caster)
 {
-	LogSpells("Corpse::CastRezz spellid [{}], Rezzed() is [{}], rezzexp is [{}]", spellid,IsRezzed(),rez_experience);
+	LogSpells("Corpse::CastRezz spellid [{}], Rezzed() is [{}], rezzexp is [{}], rez_timer enabled:: [{}]", spellid,IsRezzed(),rez_experience, corpse_rez_timer.Enabled());
 
 	// Rez timer has expired, only GMs can rez at this point. (uses rezzable)
 	if (!IsRezzable()) {
