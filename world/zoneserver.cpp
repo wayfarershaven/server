@@ -1377,7 +1377,17 @@ void ZoneServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p) {
 			} else {
 				online->online = 0;
 			}
-			zoneserver_list.FindByZoneID(online->zoneid)->SendPacket(pack);
+			/*
+			auto zs = (
+						cle->instance() ?
+						zoneserver_list.FindByInstanceID(cle->instance()) :
+						zoneserver_list.FindByZoneID(cle->zone())
+					);
+			*/
+			auto zs = zoneserver_list.FindByZoneID(online->zoneid);
+			if (zs) {
+				zs->SendPacket(pack);
+			}
 			break;
 		}
 		case ServerOP_ReloadContentFlags: {
