@@ -1691,7 +1691,6 @@ private:
 	int64 CalcHPRegen();
 	int64 CalcManaRegen();
 	int64 CalcBaseManaRegen();
-	uint64 GetClassHPFactor();
 	void DoHPRegen();
 	void DoManaRegen();
 	void DoStaminaHungerUpdate();
