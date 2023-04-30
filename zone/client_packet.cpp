@@ -5239,18 +5239,22 @@ void Client::Handle_OP_ConsiderCorpse(const EQApplicationPacket *app)
 		}
 	} else if (t && t->IsPlayerCorpse()) {
 		uint32 day, hour, min, sec, ttime;
-		if ((ttime = t->GetRemainingRezTime()) > 0) {
-			sec = (ttime / 1000) % 60; // Total seconds
-			min = (ttime / 60000) % 60; // Total seconds
-			hour = (ttime / 3600000) % 24; // Total hours
-			if (hour) {
-				Message(Chat::White, "This corpse's resurrection time will expire in %i hour(s) %i minute(s) and %i seconds.", hour, min, sec);
+		if (!t->IsRezzed()) {
+			if ((ttime = t->GetRemainingRezTime()) > 0) {
+				sec = (ttime / 1000) % 60; // Total seconds
+				min = (ttime / 60000) % 60; // Total seconds
+				hour = (ttime / 3600000) % 24; // Total hours
+				if (hour) {
+					Message(Chat::White, "This corpse's resurrection time will expire in %i hour(s) %i minute(s) and %i seconds.", hour, min, sec);
+				} else {
+					Message(Chat::White, "This corpse's resurrection time will expire in %i minute(s) and %i seconds.", min, sec);
+				}
+				hour = 0;
 			} else {
-				Message(Chat::White, "This corpse's resurrection time will expire in %i minute(s) and %i seconds.", min, sec);
+				Message(Chat::White, "This corpse is too old to be resurrected.");
 			}
-			hour = 0;
 		} else {
-			Message(Chat::White, "This corpse is too old to be resurrected.");
+			Message(Chat::White, "This corpse has already accepted a resurrection.");	
 		}
 
 		if ((ttime = t->GetDecayTime()) != 0) {
