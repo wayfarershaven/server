@@ -16,6 +16,7 @@
 	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 */
 
+#include "../common/data_verification.h"
 #include "../common/spdat.h"
 #include "../common/strings.h"
 #include "../common/misc_functions.h"
@@ -5482,16 +5483,41 @@ int16 Mob::GetSkillReuseTime(uint16 skill)
 	return skill_reduction;
 }
 
-int Mob::GetSkillDmgAmt(uint16 skill)
+int Mob::GetSkillDmgAmt(int skill_id)
 {
 	int skill_dmg = 0;
 
-	// All skill dmg(only spells do this) + Skill specific
-	skill_dmg += spellbonuses.SkillDamageAmount[EQ::skills::HIGHEST_SKILL + 1] + itembonuses.SkillDamageAmount[EQ::skills::HIGHEST_SKILL + 1] + aabonuses.SkillDamageAmount[EQ::skills::HIGHEST_SKILL + 1]
-				+ itembonuses.SkillDamageAmount[skill] + spellbonuses.SkillDamageAmount[skill] + aabonuses.SkillDamageAmount[skill];
+	if (!EQ::ValueWithin(skill_id, ALL_SKILLS, EQ::skills::HIGHEST_SKILL)) {
+		return skill_dmg;
+	}
 
-	skill_dmg += spellbonuses.SkillDamageAmount2[EQ::skills::HIGHEST_SKILL + 1] + itembonuses.SkillDamageAmount2[EQ::skills::HIGHEST_SKILL + 1]
-				+ itembonuses.SkillDamageAmount2[skill] + spellbonuses.SkillDamageAmount2[skill];
+	skill_dmg += (
+		spellbonuses.SkillDamageAmount[EQ::skills::HIGHEST_SKILL + 1] +
+		itembonuses.SkillDamageAmount[EQ::skills::HIGHEST_SKILL + 1] +
+		aabonuses.SkillDamageAmount[EQ::skills::HIGHEST_SKILL + 1]
+	);
+
+	if (skill_id != ALL_SKILLS) {
+		skill_dmg += (
+			itembonuses.SkillDamageAmount[skill_id] +
+			spellbonuses.SkillDamageAmount[skill_id] +
+			aabonuses.SkillDamageAmount[skill_id]
+		);
+	}
+
+	skill_dmg += (
+		spellbonuses.SkillDamageAmount2[EQ::skills::HIGHEST_SKILL + 1] +
+		itembonuses.SkillDamageAmount2[EQ::skills::HIGHEST_SKILL + 1] +
+		aabonuses.SkillDamageAmount2[EQ::skills::HIGHEST_SKILL + 1]
+	);
+
+	if (skill_id != ALL_SKILLS) {
+		skill_dmg += (
+			itembonuses.SkillDamageAmount2[skill_id] +
+			spellbonuses.SkillDamageAmount2[skill_id] +
+			aabonuses.SkillDamageAmount2[skill_id]
+		);
+	}
 
 	return skill_dmg;
 }
@@ -6140,20 +6166,20 @@ FACTION_VALUE Mob::GetSpecialFactionCon(Mob* iOther) {
 
 bool Mob::HasSpellEffect(int effect_id)
 {
-	int i;
+	const auto buff_count = GetMaxTotalSlots();
+	for (int i = 0; i < buff_count; i++) {
+		const auto spell_id = buffs[i].spellid;
 
-    int buff_count = GetMaxTotalSlots();
-	for(i = 0; i < buff_count; i++)
-	{
-		if (!IsValidSpell(buffs[i].spellid)) {
+    	if (!IsValidSpell(spell_id)) {
 			continue;
 		}
 
-		if (IsEffectInSpell(buffs[i].spellid, effect_id)) {
-			return(1);
+		if (IsEffectInSpell(spell_id, effect_id)) {
+			return true;
 		}
 	}
-	return(0);
+	
+	return false;
 }
 
 int Mob::GetSpecialAbility(int ability)
@@ -6610,8 +6636,11 @@ void Mob::CommonBreakInvisible()
 	SetInvisible(0);
 }
 
-float Mob::GetDefaultRaceSize() const {
-	return GetRaceGenderDefaultHeight(race, gender);
+float Mob::GetDefaultRaceSize(int race_id, int gender_id) const {
+	return GetRaceGenderDefaultHeight(
+		race_id > 0 ? race_id : race,
+		gender_id >= 0 ? gender_id : gender
+	);
 }
 
 bool Mob::ShieldAbility(uint32 target_id, int shielder_max_distance, int shield_duration, int shield_target_mitigation, int shielder_mitigation, bool use_aa, bool can_shield_npc)

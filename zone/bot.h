@@ -133,7 +133,7 @@ public:
 	Bot(uint32 botID, uint32 botOwnerCharacterID, uint32 botSpellsID, double totalPlayTime, uint32 lastZoneId, NPCType *npcTypeData);
 
 	//abstract virtual override function implementations requird by base abstract class
-	bool Death(Mob* killerMob, int64 damage, uint16 spell_id, EQ::skills::SkillType attack_skill) override;
+	bool Death(Mob* killerMob, int64 damage, uint16 spell_id, EQ::skills::SkillType attack_skill, uint8 killedby = 0) override;
 	void Damage(Mob* from, int64 damage, uint16 spell_id, EQ::skills::SkillType attack_skill, bool avoidable = true, int8 buffslot = -1,
 		bool iBuffTic = false, eSpecialAttacks special = eSpecialAttacks::None) override;
 
@@ -184,9 +184,7 @@ public:
 	void RogueAssassinate(Mob* other) override;
 	void DoClassAttacks(Mob *target, bool IsRiposte=false);
 	void CalcBonuses() override;
-	void CalcItemBonuses(StatBonuses* newbon);
-	void AddItemBonuses(const EQ::ItemInstance *inst, StatBonuses* newbon, bool isAug = false, bool isTribute = false, int rec_override = 0);
-	int CalcRecommendedLevelBonus(uint8 level, uint8 reclevel, int basestat);
+
 	void MakePet(uint16 spell_id, const char* pettype, const char *petname = nullptr) override;
 	FACTION_VALUE GetReverseFactionCon(Mob* iOther) override;
 	inline bool IsPet() override { return false; }
@@ -198,10 +196,8 @@ public:
 	void SetAttackTimer() override;
 	uint64 GetClassHPFactor();
 	int64 CalcMaxHP() override;
-	bool DoFinishedSpellAETarget(uint16 spell_id, Mob* spellTarget, EQ::spells::CastingSlot slot, bool &stopLogic);
 	bool DoFinishedSpellSingleTarget(uint16 spell_id, Mob* spellTarget, EQ::spells::CastingSlot slot, bool &stopLogic);
 	bool DoFinishedSpellGroupTarget(uint16 spell_id, Mob* spellTarget, EQ::spells::CastingSlot slot, bool &stopLogic);
-	void SendBotArcheryWearChange(uint8 material_slot, uint32 material, uint32 color);
 	void Camp(bool save_to_database = true);
 	void SetTarget(Mob* mob) override;
 	void Zone();

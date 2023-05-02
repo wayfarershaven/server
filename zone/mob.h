@@ -583,7 +583,7 @@ public:
 	bool CanClassEquipItem(uint32 item_id);
 	bool CanRaceEquipItem(uint32 item_id);
 	bool AffectedBySpellExcludingSlot(int slot, int effect);
-	virtual bool Death(Mob* killerMob, int64 damage, uint16 spell_id, EQ::skills::SkillType attack_skill) = 0;
+	virtual bool Death(Mob* killerMob, int64 damage, uint16 spell_id, EQ::skills::SkillType attack_skill, uint8 killedby = 0) = 0;
 	virtual void Damage(Mob* from, int64 damage, uint16 spell_id, EQ::skills::SkillType attack_skill,
 		bool avoidable = true, int8 buffslot = -1, bool iBuffTic = false, eSpecialAttacks special = eSpecialAttacks::None) = 0;
 	void SetHP(int64 hp);
@@ -729,8 +729,6 @@ public:
 	inline int32 GetHeroicStrikethrough() const  { return heroic_strikethrough; }
 
 	virtual bool IsSitting() const { return false; }
-
-	int CalcRecommendedLevelBonus(uint8 level, uint8 reclevel, int basestat);
 	
 	void CopyHateList(Mob* to);
 	
@@ -1029,7 +1027,7 @@ public:
 	int16 GetMeleeDmgPositionMod(Mob* defender);
 	int16 GetSkillReuseTime(uint16 skill);
 	int GetCriticalChanceBonus(uint16 skill);
-	int GetSkillDmgAmt(uint16 skill);
+	int GetSkillDmgAmt(int skill_id);
 	int16 GetPositionalDmgAmt(Mob* defender);
 	inline bool CanBlockSpell() const { return(spellbonuses.FocusEffects[focusBlockNextSpell]); }
 	bool DoHPToManaCovert(int32 mana_cost = 0);
@@ -1285,7 +1283,7 @@ public:
 	void				SendTo(float new_x, float new_y, float new_z);
 	void				SendToFixZ(float new_x, float new_y, float new_z);
 	float				GetZOffset() const;
-	float               GetDefaultRaceSize() const;
+	float				GetDefaultRaceSize(int race_id = -1, int gender_id = -1) const;
 	void 				FixZ(int32 z_find_offset = 5, bool fix_client_z = false);
 	float				GetFixedZ(const glm::vec3 &destination, int32 z_find_offset = 5);
 	virtual int			GetStuckBehavior() const { return 0; }
@@ -1461,6 +1459,11 @@ public:
 	void ApplyAABonuses(const AA::Rank &rank, StatBonuses* newbon);
 	bool CheckAATimer(int timer);
 
+	void CalcItemBonuses(StatBonuses* b);
+	void AddItemBonuses(const EQ::ItemInstance* inst, StatBonuses* b, bool is_augment = false, bool is_tribute = false, int recommended_level_override = 0, bool is_ammo_item = false);
+	void AdditiveWornBonuses(const EQ::ItemInstance* inst, StatBonuses* b, bool is_augment = false);
+	int CalcRecommendedLevelBonus(uint8 current_level, uint8 recommended_level, int base_stat);
+	
 	int NPCAssistCap() { return npc_assist_cap; }
 	void AddAssistCap() { ++npc_assist_cap; }
 	void DelAssistCap() { --npc_assist_cap; }

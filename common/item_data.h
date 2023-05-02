@@ -131,7 +131,7 @@ namespace EQ
 			Mounts?
 			Ornamentations?
 			GuildBanners?
-			Collectible? 
+			Collectible?
 			Placeable?
 			(others?)
 */

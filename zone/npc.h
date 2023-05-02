@@ -126,7 +126,7 @@ public:
 	static NPC * SpawnZonePointNodeNPC(std::string name, const glm::vec4 &position);
 
 	//abstract virtual function implementations requird by base abstract class
-	virtual bool Death(Mob* killerMob, int64 damage, uint16 spell_id, EQ::skills::SkillType attack_skill);
+	virtual bool Death(Mob* killerMob, int64 damage, uint16 spell_id, EQ::skills::SkillType attack_skill, uint8 killedby = 0);
 	virtual void Damage(Mob* from, int64 damage, uint16 spell_id, EQ::skills::SkillType attack_skill, bool avoidable = true, int8 buffslot = -1, bool iBuffTic = false, eSpecialAttacks special = eSpecialAttacks::None);
 	bool Attack(Mob* other, int Hand = EQ::invslot::slotPrimary, bool FromRiposte = false, bool IsStrikethrough = false,
 		bool IsFromSpell = false, ExtraAttackOptions *opts = nullptr) override;
@@ -165,7 +165,6 @@ public:
 	virtual void SetTarget(Mob* mob);
 	virtual uint16 GetSkill(EQ::skills::SkillType skill_num) const { if (skill_num <= EQ::skills::HIGHEST_SKILL) { return skills[skill_num]; } return 0; }
 
-	void CalcItemBonuses(StatBonuses *newbon);
 	virtual void CalcBonuses();
 	virtual int GetCurrentBuffSlots() const { return RuleI(Spells, MaxBuffSlotsNPC); }
 	virtual int GetCurrentSongSlots() const { return RuleI(Spells, MaxSongSlotsNPC); }
@@ -595,7 +594,6 @@ protected:
 	uint32	npc_spells_id;
 	uint8	casting_spell_AIindex;
 
-	uint32*	pDontCastBefore_casting_spell;
 	std::vector<AISpells_Struct> AIspells;
 	bool HasAISpell;
 	virtual bool AICastSpell(Mob* tar, uint8 iChance, uint32 iSpellTypes, bool bInnates = false);

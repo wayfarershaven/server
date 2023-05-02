@@ -1,5 +1,7 @@
 #ifdef LUA_EQEMU
 
+#include "../common/data_verification.h"
+
 #include <luabind/luabind.hpp>
 
 #include "lua_stat_bonuses.h"
@@ -1096,7 +1098,11 @@ int32 Lua_StatBonuses::GetSkillReuseTime(int idx) const {
 
 int32 Lua_StatBonuses::GetSkillDamageAmount(int idx) const {
 	Lua_Safe_Call_Int();
-	return self->SkillDamageAmount[idx];
+	if (!EQ::ValueWithin(idx, ALL_SKILLS, EQ::skills::HIGHEST_SKILL)) {
+		return 0;
+	}
+
+	return idx == ALL_SKILLS ? self->SkillDamageAmount[EQ::skills::HIGHEST_SKILL + 1] : self->SkillDamageAmount[idx];
 }
 
 int Lua_StatBonuses::GetHPPercCap(int idx) const {

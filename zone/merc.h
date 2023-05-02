@@ -268,10 +268,6 @@ public:
 	bool FindTarget();
 
 protected:
-	void CalcItemBonuses(StatBonuses* newbon);
-	void AddItemBonuses(const EQ::ItemData *item, StatBonuses* newbon);
-	int CalcRecommendedLevelBonus(uint8 level, uint8 reclevel, int basestat);
-
 	int64 GetFocusEffect(focusType type, uint16 spell_id, bool from_buff_tic = false);
 
 	std::vector<MercSpell> merc_spells;
@@ -311,7 +307,6 @@ private:
 	int32 CalcCorrup();
 	int64 CalcMaxHP();
 	int64 CalcBaseHP();
-	int64 GetClassHPFactor();
 	int64 CalcHPRegen();
 	int64 CalcHPRegenCap();
 	int64 CalcMaxMana();

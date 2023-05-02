@@ -24,6 +24,7 @@
 
 #include <string>
 #include <map>
+#include <vector>
 
 
 namespace EQ
@@ -169,6 +170,7 @@ namespace EQ
 		int32 GetBaseDamage(SkillType skill);
 
 		extern const std::map<SkillType, std::string>& GetSkillTypeMap();
+		extern const std::vector<SkillType>& GetExtraDamageSkills();
 
 		std::string GetSkillName(SkillType skill);
 	} /*skills*/

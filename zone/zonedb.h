@@ -306,7 +306,8 @@ struct CharacterCorpseItemEntry
 struct CharacterCorpseEntry 
 {
 	bool locked;
-	uint32 exp;
+	uint64 exp;
+	uint64	gmexp;
 	float size;
 	uint8 level;
 	uint32 race;
@@ -327,6 +328,9 @@ struct CharacterCorpseEntry
 	uint8 hairstyle;
 	uint8 face;
 	uint8 beard;
+	uint8 killedby;
+	bool  rezzable;
+	uint32	rez_time;
 	uint32 drakkin_heritage;
 	uint32 drakkin_tattoo;
 	uint32 drakkin_details;

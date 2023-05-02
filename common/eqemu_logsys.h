@@ -138,6 +138,8 @@ namespace Logs {
 		Group,
 		QuestErrors,
 		PlayerEvents,
+		AccountEvents,
+		Petitions,
 		MaxCategoryID /* Don't Remove this */
 	};
 
@@ -235,6 +237,8 @@ namespace Logs {
 		"Group",
 		"QuestErrors",
 		"PlayerEvents",
+		"AccountEvents",
+		"Petitions",
 	};
 }
 
