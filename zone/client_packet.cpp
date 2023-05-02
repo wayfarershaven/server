@@ -5226,28 +5226,53 @@ void Client::Handle_OP_ConsiderCorpse(const EQApplicationPacket *app)
 		}
 	}
 
-	uint32 decay_time = t->GetDecayTime();
-	if (decay_time) {
-		auto time_string = Strings::SecondsToTime(decay_time, true);
-		Message(
-			Chat::NPCQuestSay,
-			fmt::format(
-				"This corpse will decay in {}.",
-				time_string
-			).c_str()
-		);
-
-		if (t->IsPlayerCorpse()) {
-			Message(
-				Chat::NPCQuestSay,
-				fmt::format(
-					"This corpse {} be resurrected.",
-					t->IsRezzed() ? "cannot" : "can"
-				).c_str()
-			);
+	if (t && t->IsNPCCorpse()) {
+		uint32 min; uint32 sec; uint32 ttime;
+		if ((ttime = t->GetDecayTime()) != 0) {
+			sec = (ttime / 1000) % 60; // Total seconds
+			min = (ttime / 60000) % 60; // Total seconds / 60 drop .00
+			char val1[20] = { 0 };
+			char val2[20] = { 0 };
+			MessageString(Chat::NPCQuestSay, CORPSE_DECAY1, ConvertArray(min, val1), ConvertArray(sec, val2));
+		} else {
+			MessageString(Chat::NPCQuestSay, CORPSE_DECAY_NOW);
 		}
-	} else {
-		MessageString(Chat::NPCQuestSay, CORPSE_DECAY_NOW);
+	} else if (t && t->IsPlayerCorpse()) {
+		uint32 day, hour, min, sec, ttime;
+		if (!t->IsRezzed()) {
+			if ((ttime = t->GetRemainingRezTime()) > 0) {
+				sec = (ttime / 1000) % 60; // Total seconds
+				min = (ttime / 60000) % 60; // Total seconds
+				hour = (ttime / 3600000) % 24; // Total hours
+				if (hour) {
+					Message(Chat::White, "This corpse's resurrection time will expire in %i hour(s) %i minute(s) and %i seconds.", hour, min, sec);
+				} else {
+					Message(Chat::White, "This corpse's resurrection time will expire in %i minute(s) and %i seconds.", min, sec);
+				}
+				hour = 0;
+			} else {
+				Message(Chat::White, "This corpse is too old to be resurrected.");
+			}
+		} else {
+			Message(Chat::White, "This corpse has already accepted a resurrection.");	
+		}
+
+		if ((ttime = t->GetDecayTime()) != 0) {
+			sec = (ttime / 1000) % 60; // Total seconds
+			min = (ttime / 60000) % 60; // Total seconds
+			hour = (ttime / 3600000) % 24; // Total hours
+			day = ttime / 86400000; // Total Days
+			if (day) {
+				Message(Chat::White, "This corpse will decay in %i day(s) %i hour(s) %i minute(s) and %i seconds.", day, hour, min, sec);
+			} else if (hour) {
+				Message(Chat::White, "This corpse will decay in %i hour(s) %i minute(s) and %i seconds.", hour, min, sec);
+			} else {
+				Message(Chat::White, "This corpse will decay in %i minute(s) and %i seconds.", min, sec);
+			}
+			hour = 0;
+		} else {
+			MessageString(Chat::NPCQuestSay, CORPSE_DECAY_NOW);
+		}
 	}
 }
 
