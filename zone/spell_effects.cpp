@@ -3858,21 +3858,26 @@ void Mob::DoBuffTic(const Buffs_Struct &buff, int slot, Mob *caster)
 		}
 
 		case SE_BardAEDot: {
-			effect_value =
-			    CalcSpellEffectValue(buff.spellid, i, buff.casterlevel, buff.instrument_mod, caster);
+			effect_value = CalcSpellEffectValue(buff.spellid, i, buff.casterlevel, buff.instrument_mod, caster, buff.ticsremaining);
 
-			if ((!RuleB(Spells, PreNerfBardAEDoT) && IsMoving()) || invulnerable ||
-			    /*effect_value > 0 ||*/ DivineAura())
+			if ((!RuleB(Spells, PreNerfBardAEDoT) && IsMoving()) || invulnerable || DivineAura()) {
 				break;
+			}
 
-			if (effect_value < 0) {
-				effect_value = -effect_value;
-				if (caster) {
-					if (caster->IsClient() && !caster->CastToClient()->GetFeigned()) {
-						AddToHateList(caster, effect_value);
-					} else if (!caster->IsClient())
-						AddToHateList(caster, effect_value);
+			if (caster && effect_value < 0) {
+				if (IsDetrimentalSpell(buff.spellid)) {
+					if (caster->IsClient()) {
+						if (!caster->CastToClient()->GetFeigned()) {
+							AddToHateList(caster, -effect_value);
+						}
+					} else if (!IsClient()) { // Allow NPC's to generate hate if casted on other NPC's
+						AddToHateList(caster, -effect_value);
+					}
 				}
+
+				effect_value = caster->GetActDoTDamage(buff.spellid, effect_value, this);
+				caster->ResourceTap(-effect_value, buff.spellid);
+				effect_value = -effect_value;
 				Damage(caster, effect_value, buff.spellid, spell.skill, false, i, true);
 			} else if (effect_value > 0) {
 				// healing spell...
