@@ -761,9 +761,7 @@ bool Mob::CombatRange(Mob* other, float fixed_size_mod, bool aeRampage, ExtraAtt
 
 	if (opts) {
 		if (opts->range_percent > 0) {
-		aeramp_size = (opts->range_percent / 100);
-		} else {
-			aeramp_size = 0.018;
+			aeramp_size = (opts->range_percent / 100);
 		}
 	}
 
