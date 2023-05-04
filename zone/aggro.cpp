@@ -845,25 +845,25 @@ bool Mob::CombatRange(Mob* other, float fixed_size_mod, bool aeRampage, ExtraAtt
 	if (aeRampage) {
 		float aeramp_size = RuleR(Combat, AERampageSafeZone);
 
-		LogQuestDebug("[1] Start - aeramp_size = [{}] ", aeramp_size);
+		LogDebug("[1] Start - aeramp_size = [{}] ", aeramp_size);
 
 		if (opts) {
-			LogQuestDebug("[2] has opts");
+			LogDebug("[2] has opts");
 			if (opts->range_percent > 0) {
 				aeramp_size = (opts->range_percent / 1000);
-				LogQuestDebug("[3] range_percent = [{}] - Calculated = [{}]", opts->range_percent, aeramp_size);
+				LogDebug("[3] range_percent = [{}] - Calculated = [{}]", opts->range_percent, aeramp_size);
 			}
 		}
 
 		float multiplyer = GetSize() * aeramp_size;
 		float ramp_range = (size_mod * multiplyer);
-		LogQuestDebug("[5] (Getsize [{}] * aeramp_size [{}] = multiplyer [{}]) --- (size_mod [{}] * multiplyer = ramp_range [{}])", GetSize(), aeramp_size, multiplyer, size_mod, ramp_range);
-		LogQuestDebug("[6] _DistNoRoot [{}] <= ramp_range", _DistNoRoot,ramp_range );
+		LogDebug("[5] (Getsize [{}] * aeramp_size [{}] = multiplyer [{}]) --- (size_mod [{}] * multiplyer = ramp_range [{}])", GetSize(), aeramp_size, multiplyer, size_mod, ramp_range);
+		LogDebug("[6] _DistNoRoot [{}] <= ramp_range", _DistNoRoot,ramp_range );
 		if (_DistNoRoot <= ramp_range) {
-			LogQuestDebug("[7] true");
+			LogDebug("[7] true");
 			return true;
 		} else {
-			LogQuestDebug("[7] false");
+			LogDebug("[7] false");
 			return false;
 		}
 	}
