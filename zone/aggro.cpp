@@ -843,7 +843,7 @@ bool Mob::CombatRange(Mob* other, float fixed_size_mod, bool aeRampage, ExtraAtt
 		}
 	}
 	if (aeRampage) {
-		int aeramp_size = 90;
+		float aeramp_size = 90;
 
 		LogDebug("[1] Default - aeramp_size = [{}] ", aeramp_size);
 
@@ -861,7 +861,7 @@ bool Mob::CombatRange(Mob* other, float fixed_size_mod, bool aeRampage, ExtraAtt
 			aeramp_size /= 100;
 		}
 
-		int ramp_range = size_mod * aeramp_size;
+		float ramp_range = size_mod * aeramp_size;
 		LogDebug("[4] ramp_range = [{}] -- (size_mod [{}] * aeramp_size [{}])", ramp_range, size_mod, aeramp_size);
 		LogDebug("[5] _DistNoRoot [{}] <= ramp_range [{}]", _DistNoRoot, ramp_range);
 		if (_DistNoRoot <= ramp_range) {
