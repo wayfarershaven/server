@@ -887,7 +887,7 @@ struct ExtraAttackOptions {
 	int hit_chance;
 	int melee_damage_bonus_flat;
 	int skilldmgtaken_bonus_flat;
-
+	int range_percent;
 };
 
 struct DamageTable {

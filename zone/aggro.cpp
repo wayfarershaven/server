@@ -750,14 +750,14 @@ bool Mob::IsBeneficialAllowed(Mob *target)
 	return false;
 }
 
-bool Mob::CombatRange(Mob* other, float fixed_size_mod, bool aeRampage)
-{
+bool Mob::CombatRange(Mob* other, float fixed_size_mod, bool aeRampage, ExtraAttackOptions *opts) {
 	if (!other) {
 		return(false);
 	}
 
 	float size_mod = GetSize();
 	float other_size_mod = other->GetSize();
+
 
 	if (GetRace() == RACE_LAVA_DRAGON_49 || GetRace() == RACE_WURM_158 || GetRace() == RACE_GHOST_DRAGON_196) { //For races with a fixed size
 		size_mod = 60.0f;
@@ -785,12 +785,11 @@ bool Mob::CombatRange(Mob* other, float fixed_size_mod, bool aeRampage)
 		size_mod *= size_mod * 4;
 	}
 
-	if (other->GetRace() == 184)		// Lord Vyemm and other velious dragons
-	{
+	if (other->GetRace() == 184) { // Lord Vyemm and other velious dragons
 		size_mod *= 1.75;
 	}
-	if (other->GetRace() == 122)		// Dracoliche in Fear.  Skeletal Dragon
-	{
+
+	if (other->GetRace() == 122) { // Dracoliche in Fear.  Skeletal Dragon
 		size_mod *= 2.25;
 	}
 
@@ -817,7 +816,6 @@ bool Mob::CombatRange(Mob* other, float fixed_size_mod, bool aeRampage)
 	_zDist *= _zDist;
 
 	if (GetSpecialAbility(NPC_CHASE_DISTANCE)) {
-
 		bool DoLoSCheck = true;
 		float max_dist = static_cast<float>(GetSpecialAbilityParam(NPC_CHASE_DISTANCE, 0));
 		float min_distance = static_cast<float>(GetSpecialAbilityParam(NPC_CHASE_DISTANCE, 1));
@@ -845,11 +843,32 @@ bool Mob::CombatRange(Mob* other, float fixed_size_mod, bool aeRampage)
 		}
 	}
 	if (aeRampage) {
-		float multiplyer = GetSize() * RuleR(Combat, AERampageSafeZone);
-		float ramp_range = (size_mod * multiplyer);
+		float aeramp_size = RuleR(Combat, AERampageMaxDistance);
+
+		//LogDebug("[1] Default - aeramp_size = [{}] ", aeramp_size);
+
+		if (opts) {
+			//LogDebug("[2] has opts");
+			if (opts->range_percent > 0) {
+				aeramp_size = opts->range_percent;
+				//LogDebug("[3] range_percent = [{}] -- aeramp_size [{}]", opts->range_percent, aeramp_size);
+			}
+		}
+
+		if (aeramp_size <= 0 ) {
+			aeramp_size = 0.90;
+		} else {
+			aeramp_size /= 100;
+		}
+
+		float ramp_range = size_mod * aeramp_size;
+		//LogDebug("[4] ramp_range = [{}] -- (size_mod [{}] * aeramp_size [{}])", ramp_range, size_mod, aeramp_size);
+		//LogDebug("[5] _DistNoRoot [{}] <= ramp_range [{}]", _DistNoRoot, ramp_range);
 		if (_DistNoRoot <= ramp_range) {
+			//LogDebug("[7] true");
 			return true;
 		} else {
+			//LogDebug("[7] false");
 			return false;
 		}
 	}
