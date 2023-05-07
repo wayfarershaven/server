@@ -1310,8 +1310,9 @@ void Client::Handle_Connect_OP_ZoneEntry(const EQApplicationPacket *app)
     max_AAXP = GetEXPForLevel(0, true);
 
 	/* If we can maintain intoxication across zones, check for it */
-	if (!RuleB(Character, MaintainIntoxicationAcrossZones))
-		m_pp.intoxication = 0;
+	if (!RuleB(Character, MaintainIntoxicationAcrossZones)) {
+		SetIntoxication(0);
+	}
 
 	strcpy(name, m_pp.name);
 	strcpy(lastname, m_pp.last_name);
@@ -5619,18 +5620,17 @@ void Client::Handle_OP_DeleteItem(const EQApplicationPacket *app)
 		int16 AlcoholTolerance = GetSkill(EQ::skills::SkillAlcoholTolerance);
 		int16 IntoxicationIncrease;
 
-		if (ClientVersion() < EQ::versions::ClientVersion::SoD)
+		if (ClientVersion() < EQ::versions::ClientVersion::SoD) {
 			IntoxicationIncrease = (200 - AlcoholTolerance) * 30 / 200 + 10;
-		else
+		} else {
 			IntoxicationIncrease = (270 - AlcoholTolerance) * 0.111111108 + 10;
+		}
 
-		if (IntoxicationIncrease < 0)
+		if (IntoxicationIncrease < 0) {
 			IntoxicationIncrease = 1;
+		}
 
-		m_pp.intoxication += IntoxicationIncrease;
-
-		if (m_pp.intoxication > 200)
-			m_pp.intoxication = 200;
+		SetIntoxication(GetIntoxication()+IntoxicationIncrease);
 	}
 	DeleteItemInInventory(alc->from_slot, 1);
 
