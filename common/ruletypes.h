@@ -498,7 +498,7 @@ RULE_BOOL(Spells, ResurrectionEffectsBlock, true, "If enabled, resurrection effe
 RULE_CATEGORY_END()
 
 RULE_CATEGORY(Combat)
-RULE_REAL(Combat, AERampageSafeZone, 0.018, "max hit ae ramp reduction range")
+RULE_REAL(Combat, AERampageMaxDistance, 82, "Max AERampage range (% of max combat distance)")
 RULE_INT(Combat, PetBaseCritChance, 0, "Pet base crit chance")
 RULE_INT(Combat, NPCBashKickLevel, 6, "The level that NPCcan KICK/BASH")
 RULE_INT(Combat, MeleeCritDifficulty, 8900, "Value against which is rolled to check if a melee crit is triggered. Lower is easier")
