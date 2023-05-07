@@ -937,6 +937,8 @@ public:
 	void DropItem(int16 slot_id, bool recurse = true);
 	void DropItemQS(EQ::ItemInstance* inst, bool pickup, uint32 ground_id);
 
+	bool IsAugmentRestricted(uint8 item_type, uint32 augment_restriction);
+
 	int GetItemLinkHash(const EQ::ItemInstance* inst); // move to ItemData..or make use of the pre-calculated database field
 
 	void SendItemLink(const EQ::ItemInstance* inst, bool sendtoall=false);
