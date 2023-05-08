@@ -644,12 +644,10 @@ bool Client::Save(uint8 iCommitNow) {
 	/* Save Character Currency */
 	database.SaveCharacterCurrency(CharacterID(), &m_pp);
 
-	/* Save Current Bind Points */
-	for (int i = 0; i < 5; i++) {
-		if (m_pp.binds[i].zone_id) {
-			database.SaveCharacterBindPoint(CharacterID(), m_pp.binds[i], i);
-		}
-	}
+	// save character binds
+	// this may not need to be called in Save() but it's here for now
+	// to maintain the current behavior
+	database.SaveCharacterBinds(this);
 
 	/* Save Character Buffs */
 	database.SaveBuffs(this);
@@ -898,8 +896,8 @@ void Client::ChannelMessageReceived(uint8 chan_num, uint8 language, uint8 lang_s
 	}
 
 	// Garble the message based on drunkness
-	if (m_pp.intoxication > 0 && !(RuleB(Chat, ServerWideOOC) && chan_num == ChatChannel_OOC) && !GetGM()) {
-		GarbleMessage(message, (int)(m_pp.intoxication / 3));
+	if (GetIntoxication() > 0 && !(RuleB(Chat, ServerWideOOC) && chan_num == ChatChannel_OOC) && !GetGM()) {
+		GarbleMessage(message, (int)(GetIntoxication() / 3));
 		language = 0; // No need for language when drunk
 		lang_skill = 100;
 	}
@@ -7946,6 +7944,11 @@ void Client::SetThirst(int32 in_thirst)
 	safe_delete(outapp);
 }
 
+void Client::SetIntoxication(int32 in_intoxication)
+{
+	m_pp.intoxication = EQ::Clamp(in_intoxication, 0, 200);
+}
+
 void Client::SetConsumption(int32 in_hunger, int32 in_thirst)
 {
 	EQApplicationPacket *outapp = nullptr;
@@ -10607,7 +10610,7 @@ void Client::ReconnectUCS()
 {
 	EQApplicationPacket      *outapp         = nullptr;
 	std::string              buffer;
-	std::string              mail_key        = database.GetMailKey(CharacterID(), true);
+	std::string              mail_key        = m_mail_key;
 	EQ::versions::UCSVersion connection_type = EQ::versions::ucsUnknown;
 
 	// chat server packet

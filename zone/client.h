@@ -67,6 +67,7 @@ namespace EQ
 #include "task_client_state.h"
 #include "cheat_manager.h"
 #include "../common/events/player_events.h"
+#include "../common/data_verification.h"
 
 #ifdef _WINDOWS
 	// since windows defines these within windef.h (which windows.h include)
@@ -936,6 +937,8 @@ public:
 	void DropItem(int16 slot_id, bool recurse = true);
 	void DropItemQS(EQ::ItemInstance* inst, bool pickup, uint32 ground_id);
 
+	bool IsAugmentRestricted(uint8 item_type, uint32 augment_restriction);
+
 	int GetItemLinkHash(const EQ::ItemInstance* inst); // move to ItemData..or make use of the pre-calculated database field
 
 	void SendItemLink(const EQ::ItemInstance* inst, bool sendtoall=false);
@@ -962,6 +965,7 @@ public:
 	void SetHunger(int32 in_hunger);
 	void SetThirst(int32 in_thirst);
 	void SetConsumption(int32 in_hunger, int32 in_thirst);
+	int32 GetIntoxication() const { return m_pp.intoxication; }
 
 	bool CheckTradeLoreConflict(Client* other);
 	bool CheckTradeNonDroppable();
@@ -1551,6 +1555,7 @@ public:
 	void SetEnvironmentDamageModifier(int32 val) { environment_damage_modifier = val; }
 	inline bool GetInvulnerableEnvironmentDamage() const { return invulnerable_environment_damage; }
 	void SetInvulnerableEnvironmentDamage(bool val) { invulnerable_environment_damage = val; }
+	void SetIntoxication(int32 in_intoxication);
 
 	void ShowNumHits(); // work around function for numhits not showing on buffs
 
@@ -2007,6 +2012,13 @@ private:
 	bool CanTradeFVNoDropItem();
 	void SendMobPositions();
 	void PlayerTradeEventLog(Trade *t, Trade *t2);
+
+	// full and partial mail key cache
+	std::string m_mail_key_full;
+	std::string m_mail_key;
+public:
+	const std::string &GetMailKeyFull() const;
+	const std::string &GetMailKey() const;
 };
 
 #endif

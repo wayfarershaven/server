@@ -62,9 +62,9 @@ void command_reimburse(Client *c, const Seperator *sep) {
 			}
 
 			std::string query = StringFormat("INSERT INTO `cust_playerawards` (`CharID`, `Item_id`, `Reason`) VALUES (%i, %i, '%s')",
-											 char_id, item_id, Strings::Escape(message).c_str());
+											 char_id, item_id, Strings::Escape(message));
 			auto results = database.QueryDatabase(query);
-			c->Message(Chat::Lime, "Successfully added item: %s (%i) to Vhanna for player: %s (%i) For Reason: (%s)", Strings::Escape(item_name).c_str(), item_id, Strings::Escape(char_name).c_str(), char_id, Strings::Escape(message).c_str());
+			c->Message(Chat::Lime, "Successfully added item: %s (%i) to Vhanna for player: %s (%i) For Reason: (%s)", Strings::Escape(item_name), item_id, Strings::Escape(char_name), char_id, Strings::Escape(message));
 		}
 	} else {
 		c->Message(Chat::Red, "#reimburse usage:");
