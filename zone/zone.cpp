@@ -1232,8 +1232,6 @@ bool Zone::Init(bool is_static) {
 	LoadGrids();
 	LoadTickItems();
 
-	parse->ReloadQuests();
-	
 	// logging origination information
 	LogSys.origination_info.zone_short_name = zone->short_name;
 	LogSys.origination_info.zone_long_name  = zone->long_name;
