@@ -670,7 +670,11 @@ void Client::CompleteConnect()
 				break;
 			}
 			case SE_SummonHorse: {
-				BuffFadeByEffect(SE_SummonHorse);	// mounts should always wear off on zone.
+				if (zone->CanCastOutdoor()) { // If zone is outdoor allow mount to stay
+					SummonHorse(buffs[j1].spellid);
+				} else {
+					BuffFadeByEffect(SE_SummonHorse);
+				}
 				break;
 			}
 			case SE_Silence:
