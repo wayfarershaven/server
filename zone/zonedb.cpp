@@ -3898,7 +3898,7 @@ uint32 ZoneDatabase::UpdateCharacterCorpse(uint32 db_id, uint32 char_id, const c
                                     corpse.item_tint.Head.Color, corpse.item_tint.Chest.Color, corpse.item_tint.Arms.Color,
                                     corpse.item_tint.Wrist.Color, corpse.item_tint.Hands.Color, corpse.item_tint.Legs.Color,
                                     corpse.item_tint.Feet.Color, corpse.item_tint.Primary.Color, corpse.item_tint.Secondary.Color,
-                                    corpse.killedby, corpse.rezzable, corpse.rez_time, db_id);
+                                    corpse.killedby, corpse.rezzable, corpse.rez_time, is_rezzed, db_id);
 	auto results = QueryDatabase(query);
 
 	return db_id;

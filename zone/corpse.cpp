@@ -194,11 +194,18 @@ Corpse::Corpse(NPC* in_npc, ItemList* in_itemlist, uint32 in_npctypeid, const NP
 	strcpy(name, in_npc->GetName());
 
 	for(int count = 0; count < 100; count++) {
-		if ((level >= npcCorpseDecayTimes[count].minlvl) && (level <= npcCorpseDecayTimes[count].maxlvl)) {
+		if (
+			EQ::ValueWithin(
+				level,
+				npcCorpseDecayTimes[count].minlvl,
+				npcCorpseDecayTimes[count].maxlvl
+			)
+		) {
 			corpse_decay_timer.SetTimer(npcCorpseDecayTimes[count].seconds*1000);
 			break;
 		}
 	}
+
 	if(IsEmpty()) {
 		corpse_decay_timer.SetTimer(RuleI(NPC,EmptyNPCCorpseDecayTimeMS)+1000);
 	}
@@ -211,6 +218,7 @@ Corpse::Corpse(NPC* in_npc, ItemList* in_itemlist, uint32 in_npctypeid, const NP
 	for (int i = 0; i < MAX_LOOTERS; i++){
 		allowed_looters[i] = 0;
 	}
+
 	rez_experience = 0;
 
 	UpdateEquipmentLight();
@@ -282,8 +290,6 @@ Corpse::Corpse(Client* client, int32 in_rezexp, uint8 in_killedby) : Mob (
 	corpse_graveyard_timer(RuleI(Zone, GraveyardTimeMS)),
 	loot_cooldown_timer(10)
 {
-	int i;
-
 	PlayerProfile_Struct *pp = &client->GetPP();
 	EQ::ItemInstance *item = nullptr;
 
@@ -292,18 +298,18 @@ Corpse::Corpse(Client* client, int32 in_rezexp, uint8 in_killedby) : Mob (
 		corpse_graveyard_timer.Disable();
 	}
 
-	for (i = 0; i < MAX_LOOTERS; i++){
+	for (int i = 0; i < MAX_LOOTERS; i++){
 		allowed_looters[i] = 0;
 	}
 
 	if (client->AutoConsentGroupEnabled()) {
-		Group* grp = client->GetGroup();
-		consented_group_id = grp ? grp->GetID() : 0;
+		auto* g = client->GetGroup();
+		consented_group_id = g ? g->GetID() : 0;
 	}
 
 	if (client->AutoConsentRaidEnabled()) {
-		Raid* raid = client->GetRaid();
-		consented_raid_id = raid ? raid->GetID() : 0;
+		auto* r = client->GetRaid();
+		consented_raid_id = r ? r->GetID() : 0;
 	}
 
 	consented_guild_id = client->AutoConsentGuildEnabled() ? client->GuildID() : 0;
@@ -340,12 +346,17 @@ Corpse::Corpse(Client* client, int32 in_rezexp, uint8 in_killedby) : Mob (
 	SetPlayerKillItemID(0);
 
 	/* Check Rule to see if we can leave corpses */
-	if((!RuleB(Character, LeaveNakedCorpses) || RuleB(Character, LeaveCorpses)) &&
-		GetLevel() >= RuleI(Character, DeathItemLossLevel)) {
+	if (
+		(!RuleB(Character, LeaveNakedCorpses) || RuleB(Character, LeaveCorpses)) &&
+		GetLevel() >= RuleI(Character, DeathItemLossLevel)
+	) {
 		// cash
 		// Let's not move the cash when 'RespawnFromHover = true' && 'client->GetClientVersion() < EQClientSoF' since the client doesn't.
 		// (change to first client that supports 'death hover' mode, if not SoF.)
-		if (!RuleB(Character, RespawnFromHover) || client->ClientVersion() < EQ::versions::ClientVersion::SoF) {
+		if (
+			!RuleB(Character, RespawnFromHover) ||
+			client->ClientVersion() < EQ::versions::ClientVersion::SoF
+		) {
 			auto corpse_copper   = pp->copper;
 			auto corpse_silver   = pp->silver;
 			auto corpse_gold     = pp->gold;
@@ -382,12 +393,21 @@ Corpse::Corpse(Client* client, int32 in_rezexp, uint8 in_killedby) : Mob (
 		// ..then regress and process invslot::EQUIPMENT_BEGIN through invslot::EQUIPMENT_END...
 		// without additional work to database loading of player corpses, this order is not
 		// currently preserved and a re-work of this processing loop is not warranted.
-		for (i = EQ::invslot::POSSESSIONS_BEGIN; i <= EQ::invslot::POSSESSIONS_END; ++i) {
+		for (int i = EQ::invslot::POSSESSIONS_BEGIN; i <= EQ::invslot::POSSESSIONS_END; ++i) {
 			item = client->GetInv().GetItem(i);
-			if (item == nullptr) { continue; }
+			if (!item) {
+				continue;
+			}
 
-			if(!client->IsBecomeNPC() || (client->IsBecomeNPC() && !item->GetItem()->NoRent))
+			if (
+				!client->IsBecomeNPC() ||
+				(
+					client->IsBecomeNPC() &&
+					!item->GetItem()->NoRent
+				)
+			) {
 				MoveItemToCorpse(client, item, i, removed_list);
+			}
 		}
 
 		database.TransactionBegin();
@@ -429,7 +449,7 @@ Corpse::Corpse(Client* client, int32 in_rezexp, uint8 in_killedby) : Mob (
 		UpdateActiveLight();
 
 		return;
-	} //end "not leaving naked corpses"
+	}
 
 	UpdateEquipmentLight();
 	UpdateActiveLight();
@@ -558,11 +578,11 @@ false),
 	corpse_graveyard_timer(RuleI(Zone, GraveyardTimeMS)),
 	loot_cooldown_timer(10)
 {
-
 	LoadPlayerCorpseDecayTime(in_dbid);
 
-	if (!zone->HasGraveyard() || wasAtGraveyard)
+	if (!zone->HasGraveyard() || wasAtGraveyard) {
 		corpse_graveyard_timer.Disable();
+	}
 
 	is_corpse_changed = false;
 	is_player_corpse = true;
@@ -597,6 +617,7 @@ false),
 	for (int i = 0; i < MAX_LOOTERS; i++){
 		allowed_looters[i] = 0;
 	}
+
 	SetPlayerKillItemID(0);
 
 	UpdateEquipmentLight();
@@ -644,7 +665,6 @@ bool Corpse::Save() {
 	if (!is_corpse_changed) {
 		return true;
 	}
-
 
 	CharacterCorpseEntry ce;
 
@@ -709,6 +729,7 @@ bool Corpse::Save() {
 	else{
 		corpse_db_id = database.UpdateCharacterCorpse(corpse_db_id, char_id, corpse_name, zone->GetZoneID(), zone->GetInstanceID(), ce, m_Position, consented_guild_id, IsRezzed(), RuleB(Character, UsePlayerCorpseBackups));
 	}
+
 	return true;
 }
 
@@ -800,6 +821,7 @@ void Corpse::AddItem(uint32 itemnum,
 	item->ornamenticon = ornamenticon;
 	item->ornamentidfile = ornamentidfile;
 	item->ornament_hero_model = ornament_hero_model;
+
 	itemlist.push_back(item);
 
 	UpdateEquipmentLight();
@@ -972,10 +994,8 @@ bool Corpse::Process() {
 	}
 	
 	//Player is offline. If rez timer is enabled, disable it and save corpse.
-	if(!is_owner_online && rezzable)
-	{
-		if(corpse_rez_timer.Enabled())
-		{
+	if(!is_owner_online && rezzable) {
+		if(corpse_rez_timer.Enabled()) {
 			rez_time = corpse_rez_timer.GetRemainingTime();
 			corpse_rez_timer.Disable();
 			is_corpse_changed = true;
@@ -1125,6 +1145,7 @@ void Corpse::MakeLootRequestPackets(Client* client, const EQApplicationPacket* a
 	if (client->GetGM()) {
 		if (client->Admin() >= AccountStatus::GMAdmin) {
 			loot_request_type = LootRequestType::GMAllowed;
+
 		} else {
 			loot_request_type = LootRequestType::GMPeek;
 		}
@@ -1346,8 +1367,9 @@ void Corpse::MakeLootRequestPackets(Client* client, const EQApplicationPacket* a
 
 void Corpse::LootItem(Client *client, const EQApplicationPacket *app)
 {
-	if (!client)
+	if (!client) {
 		return;
+	}
 
 	auto lootitem = (LootingItem_Struct *)app->pBuffer;
 
