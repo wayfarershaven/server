@@ -400,18 +400,6 @@ bool Zone::LoadGroundSpawns() {
 	return(true);
 }
 
-void Zone::DumpMerchantList(uint32 npcid) {
-	std::list<TempMerchantList> tmp_merlist = tmpmerchanttable[npcid];
-	std::list<TempMerchantList>::const_iterator tmp_itr;
-	TempMerchantList ml;
-
-	for (tmp_itr = tmp_merlist.begin(); tmp_itr != tmp_merlist.end(); ++tmp_itr) {
-		ml = *tmp_itr;
-
-		LogInventory("slot[{}] Orig[{}] Item[{}] Charges[{}]", ml.slot, ml.origslot, ml.item, ml.charges);
-	}
-}
-
 /*
 	Gets a temp item from a merchant.
 */

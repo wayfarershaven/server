@@ -182,7 +182,6 @@ public:
 	inline void ShowNPCGlobalLoot(Client *to, NPC *who) { m_global_loot.ShowNPCGlobalLoot(to, who); }
 	inline void ShowZoneGlobalLoot(Client *to) { m_global_loot.ShowZoneGlobalLoot(to); }
 	int GetZoneTotalBlockedSpells() { return zone_total_blocked_spells; }
-	void DumpMerchantList(uint32 npcid);
 	TempMerchantList GetTempMerchItem(uint32 merchantid, uint32 npcid, uint32 item);
 	int SaveTempItem(uint32 merchantid, uint32 npcid, uint32 item, int32 quantity, int32 charges, bool sold=false);
 	int32 MobsAggroCount() { return aggroedmobs; }
