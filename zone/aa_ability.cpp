@@ -21,18 +21,6 @@
 #include "masterentity.h"
 #include "aa_ability.h"
 
-AA::Rank *AA::Ability::GetMaxRank() {
-	if(!first)
-		return nullptr;
-	
-	Rank *current = first;	
-	while(current->next) {
-		current = current->next;
-	}
-
-	return current;
-}
-
 AA::Rank *AA::Ability::GetRankByPointsSpent(int current_level) {
 	if(current_level == 0)
 		return nullptr;
