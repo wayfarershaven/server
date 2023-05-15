@@ -47,7 +47,6 @@ public:
 	Mob *GetEntOnHateListByID(uint16 mobId);
 	Mob *GetRandomEntOnHateList(bool skip_mezzed = false);
 	Mob *GetEntWithMostHateOnList(bool skip_mezzed = false);
-	Mob *GetEscapingEntOnHateList(); // returns first eligble entity
 	Mob *GetEscapingEntOnHateList(Mob *center, float range = 0.0f, bool first = false);
 	Bot* GetRandomBotOnHateList(bool skip_mezzed = false);
 	Client *GetRandomClientOnHateList(bool skip_mezzed = false);
