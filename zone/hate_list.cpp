@@ -42,19 +42,6 @@ HateList::~HateList()
 {
 }
 
-// added for frenzy support
-// checks if target still is in frenzy mode
-void HateList::IsEntityInFrenzyMode()
-{
-	auto iterator = list.begin();
-	while (iterator != list.end())
-	{
-		if ((*iterator)->entity_on_hatelist->GetHPRatio() >= 20)
-			(*iterator)->is_entity_frenzy = false;
-		++iterator;
-	}
-}
-
 void HateList::WipeHateList(bool npc_only) {
 	auto iterator = list.begin();
 
@@ -618,29 +605,6 @@ Mob *HateList::GetRandomEntOnHateList(bool skip_mezzed)
 			++counter;
 			continue;
 		}
-
-		return iter->entity_on_hatelist;
-	}
-
-	return nullptr;
-}
-
-Mob *HateList::GetEscapingEntOnHateList() {
-	// function is still in design stage
-
-	for (auto iter : list) {
-		if (!iter->entity_on_hatelist)
-			continue;
-
-		if (!iter->entity_on_hatelist->IsFeared())
-			continue;
-
-		if (iter->entity_on_hatelist->IsRooted())
-			continue;
-		if (iter->entity_on_hatelist->IsMezzed())
-			continue;
-		if (iter->entity_on_hatelist->IsStunned())
-			continue;
 
 		return iter->entity_on_hatelist;
 	}

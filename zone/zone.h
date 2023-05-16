@@ -182,7 +182,6 @@ public:
 	inline void ShowNPCGlobalLoot(Client *to, NPC *who) { m_global_loot.ShowNPCGlobalLoot(to, who); }
 	inline void ShowZoneGlobalLoot(Client *to) { m_global_loot.ShowZoneGlobalLoot(to); }
 	int GetZoneTotalBlockedSpells() { return zone_total_blocked_spells; }
-	void DumpMerchantList(uint32 npcid);
 	TempMerchantList GetTempMerchItem(uint32 merchantid, uint32 npcid, uint32 item);
 	int SaveTempItem(uint32 merchantid, uint32 npcid, uint32 item, int32 quantity, int32 charges, bool sold=false);
 	int32 MobsAggroCount() { return aggroedmobs; }
@@ -299,7 +298,6 @@ public:
 	void RequestUCSServerStatus();
 	void ResetAuth();
 	void SetDate(uint16 year, uint8 month, uint8 day, uint8 hour, uint8 minute);
-	void SetGraveyard(uint32 zoneid, const glm::vec4 &graveyardPosition);
 	void SetInstanceTimer(uint32 new_duration);
 	void SetStaticZone(bool sz) { staticzone = sz; }
 	void SetTime(uint8 hour, uint8 minute, bool update_world = true);

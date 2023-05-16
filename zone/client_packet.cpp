@@ -670,7 +670,11 @@ void Client::CompleteConnect()
 				break;
 			}
 			case SE_SummonHorse: {
-				BuffFadeByEffect(SE_SummonHorse);	// mounts should always wear off on zone.
+				if (zone->CanCastOutdoor()) { // If zone is outdoor allow mount to stay
+					SummonHorse(buffs[j1].spellid);
+				} else {
+					BuffFadeByEffect(SE_SummonHorse);
+				}
 				break;
 			}
 			case SE_Silence:
@@ -1264,7 +1268,7 @@ void Client::Handle_Connect_OP_ZoneEntry(const EQApplicationPacket *app)
 	database.LoadCharacterDisciplines(cid, &m_pp); /* Load Character Disciplines */
 	database.LoadCharacterLanguages(cid, &m_pp); /* Load Character Languages */
 	database.LoadCharacterLeadershipAA(cid, &m_pp); /* Load Character Leadership AA's */
-	database.LoadCharacterTribute(cid, &m_pp); /* Load CharacterTribute */
+	database.LoadCharacterTribute(this); /* Load CharacterTribute */
 
 	// this pattern is strange
 	// this is remnants of the old way of doing things

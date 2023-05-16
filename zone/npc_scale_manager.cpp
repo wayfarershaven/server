@@ -111,8 +111,9 @@ void NpcScaleManager::ScaleNPC(
 		npc->ModifyNPCStat("phr", std::to_string(scale_data.physical_resist));
 	}
 	
+	bool min_damage_set = false;
 	if (stats_always_scale || npc->GetMinDMG() == -1) {
-		int min_dmg = scale_data.min_dmg;
+		int64 min_dmg = scale_data.min_dmg;
 		if (RuleB(Combat, UseNPCDamageClassLevelMods)) {
 			int32 class_level_damage_mod = GetClassLevelDamageMod(npc->GetLevel(), npc->GetClass());
 			min_dmg = (min_dmg * class_level_damage_mod) / 220;
@@ -121,9 +122,10 @@ void NpcScaleManager::ScaleNPC(
 		}
 
 		npc->ModifyNPCStat("min_hit", std::to_string(min_dmg));
+		min_damage_set = true;
 	}
-	if (stats_always_scale || npc->GetMaxDMG() == -1) {
-		int max_dmg = scale_data.max_dmg;
+	if (stats_always_scale || npc->GetMaxDMG() == -1 || min_damage_set) {
+		int64 max_dmg = scale_data.max_dmg;
 		if (RuleB(Combat, UseNPCDamageClassLevelMods)) {
 			int32 class_level_damage_mod = GetClassLevelDamageMod(npc->GetLevel(), npc->GetClass());
 			max_dmg = (scale_data.max_dmg * class_level_damage_mod) / 220;
