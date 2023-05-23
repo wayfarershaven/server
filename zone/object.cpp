@@ -1179,7 +1179,7 @@ void Object::SetEntityVariable(std::string variable_name, std::string variable_v
 void Object::FixZ() {
 	float best_z = BEST_Z_INVALID;
 	if (zone->zonemap != nullptr) {
-		auto dest = glm::vec3(m_data.x, m_data.y, m_data.z + 2);
+		auto dest = glm::vec3(m_data.x, m_data.y, m_data.z + 1);
 		best_z = zone->zonemap->FindBestZ(dest, nullptr);
 		if (best_z != BEST_Z_INVALID) {
 			m_data.z = best_z;
