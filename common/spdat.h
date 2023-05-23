@@ -206,9 +206,6 @@
 #define INSTRUMENT_LUTE 13011
 #define INSTRUMENT_HORN 13012
 
-
-const int Z_AGGRO=10;
-
 const uint32 MobAISpellRange=100; // max range of buffs
 
 enum FocusLimitIncludes {
