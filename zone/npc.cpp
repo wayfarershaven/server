@@ -1330,51 +1330,62 @@ NPC * NPC::SpawnNodeNPC(std::string name, std::string last_name, const glm::vec4
 }
 
 NPC* NPC::SpawnNPC(const char* spawncommand, const glm::vec4& position, Client* client) {
-	if(spawncommand == 0 || spawncommand[0] == 0) {
+	if (spawncommand == 0 || spawncommand[0] == 0) {
 		return 0;
-	}
-	else {
+	} else {
 		Seperator sep(spawncommand);
 		//Lets see if someone didn't fill out the whole #spawn function properly
 		if (!sep.IsNumber(1)) {
 			sprintf(sep.arg[1], "1");
 		}
+
 		if (!sep.IsNumber(2)) {
 			sprintf(sep.arg[2], "1");
 		}
+
 		if (!sep.IsNumber(3)) {
 			sprintf(sep.arg[3], "0");
 		}
+
 		if (Strings::ToInt(sep.arg[4]) > 2100000000 || Strings::ToInt(sep.arg[4]) <= 0) {
 			sprintf(sep.arg[4], " ");
 		}
+
 		if (!strcmp(sep.arg[5], "-")) {
 			sprintf(sep.arg[5], " ");
 		}
+
 		if (!sep.IsNumber(5)) {
 			sprintf(sep.arg[5], " ");
 		}
+
 		if (!sep.IsNumber(6)) {
 			sprintf(sep.arg[6], "1");
 		}
+
 		if (!sep.IsNumber(8)) {
 			sprintf(sep.arg[8], "0");
 		}
+
 		if (!sep.IsNumber(9)) {
 			sprintf(sep.arg[9], "0");
 		}
+
 		if (!sep.IsNumber(7)) {
 			sprintf(sep.arg[7], "0");
 		}
+
 		if (!strcmp(sep.arg[4], "-")) {
 			sprintf(sep.arg[4], " ");
 		}
+
 		if (!sep.IsNumber(10)) {    // bodytype
 			sprintf(sep.arg[10], "0");
 		}
+
 		//Calc MaxHP if client neglected to enter it...
 		if (sep.arg[4] && !sep.IsNumber(4)) {
-			sprintf(sep.arg[4], "0");
+			sprintf(sep.arg[4], "1");
 		}
 
 		// Autoselect NPC Gender
@@ -1397,8 +1408,8 @@ NPC* NPC::SpawnNPC(const char* spawncommand, const glm::vec4& position, Client* 
 		npc_type->npc_id           = 0;
 		npc_type->loottable_id     = 0;
 		npc_type->texture          = Strings::ToInt(sep.arg[3]);
-		npc_type->light            = 0; // spawncommand needs update
-		npc_type->runspeed         = 1.25;
+		npc_type->light            = 0;
+		npc_type->runspeed         = 1.25f;
 		npc_type->d_melee_texture1 = Strings::ToInt(sep.arg[7]);
 		npc_type->d_melee_texture2 = Strings::ToInt(sep.arg[8]);
 		npc_type->merchanttype     = Strings::ToInt(sep.arg[9]);
@@ -1424,17 +1435,34 @@ NPC* NPC::SpawnNPC(const char* spawncommand, const glm::vec4& position, Client* 
 
 		if (client) {
 			// Notify client of spawn data
-			client->Message(Chat::White, "New spawn:");
-			client->Message(Chat::White, "Name: %s", npc->name);
-			client->Message(Chat::White, "Race: %u", npc->race);
-			client->Message(Chat::White, "Level: %u", npc->level);
-			client->Message(Chat::White, "Material: %u", npc->texture);
-			client->Message(Chat::White, "Current/Max HP: %i", npc->max_hp);
-			client->Message(Chat::White, "Gender: %u", npc->gender);
-			client->Message(Chat::White, "Class: %u", npc->class_);
-			client->Message(Chat::White, "Weapon Item Number: %u/%u", npc->d_melee_texture1, npc->d_melee_texture2);
-			client->Message(Chat::White, "MerchantID: %u", npc->MerchantType);
-			client->Message(Chat::White, "Bodytype: %u", npc->bodytype);
+			client->Message(Chat::White, fmt::format("Name | {}", npc->name).c_str());
+			client->Message(Chat::White, fmt::format("Level | {}", npc->level).c_str());
+			client->Message(Chat::White, fmt::format("Health | {}", npc->max_hp).c_str());
+			client->Message(Chat::White, fmt::format("Race | {} ({})", GetRaceIDName(npc->race), npc->race).c_str());
+			client->Message(Chat::White, fmt::format("Class | {} ({})", GetClassIDName(npc->class_), npc->class_).c_str());
+			client->Message(Chat::White, fmt::format("Gender | {} ({})", GetGenderName(npc->gender), npc->gender).c_str());
+			client->Message(Chat::White, fmt::format("Texture | {}", npc->texture).c_str());
+
+			if (npc->d_melee_texture1 || npc->d_melee_texture2) {
+				client->Message(
+					Chat::White,
+					fmt::format(
+						"Weapon Item Number | Primary: {} Secondary: {}",
+						npc->d_melee_texture1,
+						npc->d_melee_texture2
+					).c_str()
+				);
+			}
+
+			if (npc->MerchantType) {
+				client->Message(Chat::White, fmt::format("Merchant ID | {}", npc->MerchantType).c_str());
+			}
+
+			if (npc->bodytype) {
+				client->Message(Chat::White, fmt::format("Body Type | {} ({})", EQ::constants::GetBodyTypeName(npc->bodytype), npc->bodytype).c_str());
+			}
+
+			client->Message(Chat::White, "New NPC spawned!");
 		}
 
 		return npc;
