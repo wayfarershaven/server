@@ -102,6 +102,8 @@ Copyright (C) 2001-2002 EQEMu Development Team (http://eqemu.org)
 #include "client.h"
 #include "mob.h"
 
+#include "water_map.h"
+
 
 extern Zone* zone;
 extern volatile bool is_zone_loaded;
@@ -221,7 +223,7 @@ bool Mob::CastSpell(uint16 spell_id, uint16 target_id, CastingSlot slot,
 	}
 
 	// check line of sight to target if it's a detrimental spell
-	if (spells[spell_id].target_type != ST_AECaster && !spells[spell_id].npc_no_los && GetTarget() && IsDetrimentalSpell(spell_id) && !CheckLosFN(GetTarget()) && !IsHarmonySpell(spell_id) && spells[spell_id].target_type != ST_TargetOptional && !IsBindSightSpell(spell_id)) {
+	if (spells[spell_id].target_type != ST_AECaster && !spells[spell_id].npc_no_los && GetTarget() && IsDetrimentalSpell(spell_id) && (!CheckLosFN(GetTarget()) || !CheckWaterLoS(this, GetTarget())) && !IsHarmonySpell(spell_id) && spells[spell_id].target_type != ST_TargetOptional && !IsBindSightSpell(spell_id)) {
 		Log(Logs::Detail, Logs::Spells, "Spell %d: cannot see target %s", spell_id, GetTarget()->GetName());
 		MessageString(13, CANT_SEE_TARGET);
 		if (IsClient()) {
@@ -3824,18 +3826,53 @@ bool Mob::SpellOnTarget(
 
 	// Prevent double invising, which made you uninvised
 	// Not sure if all 3 should be stacking
-	//This is not live like behavior (~Kayen confirmed 2/2/22)
+
 	if (!RuleB(Spells, AllowDoubleInvis)) {
 		if (IsEffectInSpell(spell_id, SE_Invisibility)) {
-			if (spelltar->invisible) {
+			if (spelltar->IsClient()) {
+				if (IsClient()) {
+					if (spelltar != this && !entity_list.IsInSameGroupOrRaidGroup(spelltar->CastToClient(), this->CastToClient())) {
+						Message(Chat::Red, "Your target must be a group member for this spell.");
+						return false;
+					}
+				}
+			} else {
+				Message(Chat::Red, "This spell can only be cast on players.");
+			}
+		}
+
+		if (IsEffectInSpell(spell_id, SE_InvisVsUndead)) {
+			if (spelltar->IsClient()) {
+				if (IsClient()) {
+					if (spelltar != this && !entity_list.IsInSameGroupOrRaidGroup(spelltar->CastToClient(), this->CastToClient())) {
+						Message(Chat::Red, "Your target must be a group member for this spell.");
+						return false;
+					}
+				}
+			} else {
+				Message(Chat::Red, "This spell can only be cast on players.");
+			}
+
+			if (spelltar->invisible_undead) {
 				spelltar->MessageString(Chat::SpellFailure, ALREADY_INVIS, GetCleanName());
 				safe_delete(action_packet);
 				return false;
 			}
 		}
+		
+		if (IsEffectInSpell(spell_id, SE_InvisVsAnimals)) {
+			if (spelltar->IsClient()) {
+				if (IsClient()) {
+					if (spelltar != this && !entity_list.IsInSameGroupOrRaidGroup(spelltar->CastToClient(), this->CastToClient())) {
+						Message(Chat::Red, "Your target must be a group member for this spell.");
+						return false;
+					}
+				}
+			} else {
+				Message(Chat::Red, "This spell can only be cast on players.");
+			}
 
-		if (IsEffectInSpell(spell_id, SE_InvisVsUndead)) {
-			if (spelltar->invisible_undead) {
+			if (spelltar->invisible_animals) {
 				spelltar->MessageString(Chat::SpellFailure, ALREADY_INVIS, GetCleanName());
 				safe_delete(action_packet);
 				return false;
@@ -7227,4 +7264,12 @@ void Mob::DrawDebugCoordinateNode(std::string node_name, const glm::vec4 vec)
 const CombatRecord &Mob::GetCombatRecord() const
 {
 	return m_combat_record;
+}
+
+bool Mob::CheckWaterLoS(Mob* los_attacker, Mob* los_target) // checks if both attacker and target are both in or out of the water
+{
+	if (!RuleB(Spells, WaterMatchRequiredForLoS)) { // if rule is set to false, bypass check
+		return true;
+	}
+	return zone->watermap->InLiquid(los_attacker->GetPosition()) == zone->watermap->InLiquid(los_target->GetPosition());
 }

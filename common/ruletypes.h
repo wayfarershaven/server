@@ -496,6 +496,7 @@ RULE_BOOL(Spells, UseItemCastMessage, false, "Enable to use the \"item begins to
 RULE_BOOL(Spells, TargetsTargetRequiresCombatRange, true, "Disable to remove combat range requirement from Target's Target Spell Target Type")
 RULE_BOOL(Spells, NPCBuffLevelRestrictions, true, "Impose BuffLevelRestrictions on NPCs if true")
 RULE_BOOL(Spells, ResurrectionEffectsBlock, true, "If enabled, resurrection effects cannot be overwritten.")
+RULE_BOOL(Spells, WaterMatchRequiredForLoS, true, "Enable/Disable the requirement of both the attacker/victim being both in or out of water for spells LoS to pass.")
 RULE_CATEGORY_END()
 
 RULE_CATEGORY(Combat)

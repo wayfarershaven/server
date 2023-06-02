@@ -223,8 +223,8 @@ public:
 		uint32 in_drakkin_details,
 		EQ::TintProfile in_armor_tint,
 		uint8 in_aa_title,
-		uint16 in_see_invis, // see through invis
-		uint16 in_see_invis_undead, // see through invis vs. undead
+		uint8 in_see_invis, // see through invis
+		uint8 in_see_invis_undead, // see through invis vs. undead
 		uint8 in_see_hide,
 		uint8 in_see_improved_hide,
 		int64 in_hp_regen,
@@ -259,6 +259,7 @@ public:
 	virtual void RogueBackstab(Mob* other, bool min_damage = false, int ReuseTime = 10);
 	virtual void RogueAssassinate(Mob* other);
 	float MobAngle(Mob *other = 0, float ourx = 0.0f, float oury = 0.0f) const;
+	virtual bool CheckWaterLoS(Mob* attacker, Mob* target);
 	// greater than 90 is behind
 	inline bool BehindMob(Mob *other = 0, float ourx = 0.0f, float oury = 0.0f) const
 		{ return (!other || other == this) ? true : MobAngle(other, ourx, oury) > 90.0f; }
@@ -311,6 +312,10 @@ public:
 	virtual inline bool IsBerserk() { return false; } // only clients
 	void RogueEvade(Mob *other);
 	void CommonOutgoingHitSuccess(Mob *defender, DamageHitInfo &hit, ExtraAttackOptions *opts = nullptr);
+	void BreakInvisibleSpells();
+	virtual void CancelSneakHide();
+	void CommonBreakInvisible();
+	void CommonBreakInvisibleFromCombat();
 	bool HasDied();
 	virtual bool CheckDualWield();
 	void DoMainHandAttackRounds(Mob *target, ExtraAttackOptions *opts = nullptr, bool ramp = false);
@@ -328,28 +333,6 @@ public:
 		return;
 	}
 
-	//Invisible
-	bool IsInvisible(Mob* other = 0) const;
-	void SetInvisible(uint8 state = 0, uint8 type = 0);
-
-	void BreakInvisibleSpells();
-	virtual void CancelSneakHide();
-	void CommonBreakInvisible();
-	void CommonBreakInvisibleFromCombat();
-
-	inline bool GetSeeInvisible(uint8 see_invis);
-	inline bool SeeHide() const { return see_hide; }
-	inline bool SeeImprovedHide() const { return see_improved_hide; }
-	inline uint8 SeeInvisibleUndead() const { return see_invis_undead; }
-	inline uint8 SeeInvisible() const { return see_invis; }
-
-	uint32 tmHidden; // timestamp of hide, only valid while hidden == true
-	uint8 invisible, nobuff_invisible, invisible_undead, invisible_animals;
-	uint8 see_invis, innate_see_invis, see_invis_undead; //TODO: do we need a see_invis_animal ?
-
-	bool sneaking, hidden, improved_hidden;
-	bool see_hide, see_improved_hide;
-
 	/**
 	 ************************************************
 	 * Appearance
@@ -358,7 +341,15 @@ public:
 
 	EQ::InternalTextureProfile mob_texture_profile = {};
 
+	bool IsInvisible(Mob* other = 0) const;
+
 	EQ::skills::SkillType AttackAnimation(int Hand, const EQ::ItemInstance* weapon, EQ::skills::SkillType skillinuse = EQ::skills::Skill1HBlunt);
+
+	inline bool GetSeeInvisible(uint8 see_invis);
+	inline bool SeeHide() const { return see_hide; }
+	inline bool SeeImprovedHide() const { return see_improved_hide; }
+	inline bool SeeInvisibleUndead() const { return see_invis_undead; }
+	uint8 SeeInvisible();
 
 	int32 GetTextureProfileMaterial(uint8 material_slot) const;
 	int32 GetTextureProfileColor(uint8 material_slot) const;
@@ -378,6 +369,7 @@ public:
 	void SendLevelAppearance();
 	void SendStunAppearance();
 	void SendTargetable(bool on, Client *specific_target = nullptr);
+	void SetInvisible(uint8 state = 0, uint8 type = 0);
 	void SetMobTextureProfile(uint8 material_slot, uint16 texture, uint32 color = 0, uint32 hero_forge_model = 0);
 
 	//Spell
@@ -1153,7 +1145,10 @@ public:
 	inline const bodyType GetOrigBodyType() const { return orig_bodytype; }
 	void SetBodyType(bodyType new_body, bool overwrite_orig);
 
-	bool invulnerable;
+	uint32 tmHidden; // timestamp of hide, only valid while hidden == true
+	uint8 invisible, see_invis;
+	bool invulnerable, invisible_undead, invisible_animals, sneaking, hidden, improved_hidden;
+	bool see_invis_undead, see_hide, see_improved_hide;
 	bool qglobal;
 
 	virtual void SetAttackTimer();

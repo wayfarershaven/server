@@ -3306,7 +3306,6 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 			case SE_Proc_Timer_Modifier:
 			case SE_FFItemClass:
 			case SE_SpellEffectResistChance:
-			case SE_ImprovedInvisAnimals:
 			{
 				break;
 			}
@@ -3997,7 +3996,6 @@ void Mob::DoBuffTic(const Buffs_Struct &buff, int slot, Mob *caster)
 				}
 			}
 		}
-		case SE_ImprovedInvisAnimals:
 		case SE_Invisibility2:
 		case SE_InvisVsUndead2: {
 			if (!IsBardSong(buff.spellid)) {
