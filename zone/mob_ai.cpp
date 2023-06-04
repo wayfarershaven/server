@@ -718,54 +718,39 @@ void Client::AI_SpellCast()
 
 	uint32 spell_to_cast = 0xFFFFFFFF;
 	EQ::spells::CastingSlot slot_to_use = EQ::spells::CastingSlot::Item;
-	if(valid_spells.size() == 1)
-	{
+	if (valid_spells.size() == 1) {
 		spell_to_cast = valid_spells[0];
 		slot_to_use = static_cast<EQ::spells::CastingSlot>(slots[0]);
-	}
-	else if(valid_spells.empty())
-	{
+	} else if(valid_spells.empty()) {
 		return;
-	}
-	else
-	{
+	} else {
 		uint32 idx = zone->random.Int(0, (valid_spells.size()-1));
 		spell_to_cast = valid_spells[idx];
 		slot_to_use = static_cast<EQ::spells::CastingSlot>(slots[idx]);
 	}
 
-	if(IsMezSpell(spell_to_cast) || IsFearSpell(spell_to_cast))
-	{
+	if (IsMesmerizeSpell(spell_to_cast) || IsFearSpell(spell_to_cast)) {
 		Mob *tar = entity_list.GetTargetForMez(this);
-		if(!tar)
-		{
+		if (!tar) {
 			tar = GetTarget();
-			if(tar && IsFearSpell(spell_to_cast))
-			{
-				if(!IsBardSong(spell_to_cast))
-				{
+			if (tar && IsFearSpell(spell_to_cast)) {
+				if (!IsBardSong(spell_to_cast)) {
 					StopNavigation();
 				}
 				CastSpell(spell_to_cast, tar->GetID(), slot_to_use);
 				return;
 			}
 		}
-	}
-	else
-	{
+	} else {
 		Mob *tar = GetTarget();
-		if(tar)
-		{
-			if(!IsBardSong(spell_to_cast))
-			{
+		if (tar) {
+			if (!IsBardSong(spell_to_cast)) {
 				StopNavigation();
 			}
 			CastSpell(spell_to_cast, tar->GetID(), slot_to_use);
 			return;
 		}
 	}
-
-
 }
 
 void Client::AI_Process()

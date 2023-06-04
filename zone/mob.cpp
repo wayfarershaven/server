@@ -4347,7 +4347,7 @@ int Mob::CountDispellableBuffs() {
 			continue;
 		}
 
-		if(spells[buffs[x].spellid].good_effect == 0) {
+		if(spells[buffs[x].spellid].good_effect == DETRIMENTAL_EFFECT) {
 			continue;
 		}
 

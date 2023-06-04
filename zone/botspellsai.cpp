@@ -106,12 +106,18 @@ bool Bot::BotCastSong(Mob* tar, uint8 botLevel) {
 
 	for (auto botSongList = GetPrioritizedBotSpellsBySpellType(this, SpellType_OutOfCombatBuffSong);
 			auto iter : botSongList) {
-		if (!iter.SpellId)
+		if (!iter.SpellId) {
 			continue;
-		if (!CheckSpellRecastTimers(this, iter.SpellIndex))
+		}
+
+		if (!CheckSpellRecastTimers(this, iter.SpellIndex)) {
 			continue;
-		if (!IsSpellUsableThisZoneType(iter.SpellId, zone->GetZoneType()))
+		}
+
+		if (!IsSpellUsableInThisZoneType(iter.SpellId, zone->GetZoneType())) {
 			continue;
+		}
+
 		switch (spells[iter.SpellId].target_type) {
 		case ST_AEBard:
 		case ST_AECaster:
@@ -122,12 +128,14 @@ bool Bot::BotCastSong(Mob* tar, uint8 botLevel) {
 		default:
 			continue;
 		}
-		if (tar->CanBuffStack(iter.SpellId, botLevel, true) < 0)
+		if (tar->CanBuffStack(iter.SpellId, botLevel, true) < 0) {
 			continue;
+		}
 
 		casted_spell = AIDoSpellCast(iter.SpellIndex, tar, iter.ManaCost);
-		if (casted_spell)
+		if (casted_spell) {
 			break;
+		}
 	}
 
 	return casted_spell;
@@ -144,7 +152,7 @@ bool Bot::BotCastCombatSong(Mob* tar, uint8 botLevel) {
 			continue;
 		if (!CheckSpellRecastTimers(this, iter.SpellIndex))
 			continue;
-		if (!IsSpellUsableThisZoneType(iter.SpellId, zone->GetZoneType()))
+		if (!IsSpellUsableInThisZoneType(iter.SpellId, zone->GetZoneType()))
 			continue;
 		switch (spells[iter.SpellId].target_type) {
 		case ST_AEBard:
@@ -176,7 +184,7 @@ bool Bot::BotCastHateReduction(Mob* tar, uint8 botLevel, const BotSpell& botSpel
 				continue;
 			if (!CheckSpellRecastTimers(this, iter.SpellIndex))
 				continue;
-			if (!IsSpellUsableThisZoneType(iter.SpellId, zone->GetZoneType()))
+			if (!IsSpellUsableInThisZoneType(iter.SpellId, zone->GetZoneType()))
 				continue;
 			if (spells[iter.SpellId].target_type != ST_Target)
 				continue;
@@ -316,7 +324,7 @@ bool Bot::BotCastSlow(Mob* tar, uint8 botLevel, uint8 botClass, BotSpell& botSpe
 						continue;
 					}
 
-					if (!IsSpellUsableThisZoneType(iter.SpellId, zone->GetZoneType())) {
+					if (!IsSpellUsableInThisZoneType(iter.SpellId, zone->GetZoneType())) {
 						continue;
 					}
 
@@ -582,7 +590,7 @@ bool Bot::BotCastCombatBuff(Mob* tar, uint8 botLevel, uint8 botClass) {
 			if (
 				((IsEffectInSpell(s.SpellId, SE_Levitate) && !zone->CanLevitate()) ||
 				(IsEffectInSpell(s.SpellId, SE_MovementSpeed) && !zone->CanCastOutdoor())) &&
-				(botClass != BARD || !IsSpellUsableThisZoneType(s.SpellId, zone->GetZoneType()))
+				(botClass != BARD || !IsSpellUsableInThisZoneType(s.SpellId, zone->GetZoneType()))
 			) {
 				continue;
 			}
@@ -892,7 +900,7 @@ bool Bot::BotCastBuff(Mob* tar, uint8 botLevel, uint8 botClass) {
 					(IsEffectInSpell(s.SpellId, SE_Levitate) && !zone->CanLevitate()) ||
 					(IsEffectInSpell(s.SpellId, SE_MovementSpeed) && !zone->CanCastOutdoor())
 				) &&
-				(botClass != BARD || !IsSpellUsableThisZoneType(s.SpellId, zone->GetZoneType()))
+				(botClass != BARD || !IsSpellUsableInThisZoneType(s.SpellId, zone->GetZoneType()))
 			) {
 				continue;
 			}
@@ -1895,7 +1903,7 @@ std::list<BotSpell> Bot::GetBotSpellsForSpellEffect(Bot* botCaster, int spellEff
 				continue;
 			}
 
-			if (IsEffectInSpell(botSpellList[i].spellid, spellEffect) || GetTriggerSpellID(botSpellList[i].spellid, spellEffect)) {
+			if (IsEffectInSpell(botSpellList[i].spellid, spellEffect) || GetSpellTriggerSpellID(botSpellList[i].spellid, spellEffect)) {
 				BotSpell botSpell;
 				botSpell.SpellId = botSpellList[i].spellid;
 				botSpell.SpellIndex = i;
@@ -1933,7 +1941,7 @@ std::list<BotSpell> Bot::GetBotSpellsForSpellEffectAndTargetType(Bot* botCaster,
 			if (
 				(
 					IsEffectInSpell(botSpellList[i].spellid, spellEffect) ||
-					GetTriggerSpellID(botSpellList[i].spellid, spellEffect)
+					GetSpellTriggerSpellID(botSpellList[i].spellid, spellEffect)
 				) &&
 				spells[botSpellList[i].spellid].target_type == targetType
 			) {
@@ -2306,7 +2314,7 @@ BotSpell Bot::GetBestBotSpellForMez(Bot* botCaster) {
 		for (std::list<BotSpell>::iterator botSpellListItr = botSpellList.begin(); botSpellListItr != botSpellList.end(); ++botSpellListItr) {
 			// Assuming all the spells have been loaded into this list by level and in descending order
 			if (
-				IsMezSpell(botSpellListItr->SpellId) &&
+				IsMesmerizeSpell(botSpellListItr->SpellId) &&
 				CheckSpellRecastTimers(botCaster, botSpellListItr->SpellIndex)
 			) {
 				result.SpellId = botSpellListItr->SpellId;
@@ -2381,7 +2389,7 @@ BotSpell Bot::GetBestBotSpellForDiseaseBasedSlow(Bot* botCaster) {
 Mob* Bot::GetFirstIncomingMobToMez(Bot* botCaster, BotSpell botSpell) {
 	Mob* result = 0;
 
-	if (botCaster && IsMezSpell(botSpell.SpellId)) {
+	if (botCaster && IsMesmerizeSpell(botSpell.SpellId)) {
 
 		std::list<NPC*> npc_list;
 		entity_list.GetNPCList(npc_list);

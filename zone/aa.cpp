@@ -1288,7 +1288,7 @@ void Client::ActivateAlternateAdvancementAbility(int rank_id, int target_id) {
 		timer_duration = 0;
 	}
 
-	if (!IsCastWhileInvis(rank->spell)) {
+	if (!IsCastWhileInvisibleSpell(rank->spell)) {
 		CommonBreakInvisible();
 	}
 
@@ -1302,9 +1302,10 @@ void Client::ActivateAlternateAdvancementAbility(int rank_id, int target_id) {
 		target_id = GetPetID();
 
 	// extra handling for cast_not_standing spells
-	if (!IgnoreCastingRestriction(rank->spell)) {
-		if (GetAppearance() == eaSitting) // we need to stand!
+	if (!IsCastNotStandingSpell(rank->spell)) {
+		if (GetAppearance() == eaSitting) { // we need to stand!
 			SetAppearance(eaStanding, false);
+		}
 
 		if (GetAppearance() != eaStanding) {
 			MessageString(Chat::SpellFailure, STAND_TO_CAST);

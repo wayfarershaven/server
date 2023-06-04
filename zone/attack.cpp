@@ -2961,7 +2961,7 @@ void Mob::AddToHateList(Mob* other, int64 hate /*= 0*/, int64 damage /*= 0*/, bo
 		return;
 	}
 
-	if (IsValidSpell(spell_id) && NoDetrimentalSpellAggro(spell_id)) {
+	if (IsValidSpell(spell_id) && IsNoDetrimentalSpellAggroSpell(spell_id)) {
 		return;
 	}
 
