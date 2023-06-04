@@ -826,16 +826,11 @@ void Client::ChannelMessageReceived(uint8 chan_num, uint8 language, uint8 lang_s
 		targetname = (!GetTarget()) ? "" : GetTarget()->GetName();
 	}
 
-	if(RuleB(Chat, EnableAntiSpam))
-	{
-		if(strcmp(targetname, "discard") != 0)
-		{
-			if(chan_num == ChatChannel_Shout || chan_num == ChatChannel_Auction || chan_num == ChatChannel_OOC || chan_num == ChatChannel_Tell)
-			{
-				if(GlobalChatLimiterTimer)
-				{
-					if(GlobalChatLimiterTimer->Check(false))
-					{
+	if (RuleB(Chat, EnableAntiSpam)) {
+		if (strcmp(targetname, "discard") != 0) {
+			if (chan_num == ChatChannel_Shout || chan_num == ChatChannel_Auction || chan_num == ChatChannel_OOC || chan_num == ChatChannel_Tell) {
+				if (GlobalChatLimiterTimer) {
+					if (GlobalChatLimiterTimer->Check(false)) {
 						GlobalChatLimiterTimer->Start(RuleI(Chat, IntervalDurationMS));
 						AttemptedMessages = 0;
 					}
@@ -844,25 +839,23 @@ void Client::ChannelMessageReceived(uint8 chan_num, uint8 language, uint8 lang_s
 				uint32 AllowedMessages = RuleI(Chat, MinimumMessagesPerInterval) + TotalKarma;
 				AllowedMessages = AllowedMessages > RuleI(Chat, MaximumMessagesPerInterval) ? RuleI(Chat, MaximumMessagesPerInterval) : AllowedMessages;
 
-				if(RuleI(Chat, MinStatusToBypassAntiSpam) <= Admin())
+				if (RuleI(Chat, MinStatusToBypassAntiSpam) <= Admin()) {
 					AllowedMessages = 10000;
+				}
 
 				AttemptedMessages++;
-				if(AttemptedMessages > AllowedMessages)
-				{
-					if(AttemptedMessages > RuleI(Chat, MaxMessagesBeforeKick))
-					{
+
+				if (AttemptedMessages > AllowedMessages) {
+					if (AttemptedMessages > RuleI(Chat, MaxMessagesBeforeKick)) {
 						Kick("Sent too many chat messages at once.");
 						return;
 					}
-					if(GlobalChatLimiterTimer)
-					{
+
+					if (GlobalChatLimiterTimer) {
 						Message(0, "You have been rate limited, you can send more messages in %i seconds.",
 							GlobalChatLimiterTimer->GetRemainingTime() / 1000);
 						return;
-					}
-					else
-					{
+					} else {
 						Message(0, "You have been rate limited, you can send more messages in 60 seconds.");
 						return;
 					}
@@ -876,22 +869,26 @@ void Client::ChannelMessageReceived(uint8 chan_num, uint8 language, uint8 lang_s
 		auto pack = new ServerPacket(ServerOP_Speech, sizeof(Server_Speech_Struct) + strlen(message) + 1);
 		Server_Speech_Struct* sem = (Server_Speech_Struct*) pack->pBuffer;
 
-		if(chan_num == ChatChannel_Guild)
+		if (chan_num == ChatChannel_Guild) {
 			sem->guilddbid = GuildID();
-		else
+		} else {
 			sem->guilddbid = 0;
+		}
 
 		strcpy(sem->message, message);
 		sem->minstatus = Admin();
 		sem->type = chan_num;
-		if(targetname != 0)
+		if (targetname != 0) {
 			strcpy(sem->to, targetname);
+		}
 
-		if(GetName() != 0)
+		if (GetName() != 0) {
 			strcpy(sem->from, GetName());
+		}
 
-		if(worldserver.Connected())
+		if (worldserver.Connected()) {
 			worldserver.SendPacket(pack);
+		}
 		safe_delete(pack);
 	}
 
@@ -903,367 +900,354 @@ void Client::ChannelMessageReceived(uint8 chan_num, uint8 language, uint8 lang_s
 	}
 
 	// some channels don't use languages
-	if (chan_num == ChatChannel_OOC || chan_num == ChatChannel_GMSAY || chan_num == ChatChannel_Broadcast || chan_num == ChatChannel_Petition)
-	{
+	if (chan_num == ChatChannel_OOC || chan_num == ChatChannel_GMSAY || chan_num == ChatChannel_Broadcast || chan_num == ChatChannel_Petition) {
 		language = 0;
 		lang_skill = 100;
 	}
 
 	// Censor the message
-	if (EQ::ProfanityManager::IsCensorshipActive() && (chan_num != ChatChannel_Say))
+	if (EQ::ProfanityManager::IsCensorshipActive() && (chan_num != ChatChannel_Say)) {
 		EQ::ProfanityManager::RedactMessage(message);
-
-	switch(chan_num)
-	{
-	case ChatChannel_Guild: { /* Guild Chat */
-		if (!IsInAGuild())
-			MessageString(Chat::DefaultText, GUILD_NOT_MEMBER2);	//You are not a member of any guild.
-		else if (!guild_mgr.CheckPermission(GuildID(), GuildRank(), GUILD_SPEAK))
-			Message(0, "Error: You dont have permission to speak to the guild.");
-		else if (!worldserver.SendChannelMessage(this, targetname, chan_num, GuildID(), language, lang_skill, message))
-			Message(0, "Error: World server disconnected");
-		break;
 	}
-	case ChatChannel_Group: { /* Group Chat */
-		Raid* raid = entity_list.GetRaidByClient(this);
-		if(raid) {
-			raid->RaidGroupSay((const char*) message, this, language, lang_skill);
+
+	switch(chan_num) {
+		case ChatChannel_Guild: { /* Guild Chat */
+			if (!IsInAGuild()) {
+				MessageString(Chat::DefaultText, GUILD_NOT_MEMBER2);	//You are not a member of any guild.
+			} else if (!guild_mgr.CheckPermission(GuildID(), GuildRank(), GUILD_SPEAK)) {
+				Message(0, "Error: You dont have permission to speak to the guild.");
+			} else if (!worldserver.SendChannelMessage(this, targetname, chan_num, GuildID(), language, lang_skill, message)) {
+				Message(0, "Error: World server disconnected");
+			}
 			break;
 		}
 
-		Group* group = GetGroup();
-		if(group != nullptr) {
-			group->GroupMessage(this,language,lang_skill,(const char*) message);
-		}
-		break;
-	}
-	case ChatChannel_Raid: { /* Raid Say */
-		Raid* raid = entity_list.GetRaidByClient(this);
-		if(raid){
-			raid->RaidSay((const char*) message, this, language, lang_skill);
-		}
-		break;
-	}
-	case ChatChannel_Shout: { /* Shout */
-		Mob *sender = this;
-		if (GetPet() && GetTarget() == GetPet() && GetPet()->FindType(SE_VoiceGraft))
-			sender = GetPet();
-
-		entity_list.ChannelMessage(sender, chan_num, language, lang_skill, message);
-		break;
-	}
-	case ChatChannel_Auction: { /* Auction */
-		if(RuleB(Chat, ServerWideAuction))
-		{
-			if(!global_channel_timer.Check())
-			{
-				if(strlen(targetname) == 0)
-					ChannelMessageReceived(chan_num, language, lang_skill, message, "discard"); //Fast typer or spammer??
-				else
-					return;
+		case ChatChannel_Group: { /* Group Chat */
+			Raid* raid = entity_list.GetRaidByClient(this);
+			if (raid) {
+				raid->RaidGroupSay((const char*) message, this, language, lang_skill);
+				break;
 			}
 
-			if(GetRevoked())
-			{
-				Message(0, "You have been revoked. You may not talk on Auction.");
-				return;
+			Group* group = GetGroup();
+			if (group != nullptr) {
+				group->GroupMessage(this,language,lang_skill,(const char*) message);
 			}
-
-			if(TotalKarma < RuleI(Chat, KarmaGlobalChatLimit))
-			{
-				if(GetLevel() < RuleI(Chat, GlobalChatLevelLimit))
-				{
-					Message(0, "You do not have permission to talk in Auction at this time.");
-					return;
-				}
-			}
-
-			if (!worldserver.SendChannelMessage(this, 0, chan_num, 0, language, lang_skill, message))
-			Message(0, "Error: World server disconnected");
+			break;
 		}
-		else if(!RuleB(Chat, ServerWideAuction)) {
+
+		case ChatChannel_Raid: { /* Raid Say */
+			Raid* raid = entity_list.GetRaidByClient(this);
+			if (raid) {
+				raid->RaidSay((const char*) message, this, language, lang_skill);
+			}
+			break;
+		}
+
+		case ChatChannel_Shout: { /* Shout */
 			Mob *sender = this;
-
-			if (GetPet() && GetTarget() == GetPet() && GetPet()->FindType(SE_VoiceGraft))
-			sender = GetPet();
-
-			entity_list.ChannelMessage(sender, chan_num, language, lang_skill, message);
-		}
-		break;
-	}
-	case ChatChannel_OOC: { /* OOC */
-		if(RuleB(Chat, ServerWideOOC))
-		{
-			if(!global_channel_timer.Check())
-			{
-				if(strlen(targetname) == 0)
-					ChannelMessageReceived(chan_num, language, lang_skill, message, "discard"); //Fast typer or spammer??
-				else
-					return;
-			}
-			if(worldserver.IsOOCMuted() && admin < AccountStatus::GMAdmin)
-			{
-				Message(0,"OOC has been muted. Try again later.");
-				return;
-			}
-
-			if(GetRevoked())
-			{
-				Message(0, "You have been revoked. You may not talk on OOC.");
-				return;
-			}
-
-			if(TotalKarma < RuleI(Chat, KarmaGlobalChatLimit))
-			{
-				if(GetLevel() < RuleI(Chat, GlobalChatLevelLimit))
-				{
-					Message(0, "You do not have permission to talk in OOC at this time.");
-					return;
-				}
-			}
-
-			if (!worldserver.SendChannelMessage(this, 0, chan_num, 0, language, lang_skill, message))
-			{
-				Message(0, "Error: World server disconnected");
-			}
-		}
-		else if(!RuleB(Chat, ServerWideOOC))
-		{
-			Mob *sender = this;
-
-			if (GetPet() && GetTarget() == GetPet() && GetPet()->FindType(SE_VoiceGraft))
+			if (GetPet() && GetTarget() == GetPet() && GetPet()->FindType(SE_VoiceGraft)) {
 				sender = GetPet();
-
+			}
 			entity_list.ChannelMessage(sender, chan_num, language, lang_skill, message);
+			break;
 		}
-		break;
-	}
-	case ChatChannel_Broadcast: /* Broadcast */
-	case ChatChannel_GMSAY: { /* GM Say */
-		if (!(admin >= AccountStatus::QuestTroupe))
-			Message(0, "Error: Only GMs can use this channel");
-		else if (!worldserver.SendChannelMessage(this, targetname, chan_num, 0, language, lang_skill, message))
-			Message(0, "Error: World server disconnected");
-		break;
-	}
-	case ChatChannel_Tell: { /* Tell */
-			if(!global_channel_timer.Check())
-			{
-				if(strlen(targetname) == 0)
-					ChannelMessageReceived(7, language, lang_skill, message, "discard"); //Fast typer or spammer??
-				else
-					return;
-			}
 
-			if(GetRevoked())
-			{
-				Message(0, "You have been revoked. You may not send tells.");
-				return;
-			}
-
-			if(TotalKarma < RuleI(Chat, KarmaGlobalChatLimit))
-			{
-				if(GetLevel() < RuleI(Chat, GlobalChatLevelLimit))
-				{
-					Message(0, "You do not have permission to send tells at this time.");
-					return;
-				}
-			}
-
-			char target_name[64];
-
-			if(targetname)
-			{
-				size_t i = strlen(targetname);
-				int x;
-				for(x = 0; x < i; ++x)
-				{
-					if(targetname[x] == '%')
-					{
-						target_name[x] = '/';
-					}
-					else
-					{
-						target_name[x] = targetname[x];
+		case ChatChannel_Auction: { /* Auction */
+			if (RuleB(Chat, ServerWideAuction)) {
+				if (!global_channel_timer.Check()) {
+					if (strlen(targetname) == 0) {
+						ChannelMessageReceived(chan_num, language, lang_skill, message, "discard"); //Fast typer or spammer??
+					} else {
+						return;
 					}
 				}
-				target_name[x] = '\0';
-			}
 
-			if(!worldserver.SendChannelMessage(this, target_name, chan_num, 0, language, lang_skill, message))
+				if (GetRevoked()) {
+					Message(0, "You have been revoked. You may not talk on Auction.");
+					return;
+				}
+
+				if (TotalKarma < RuleI(Chat, KarmaGlobalChatLimit)) {
+					if (GetLevel() < RuleI(Chat, GlobalChatLevelLimit)) {
+						Message(0, "You do not have permission to talk in Auction at this time.");
+						return;
+					}
+				}
+
+				if (!worldserver.SendChannelMessage(this, 0, chan_num, 0, language, lang_skill, message))
 				Message(0, "Error: World server disconnected");
-		break;
-	}
-	case ChatChannel_Say: { /* Say */
-	if (player_event_logs.IsEventEnabled(PlayerEvent::SAY)) {
-			std::string msg = message;
-			if (!msg.empty() && msg.at(0) != '#' && msg.at(0) != '^') {
-				auto e = PlayerEvent::SayEvent{
-					.message = message,
-					.target = GetTarget() ? GetTarget()->GetCleanName() : ""
-				};
-				RecordPlayerEventLog(PlayerEvent::SAY, e);
-			}
-		}
+			} else if(!RuleB(Chat, ServerWideAuction)) {
+				Mob *sender = this;
 
-		if (message[0] == COMMAND_CHAR) {
-			if (command_dispatch(this, message, false) == -2) {
-				if (parse->PlayerHasQuestSub(EVENT_COMMAND)) {
-					int i = parse->EventPlayer(EVENT_COMMAND, this, message, 0);
-					if (i == 0 && !RuleB(Chat, SuppressCommandErrors)) {
-						Message(Chat::Red, "Command '%s' not recognized.", message);
-					}
+				if (GetPet() && GetTarget() == GetPet() && GetPet()->FindType(SE_VoiceGraft)) {
+					sender = GetPet();
 				}
-				else if (parse->PlayerHasQuestSub(EVENT_SAY)) {
-					int i = parse->EventPlayer(EVENT_SAY, this, message, 0);
-					if (i == 0 && !RuleB(Chat, SuppressCommandErrors)) {
-						Message(Chat::Red, "Command '%s' not recognized.", message);
-					}
-				}
-				else {
-					if (!RuleB(Chat, SuppressCommandErrors)) {
-						Message(Chat::Red, "Command '%s' not recognized.", message);
-					}
-				}
+
+				entity_list.ChannelMessage(sender, chan_num, language, lang_skill, message);
 			}
 			break;
 		}
 
-		if (message[0] == BOT_COMMAND_CHAR) {
-			if (RuleB(Bots, Enabled)) {
-				if (bot_command_dispatch(this, message) == -2) {
-					if (parse->PlayerHasQuestSub(EVENT_BOT_COMMAND)) {
-						int i = parse->EventPlayer(EVENT_BOT_COMMAND, this, message, 0);
-						if (i == 0 && !RuleB(Chat, SuppressCommandErrors)) {
-							Message(Chat::Red, "Bot command '%s' not recognized.", message);
+		case ChatChannel_OOC: { /* OOC */
+			if (RuleB(Chat, ServerWideOOC)) {
+				if (!global_channel_timer.Check()) {
+					if (strlen(targetname) == 0) {
+						ChannelMessageReceived(chan_num, language, lang_skill, message, "discard"); //Fast typer or spammer??
+					} else {
+						return;
+					}
+				}
+
+				if (worldserver.IsOOCMuted() && admin < AccountStatus::GMAdmin) {
+					Message(0,"OOC has been muted. Try again later.");
+					return;
+				}
+
+				if (GetRevoked()) {
+					Message(0, "You have been revoked. You may not talk on OOC.");
+					return;
+				}
+
+				if (TotalKarma < RuleI(Chat, KarmaGlobalChatLimit)) {
+					if(GetLevel() < RuleI(Chat, GlobalChatLevelLimit)) {
+						Message(0, "You do not have permission to talk in OOC at this time.");
+						return;
+					}
+				}
+
+				if (!worldserver.SendChannelMessage(this, 0, chan_num, 0, language, lang_skill, message)) {
+					Message(0, "Error: World server disconnected");
+				}
+			} else if(!RuleB(Chat, ServerWideOOC)) {
+				Mob *sender = this;
+
+				if (GetPet() && GetTarget() == GetPet() && GetPet()->FindType(SE_VoiceGraft)) {
+					sender = GetPet();
+				}
+
+				entity_list.ChannelMessage(sender, chan_num, language, lang_skill, message);
+			}
+			break;
+		}
+
+		case ChatChannel_Broadcast: /* Broadcast */
+		case ChatChannel_GMSAY: { /* GM Say */
+			if (!(admin >= AccountStatus::QuestTroupe)) {
+				Message(0, "Error: Only GMs can use this channel");
+			} else if (!worldserver.SendChannelMessage(this, targetname, chan_num, 0, language, lang_skill, message)) {
+				Message(0, "Error: World server disconnected");
+			}
+			break;
+		}
+
+		case ChatChannel_Tell: { /* Tell */
+				if (!global_channel_timer.Check()) {
+					if (strlen(targetname) == 0) {
+						ChannelMessageReceived(ChatChannel_Tell, language, lang_skill, message, "discard"); //Fast typer or spammer??
+					} else {
+						return;
+					}
+				}
+
+				if (GetRevoked()) {
+					Message(0, "You have been revoked. You may not send tells.");
+					return;
+				}
+
+				if (TotalKarma < RuleI(Chat, KarmaGlobalChatLimit)) {
+					if (GetLevel() < RuleI(Chat, GlobalChatLevelLimit)) {
+						Message(0, "You do not have permission to send tells at this time.");
+						return;
+					}
+				}
+
+				char target_name[64];
+
+				if (targetname) {
+					size_t i = strlen(targetname);
+					int x;
+					for(x = 0; x < i; ++x) {
+						if (targetname[x] == '%') {
+							target_name[x] = '/';
+						} else {
+							target_name[x] = targetname[x];
 						}
 					}
-					else if (parse->PlayerHasQuestSub(EVENT_SAY)) {
+					target_name[x] = '\0';
+				}
+
+				if (!worldserver.SendChannelMessage(this, target_name, chan_num, 0, language, lang_skill, message)) {
+					Message(0, "Error: World server disconnected");
+				}
+			break;
+		}
+
+		case ChatChannel_Say: { /* Say */
+			if (player_event_logs.IsEventEnabled(PlayerEvent::SAY)) {
+				std::string msg = message;
+				if (!msg.empty() && msg.at(0) != '#' && msg.at(0) != '^') {
+					auto e = PlayerEvent::SayEvent{
+						.message = message,
+						.target = GetTarget() ? GetTarget()->GetCleanName() : ""
+					};
+					RecordPlayerEventLog(PlayerEvent::SAY, e);
+				}
+			}
+
+			if (message[0] == COMMAND_CHAR) {
+				if (command_dispatch(this, message, false) == -2) {
+					if (parse->PlayerHasQuestSub(EVENT_COMMAND)) {
+						int i = parse->EventPlayer(EVENT_COMMAND, this, message, 0);
+						if (i == 0 && !RuleB(Chat, SuppressCommandErrors)) {
+							Message(Chat::Red, "Command '%s' not recognized.", message);
+						}
+					} else if (parse->PlayerHasQuestSub(EVENT_SAY)) {
 						int i = parse->EventPlayer(EVENT_SAY, this, message, 0);
 						if (i == 0 && !RuleB(Chat, SuppressCommandErrors)) {
-							Message(Chat::Red, "Bot command '%s' not recognized.", message);
+							Message(Chat::Red, "Command '%s' not recognized.", message);
 						}
-					}
-					else {
+					} else {
 						if (!RuleB(Chat, SuppressCommandErrors)) {
-							Message(Chat::Red, "Bot command '%s' not recognized.", message);
+							Message(Chat::Red, "Command '%s' not recognized.", message);
 						}
 					}
 				}
-			} else {
-				Message(Chat::Red, "Bots are disabled on this server.");	
+				break;
 			}
-			break;
-		}
 
-		if (EQ::ProfanityManager::IsCensorshipActive()) {
-			EQ::ProfanityManager::RedactMessage(message);
-		}
-
-		Mob* sender = this;
-		if (GetPet() && GetTarget() == GetPet() && GetPet()->FindType(SE_VoiceGraft)) {
-			sender = GetPet();
-		}
-
-		if (!is_silent) {
-			entity_list.ChannelMessage(sender, chan_num, language, lang_skill, message);
-		}
-
-		if (parse->PlayerHasQuestSub(EVENT_SAY)) {
-			parse->EventPlayer(EVENT_SAY, this, message, language);
-		}
-
-		if (sender != this) {
-			break;
-		}
-
-		if (quest_manager.ProximitySayInUse()) {
-			entity_list.ProcessProximitySay(message, this, language);
-		}
-
-		if (
-			GetTarget() &&
-			GetTarget()->IsNPC() &&
-			!IsInvisible(GetTarget())
-		) {
-			auto* t = GetTarget()->CastToNPC();
-			if (!t->IsEngaged()) {
-				CheckLDoNHail(t);
-				CheckEmoteHail(t, message);
-
-				if (DistanceNoZ(m_Position, t->GetPosition()) <= RuleI(Range, Say)) {
-
-					if (parse->HasQuestSub(t->GetNPCTypeID(), EVENT_SAY)) {
-						parse->EventNPC(EVENT_SAY, t, this, message, language);
-					}
-
-					if (RuleB(TaskSystem, EnableTaskSystem)) {
-						if (UpdateTasksOnSpeakWith(t)) {
-							t->DoQuestPause(this);
+			if (message[0] == BOT_COMMAND_CHAR) {
+				if (RuleB(Bots, Enabled)) {
+					if (bot_command_dispatch(this, message) == -2) {
+						if (parse->PlayerHasQuestSub(EVENT_BOT_COMMAND)) {
+							int i = parse->EventPlayer(EVENT_BOT_COMMAND, this, message, 0);
+							if (i == 0 && !RuleB(Chat, SuppressCommandErrors)) {
+								Message(Chat::Red, "Bot command '%s' not recognized.", message);
+							}
+						} else if (parse->PlayerHasQuestSub(EVENT_SAY)) {
+							int i = parse->EventPlayer(EVENT_SAY, this, message, 0);
+							if (i == 0 && !RuleB(Chat, SuppressCommandErrors)) {
+								Message(Chat::Red, "Bot command '%s' not recognized.", message);
+							}
+						} else {
+							if (!RuleB(Chat, SuppressCommandErrors)) {
+								Message(Chat::Red, "Bot command '%s' not recognized.", message);
+							}
 						}
-					}
-				}
-			} else {
-				if (parse->HasQuestSub(t->GetNPCTypeID(), EVENT_AGGRO_SAY)) {
-					if (DistanceSquaredNoZ(m_Position, t->GetPosition()) <= RuleI(Range, Say)) {
-						parse->EventNPC(EVENT_AGGRO_SAY, t, this, message, language);
-					}
-				}
-			}
-
-		}
-
-		else if (GetTarget() && GetTarget()->IsBot() && !IsInvisible(GetTarget())) {
-			if (DistanceNoZ(m_Position, GetTarget()->GetPosition()) <= RuleI(Range, Say)) {
-				if (GetTarget()->IsEngaged()) {
-					if (parse->BotHasQuestSub(EVENT_AGGRO_SAY)) {
-						parse->EventBot(EVENT_AGGRO_SAY, GetTarget()->CastToBot(), this, message, language);
 					}
 				} else {
-					if (parse->BotHasQuestSub(EVENT_SAY)) {
-						parse->EventBot(EVENT_SAY, GetTarget()->CastToBot(), this, message, language);
+					Message(Chat::Red, "Bots are disabled on this server.");	
+				}
+				break;
+			}
+
+			if (EQ::ProfanityManager::IsCensorshipActive()) {
+				EQ::ProfanityManager::RedactMessage(message);
+			}
+
+			Mob* sender = this;
+			if (GetPet() && GetTarget() == GetPet() && GetPet()->FindType(SE_VoiceGraft)) {
+				sender = GetPet();
+			}
+
+			if (!is_silent) {
+				entity_list.ChannelMessage(sender, chan_num, language, lang_skill, message);
+			}
+
+			if (parse->PlayerHasQuestSub(EVENT_SAY)) {
+				parse->EventPlayer(EVENT_SAY, this, message, language);
+			}
+
+			if (sender != this) {
+				break;
+			}
+
+			if (quest_manager.ProximitySayInUse()) {
+				entity_list.ProcessProximitySay(message, this, language);
+			}
+
+			if (
+				GetTarget() &&
+				GetTarget()->IsNPC() &&
+				!IsInvisible(GetTarget())
+			) {
+				auto* t = GetTarget()->CastToNPC();
+				if (!t->IsEngaged()) {
+					CheckLDoNHail(t);
+					CheckEmoteHail(t, message);
+					if (DistanceNoZ(m_Position, t->GetPosition()) <= RuleI(Range, Say)) {
+						if (parse->HasQuestSub(t->GetNPCTypeID(), EVENT_SAY)) {
+							parse->EventNPC(EVENT_SAY, t, this, message, language);
+						}
+
+						if (RuleB(TaskSystem, EnableTaskSystem)) {
+							if (UpdateTasksOnSpeakWith(t)) {
+								t->DoQuestPause(this);
+							}
+						}
+					}
+				} else {
+					if (parse->HasQuestSub(t->GetNPCTypeID(), EVENT_AGGRO_SAY)) {
+						if (DistanceSquaredNoZ(m_Position, t->GetPosition()) <= RuleI(Range, Say)) {
+							parse->EventNPC(EVENT_AGGRO_SAY, t, this, message, language);
+						}
+					}
+				}
+			} else if (GetTarget() && GetTarget()->IsBot() && !IsInvisible(GetTarget())) {
+				if (DistanceNoZ(m_Position, GetTarget()->GetPosition()) <= RuleI(Range, Say)) {
+					if (GetTarget()->IsEngaged()) {
+						if (parse->BotHasQuestSub(EVENT_AGGRO_SAY)) {
+							parse->EventBot(EVENT_AGGRO_SAY, GetTarget()->CastToBot(), this, message, language);
+						}
+					} else {
+						if (parse->BotHasQuestSub(EVENT_SAY)) {
+							parse->EventBot(EVENT_SAY, GetTarget()->CastToBot(), this, message, language);
+						}
 					}
 				}
 			}
+			break;
 		}
 
+		case ChatChannel_UCSRelay:
+		{
+			// UCS Relay for Underfoot and later.
+			if (!worldserver.SendChannelMessage(this, 0, chan_num, 0, language, lang_skill, message)) {
+				Message(0, "Error: World server disconnected");
+			}
+			break;
+		}
 
-		break;
-	}
-	case ChatChannel_UCSRelay:
-	{
-		// UCS Relay for Underfoot and later.
-		if(!worldserver.SendChannelMessage(this, 0, chan_num, 0, language, lang_skill, message))
-			Message(0, "Error: World server disconnected");
-		break;
-	}
-	case ChatChannel_Emotes:
-	{
-		// Emotes for Underfoot and later.
-		// crash protection -- cheater
-		message[1023] = '\0';
-		size_t msg_len = strlen(message);
-		if (msg_len > 512)
-			message[512] = '\0';
+		case ChatChannel_Emotes:
+		{
+			// Emotes for Underfoot and later.
+			// crash protection -- cheater
+			message[1023] = '\0';
+			size_t msg_len = strlen(message);
+			if (msg_len > 512) {
+				message[512] = '\0';
+			}
 
-		auto outapp = new EQApplicationPacket(OP_Emote, 4 + msg_len + strlen(GetName()) + 2);
-		Emote_Struct* es = (Emote_Struct*)outapp->pBuffer;
-		char *Buffer = (char *)es;
-		Buffer += 4;
-		snprintf(Buffer, sizeof(Emote_Struct) - 4, "%s %s", GetName(), message);
-		entity_list.QueueCloseClients(this, outapp, true, RuleI(Range, Emote), 0, true, FilterSocials);
-		safe_delete(outapp);
-		break;
-	}
-	default: {
-		Message(0, "Channel (%i) not implemented", (uint16)chan_num);
-	}
+			auto outapp = new EQApplicationPacket(OP_Emote, 4 + msg_len + strlen(GetName()) + 2);
+			Emote_Struct* es = (Emote_Struct*)outapp->pBuffer;
+			char *Buffer = (char *)es;
+			Buffer += 4;
+			snprintf(Buffer, sizeof(Emote_Struct) - 4, "%s %s", GetName(), message);
+			entity_list.QueueCloseClients(this, outapp, true, RuleI(Range, Emote), 0, true, FilterSocials);
+			safe_delete(outapp);
+			break;
+		}
+
+		default: {
+			Message(0, "Channel (%i) not implemented", (uint16)chan_num);
+		}
 	}
 }
 
 void Client::ChannelMessageSend(const char* from, const char* to, uint8 chan_num, uint8 language, uint8 lang_skill, const char* message, ...) {
-	if ((chan_num==11 && !(GetGM())) || (chan_num==10 && Admin() < AccountStatus::QuestTroupe)) // dont need to send /pr & /petition to everybody
+	if ((chan_num==11 && !(GetGM())) || (chan_num==10 && Admin() < AccountStatus::QuestTroupe)) { // dont need to send /pr & /petition to everybody
 		return;
+	}
 	va_list argptr;
 	char buffer[4096];
 	char message_sender[64];
@@ -1275,20 +1259,21 @@ void Client::ChannelMessageSend(const char* from, const char* to, uint8 chan_num
 	EQApplicationPacket app(OP_ChannelMessage, sizeof(ChannelMessage_Struct)+strlen(buffer)+1);
 	ChannelMessage_Struct* cm = (ChannelMessage_Struct*)app.pBuffer;
 
-	if (from == 0)
+	if (from == 0) {
 		strcpy(cm->sender, "ZServer");
-	else if (from[0] == 0)
+	} else if (from[0] == 0) {
 		strcpy(cm->sender, "ZServer");
-	else {
+	} else {
 		CleanMobName(from, message_sender);
 		strcpy(cm->sender, message_sender);
 	}
-	if (to != 0)
+	if (to != 0) {
 		strcpy((char *) cm->targetname, to);
-	else if (chan_num == ChatChannel_Tell)
+	} else if (chan_num == ChatChannel_Tell) {
 		strcpy(cm->targetname, m_pp.name);
-	else
+	} else {
 		cm->targetname[0] = 0;
+	}
 
 	uint8 ListenerSkill;
 
@@ -1296,20 +1281,19 @@ void Client::ChannelMessageSend(const char* from, const char* to, uint8 chan_num
 		ListenerSkill = m_pp.languages[language];
 		if (ListenerSkill < 24) {
 			cm->language = (MAX_PP_LANGUAGE - 1); // in an unknown tongue
-		}
-		else {
+		} else {
 			cm->language = language;
 		}
-	}
-	else {
+	} else {
 		ListenerSkill = m_pp.languages[0];
 		cm->language = 0;
 	}
 
 	// set effective language skill = lower of sender and receiver skills
 	int32 EffSkill = (lang_skill < ListenerSkill ? lang_skill : ListenerSkill);
-	if (EffSkill > 100)	// maximum language skill is 100
+	if (EffSkill > 100)	{ // maximum language skill is 100
 		EffSkill = 100;
+	}
 	cm->skill_in_language = EffSkill;
 
 	cm->chan_num = chan_num;
@@ -1321,19 +1305,25 @@ void Client::ChannelMessageSend(const char* from, const char* to, uint8 chan_num
 
 	if (senderCanTrainSelf || weAreNotSender) {
 		if ((chan_num == ChatChannel_Group) && (ListenerSkill < 100)) {	// group message in unmastered language, check for skill up
-			if (language < MAX_PP_LANGUAGE && m_pp.languages[language] <= lang_skill)
+			if (language < MAX_PP_LANGUAGE && m_pp.languages[language] <= lang_skill) {
 				CheckLanguageSkillIncrease(language, lang_skill);
+			}
 		}
 	}
 }
 
 void Client::Message(uint32 type, const char* message, ...) {
-	if (GetFilter(FilterSpellDamage) == FilterHide && type == Chat::NonMelee)
+	if (GetFilter(FilterSpellDamage) == FilterHide && type == Chat::NonMelee) {
 		return;
-	if (GetFilter(FilterMeleeCrits) == FilterHide && type == Chat::MeleeCrit) //98 is self...
+	}
+
+	if (GetFilter(FilterMeleeCrits) == FilterHide && type == Chat::MeleeCrit) { //98 is self...
 		return;
-	if (GetFilter(FilterSpellCrits) == FilterHide && type == Chat::SpellCrit)
+	}
+
+	if (GetFilter(FilterSpellCrits) == FilterHide && type == Chat::SpellCrit) {
 		return;
+	}
 
 	va_list argptr;
 	auto buffer = new char[4096];
@@ -1361,8 +1351,9 @@ void Client::Message(uint32 type, const char* message, ...) {
 }
 
 void Client::FilteredMessage(Mob *sender, uint32 type, eqFilterType filter, const char* message, ...) {
-	if (!FilteredMessageCheck(sender, filter))
+	if (!FilteredMessageCheck(sender, filter)) {
 		return;
+	}
 
 	va_list argptr;
 	auto buffer = new char[4096];
@@ -1390,8 +1381,10 @@ void Client::FilteredMessage(Mob *sender, uint32 type, eqFilterType filter, cons
 }
 
 void Client::SetMaxHP() {
-	if(dead)
+	if(dead) {
 		return;
+	}
+	
 	SetHP(CalcMaxHP());
 	SendHPUpdate();
 	Save();

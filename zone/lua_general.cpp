@@ -4393,6 +4393,21 @@ int lua_get_zone_minimum_lava_damage(uint32 zone_id, int version)
 	return zone_store.GetZoneMinimumLavaDamage(zone_id, version);
 }
 
+void lua_send_channel_message(uint8 channel_number, uint32 guild_id, uint8 language_id, uint8 language_skill, const char* message)
+{
+	quest_manager.SendChannelMessage(channel_number, guild_id, language_id, language_skill, message);
+}
+
+void lua_send_channel_message(Lua_Client from, uint8 channel_number, uint32 guild_id, uint8 language_id, uint8 language_skill, const char* message)
+{
+	quest_manager.SendChannelMessage(from, channel_number, guild_id, language_id, language_skill, message);
+}
+
+void lua_send_channel_message(Lua_Client from, const char* to, uint8 channel_number, uint32 guild_id, uint8 language_id, uint8 language_skill, const char* message)
+{
+	quest_manager.SendChannelMessage(from, to, channel_number, guild_id, language_id, language_skill, message);
+}
+
 #define LuaCreateNPCParse(name, c_type, default_value) do { \
 	cur = table[#name]; \
 	if(luabind::type(cur) != LUA_TNIL) { \
@@ -5042,6 +5057,9 @@ luabind::scope lua_register_general() {
 		luabind::def("get_zone_minimum_lava_damage", (int(*)(uint32,int))&lua_get_zone_minimum_lava_damage),
 		luabind::def("does_augment_fit", (int8(*)(Lua_ItemInst, uint32))&lua_does_augment_fit),
 		luabind::def("does_augment_fit", (int8(*)(Lua_ItemInst, uint32, uint8))&lua_does_augment_fit),
+		luabind::def("send_channel_message", (void(*)(uint8,uint32,uint8,uint8,const char*))&lua_send_channel_message),
+		luabind::def("send_channel_message", (void(*)(Lua_Client,uint8,uint32,uint8,uint8,const char*))&lua_send_channel_message),
+		luabind::def("send_channel_message", (void(*)(Lua_Client,const char*,uint8,uint32,uint8,uint8,const char*))&lua_send_channel_message),
 
 		/*
 			Cross Zone
