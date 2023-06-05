@@ -102,6 +102,8 @@ Copyright (C) 2001-2002 EQEMu Development Team (http://eqemu.org)
 #include "client.h"
 #include "mob.h"
 
+#include "water_map.h"
+
 
 extern Zone* zone;
 extern volatile bool is_zone_loaded;
@@ -221,7 +223,7 @@ bool Mob::CastSpell(uint16 spell_id, uint16 target_id, CastingSlot slot,
 	}
 
 	// check line of sight to target if it's a detrimental spell
-	if (spells[spell_id].target_type != ST_AECaster && !spells[spell_id].npc_no_los && GetTarget() && IsDetrimentalSpell(spell_id) && !CheckLosFN(GetTarget()) && !IsHarmonySpell(spell_id) && spells[spell_id].target_type != ST_TargetOptional && !IsBindSightSpell(spell_id)) {
+	if (spells[spell_id].target_type != ST_AECaster && !spells[spell_id].npc_no_los && GetTarget() && IsDetrimentalSpell(spell_id) && (!CheckLosFN(GetTarget()) || !CheckWaterLoS(this, GetTarget())) && !IsHarmonySpell(spell_id) && spells[spell_id].target_type != ST_TargetOptional && !IsBindSightSpell(spell_id)) {
 		Log(Logs::Detail, Logs::Spells, "Spell %d: cannot see target %s", spell_id, GetTarget()->GetName());
 		MessageString(13, CANT_SEE_TARGET);
 		if (IsClient()) {
@@ -563,7 +565,7 @@ bool Mob::DoCastingChecksOnCaster(int32 spell_id, CastingSlot slot) {
 	/*
 		Cannot cast if stunned or mezzed, unless spell has 'cast_not_standing' flag.
 	*/
-	if ((IsStunned() || IsMezzed()) && !IgnoreCastingRestriction(spell_id)) {
+	if ((IsStunned() || IsMezzed()) && !IsCastNotStandingSpell(spell_id)) {
 		LogSpells("Spell casting canceled [{}] : can not cast spell when stunned.", spell_id);
 		return false;
 	}
@@ -593,7 +595,7 @@ bool Mob::DoCastingChecksOnCaster(int32 spell_id, CastingSlot slot) {
 	/*
 		Cannot cast under divine aura, unless spell has 'cast_not_standing' flag.
 	*/
-	if (DivineAura() && !IgnoreCastingRestriction(spell_id)) {
+	if (DivineAura() && !IsCastNotStandingSpell(spell_id)) {
 		LogSpells("Spell casting canceled [{}] : cannot cast while Divine Aura is in effect.", spell_id);
 		InterruptSpell(173, 0x121, false); //not sure we need this.
 		return false;
@@ -887,7 +889,7 @@ bool Mob::DoCastingChecksOnTarget(bool check_on_casting, int32 spell_id, Mob *sp
 	/*
 		Requires target to be in same group or same raid in order to apply invisible.
 	*/
-	if (check_on_casting && RuleB(Spells, InvisRequiresGroup) && IsInvisSpell(spell_id)) {
+	if (check_on_casting && RuleB(Spells, InvisRequiresGroup) && IsInvisibleSpell(spell_id)) {
 		if (IsClient() && spell_target && spell_target->IsClient()) {
 			if (spell_target && spell_target->GetID() != GetID()) {
 				bool cast_failed = true;
@@ -1811,7 +1813,7 @@ bool Mob::DetermineSpellTargets(uint16 spell_id, Mob *&spell_target, Mob *&ae_ce
 	SpellTargetType targetType = spells[spell_id].target_type;
 	bodyType mob_body = spell_target ? spell_target->GetBodyType() : BT_Humanoid;
 
-	if(IsPlayerIllusionSpell(spell_id)
+	if(IsIllusionSpell(spell_id)
 		&& spell_target != nullptr // null ptr crash safeguard
 		&& !spell_target->IsNPC() // still self only if NPC targetted
 		&& IsClient()
@@ -2387,11 +2389,12 @@ bool Mob::SpellFinished(uint16 spell_id, Mob *spell_target, CastingSlot slot, in
 
 	//range check our target, if we have one and it is not us
 	float range = spells[spell_id].range + GetRangeDistTargetSizeMod(spell_target);
-	if(IsClient() && CastToClient()->TGB() && IsTGBCompatibleSpell(spell_id) && IsGroupSpell(spell_id))
+	if(IsClient() && CastToClient()->TGB() && IsTGBCompatibleSpell(spell_id) && IsGroupSpell(spell_id)) {
 		range = spells[spell_id].aoe_range;
+	}
 
 	range = GetActSpellRange(spell_id, range);
-	if(IsClient() && IsPlayerIllusionSpell(spell_id) && (HasProjectIllusion())){
+	if(IsClient() && IsIllusionSpell(spell_id) && (HasProjectIllusion())) {
 		range = 100;
 	}
 
@@ -2474,7 +2477,7 @@ bool Mob::SpellFinished(uint16 spell_id, Mob *spell_target, CastingSlot slot, in
 				}
 			}
 
-			if(IsPlayerIllusionSpell(spell_id)
+			if(IsIllusionSpell(spell_id)
 			&& IsClient()
 			&& (HasProjectIllusion())){
 				LogAA("Effect Project Illusion for [{}] on spell id: [{}] was ON", GetName(), spell_id);
@@ -2618,7 +2621,7 @@ bool Mob::SpellFinished(uint16 spell_id, Mob *spell_target, CastingSlot slot, in
 	}
 
 	// Set and send the nimbus effect if this spell has one
-	int NimbusEffect = GetNimbusEffect(spell_id);
+	int NimbusEffect = GetSpellNimbusEffect(spell_id);
 	if(NimbusEffect) {
 		if(!IsNimbusEffectActive(NimbusEffect)) {
 			SendSpellEffect(NimbusEffect, 500, 0, 1, 3000, true);
@@ -2768,7 +2771,7 @@ bool Mob::ApplyBardPulse(int32 spell_id, Mob *spell_target, CastingSlot slot) {
 	/*
 		If divine aura applied while pulsing, it is not interrupted but does not reapply until DA fades.
 	*/
-	if (DivineAura() && !IgnoreCastingRestriction(spell_id)) {
+	if (DivineAura() && !IsCastNotStandingSpell(spell_id)) {
 		return true;
 	}
 	/*
@@ -2949,7 +2952,7 @@ int Mob::CheckStackConflict(uint16 spellid1, int caster_level1, uint16 spellid2,
 			return -1;
 		}
 
-		if (!IsStackableDot(spellid1) && !(spellid1 == SPELL_MANA_BURN)) { // Manaburn cannot land on a target with the debuff
+		if (!IsStackableDOT(spellid1) && !(spellid1 == SPELL_MANA_BURN)) { // Manaburn cannot land on a target with the debuff
 			if (caster_level1 > caster_level2) { // cur buff higher level than new
 				if (IsEffectInSpell(spellid1, SE_ImprovedTaunt)) {
 					LogSpells("SE_ImprovedTaunt level exception, overwriting");
@@ -3019,23 +3022,26 @@ int Mob::CheckStackConflict(uint16 spellid1, int caster_level1, uint16 spellid2,
 			}
 
 			if (spellbonuses.BStacker[SBIndex::BUFFSTACKER_EXISTS]) {
-				if ((effect2 == SE_BStacker) && (sp2.effect_id[i] <= spellbonuses.BStacker[SBIndex::BUFFSTACKER_VALUE]))
+				if ((effect2 == SE_BStacker) && (sp2.effect_id[i] <= spellbonuses.BStacker[SBIndex::BUFFSTACKER_VALUE])) {
 					return -1;
-				if ((effect2 == SE_AStacker) && (!IsCastonFadeDurationSpell(spellid1) && buffs[buffslot].ticsremaining != 1 && IsEffectInSpell(spellid1, SE_BStacker)))
+				}
+
+				if ((effect2 == SE_AStacker) && (!IsCastOnFadeDurationSpell(spellid1) && buffs[buffslot].ticsremaining != 1 && IsEffectInSpell(spellid1, SE_BStacker))) {
 					return -1;
+				}
 			}
 
 			if (spellbonuses.CStacker[SBIndex::BUFFSTACKER_EXISTS]) {
 				if ((effect2 == SE_CStacker) && (sp2.effect_id[i] <= spellbonuses.CStacker[SBIndex::BUFFSTACKER_VALUE]))
 					return -1;
-				if ((effect2 == SE_BStacker) && (!IsCastonFadeDurationSpell(spellid1) && buffs[buffslot].ticsremaining != 1 && IsEffectInSpell(spellid1, SE_CStacker)))
+				if ((effect2 == SE_BStacker) && (!IsCastOnFadeDurationSpell(spellid1) && buffs[buffslot].ticsremaining != 1 && IsEffectInSpell(spellid1, SE_CStacker)))
 					return -1;
 			}
 
 			if (spellbonuses.DStacker[SBIndex::BUFFSTACKER_EXISTS]) {
 				if ((effect2 == SE_DStacker) && (sp2.effect_id[i] <= spellbonuses.DStacker[SBIndex::BUFFSTACKER_VALUE]))
 					return -1;
-				if ((effect2 == SE_CStacker) && (!IsCastonFadeDurationSpell(spellid1) && buffs[buffslot].ticsremaining != 1 && IsEffectInSpell(spellid1, SE_DStacker)))
+				if ((effect2 == SE_CStacker) && (!IsCastOnFadeDurationSpell(spellid1) && buffs[buffslot].ticsremaining != 1 && IsEffectInSpell(spellid1, SE_DStacker)))
 					return -1;
 			}
 
@@ -3050,6 +3056,12 @@ int Mob::CheckStackConflict(uint16 spellid1, int caster_level1, uint16 spellid2,
 						sp2.name, spellid2, overwrite_effect, overwrite_slot, overwrite_below_value, sp1_value, (sp1_value < overwrite_below_value)?"Overwriting":"Not overwriting");
 
 					if(sp1_value < overwrite_below_value) {
+						if (IsResurrectionEffects(spellid1)) {
+							int8 res_effect_check = GetSpellResurrectionSicknessCheck(spellid1, spellid2);
+							if (res_effect_check != 0) {
+								return res_effect_check;
+							}
+						}
 						LogSpells("Overwrite spell because sp1_value < overwrite_below_value");
 						return 1;			// overwrite spell if its value is less
 					}
@@ -3193,6 +3205,13 @@ int Mob::CheckStackConflict(uint16 spellid1, int caster_level1, uint16 spellid2,
 			sp2_value = 0 - sp2_value;
 		}
 
+		if (IsResurrectionEffects(spellid1)) {
+			int8 res_effect_check = GetSpellResurrectionSicknessCheck(spellid1, spellid2);
+			if (res_effect_check != 0) {
+				return res_effect_check;
+			}
+		}
+
 		if(sp2_value < sp1_value) {
 			LogSpells("Spell [{}] (value [{}]) is not as good as [{}] (value [{}]). Rejecting [{}]",
 				sp2.name, sp2_value, sp1.name, sp1_value, sp2.name);
@@ -3201,10 +3220,7 @@ int Mob::CheckStackConflict(uint16 spellid1, int caster_level1, uint16 spellid2,
 		if (sp2_value != sp1_value) {
 			values_equal = false;
 		}
-		if (RuleB(Spells, ResurrectionEffectsBlock) && IsResurrectionEffects(spellid1)) {
-			LogSpells("ResurrectionEffectsBlock triggered -- [{}] is blocked by [{}]", sp2.name, sp1.name);
-			return -1;	// can't stack
-		}
+
 		//we dont return here... a better value on this one effect dosent mean they are
 		//all better...
 
@@ -3270,7 +3286,7 @@ bool Mob::CheckSpellLevelRestriction(Mob *caster, uint16 spell_id)
 	}
 
 	if (check_for_restrictions) {
-		int spell_level = GetMinLevel(spell_id);
+		int spell_level = GetSpellMinimumLevel(spell_id);
 
 		// Only check for beneficial buffs
 		if (IsBuffSpell(spell_id) && IsBeneficialSpell(spell_id)) {
@@ -3402,6 +3418,11 @@ int Mob::AddBuff(Mob *caster, uint16 spell_id, int duration, int32 level_overrid
 
 				will_overwrite = true;
 				overwrite_slots.push_back(buffslot);
+			}
+
+			if (ret == 2) { //ResurrectionEffectBlock handling to move potential overwrites to a new buff slock while keeping Res Sickness
+				LogSpells("Adding buff [{}] will overwrite spell [{}] in slot [{}] with caster level [{}], but ResurrectionEffectBlock is set to 2. Attempting to move [{}] to an empty buff slot.",
+					spell_id, curbuf.spellid, buffslot, curbuf.casterlevel, spell_id);
 			}
 		} else {
 			if (emptyslot == -1) {
@@ -3559,6 +3580,20 @@ int Mob::CanBuffStack(uint16 spellid, uint8 caster_level, bool iFailIfOverwrite)
 		if(ret == -1) {
 			LogAIDetail("Buff [{}] would conflict with [{}] in slot [{}], reporting stack failure", spellid, curbuf.spellid, i);
 			return -1;	// stop the spell, can't stack it
+		}
+
+		if (ret == 2) { //ResurrectionEffectBlock handling to move potential overwrites to a new buff slock while keeping Res Sickness
+			LogAIDetail("Adding buff [{}] will overwrite spell [{}] in slot [{}] with caster level [{}], but ResurrectionEffectBlock is set to 2. Attempting to move [{}] to an empty buff slot.",
+				spellid, curbuf.spellid, i, curbuf.casterlevel, spellid);
+			for (int x = 0; x < buff_count; x++) {
+				const Buffs_Struct& curbuf = buffs[x];
+				if (IsValidSpell(curbuf.spellid)) {
+					continue;
+				}
+				else {
+					firstfree = x;
+				}
+			}
 		}
 	}
 
@@ -3793,7 +3828,7 @@ bool Mob::SpellOnTarget(
 	if (
 		(spelltar->GetInvul() && !spelltar->DivineAura()) ||
 		(spelltar != this && spelltar->DivineAura()) ||
-		(spelltar == this && spelltar->DivineAura() && !IgnoreCastingRestriction(spell_id))
+		(spelltar == this && spelltar->DivineAura() && !IsCastNotStandingSpell(spell_id))
 	) {
 		LogSpells("Casting spell [{}] on [{}] aborted: they are invulnerable", spell_id, spelltar->GetName());
 		safe_delete(action_packet);
@@ -3824,18 +3859,53 @@ bool Mob::SpellOnTarget(
 
 	// Prevent double invising, which made you uninvised
 	// Not sure if all 3 should be stacking
-	//This is not live like behavior (~Kayen confirmed 2/2/22)
+
 	if (!RuleB(Spells, AllowDoubleInvis)) {
 		if (IsEffectInSpell(spell_id, SE_Invisibility)) {
-			if (spelltar->invisible) {
+			if (spelltar->IsClient()) {
+				if (IsClient()) {
+					if (spelltar != this && !entity_list.IsInSameGroupOrRaidGroup(spelltar->CastToClient(), this->CastToClient())) {
+						Message(Chat::Red, "Your target must be a group member for this spell.");
+						return false;
+					}
+				}
+			} else {
+				Message(Chat::Red, "This spell can only be cast on players.");
+			}
+		}
+
+		if (IsEffectInSpell(spell_id, SE_InvisVsUndead)) {
+			if (spelltar->IsClient()) {
+				if (IsClient()) {
+					if (spelltar != this && !entity_list.IsInSameGroupOrRaidGroup(spelltar->CastToClient(), this->CastToClient())) {
+						Message(Chat::Red, "Your target must be a group member for this spell.");
+						return false;
+					}
+				}
+			} else {
+				Message(Chat::Red, "This spell can only be cast on players.");
+			}
+
+			if (spelltar->invisible_undead) {
 				spelltar->MessageString(Chat::SpellFailure, ALREADY_INVIS, GetCleanName());
 				safe_delete(action_packet);
 				return false;
 			}
 		}
+		
+		if (IsEffectInSpell(spell_id, SE_InvisVsAnimals)) {
+			if (spelltar->IsClient()) {
+				if (IsClient()) {
+					if (spelltar != this && !entity_list.IsInSameGroupOrRaidGroup(spelltar->CastToClient(), this->CastToClient())) {
+						Message(Chat::Red, "Your target must be a group member for this spell.");
+						return false;
+					}
+				}
+			} else {
+				Message(Chat::Red, "This spell can only be cast on players.");
+			}
 
-		if (IsEffectInSpell(spell_id, SE_InvisVsUndead)) {
-			if (spelltar->invisible_undead) {
+			if (spelltar->invisible_animals) {
 				spelltar->MessageString(Chat::SpellFailure, ALREADY_INVIS, GetCleanName());
 				safe_delete(action_packet);
 				return false;
@@ -3904,7 +3974,7 @@ bool Mob::SpellOnTarget(
 				}
 
 				if (
-					(!IsAllianceSpellLine(spell_id) && !IsBeneficialAllowed(spelltar)) ||
+					(!IsAllianceSpell(spell_id) && !IsBeneficialAllowed(spelltar)) ||
 					(IsGroupOnlySpell(spell_id) &&
 						!(
 							(
@@ -4141,7 +4211,7 @@ bool Mob::SpellOnTarget(
 
 		if (
 			IsCharmSpell(spell_id) ||
-			IsMezSpell(spell_id) ||
+			IsMesmerizeSpell(spell_id) ||
 			IsFearSpell(spell_id)
 		) {
 			spell_effectiveness = spelltar->ResistSpell(
@@ -4170,7 +4240,7 @@ bool Mob::SpellOnTarget(
 		}
 
 		if (spell_effectiveness < 100) {
-			if (spell_effectiveness == 0 || !IsPartialCapableSpell(spell_id)) {
+			if (spell_effectiveness == 0 || !IsPartialResistableSpell(spell_id)) {
 				LogSpells("Spell [{}] was completely resisted by [{}]", spell_id, spelltar->GetName());
 
 				if (spells[spell_id].resist_type == RESIST_PHYSICAL){
@@ -4740,7 +4810,7 @@ bool Mob::IsImmuneToSpell(uint16 spell_id, Mob *caster)
 	if(IsBeneficialSpell(spell_id) && (caster->GetNPCTypeID())) //then skip the rest, stop NPCs aggroing each other with buff spells. 2013-03-05
 		return false;
 
-	if(IsMezSpell(spell_id))
+	if(IsMesmerizeSpell(spell_id))
 	{
 		if(GetSpecialAbility(UNMEZABLE)) {
 			LogSpells("We are immune to Mez spells");
@@ -5282,7 +5352,7 @@ float Mob::ResistSpell(uint8 resist_type, uint16 spell_id, Mob *caster, bool use
 
 		//This is confusing but it's basically right
 		//It skews partial resists up over 100 more often than not
-		if(!IsPartialCapableSpell(spell_id)) {
+		if(!IsPartialResistableSpell(spell_id)) {
 			return 0;
 		} else {
 			if(resist_chance < 1) {
@@ -7227,4 +7297,12 @@ void Mob::DrawDebugCoordinateNode(std::string node_name, const glm::vec4 vec)
 const CombatRecord &Mob::GetCombatRecord() const
 {
 	return m_combat_record;
+}
+
+bool Mob::CheckWaterLoS(Mob* los_attacker, Mob* los_target) // checks if both attacker and target are both in or out of the water
+{
+	if (!RuleB(Spells, WaterMatchRequiredForLoS)) { // if rule is set to false, bypass check
+		return true;
+	}
+	return zone->watermap->InLiquid(los_attacker->GetPosition()) == zone->watermap->InLiquid(los_target->GetPosition());
 }

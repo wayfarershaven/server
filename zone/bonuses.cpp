@@ -1024,10 +1024,7 @@ void Mob::ApplyAABonuses(const AA::Rank &rank, StatBonuses *newbon)
 			newbon->MaxBindWound += base_value;
 			break;
 		case SE_SeeInvis:
-			base_value = std::min({ base_value, MAX_INVISIBILTY_LEVEL });
-			if (newbon->SeeInvis < base_value) {
-				newbon->SeeInvis = base_value;
-			}
+			newbon->SeeInvis = base_value;
 			break;
 		case SE_BaseMovementSpeed:
 			newbon->BaseMovementSpeed += base_value;
@@ -4052,33 +4049,6 @@ void Mob::ApplySpellsBonuses(uint16 spell_id, uint8 casterlevel, StatBonuses *ne
 				break;
 			}
 
-			case SE_Invisibility:
-			case SE_Invisibility2:
-				effect_value = std::min({ effect_value, MAX_INVISIBILTY_LEVEL });
-				if (new_bonus->invisibility < effect_value)
-					new_bonus->invisibility = effect_value;
-				break;
-
-			case SE_InvisVsUndead:
-			case SE_InvisVsUndead2:
-				if (new_bonus->invisibility_verse_undead < effect_value)
-					new_bonus->invisibility_verse_undead = effect_value;
-				break;
-
-			case SE_InvisVsAnimals:
-			case SE_ImprovedInvisAnimals:
-				effect_value = std::min({ effect_value, MAX_INVISIBILTY_LEVEL });
-				if (new_bonus->invisibility_verse_animal < effect_value)
-					new_bonus->invisibility_verse_animal = effect_value;
-				break;
-
-			case SE_SeeInvis:
-				effect_value = std::min({ effect_value, MAX_INVISIBILTY_LEVEL });
-				if (new_bonus->SeeInvis < effect_value) {
-					new_bonus->SeeInvis = effect_value;
-				}
-				break;
-
 			case SE_ZoneSuspendMinion:
 				new_bonus->ZoneSuspendMinion = effect_value;
 				break;
@@ -4090,6 +4060,19 @@ void Mob::ApplySpellsBonuses(uint16 spell_id, uint8 casterlevel, StatBonuses *ne
 			case SE_TrapCircumvention:
 				new_bonus->TrapCircumvention += effect_value;
 				break;
+
+			case SE_SeeInvis:
+				new_bonus->SeeInvis = spells[spell_id].base_value[i];
+				break;
+
+			//Special custom cases for loading effects on to NPC from 'npc_spels_effects' table
+			if (IsAISpellEffect) {
+
+				//Non-Focused Effect to modify incoming spell damage by resist type.
+				case SE_FcSpellVulnerability:
+					ModVulnerability(limit_value, effect_value);
+				break;
+			}
 		}
 	}
 }

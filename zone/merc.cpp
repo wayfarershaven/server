@@ -776,7 +776,7 @@ void Merc::CalcRestState() {
 	for (unsigned int j = 0; j < buff_count; j++) {
 		if(IsValidSpell(buffs[j].spellid)) {
 			if(IsDetrimentalSpell(buffs[j].spellid) && (buffs[j].ticsremaining > 0)) {
-				if(!DetrimentalSpellAllowsRest(buffs[j].spellid)) {
+				if(!IsRestAllowedSpell(buffs[j].spellid)) {
 					return;
 				}
 			}

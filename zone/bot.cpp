@@ -259,7 +259,7 @@ Bot::Bot(uint32 botID, uint32 botOwnerCharacterID, uint32 botSpellsID, double to
 
 			const SPDat_Spell_Struct& spell = spells[buffs[j1].spellid];
 
-			if (int NimbusEffect = GetNimbusEffect(buffs[j1].spellid); NimbusEffect && !IsNimbusEffectActive(NimbusEffect)) {
+			if (int NimbusEffect = GetSpellNimbusEffect(buffs[j1].spellid); NimbusEffect && !IsNimbusEffectActive(NimbusEffect)) {
 				SendSpellEffect(NimbusEffect, 500, 0, 1, 3000, true);
 			}
 
@@ -268,24 +268,19 @@ Bot::Bot(uint32 botID, uint32 botOwnerCharacterID, uint32 botSpellsID, double to
 				case SE_IllusionCopy:
 				case SE_Illusion: {
 					if (spell.base_value[x1] == -1) {
-						if (gender == 1)
+						if (gender == 1) {
 							gender = 0;
-						else if (gender == 0)
+						} else if (gender == 0) {
 							gender = 1;
+						}
 						SendIllusionPacket(GetRace(), gender, 0xFF, 0xFF);
-					}
-					else if (spell.base_value[x1] == -2) // WTF IS THIS
-					{
+					} else if (spell.base_value[x1] == -2) { // WTF IS THIS
 						if (GetRace() == IKSAR || GetRace() == VAHSHIR || GetRace() <= GNOME) {
 							SendIllusionPacket(GetRace(), GetGender(), spell.limit_value[x1], spell.max_value[x1]);
 						}
-					}
-					else if (spell.max_value[x1] > 0)
-					{
+					} else if (spell.max_value[x1] > 0) {
 						SendIllusionPacket(spell.base_value[x1], 0xFF, spell.limit_value[x1], spell.max_value[x1]);
-					}
-					else
-					{
+					} else {
 						SendIllusionPacket(spell.base_value[x1], 0xFF, 0xFF, 0xFF);
 					}
 					switch (spell.base_value[x1]) {
@@ -4882,14 +4877,16 @@ void Bot::DoSpecialAttackDamage(Mob *who, EQ::skills::SkillType skill, int32 max
 	if (skill == EQ::skills::SkillBash) {
 		const EQ::ItemInstance* inst = GetBotItem(EQ::invslot::slotSecondary);
 		const EQ::ItemData* botweapon = nullptr;
-		if (inst)
+		if (inst) {
 			botweapon = inst->GetItem();
+		}
 
 		if (botweapon) {
-			if (botweapon->ItemType == EQ::item::ItemTypeShield)
+			if (botweapon->ItemType == EQ::item::ItemTypeShield) {
 				hate += botweapon->AC;
+			}
 
-			hate = (hate * (100 + GetFuriousBash(botweapon->Focus.Effect)) / 100);
+			hate = (hate * (100 + GetSpellFuriousBash(botweapon->Focus.Effect)) / 100);
 		}
 	}
 
@@ -4903,8 +4900,9 @@ void Bot::DoSpecialAttackDamage(Mob *who, EQ::skills::SkillType skill, int32 max
 	my_hit.tohit = GetTotalToHit(my_hit.skill, 0);
 	my_hit.hand = EQ::invslot::slotPrimary;
 
-	if (skill == EQ::skills::SkillThrowing || skill == EQ::skills::SkillArchery)
+	if (skill == EQ::skills::SkillThrowing || skill == EQ::skills::SkillArchery) {
 		my_hit.hand = EQ::invslot::slotRange;
+	}
 
 	DoAttack(who, my_hit);
 
@@ -4912,29 +4910,35 @@ void Bot::DoSpecialAttackDamage(Mob *who, EQ::skills::SkillType skill, int32 max
 
 	who->Damage(this, my_hit.damage_done, SPELL_UNKNOWN, skill, false);
 
-	if (!GetTarget() || HasDied())
+	if (!GetTarget() || HasDied()) {
 		return;
+	}
 
-	if (my_hit.damage_done > 0)
+	if (my_hit.damage_done > 0) {
 		CheckNumHitsRemaining(NumHit::OutgoingHitSuccess);
+	}
 
-	if (HasSkillProcs())
+	if (HasSkillProcs()) {
 		TrySkillProc(who, skill, (ReuseTime * 1000));
+	}
 
-	if (my_hit.damage_done > 0 && HasSkillProcSuccess())
+	if (my_hit.damage_done > 0 && HasSkillProcSuccess()) {
 		TrySkillProc(who, skill, (ReuseTime * 1000), true);
+	}
 }
 
 void Bot::TryBackstab(Mob *other, int ReuseTime) {
-	if (!other)
+	if (!other) {
 		return;
+	}
 
 	bool bIsBehind = false;
 	bool bCanFrontalBS = false;
 	const EQ::ItemInstance* inst = GetBotItem(EQ::invslot::slotPrimary);
 	const EQ::ItemData* botpiercer = nullptr;
-	if (inst)
+	if (inst) {
 		botpiercer = inst->GetItem();
+	}
 
 	if (!botpiercer || (botpiercer->ItemType != EQ::item::ItemType1HPiercing)) {
 		BotGroupSay(this, "I can't backstab with this weapon!");
@@ -4942,12 +4946,13 @@ void Bot::TryBackstab(Mob *other, int ReuseTime) {
 	}
 
 	int tripleChance = (itembonuses.TripleBackstab + spellbonuses.TripleBackstab + aabonuses.TripleBackstab);
-	if (BehindMob(other, GetX(), GetY()))
+	if (BehindMob(other, GetX(), GetY())) {
 		bIsBehind = true;
-	else {
+	} else {
 		int FrontalBSChance = (itembonuses.FrontalBackstabChance + spellbonuses.FrontalBackstabChance + aabonuses.FrontalBackstabChance);
-		if (FrontalBSChance && (FrontalBSChance > zone->random.Int(0, 100)))
+		if (FrontalBSChance && (FrontalBSChance > zone->random.Int(0, 100))) {
 			bCanFrontalBS = true;
+		}
 	}
 
 	if (bIsBehind || bCanFrontalBS) {
@@ -5445,10 +5450,11 @@ int64 Bot::CalcMaxMana() {
 		}
 	}
 
-	if (current_mana > max_mana)
+	if (current_mana > max_mana) {
 		current_mana = max_mana;
-	else if (max_mana < 0)
+	} else if (max_mana < 0) {
 		max_mana = 0;
+	}
 
 	return max_mana;
 }
@@ -5459,19 +5465,21 @@ void Bot::SetAttackTimer() {
 	Timer* TimerToUse = nullptr;
 	const EQ::ItemData* PrimaryWeapon = nullptr;
 	for (int i = EQ::invslot::slotRange; i <= EQ::invslot::slotSecondary; i++) {
-		if (i == EQ::invslot::slotPrimary)
+		if (i == EQ::invslot::slotPrimary) {
 			TimerToUse = &attack_timer;
-		else if (i == EQ::invslot::slotRange)
+		} else if (i == EQ::invslot::slotRange) {
 			TimerToUse = &ranged_timer;
-		else if (i == EQ::invslot::slotSecondary)
+		} else if (i == EQ::invslot::slotSecondary) {
 			TimerToUse = &attack_dw_timer;
-		else
+		} else {
 			continue;
+		}
 
 		const EQ::ItemData* ItemToUse = nullptr;
 		EQ::ItemInstance* ci = GetBotItem(i);
-		if (ci)
+		if (ci) {
 			ItemToUse = ci->GetItem();
+		}
 
 		if (i == EQ::invslot::slotSecondary) {
 			if (PrimaryWeapon != nullptr) {
@@ -5488,8 +5496,9 @@ void Bot::SetAttackTimer() {
 		}
 
 		if (ItemToUse != nullptr) {
-			if (!ItemToUse->IsClassCommon() || ItemToUse->Damage == 0 || ItemToUse->Delay == 0 || ((ItemToUse->ItemType > EQ::item::ItemTypeLargeThrowing) && (ItemToUse->ItemType != EQ::item::ItemTypeMartial) && (ItemToUse->ItemType != EQ::item::ItemType2HPiercing)))
+			if (!ItemToUse->IsClassCommon() || ItemToUse->Damage == 0 || ItemToUse->Delay == 0 || ((ItemToUse->ItemType > EQ::item::ItemTypeLargeThrowing) && (ItemToUse->ItemType != EQ::item::ItemTypeMartial) && (ItemToUse->ItemType != EQ::item::ItemType2HPiercing))) {
 				ItemToUse = nullptr;
+			}
 		}
 
 		int hhe = (itembonuses.HundredHands + spellbonuses.HundredHands);
@@ -5504,8 +5513,9 @@ void Bot::SetAttackTimer() {
 		speed = (RuleB(Spells, Jun182014HundredHandsRevamp) ? static_cast<int>(((delay / haste_mod) + ((hhe / 1000.0f) * (delay / haste_mod))) * 100) : static_cast<int>(((delay / haste_mod) + ((hhe / 100.0f) * delay)) * 100));
 		TimerToUse->SetAtTrigger(std::max(RuleI(Combat, MinHastedDelay), speed), true, true);
 
-		if (i == EQ::invslot::slotPrimary)
+		if (i == EQ::invslot::slotPrimary) {
 			PrimaryWeapon = ItemToUse;
+		}
 	}
 }
 
@@ -5525,18 +5535,21 @@ int32 Bot::GetActSpellDuration(uint16 spell_id, int32 duration) {
 				break;
 			case 3:
 				increase += 30;
-				if (GetAA(aaSpellCastingReinforcementMastery) == 1)
+				if (GetAA(aaSpellCastingReinforcementMastery) == 1) {
 					increase += 20;
+				}
 
 				break;
 		}
 
-		if (GetAA(aaSpellCastingReinforcementMastery))
+		if (GetAA(aaSpellCastingReinforcementMastery)) {
 			increase += 20;
+		}
 	}
 
-	if (IsMezSpell(spell_id))
+	if (IsMesmerizeSpell(spell_id)) {
 		tic_inc += GetAA(aaMesmerizationMastery);
+	}
 
 	return (((duration * increase) / 100) + tic_inc);
 }
@@ -6082,16 +6095,19 @@ int32 Bot::GetMaxCorrup() {
 int32 Bot::CalcSTR() {
 	int32 val = (STR + itembonuses.STR + spellbonuses.STR);
 	int32 mod = aabonuses.STR;
-	if (val > 255 && GetLevel() <= 60)
+	if (val > 255 && GetLevel() <= 60) {
 		val = 255;
+	}
 
 	STR = (val + mod);
-	if (STR < 1)
+	if (STR < 1) {
 		STR = 1;
+	}
 
 	int m = GetMaxSTR();
-	if (STR > m)
+	if (STR > m) {
 		STR = m;
+	}
 
 	return STR;
 }
@@ -6099,16 +6115,19 @@ int32 Bot::CalcSTR() {
 int32 Bot::CalcSTA() {
 	int32 val = (STA + itembonuses.STA + spellbonuses.STA);
 	int32 mod = aabonuses.STA;
-	if (val > 255 && GetLevel() <= 60)
+	if (val > 255 && GetLevel() <= 60) {
 		val = 255;
+	}
 
 	STA = (val + mod);
-	if (STA < 1)
+	if (STA < 1) {
 		STA = 1;
+	}
 
 	int m = GetMaxSTA();
-	if (STA > m)
+	if (STA > m) {
 		STA = m;
+	}
 
 	return STA;
 }
@@ -6116,16 +6135,19 @@ int32 Bot::CalcSTA() {
 int32 Bot::CalcAGI() {
 	int32 val = (AGI + itembonuses.AGI + spellbonuses.AGI);
 	int32 mod = aabonuses.AGI;
-	if (val > 255 && GetLevel() <= 60)
+	if (val > 255 && GetLevel() <= 60) {
 		val = 255;
+	}
 
 	AGI = (val + mod);
-	if (AGI < 1)
+	if (AGI < 1) {
 		AGI = 1;
+	}
 
 	int m = GetMaxAGI();
-	if (AGI > m)
+	if (AGI > m) {
 		AGI = m;
+	}
 
 	return AGI;
 }
@@ -6133,16 +6155,19 @@ int32 Bot::CalcAGI() {
 int32 Bot::CalcDEX() {
 	int32 val = (DEX + itembonuses.DEX + spellbonuses.DEX);
 	int32 mod = aabonuses.DEX;
-	if (val > 255 && GetLevel() <= 60)
+	if (val > 255 && GetLevel() <= 60) {
 		val = 255;
+	}
 
 	DEX = (val + mod);
-	if (DEX < 1)
+	if (DEX < 1) {
 		DEX = 1;
+	}
 
 	int m = GetMaxDEX();
-	if (DEX > m)
+	if (DEX > m) {
 		DEX = m;
+	}
 
 	return DEX;
 }
@@ -6150,17 +6175,20 @@ int32 Bot::CalcDEX() {
 int32 Bot::CalcINT() {
 	int32 val = (INT + itembonuses.INT + spellbonuses.INT);
 	int32 mod = aabonuses.INT;
-	if (val > 255 && GetLevel() <= 60)
+	if (val > 255 && GetLevel() <= 60) {
 		val = 255;
+	}
 
 	INT = (val + mod);
 
-	if (INT < 1)
+	if (INT < 1) {
 		INT = 1;
+	}
 
 	int m = GetMaxINT();
-	if (INT > m)
+	if (INT > m) {
 		INT = m;
+	}
 
 	return INT;
 }
@@ -6168,17 +6196,20 @@ int32 Bot::CalcINT() {
 int32 Bot::CalcWIS() {
 	int32 val = (WIS + itembonuses.WIS + spellbonuses.WIS);
 	int32 mod = aabonuses.WIS;
-	if (val > 255 && GetLevel() <= 60)
+	if (val > 255 && GetLevel() <= 60) {
 		val = 255;
+	}
 
 	WIS = (val + mod);
 
-	if (WIS < 1)
+	if (WIS < 1) {
 		WIS = 1;
+	}
 
 	int m = GetMaxWIS();
-	if (WIS > m)
+	if (WIS > m) {
 		WIS = m;
+	}
 
 	return WIS;
 }
@@ -6186,32 +6217,37 @@ int32 Bot::CalcWIS() {
 int32 Bot::CalcCHA() {
 	int32 val = (CHA + itembonuses.CHA + spellbonuses.CHA);
 	int32 mod = aabonuses.CHA;
-	if (val > 255 && GetLevel() <= 60)
+	if (val > 255 && GetLevel() <= 60) {
 		val = 255;
+	}
 
 	CHA = (val + mod);
 
-	if (CHA < 1)
+	if (CHA < 1) {
 		CHA = 1;
+	}
 
 	int m = GetMaxCHA();
-	if (CHA > m)
+	if (CHA > m) {
 		CHA = m;
+	}
 
 	return CHA;
 }
 
 int32 Bot::CalcMR() {
 	MR += (itembonuses.MR + spellbonuses.MR + aabonuses.MR);
-	if (GetClass() == WARRIOR)
+	if (GetClass() == WARRIOR) {
 		MR += (GetLevel() / 2);
+	}
 
-	if (MR < 1)
+	if (MR < 1) {
 		MR = 1;
+	}
 
-	if (MR > GetMaxMR())
+	if (MR > GetMaxMR()) {
 		MR = GetMaxMR();
-
+	}
 	return MR;
 }
 
@@ -6220,18 +6256,20 @@ int32 Bot::CalcFR() {
 	if (c == RANGER) {
 		FR += 4;
 		int l = GetLevel();
-		if (l > 49)
+		if (l > 49) {
 			FR += (l - 49);
+		}
 	}
 
 	FR += (itembonuses.FR + spellbonuses.FR + aabonuses.FR);
 
-	if (FR < 1)
+	if (FR < 1) {
 		FR = 1;
+	}
 
-	if (FR > GetMaxFR())
+	if (FR > GetMaxFR()) {
 		FR = GetMaxFR();
-
+	}
 	return FR;
 }
 
@@ -6240,22 +6278,25 @@ int32 Bot::CalcDR() {
 	if (c == PALADIN) {
 		DR += 8;
 		int l = GetLevel();
-		if (l > 49)
+		if (l > 49) {
 			DR += (l - 49);
+		}
 	} else if (c == SHADOWKNIGHT) {
 		DR += 4;
 		int l = GetLevel();
-		if (l > 49)
+		if (l > 49) {
 			DR += (l - 49);
+		}
 	}
 
 	DR += (itembonuses.DR + spellbonuses.DR + aabonuses.DR);
-	if (DR < 1)
+	if (DR < 1) {
 		DR = 1;
+	}
 
-	if (DR > GetMaxDR())
+	if (DR > GetMaxDR()) {
 		DR = GetMaxDR();
-
+	}
 	return DR;
 }
 
@@ -6264,22 +6305,26 @@ int32 Bot::CalcPR() {
 	if (c == ROGUE) {
 		PR += 8;
 		int l = GetLevel();
-		if (l > 49)
+		if (l > 49) {
 			PR += (l - 49);
+		}
 	} else if (c == SHADOWKNIGHT) {
 		PR += 4;
 		int l = GetLevel();
-		if (l > 49)
+		if (l > 49) {
 			PR += (l - 49);
+		}
 	}
 
 	PR += (itembonuses.PR + spellbonuses.PR + aabonuses.PR);
 
-	if (PR < 1)
+	if (PR < 1) {
 		PR = 1;
+	}
 
-	if (PR > GetMaxPR())
+	if (PR > GetMaxPR()) {
 		PR = GetMaxPR();
+	}
 
 	return PR;
 }
@@ -6289,25 +6334,29 @@ int32 Bot::CalcCR() {
 	if (c == RANGER) {
 		CR += 4;
 		int l = GetLevel();
-		if (l > 49)
+		if (l > 49) {
 			CR += (l - 49);
+		}
 	}
 
 	CR += (itembonuses.CR + spellbonuses.CR + aabonuses.CR);
 
-	if (CR < 1)
+	if (CR < 1) {
 		CR = 1;
+	}
 
-	if (CR > GetMaxCR())
+	if (CR > GetMaxCR()) {
 		CR = GetMaxCR();
+	}
 
 	return CR;
 }
 
 int32 Bot::CalcCorrup() {
 	Corrup = (Corrup + itembonuses.Corrup + spellbonuses.Corrup + aabonuses.Corrup);
-	if (Corrup > GetMaxCorrup())
+	if (Corrup > GetMaxCorrup()) {
 		Corrup = GetMaxCorrup();
+	}
 
 	return Corrup;
 }
@@ -6319,15 +6368,18 @@ int32 Bot::CalcATK() {
 
 void Bot::CalcRestState() {
 	RestRegenHP = RestRegenMana = RestRegenEndurance = 0;
-	if(IsEngaged() || !IsSitting() || !rest_timer.Check(false))
+	if(IsEngaged() || !IsSitting() || !rest_timer.Check(false)) {
 		return;
+	}
 
 	uint32 buff_count = GetMaxTotalSlots();
 	for (unsigned int j = 0; j < buff_count; j++) {
-		if(IsValidSpell(buffs[j].spellid)) {
-			if(IsDetrimentalSpell(buffs[j].spellid) && (buffs[j].ticsremaining > 0))
-				if(!DetrimentalSpellAllowsRest(buffs[j].spellid))
+		if (IsValidSpell(buffs[j].spellid)) {
+			if (IsDetrimentalSpell(buffs[j].spellid) && (buffs[j].ticsremaining > 0)) {
+				if (!IsRestAllowedSpell(buffs[j].spellid)) {
 					return;
+				}
+			}
 		}
 	}
 

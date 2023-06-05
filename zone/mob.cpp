@@ -80,8 +80,8 @@ Mob::Mob(
 	uint32 in_drakkin_details,
 	EQ::TintProfile in_armor_tint,
 	uint8 in_aa_title,
-	uint16 in_see_invis, // see through invis/ivu
-	uint16 in_see_invis_undead,
+	uint8 in_see_invis, // see through invis/ivu
+	uint8 in_see_invis_undead,
 	uint8 in_see_hide,
 	uint8 in_see_improved_hide,
 	int64 in_hp_regen,
@@ -269,8 +269,8 @@ Mob::Mob(
 	maxlevel            = in_maxlevel;
 	scalerate           = in_scalerate;
 	invisible           = 0;
-	invisible_undead    = 0;
-	invisible_animals   = 0;
+	invisible_undead  = false;
+	invisible_animals = false;
 	sneaking            = false;
 	hidden              = false;
 	improved_hidden     = false;
@@ -3276,6 +3276,15 @@ void Mob::ChangeSize(float in_size = 0, bool bNoRestriction) {
 	SendAppearancePacket(AT_Size, (uint32) in_size);
 }
 
+uint8 Mob::SeeInvisible()
+{
+	// it's not clear how multiple sources of see invis should be handled - for now, simply taking a maximum of all sources
+	std::vector<uint8> v{ see_invis, aabonuses.SeeInvis, spellbonuses.SeeInvis, itembonuses.SeeInvis };
+	auto biggest = std::max_element(std::begin(v), std::end(v));
+
+	return *biggest;
+}
+
 Mob* Mob::GetOwnerOrSelf() {
 	if (!GetOwnerID())
 		return this;
@@ -4338,7 +4347,7 @@ int Mob::CountDispellableBuffs() {
 			continue;
 		}
 
-		if(spells[buffs[x].spellid].good_effect == 0) {
+		if(spells[buffs[x].spellid].good_effect == DETRIMENTAL_EFFECT) {
 			continue;
 		}
 
