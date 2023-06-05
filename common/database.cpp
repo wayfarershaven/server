@@ -51,6 +51,7 @@
 #include "http/uri.h"
 
 #include "repositories/zone_repository.h"
+#include "repositories/account_repository.h"
 #include "zone_store.h"
 
 extern Client client;
@@ -209,8 +210,12 @@ int16 Database::CheckStatus(uint32 account_id)
 		date_diff = Strings::ToInt(row[1]);
 	}
 
-	if (date_diff > 0) {
+	if ((status == -1 || status == 0) && date_diff > 0) {
 		return -1;
+	} else if (status == -1 && date_diff <= 0) {
+		std::string query = StringFormat("UPDATE `account` SET `status` = '0' WHERE id = %i", account_id);
+		auto results = QueryDatabase(query);
+		return 0;
 	}
 
 	return status;
