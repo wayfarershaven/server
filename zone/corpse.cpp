@@ -2165,6 +2165,7 @@ void Corpse::IsOwnerOnline() {
 		online->zoneid = zone->GetZoneID();
 		online->online = 0;
 		worldserver.SendPacket(pack);
+		safe_delete(pack);
 	} else {
 		SetOwnerOnline(true);
 	}
