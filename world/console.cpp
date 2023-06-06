@@ -355,7 +355,7 @@ void ConsoleTell(
 	auto join_args = args;
 	join_args.erase(join_args.begin(), join_args.begin() + 1);
 
-	zoneserver_list.SendChannelMessage(tmpname, to.c_str(), ChatChannel_Tell, 0, Strings::Join(join_args, " ").c_str());
+	zoneserver_list.SendChannelMessage(tmpname, to.c_str(), 7, 0, Strings::Join(join_args, " ").c_str());
 }
 
 /**
@@ -376,7 +376,7 @@ void ConsoleBroadcast(
 	char tmpname[64];
 	tmpname[0] = '*';
 	strcpy(&tmpname[1], connection->UserName().c_str());
-	zoneserver_list.SendChannelMessage(tmpname, 0, ChatChannel_Broadcast, 0, Strings::Join(args, " ").c_str());
+	zoneserver_list.SendChannelMessage(tmpname, 0, 6, 0, Strings::Join(args, " ").c_str());
 }
 
 /**
@@ -397,7 +397,7 @@ void ConsoleGMSay(
 	char tmpname[64];
 	tmpname[0] = '*';
 	strcpy(&tmpname[1], connection->UserName().c_str());
-	zoneserver_list.SendChannelMessage(tmpname, 0, ChatChannel_GMSAY, 0, Strings::Join(args, " ").c_str());
+	zoneserver_list.SendChannelMessage(tmpname, 0, 11, 0, Strings::Join(args, " ").c_str());
 }
 
 /**
@@ -451,7 +451,7 @@ void ConsoleOOC(
 	char tmpname[64];
 	tmpname[0] = '*';
 	strcpy(&tmpname[1], connection->UserName().c_str());
-	zoneserver_list.SendChannelMessage(tmpname, 0, ChatChannel_OOC, 0, Strings::Join(args, " ").c_str());
+	zoneserver_list.SendChannelMessage(tmpname, 0, 5, 0, Strings::Join(args, " ").c_str());
 }
 
 /**
@@ -472,7 +472,7 @@ void ConsoleAuction(
 	char tmpname[64];
 	tmpname[0] = '*';
 	strcpy(&tmpname[1], connection->UserName().c_str());
-	zoneserver_list.SendChannelMessage(tmpname, 0, ChatChannel_Auction, 0, Strings::Join(args, " ").c_str());
+	zoneserver_list.SendChannelMessage(tmpname, 0, 4, 0, Strings::Join(args, " ").c_str());
 }
 
 /**
