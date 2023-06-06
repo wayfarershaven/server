@@ -11539,7 +11539,7 @@ void Client::Handle_OP_PopupResponse(const EQApplicationPacket *app)
 			if (EntityVariableExists(DIAWIND_RESPONSE_ONE_KEY)) {
 				response = GetEntityVariable(DIAWIND_RESPONSE_ONE_KEY);
 				if (!response.empty()) {
-					ChannelMessageReceived(ChatChannel_Say, 0, 100, response.c_str(), nullptr, true);
+					ChannelMessageReceived(8, 0, 100, response.c_str(), nullptr, true);
 				}
 			}
 			break;
@@ -11548,7 +11548,7 @@ void Client::Handle_OP_PopupResponse(const EQApplicationPacket *app)
 			if (EntityVariableExists(DIAWIND_RESPONSE_TWO_KEY)) {
 				response = GetEntityVariable(DIAWIND_RESPONSE_TWO_KEY);
 				if (!response.empty()) {
-					ChannelMessageReceived(ChatChannel_Say, 0, 100, response.c_str(), nullptr, true);
+					ChannelMessageReceived(8, 0, 100, response.c_str(), nullptr, true);
 				}
 			}
 			break;

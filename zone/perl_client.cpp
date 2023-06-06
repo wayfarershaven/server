@@ -1547,10 +1547,10 @@ void Perl_Client_SilentMessage(Client* self, const char* message) // @categories
 	if (self->GetTarget() != NULL) {
 		if (self->GetTarget()->IsNPC()) {
 			if (DistanceSquaredNoZ(self->GetPosition(), self->GetTarget()->GetPosition()) <= 200) {
-				if (self->GetTarget()->CastToNPC()->IsMoving() && !self->GetTarget()->CastToNPC()->IsOnHatelist(self->GetTarget())) {
+				if (self->GetTarget()->CastToNPC()->IsMoving() &&
+					  !self->GetTarget()->CastToNPC()->IsOnHatelist(self->GetTarget()))
 					self->GetTarget()->CastToNPC()->PauseWandering(RuleI(NPC, SayPauseTimeInSec));
-				}
-				self->ChannelMessageReceived(ChatChannel_Say, 0, 100, message, nullptr, true);
+				self->ChannelMessageReceived(8, 0, 100, message, nullptr, true);
 			}
 		}
 	}
