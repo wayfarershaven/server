@@ -1667,17 +1667,30 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 			}
 
 			case SE_SummonToCorpse:
+						{
+#ifdef SPELL_EFFECT_SPAM
+				snprintf(effect_desc, _EDLEN, "SummonToCorpse");	// heh the corpse won't see this
+#endif
+				if (IsCorpse() && CastToCorpse()->IsPlayerCorpse()) {
+					if(caster) {
+						LogSpells(" corpse being called (No xp rez) using spell [{}] by [{}]",
+							spell_id, caster->GetName());
+					}
+					CastToCorpse()->SummonToCorpse(spell_id, caster);
+				}
+				break;
+			}
+
 			case SE_Revive:
 			{
 #ifdef SPELL_EFFECT_SPAM
 				snprintf(effect_desc, _EDLEN, "Revive");	// heh the corpse won't see this
 #endif
 				if (IsCorpse() && CastToCorpse()->IsPlayerCorpse()) {
-
-					if(caster)
+					if(caster) {
 						LogSpells(" corpse being rezzed using spell [{}] by [{}]",
 							spell_id, caster->GetName());
-
+					}
 					CastToCorpse()->CastRezz(spell_id, caster);
 				}
 				break;

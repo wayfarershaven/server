@@ -4454,6 +4454,25 @@ bool Mob::SpellOnTarget(
 	return true;
 }
 
+void Corpse::SummonToCorpse(uint16 spellid, Mob* Caster)
+{
+	auto target = Caster->GetTarget();
+
+	if (target->IsCorpse()) {
+		auto pack = new ServerPacket(ServerOP_ZonePlayer, sizeof(ServerZonePlayer_Struct));
+		auto szp = (ServerZonePlayer_Struct *) pack->pBuffer;
+		strn0cpy(szp->name, target->CastToCorpse()->GetOwnerName(), sizeof(szp->name));
+		strn0cpy(szp->zone, zone->GetShortName(), sizeof(szp->zone));
+		szp->x_pos = target->GetX();
+		szp->y_pos = target->GetY();
+		szp->z_pos = target->GetZ();
+		szp->instance_id = zone->GetInstanceID();
+		worldserver.SendPacket(pack);
+		safe_delete(pack);
+		return;
+	}
+}
+
 void Corpse::CastRezz(uint16 spellid, Mob* Caster)
 {
 	LogSpells("Corpse::CastRezz spellid [{}], Rezzed() is [{}], rezzexp is [{}], rez_timer enabled:: [{}]", spellid,IsRezzed(),rez_experience, corpse_rez_timer.Enabled());

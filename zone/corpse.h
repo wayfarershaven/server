@@ -126,6 +126,7 @@ class Corpse : public Mob {
 	/* Corpse: Resurrection */
 	bool	IsRezzed() { return rez; }
 	void	IsRezzed(bool in_rez) { rez = in_rez; }
+	void	SummonToCorpse(uint16 spellid, Mob* Caster);
 	void	CastRezz(uint16 spellid, Mob* Caster);
 	void	CompleteResurrection(bool timer_expired = false);
 	bool	IsRezzable() { return rezzable; }
