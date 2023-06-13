@@ -8868,6 +8868,7 @@ void Client::ShowDevToolsMenu()
 	menu_reload_five += Saylink::Silent("#reload merchants", "Merchants");
 	menu_reload_five += " | " + Saylink::Silent("#reload npc_emotes", "NPC Emotes");
 	menu_reload_five += " | " + Saylink::Silent("#reload objects", "Objects");
+	menu_reload_five += " | " + Saylink::Silent("#reload opcodes", "Opcodes");
 
 	menu_reload_six += Saylink::Silent("#reload perl_export", "Perl Event Export Settings");
 	menu_reload_six += " | " + Saylink::Silent("#reload quest", "Quests");
@@ -10854,6 +10855,16 @@ void Client::SendReloadCommandMessages() {
 		).c_str()
 	);
 
+	auto opcodes_link = Saylink::Silent("#reload opcodes");
+
+	Message(
+		Chat::White,
+		fmt::format(
+			"Usage: {} - Reloads Opcodes globally",
+			opcodes_link
+		).c_str()
+	);
+	
 	auto perl_export_link = Saylink::Silent("#reload perl_export");
 
 	Message(

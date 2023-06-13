@@ -830,14 +830,6 @@ void NPC::AddCash(uint16 in_copper, uint16 in_silver, uint16 in_gold, uint16 in_
 		platinum = 0;
 }
 
-void NPC::AddCash()
-{
-	copper   = zone->random.Int(1, 100);
-	silver   = zone->random.Int(1, 50);
-	gold     = zone->random.Int(1, 10);
-	platinum = zone->random.Int(1, 5);
-}
-
 void NPC::RemoveCash() {
 	copper = 0;
 	silver = 0;
@@ -2630,8 +2622,16 @@ void NPC::ModifyNPCStat(std::string stat, std::string value)
 		hp_regen_per_second = strtoll(value.c_str(), nullptr, 10);
 		return;
 	}
+	else if (stat_lower == "combat_hp_regen") {
+		combat_hp_regen = strtoll(value.c_str(), nullptr, 10);
+		return;
+	}
 	else if (stat_lower == "mana_regen") {
 		mana_regen = strtoll(value.c_str(), nullptr, 10);
+		return;
+	}
+	else if (stat_lower == "combat_mana_regen") {
+		combat_mana_regen = strtoll(value.c_str(), nullptr, 10);
 		return;
 	}
 	else if (stat_lower == "level") {

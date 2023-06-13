@@ -6545,27 +6545,27 @@ void Client::Handle_OP_GMFind(const EQApplicationPacket *app)
 		RecordPlayerEventLog(PlayerEvent::POSSIBLE_HACK, PlayerEvent::PossibleHackEvent{.message = "Used /find"});
 		return;
 	}
-	if (app->size != sizeof(GMSummon_Struct)) {
-		LogError("Wrong size: OP_GMFind, size=[{}], expected [{}]", app->size, sizeof(GMSummon_Struct));
+
+	if (app->size != sizeof(GMFind_Struct)) {
+		LogError("Wrong size: OP_GMFind, size=[{}], expected [{}]", app->size, sizeof(GMFind_Struct));
 		return;
 	}
 	//Break down incoming
-	GMSummon_Struct* request = (GMSummon_Struct*)app->pBuffer;
+	auto* request = (GMFind_Struct*) app->pBuffer;
 	//Create a new outgoing
-	auto outapp = new EQApplicationPacket(OP_GMFind, sizeof(GMSummon_Struct));
-	GMSummon_Struct* foundplayer = (GMSummon_Struct*)outapp->pBuffer;
+	auto outapp = new EQApplicationPacket(OP_GMFind, sizeof(GMFind_Struct));
+	auto* foundplayer = (GMFind_Struct*) outapp->pBuffer;
 	//Copy the constants
 	strcpy(foundplayer->charname, request->charname);
 	strcpy(foundplayer->gmname, request->gmname);
 	//Check if the NPC exits intrazone...
-	Mob* gt = entity_list.GetMob(request->charname);
-	if (gt != 0) {
+	auto* gt = entity_list.GetMob(request->charname);
+	if (gt) {
 		foundplayer->success = 1;
-		foundplayer->x = (int32)gt->GetX();
-		foundplayer->y = (int32)gt->GetY();
-
-		foundplayer->z = (int32)gt->GetZ();
-		foundplayer->zoneID = zone->GetZoneID();
+		foundplayer->x       = gt->GetX();
+		foundplayer->y       = gt->GetY();
+		foundplayer->z       = gt->GetZ();
+		foundplayer->zoneID  = zone->GetZoneID();
 	}
 	//Send the packet...
 	FastQueuePacket(&outapp);
@@ -14506,16 +14506,16 @@ void Client::Handle_OP_TargetCommand(const EQApplicationPacket *app) {
 		return;
 	}
 
-	if (GetTarget()) {
-		GetTarget()->IsTargeted(-1);
-	}
-
 	// Locate and cache new target
 	ClientTarget_Struct* ct = (ClientTarget_Struct*)app->pBuffer;
 	pClientSideTarget = ct->new_target;
 	if (!IsAIControlled()) {
 		Mob *nt = entity_list.GetMob(ct->new_target);
 		if (nt) {
+			if (GetTarget()) {
+				GetTarget()->IsTargeted(-1);
+			}
+
 			SetTarget(nt);
 			bool inspect_buffs = false;
 			// rank 1 gives you ability to see NPC buffs in target window (SoD+)
@@ -14538,23 +14538,7 @@ void Client::Handle_OP_TargetCommand(const EQApplicationPacket *app) {
 				nt->SendBuffsToClient(this);
 			}
 		} else {
-			SetTarget(nullptr);
-			SetHoTT(0);
-
-			Group *g = GetGroup();
-
-			if (g && g->HasRole(this, RoleAssist)) {
-				g->SetGroupAssistTarget(0);
-			}
-
-			if (g && g->HasRole(this, RoleTank)) {
-				g->SetGroupTankTarget(0);
-			}
-
-			if (g && g->HasRole(this, RolePuller)) {
-				g->SetGroupPullerTarget(0);
-			}
-
+			MessageString(Chat::Red, DONT_SEE_TARGET);
 			return;
 		}
 	} else {
