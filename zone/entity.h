@@ -476,7 +476,6 @@ public:
 	void	CorpseFix(Client* c);
 	void	HalveAggro(Mob* who);
 	void	DoubleAggro(Mob* who);
-	void	Evade(Mob *who);
 	void	UpdateHoTT(Mob* target);
 
 	void	Process();
