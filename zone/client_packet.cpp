@@ -14501,9 +14501,51 @@ void Client::Handle_OP_SwapSpell(const EQApplicationPacket *app)
 }
 
 void Client::Handle_OP_TargetCommand(const EQApplicationPacket *app) {
+		if (app->size != sizeof(ClientTarget_Struct)) {
+		LogError("OP size error: OP_TargetCommand expected:[{}] got:[{}]", sizeof(ClientTarget_Struct), app->size);
+		return;
+	}
+
+	// Locate and cache new target
+	ClientTarget_Struct* ct = (ClientTarget_Struct*)app->pBuffer;
+
+	bool can_target=false;
+	Mob *nt = entity_list.GetMob(ct->new_target);
+
+	if (nt) {
+		if (GetGM() || (!nt->IsInvisible(this) && (DistanceSquared(m_Position, nt->GetPosition()) <= TARGETING_RANGE*TARGETING_RANGE))) {
+			if (nt->GetBodyType() == BT_NoTarget2 || 
+				nt->GetBodyType() == BT_Special || 
+				nt->GetBodyType() == BT_NoTarget) {
+				can_target = false;
+			}
+			else {
+				can_target = true;
+			}
+		}
+	}
+
+	if (can_target) {
+		QueuePacket(app);
+	} else {
+		MessageString(Chat::Red, DONT_SEE_TARGET);
+		auto outapp = new EQApplicationPacket(OP_TargetReject, sizeof(TargetReject_Struct));
+		outapp->pBuffer[0] = 0x2f;
+		outapp->pBuffer[1] = 0x01;
+		outapp->pBuffer[4] = 0x0d;
+		QueuePacket(outapp);
+		safe_delete(outapp);
+	}
+}
+
+void Client::Handle_OP_TargetMouse(const EQApplicationPacket *app) {
 	if (app->size != sizeof(ClientTarget_Struct)) {
 		LogError("OP size error: OP_TargetMouse expected:[{}] got:[{}]", sizeof(ClientTarget_Struct), app->size);
 		return;
+	}
+
+	if (GetTarget()) {
+		GetTarget()->IsTargeted(-1);
 	}
 
 	// Locate and cache new target
@@ -14512,33 +14554,50 @@ void Client::Handle_OP_TargetCommand(const EQApplicationPacket *app) {
 	if (!IsAIControlled()) {
 		Mob *nt = entity_list.GetMob(ct->new_target);
 		if (nt) {
-			if (GetTarget()) {
-				GetTarget()->IsTargeted(-1);
-			}
-
 			SetTarget(nt);
 			bool inspect_buffs = false;
 			// rank 1 gives you ability to see NPC buffs in target window (SoD+)
-			if (IsRaidGrouped()) {
-				Raid *raid = GetRaid();
-				if (raid) {
-					uint32 gid = raid->GetGroup(this);
-					if (gid < 12 && raid->GroupCount(gid) > 2)
-						inspect_buffs = raid->GetLeadershipAA(groupAAInspectBuffs, gid);
-				}
-			}
-			else {
-				Group *group = GetGroup();
-				if (group && group->GroupCount() > 2) {
-					inspect_buffs = group->GetLeadershipAA(groupAAInspectBuffs);
+			if (nt->IsNPC()) {
+				if (IsRaidGrouped()) {
+					Raid *raid = GetRaid();
+					if (raid) {
+						uint32 gid = raid->GetGroup(this);
+						if (gid < 12 && raid->GroupCount(gid) > 2) {
+							inspect_buffs = raid->GetLeadershipAA(groupAAInspectBuffs, gid);
+						}
+					}
+				} else {
+					Group *group = GetGroup();
+					if (group && group->GroupCount() > 2) {
+						inspect_buffs = group->GetLeadershipAA(groupAAInspectBuffs);
+					}
 				}
 			}
 
-			if (GetGM() || RuleB(Spells, AlwaysSendTargetsBuffs) || inspect_buffs || (nt->IsPet() && nt->GetOwner() && nt->GetOwner()->IsClient() && !nt->GetOwner()->CastToClient()->GetPVP())) {
+			if (GetGM() || RuleB(Spells, AlwaysSendTargetsBuffs) || nt == this || inspect_buffs || (nt->IsClient() && !nt->CastToClient()->GetPVP()) ||
+				(nt->IsPet() && nt->GetOwner() && nt->GetOwner()->IsClient() && !nt->GetOwner()->CastToClient()->GetPVP()) ||
+				(nt->IsBot() && nt->GetOwner() && nt->GetOwner()->IsClient() && !nt->GetOwner()->CastToClient()->GetPVP()) || // TODO: bot pets
+				(nt->IsMerc() && nt->GetOwner() && nt->GetOwner()->IsClient() && !nt->GetOwner()->CastToClient()->GetPVP())) {
 				nt->SendBuffsToClient(this);
 			}
 		} else {
-			MessageString(Chat::Red, DONT_SEE_TARGET);
+			SetTarget(nullptr);
+			SetHoTT(0);
+
+			Group *g = GetGroup();
+
+			if (g && g->HasRole(this, RoleAssist)) {
+				g->SetGroupAssistTarget(0);
+			}
+
+			if (g && g->HasRole(this, RoleTank)) {
+				g->SetGroupTankTarget(0);
+			}
+
+			if (g && g->HasRole(this, RolePuller)) {
+				g->SetGroupPullerTarget(0);
+			}
+
 			return;
 		}
 	} else {
@@ -14568,136 +14627,86 @@ void Client::Handle_OP_TargetCommand(const EQApplicationPacket *app) {
 		g->SetGroupPullerTarget(GetTarget());
 	}
 
-	// For /target, send reject or success packet
-	if (app->GetOpcode() == OP_TargetCommand) {
-		if (GetTarget() && !GetTarget()->CastToMob()->IsInvisible(this) && (DistanceSquared(m_Position, GetTarget()->GetPosition()) <= TARGETING_RANGE*TARGETING_RANGE || GetGM())) {
-			if (GetTarget()->GetBodyType() == BT_NoTarget2 || GetTarget()->GetBodyType() == BT_Special
-				|| GetTarget()->GetBodyType() == BT_NoTarget) {
-				//Targeting something we shouldn't with /target
-				//but the client allows this without MQ so you don't flag it
-				auto outapp = new EQApplicationPacket(OP_TargetReject, sizeof(TargetReject_Struct));
-				outapp->pBuffer[0] = 0x2f;
-				outapp->pBuffer[1] = 0x01;
-				outapp->pBuffer[4] = 0x0d;
-				if (GetTarget()) {
-					SetTarget(nullptr);
-				}
-				QueuePacket(outapp);
-				safe_delete(outapp);
-				return;
-			}
-
-			QueuePacket(app);
-
+	if (GetTarget()) {
+		if (GetGM()) {
 			GetTarget()->IsTargeted(1);
-			SendHPUpdate();
-		} else {
-			auto outapp = new EQApplicationPacket(OP_TargetReject, sizeof(TargetReject_Struct));
-			outapp->pBuffer[0] = 0x2f;
-			outapp->pBuffer[1] = 0x01;
-			outapp->pBuffer[4] = 0x0d;
-			if (GetTarget()) {
-				SetTarget(nullptr);
-			}
-			QueuePacket(outapp);
-			safe_delete(outapp);
-		}
-	} else {
-		if (GetTarget()) {
-			if (GetGM()) {
-				GetTarget()->IsTargeted(1);
-				return;
-			} else if (RuleB(Character, AllowMQTarget)) {
-				GetTarget()->IsTargeted(1);
-				return;
-			} else if (cheat_manager.GetExemptStatus(Assist)) {
-				GetTarget()->IsTargeted(1);
-				cheat_manager.SetExemptStatus(Assist, false);
-				return;
-			} else if (GetTarget()->IsClient()) {
-				//make sure this client is in our raid/group
-				GetTarget()->IsTargeted(1);
-				return;
-			} else if (GetTarget()->GetBodyType() == BT_NoTarget2 || GetTarget()->GetBodyType() == BT_Special
-				|| GetTarget()->GetBodyType() == BT_NoTarget) {
-				auto message = fmt::format(
-					"[{}] attempting to target something untargetable [{}] bodytype [{}]",
-					GetName(),
-					GetTarget()->GetName(),
-					(int) GetTarget()->GetBodyType()
-				);
-				RecordPlayerEventLog(PlayerEvent::POSSIBLE_HACK, PlayerEvent::PossibleHackEvent{.message = message});
-
-				SetTarget((Mob*)nullptr);
-				return;
-			} else if (cheat_manager.GetExemptStatus(Port)) {
-				GetTarget()->IsTargeted(1);
-				return;
-			} else if (cheat_manager.GetExemptStatus(Sense)) {
-				GetTarget()->IsTargeted(1);
-				cheat_manager.SetExemptStatus(Sense, false);
-				return;
-			} else if (GetTarget()->IsPetOwnerClient()) {
-				GetTarget()->IsTargeted(1);
-				return;
-			} else if (GetBindSightTarget()) {
-				if (DistanceSquared(GetBindSightTarget()->GetPosition(), GetTarget()->GetPosition()) > (zone->newzone_data.maxclip*zone->newzone_data.maxclip)) {
-					if (DistanceSquared(m_Position, GetTarget()->GetPosition()) > (zone->newzone_data.maxclip*zone->newzone_data.maxclip)) {
-						auto message = fmt::format(
-						    "[{}] attempting to target something beyond the clip plane of {:.2f} "
-						    "units, from ({:.2f}, {:.2f}, {:.2f}) to {} ({:.2f}, {:.2f}, "
-						    "{:.2f})",
-						    GetName(),
-						    (zone->newzone_data.maxclip * zone->newzone_data.maxclip), GetX(),
-						    GetY(), GetZ(), GetTarget()->GetName(), GetTarget()->GetX(),
-						    GetTarget()->GetY(), GetTarget()->GetZ());
-						
-						RecordPlayerEventLog(PlayerEvent::POSSIBLE_HACK, PlayerEvent::PossibleHackEvent{.message = message});
-						SetTarget(nullptr);
-						return;
-					}
-				}
-			} else if (!GetTarget()->IsClient() && std::abs(m_Position.z - GetTarget()->GetZ()) > RuleI(Character, MaxZTargetDistance)) {
-				auto outapp = new EQApplicationPacket(OP_TargetReject, sizeof(TargetReject_Struct));
-				outapp->pBuffer[0] = 0x2f;
-				outapp->pBuffer[1] = 0x01;
-				outapp->pBuffer[4] = 0x0d;
-				if (GetTarget()) {
-					GetTarget()->IsTargeted(0);
-					SetTarget(nullptr);
-				}
-				QueuePacket(outapp);
-				safe_delete(outapp);
-				return;		
-			} else if (DistanceSquared(m_Position, GetTarget()->GetPosition()) > (zone->newzone_data.maxclip*zone->newzone_data.maxclip)) {
-				auto message = fmt::format(
-					"{} attempting to target something beyond the clip plane of {:.2f} "
-					"units, from ({:.2f}, {:.2f}, {:.2f}) to {} ({:.2f}, {:.2f}, {:.2f})",
-					GetName(),
-					(zone->newzone_data.maxclip * zone->newzone_data.maxclip),
-					GetX(),
-					GetY(),
-					GetZ(),
-					GetTarget()->GetName(),
-					GetTarget()->GetX(),
-					GetTarget()->GetY(),
-					GetTarget()->GetZ()
-				);
-
-				RecordPlayerEventLog(PlayerEvent::POSSIBLE_HACK, PlayerEvent::PossibleHackEvent{.message = message});
-				SetTarget(nullptr);
-				return;
-			}
-
+			return;
+		} else if (RuleB(Character, AllowMQTarget)) {
 			GetTarget()->IsTargeted(1);
+			return;
+		} else if (cheat_manager.GetExemptStatus(Assist)) {
+			GetTarget()->IsTargeted(1);
+			cheat_manager.SetExemptStatus(Assist, false);
+			return;
+		} else if (GetTarget()->IsClient()) {
+			//make sure this client is in our raid/group
+			GetTarget()->IsTargeted(1);
+			return;
+		} else if (GetTarget()->GetBodyType() == BT_NoTarget2 || GetTarget()->GetBodyType() == BT_Special
+			|| GetTarget()->GetBodyType() == BT_NoTarget) {
+			auto message = fmt::format(
+				"[{}] attempting to target something untargetable [{}] bodytype [{}]",
+				GetName(),
+				GetTarget()->GetName(),
+				(int) GetTarget()->GetBodyType()
+			);
+			RecordPlayerEventLog(PlayerEvent::POSSIBLE_HACK, PlayerEvent::PossibleHackEvent{.message = message});
+
+			SetTarget((Mob*)nullptr);
+			return;
+		} else if (cheat_manager.GetExemptStatus(Port)) {
+			GetTarget()->IsTargeted(1);
+			return;
+		} else if (cheat_manager.GetExemptStatus(Sense)) {
+			GetTarget()->IsTargeted(1);
+			cheat_manager.SetExemptStatus(Sense, false);
+			return;
+		} else if (IsXTarget(GetTarget())) {
+			GetTarget()->IsTargeted(1);
+			return;
+		} else if (GetTarget()->IsPetOwnerClient()) {
+			GetTarget()->IsTargeted(1);
+			return;
+		} else if (GetBindSightTarget()) {
+			if (DistanceSquared(GetBindSightTarget()->GetPosition(), GetTarget()->GetPosition()) > (zone->newzone_data.maxclip*zone->newzone_data.maxclip)) {
+				if (DistanceSquared(m_Position, GetTarget()->GetPosition()) > (zone->newzone_data.maxclip*zone->newzone_data.maxclip)) {
+					auto message = fmt::format(
+						"[{}] attempting to target something beyond the clip plane of {:.2f} "
+						"units, from ({:.2f}, {:.2f}, {:.2f}) to {} ({:.2f}, {:.2f}, "
+						"{:.2f})",
+						GetName(),
+						(zone->newzone_data.maxclip * zone->newzone_data.maxclip), GetX(),
+						GetY(), GetZ(), GetTarget()->GetName(), GetTarget()->GetX(),
+						GetTarget()->GetY(), GetTarget()->GetZ());
+
+					RecordPlayerEventLog(PlayerEvent::POSSIBLE_HACK, PlayerEvent::PossibleHackEvent{.message = message});
+					SetTarget(nullptr);
+					return;
+				}
+			}
+		} else if (DistanceSquared(m_Position, GetTarget()->GetPosition()) > (zone->newzone_data.maxclip*zone->newzone_data.maxclip)) {
+			auto message = fmt::format(
+				"{} attempting to target something beyond the clip plane of {:.2f} "
+				"units, from ({:.2f}, {:.2f}, {:.2f}) to {} ({:.2f}, {:.2f}, {:.2f})",
+				GetName(),
+				(zone->newzone_data.maxclip * zone->newzone_data.maxclip),
+				GetX(),
+				GetY(),
+				GetZ(),
+				GetTarget()->GetName(),
+				GetTarget()->GetX(),
+				GetTarget()->GetY(),
+				GetTarget()->GetZ()
+			);
+
+			RecordPlayerEventLog(PlayerEvent::POSSIBLE_HACK, PlayerEvent::PossibleHackEvent{.message = message});
+			SetTarget(nullptr);
+			return;
 		}
+
+		GetTarget()->IsTargeted(1);
 	}
 	return;
-}
-
-void Client::Handle_OP_TargetMouse(const EQApplicationPacket *app)
-{
-	Handle_OP_TargetCommand(app);
 }
 
 void Client::Handle_OP_TaskHistoryRequest(const EQApplicationPacket *app)
