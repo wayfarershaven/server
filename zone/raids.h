@@ -21,6 +21,7 @@
 #include "../common/types.h"
 #include "groups.h"
 #include "xtargetautohaters.h"
+#include "client.h"
 
 class Client;
 class EQApplicationPacket;
@@ -75,9 +76,18 @@ enum { //raid command types
 	RaidCommandSetNote = 36,
 };
 
+enum {
+	FindNextMarkerSlot     = 1,
+	FindNextAssisterSlot   = 2,
+	RaidDelegateMainAssist = 3,
+	RaidDelegateMainMarker = 4
+};
+
 constexpr uint8_t MAX_RAID_GROUPS = 12;
 constexpr uint8_t MAX_RAID_MEMBERS = 72;
 const uint32 RAID_GROUPLESS = 0xFFFFFFFF;
+#define MAX_RAID_MAIN_ASSISTERS 3
+#define MAX_RAID_MAIN_MARKERS 3
 
 struct RaidMember{
 	char member_name[64];
@@ -85,9 +95,12 @@ struct RaidMember{
 	uint32 group_number;
 	uint8 _class;
 	uint8 level;
+	char note[64];
 	bool is_group_leader;
 	bool is_raid_leader;
 	bool is_looter;
+	uint8 mainmarker;
+	uint8 mainassister;
 	bool is_bot = false;
 	bool is_raid_main_assist_one = false;
 };
@@ -188,6 +201,19 @@ public:
 	void	SendEndurancePacketFrom(Mob *mob);
 	void	RaidSay(const char *msg, Client *c, uint8 language, uint8 lang_skill);
 	void	RaidGroupSay(const char *msg, Client *c, uint8 language, uint8 lang_skill);
+	void    SaveRaidNote(const char* who, const char* note);
+	std::vector<RaidMember> GetMembersWithNotes();
+	std::vector<RaidMember> GetAssisters();
+	std::vector<RaidMember> GetMarkers();
+	void	DelegateAbilityAssist(Mob* mob, const char* who);
+	void	DelegateAbilityMark(Mob* mob, const char* who);
+	void    RaidMarkNPC(Mob* mob, uint32 parameter);
+	void    UpdateXTargetType(XTargetType Type, Mob* m, const char* Name = (const char*)nullptr);
+	int     FindNextRaidDelegateSlot(int option);
+	void    UpdateXtargetMarkedNPC();
+	void    RaidClearNPCMarks(const char* client_name);
+	void    RemoveRaidDelegates(const char* delegatee);
+	void	UpdateRaidXTargets();
 
 	//Packet Functions
 	void	SendRaidCreate(Client *to);
@@ -200,6 +226,13 @@ public:
 	void	SendRaidMove(const char* who, Client *to);
 	void	SendRaidMoveAll(const char* who);
 	void	SendBulkRaid(Client *to);
+	void    SendRaidNotes();
+	void    SendRaidNotesToWorld();
+	void    SendRaidAssisters();
+	void    SendRaidMarkers();
+	void    SendRemoveRaidXTargets(XTargetType Type);
+	void    SendRemoveAllRaidXTargets();
+	void    SendRemoveAllRaidXTargets(const char* client_name);
 
 	void	GroupUpdate(uint32 gid, bool initial = true);
 	void	SendGroupUpdate(Client *to);
@@ -259,6 +292,9 @@ public:
 
 	RaidMember members[MAX_RAID_MEMBERS];
 	char leadername[64];
+	char MainAssisterPCs[MAX_RAID_MAIN_ASSISTERS][64];
+	char MainMarkerPCs[MAX_RAID_MAIN_MARKERS][64];
+	uint32	MarkedNPCs[MAX_MARKED_NPCS];
 protected:
 	Client *leader;
 	bool locked;

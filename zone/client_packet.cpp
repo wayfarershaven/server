@@ -328,6 +328,8 @@ void MapOpcodes()
 	ConnectedOpcodes[OP_PVPLeaderBoardRequest] = &Client::Handle_OP_PVPLeaderBoardRequest;
 	ConnectedOpcodes[OP_QueryUCSServerStatus] = &Client::Handle_OP_QueryUCSServerStatus;
 	ConnectedOpcodes[OP_RaidInvite] = &Client::Handle_OP_RaidCommand;
+	ConnectedOpcodes[OP_RaidDelegateAbility] = &Client::Handle_OP_RaidDelegateAbility;
+	ConnectedOpcodes[OP_RaidClearNPCMarks] = &Client::Handle_OP_RaidClearNPCMarks;
 	ConnectedOpcodes[OP_RandomReq] = &Client::Handle_OP_RandomReq;
 	ConnectedOpcodes[OP_ReadBook] = &Client::Handle_OP_ReadBook;
 	ConnectedOpcodes[OP_RecipeAutoCombine] = &Client::Handle_OP_RecipeAutoCombine;
@@ -607,15 +609,17 @@ void Client::CompleteConnect()
 			but not important for now.
 			*/
 			raid->SendRaidCreate(this);
-			raid->SendMakeLeaderPacketTo(raid->leadername, this);
 			raid->SendRaidAdd(GetName(), this);
 			raid->SendBulkRaid(this);
+			raid->SendRaidMarkers();
+			raid->SendRaidAssisters();
 			raid->SendGroupUpdate(this);
 			raid->SendRaidMOTD(this);
 			if (raid->IsLeader(this)) { // We're a raid leader, lets update just in case!
 				raid->UpdateRaidAAs();
 				raid->SendAllRaidLeadershipAA();
 			}
+			raid->SendMakeLeaderPacketTo(raid->leadername, this);
 			uint32 grpID = raid->GetGroup(GetName());
 			if (grpID < 12) {
 				raid->SendRaidGroupRemove(GetName(), grpID);
@@ -633,6 +637,8 @@ void Client::CompleteConnect()
 			}
 
 			raid->SendHPManaEndPacketsTo(this);
+			raid->SendRaidAssisters();
+			raid->SendRaidMarkers();
 		}
 	}
 	else {
@@ -5915,7 +5921,33 @@ void Client::Handle_OP_DoGroupLeadershipAbility(const EQApplicationPacket *app)
 
 		break;
 	}
+	case RaidLeadershipAbility_MainAssist:
+	{
+		//This is not needed as it executes from opcode 0x2b33 which is sent
+		//with this opcode.
+		//if (GetTarget())
+		//{
+		//	Raid* r = GetRaid();
+		//	if (r)
+		//	{
+		//		r->DelegateAbility(GetTarget()->CastToClient()->GetName());
+		//	}
+		//}
+		break;
+	}
+	case RaidLeadershipAbility_MarkNPC:
+	{
+		if (GetTarget() && GetTarget()->IsMob())
+		{
+			Raid* r = GetRaid();
+			if (r)
+			{
+				r->RaidMarkNPC(this, dglas->Parameter);
+			}
+		}
+		break;
 
+	}
 	default:
 		LogDebug("Got unhandled OP_DoGroupLeadershipAbility Ability: [{}] Parameter: [{}]", dglas->Ability, dglas->Parameter);
 		break;
@@ -12225,6 +12257,7 @@ void Client::Handle_OP_RaidCommand(const EQApplicationPacket* app)
 				//Does not camp the Bots, just removes from the raid
 				if (c_to_disband) {
 					uint32 i = raid->GetPlayerIndex(raid_command_packet->leader_name);
+					raid->RemoveRaidDelegates(raid_command_packet->leader_name);
 					raid->SetNewRaidLeader(i);
 					raid->HandleBotGroupDisband(c_to_disband->CharacterID());
 					raid->HandleOfflineBots(c_to_disband->CharacterID());
@@ -12240,11 +12273,11 @@ void Client::Handle_OP_RaidCommand(const EQApplicationPacket* app)
 
 					if (gid < 12 && (raid->IsGroupLeader(b_to_disband->GetName()) || raid->GroupCount(gid) < 2)) {
 						uint32 owner_id = b_to_disband->CastToBot()->GetOwner()->CastToClient()->CharacterID();
+						raid->RemoveRaidDelegates(raid_command_packet->leader_name);
 						raid->HandleBotGroupDisband(owner_id, gid);
-
 					} else if (b_to_disband && raid->IsRaidMember(b_to_disband->GetName())) {
+						raid->RemoveRaidDelegates(raid_command_packet->leader_name);
 						Bot::RemoveBotFromRaid(b_to_disband);
-
 					} else if (gid < 12 && raid->GetGroupLeader(gid) && raid->GetGroupLeader(gid)->IsBot()) {
 						c_doing_disband->Message(
 							Chat::Yellow,
@@ -12275,6 +12308,7 @@ void Client::Handle_OP_RaidCommand(const EQApplicationPacket* app)
 				}
 			}
 			raid->SetNewRaidLeader(i);
+			raid->RemoveRaidDelegates(raid_command_packet->leader_name);
 			raid->RemoveMember(raid_command_packet->leader_name);
 			Client* c = entity_list.GetClientByName(raid_command_packet->leader_name);
 			if (c) {
@@ -12328,9 +12362,9 @@ void Client::Handle_OP_RaidCommand(const EQApplicationPacket* app)
 										if (client_to_update) {
 											raid->SendRaidRemove(raid->members[x].member_name, client_to_update);
 											raid->SendRaidCreate(client_to_update);
-											raid->SendMakeLeaderPacketTo(raid->leadername, client_to_update);
 											raid->SendRaidAdd(raid->members[x].member_name, client_to_update);
 											raid->SendBulkRaid(client_to_update);
+											raid->SendMakeLeaderPacketTo(raid->leadername, client_to_update);
 											if (raid->IsLocked()) {
 												raid->SendRaidLockTo(client_to_update);
 											}
@@ -12360,6 +12394,8 @@ void Client::Handle_OP_RaidCommand(const EQApplicationPacket* app)
 					}
 
 					raid->MoveMember(raid_command_packet->leader_name, raid_command_packet->parameter);
+					raid->SendRaidMarkers();
+					raid->SendRaidAssisters();
 					if (c) {
 						raid->SendGroupDisband(c);
 					}
@@ -12378,9 +12414,9 @@ void Client::Handle_OP_RaidCommand(const EQApplicationPacket* app)
 					raid->GroupUpdate(raid_command_packet->parameter);
 
 					/* If our old was a group send update there too */
-					if (old_group < 12)
+					if (old_group < 12) {
 						raid->GroupUpdate(old_group);
-
+					}
 				}
 			}
 			/* Move player to ungrouped bank */
@@ -12423,6 +12459,8 @@ void Client::Handle_OP_RaidCommand(const EQApplicationPacket* app)
 					}
 				}
 				raid->MoveMember(raid_command_packet->leader_name, RAID_GROUPLESS);
+				raid->SendRaidMarkers();
+				raid->SendRaidAssisters();
 				if (c) {
 					raid->SendGroupDisband(c);
 				}
@@ -12441,6 +12479,8 @@ void Client::Handle_OP_RaidCommand(const EQApplicationPacket* app)
 				}
 
 				raid->GroupUpdate(oldgrp);
+				raid->SendRaidMarkers();
+				raid->SendRaidAssisters();
 			}
 		}
 
@@ -12539,7 +12579,17 @@ void Client::Handle_OP_RaidCommand(const EQApplicationPacket* app)
 		raid->SendRaidMOTDToWorld();
 		break;
 	}
+	case RaidCommandSetNote:
+	{
+		Raid* raid = entity_list.GetRaidByClient(this);
+		if (!raid) {
+			break;
+		}
 
+		raid->SaveRaidNote(raid_command_packet->leader_name, raid_command_packet->note);
+		raid->SendRaidNotesToWorld();
+		break;
+	}
 	default: {
 		Message(Chat::Red, "Raid command (%d) NYI", raid_command_packet->action);
 		break;
@@ -16025,4 +16075,48 @@ void Client::RecordKilledNPCEvent(NPC *n)
 			RecordPlayerEventLog(c.event, e);
 		}
 	}
+}
+
+void Client::Handle_OP_RaidDelegateAbility(const EQApplicationPacket* app) 
+{
+	if (app->size != sizeof(DelegateAbility_Struct))
+	{
+		LogDebug("Size mismatch in OP_RaidDelegateAbility expected [{}] got [{}]", sizeof(DelegateAbility_Struct), app->size);
+		DumpPacket(app);
+		return;
+	}
+
+	DelegateAbility_Struct* das = (DelegateAbility_Struct*)app->pBuffer;
+
+	switch (das->DelegateAbility)
+	{
+	case RaidDelegateMainAssist: 
+	{
+		auto r = entity_list.GetRaidByName(this->GetName());
+		r->DelegateAbilityAssist(this, das->Name);
+		break;
+	}
+	case RaidDelegateMainMarker: 
+	{
+		auto r = entity_list.GetRaidByName(this->GetName());
+		r->DelegateAbilityMark(this, das->Name);
+		break;
+	}
+	default:
+		LogDebug("RaidDelegateAbility default case");
+		break;
+	}
+}
+void Client::Handle_OP_RaidClearNPCMarks(const EQApplicationPacket* app)
+{
+	if (app->size != 0)
+	{
+		LogDebug("Size mismatch in OP_RaidClearNPCMark expected [{}] got [{}]", 0, app->size);
+		DumpPacket(app);
+		return;
+	}
+
+	auto r = entity_list.GetRaidByName(GetName());
+	r->RaidClearNPCMarks(GetName());
+
 }
