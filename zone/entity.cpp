@@ -2200,6 +2200,18 @@ Raid* EntityList::GetRaidByBot(const Bot* bot)
 	return nullptr;
 }
 
+Raid* EntityList::GetRaidByName(const char* name)
+{
+	for (const auto& r : raid_list) {
+		for (const auto& m : r->members) {
+			if (strcasecmp(m.member_name, name) == 0) {
+				return r;
+			}
+		}
+	}
+	return nullptr;
+}
+
 Client *EntityList::GetClientByAccID(uint32 accid)
 {
 	auto it = client_list.begin();
