@@ -177,6 +177,8 @@ void Raid::AddMember(Client *c, uint32 group, bool rleader, bool groupleader, bo
 	rga->instance_id = zone->GetInstanceID();
 	worldserver.SendPacket(pack);
 	safe_delete(pack);
+
+	SendAssistTarget(c);
 }
 
 void Raid::AddBot(Bot* b, uint32 group, bool raid_leader, bool group_leader, bool looter)
@@ -2730,3 +2732,85 @@ void Raid::SendRemoveAllRaidXTargets(const char* client_name) {}
 void Raid::SendRemoveRaidXTargets(XTargetType Type) {}
 
 void Raid::SendRemoveAllRaidXTargets() {}
+
+void Raid::SendRaidAssistTarget()
+{
+	// Send a packet to the entire raid notifying them of the group target selected by the Main Assist.
+	uint16 AssistTargetID = 0;
+
+	if (strlen(MainAssisterPCs[0]) > 0)
+	{
+		auto target = entity_list.GetMob(MainAssisterPCs[0])->GetTarget();
+		if (target) {
+			AssistTargetID = target->GetID();
+		}
+	}
+	if (!AssistTargetID && strlen(MainAssisterPCs[1]) > 0) {
+		auto target = entity_list.GetMob(MainAssisterPCs[1])->GetTarget();
+		if (target) {
+			AssistTargetID = target->GetID();
+		}
+	}
+	if (!AssistTargetID && strlen(MainAssisterPCs[2]) > 0) {
+		auto target = entity_list.GetMob(MainAssisterPCs[2])->GetTarget();
+		if (target) {
+			AssistTargetID = target->GetID();
+		}
+	}
+
+	if (AssistTargetID) {
+		auto outapp = new EQApplicationPacket(OP_SetGroupTarget, sizeof(MarkNPC_Struct));
+		MarkNPC_Struct* mnpcs = (MarkNPC_Struct*)outapp->pBuffer;
+		mnpcs->TargetID = AssistTargetID;
+		mnpcs->Number = 0;
+		Mob* m = entity_list.GetMob(AssistTargetID);
+
+		for (const auto& m : members) {
+			if (m.member && !m.is_bot) {
+				m.member->QueuePacket(outapp);
+			}
+		}
+		safe_delete(outapp);
+	}
+}
+void Raid::SendAssistTarget(Client* c)
+{
+	// Send a packet to a specific client notifying them of the group target selected by the Main Assist.
+
+	if (!c) {
+		return;
+	}
+
+	uint16 AssistTargetID = 0;
+
+	if (strlen(MainAssisterPCs[0]) > 0)	{
+		auto target = entity_list.GetMob(MainAssisterPCs[0])->GetTarget();
+		if (target) {
+			AssistTargetID = target->GetID();
+		}
+	}
+
+	if (!AssistTargetID && strlen(MainAssisterPCs[1]) > 0) {
+		auto target = entity_list.GetMob(MainAssisterPCs[1])->GetTarget();
+		if (target) {
+			AssistTargetID = target->GetID();
+		}
+	}
+
+	if (!AssistTargetID && strlen(MainAssisterPCs[2]) > 0) {
+		auto target = entity_list.GetMob(MainAssisterPCs[2])->GetTarget();
+		if (target) {
+			AssistTargetID = target->GetID();
+		}
+	}
+
+	if (AssistTargetID) {
+		auto outapp = new EQApplicationPacket(OP_SetGroupTarget, sizeof(MarkNPC_Struct));
+		MarkNPC_Struct* mnpcs = (MarkNPC_Struct*)outapp->pBuffer;
+		mnpcs->TargetID = AssistTargetID;
+		mnpcs->Number = 0;
+		Mob* m = entity_list.GetMob(AssistTargetID);
+		c->QueuePacket(outapp);
+		safe_delete(outapp);
+	}
+}

@@ -4287,6 +4287,13 @@ void Mob::SetTarget(Mob *mob)
 	if (IsClient() && GetTarget()) {
 		GetTarget()->SendHPUpdate(true);
 	}
+
+	if (IsClient() || IsBot()) {
+		Raid* r = GetRaid();
+		if (r) {
+			r->SendRaidAssistTarget();
+		}
+	}
 }
 
 // For when we want a Ground Z at a location we are not at yet

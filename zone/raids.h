@@ -233,6 +233,8 @@ public:
 	void    SendRemoveRaidXTargets(XTargetType Type);
 	void    SendRemoveAllRaidXTargets();
 	void    SendRemoveAllRaidXTargets(const char* client_name);
+	void    SendRaidAssistTarget();
+	void    SendAssistTarget(Client* c);
 
 	void	GroupUpdate(uint32 gid, bool initial = true);
 	void	SendGroupUpdate(Client *to);
