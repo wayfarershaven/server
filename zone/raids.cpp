@@ -2737,24 +2737,28 @@ void Raid::SendRaidAssistTarget()
 {
 	// Send a packet to the entire raid notifying them of the group target selected by the Main Assist.
 	uint16 AssistTargetID = 0;
+	uint16 number = 0;
 
 	if (strlen(MainAssisterPCs[0]) > 0)
 	{
 		auto target = entity_list.GetMob(MainAssisterPCs[0])->GetTarget();
 		if (target) {
 			AssistTargetID = target->GetID();
+			number = 1;
 		}
 	}
 	if (!AssistTargetID && strlen(MainAssisterPCs[1]) > 0) {
 		auto target = entity_list.GetMob(MainAssisterPCs[1])->GetTarget();
 		if (target) {
 			AssistTargetID = target->GetID();
+			number = 2;
 		}
 	}
 	if (!AssistTargetID && strlen(MainAssisterPCs[2]) > 0) {
 		auto target = entity_list.GetMob(MainAssisterPCs[2])->GetTarget();
 		if (target) {
 			AssistTargetID = target->GetID();
+			number = 3;
 		}
 	}
 
@@ -2762,8 +2766,7 @@ void Raid::SendRaidAssistTarget()
 		auto outapp = new EQApplicationPacket(OP_SetGroupTarget, sizeof(MarkNPC_Struct));
 		MarkNPC_Struct* mnpcs = (MarkNPC_Struct*)outapp->pBuffer;
 		mnpcs->TargetID = AssistTargetID;
-		mnpcs->Number = 0;
-		Mob* m = entity_list.GetMob(AssistTargetID);
+		mnpcs->Number = number;
 
 		for (const auto& m : members) {
 			if (m.member && !m.is_bot) {
@@ -2782,11 +2785,13 @@ void Raid::SendAssistTarget(Client* c)
 	}
 
 	uint16 AssistTargetID = 0;
+	uint16 number = 0;
 
 	if (strlen(MainAssisterPCs[0]) > 0)	{
 		auto target = entity_list.GetMob(MainAssisterPCs[0])->GetTarget();
 		if (target) {
 			AssistTargetID = target->GetID();
+			number = 1;
 		}
 	}
 
@@ -2794,6 +2799,7 @@ void Raid::SendAssistTarget(Client* c)
 		auto target = entity_list.GetMob(MainAssisterPCs[1])->GetTarget();
 		if (target) {
 			AssistTargetID = target->GetID();
+			number = 2;
 		}
 	}
 
@@ -2801,6 +2807,7 @@ void Raid::SendAssistTarget(Client* c)
 		auto target = entity_list.GetMob(MainAssisterPCs[2])->GetTarget();
 		if (target) {
 			AssistTargetID = target->GetID();
+			number = 3;
 		}
 	}
 
@@ -2808,8 +2815,7 @@ void Raid::SendAssistTarget(Client* c)
 		auto outapp = new EQApplicationPacket(OP_SetGroupTarget, sizeof(MarkNPC_Struct));
 		MarkNPC_Struct* mnpcs = (MarkNPC_Struct*)outapp->pBuffer;
 		mnpcs->TargetID = AssistTargetID;
-		mnpcs->Number = 0;
-		Mob* m = entity_list.GetMob(AssistTargetID);
+		mnpcs->Number = number;
 		c->QueuePacket(outapp);
 		safe_delete(outapp);
 	}
