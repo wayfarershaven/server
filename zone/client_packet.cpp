@@ -611,8 +611,8 @@ void Client::CompleteConnect()
 			raid->SendRaidCreate(this);
 			raid->SendRaidAdd(GetName(), this);
 			raid->SendBulkRaid(this);
-			raid->SendRaidMarkers();
-			raid->SendRaidAssisters();
+			//raid->SendRaidMarkers();
+			//raid->SendRaidAssisters();
 			raid->SendGroupUpdate(this);
 			raid->SendRaidMOTD(this);
 			if (raid->IsLeader(this)) { // We're a raid leader, lets update just in case!
@@ -637,11 +637,10 @@ void Client::CompleteConnect()
 			}
 
 			raid->SendHPManaEndPacketsTo(this);
-			raid->SendRaidAssisters();
-			raid->SendRaidMarkers();
+			//raid->SendRaidAssisters();
+			//raid->SendRaidMarkers();
 		}
-	}
-	else {
+	} else {
 		Group *group = nullptr;
 		group = GetGroup();
 		if (group) {
@@ -12394,12 +12393,11 @@ void Client::Handle_OP_RaidCommand(const EQApplicationPacket* app)
 					}
 
 					raid->MoveMember(raid_command_packet->leader_name, raid_command_packet->parameter);
-					raid->SendRaidMarkers();
-					raid->SendRaidAssisters();
+					//raid->SendRaidMarkers();
+					//raid->SendRaidAssisters();
 					if (c) {
 						raid->SendGroupDisband(c);
-					}
-					else {
+					} else {
 						auto pack = new ServerPacket(ServerOP_RaidGroupDisband, sizeof(ServerRaidGeneralAction_Struct));
 						ServerRaidGeneralAction_Struct* raid_command = (ServerRaidGeneralAction_Struct*)pack->pBuffer;
 						raid_command->rid = raid->GetID();
@@ -12459,12 +12457,11 @@ void Client::Handle_OP_RaidCommand(const EQApplicationPacket* app)
 					}
 				}
 				raid->MoveMember(raid_command_packet->leader_name, RAID_GROUPLESS);
-				raid->SendRaidMarkers();
-				raid->SendRaidAssisters();
+				//raid->SendRaidMarkers();
+				//raid->SendRaidAssisters();
 				if (c) {
 					raid->SendGroupDisband(c);
-				}
-				else {
+				} else {
 					auto pack = new ServerPacket(ServerOP_RaidGroupDisband, sizeof(ServerRaidGeneralAction_Struct));
 					ServerRaidGeneralAction_Struct* raid_command = (ServerRaidGeneralAction_Struct*)pack->pBuffer;
 
@@ -12479,8 +12476,8 @@ void Client::Handle_OP_RaidCommand(const EQApplicationPacket* app)
 				}
 
 				raid->GroupUpdate(oldgrp);
-				raid->SendRaidMarkers();
-				raid->SendRaidAssisters();
+				//raid->SendRaidMarkers();
+				//raid->SendRaidAssisters();
 			}
 		}
 

@@ -1128,8 +1128,8 @@ void Raid::SendRaidAdd(const char *who, Client *to)
 			return;
 		}
 	}
-	SendRaidAssisters();
-	SendRaidMarkers();
+	//SendRaidAssisters();
+	//SendRaidMarkers();
 }
 
 void Raid::SendRaidAddAll(const char *who)
@@ -1153,8 +1153,8 @@ void Raid::SendRaidAddAll(const char *who)
 			return;
 		}
 	}
-	SendRaidAssisters();
-	SendRaidMarkers();
+	//SendRaidAssisters();
+	//SendRaidMarkers();
 }
 
 void Raid::SendRaidRemove(const char *who, Client *to)
@@ -1277,8 +1277,8 @@ void Raid::SendBulkRaid(Client *to)
 		}
 	}
 	SendRaidNotes();
-	SendRaidAssisters();
-	SendRaidMarkers();
+	//SendRaidAssisters();
+	//SendRaidMarkers();
 }
 
 void Raid::QueuePacket(const EQApplicationPacket *app, bool ack_req)
