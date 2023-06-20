@@ -1128,8 +1128,8 @@ void Raid::SendRaidAdd(const char *who, Client *to)
 			return;
 		}
 	}
-	SendRaidAssisters();
-	SendRaidMarkers();
+	//SendRaidAssisters();
+	//SendRaidMarkers();
 }
 
 void Raid::SendRaidAddAll(const char *who)
@@ -1153,8 +1153,8 @@ void Raid::SendRaidAddAll(const char *who)
 			return;
 		}
 	}
-	SendRaidAssisters();
-	SendRaidMarkers();
+	//SendRaidAssisters();
+	//SendRaidMarkers();
 }
 
 void Raid::SendRaidRemove(const char *who, Client *to)
@@ -1277,8 +1277,8 @@ void Raid::SendBulkRaid(Client *to)
 		}
 	}
 	SendRaidNotes();
-	SendRaidAssisters();
-	SendRaidMarkers();
+	//SendRaidAssisters();
+	//SendRaidMarkers();
 }
 
 void Raid::QueuePacket(const EQApplicationPacket *app, bool ack_req)
@@ -2556,7 +2556,7 @@ void Raid::RaidMarkNPC(Mob* mob, uint32 parameter)
 
 	for (int i = 0; i < MAX_RAID_MAIN_MARKERS; i++) {
 		auto cname = c->GetCleanName();
-		if (strcasecmp(MainMarkerPCs[i], cname) == 0) {
+		if (strcasecmp(MainMarkerPCs[i], cname) == 0 || strcasecmp(leadername, cname) == 0) {
 			MarkedNPCs[parameter - 1] = c->GetTarget()->GetID();
 
 			std::string query = StringFormat("UPDATE raid_details SET MarkedNPC%i = %i WHERE raidid = %i;",
@@ -2737,24 +2737,38 @@ void Raid::SendRaidAssistTarget()
 {
 	// Send a packet to the entire raid notifying them of the group target selected by the Main Assist.
 	uint16 AssistTargetID = 0;
+	uint16 number = 0;
+	Mob* target = nullptr;
 
 	if (strlen(MainAssisterPCs[0]) > 0)
 	{
-		auto target = entity_list.GetMob(MainAssisterPCs[0])->GetTarget();
-		if (target) {
-			AssistTargetID = target->GetID();
+		auto player = entity_list.GetMob(MainAssisterPCs[0]);
+		if (player) {
+			target = entity_list.GetMob(MainAssisterPCs[0])->GetTarget();
+			if (target) {
+				AssistTargetID = target->GetID();
+				number = 1;
+			}
 		}
 	}
 	if (!AssistTargetID && strlen(MainAssisterPCs[1]) > 0) {
-		auto target = entity_list.GetMob(MainAssisterPCs[1])->GetTarget();
-		if (target) {
-			AssistTargetID = target->GetID();
+		auto player = entity_list.GetMob(MainAssisterPCs[1]);
+		if (player) {
+			target = entity_list.GetMob(MainAssisterPCs[1])->GetTarget();
+			if (target) {
+				AssistTargetID = target->GetID();
+				number = 2;
+			}
 		}
 	}
 	if (!AssistTargetID && strlen(MainAssisterPCs[2]) > 0) {
-		auto target = entity_list.GetMob(MainAssisterPCs[2])->GetTarget();
-		if (target) {
-			AssistTargetID = target->GetID();
+		auto player = entity_list.GetMob(MainAssisterPCs[2]);
+		if (player) {
+			target = entity_list.GetMob(MainAssisterPCs[2])->GetTarget();
+			if (target) {
+				AssistTargetID = target->GetID();
+				number = 3;
+			}
 		}
 	}
 
@@ -2762,8 +2776,7 @@ void Raid::SendRaidAssistTarget()
 		auto outapp = new EQApplicationPacket(OP_SetGroupTarget, sizeof(MarkNPC_Struct));
 		MarkNPC_Struct* mnpcs = (MarkNPC_Struct*)outapp->pBuffer;
 		mnpcs->TargetID = AssistTargetID;
-		mnpcs->Number = 0;
-		Mob* m = entity_list.GetMob(AssistTargetID);
+		mnpcs->Number = number;
 
 		for (const auto& m : members) {
 			if (m.member && !m.is_bot) {
@@ -2777,30 +2790,44 @@ void Raid::SendAssistTarget(Client* c)
 {
 	// Send a packet to a specific client notifying them of the group target selected by the Main Assist.
 
-	if (!c) {
+	if (!c || c->IsBot()) {
 		return;
 	}
 
 	uint16 AssistTargetID = 0;
+	uint16 number = 0;
+	Mob* target = nullptr;
 
 	if (strlen(MainAssisterPCs[0]) > 0)	{
-		auto target = entity_list.GetMob(MainAssisterPCs[0])->GetTarget();
-		if (target) {
-			AssistTargetID = target->GetID();
+		auto player = entity_list.GetMob(MainAssisterPCs[0]);
+		if (player) {
+			target = entity_list.GetMob(MainAssisterPCs[0])->GetTarget();
+			if (target) {
+				AssistTargetID = target->GetID();
+				number = 1;
+			}
 		}
 	}
 
 	if (!AssistTargetID && strlen(MainAssisterPCs[1]) > 0) {
-		auto target = entity_list.GetMob(MainAssisterPCs[1])->GetTarget();
-		if (target) {
-			AssistTargetID = target->GetID();
+		auto player = entity_list.GetMob(MainAssisterPCs[1]);
+		if (player) {
+			target = entity_list.GetMob(MainAssisterPCs[1])->GetTarget();
+			if (target) {
+				AssistTargetID = target->GetID();
+				number = 2;
+			}
 		}
 	}
 
 	if (!AssistTargetID && strlen(MainAssisterPCs[2]) > 0) {
-		auto target = entity_list.GetMob(MainAssisterPCs[2])->GetTarget();
-		if (target) {
-			AssistTargetID = target->GetID();
+		auto player = entity_list.GetMob(MainAssisterPCs[2]);
+		if (player) {
+			target = entity_list.GetMob(MainAssisterPCs[2])->GetTarget();
+			if (target) {
+				AssistTargetID = target->GetID();
+				number = 3;
+			}
 		}
 	}
 
@@ -2808,8 +2835,7 @@ void Raid::SendAssistTarget(Client* c)
 		auto outapp = new EQApplicationPacket(OP_SetGroupTarget, sizeof(MarkNPC_Struct));
 		MarkNPC_Struct* mnpcs = (MarkNPC_Struct*)outapp->pBuffer;
 		mnpcs->TargetID = AssistTargetID;
-		mnpcs->Number = 0;
-		Mob* m = entity_list.GetMob(AssistTargetID);
+		mnpcs->Number = number;
 		c->QueuePacket(outapp);
 		safe_delete(outapp);
 	}
