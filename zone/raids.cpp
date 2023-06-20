@@ -2556,7 +2556,7 @@ void Raid::RaidMarkNPC(Mob* mob, uint32 parameter)
 
 	for (int i = 0; i < MAX_RAID_MAIN_MARKERS; i++) {
 		auto cname = c->GetCleanName();
-		if (strcasecmp(MainMarkerPCs[i], cname) == 0) {
+		if (strcasecmp(MainMarkerPCs[i], cname) == 0 || strcasecmp(leadername, cname) == 0) {
 			MarkedNPCs[parameter - 1] = c->GetTarget()->GetID();
 
 			std::string query = StringFormat("UPDATE raid_details SET MarkedNPC%i = %i WHERE raidid = %i;",
