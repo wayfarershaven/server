@@ -3062,7 +3062,25 @@ void Client::Handle_OP_AssistGroup(const EQApplicationPacket *app)
 		LogDebug("Size mismatch in OP_AssistGroup expected [{}] got [{}]", sizeof(EntityId_Struct), app->size);
 		return;
 	}
-	QueuePacket(app);
+	EntityId_Struct* eid = (EntityId_Struct*)app->pBuffer;
+	Entity* entity = entity_list.GetID(eid->entity_id);
+
+	EQApplicationPacket* outapp = new EQApplicationPacket(OP_Assist, sizeof(EntityId_Struct));
+	eid = (EntityId_Struct*)outapp->pBuffer;
+	if (entity && entity->IsMob()) {
+		Mob* new_target = entity->CastToMob();
+		if (new_target && (GetGM() ||
+			Distance(m_Position, new_target->GetPosition()) <= TARGETING_RANGE)) {
+			cheat_manager.SetExemptStatus(Assist, true);
+			eid->entity_id = new_target->GetID();
+		} else {
+			eid->entity_id = 0;
+		}
+	} else {
+		eid->entity_id = 0;
+	}
+
+	FastQueuePacket(&outapp);
 	return;
 }
 
