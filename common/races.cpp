@@ -17,6 +17,7 @@
 */
 
 #include "../common/races.h"
+#include "data_verification.h"
 
 const char* GetRaceIDName(uint16 race_id)
 {
@@ -2281,4 +2282,58 @@ const char* GetGenderName(uint32 gender_id) {
 		gender_name = "Neuter";
 	}
 	return gender_name;
+}
+
+const std::string GetPlayerRaceAbbreviation(uint16 race_id)
+{
+	if (!IsPlayerRace(race_id)) {
+		return std::string();
+	}
+
+	switch (race_id) {
+		case RACE_HUMAN_1:
+			return "HUM";
+		case RACE_BARBARIAN_2:
+			return "BAR";
+		case RACE_ERUDITE_3:
+			return "ERU";
+		case RACE_WOOD_ELF_4:
+			return "ELF";
+		case RACE_HIGH_ELF_5:
+			return "HIE";
+		case RACE_DARK_ELF_6:
+			return "DEF";
+		case RACE_HALF_ELF_7:
+			return "HEF";
+		case RACE_DWARF_8:
+			return "DWF";
+		case RACE_TROLL_9:
+			return "TRL";
+		case RACE_OGRE_10:
+			return "OGR";
+		case RACE_HALFLING_11:
+			return "HFL";
+		case RACE_GNOME_12:
+			return "GNM";
+		case RACE_IKSAR_128:
+			return "IKS";
+		case RACE_VAH_SHIR_130:
+			return "VAH";
+		case RACE_FROGLOK_330:
+			return "FRG";
+		case RACE_DRAKKIN_522:
+			return "DRK";
+	}
+
+	return std::string();
+}
+
+bool IsPlayerRace(uint16 race_id) {
+	return (
+		EQ::ValueWithin(race_id, RACE_HUMAN_1, RACE_GNOME_12) ||
+		race_id == RACE_IKSAR_128 ||
+		race_id == RACE_VAH_SHIR_130 ||
+		race_id == RACE_FROGLOK_330 ||
+		race_id == RACE_DRAKKIN_522
+	);
 }

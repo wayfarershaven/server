@@ -577,7 +577,7 @@ int64 Client::CalcBaseMana()
 int64 Client::CalcBaseManaRegen()
 {
 	uint8 clevel = GetLevel();
-	int32 regen = 0;
+	int64 regen = 0;
 	if (IsSitting() || (GetHorseId() != 0)) {
 		if (HasSkill(EQ::skills::SkillMeditate)) {
 			regen = (((GetSkill(EQ::skills::SkillMeditate) / 10) + (clevel - (clevel / 4))) / 4) + 4;

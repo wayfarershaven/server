@@ -19,7 +19,7 @@ void command_findclass(Client *c, const Seperator *sep)
 					class_id,
 					class_name,
 					(
-						c->IsPlayerClass(class_id) ?
+						IsPlayerClass(class_id) ?
 						fmt::format(
 							" ({})",
 							GetPlayerClassBit(class_id)
@@ -58,7 +58,7 @@ void command_findclass(Client *c, const Seperator *sep)
 					class_id,
 					class_name,
 					(
-						c->IsPlayerClass(class_id) ?
+						IsPlayerClass(class_id) ?
 						fmt::format(
 							" ({})",
 							GetPlayerClassBit(class_id)

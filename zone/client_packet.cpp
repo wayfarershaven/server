@@ -11575,10 +11575,9 @@ void Client::Handle_OP_PopupResponse(const EQApplicationPacket *app)
 			break;
 
 		case POPUPID_UPDATE_SHOWSTATSWINDOW:
-			if (GetTarget() && GetTarget()->IsClient()) {
-				GetTarget()->CastToClient()->SendStatsWindow(this, true);
-			}
-			else {
+			if (GetTarget() && GetTarget()->IsOfClientBot()) {
+				GetTarget()->SendStatsWindow(this, true);
+			} else {
 				SendStatsWindow(this, true);
 			}
 			return;
@@ -14579,8 +14578,8 @@ void Client::Handle_OP_TargetCommand(const EQApplicationPacket *app) {
 
 	if (nt) {
 		if (GetGM() || (!nt->IsInvisible(this) && (DistanceSquared(m_Position, nt->GetPosition()) <= TARGETING_RANGE*TARGETING_RANGE))) {
-			if (nt->GetBodyType() == BT_NoTarget2 || 
-				nt->GetBodyType() == BT_Special || 
+			if (nt->GetBodyType() == BT_NoTarget2 ||
+				nt->GetBodyType() == BT_Special ||
 				nt->GetBodyType() == BT_NoTarget) {
 				can_target = false;
 			}

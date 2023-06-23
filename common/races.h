@@ -20,6 +20,7 @@
 #define RACES_H
 #include "../common/types.h"
 #include <cmath>
+#include <string>
 
 #define MALE 0
 #define FEMALE 1
@@ -853,6 +854,8 @@
 const char* GetRaceIDName(uint16 race_id);
 const char* GetPlayerRaceName(uint32 player_race_value);
 const char* GetGenderName(uint32 gender_id);
+bool IsPlayerRace(uint16 race_id);
+const std::string GetPlayerRaceAbbreviation(uint16 race_id);
 uint32 GetArrayRace(uint16 race);
 inline uint32 GetRaceBitmask(uint16 race) { return uint32(pow(2.0f, float(GetArrayRace(race) - 1))); }
 
