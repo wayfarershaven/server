@@ -133,6 +133,12 @@ enum {
 
 typedef enum
 {
+	Disciplines,
+	Spells
+} ShowSpellType;
+
+typedef enum
+{
 	Empty = 0,
 	Auto = 1,
 	CurrentTargetPC = 2,
@@ -640,6 +646,8 @@ public:
 	inline const int32 GetInstanceID() const { return zone->GetInstanceID(); }
 	void SetZoning(bool in) { bZoning = in; }
 
+	void ShowSpells(Client* c, ShowSpellType show_spell_type);
+	
 	FACTION_VALUE GetReverseFactionCon(Mob* iOther);
 	FACTION_VALUE GetFactionLevel(uint32 char_id, uint32 npc_id, uint32 p_race, uint32 p_class, uint32 p_deity, int32 pFaction, Mob* tnpc);
 	bool ReloadCharacterFaction(Client *c, uint32 facid, uint32 charid);
