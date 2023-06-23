@@ -1125,11 +1125,18 @@ void Raid::SendRaidAdd(const char *who, Client *to)
 			ram->isGroupLeader = m.is_group_leader;
 			to->QueuePacket(outapp);
 			safe_delete(outapp);
+
+			if (IsAssister(m.member_name)) {
+				SendRaidAssisterTo(m.member_name, to);
+			}
+
+			if (IsMarker(m.member_name)) {
+				SendRaidMarkerTo(m.member_name, to);
+			}
+
 			return;
 		}
 	}
-	//SendRaidAssisters();
-	//SendRaidMarkers();
 }
 
 void Raid::SendRaidAddAll(const char *who)
@@ -1150,11 +1157,18 @@ void Raid::SendRaidAddAll(const char *who)
 
 			QueuePacket(outapp);
 			safe_delete(outapp);
+
+			if (IsAssister(m.member_name)) {
+				SendRaidAssister(m.member_name);
+			}
+
+			if (IsMarker(m.member_name)) {
+				SendRaidMarker(m.member_name);
+			}
+
 			return;
 		}
 	}
-	//SendRaidAssisters();
-	//SendRaidMarkers();
 }
 
 void Raid::SendRaidRemove(const char *who, Client *to)
@@ -2838,5 +2852,128 @@ void Raid::SendAssistTarget(Client* c)
 		mnpcs->Number = number;
 		c->QueuePacket(outapp);
 		safe_delete(outapp);
+	}
+}
+
+bool Raid::IsAssister(const char* who) 
+{
+
+	for (int i = 0; i < 3; i++) {
+		if (strcasecmp(MainAssisterPCs[i], who) == 0) {
+			return 1;
+		}
+	}
+	return 0;
+
+}
+
+void Raid::SendRaidAssisterTo(const char* assister, Client* to)
+{
+
+	if (strlen(assister) == 0 || !to || to->IsBot()) {
+		return;
+	}
+
+	auto mob = entity_list.GetMob(assister);
+
+	if (mob) {
+		auto m_id = mob->GetID();
+		if (m_id) {
+			auto outapp = new EQApplicationPacket(OP_RaidDelegateAbility, sizeof(DelegateAbility_Struct));
+			DelegateAbility_Struct* das = (DelegateAbility_Struct*)outapp->pBuffer;
+			das->Action = 0;
+			das->DelegateAbility = RaidDelegateMainAssist;
+			das->MemberNumber = 0;
+			das->EntityID = m_id;
+			strcpy(das->Name, assister);
+			to->QueuePacket(outapp);
+			safe_delete(outapp);
+		}
+	}
+}
+
+void Raid::SendRaidAssister(const char* assister)
+{
+
+	if (strlen(assister) == 0) {
+		return;
+	}
+
+	auto mob = entity_list.GetMob(assister);
+
+	if (mob) {
+		auto m_id = mob->GetID();
+		if (m_id) {
+			auto outapp = new EQApplicationPacket(OP_RaidDelegateAbility, sizeof(DelegateAbility_Struct));
+			DelegateAbility_Struct* das = (DelegateAbility_Struct*)outapp->pBuffer;
+			das->Action = 0;
+			das->DelegateAbility = RaidDelegateMainAssist;
+			das->MemberNumber = 0;
+			das->EntityID = m_id;
+			strcpy(das->Name, assister);
+			QueuePacket(outapp);
+			safe_delete(outapp);
+		}
+	}
+}
+bool Raid::IsMarker(const char* who)
+{
+
+	for (int i = 0; i < 3; i++) {
+		if (strcasecmp(MainMarkerPCs[i], who) == 0) {
+			return 1;
+		}
+	}
+	return 0;
+
+}
+
+void Raid::SendRaidMarkerTo(const char* marker, Client* to)
+{
+
+	if (strlen(marker) == 0 || !to || to->IsBot()) {
+		return;
+	}
+
+	auto mob = entity_list.GetMob(marker);
+
+	if (mob) {
+		auto m_id = mob->GetID();
+		if (m_id) {
+			auto outapp = new EQApplicationPacket(OP_RaidDelegateAbility, sizeof(DelegateAbility_Struct));
+			DelegateAbility_Struct* das = (DelegateAbility_Struct*)outapp->pBuffer;
+			das->Action = 0;
+			das->DelegateAbility = RaidDelegateMainMarker;
+			das->MemberNumber = 0;
+			das->EntityID = m_id;
+			strcpy(das->Name, marker);
+			to->QueuePacket(outapp);
+			safe_delete(outapp);
+		}
+	}
+}
+
+void Raid::SendRaidMarker(const char* marker)
+{
+
+	if (strlen(marker) == 0) {
+		return;
+	}
+
+	auto mob = entity_list.GetMob(marker);
+
+	if (mob) {
+		auto m_id = mob->GetID();
+		if (m_id) {
+			auto outapp = new EQApplicationPacket(OP_RaidDelegateAbility, sizeof(DelegateAbility_Struct));
+			DelegateAbility_Struct* das = (DelegateAbility_Struct*)outapp->pBuffer;
+			das->Action = 0;
+			das->DelegateAbility = RaidDelegateMainMarker;
+			das->MemberNumber = 0;
+			das->EntityID = m_id;
+			strcpy(das->Name, marker);
+			QueuePacket(outapp);
+			safe_delete(outapp);
+		}
 	}
 }
