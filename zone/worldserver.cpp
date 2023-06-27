@@ -1540,8 +1540,9 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 		if (!zone)
 			break;
 		Raid *r = entity_list.GetRaidByID(rmotd->rid);
-		if (!r)
+		if (!r) {
 			break;
+		}
 		r->SetRaidMOTD(std::string(rmotd->motd));
 		r->SendRaidMOTD();
 		break;
@@ -1550,8 +1551,9 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 		auto snote = (ServerRaidNote_Struct*)pack->pBuffer;
 		if (snote->rid > 0) {
 			Raid* r = entity_list.GetRaidByID(snote->rid);
-			if (!r)
+			if (!r) {
 				break;
+			}
 			r->SendRaidNotes();
 		}
 		break;
