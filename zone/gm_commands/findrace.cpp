@@ -22,7 +22,7 @@ void command_findrace(Client *c, const Seperator *sep)
 					race_id,
 					race_name,
 					(
-						c->IsPlayerRace(race_id) ?
+						IsPlayerRace(race_id) ?
 						fmt::format(
 							" ({})",
 							GetPlayerRaceBit(race_id)
@@ -60,7 +60,7 @@ void command_findrace(Client *c, const Seperator *sep)
 					race_id,
 					race_name,
 					(
-						c->IsPlayerRace(race_id) ?
+						IsPlayerRace(race_id) ?
 						fmt::format(
 							" ({})",
 							GetPlayerRaceBit(race_id)

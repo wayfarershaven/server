@@ -2140,8 +2140,14 @@ void Client::Handle_OP_AdventureMerchantRequest(const EQApplicationPacket *app)
 
 	Mob* tmp = entity_list.GetMob(eid->entity_id);
 	if (tmp == 0 || !tmp->IsNPC() || ((tmp->GetClass() != ADVENTURE_MERCHANT) &&
-		(tmp->GetClass() != DISCORD_MERCHANT) && (tmp->GetClass() != NORRATHS_KEEPERS_MERCHANT) && (tmp->GetClass() != DARK_REIGN_MERCHANT)))
+		(tmp->GetClass() != DISCORD_MERCHANT) && (tmp->GetClass() != NORRATHS_KEEPERS_MERCHANT) && (tmp->GetClass() != DARK_REIGN_MERCHANT))) {
 		return;
+	}
+
+	if (!tmp->CastToNPC()->IsMerchantOpen()) {
+		tmp->SayString(zone->random.Int(MERCHANT_CLOSED_ONE, MERCHANT_CLOSED_THREE));
+		return;
+	}
 
 	//you have to be somewhat close to them to be properly using them
 	if (DistanceSquared(m_Position, tmp->GetPosition()) > USE_NPC_RANGE2)
@@ -3062,7 +3068,25 @@ void Client::Handle_OP_AssistGroup(const EQApplicationPacket *app)
 		LogDebug("Size mismatch in OP_AssistGroup expected [{}] got [{}]", sizeof(EntityId_Struct), app->size);
 		return;
 	}
-	QueuePacket(app);
+	EntityId_Struct* eid = (EntityId_Struct*)app->pBuffer;
+	Entity* entity = entity_list.GetID(eid->entity_id);
+
+	EQApplicationPacket* outapp = new EQApplicationPacket(OP_Assist, sizeof(EntityId_Struct));
+	eid = (EntityId_Struct*)outapp->pBuffer;
+	if (entity && entity->IsMob()) {
+		Mob* new_target = entity->CastToMob();
+		if (new_target && (GetGM() ||
+			Distance(m_Position, new_target->GetPosition()) <= TARGETING_RANGE)) {
+			cheat_manager.SetExemptStatus(Assist, true);
+			eid->entity_id = new_target->GetID();
+		} else {
+			eid->entity_id = 0;
+		}
+	} else {
+		eid->entity_id = 0;
+	}
+
+	FastQueuePacket(&outapp);
 	return;
 }
 
@@ -10776,7 +10800,7 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
 	case PET_HEALTHREPORT: {
 		if ((mypet->GetPetType() == petAnimation && aabonuses.PetCommands[PetCommand]) || mypet->GetPetType() != petAnimation) {
 			MessageString(Chat::PetResponse, PET_REPORT_HP, ConvertArrayF(mypet->GetHPRatio(), val1));
-			mypet->ShowBuffList(this);
+			mypet->ShowBuffs(this);
 		}
 		break;
 	}
@@ -11557,10 +11581,9 @@ void Client::Handle_OP_PopupResponse(const EQApplicationPacket *app)
 			break;
 
 		case POPUPID_UPDATE_SHOWSTATSWINDOW:
-			if (GetTarget() && GetTarget()->IsClient()) {
-				GetTarget()->CastToClient()->SendStatsWindow(this, true);
-			}
-			else {
+			if (GetTarget() && GetTarget()->IsOfClientBot()) {
+				GetTarget()->SendStatsWindow(this, true);
+			} else {
 				SendStatsWindow(this, true);
 			}
 			return;
@@ -14104,16 +14127,18 @@ void Client::Handle_OP_ShopRequest(const EQApplicationPacket *app)
 	int merchantid = 0;
 	Mob* tmp = entity_list.GetMob(mc->npcid);
 
-	if (tmp == 0 || !tmp->IsNPC() || tmp->GetClass() != MERCHANT)
+	if (tmp == 0 || !tmp->IsNPC() || tmp->GetClass() != MERCHANT) {
 		return;
+	}
 
 	//you have to be somewhat close to them to be properly using them
-	if (DistanceSquared(m_Position, tmp->GetPosition()) > USE_NPC_RANGE2)
+	if (DistanceSquared(m_Position, tmp->GetPosition()) > USE_NPC_RANGE2) {
 		return;
+	}
 
 	merchantid = tmp->CastToNPC()->MerchantType;
-
 	int action = 1;
+
 	if (merchantid == 0) {
 		auto outapp = new EQApplicationPacket(OP_ShopRequest, sizeof(Merchant_Click_Struct));
 		Merchant_Click_Struct* mco = (Merchant_Click_Struct*)outapp->pBuffer;
@@ -14125,28 +14150,31 @@ void Client::Handle_OP_ShopRequest(const EQApplicationPacket *app)
 		safe_delete(outapp);
 		return;
 	}
+
 	if (tmp->IsEngaged()) {
 		MessageString(Chat::White, MERCHANT_BUSY);
 		action = 0;
 	}
-	if (GetFeigned() || IsInvisible())
-	{
+
+	if (GetFeigned() || IsInvisible()) {
 		Message(Chat::White, "You cannot use a merchant right now.");
 		action = 0;
 	}
+
 	int primaryfaction = tmp->CastToNPC()->GetPrimaryFaction();
 	int factionlvl = GetFactionLevel(CharacterID(), tmp->CastToNPC()->GetNPCTypeID(), GetRace(), GetClass(), GetDeity(), primaryfaction, tmp);
+
 	if (factionlvl >= 7) {
 		MerchantRejectMessage(tmp, primaryfaction);
 		action = 0;
 	}
 
-	if (tmp->Charmed())
+	if (tmp->Charmed()) {
 		action = 0;
+	}
 
-	// 1199 I don't have time for that now. etc
 	if (!tmp->CastToNPC()->IsMerchantOpen()) {
-		tmp->SayString(zone->random.Int(1199, 1202));
+		tmp->SayString(zone->random.Int(MERCHANT_CLOSED_ONE, MERCHANT_CLOSED_THREE));
 		action = 0;
 	}
 
@@ -14158,16 +14186,17 @@ void Client::Handle_OP_ShopRequest(const EQApplicationPacket *app)
 	mco->command = action; // Merchant command 0x01 = open
 	if (RuleB(Merchant, UsePriceMod)) {
 		mco->rate = 1 / ((RuleR(Merchant, BuyCostMod))*Client::CalcPriceMod(tmp, true)); // works
-	}
-	else
+	} else {
 		mco->rate = 1 / (RuleR(Merchant, BuyCostMod));
+	}
 
 	outapp->priority = 6;
 	QueuePacket(outapp);
 	safe_delete(outapp);
 
-	if (action == 1)
+	if (action == 1) {
 		BulkSendMerchantInventory(merchantid, tmp->GetNPCTypeID());
+	}
 
 	return;
 }
@@ -14561,8 +14590,8 @@ void Client::Handle_OP_TargetCommand(const EQApplicationPacket *app) {
 
 	if (nt) {
 		if (GetGM() || (!nt->IsInvisible(this) && (DistanceSquared(m_Position, nt->GetPosition()) <= TARGETING_RANGE*TARGETING_RANGE))) {
-			if (nt->GetBodyType() == BT_NoTarget2 || 
-				nt->GetBodyType() == BT_Special || 
+			if (nt->GetBodyType() == BT_NoTarget2 ||
+				nt->GetBodyType() == BT_Special ||
 				nt->GetBodyType() == BT_NoTarget) {
 				can_target = false;
 			}

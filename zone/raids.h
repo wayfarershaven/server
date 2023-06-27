@@ -144,6 +144,8 @@ public:
 	bool	IsRaidMember(Client *c);
 	void	UpdateLevel(const char *name, int newLevel);
 	void	SetNewRaidLeader(uint32 i);
+	bool    IsAssister(const char* who);
+	bool    IsMarker(const char* who);
 
 	uint32	GetFreeGroup();
 	uint8	GroupCount(uint32 gid);
@@ -235,7 +237,6 @@ public:
 	void    SendRemoveAllRaidXTargets(const char* client_name);
 	void    SendRaidAssistTarget();
 	void    SendAssistTarget(Client* c);
-
 	void	GroupUpdate(uint32 gid, bool initial = true);
 	void	SendGroupUpdate(Client *to);
 	void	SendGroupDisband(Client *to);
@@ -253,6 +254,10 @@ public:
 	void	SendRaidMOTD(Client *c);
 	void	SendRaidMOTD();
 	void	SendRaidMOTDToWorld();
+	void    SendRaidAssisterTo(const char* assister, Client* to);
+	void    SendRaidAssister(const char* assister);
+	void    SendRaidMarkerTo(const char* marker, Client* to);
+	void    SendRaidMarker(const char* marker);
 
 	void	QueuePacket(const EQApplicationPacket *app, bool ack_req = true);
 

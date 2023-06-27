@@ -133,6 +133,12 @@ enum {
 
 typedef enum
 {
+	Disciplines,
+	Spells
+} ShowSpellType;
+
+typedef enum
+{
 	Empty = 0,
 	Auto = 1,
 	CurrentTargetPC = 2,
@@ -640,6 +646,8 @@ public:
 	inline const int32 GetInstanceID() const { return zone->GetInstanceID(); }
 	void SetZoning(bool in) { bZoning = in; }
 
+	void ShowSpells(Client* c, ShowSpellType show_spell_type);
+	
 	FACTION_VALUE GetReverseFactionCon(Mob* iOther);
 	FACTION_VALUE GetFactionLevel(uint32 char_id, uint32 npc_id, uint32 p_race, uint32 p_class, uint32 p_deity, int32 pFaction, Mob* tnpc);
 	bool ReloadCharacterFaction(Client *c, uint32 facid, uint32 charid);
@@ -736,7 +744,6 @@ public:
 	void SetLanguageSkill(int langid, int value);
 	void SetHoTT(uint32 mobid);
 	void ShowSkillsWindow();
-	void SendStatsWindow(Client* client, bool use_window);
 
 	uint16 MaxSkill(EQ::skills::SkillType skillid, uint16 class_, uint16 level) const;
 	inline uint16 MaxSkill(EQ::skills::SkillType skillid) const { return MaxSkill(skillid, GetClass(), GetLevel()); }
@@ -1056,7 +1063,7 @@ public:
 	uint16 GetMaxSkillAfterSpecializationRules(EQ::skills::SkillType skillid, uint16 maxSkill);
 	void SendPopupToClient(const char *Title, const char *Text, uint32 PopupID = 0, uint32 Buttons = 0, uint32 Duration = 0);
 	void SendFullPopup(const char *Title, const char *Text, uint32 PopupID = 0, uint32 NegativeID = 0, uint32 Buttons = 0, uint32 Duration = 0, const char *ButtonName0 = 0, const char *ButtonName1 = 0, uint32 SoundControls = 0);
-	void SendWindow(uint32 PopupID, uint32 NegativeID, uint32 Buttons, const char *ButtonName0, const char *ButtonName1, uint32 Duration, int title_type, Client* target, const char *Title, const char *Text, ...);
+	void SendWindow(uint32 button_one_id, uint32 button_two_id, uint32 button_type, const char* button_one_text, const char* button_two_text, uint32 duration, int title_type, Mob* target, const char* title, const char* text, ...);
 	bool PendingTranslocate;
 	time_t TranslocateTime;
 	bool PendingSacrifice;
@@ -1555,8 +1562,6 @@ public:
 	inline bool GetInvulnerableEnvironmentDamage() const { return invulnerable_environment_damage; }
 	void SetInvulnerableEnvironmentDamage(bool val) { invulnerable_environment_damage = val; }
 	void SetIntoxication(int32 in_intoxication);
-
-	void ShowNumHits(); // work around function for numhits not showing on buffs
 
 	void ApplyWeaponsStance();
 	void TogglePassiveAlternativeAdvancement(const AA::Rank &rank, uint32 ability_id);
