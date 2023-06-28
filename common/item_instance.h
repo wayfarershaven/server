@@ -233,8 +233,8 @@ namespace EQ
 		std::string Serialize(int16 slot_id) const { InternalSerializedItem_Struct s; s.slot_id = slot_id; s.inst = (const void*)this; std::string ser; ser.assign((char*)&s, sizeof(InternalSerializedItem_Struct)); return ser; }
 		void Serialize(OutBuffer& ob, int16 slot_id) const { InternalSerializedItem_Struct isi; isi.slot_id = slot_id; isi.inst = (const void*)this; ob.write((const char*)&isi, sizeof(isi)); }
 
-		inline int32 GetSerialNumber() const { return m_SerialNumber; }
-		inline void SetSerialNumber(int32 id) { m_SerialNumber = id; }
+		inline uint32 GetSerialNumber() const { return m_SerialNumber; }
+		inline void SetSerialNumber(uint32 id) { m_SerialNumber = id; }
 
 		std::map<std::string, ::Timer>& GetTimers() { return m_timers; }
 		void SetTimer(std::string name, uint32 time);
@@ -320,7 +320,7 @@ namespace EQ
 		int16				m_currentslot {0};
 		bool				m_attuned {false};
 		int32				m_merchantcount {1}; //number avaliable on the merchant, -1=unlimited
-		int32				m_SerialNumber {0};	// Unique identifier for this instance of an item. Needed for Bazaar.
+		uint32				m_SerialNumber {0};	// Unique identifier for this instance of an item. Needed for Bazaar.
 		uint32				m_exp {0};
 		int8				m_evolveLvl {0};
 		bool				m_activated {false};

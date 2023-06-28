@@ -980,29 +980,26 @@ void Client::BulkSendMerchantInventory(int merchant_id, int npcid) {
 //		safe_delete_array(cpi);
 }
 
-uint8 Client::WithCustomer(uint16 NewCustomer){
-
-	if(NewCustomer == 0) {
-		CustomerID = 0;
-		return 0;
-	}
-
-	if(CustomerID == 0) {
-		CustomerID = NewCustomer;
+uint8 Client::WithCustomer(uint16 NewCustomer, uint8 clear) {
+	if (NewCustomer == 0) { // just assume we do nothing in this case, bugged client
 		return 1;
 	}
 
-	// Check that the player browsing our wares hasn't gone away.
-
-	Client* c = entity_list.GetClientByID(CustomerID);
-
-	if(!c) {
-		LogTrading("Previous customer has gone away");
-		CustomerID = NewCustomer;
+	if (clear) {
+		auto eraseIt = std::find(CustomerID.begin(), CustomerID.end(), NewCustomer);
+		if (eraseIt != CustomerID.end()) { //already added
+			return 1;
+		}
+		CustomerID.push_front(NewCustomer);
+		return 1;
+	} else {
+		auto eraseIt = std::find(CustomerID.begin(), CustomerID.end(), NewCustomer);
+		if (eraseIt == CustomerID.end()) { //already removed
+			return 1;
+		}
+		CustomerID.erase(eraseIt);
 		return 1;
 	}
-
-	return 0;
 }
 
 void Client::OPRezzAnswer(uint32 Action, uint32 SpellID, uint16 ZoneID, uint16 InstanceID, float x, float y, float z)

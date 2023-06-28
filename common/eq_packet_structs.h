@@ -2840,13 +2840,23 @@ struct BazaarSearch_Struct {
 	char	Name[64];
 	uint32	MinPrice;
 	uint32	MaxPrice;
-	uint32	Minlevel;
-	uint32	MaxLlevel;
+	uint32	MinLevel;
+	uint32	MaxLevel;
 };
 struct BazaarInspect_Struct{
 	uint32 ItemID;
 	uint32 Unknown004;
 	char Name[64];
+};
+
+struct BazaarTraderInspect_Struct {
+	uint32	Code;
+	uint32	SubCode;
+	uint32	ItemID;
+	char	SerialNumber[16];
+	uint32  Icon;
+	uint32	Unknown;
+	uint32	Unknown2;
 };
 
 struct NewBazaarInspect_Struct {
@@ -2855,7 +2865,7 @@ struct NewBazaarInspect_Struct {
 /*068*/	uint32 Unknown068;
 /*072*/	uint32 Unknown072;
 /*076*/	uint32 Unknown076;
-/*080*/	int32 SerialNumber;
+/*080*/	uint32 SerialNumber;
 /*084*/	uint32 Unknown084;
 };
 
@@ -2878,6 +2888,19 @@ struct BazaarSearchResults_Struct {
 	// New fields for SoD+, stripped off when encoding for older clients.
 	char	SellerName[64];
 	uint32	ItemID;
+};
+
+struct BazaarSearchResultsNew_Struct {
+	/*004*/    uint32    Count;
+	/*008*/    uint32    SerialNumber;
+	/*012*/    uint32    SellerID;
+	/*016*/    uint32    Cost;
+	/*020*/    uint32    StackSize;
+	/*020*/    uint32    ItemIcon;
+	/*020*/    uint32    UnknownInt32;
+	/*024*/    char		 ItemName[64];
+	/*020*/    uint32    ItemStat;
+	/*088*/
 };
 
 // Barter/Buyer
@@ -3181,21 +3204,37 @@ struct WhoAllReturnStruct {
 struct Trader_Struct {
 /*000*/	uint32	Code;
 /*004*/	uint32	Unknown004;
-/*008*/	uint64	Items[80];
-/*648*/	uint32	ItemCost[80];
+/*008*/	uint64	Items[100];
+/*648*/	uint32	ItemCost[100];
 };
 
 struct ClickTrader_Struct {
 /*000*/	uint32	Code;
-/*004*/	uint32	Unknown004;
-/*008*/	int64	SerialNumber[80];
-/*648*/	uint32	ItemCost[80];
+/*004*/	uint32	TraderID;
+/*008*/	uint32	SerialNumber[100];
+/*648*/	uint32	StackSize[100];
+/*648*/	uint32	ItemCost[100];
+};
+
+struct TraderUpdate_Struct {
+/*000*/	uint32 Code;
+/*004*/	uint32 ItemID;
+/*004*/	uint32 Uknown04;
+/*008*/	uint32 Uknown08;
+/*008*/	uint32 Price;
+/*012*/
 };
 
 struct GetItems_Struct{
-	uint32	Items[80];
-	int32	SerialNumber[80];
-	int32	Charges[80];
+	uint32 Items[100];
+	uint32 SerialNumber[100];
+	int32  Charges[100];
+	uint32 AugID1[100];
+	uint32 AugID2[100];
+	uint32 AugID3[100];
+	uint32 AugID4[100];
+	uint32 AugID5[100];
+	uint32 AugID6[100];
 };
 
 struct BecomeTrader_Struct
@@ -3209,7 +3248,7 @@ struct BecomeTrader_Struct
 
 struct TraderStatus_Struct{
 	uint32 Code;
-	uint32 Uknown04;
+	uint32 TraderID;
 	uint32 Uknown08;
 };
 
@@ -3227,7 +3266,10 @@ struct TraderBuy_Struct{
 /*012*/	uint32 AlreadySold;
 /*016*/	uint32 Price;
 /*020*/	uint32 Quantity;
+/*024*/	char SellerName[64];
+/*024*/	char BuyerName[64];
 /*024*/	char ItemName[64];
+/*088*/	uint32 SerialNumber;
 };
 
 struct TraderItemUpdate_Struct{
@@ -3241,7 +3283,7 @@ struct TraderItemUpdate_Struct{
 struct TraderPriceUpdate_Struct {
 /*000*/	uint32	Action;
 /*004*/	uint32	SubAction;
-/*008*/	int32	SerialNumber;
+/*008*/	uint32	SerialNumber;
 /*012*/	uint32	Unknown012;
 /*016*/	uint32	NewPrice;
 /*020*/	uint32	Unknown016;
@@ -3259,6 +3301,18 @@ struct TraderDelItem_Struct{
 	uint32 TraderID;
 	uint32 ItemID;
 	uint32 Unknown012;
+};
+
+struct TraderSubList_Struct {
+	uint32 ZoneID;
+	uint32 TraderID;
+	uint32 EntityID;
+	char   VendorName[64];
+};
+
+struct TraderList_Struct {
+	uint32 Count;
+	TraderSubList_Struct vendors[0];
 };
 
 struct TraderClick_Struct{

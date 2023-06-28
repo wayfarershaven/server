@@ -32,7 +32,7 @@
 
 //#include <iostream>
 
-int32 NextItemInstSerialNumber = 1;
+uint32 NextItemInstSerialNumber = 1;
 
 static inline int32 GetNextItemInstSerialNumber() {
 
@@ -46,11 +46,12 @@ static inline int32 GetNextItemInstSerialNumber() {
 	// NextItemInstSerialNumber is the next one to hand out.
 	//
 	// It is very unlikely to reach 2,147,483,647. Maybe we should call abort(), rather than wrapping back to 1.
-	if(NextItemInstSerialNumber >= INT_MAX)
+	if(NextItemInstSerialNumber >= UINT_MAX) {
 		NextItemInstSerialNumber = 1;
-	else
+	} else {
 		NextItemInstSerialNumber++;
-
+	}
+	
 	return NextItemInstSerialNumber;
 }
 

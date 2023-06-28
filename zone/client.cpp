@@ -193,7 +193,7 @@ Client::Client(EQStreamInterface* ieqs)
 	Trader=false;
 	Buyer = false;
 	Haste = 0;
-	CustomerID = 0;
+	CustomerID.clear();
 	TraderID = 0;
 	TrackingID = 0;
 	WID = 0;

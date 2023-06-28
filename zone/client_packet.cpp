@@ -3708,8 +3708,7 @@ void Client::Handle_OP_BankerChange(const EQApplicationPacket *app)
 void Client::Handle_OP_Barter(const EQApplicationPacket *app)
 {
 
-	if (app->size < 4)
-	{
+	if (app->size < 4) {
 		LogDebug("OP_Barter packet below minimum expected size. The packet was [{}] bytes", app->size);
 		DumpPacket(app);
 		return;
@@ -3797,8 +3796,9 @@ void Client::Handle_OP_Barter(const EQApplicationPacket *app)
 	{
 		BuyerInspectRequest_Struct* bir = (BuyerInspectRequest_Struct*)app->pBuffer;
 		Client *Buyer = entity_list.GetClientByID(bir->BuyerID);
-		if (Buyer)
-			Buyer->WithCustomer(0);
+		if (Buyer) {
+			Buyer->WithCustomer(this->GetID(), 0);
+		}
 
 		break;
 	}
@@ -3809,13 +3809,11 @@ void Client::Handle_OP_Barter(const EQApplicationPacket *app)
 
 		const EQ::ItemData* item = database.GetItem(bislr->ItemID);
 
-		if (!item)
+		if (!item) {
 			Message(Chat::Red, "Error: This item does not exist!");
-		else
-		{
+		} else {
 			EQ::ItemInstance* inst = database.CreateItem(item);
-			if (inst)
-			{
+			if (inst) {
 				SendItemPacket(0, inst, ItemPacketViewLink);
 				safe_delete(inst);
 			}
@@ -3904,7 +3902,7 @@ void Client::Handle_OP_BazaarSearch(const EQApplicationPacket *app)
 		BazaarSearch_Struct* bss = (BazaarSearch_Struct*)app->pBuffer;
 
 		SendBazaarResults(bss->TraderID, bss->Class_, bss->Race, bss->ItemStat, bss->Slot, bss->Type,
-			bss->Name, bss->Minlevel, bss->MaxLlevel, bss->MinPrice * 1000, bss->MaxPrice * 1000);
+			bss->Name, bss->MinLevel, bss->MaxLevel, bss->MinPrice * 1000, bss->MaxPrice * 1000);
 	}
 	else if (app->size == sizeof(BazaarWelcome_Struct)) {
 
@@ -15063,7 +15061,7 @@ void Client::Handle_OP_Trader(const EQApplicationPacket *app)
 	// I don't know what they are for (yet), but it doesn't seem to matter that we ignore them.
 
 
-	uint32 max_items = 80;
+	uint32 max_items = 100;
 
 	/*
 	if (GetClientVersion() >= EQClientRoF)
@@ -15087,7 +15085,7 @@ void Client::Handle_OP_Trader(const EQApplicationPacket *app)
 			Client* c = entity_list.GetClientByID(sis->TraderID);
 			if (c)
 			{
-				c->WithCustomer(0);
+				c->WithCustomer(this->GetID(), 0);
 				LogTrading("End Transaction");
 			}
 			else
@@ -15118,64 +15116,31 @@ void Client::Handle_OP_Trader(const EQApplicationPacket *app)
 
 		if (ints->Code == BazaarTrader_StartTraderMode)
 		{
-			GetItems_Struct* gis = GetTraderItems();
-
 			LogTrading("Start Trader Mode");
 			// Verify there are no NODROP or items with a zero price
 			bool TradeItemsValid = true;
 
+			int index = 0;
 			for (uint32 i = 0; i < max_items; i++) {
-
-				if (gis->Items[i] == 0) break;
-
-				if (ints->ItemCost[i] == 0) {
-					Message(Chat::Red, "Item in Trader Satchel with no price. Unable to start trader mode");
-					TradeItemsValid = false;
-					break;
-				}
-				const EQ::ItemData *Item = database.GetItem(gis->Items[i]);
-
-				if (!Item) {
-					Message(Chat::Red, "Unexpected error. Unable to start trader mode");
-					TradeItemsValid = false;
-					break;
-				}
-
-				if (Item->NoDrop == 0) {
-					Message(Chat::Red, "NODROP Item in Trader Satchel. Unable to start trader mode");
-					TradeItemsValid = false;
-					break;
-				}
-
-				if(Item->IsClassBag()) {
-					Message(Chat::Red, "Not allowed to sell bags, please convert to a token. Unable to start trader mode.");
-					TradeItemsValid = false;
-					break;
-				}
-			}
-
-			if (!TradeItemsValid) {
-				Trader_EndTrader();
-				safe_delete(gis);
-				return;
-			}
-
-			for (uint32 i = 0; i < max_items; i++) {
-				if (database.GetItem(gis->Items[i])) {
-					database.SaveTraderItem(CharacterID(), gis->Items[i], gis->SerialNumber[i],
-						gis->Charges[i], ints->ItemCost[i], i);
-
-					auto inst = FindTraderItemBySerialNumber(gis->SerialNumber[i]);
-					if (inst)
-						inst->SetPrice(ints->ItemCost[i]);
-				}
-				else {
+				Log(Logs::Detail, Logs::Trading, "[Debug] Client Packet -i = [%i] -  ints->SerialNumber[i] = [%i]",i, ints->SerialNumber[i]);
+				auto inst = FindTraderItemBySerialNumber(ints->SerialNumber[i]);
+				if (inst && database.GetItem(inst->GetItem()->ID ? inst->GetItem()->ID : 0)->ID) {
+					inst->SetPrice(ints->ItemCost[i]);
+					if (inst->IsStackable()) {
+						inst->SetMerchantCount(inst->GetCharges());
+						inst->SetMerchantSlot(i);
+					} else {
+						inst->SetMerchantCount(1);
+						inst->SetMerchantSlot(i);
+					}
+					database.SaveTraderItem(this->CharacterID(), inst->GetItem()->ID, inst->GetSerialNumber(), inst->GetMerchantCount(), ints->ItemCost[i], index);
+					index++;
+				} else {
 					//return; //sony doesnt memset so assume done on first bad item
 					break;
 				}
 
 			}
-			safe_delete(gis);
 
 			Trader_StartTrader();
 
@@ -15185,6 +15150,7 @@ void Client::Handle_OP_Trader(const EQApplicationPacket *app)
 				auto outapp = new EQApplicationPacket(OP_Trader, sizeof(TraderStatus_Struct));
 				TraderStatus_Struct* tss = (TraderStatus_Struct*)outapp->pBuffer;
 				tss->Code = BazaarTrader_StartTraderMode2;
+				tss->TraderID = GetID();
 				QueuePacket(outapp);
 				safe_delete(outapp);
 			}
@@ -15335,22 +15301,17 @@ void Client::Handle_OP_TradeRequestAck(const EQApplicationPacket *app)
 void Client::Handle_OP_TraderShop(const EQApplicationPacket *app)
 {
 	// Bazaar Trader:
-
-	if (app->size == sizeof(TraderClick_Struct))
-	{
-
+	if (app->size == sizeof(TraderClick_Struct)) {
 		TraderClick_Struct* tcs = (TraderClick_Struct*)app->pBuffer;
-
 		LogTrading("Handle_OP_TraderShop: TraderClick_Struct TraderID [{}], Code [{}], Unknown008 [{}], Approval [{}]",
 			tcs->TraderID, tcs->Code, tcs->Unknown008, tcs->Approval);
 
-		if (tcs->Code == BazaarWelcome)
-		{
+		if (tcs->Code == BazaarWelcome) {
 			LogTrading("Client::Handle_OP_TraderShop: Sent Bazaar Welcome Info");
 			SendBazaarWelcome();
-		}
-		else
-		{
+		} else if (tcs->Code == 26) {
+			SendBazaarTraders();
+		} else {
 			// This is when a potential purchaser right clicks on this client who is in Trader mode to
 			// browse their goods.
 			auto outapp = new EQApplicationPacket(OP_TraderShop, sizeof(TraderClick_Struct));
@@ -15359,33 +15320,28 @@ void Client::Handle_OP_TraderShop(const EQApplicationPacket *app)
 
 			Client* Trader = entity_list.GetClientByID(tcs->TraderID);
 
-			if (Trader)
-			{
-				outtcs->Approval = Trader->WithCustomer(GetID());
-				LogTrading("Client::Handle_OP_TraderShop: Shop Request ([{}]) to ([{}]) with Approval: [{}]", GetCleanName(), Trader->GetCleanName(), outtcs->Approval);
-			}
-			else {
-				LogTrading("Client::Handle_OP_TraderShop: entity_list.GetClientByID(tcs->traderid)"
-					" returned a nullptr pointer");
+			if (Trader) {
+				outtcs->Approval = Trader->WithCustomer(GetID(), 1);
+				Log(Logs::Detail, Logs::Trading,
+					"Client::Handle_OP_TraderShop: Shop Request (%s) to (%s) with Approval: %d", GetCleanName(),
+					Trader->GetCleanName(), outtcs->Approval);
+			} else {
+				Log(Logs::Detail, Logs::Trading,
+					"Client::Handle_OP_TraderShop: entity_list.GetClientByID(tcs->traderid)");
 				safe_delete(outapp);
 				return;
 			}
 
 			outtcs->TraderID = tcs->TraderID;
-
 			outtcs->Unknown008 = 0x3f800000;
-
 			QueuePacket(outapp);
 
-
 			if (outtcs->Approval) {
-				BulkSendTraderInventory(Trader->CharacterID());
+				BulkSendTraderInventory(Trader);
 				Trader->Trader_CustomerBrowsing(this);
 				TraderID = tcs->TraderID;
 				LogTrading("Client::Handle_OP_TraderShop: Trader Inventory Sent");
-			}
-			else
-			{
+			} else {
 				MessageString(Chat::Yellow, TRADER_BUSY);
 				LogTrading("Client::Handle_OP_TraderShop: Trader Busy");
 			}
@@ -15393,62 +15349,61 @@ void Client::Handle_OP_TraderShop(const EQApplicationPacket *app)
 			safe_delete(outapp);
 			return;
 		}
+	} else if (app->size == sizeof(BazaarTraderInspect_Struct)) {
+		BazaarTraderInspect_Struct *tis = (BazaarTraderInspect_Struct *) app->pBuffer;
 
-	}
-	else if (app->size == sizeof(BazaarWelcome_Struct))
-	{
+		auto serial = std::stoi(tis->SerialNumber);
+
+		auto charIdForSerial = database.GetCharIDByItemSerial(serial);
+		if (charIdForSerial > 0) {
+			EQ::ItemInstance *inst = database.LoadSingleTraderItem(charIdForSerial, serial);
+			if (inst) {
+				SendItemPacket(0, inst, ItemPacketViewLink);
+				safe_delete(inst);
+			}
+		}
+		return;
+	} else if (app->size == sizeof(BazaarWelcome_Struct)) {
 		// RoF+
 		// Client requested Bazaar Welcome Info (Trader and Item Total Counts)
 		SendBazaarWelcome();
-		LogTrading("Client::Handle_OP_TraderShop: Sent Bazaar Welcome Info");
-	}
-	else if (app->size == sizeof(TraderBuy_Struct))
-	{
+		LogTrading("Sent Bazaar Welcome Info");
+	} else if (app->size == sizeof(TraderBuy_Struct)) {
 		// RoF+
 		// Customer has purchased an item from the Trader
 
 		TraderBuy_Struct* tbs = (TraderBuy_Struct*)app->pBuffer;
 
-		if (Client* Trader = entity_list.GetClientByID(tbs->TraderID))
-		{
+		if (Client* Trader = entity_list.GetClientByID(tbs->TraderID)) {
 			BuyTraderItem(tbs, Trader, app);
-			LogTrading("Handle_OP_TraderShop: Buy Action [{}], Price [{}], Trader [{}], ItemID [{}], Quantity [{}], ItemName, [{}]",
-				tbs->Action, tbs->Price, tbs->TraderID, tbs->ItemID, tbs->Quantity, tbs->ItemName);
+			LogTradingDetail("Buy Action [{}], Price [{}], Trader [{}], ItemID [{}], Quantity [{}], ItemName, [{}]", tbs->Action, tbs->Price, tbs->TraderID, tbs->ItemID, tbs->Quantity, tbs->ItemName);
 		}
-		else
-		{
-			LogTrading("OP_TraderShop: Null Client Pointer");
-		}
-	}
-	else if (app->size == 4)
-	{
+	} else if (app->size == sizeof(BazaarSearch_Struct)) {
+		// RoF+
+		// Customer has requested a search
+		BazaarSearch_Struct *bss = (BazaarSearch_Struct *) app->pBuffer;
+		this->SendBazaarResults(bss->TraderID, bss->Class_, bss->Race, bss->ItemStat, bss->Slot, bss->Type,
+								bss->Name, bss->MinLevel, bss->MaxLevel, bss->MinPrice * 1000, bss->MaxPrice * 1000);
+	} else if (app->size == 4) {
 		// RoF+
 		// Customer has closed the trade window
 		uint32 Command = *((uint32 *)app->pBuffer);
 
-		if (Command == 4)
-		{
+		if (Command == 4) {
 			Client* c = entity_list.GetClientByID(TraderID);
 			TraderID = 0;
-			if (c)
-			{
-				c->WithCustomer(0);
+			if (c) {
+				c->WithCustomer(this->GetID(), 0);
 				LogTrading("End Transaction - Code [{}]", Command);
-			}
-			else
-			{
+			} else {
 				LogTrading("Null Client Pointer for Trader - Code [{}]", Command);
 			}
 			EQApplicationPacket empty(OP_ShopEndConfirm);
 			QueuePacket(&empty);
-		}
-		else
-		{
+		} else {
 			LogTrading("Unhandled Code [{}]", Command);
 		}
-	}
-	else
-	{
+	} else {
 		LogTrading("Unknown size for OP_TraderShop: [{}]\n", app->size);
 		LogError("Unknown size for OP_TraderShop: [{}]\n", app->size);
 		DumpPacket(app);

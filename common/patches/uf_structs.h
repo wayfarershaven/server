@@ -2643,8 +2643,8 @@ struct BazaarSearch_Struct {
 	char	Name[64];
 	uint32	MinPrice;
 	uint32	MaxPrice;
-	uint32	Minlevel;
-	uint32	MaxLlevel;
+	uint32	MinLevel;
+	uint32	MaxLevel;
 };
 struct BazaarInspect_Struct{
 	uint32 ItemID;

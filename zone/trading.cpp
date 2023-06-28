@@ -898,20 +898,20 @@ bool Client::CheckTradeNonDroppable()
 }
 
 void Client::Trader_ShowItems(){
-	auto outapp = new EQApplicationPacket(OP_Trader, sizeof(Trader_Struct));
+	//auto outapp = new EQApplicationPacket(OP_Trader, sizeof(Trader_Struct));
 
-	Trader_Struct* outints = (Trader_Struct*)outapp->pBuffer;
-	Trader_Struct* TraderItems = database.LoadTraderItem(CharacterID());
+	//Trader_Struct* outints = (Trader_Struct*)outapp->pBuffer;
+	//Trader_Struct* TraderItems = database.LoadTraderItem(this->CharacterID());
 
-	for(int i = 0; i < 80; i++){
-		outints->ItemCost[i] = TraderItems->ItemCost[i];
-		outints->Items[i] = TraderItems->Items[i];
-	}
-	outints->Code = BazaarTrader_ShowItems;
+	//for(int i = 0; i < 100; i++){
+	//	outints->ItemCost[i] = TraderItems->ItemCost[i];
+	//	outints->Items[i] = TraderItems->Items[i];
+	//}
+	//outints->Code = BazaarTrader_ShowItems;
 
-	QueuePacket(outapp);
-	safe_delete(outapp);
-	safe_delete(TraderItems);
+	//QueuePacket(outapp);
+	//safe_delete(outapp);
+	//safe_delete(TraderItems);
 }
 
 void Client::SendTraderPacket(Client* Trader, uint32 Unknown72)
@@ -982,7 +982,12 @@ void Client::Trader_StartTrader() {
 	strn0cpy(bts->Name, GetName(), sizeof(bts->Name));
 
 	entity_list.QueueClients(this, outapp, false);
+	std::list<Client*> client_list;
+	entity_list.GetClientList(client_list);
 
+	for (auto c : client_list) {
+		c->SendBazaarTraders();
+	}
 
 	safe_delete(outapp);
 }
@@ -991,11 +996,11 @@ void Client::Trader_EndTrader() {
 
 	// If someone is looking at our wares, remove all the items from the window.
 	//
-	if(CustomerID) {
-		Client* Customer = entity_list.GetClientByID(CustomerID);
+	for (auto cust : CustomerID) {
+		Client* Customer = entity_list.GetClientByID(cust);
 		GetItems_Struct* gis=GetTraderItems();
 
-		if(Customer && gis) {
+		if (Customer && gis) {
 			auto outapp = new EQApplicationPacket(OP_TraderDelItem, sizeof(TraderDelItem_Struct));
 			TraderDelItem_Struct* tdis = (TraderDelItem_Struct*)outapp->pBuffer;
 
@@ -1004,19 +1009,9 @@ void Client::Trader_EndTrader() {
 			tdis->Unknown012 = 0;
 			Customer->Message(Chat::Red, "The Trader is no longer open for business");
 
-			for(int i = 0; i < 80; i++) {
-				if(gis->Items[i] != 0) {
-
-					if (Customer->ClientVersion() >= EQ::versions::ClientVersion::RoF)
-					{
-						// RoF+ use Item IDs for now
-						tdis->ItemID = gis->Items[i];
-					}
-					else
-					{
-						tdis->ItemID = gis->SerialNumber[i];
-					}
-
+			for (int i = 0; i < 100; i++) {
+				if (gis->Items[i] != 0) {
+					tdis->ItemID = gis->SerialNumber[i];
 					Customer->QueuePacket(outapp);
 				}
 			}
@@ -1026,48 +1021,33 @@ void Client::Trader_EndTrader() {
 		safe_delete(gis);
 	}
 
-	database.DeleteTraderItem(CharacterID());
+	if (this && this->IsClient() && this->CastToClient()->IsTrader() && this->CastToClient()->CharacterID() != 0) {
+		database.DeleteTraderItem(this->CastToClient()->CharacterID());
+	}
 
 	// Notify other clients we are no longer in trader mode.
 	//
 	auto outapp = new EQApplicationPacket(OP_BecomeTrader, sizeof(BecomeTrader_Struct));
-
 	BecomeTrader_Struct* bts = (BecomeTrader_Struct*)outapp->pBuffer;
-
 	bts->Code = 0;
-
 	bts->ID = GetID();
-
 	strn0cpy(bts->Name, GetName(), sizeof(bts->Name));
-
 	entity_list.QueueClients(this, outapp, false);
-
-
 	safe_delete(outapp);
-
 	outapp= new EQApplicationPacket(OP_Trader, sizeof(Trader_ShowItems_Struct));
-
 	Trader_ShowItems_Struct* sis = (Trader_ShowItems_Struct*)outapp->pBuffer;
-
 	sis->Code = BazaarTrader_EndTraderMode;
-
 	sis->TraderID = BazaarTrader_EndTraderMode;
-
 	QueuePacket(outapp);
-
 	safe_delete(outapp);
-
-	WithCustomer(0);
-
+	CustomerID.clear();
 	Trader = false;
 }
 
-void Client::SendTraderItem(uint32 ItemID, uint16 Quantity) {
-
+void Client::SendTraderItem(const EQ::ItemInstance* iinst, int16 Quantity) {
 	std::string Packet;
 	int16 FreeSlotID=0;
-
-	const EQ::ItemData* item = database.GetItem(ItemID);
+	const EQ::ItemData* item = database.GetItem(iinst->GetID());
 
 	if(!item){
 		LogTrading("Bogus item deleted in Client::SendTraderItem!\n");
@@ -1094,51 +1074,51 @@ void Client::SendSingleTraderItem(uint32 CharID, int SerialNumber) {
 
 	EQ::ItemInstance* inst= database.LoadSingleTraderItem(CharID, SerialNumber);
 	if(inst) {
-		SendItemPacket(EQ::invslot::slotCursor, inst, ItemPacketMerchant); // MainCursor?
-		safe_delete(inst);
+		for (auto cust : CustomerID)
+		{
+			Client* CustomerToTell = entity_list.GetClientByID(cust);
+			if (CustomerToTell && inst) {
+				SendItemPacket(EQ::invslot::slotCursor, inst, ItemPacketMerchant); // MainCursor?
+			}
+			//Client* CustomerToSkip = entity_list.GetClientByID(CharID);
+			//if (CustomerToTell && CustomerToSkip != CustomerToTell)
+			//{
+			//	//Customer->Message(13, "The Trader has sold the %s.", inst->GetItem()->Name);
+			//}
+		}
 	}
-
 }
 
-void Client::BulkSendTraderInventory(uint32 char_id) {
-	const EQ::ItemData *item;
+void Client::BulkSendTraderInventory(Client* trader) {
+	if (!trader) {
+		return;
+	}
 
-	TraderCharges_Struct* TraderItems = database.LoadTraderItemWithCharges(char_id);
+	TraderCharges_Struct* TraderItems = database.LoadTraderItemWithCharges(trader->CharacterID());
 
-	for (uint8 i = 0;i < 80; i++) { // need to transition away from 'magic number'
-		if((TraderItems->ItemID[i] == 0) || (TraderItems->ItemCost[i] <= 0)) {
-			continue;
-		}
-		else
-			item=database.GetItem(TraderItems->ItemID[i]);
+	for (uint8 i = 0; i < 100; i++) { // need to transition away from 'magic number'
+		auto inst = trader->FindTraderItemBySerialNumber(TraderItems->SerialNumber[i]);
 
-		if (item && (item->NoDrop!=0)) {
-			EQ::ItemInstance* inst = database.CreateItem(item);
-			if (inst) {
-				inst->SetSerialNumber(TraderItems->SerialNumber[i]);
-				if(TraderItems->Charges[i] > 0)
+		if (inst) {
+				if(TraderItems->Charges[i] > 0) {
 					inst->SetCharges(TraderItems->Charges[i]);
+				}
 
 				if(inst->IsStackable()) {
 					inst->SetMerchantCount(TraderItems->Charges[i]);
-					inst->SetMerchantSlot(TraderItems->SerialNumber[i]);
+					inst->SetMerchantSlot(i);
 				}
 
 				inst->SetPrice(TraderItems->ItemCost[i]);
 				SendItemPacket(EQ::invslot::slotCursor, inst, ItemPacketMerchant); // MainCursor?
-				safe_delete(inst);
-			}
-			else
-				LogTrading("Client::BulkSendTraderInventory nullptr inst pointer");
 		}
 	}
 	safe_delete(TraderItems);
 }
 
-uint32 Client::FindTraderItemSerialNumber(int32 ItemID) {
-
+uint32 Client::FindTraderItemSerialNumber(uint32 ItemID) {
 	EQ::ItemInstance* item = nullptr;
-	uint16 SlotID = 0;
+	uint16 SlotID = INVALID_INDEX;
 	for (int i = EQ::invslot::GENERAL_BEGIN; i <= EQ::invslot::GENERAL_END; i++){
 		item = GetInv().GetItem(i);
 		if (item && item->GetItem()->BagType == EQ::item::BagTypeTradersSatchel){
@@ -1158,13 +1138,12 @@ uint32 Client::FindTraderItemSerialNumber(int32 ItemID) {
 	return 0;
 }
 
-EQ::ItemInstance* Client::FindTraderItemBySerialNumber(int32 SerialNumber){
-
+EQ::ItemInstance* Client::FindTraderItemBySerialNumber(uint32 SerialNumber) {
 	EQ::ItemInstance* item = nullptr;
 	uint16 SlotID = 0;
-	for (int i = EQ::invslot::GENERAL_BEGIN; i <= EQ::invslot::GENERAL_END; i++){
+	for (int i = EQ::invslot::GENERAL_BEGIN; i <= EQ::invslot::GENERAL_END; i++) {
 		item = GetInv().GetItem(i);
-		if (item && item->GetItem()->BagType == EQ::item::BagTypeTradersSatchel){
+		if (item && item->GetItem()->BagType == EQ::item::BagTypeTradersSatchel) {
 			for (int x = EQ::invbag::SLOT_BEGIN; x <= EQ::invbag::SLOT_END; x++) {
 				// we already have the parent bag and a contents iterator..why not just iterate the bag!??
 				SlotID = EQ::InventoryProfile::CalcSlotId(i, x);
@@ -1194,16 +1173,18 @@ GetItems_Struct* Client::GetTraderItems(){
 	uint8 ndx = 0;
 
 	for (int i = EQ::invslot::GENERAL_BEGIN; i <= EQ::invslot::GENERAL_END; i++) {
-		if (ndx >= 80)
+		if (ndx >= 100) {
 			break;
+		}
+
 		item = GetInv().GetItem(i);
-		if (item && item->GetItem()->BagType == EQ::item::BagTypeTradersSatchel){
+		if (item && item->GetItem()->BagType == EQ::item::BagTypeTradersSatchel) {
 			for (int x = EQ::invbag::SLOT_BEGIN; x <= EQ::invbag::SLOT_END; x++) {
-				if (ndx >= 80)
+				if (ndx >= 100) {
 					break;
+				}
 
 				SlotID = EQ::InventoryProfile::CalcSlotId(i, x);
-
 				item = GetInv().GetItem(SlotID);
 
 				if(item){
@@ -1218,8 +1199,7 @@ GetItems_Struct* Client::GetTraderItems(){
 	return gis;
 }
 
-uint16 Client::FindTraderItem(int32 SerialNumber, uint16 Quantity){
-
+uint16 Client::FindTraderItem(uint32 SerialNumber, uint16 Quantity) {
 	const EQ::ItemInstance* item= nullptr;
 	uint16 SlotID = 0;
 	for (int i = EQ::invslot::GENERAL_BEGIN; i <= EQ::invslot::GENERAL_END; i++) {
@@ -1244,177 +1224,147 @@ uint16 Client::FindTraderItem(int32 SerialNumber, uint16 Quantity){
 	return 0;
 }
 
-void Client::NukeTraderItem(uint16 Slot,int16 Charges,int16 Quantity,Client* Customer,uint16 TraderSlot, int32 SerialNumber, int32 itemid) {
-
-	if(!Customer)
+void Client::NukeTraderItem(uint16 Slot,int16 Charges,uint16 Quantity,Client* Customer,uint16 TraderSlot, uint32 SerialNumber, uint32 itemid) {
+	if(!Customer) {
 		return;
+	}
 
 	LogTrading("NukeTraderItem(Slot [{}], Charges [{}], Quantity [{}]", Slot, Charges, Quantity);
 
-	if(Quantity < Charges)
-	{
-		Customer->SendSingleTraderItem(CharacterID(), SerialNumber);
+	const EQ::ItemInstance* Inst = m_inv[Slot];
+
+	if (Quantity < Charges && Inst->GetCharges() > 0) {
+		Customer->SendSingleTraderItem(Customer->GetID(), SerialNumber);
 		m_inv.DeleteItem(Slot, Quantity);
-	}
-	else
-	{
-		auto outapp = new EQApplicationPacket(OP_TraderDelItem, sizeof(TraderDelItem_Struct));
-		TraderDelItem_Struct* tdis = (TraderDelItem_Struct*)outapp->pBuffer;
-
-		tdis->Unknown000 = 0;
-		tdis->TraderID = Customer->GetID();
-		if (Customer->ClientVersion() >= EQ::versions::ClientVersion::RoF)
-		{
-			// RoF+ use Item IDs for now
-			tdis->ItemID = itemid;
-		}
-		else
-		{
+	} else {
+		for (auto cust : CustomerID) {
+			// If the new price is 0, remove the item(s) from the window.
+			auto outapp = new EQApplicationPacket(OP_TraderDelItem, sizeof(TraderDelItem_Struct));
+			TraderDelItem_Struct* tdis = (TraderDelItem_Struct*)outapp->pBuffer;
+			tdis->Unknown000 = 0;
+			tdis->TraderID = GetID();
+			tdis->Unknown012 = 0;
 			tdis->ItemID = SerialNumber;
+			Client* CustomerToTell = entity_list.GetClientByID(cust);
+
+			if (CustomerToTell) {
+				CustomerToTell->QueuePacket(outapp);
+				//Customer->Message(13, "The Trader has sold the %s.", inst->GetItem()->Name);
+			}
+			safe_delete(outapp);
+
 		}
-		tdis->Unknown012 = 0;
-
-
-		Customer->QueuePacket(outapp);
-		safe_delete(outapp);
-
-		m_inv.DeleteItem(Slot);
+		Inst = nullptr;
+		//inst->SetCharges(0);
+		//inst->SetMerchantCount(0);
+		//Customer->SendItemPacket(EQ::invslot::slotCursor, inst, ItemPacketMerchant); // MainCursor?
+		//safe_delete(inst);
 	}
 	// This updates the trader. Removes it from his trading bags.
 	//
-	const EQ::ItemInstance* Inst = m_inv[Slot];
-
 	database.SaveInventory(CharacterID(), Inst, Slot);
 
 	EQApplicationPacket* outapp2;
 
-	if(Quantity < Charges)
+	if(Quantity < Charges) {
 		outapp2 = new EQApplicationPacket(OP_DeleteItem,sizeof(MoveItem_Struct));
-	else
+	} else {
 		outapp2 = new EQApplicationPacket(OP_MoveItem,sizeof(MoveItem_Struct));
+	}
 
 	MoveItem_Struct* mis = (MoveItem_Struct*)outapp2->pBuffer;
 	mis->from_slot = Slot;
 	mis->to_slot = 0xFFFFFFFF;
 	mis->number_in_stack = 0xFFFFFFFF;
 
-	if(Quantity >= Charges)
+	if(Quantity >= Charges) {
 		Quantity = 1;
+	}
 
 	for(int i = 0; i < Quantity; i++) {
-
 		QueuePacket(outapp2);
 	}
 	safe_delete(outapp2);
-
 }
 
-void Client::FindAndNukeTraderItem(int32 SerialNumber, int16 Quantity, Client* Customer, uint16 TraderSlot){
-
+void Client::FindAndNukeTraderItem(uint32 SerialNumber, uint16 Quantity, Client* Customer, uint16 TraderSlot){
 	const EQ::ItemInstance* item= nullptr;
 	bool Stackable = false;
 	int16 Charges=0;
 
 	uint16 SlotID = FindTraderItem(SerialNumber, Quantity);
 
-	if(SlotID > 0) {
-
+	if (SlotID > 0) {
 		item = GetInv().GetItem(SlotID);
 
-		if (!item)
-		{
+		if (!item) {
 			LogTrading("Could not find Item: [{}] on Trader: [{}]", SerialNumber, Quantity, GetName());
 			return;
 		}
 
 		Charges = GetInv().GetItem(SlotID)->GetCharges();
-
 		Stackable = item->IsStackable();
 
-		if (!Stackable)
+		if (!Stackable) {
 			Quantity = (Charges > 0) ? Charges : 1;
+		}
 
 		LogTrading("FindAndNuke [{}], Charges [{}], Quantity [{}]", item->GetItem()->Name, Charges, Quantity);
 
-		if (Charges <= Quantity || (Charges <= 0 && Quantity==1) || !Stackable)
-		{
+		if (Charges <= Quantity || (Charges <= 0 && Quantity==1) || !Stackable) {
 			DeleteItemInInventory(SlotID, Quantity);
-
 			TraderCharges_Struct* TraderItems = database.LoadTraderItemWithCharges(CharacterID());
-
 			uint8 Count = 0;
-
 			bool TestSlot = true;
 
-			for(int i = 0;i < 80;i++){
-
-				if(TestSlot && TraderItems->SerialNumber[i] == SerialNumber)
-				{
-					database.DeleteTraderItem(CharacterID(),i);
+			for (int i = 0;i < 100;i++) {
+				if (TestSlot && TraderItems->SerialNumber[i] == SerialNumber) {
 					NukeTraderItem(SlotID, Charges, Quantity, Customer, TraderSlot, TraderItems->SerialNumber[i], TraderItems->ItemID[i]);
-					TestSlot=false;
-				}
-				else if (TraderItems->ItemID[i] > 0)
-				{
+					database.DeleteTraderItem(this->CharacterID(), i);
+					TestSlot = false;
+				} else if (TraderItems->ItemID[i] > 0) {
 					Count++;
 				}
 			}
-			if (Count == 0)
-			{
+
+			if (Count == 0) {
 				Trader_EndTrader();
 			}
 
 			safe_delete(TraderItems);
-
 			return;
-		}
-		else
-		{
+		} else {
 			database.UpdateTraderItemCharges(CharacterID(), item->GetSerialNumber(), Charges-Quantity);
-
 			NukeTraderItem(SlotID, Charges, Quantity, Customer, TraderSlot, item->GetSerialNumber(), item->GetID());
-
 			return;
-
 		}
 	}
 	LogTrading("Could NOT find a match for Item: [{}] with a quantity of: [{}] on Trader: [{}]\n",SerialNumber,
 					Quantity,GetName());
 }
 
-void Client::ReturnTraderReq(const EQApplicationPacket* app, int16 TraderItemCharges, uint32 itemid){
-
+void Client::ReturnTraderReq(const EQApplicationPacket* app, int16 TraderItemCharges, uint32 TraderID, uint32 itemid) {
 	TraderBuy_Struct* tbs = (TraderBuy_Struct*)app->pBuffer;
-
 	EQApplicationPacket* outapp = nullptr;
 
-	if (ClientVersion() >= EQ::versions::ClientVersion::RoF)
-	{
+	if (ClientVersion() >= EQ::versions::ClientVersion::RoF) {
 		outapp = new EQApplicationPacket(OP_TraderShop, sizeof(TraderBuy_Struct));
-	}
-	else
-	{
+	} else {
 		outapp = new EQApplicationPacket(OP_TraderBuy, sizeof(TraderBuy_Struct));
 	}
 
 	TraderBuy_Struct* outtbs = (TraderBuy_Struct*)outapp->pBuffer;
 	memcpy(outtbs, tbs, app->size);
 
-	if (ClientVersion() >= EQ::versions::ClientVersion::RoF)
-	{
-		// Convert Serial Number back to Item ID for RoF+
-		outtbs->ItemID = itemid;
-	}
-	else
-	{
+	if (ClientVersion() >= EQ::versions::ClientVersion::RoF) {
 		// RoF+ requires individual price, but older clients require total price
 		outtbs->Price = (tbs->Price * static_cast<uint32>(TraderItemCharges));
 	}
 
 	outtbs->Quantity = TraderItemCharges;
 	// This should probably be trader ID, not customer ID as it is below.
-	outtbs->TraderID = GetID();
-	outtbs->AlreadySold = 0;
+	outtbs->TraderID = TraderID;
+	outtbs->AlreadySold = 1;
 
 	QueuePacket(outapp);
 
@@ -1422,21 +1372,23 @@ void Client::ReturnTraderReq(const EQApplicationPacket* app, int16 TraderItemCha
 }
 
 void Client::TradeRequestFailed(const EQApplicationPacket* app) {
-
 	TraderBuy_Struct* tbs = (TraderBuy_Struct*)app->pBuffer;
-
-	auto outapp = new EQApplicationPacket(OP_TraderBuy, sizeof(TraderBuy_Struct));
+	EQApplicationPacket *outapp = nullptr;
+	if (ClientVersion() >= EQ::versions::ClientVersion::RoF) {
+		outapp = new EQApplicationPacket(OP_TraderShop, sizeof(TraderBuy_Struct));
+	} else {
+		outapp = new EQApplicationPacket(OP_TraderBuy, sizeof(TraderBuy_Struct));
+	}
 
 	TraderBuy_Struct* outtbs = (TraderBuy_Struct*)outapp->pBuffer;
-
 	memcpy(outtbs, tbs, app->size);
-
-	outtbs->AlreadySold = 0xFFFFFFFF;
-
-	outtbs->TraderID = 0xFFFFFFFF;;
-
+	strn0cpy(tbs->BuyerName, "No one", 64);
+	strn0cpy(tbs->SellerName, "No one", 64);
+	outtbs->AlreadySold = 1;
+	outtbs->Action = tbs->Action;
+	outtbs->Quantity = 0;
+	outtbs->ItemID = -1;
 	QueuePacket(outapp);
-
 	safe_delete(outapp);
 }
 
@@ -1450,32 +1402,24 @@ static void BazaarAuditTrail(const char *seller, const char *buyer, const char *
 	database.QueryDatabase(query);
 }
 
-void Client::BuyTraderItem(TraderBuy_Struct* tbs, Client* Trader, const EQApplicationPacket* app){
-
-	if(!Trader) return;
+void Client::BuyTraderItem(TraderBuy_Struct* tbs, Client* Trader, const EQApplicationPacket* app) {
+	if (!Trader) {
+		TradeRequestFailed(app);
+		return;
+	}
 
 	if(!Trader->IsTrader()) {
 		TradeRequestFailed(app);
 		return;
 	}
 
+	strn0cpy(tbs->BuyerName, this->GetCleanName(), 64);
+	strn0cpy(tbs->SellerName, Trader->GetCleanName(), 64);
 	auto outapp = new EQApplicationPacket(OP_Trader, sizeof(TraderBuy_Struct));
-
 	TraderBuy_Struct* outtbs = (TraderBuy_Struct*)outapp->pBuffer;
-
-	outtbs->ItemID = tbs->ItemID;
-
 	const EQ::ItemInstance* BuyItem = nullptr;
 	uint32 ItemID = 0;
-
-	if (ClientVersion() >= EQ::versions::ClientVersion::RoF)
-	{
-		// Convert Item ID to Serial Number for RoF+
-		ItemID = tbs->ItemID;
-		tbs->ItemID = Trader->FindTraderItemSerialNumber(tbs->ItemID);
-	}
-
-	BuyItem = Trader->FindTraderItemBySerialNumber(tbs->ItemID);
+	BuyItem = Trader->FindTraderItemBySerialNumber(tbs->SerialNumber);
 
 	if(!BuyItem) {
 		LogTrading("Unable to find item on trader");
@@ -1484,27 +1428,30 @@ void Client::BuyTraderItem(TraderBuy_Struct* tbs, Client* Trader, const EQApplic
 		return;
 	}
 
+	outtbs->ItemID = BuyItem->GetID();
+
 	LogTrading("Buyitem: Name: [{}], IsStackable: [{}], Requested Quantity: [{}], Charges on Item [{}]",
 					BuyItem->GetItem()->Name, BuyItem->IsStackable(), tbs->Quantity, BuyItem->GetCharges());
 	// If the item is not stackable, then we can only be buying one of them.
-	if(!BuyItem->IsStackable())
+	if (!BuyItem->IsStackable()) {
 		outtbs->Quantity = 1; // normally you can't send more than 1 here
-	else {
+	} else {
 		// Stackable items, arrows, diamonds, etc
 		int32 ItemCharges = BuyItem->GetCharges();
 		// ItemCharges for stackables should not be <= 0
-		if(ItemCharges <= 0)
+		if (ItemCharges <= 0) {
 			outtbs->Quantity = 1;
 		// If the purchaser requested more than is in the stack, just sell them how many are actually in the stack.
-		else if(static_cast<uint32>(ItemCharges) < tbs->Quantity)
+		} else if(static_cast<uint32>(ItemCharges) < tbs->Quantity) {
 			outtbs->Quantity = ItemCharges;
-		else
+		} else {
 			outtbs->Quantity = tbs->Quantity;
+		}
 	}
 
 	LogTrading("Actual quantity that will be traded is [{}]", outtbs->Quantity);
 
-	if((tbs->Price * outtbs->Quantity) <= 0) {
+	if ((BuyItem->GetPrice() * outtbs->Quantity) <= 0) {
 		Message(Chat::Red, "Internal error. Aborting trade. Please report this to the ServerOP. Error code is 1");
 		Trader->Message(Chat::Red, "Internal error. Aborting trade. Please report this to the ServerOP. Error code is 1");
 		LogError("Bazaar: Zero price transaction between [{}] and [{}] aborted. Item: [{}], Charges: [{}], TBS: Qty [{}], Price: [{}]",
@@ -1525,15 +1472,12 @@ void Client::BuyTraderItem(TraderBuy_Struct* tbs, Client* Trader, const EQApplic
 	}
 
 	// This cannot overflow assuming MAX_TRANSACTION_VALUE, checked above, is the default of 2000000000
-	uint32 TotalCost = tbs->Price * outtbs->Quantity;
+	uint32 TotalCost = BuyItem->GetPrice() * outtbs->Quantity;
 
-	if (Trader->ClientVersion() >= EQ::versions::ClientVersion::RoF)
-	{
+	if (Trader->ClientVersion() >= EQ::versions::ClientVersion::RoF) {
 		// RoF+ uses individual item price where older clients use total price
 		outtbs->Price = tbs->Price;
-	}
-	else
-	{
+	} else {
 		outtbs->Price = TotalCost;
 	}
 
@@ -1588,32 +1532,29 @@ void Client::BuyTraderItem(TraderBuy_Struct* tbs, Client* Trader, const EQApplic
 	
 	LogTrading("Trader Received: [{}] Platinum, [{}] Gold, [{}] Silver, [{}] Copper", platinum, gold, silver, copper);
 
+	strn0cpy(outtbs->BuyerName, this->GetCleanName(), 64);
+	strn0cpy(outtbs->SellerName, Trader->GetCleanName(), 64);
+	outtbs->SerialNumber = BuyItem->GetSerialNumber();
+	strn0cpy(outtbs->ItemName, BuyItem->GetItem()->Name, 64);
 	ReturnTraderReq(app, outtbs->Quantity, ItemID);
 
 	outtbs->TraderID = GetID();
 	outtbs->Action = BazaarBuyItem;
-	strn0cpy(outtbs->ItemName, BuyItem->GetItem()->Name, 64);
-
 	int TraderSlot = 0;
 
-	if(BuyItem->IsStackable())
-		SendTraderItem(BuyItem->GetItem()->ID, outtbs->Quantity);
-	else
-		SendTraderItem(BuyItem->GetItem()->ID, BuyItem->GetCharges());
-
-	TraderSlot = Trader->FindTraderItem(tbs->ItemID, outtbs->Quantity);
-
-	if(RuleB(Bazaar, AuditTrail))
-		BazaarAuditTrail(Trader->GetName(), GetName(), BuyItem->GetItem()->Name, outtbs->Quantity, outtbs->Price, 0);
-
-	Trader->FindAndNukeTraderItem(tbs->ItemID, outtbs->Quantity, this, 0);
-
-	if (ItemID > 0 && Trader->ClientVersion() >= EQ::versions::ClientVersion::RoF)
-	{
-		// Convert Serial Number back to ItemID for RoF+
-		outtbs->ItemID = ItemID;
+	if (BuyItem->IsStackable()) {
+		SendTraderItem(BuyItem, outtbs->Quantity);
+	} else {
+		SendTraderItem(BuyItem, BuyItem->GetCharges());
 	}
 
+	TraderSlot = Trader->FindTraderItem(tbs->SerialNumber, outtbs->Quantity);
+
+	if (RuleB(Bazaar, AuditTrail)) {
+		BazaarAuditTrail(Trader->GetName(), GetName(), BuyItem->GetItem()->Name, outtbs->Quantity, outtbs->Price, 0);
+	}
+
+	Trader->FindAndNukeTraderItem(tbs->SerialNumber, outtbs->Quantity, this, 0);
 	Trader->QueuePacket(outapp);
 	safe_delete(outapp);
 }
@@ -1664,299 +1605,371 @@ void Client::SendBazaarWelcome()
 				"or use /buyer to set up your own Buy Lines.", Strings::ToInt(row[0]));
 }
 
-void Client::SendBazaarResults(
-	uint32 trader_id,
-	uint32 in_class,
-	uint32 in_race,
-	uint32 item_stat,
-	uint32 item_slot,
-	uint32 item_type,
-	char item_name[64],
-	uint32 MinLevel,
-	uint32 MaxLevel,
-	uint32 min_price,
-	uint32 max_price
-)
+void Client::SendBazaarTraders()
 {
-	std::string search_values   = " COUNT(item_id), trader.*, items.name ";
-	std::string search_criteria = " WHERE trader.item_id = items.id ";
-
-	if (trader_id > 0) {
-		Client *trader = entity_list.GetClientByID(trader_id);
-
-		if (trader) {
-			search_criteria.append(StringFormat(" AND trader.char_id = %i", trader->CharacterID()));
-		}
-	}
-
-	if (min_price != 0) {
-		search_criteria.append(StringFormat(" AND trader.item_cost >= %i", min_price));
-	}
-
-	if (max_price != 0) {
-		search_criteria.append(StringFormat(" AND trader.item_cost <= %i", max_price));
-	}
-
-	if (MinLevel > 1) {
-		search_criteria.append(StringFormat(
-				" AND (items.reqlevel != 0 OR items.reclevel != 0) AND (items.reqlevel <= %i OR items.reclevel <= %i)",
-				MinLevel, MinLevel));
-	}
-	
-	if (strlen(item_name) > 0) {
-		char *safeName = RemoveApostrophes(item_name);
-		search_criteria.append(StringFormat(" AND items.name LIKE '%%%s%%'", safeName));
-		safe_delete_array(safeName);
-	}
-
-	if (in_class != 0xFFFFFFFF) {
-		search_criteria.append(StringFormat(" AND MID(REVERSE(BIN(items.classes)), %i, 1) = 1", in_class));
-	}
-
-	if (in_race != 0xFFFFFFFF) {
-		search_criteria.append(StringFormat(" AND MID(REVERSE(BIN(items.races)), %i, 1) = 1", in_race));
-	}
-
-	if (item_slot != 0xFFFFFFFF) {
-		search_criteria.append(StringFormat(" AND MID(REVERSE(BIN(items.slots)), %i, 1) = 1", item_slot + 1));
-	}
-
-	switch (item_type) {
-		case 0xFFFFFFFF:
-			break;
-		case 0:
-			// 1H Slashing
-			search_criteria.append(" AND items.itemtype = 0 AND damage > 0");
-			break;
-		case 31:
-			search_criteria.append(" AND items.itemclass = 2");
-			break;
-		case 46:
-			search_criteria.append(" AND items.scrolleffect > 0 AND items.scrolleffect < 65000");
-			break;
-		case 47:
-			search_criteria.append(" AND items.worneffect = 998");
-			break;
-		case 48:
-			search_criteria.append(" AND items.worneffect >= 1298 AND items.worneffect <= 1307");
-			break;
-		case 49:
-			search_criteria.append(" AND items.focuseffect > 0");
-			break;
-
-		default:
-			search_criteria.append(StringFormat(" AND items.itemtype = %i", item_type));
-	}
-
-	switch (item_stat) {
-
-		case STAT_AC:
-			search_criteria.append(" AND items.ac > 0");
-			search_values.append(", items.ac");
-			break;
-
-		case STAT_AGI:
-			search_criteria.append(" AND items.aagi > 0");
-			search_values.append(", items.aagi");
-			break;
-
-		case STAT_CHA:
-			search_criteria.append(" AND items.acha > 0");
-			search_values.append(", items.acha");
-			break;
-
-		case STAT_DEX:
-			search_criteria.append(" AND items.adex > 0");
-			search_values.append(", items.adex");
-			break;
-
-		case STAT_INT:
-			search_criteria.append(" AND items.aint > 0");
-			search_values.append(", items.aint");
-			break;
-
-		case STAT_STA:
-			search_criteria.append(" AND items.asta > 0");
-			search_values.append(", items.asta");
-			break;
-
-		case STAT_STR:
-			search_criteria.append(" AND items.astr > 0");
-			search_values.append(", items.astr");
-			break;
-
-		case STAT_WIS:
-			search_criteria.append(" AND items.awis > 0");
-			search_values.append(", items.awis");
-			break;
-
-		case STAT_COLD:
-			search_criteria.append(" AND items.cr > 0");
-			search_values.append(", items.cr");
-			break;
-
-		case STAT_DISEASE:
-			search_criteria.append(" AND items.dr > 0");
-			search_values.append(", items.dr");
-			break;
-
-		case STAT_FIRE:
-			search_criteria.append(" AND items.fr > 0");
-			search_values.append(", items.fr");
-			break;
-
-		case STAT_MAGIC:
-			search_criteria.append(" AND items.mr > 0");
-			search_values.append(", items.mr");
-			break;
-
-		case STAT_POISON:
-			search_criteria.append(" AND items.pr > 0");
-			search_values.append(", items.pr");
-			break;
-
-		case STAT_HP:
-			search_criteria.append(" AND items.hp > 0");
-			search_values.append(", items.hp");
-			break;
-
-		case STAT_MANA:
-			search_criteria.append(" AND items.mana > 0");
-			search_values.append(", items.mana");
-			break;
-
-		case STAT_ENDURANCE:
-			search_criteria.append(" AND items.endur > 0");
-			search_values.append(", items.endur");
-			break;
-
-		case STAT_ATTACK:
-			search_criteria.append(" AND items.attack > 0");
-			search_values.append(", items.attack");
-			break;
-
-		case STAT_HP_REGEN:
-			search_criteria.append(" AND items.regen > 0");
-			search_values.append(", items.regen");
-			break;
-
-		case STAT_MANA_REGEN:
-			search_criteria.append(" AND items.manaregen > 0");
-			search_values.append(", items.manaregen");
-			break;
-
-		case STAT_HASTE:
-			search_criteria.append(" AND items.haste > 0");
-			search_values.append(", items.haste");
-			break;
-
-		case STAT_DAMAGE_SHIELD:
-			search_criteria.append(" AND items.damageshield > 0");
-			search_values.append(", items.damageshield");
-			break;
-
-		default:
-			search_values.append(", 0");
-			break;
-	}
-
-	std::string query = StringFormat(
-		"SELECT %s, SUM(charges), items.stackable "
-		"FROM trader, items %s GROUP BY items.id, charges, char_id LIMIT %i",
-		search_values.c_str(),
-		search_criteria.c_str(),
-		RuleI(Bazaar, MaxSearchResults)
-	);
-
+	const std::string query = "SELECT distinct character_data.`name`, character_data.`id` FROM trader, character_data where trader.char_id = character_data.id";
 	auto results = database.QueryDatabase(query);
 
 	if (!results.Success()) {
 		return;
 	}
 
-	LogTrading("SRCH: [{}]", query.c_str());
+	std::list<TraderSubList_Struct> traderlist;
 
+	for (auto row = results.begin(); row != results.end(); ++row) {
+		TraderSubList_Struct trader;
+		strncpy(trader.VendorName, row[0], strlen(row[0]) + 1);
+		trader.TraderID = atoi(row[1]);
+		trader.EntityID = atoi(row[1]);
+		trader.ZoneID = zone->GetZoneID();
+		//trader.ZoneID = zone ? zone->GetZoneID() : RuleI(World, LoadZoneID);
+		traderlist.push_back(trader);
+	}
+
+	int PacketSize = sizeof(TraderList_Struct) + (traderlist.size() * sizeof(TraderSubList_Struct));
+	auto outapp = new EQApplicationPacket(OP_Bazaar, PacketSize);
+	char* Buffer = (char *)outapp->pBuffer;
+	VARSTRUCT_ENCODE_TYPE(uint32, Buffer, traderlist.size());
+	
+	for (auto traders : traderlist) {
+		VARSTRUCT_ENCODE_TYPE(uint32, Buffer, traders.ZoneID);
+		VARSTRUCT_ENCODE_TYPE(uint32, Buffer, traders.TraderID);
+		VARSTRUCT_ENCODE_TYPE(uint32, Buffer, traders.EntityID);
+		strncpy(Buffer, traders.VendorName, strlen(traders.VendorName) + 1);
+		Buffer += 64;
+	}
+
+	QueuePacket(outapp);
+	safe_delete(outapp);
+}
+
+std::list<BazaarSearchResultsNew_Struct> Client::QueryBazaar(uint32 TraderID, uint32 Class_, uint32 Race, uint32 ItemStat, uint32 Slot, uint32 Type,
+															 char Name[64], uint32 MinLevel, uint32 MaxLevel, uint32 MinPrice, uint32 MaxPrice) {
+	std::list<BazaarSearchResultsNew_Struct> newlist;
+
+	std::string searchValues = " 0, trader.item_id, trader.char_id, trader.serialnumber, trader.charges, trader.item_cost ";
+	std::string searchCriteria = "";
+
+	std::string query = StringFormat("SELECT %s "
+									 "FROM trader",
+									 searchValues.c_str());
+	auto results = database.QueryDatabase(query);
+
+	if (!results.Success()) {
+		return newlist;
+	}
+
+	for (auto row = results.begin(); row != results.end(); ++row) {
+		bool bMatch = true;
+
+		uint32 itemStat = 0;
+		if (atoi(row[1]) == 0) {
+			bMatch = false;
+		}
+
+		const EQ::ItemData* item = database.GetItem(atoi(row[1]));
+
+		if (!item->ID) {
+			bMatch = false;
+		}
+
+		if (strlen(Name) > 0 && strlen(item->Name) > 0) {
+			std::string itemName = item->Name;
+			std::transform(itemName.begin(), itemName.end(), itemName.begin(), ::tolower);
+			std::string dataName = Name;
+			std::transform(dataName.begin(), dataName.end(), dataName.begin(), ::tolower);
+
+			if (itemName.find(dataName) == std::string::npos) {
+				bMatch = false;
+			}
+		}
+
+		if (Class_ != 0xFFFFFFFF && !(item->Classes & Class_)) {
+			bMatch = false;
+		}
+
+		if (Race != 0xFFFFFFFF && !(item->Races & Race)) {
+			bMatch = false;
+		}
+
+		uint32 slots = Slot;
+
+		if (Slot != 0xFFFFFFFF && !(item->Slots & (1 << slots))) {
+			bMatch = false;
+		}
+
+		if (TraderID > 0) {
+			Client *trader = entity_list.GetClientByCharID(TraderID);
+			if (atoi(row[2]) != TraderID) {
+				bMatch = false;
+			}
+		}
+
+		if (atoi(row[5]) <= MinPrice) {
+			bMatch = false;
+		}
+
+		if (atoi(row[5]) >= MaxPrice) {
+			bMatch = false;
+		}
+
+		switch (ItemStat) {
+			case STAT_AC:
+				if (!item->AC) {
+					bMatch = false;
+				}
+				itemStat = item->AC;
+				break;
+
+			case STAT_AGI:
+				itemStat = item->AAgi + item->HeroicAgi;
+				if (!itemStat) {
+					bMatch = false;
+				}
+				break;
+
+			case STAT_CHA:
+				itemStat = item->ACha + item->HeroicCha;
+				if (!itemStat) {
+					bMatch = false;
+				}
+				break;
+
+			case STAT_DEX:
+				itemStat = item->ADex + item->HeroicDex;
+				if (!itemStat) {
+					bMatch = false;
+				}
+				break;
+
+			case STAT_INT:
+				itemStat = item->AInt + item->HeroicInt;
+				if (!itemStat) {
+					bMatch = false;
+				}
+				break;
+
+			case STAT_STA:
+				itemStat = item->ASta + item->HeroicSta;
+				if (!itemStat) {
+					bMatch = false;
+				}
+				break;
+
+			case STAT_STR:
+				itemStat = item->AStr + item->HeroicStr;
+				if (!itemStat) {
+					bMatch = false;
+				}
+				break;
+
+			case STAT_WIS:
+				itemStat = item->AWis + item->HeroicWis;
+				if (!itemStat) {
+					bMatch = false;
+				}
+				break;
+
+			case STAT_COLD:
+				if (!item->CR) {
+					bMatch = false;
+				}
+				itemStat = item->CR;
+				break;
+
+			case STAT_DISEASE:
+				if (!item->DR) {
+					bMatch = false;
+				}
+				itemStat = item->DR;
+				break;
+
+			case STAT_FIRE:
+				if (!item->FR) {
+					bMatch = false;
+				}
+				itemStat = item->FR;
+				break;
+
+			case STAT_MAGIC:
+				if (!item->MR) {
+					bMatch = false;
+				}
+				itemStat = item->MR;
+				break;
+
+			case STAT_POISON:
+				if (!item->PR) {
+					bMatch = false;
+				}
+				itemStat = item->PR;
+				break;
+
+			case STAT_HP:
+				if (!item->HP) {
+					bMatch = false;
+				}
+				itemStat = item->HP;
+				break;
+
+			case STAT_MANA:
+				if (!item->Mana) {
+					bMatch = false;
+				}
+				itemStat = item->Mana;
+				break;
+
+			case STAT_ENDURANCE:
+				if (!item->Endur) {
+					bMatch = false;
+				}
+				itemStat = item->Endur;
+				break;
+
+			case STAT_ATTACK:
+				if (!item->Attack) {
+					bMatch = false;
+				}
+				itemStat = item->Attack;
+				break;
+
+			case STAT_HP_REGEN:
+				if (!item->Regen) {
+					bMatch = false;
+				}
+				itemStat = item->Regen;
+				break;
+
+			case STAT_MANA_REGEN:
+				if (!item->ManaRegen) {
+					bMatch = false;
+				}
+				itemStat = item->ManaRegen;
+				break;
+
+			case STAT_HASTE:
+				if (!item->Haste) {
+					bMatch = false;
+				}
+				itemStat = item->Haste;
+				break;
+
+			case STAT_DAMAGE_SHIELD:
+				if (!item->DamageShield) {
+					bMatch = false;
+				}
+				itemStat = item->DamageShield;
+				break;
+
+			default:
+				break;
+		}
+
+		switch (Type) {
+			case 0xFFFFFFFF:
+				break;
+			case 0:
+				if (item->ItemType != 0 || item->Damage == 0) {
+					bMatch = false;
+				}
+				break;
+			case 31:
+				if (item->ItemClass != 2) {
+					bMatch = false;
+				}
+				break;
+			case 46:
+				if (item->Scroll.Effect == 0) {
+					bMatch = false;
+				}
+				break;
+			case 47:
+				if (item->Worn.Effect != 998) {
+					bMatch = false;
+				}
+				break;
+			case 48:
+				if (item->Worn.Effect < 1298 || item->Worn.Effect > 1307) {
+					bMatch = false;
+				}
+				break;
+			case 49:
+				if (item->Focus.Effect == 0) {
+					bMatch = false;
+				}
+				break;
+
+			default:
+				if (Type != item->ItemType) {
+					bMatch = false;
+				}
+				break;
+		}
+
+		if (bMatch) {
+			//std::string searchValues = " COUNT(item_id), trader.item_id, trader.char_id, trader.serialnumber, trader.charges, trader.item_cost
+			BazaarSearchResultsNew_Struct newstruct;
+			newstruct.Cost = atoi(row[5]);
+			newstruct.ItemIcon = item->Icon;
+			newstruct.ItemStat = itemStat;
+			strncpy(newstruct.ItemName, item->Name, 64);
+			newstruct.SellerID = atoi(row[2]);
+			newstruct.SerialNumber = atoi(row[3]);
+			newstruct.StackSize = atoi(row[4]);
+			newstruct.Count = item->ID;
+			newlist.push_back(newstruct);
+		}
+		// LogTrading("SRCH: [{}]", query.c_str());
+
+
+	}
+	return newlist;
+}
+
+void Client::SendBazaarResults(uint32 TraderID, uint32 Class_, uint32 Race, uint32 ItemStat, uint32 Slot, uint32 Type,
+							   char Name[64], uint32 MinLevel, uint32 MaxLevel, uint32 MinPrice, uint32 MaxPrice) {
 	int    Size = 0;
 	uint32 ID   = 0;
+	auto list = QueryBazaar(TraderID, Class_, Race, ItemStat, Slot, Type, Name, MinLevel, MaxLevel, MinPrice, MaxPrice);
 
-	if (results.RowCount() == static_cast<unsigned long>(RuleI(Bazaar, MaxSearchResults))) {
-		Message(
-			Chat::Yellow,
-			"Your search reached the limit of %i results. Please narrow your search down by selecting more options.",
+	if (list.size() > static_cast<unsigned long>(RuleI(Bazaar, MaxSearchResults))) {
+		Message(Chat::Yellow, "Your search reached the limit of %i results. Please narrow your search down by selecting more options.",
 			RuleI(Bazaar, MaxSearchResults));
 	}
 
-	if (results.RowCount() == 0) {
-		auto                    outapp2 = new EQApplicationPacket(OP_BazaarSearch, sizeof(BazaarReturnDone_Struct));
-		BazaarReturnDone_Struct *brds   = (BazaarReturnDone_Struct *) outapp2->pBuffer;
-		brds->TraderID   = ID;
-		brds->Type       = BazaarSearchDone;
-		brds->Unknown008 = 0xFFFFFFFF;
-		brds->Unknown012 = 0xFFFFFFFF;
-		brds->Unknown016 = 0xFFFFFFFF;
-		QueuePacket(outapp2);
-		safe_delete(outapp2);
+	if (list.size() == 0) {
+		SendBazaarTraders();
 		return;
 	}
 
-	Size = results.RowCount() * sizeof(BazaarSearchResults_Struct);
-	auto  buffer  = new uchar[Size];
-	uchar *bufptr = buffer;
+	Size = list.size() * sizeof(BazaarSearchResultsNew_Struct) + 4;
+	auto buffer = new char[Size];
+	char *bufptr = buffer;
 	memset(buffer, 0, Size);
 
 	int    Action          = BazaarSearchResults;
 	uint32 Cost            = 0;
-	int32  SerialNumber    = 0;
+	uint32 SerialNumber    = 0;
 	char   temp_buffer[64] = {0};
 	int    Count           = 0;
-	uint32 StatValue       = 0;
+	Count = list.size();
+	VARSTRUCT_ENCODE_TYPE(uint32, bufptr, this->GetID());
+	//std::string searchValues = " COUNT(item_id), trader.item_id, trader.char_id, trader.serialnumber, items.name, trader.charges, trader.item_cost ";
 
-	for (auto row = results.begin(); row != results.end(); ++row) {
-		VARSTRUCT_ENCODE_TYPE(uint32, bufptr, Action);
-		Count = Strings::ToInt(row[0]);
+	for (auto row : list) {
 		VARSTRUCT_ENCODE_TYPE(uint32, bufptr, Count);
-		SerialNumber = Strings::ToInt(row[3]);
-		VARSTRUCT_ENCODE_TYPE(int32, bufptr, SerialNumber);
-		Client *Trader2 = entity_list.GetClientByCharID(Strings::ToInt(row[1]));
-		if (Trader2) {
-			ID = Trader2->GetID();
-			VARSTRUCT_ENCODE_TYPE(uint32, bufptr, ID);
-		}
-		else {
-			LogTrading("Unable to find trader: [{}]\n", Strings::ToInt(row[1]));
-			VARSTRUCT_ENCODE_TYPE(uint32, bufptr, 0);
-		}
-		Cost = Strings::ToInt(row[5]);
-		VARSTRUCT_ENCODE_TYPE(uint32, bufptr, Cost);
-		StatValue = Strings::ToInt(row[8]);
-		VARSTRUCT_ENCODE_TYPE(uint32, bufptr, StatValue);
-		bool Stackable = Strings::ToInt(row[10]);
-		if (Stackable) {
-			int Charges = Strings::ToInt(row[9]);
-			sprintf(temp_buffer, "%s(%i)", row[7], Charges);
-		}
-		else {
-			sprintf(temp_buffer, "%s(%i)", row[7], Count);
-		}
-
-		memcpy(bufptr, &temp_buffer, strlen(temp_buffer));
-
+		Count = 0;
+		VARSTRUCT_ENCODE_TYPE(int32, bufptr, row.SerialNumber);
+		VARSTRUCT_ENCODE_TYPE(uint32, bufptr, row.SellerID);
+		VARSTRUCT_ENCODE_TYPE(uint32, bufptr, row.Cost);
+		auto StackSize = row.StackSize == -1 ? 1 : row.StackSize;
+		VARSTRUCT_ENCODE_TYPE(uint32, bufptr, StackSize);
+		VARSTRUCT_ENCODE_TYPE(uint32, bufptr, row.ItemIcon);
+		VARSTRUCT_ENCODE_TYPE(uint32, bufptr, 0);
+		strncpy(bufptr, row.ItemName, strlen(row.ItemName) + 1);
 		bufptr += 64;
-
-		// Extra fields for SoD+
-		//
-		if (Trader2) {
-			sprintf(temp_buffer, "%s", Trader2->GetName());
-		}
-		else {
-			sprintf(temp_buffer, "Unknown");
-		}
-
-		memcpy(bufptr, &temp_buffer, strlen(temp_buffer));
-
-		bufptr += 64;
-
-		VARSTRUCT_ENCODE_TYPE(uint32, bufptr, Strings::ToInt(row[1])); // ItemID
+		//Stat!
+		VARSTRUCT_ENCODE_TYPE(uint32, bufptr, row.ItemStat);
 	}
 
 	auto outapp = new EQApplicationPacket(OP_BazaarSearch, Size);
@@ -1968,55 +1981,44 @@ void Client::SendBazaarResults(
 	safe_delete(outapp);
 	safe_delete_array(buffer);
 
-	auto                    outapp2 = new EQApplicationPacket(OP_BazaarSearch, sizeof(BazaarReturnDone_Struct));
-	BazaarReturnDone_Struct *brds   = (BazaarReturnDone_Struct *) outapp2->pBuffer;
-
-	brds->TraderID = ID;
-	brds->Type     = BazaarSearchDone;
-
-	brds->Unknown008 = 0xFFFFFFFF;
-	brds->Unknown012 = 0xFFFFFFFF;
-	brds->Unknown016 = 0xFFFFFFFF;
-
-	QueuePacket(outapp2);
-
-	safe_delete(outapp2);
+	SendBazaarTraders();
 }
 
-static void UpdateTraderCustomerItemsAdded(uint32 CustomerID, TraderCharges_Struct* gis, uint32 ItemID) {
-
+static void UpdateTraderCustomerItemsAdded(uint32 CustomerID, TraderCharges_Struct* gis, uint32 ItemID, uint32 SerialNumber) {
 	// Send Item packets to the customer to update the Merchant window with the
 	// new items for sale, and give them a message in their chat window.
 
 	Client* Customer = entity_list.GetClientByID(CustomerID);
-
-	if(!Customer) return;
+	
+	if (!Customer) { 
+		return;
+	}
 
 	const EQ::ItemData *item = database.GetItem(ItemID);
 
-	if(!item) return;
+	if (!item) { 
+		return;
+	}
 
 	EQ::ItemInstance* inst = database.CreateItem(item);
 
-	if(!inst) return;
+	if (!inst) { 
+		return;
+	}
 
 	Customer->Message(Chat::Red, "The Trader has put up %s for sale.", item->Name);
 
-	for(int i = 0; i < 80; i++) {
-
-		if(gis->ItemID[i] == ItemID) {
-
+	for (int i = 0; i < 100; i++) {
+		if (gis->SerialNumber[i] == ItemID) {
 			inst->SetCharges(gis->Charges[i]);
-
 			inst->SetPrice(gis->ItemCost[i]);
-
 			inst->SetSerialNumber(gis->SerialNumber[i]);
+			inst->SetMerchantSlot(i);
 
-			inst->SetMerchantSlot(gis->SerialNumber[i]);
-
-			if(inst->IsStackable())
+			if(inst->IsStackable()) {
 				inst->SetMerchantCount(gis->Charges[i]);
-
+			}
+			
 			LogTrading("Sending price update for [{}], Serial No. [{}] with [{}] charges",
 							item->Name, gis->SerialNumber[i], gis->Charges[i]);
 
@@ -2027,86 +2029,45 @@ static void UpdateTraderCustomerItemsAdded(uint32 CustomerID, TraderCharges_Stru
 	safe_delete(inst);
 }
 
-static void UpdateTraderCustomerPriceChanged(uint32 CustomerID, TraderCharges_Struct* gis, uint32 ItemID, int32 Charges, uint32 NewPrice) {
-
+void Client::UpdateTraderCustomerPriceChanged(uint32 TraderID, uint16 CustomerID, TraderCharges_Struct* gis, uint32 ItemID, int32 Charges, uint32 NewPrice, uint32 SerialNumber) {
 	// Send ItemPackets to update the customer's Merchant window with the new price (or remove the item if
 	// the new price is 0) and inform them with a chat message.
 
 	Client* Customer = entity_list.GetClientByID(CustomerID);
 
-	if(!Customer) return;
+	if (!Customer) { 
+		return;
+	}
 
 	const EQ::ItemData *item = database.GetItem(ItemID);
 
-	if(!item) return;
+	if (!item) { 
+		return;
+	}
 
-	if(NewPrice == 0) {
+	if (NewPrice == 0) {
 		// If the new price is 0, remove the item(s) from the window.
 		auto outapp = new EQApplicationPacket(OP_TraderDelItem, sizeof(TraderDelItem_Struct));
 		TraderDelItem_Struct* tdis = (TraderDelItem_Struct*)outapp->pBuffer;
-
 		tdis->Unknown000 = 0;
 		tdis->TraderID = Customer->GetID();
 		tdis->Unknown012 = 0;
 		Customer->Message(Chat::Red, "The Trader has withdrawn the %s from sale.", item->Name);
-
-		for(int i = 0; i < 80; i++) {
-
-			if(gis->ItemID[i] == ItemID) {
-				if (Customer->ClientVersion() >= EQ::versions::ClientVersion::RoF)
-				{
-					// RoF+ use Item IDs for now
-					tdis->ItemID = gis->ItemID[i];
-				}
-				else
-				{
-					tdis->ItemID = gis->SerialNumber[i];
-				}
-				tdis->ItemID = gis->SerialNumber[i];
-				LogTrading("Telling customer to remove item [{}] with [{}] charges and S/N [{}]",
-								ItemID, Charges, gis->SerialNumber[i]);
-
-
-				Customer->QueuePacket(outapp);
-			}
-		}
-
+		tdis->ItemID = SerialNumber;
+		LogTrading("Telling customer to remove item [{}] with [{}] charges and S/N [{}]",
+			ItemID, Charges, SerialNumber);
+		Customer->QueuePacket(outapp);
 		safe_delete(outapp);
 		return;
 	}
 
 	LogTrading("Sending price updates to customer [{}]", Customer->GetName());
-
-	EQ::ItemInstance* inst = database.CreateItem(item);
-
-	if(!inst) return;
-
-	if(Charges > 0)
-		inst->SetCharges(Charges);
-
-	inst->SetPrice(NewPrice);
-
-	if(inst->IsStackable())
-		inst->SetMerchantCount(Charges);
+	EQ::ItemInstance *inst = FindTraderItemBySerialNumber(SerialNumber);
 
 	// Let the customer know the price in the window has suddenly just changed on them.
-	Customer->Message(Chat::Red, "The Trader has changed the price of %s.", item->Name);
+	//Customer->Message(13, "The Trader has changed the price of %s.", item.Name);
 
-	for(int i = 0; i < 80; i++) {
-		if((gis->ItemID[i] != ItemID) ||
-			((!item->Stackable) && (gis->Charges[i] != Charges)))
-			continue;
-
-		inst->SetSerialNumber(gis->SerialNumber[i]);
-
-		inst->SetMerchantSlot(gis->SerialNumber[i]);
-
-		LogTrading("Sending price update for [{}], Serial No. [{}] with [{}] charges",
-						item->Name, gis->SerialNumber[i], gis->Charges[i]);
-
-		Customer->SendItemPacket(EQ::invslot::slotCursor, inst, ItemPacketMerchant); // MainCursor??
-	}
-	safe_delete(inst);
+	Customer->SendItemPacket(EQ::invslot::slotCursor, inst, ItemPacketMerchant); // MainCursor??
 }
 
 void Client::HandleTraderPriceUpdate(const EQApplicationPacket *app) {
@@ -2124,7 +2085,7 @@ void Client::HandleTraderPriceUpdate(const EQApplicationPacket *app) {
 	//
 	TraderCharges_Struct* gis = database.LoadTraderItemWithCharges(CharacterID());
 
-	if(!gis) {
+	if (!gis) {
 		LogDebug("[CLIENT] Error retrieving Trader items details to update price");
 		return;
 	}
@@ -2135,134 +2096,90 @@ void Client::HandleTraderPriceUpdate(const EQApplicationPacket *app) {
 	// update the prices for all items that have the same number of charges.
 	//
 	uint32 IDOfItemToUpdate = 0;
-
+	uint32 SerialOfItem = 0;
 	int32 ChargesOnItemToUpdate = 0;
-
 	uint32 OldPrice = 0;
+	uint32 SlotOfItem = 0;
 
-	for(int i = 0; i < 80; i++) {
-
-		if((gis->ItemID[i] > 0) && (gis->SerialNumber[i] == tpus->SerialNumber)) {
+	for (int i = 0; i < 100; i++) {
+		if ((gis->SerialNumber[i] == tpus->SerialNumber)) {
 			// We found the item that the Trader wants to change the price of (or add back up for sale).
-			//
 			LogTrading("ItemID is [{}], Charges is [{}]", gis->ItemID[i], gis->Charges[i]);
-
 			IDOfItemToUpdate = gis->ItemID[i];
-
 			ChargesOnItemToUpdate = gis->Charges[i];
-
+			SerialOfItem = gis->SerialNumber[i];
+			SlotOfItem = i;
 			OldPrice = gis->ItemCost[i];
-
 			break;
 		}
 	}
 
-	if(IDOfItemToUpdate == 0) {
-
+	if (IDOfItemToUpdate == 0) {
 		// If the item is not currently in the trader table for this Trader, then they must have removed it from sale while
 		// still in Trader mode. Check if the item is in their Trader Satchels, and if so, put it back up.
+		// Now put all Items with a matching ItemID up for trade.
+		auto inst = FindTraderItemBySerialNumber(tpus->SerialNumber);
 
-		// Quick Sanity check. If the item is not currently up for sale, and the new price is zero, just ack the packet
-		// and do nothing.
-		if(tpus->NewPrice == 0) {
-			tpus->SubAction = BazaarPriceChange_RemoveItem;
+		if (!inst) {
+			// Acknowledge to the client.
+			tpus->SubAction = BazaarPriceChange_UpdatePrice;
 			QueuePacket(app);
-			safe_delete(gis);
 			return ;
 		}
 
-		LogTrading("Unable to find item to update price for. Rechecking trader satchels");
-
-		// Find what is in their Trader Satchels
-		GetItems_Struct* newgis=GetTraderItems();
-
-		uint32 IDOfItemToAdd = 0;
-
-		int32 ChargesOnItemToAdd = 0;
-
-		for(int i = 0; i < 80; i++) {
-
-			if((newgis->Items[i] > 0) && (newgis->SerialNumber[i] == tpus->SerialNumber)) {
-
-				LogTrading("Found new Item to Add, ItemID is [{}], Charges is [{}]", newgis->Items[i],
-								newgis->Charges[i]);
-
-				IDOfItemToAdd = newgis->Items[i];
-				ChargesOnItemToAdd = newgis->Charges[i];
-
-				break;
-			}
-		}
-
-
-		const EQ::ItemData *item = 0;
-
-		if(IDOfItemToAdd)
-			item = database.GetItem(IDOfItemToAdd);
-
-		if(!IDOfItemToAdd || !item) {
-
-			LogTrading("Item not found in Trader Satchels either");
-			tpus->SubAction = BazaarPriceChange_Fail;
-			QueuePacket(app);
-			Trader_EndTrader();
-			safe_delete(gis);
-			safe_delete(newgis);
-			return;
-		}
-
-		// It is a limitation of the client that if you have multiple of the same item, but with different charges,
-		// although you can set different prices for them before entering Trader mode. If you Remove them and then
-		// add them back whilst still in Trader mode, they all go up for the same price. We check for this situation
-		// and give the Trader a warning message.
-		//
-		if(!item->Stackable) {
-
-			bool SameItemWithDifferingCharges = false;
-
-			for(int i = 0; i < 80; i++) {
-				if((newgis->Items[i] == IDOfItemToAdd) && (newgis->Charges[i] != ChargesOnItemToAdd)) {
-
-					SameItemWithDifferingCharges = true;
-					break;
+		bool bAdded = false;
+		int i = 0;
+		for (int i = 0; i < 100; i++) {
+			if (gis->ItemID[i] != 0) {
+				if (gis->ItemID[i] == inst->GetID()) {
+					auto alsoInst = FindTraderItemBySerialNumber(gis->SerialNumber[i]);
+					if (alsoInst && tpus->NewPrice > 0) {
+						if (alsoInst->IsStackable()) {
+							if (alsoInst->IsStackable()) {
+								alsoInst->SetMerchantCount(alsoInst->GetCharges());
+							} else {
+								alsoInst->SetMerchantCount(1);
+							}
+							alsoInst->SetMerchantSlot(i);
+						}
+						alsoInst->SetPrice(tpus->NewPrice);
+						database.UpdateTraderItemPrice(CharacterID(), alsoInst->GetID(), alsoInst->GetSerialNumber(),
+													   alsoInst->GetMerchantCount(), tpus->NewPrice);
+						for (auto cust : CustomerID) {
+							UpdateTraderCustomerPriceChanged(CharacterID(), cust, gis, alsoInst->GetID(),
+															 alsoInst->GetCharges(), tpus->NewPrice,
+															 alsoInst->GetSerialNumber());
+						}
+					}
 				}
+				continue;
 			}
 
-			if(SameItemWithDifferingCharges)
-				Message(Chat::Red, "Warning: You have more than one %s with different charges. They have all been added for sale "
-						"at the same price.", item->Name);
-		}
-
-		// Now put all Items with a matching ItemID up for trade.
-		//
-		for(int i = 0; i < 80; i++) {
-
-			if(newgis->Items[i] == IDOfItemToAdd) {
-
-				database.SaveTraderItem(CharacterID(), newgis->Items[i], newgis->SerialNumber[i], newgis->Charges[i],
+			if (tpus->NewPrice > 0 && bAdded == false && inst->GetSerialNumber() == tpus->SerialNumber) {
+				if (inst->IsStackable()) {
+					inst->SetMerchantCount(inst->GetCharges());
+				} else {
+					inst->SetMerchantCount(1);
+				}
+				inst->SetMerchantSlot(i);
+				database.SaveTraderItem(CharacterID(), inst->GetID(), inst->GetSerialNumber(), inst->GetMerchantCount(),
 							tpus->NewPrice, i);
-
-				gis->ItemID[i] = newgis->Items[i];
-				gis->Charges[i] = newgis->Charges[i];
-				gis->SerialNumber[i] = newgis->SerialNumber[i];
-				gis->ItemCost[i] = tpus->NewPrice;
-
-				LogTrading("Adding new item for [{}]. ItemID [{}], SerialNumber [{}], Charges [{}], Price: [{}], Slot [{}]",
-							GetName(), newgis->Items[i], newgis->SerialNumber[i], newgis->Charges[i],
-							tpus->NewPrice, i);
+				
+				for (auto cust : CustomerID) {
+					UpdateTraderCustomerPriceChanged(GetID(), cust, gis, inst->GetID(), inst->GetCharges(),
+													 tpus->NewPrice, inst->GetSerialNumber());
+				}
+				bAdded = true;
 			}
 		}
-
-		// If we have a customer currently browsing, update them with the new items.
-		//
-		if(CustomerID)
-			UpdateTraderCustomerItemsAdded(CustomerID, gis, IDOfItemToAdd);
-
 		safe_delete(gis);
-		safe_delete(newgis);
-
 		// Acknowledge to the client.
-		tpus->SubAction = BazaarPriceChange_AddItem;
+		if (bAdded) {
+			tpus->SubAction = BazaarPriceChange_AddItem;
+		} else {
+			tpus->SubAction = BazaarPriceChange_UpdatePrice;
+		}
+
 		QueuePacket(app);
 
 		return;
@@ -2271,43 +2188,73 @@ void Client::HandleTraderPriceUpdate(const EQApplicationPacket *app) {
 	// This is a safeguard against a Trader increasing the price of an item while a customer is browsing and
 	// unwittingly buying it at a higher price than they were expecting to.
 	//
-	if((OldPrice != 0) && (tpus->NewPrice > OldPrice) && CustomerID) {
-
-		tpus->SubAction = BazaarPriceChange_Fail;
-		QueuePacket(app);
-		Trader_EndTrader();
-		Message(Chat::Red, "You must remove the item from sale before you can increase the price while a customer is browsing.");
-		Message(Chat::Red, "Click 'Begin Trader' to restart Trader mode with the increased price for this item.");
-		safe_delete(gis);
-		return;
-	}
-
-	// Send Acknowledgement back to the client.
-	if(OldPrice == 0)
-		tpus->SubAction = BazaarPriceChange_AddItem;
-	else if(tpus->NewPrice != 0)
-		tpus->SubAction = BazaarPriceChange_UpdatePrice;
-	else
-		tpus->SubAction = BazaarPriceChange_RemoveItem;
-
-	QueuePacket(app);
-
-	if(OldPrice == tpus->NewPrice) {
-		LogTrading("The new price is the same as the old one");
-		safe_delete(gis);
-		return;
-	}
 	// Update the price for all items we have for sale that have this ItemID and number of charges, or remove
 	// them from the trader table if the new price is zero.
 	//
-	database.UpdateTraderItemPrice(CharacterID(), IDOfItemToUpdate, ChargesOnItemToUpdate, tpus->NewPrice);
+	//database.UpdateTraderItemPrice(CharacterID(), IDOfItemToUpdate, SerialOfItem, ChargesOnItemToUpdate, tpus->NewPrice);
 
-	// If a customer is browsing our goods, send them the updated prices / remove the items from the Merchant window
-	if(CustomerID)
-		UpdateTraderCustomerPriceChanged(CustomerID, gis, IDOfItemToUpdate, ChargesOnItemToUpdate, tpus->NewPrice);
+	auto inst = FindTraderItemBySerialNumber(SerialOfItem);
 
+	if (!inst) {
+		Message(Chat::Red, "An item for sale went missing! Likely, it was shuffled around. Ending trader mode.");
+		Trader_EndTrader();
+		return;
+	}
+
+	bool bAdded = false;
+
+	for (int i = 0; i < 100; i++) {
+		if (gis->ItemID[i] != 0) {
+			if (gis->ItemID[i] == inst->GetID()) {
+				auto alsoInst = FindTraderItemBySerialNumber(gis->SerialNumber[i]);
+				if (alsoInst && tpus->NewPrice > 0) {
+					if (alsoInst->IsStackable()) {
+						alsoInst->SetMerchantCount(alsoInst->GetCharges());
+					} else {
+						alsoInst->SetMerchantCount(1);
+					}
+					alsoInst->SetMerchantSlot(i);
+					alsoInst->SetPrice(tpus->NewPrice);
+					database.UpdateTraderItemPrice(CharacterID(), alsoInst->GetID(), alsoInst->GetSerialNumber(),
+												   alsoInst->GetMerchantCount(), tpus->NewPrice);
+					for (auto cust : CustomerID) {
+						UpdateTraderCustomerPriceChanged(CharacterID(), cust, gis, alsoInst->GetID(),
+														 alsoInst->GetCharges(), tpus->NewPrice,
+														 alsoInst->GetSerialNumber());
+					}
+				}
+			}
+			continue;
+		}
+
+		if (!bAdded && tpus->NewPrice > 0 && inst->GetSerialNumber() == tpus->SerialNumber) {
+			inst->SetPrice(tpus->NewPrice);
+			if (inst->IsStackable()) {
+				inst->SetMerchantCount(inst->GetCharges());
+			} else {
+				inst->SetMerchantCount(1);
+			}
+			inst->SetMerchantSlot(i);
+			database.SaveTraderItem(CharacterID(), inst->GetID(), inst->GetSerialNumber(), inst->GetMerchantCount(),
+									tpus->NewPrice, i);
+			// If a customer is browsing our goods, send them the updated prices / remove the items from the Merchant window
+			for (auto cust : CustomerID) {
+				UpdateTraderCustomerPriceChanged(CharacterID(), cust, gis, inst->GetID(), inst->GetCharges(),
+												 tpus->NewPrice, inst->GetSerialNumber());
+			}
+			bAdded = true;
+		}
+	}
+
+	if (bAdded) {
+		tpus->SubAction = BazaarPriceChange_AddItem;
+	} else if(tpus->NewPrice != 0) {
+		tpus->SubAction = BazaarPriceChange_UpdatePrice;
+	} else {
+		tpus->SubAction = BazaarPriceChange_RemoveItem;
+	}
+	QueuePacket(app);
 	safe_delete(gis);
-
 }
 
 void Client::SendBuyerResults(char* searchString, uint32 searchID) {
@@ -2323,23 +2270,25 @@ void Client::SendBuyerResults(char* searchString, uint32 searchID) {
 							escSearchString, RuleI(Bazaar, MaxBarterSearchResults));
 	safe_delete_array(escSearchString);
 	auto results = database.QueryDatabase(query);
-    if (!results.Success()) {
-        return;
-    }
+	if (!results.Success()) {
+		return;
+	}
 
-    int numberOfRows = results.RowCount();
+	int numberOfRows = results.RowCount();
 
-    if(numberOfRows == RuleI(Bazaar, MaxBarterSearchResults))
-        Message(Chat::Yellow, "Your search found too many results; some are not displayed.");
-    else if(strlen(searchString) == 0)
-        Message(Chat::NPCQuestSay, "There are %i Buy Lines.", numberOfRows);
-    else
-        Message(Chat::NPCQuestSay, "There are %i Buy Lines that match the search string '%s'.", numberOfRows, searchString);
+	if (numberOfRows == RuleI(Bazaar, MaxBarterSearchResults)) {
+		Message(Chat::Yellow, "Your search found too many results; some are not displayed.");
+	} else if(strlen(searchString) == 0) {
+		Message(Chat::NPCQuestSay, "There are %i Buy Lines.", numberOfRows);
+	} else {
+		Message(Chat::NPCQuestSay, "There are %i Buy Lines that match the search string '%s'.", numberOfRows, searchString);
+	}
 
-    if(numberOfRows == 0)
-        return;
+	if (numberOfRows == 0) {
+		return;
+	}
 
-    uint32 lastCharID = 0;
+	uint32 lastCharID = 0;
 	Client *buyer = nullptr;
 
 	for (auto row = results.begin(); row != results.end(); ++row) {
@@ -2401,20 +2350,17 @@ void Client::SendBuyerResults(char* searchString, uint32 searchID) {
 }
 
 void Client::ShowBuyLines(const EQApplicationPacket *app) {
-
 	BuyerInspectRequest_Struct* bir = ( BuyerInspectRequest_Struct*)app->pBuffer;
-
 	Client *Buyer = entity_list.GetClientByID(bir->BuyerID);
 
-	if(!Buyer) {
+	if (!Buyer) {
 		bir->Approval = 0; // Tell the client that the Buyer is unavailable
 		QueuePacket(app);
 		Message(Chat::Red, "The Buyer has gone away.");
 		return;
 	}
 
-	bir->Approval = Buyer->WithCustomer(GetID());
-
+	bir->Approval = Buyer->WithCustomer(GetID(), 1);
 	QueuePacket(app);
 
 	if(bir->Approval == 0) {
@@ -2424,26 +2370,22 @@ void Client::ShowBuyLines(const EQApplicationPacket *app) {
 
 	const char *WelcomeMessagePointer = Buyer->GetBuyerWelcomeMessage();
 
-	if(strlen(WelcomeMessagePointer) > 0)
+	if(strlen(WelcomeMessagePointer) > 0) {
 		Message(Chat::NPCQuestSay, "%s greets you, '%s'.", Buyer->GetName(), WelcomeMessagePointer);
+	}
 
 	auto outapp = new EQApplicationPacket(OP_Barter, sizeof(BuyerBrowsing_Struct));
-
 	BuyerBrowsing_Struct* bb = (BuyerBrowsing_Struct*)outapp->pBuffer;
-
 	// This packet produces the SoandSo is browsing your Buy Lines message
 	bb->Action = Barter_SellerBrowsing;
-
 	sprintf(bb->PlayerName, "%s", GetName());
-
 	Buyer->QueuePacket(outapp);
-
 	safe_delete(outapp);
-
     std::string query = StringFormat("SELECT * FROM buyer WHERE charid = %i", Buyer->CharacterID());
     auto results = database.QueryDatabase(query);
-    if (!results.Success() || results.RowCount() == 0)
+    if (!results.Success() || results.RowCount() == 0) {
         return;
+	}
 
     for (auto row = results.begin(); row != results.end(); ++row) {
         char ItemName[64];
@@ -2849,29 +2791,22 @@ void Client::SendBuyerPacket(Client* Buyer) {
 }
 
 void Client::ToggleBuyerMode(bool TurnOn) {
-
 	auto outapp = new EQApplicationPacket(OP_Barter, 13 + strlen(GetName()));
-
 	char* Buf = (char*)outapp->pBuffer;
-
 	VARSTRUCT_ENCODE_TYPE(uint32, Buf, Barter_BuyerAppearance);
 	VARSTRUCT_ENCODE_TYPE(uint32, Buf, GetID());
 
-	if(TurnOn) {
+	if (TurnOn) {
 		VARSTRUCT_ENCODE_TYPE(uint32, Buf, 0x01);
-	}
-	else {
+	} else {
 		VARSTRUCT_ENCODE_TYPE(uint32, Buf, 0x00);
 		database.DeleteBuyLines(CharacterID());
-		CustomerID = 0;
+		CustomerID.clear();
 	}
 
 	VARSTRUCT_ENCODE_STRING(Buf, GetName());
-
 	entity_list.QueueClients(this, outapp, false);
-
 	safe_delete(outapp);
-
 	Buyer = TurnOn;
 }
 

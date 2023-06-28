@@ -397,52 +397,53 @@ namespace RoF2
 	{
 		EQApplicationPacket *in = *p;
 		*p = nullptr;
-
 		char *Buffer = (char *)in->pBuffer;
+		uint8 EntityID = VARSTRUCT_DECODE_TYPE(uint32, Buffer);
+		char *__emu_buffer = Buffer;
+		BazaarSearchResultsNew_Struct *emu = (BazaarSearchResultsNew_Struct *)(__emu_buffer);
+		int EntryCount = (in->size - 4) / sizeof(BazaarSearchResultsNew_Struct);
 
-		uint8 SubAction = VARSTRUCT_DECODE_TYPE(uint8, Buffer);
-
-		if (SubAction != BazaarSearchResults)
-		{
-			dest->FastQueuePacket(&in, ack_req);
-			return;
-		}
-
-		unsigned char *__emu_buffer = in->pBuffer;
-
-		BazaarSearchResults_Struct *emu = (BazaarSearchResults_Struct *)__emu_buffer;
-
-		int EntryCount = in->size / sizeof(BazaarSearchResults_Struct);
-
-		if (EntryCount == 0 || (in->size % sizeof(BazaarSearchResults_Struct)) != 0)
-		{
-			LogNetcode("[STRUCTS] Wrong size on outbound [{}]: Got [{}], expected multiple of [{}]", opcodes->EmuToName(in->GetOpcode()), in->size, sizeof(BazaarSearchResults_Struct));
+		if (EntryCount == 0 || ((in->size - 4) % sizeof(BazaarSearchResultsNew_Struct)) != 0) {
+			//LogNetcode("[STRUCTS] Wrong size on outbound [{}]: Got [{}], expected multiple of [{}]", opcodes->EmuToName(in->GetOpcode()), in->size, sizeof(BazaarSearchResults_Struct));
 			delete in;
 			return;
 		}
 
-		in->size = EntryCount * sizeof(structs::BazaarSearchResults_Struct);
-		in->pBuffer = new unsigned char[in->size];
+		int PacketSize = 14 + (EntryCount * (4 + 4 + 4 + 4 + 4 + 4));
 
-		memset(in->pBuffer, 0, in->size);
-
-		structs::BazaarSearchResults_Struct *eq = (structs::BazaarSearchResults_Struct *)in->pBuffer;
-
-		for (int i = 0; i < EntryCount; ++i, ++emu, ++eq)
-		{
-			OUT(Beginning.Action);
-			OUT(SellerID);
-			memcpy(eq->SellerName, emu->SellerName, sizeof(eq->SellerName));
-			OUT(NumItems);
-			OUT(ItemID);
-			OUT(SerialNumber);
-			memcpy(eq->ItemName, emu->ItemName, sizeof(eq->ItemName));
-			OUT(Cost);
-			OUT(ItemStat);
+		for (int i = 0; i < EntryCount; ++i, ++emu) {
+			char SerialNumber[17];
+			snprintf(SerialNumber, sizeof(SerialNumber), "%016d", emu->SerialNumber);
+			PacketSize += strlen(emu->ItemName) + 1;
+			PacketSize += strlen(SerialNumber) + 1;
 		}
 
-		delete[] __emu_buffer;
-		dest->FastQueuePacket(&in, ack_req);
+		auto emu2 = (BazaarSearchResultsNew_Struct *)(Buffer);
+
+		auto outapp = new EQApplicationPacket(OP_BazaarSearch, PacketSize);
+		char* OutBuffer = (char *)outapp->pBuffer;
+		memset(outapp->pBuffer, 0, outapp->size);
+		VARSTRUCT_ENCODE_TYPE(uint32, OutBuffer, (uint32)EntityID);
+		VARSTRUCT_ENCODE_TYPE(uint16, OutBuffer, 1);
+		VARSTRUCT_ENCODE_TYPE(uint32, OutBuffer, 0); //unknown, just setting it.
+		int count = EntryCount;
+		VARSTRUCT_ENCODE_TYPE(uint32, OutBuffer, count); //unknown, just setting it.
+		
+		for (int i = 0; i < EntryCount; ++i, ++emu2) {
+			VARSTRUCT_ENCODE_TYPE(uint32, OutBuffer, emu2->SellerID);
+			char SerialNumber[17];
+			snprintf(SerialNumber, sizeof(SerialNumber), "%016d", emu2->SerialNumber);
+			VARSTRUCT_ENCODE_STRING(OutBuffer, SerialNumber);
+			VARSTRUCT_ENCODE_TYPE(uint32, OutBuffer, emu2->Cost);
+			VARSTRUCT_ENCODE_TYPE(uint32, OutBuffer, emu2->StackSize);
+			VARSTRUCT_ENCODE_TYPE(uint32, OutBuffer, 0);
+			VARSTRUCT_ENCODE_TYPE(uint32, OutBuffer, emu2->ItemIcon);
+			VARSTRUCT_ENCODE_STRING(OutBuffer, emu2->ItemName);
+			VARSTRUCT_ENCODE_TYPE(uint32, OutBuffer, (uint32)emu2->ItemStat);
+		}
+
+		dest->FastQueuePacket(&outapp, ack_req);
+		delete in;
 	}
 
 	ENCODE(OP_BeginCast)
@@ -677,7 +678,7 @@ namespace RoF2
 		eq->unknown08 = -1;
 		OUT(type);
 		OUT(icon);
-		eq->unknown16 = 0;
+		eq->unknown16 = emu->unknown16;
 		OUT_str(object_name);
 
 		FINISH_ENCODE();
@@ -3538,12 +3539,10 @@ namespace RoF2
 			// Live actually has 200 items now, but 80 is the most our internal struct supports
 			for (uint32 i = 0; i < 200; i++)
 			{
-				eq->items[i].Unknown18 = 0;
-				if (i < 80) {
+				if (i < 100) {
 					snprintf(eq->items[i].SerialNumber, sizeof(eq->items[i].SerialNumber), "%016" PRId64, emu->SerialNumber[i]);
 					eq->ItemCost[i] = emu->ItemCost[i];
-				}
-				else {
+				} else {
 					snprintf(eq->items[i].SerialNumber, sizeof(eq->items[i].SerialNumber), "%016d", 0);
 					eq->ItemCost[i] = 0;
 				}
@@ -3558,7 +3557,7 @@ namespace RoF2
 
 			eq->Code = emu->Code;
 			//strncpy(eq->SerialNumber, "0000000000000000", sizeof(eq->SerialNumber));
-			//snprintf(eq->SerialNumber, sizeof(eq->SerialNumber), "%016d", 0);
+			//snprintf(eq->SerialNumber, 16, "%016d", 0);
 			eq->TraderID = emu->TraderID;
 			//eq->Stacksize = 0;
 			//eq->Price = 0;
@@ -3594,6 +3593,52 @@ namespace RoF2
 		OUT(AlreadySold);
 
 		FINISH_ENCODE();
+	}
+
+	ENCODE(OP_Bazaar)
+	{
+		EQApplicationPacket *in = *p;
+		*p = nullptr;
+
+		char *Buffer = (char *)in->pBuffer;
+
+		unsigned char *__emu_buffer = in->pBuffer;
+
+		TraderSubList_Struct *emu = (TraderSubList_Struct *)(__emu_buffer + 4);
+
+		int EntryCount = (in->size - 4) / sizeof(TraderSubList_Struct);
+
+		if (EntryCount == 0 || ((in->size - 4) % sizeof(TraderSubList_Struct)) != 0)
+		{
+			Log(Logs::General, Logs::Netcode, "[STRUCTS] Wrong size on outbound %s: Got %d, expected multiple of %d", opcodes->EmuToName(in->GetOpcode()), in->size, sizeof(BazaarSearchResults_Struct));
+			delete in;
+			return;
+		}
+
+		int PacketSize = sizeof(structs::TraderList_Struct) + (EntryCount * sizeof(structs::TraderSubList_Struct));
+
+		for (int i = 0; i < EntryCount; ++i, ++emu)
+		{
+			PacketSize += strlen(emu->VendorName) + 1;
+		}
+
+		auto outapp = new EQApplicationPacket(OP_Bazaar, PacketSize);
+		char* OutBuffer = (char *)outapp->pBuffer;
+
+		auto emu2 = (TraderSubList_Struct *)(__emu_buffer + 4);
+
+		VARSTRUCT_ENCODE_TYPE(uint32, OutBuffer, EntryCount);
+
+		for (int i = 0; i < EntryCount; ++i, ++emu2)
+		{
+			VARSTRUCT_ENCODE_TYPE(uint32, OutBuffer, emu2->ZoneID);
+			VARSTRUCT_ENCODE_TYPE(uint32, OutBuffer, emu2->TraderID);
+			VARSTRUCT_ENCODE_TYPE(uint32, OutBuffer, emu2->EntityID);
+			VARSTRUCT_ENCODE_STRING(OutBuffer, emu2->VendorName);
+		}
+
+		dest->FastQueuePacket(&outapp, ack_req);
+		delete in;
 	}
 
 	ENCODE(OP_TraderDelItem)
@@ -3634,8 +3679,7 @@ namespace RoF2
 			eq->Traders2 = emu->Traders;
 			eq->Items2 = emu->Items;
 
-			LogTrading("ENCODE(OP_TraderShop): BazaarWelcome_Struct Code [{}], Traders [{}], Items [{}]",
-				eq->Code, eq->Traders, eq->Items);
+			LogTrading("ENCODE(OP_TraderShop): BazaarWelcome_Struct Code [{}], Traders [{}], Items [{}]",eq->Code, eq->Traders, eq->Items);
 
 			FINISH_ENCODE();
 		}
@@ -3647,8 +3691,8 @@ namespace RoF2
 			OUT(Action);
 			OUT(TraderID);
 
-			//memcpy(eq->BuyerName, emu->BuyerName, sizeof(eq->BuyerName));
-			//memcpy(eq->SellerName, emu->SellerName, sizeof(eq->SellerName));
+			strn0cpy(eq->BuyerName, emu->BuyerName, sizeof(eq->BuyerName));
+			strn0cpy(eq->SellerName, emu->SellerName, sizeof(eq->SellerName));
 
 			memcpy(eq->ItemName, emu->ItemName, sizeof(eq->ItemName));
 			OUT(ItemID);
@@ -3657,13 +3701,20 @@ namespace RoF2
 			OUT(Quantity);
 			snprintf(eq->SerialNumber, sizeof(eq->SerialNumber), "%016d", emu->ItemID);
 
-			LogTrading("ENCODE(OP_TraderShop): Buy Action [{}], Price [{}], Trader [{}], ItemID [{}], Quantity [{}], ItemName, [{}]",
-				eq->Action, eq->Price, eq->TraderID, eq->ItemID, eq->Quantity, emu->ItemName);
+			// LogTrading("ENCODE(OP_TraderShop): Buy Action [{}], Price [{}], Trader [{}], ItemID [{}], Quantity [{}], ItemName, [{}]", eq->Action, eq->Price, eq->TraderID, eq->ItemID, eq->Quantity, emu->ItemName);
 
 			FINISH_ENCODE();
-		}
-		else
-		{
+		} else if (psize == sizeof(ClickTrader_Struct)) {
+			ENCODE_LENGTH_EXACT(ClickTrader_Struct);
+			SETUP_DIRECT_ENCODE(ClickTrader_Struct, structs::ClickTrader_Struct);
+			emu->Code = eq->Code;
+			// Live actually has 200 items now, but 80 is the most our internal struct supports
+			for (uint32 i = 0; i < 100; i++) {
+				emu->SerialNumber[i] = std::stoi(eq->items[i].SerialNumber);	// eq->SerialNumber[i];
+				emu->StackSize[i] = eq->items[i].StackSize;
+				emu->ItemCost[i] = eq->ItemCost[i];
+			}
+		} else {
 			LogTrading("ENCODE(OP_TraderShop): Encode Size Unknown ([{}])", psize);
 		}
 	}
@@ -5227,17 +5278,15 @@ namespace RoF2
 			SETUP_DIRECT_DECODE(ClickTrader_Struct, structs::ClickTrader_Struct);
 
 			emu->Code = eq->Code;
-			// Live actually has 200 items now, but 80 is the most our internal struct supports
-			for (uint32 i = 0; i < 80; i++)
-			{
-				emu->SerialNumber[i] = 0;	// eq->SerialNumber[i];
+			// Live actually has 200 items now, but 100 is the most our internal struct supports
+			for (uint32 i = 0; i < 100; i++) {
+				emu->SerialNumber[i] = std::stoi(eq->items[i].SerialNumber);	// eq->SerialNumber[i];
+				emu->StackSize[i] = eq->items[i].StackSize;
 				emu->ItemCost[i] = eq->ItemCost[i];
 			}
 
 			FINISH_DIRECT_DECODE();
-		}
-		else if (psize == sizeof(structs::Trader_ShowItems_Struct))
-		{
+		} else if (psize == sizeof(structs::Trader_ShowItems_Struct)) {
 			DECODE_LENGTH_EXACT(structs::Trader_ShowItems_Struct);
 			SETUP_DIRECT_DECODE(Trader_ShowItems_Struct, structs::Trader_ShowItems_Struct);
 
@@ -5245,14 +5294,19 @@ namespace RoF2
 			emu->TraderID = eq->TraderID;
 
 			FINISH_DIRECT_DECODE();
-		}
-		else if (psize == sizeof(structs::TraderStatus_Struct))
-		{
+		} else if (psize == sizeof(structs::TraderStatus_Struct)) {
 			DECODE_LENGTH_EXACT(structs::TraderStatus_Struct);
 			SETUP_DIRECT_DECODE(TraderStatus_Struct, structs::TraderStatus_Struct);
 
 			emu->Code = eq->Code;	// 11 = Start Trader, 2 = End Trader, 22 = ? - Guessing
 
+			FINISH_DIRECT_DECODE();
+		} else if (psize == sizeof(structs::TraderUpdate_Struct)) {
+			DECODE_LENGTH_EXACT(structs::TraderUpdate_Struct);
+			SETUP_DIRECT_DECODE(TraderPriceUpdate_Struct, structs::TraderUpdate_Struct);
+			emu->Action = eq->Code;
+			emu->SerialNumber = std::stoi(eq->SerialNumber);	// 11 = Start Trader, 2 = End Trader, 22 = ? - Guessing
+			emu->NewPrice = eq->Price;
 			FINISH_DIRECT_DECODE();
 		}
 	}
@@ -5297,8 +5351,7 @@ namespace RoF2
 			emu->Beginning.Action = eq->Code;
 			IN(Traders);
 			IN(Items);
-			LogTrading("DECODE(OP_TraderShop): BazaarWelcome_Struct Code [{}], Traders [{}], Items [{}]",
-				eq->Code, eq->Traders, eq->Items);
+			// LogTrading("DECODE(OP_TraderShop): BazaarWelcome_Struct Code [{}], Traders [{}], Items [{}]", eq->Code, eq->Traders, eq->Items);
 
 			FINISH_DIRECT_DECODE();
 		}
@@ -5311,23 +5364,48 @@ namespace RoF2
 			IN(Action);
 			IN(Price);
 			IN(TraderID);
+			emu->SerialNumber = std::stoi(eq->SerialNumber);	// 11 = Start Trader, 2 = End Trader, 22 = ? - Guessing
 			memcpy(emu->ItemName, eq->ItemName, sizeof(emu->ItemName));
 			IN(ItemID);
 			IN(Quantity);
-			LogTrading("DECODE(OP_TraderShop): TraderBuy_Struct (Unknowns) Unknown004 [{}], Unknown008 [{}], Unknown012 [{}], Unknown076 [{}], Unknown276 [{}]",
-				eq->Unknown004, eq->Unknown008, eq->Unknown012, eq->Unknown076, eq->Unknown276);
-			LogTrading("DECODE(OP_TraderShop): TraderBuy_Struct Buy Action [{}], Price [{}], Trader [{}], ItemID [{}], Quantity [{}], ItemName, [{}]",
-				eq->Action, eq->Price, eq->TraderID, eq->ItemID, eq->Quantity, eq->ItemName);
+			// LogTrading("DECODE(OP_TraderShop): TraderBuy_Struct (Unknowns) Unknown004 [{}], Unknown008 [{}], Unknown012 [{}], Unknown076 [{}], Unknown276 [{}]", eq->Unknown004, eq->Unknown008, eq->Unknown012, eq->Unknown076, eq->Unknown276);
+			// LogTrading("DECODE(OP_TraderShop): TraderBuy_Struct Buy Action [{}], Price [{}], Trader [{}], ItemID [{}], Quantity [{}], ItemName, [{}]",  eq->Action, eq->Price, eq->TraderID, eq->ItemID, eq->Quantity, eq->ItemName);
 
 			FINISH_DIRECT_DECODE();
 		}
-		else if (psize == 4)
+		//4 + 1 + 1 + 2 + 4 + 4 + 4 + 4 + 4 + 4 + 64 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4
+		else if (psize == sizeof(structs::BazaarSearch_Struct))
 		{
-			LogTrading("DECODE(OP_TraderShop): Forwarding packet as-is with size 4");
+			DECODE_LENGTH_EXACT(structs::BazaarSearch_Struct);
+			SETUP_DIRECT_DECODE(BazaarSearch_Struct, structs::BazaarSearch_Struct);
+
+			IN(Beginning.Action);
+			IN(Beginning.Unknown001);
+			IN(Beginning.Unknown002);
+			IN(TraderID);
+			IN(Class_);
+			IN(Race);
+			IN(ItemStat);
+			IN(Slot);
+			IN(Type);
+			memcpy(emu->Name, eq->Name, sizeof(emu->Name));
+			IN(MinPrice)
+			IN(MaxPrice)
+			IN(MinLevel);
+			IN(MaxLevel);
+			//IN(MaxResults);
+			//IN(Unknown001);
+			//IN(Unknown002);
+
+			FINISH_DIRECT_DECODE();
+		}
+		else if (psize == 4 || psize == 40)
+		{
+			// LogTrading("DECODE(OP_TraderShop): Forwarding packet as-is with size 4");
 		}
 		else
 		{
-			LogTrading("DECODE(OP_TraderShop): Decode Size Unknown ([{}])", psize);
+			// LogTrading("DECODE(OP_TraderShop): Decode Size Unknown ([{}])", psize);
 		}
 	}
 
@@ -5431,7 +5509,7 @@ namespace RoF2
 
 		//sprintf(hdr.unknown000, "06e0002Y1W00");
 
-		snprintf(hdr.unknown000, sizeof(hdr.unknown000), "%016d", item->ID);
+		snprintf(hdr.unknown000, sizeof(hdr.unknown000), "%016d", inst->GetSerialNumber());
 
 		hdr.stacksize = (inst->IsStackable() ? ((inst->GetCharges() > 1000) ? 0xFFFFFFFF : inst->GetCharges()) : 1);
 		hdr.unknown004 = 0;
@@ -5455,6 +5533,7 @@ namespace RoF2
 		hdr.scaled_value = (inst->IsScaling() ? (inst->GetExp() / 100) : 0);
 		hdr.instance_id = (inst->GetMerchantSlot() ? inst->GetMerchantSlot() : inst->GetSerialNumber());
 		hdr.unknown028 = 0;
+		hdr.unknown004 = 0;
 		hdr.last_cast_time = inst->GetRecastTimestamp();
 		hdr.charges = (inst->IsStackable() ? (item->MaxCharges ? 1 : 0) : ((inst->GetCharges() > 254) ? 0xFFFFFFFF : inst->GetCharges()));
 		hdr.inst_nodrop = (inst->IsAttuned() ? 1 : 0);

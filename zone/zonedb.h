@@ -207,10 +207,10 @@ struct ZoneSpellsBlocked {
 };
 
 struct TraderCharges_Struct {
-	uint32 ItemID[80];
-	int32 SerialNumber[80];
-	uint32 ItemCost[80];
-	int32 Charges[80];
+	uint32 ItemID[100];
+	uint32 SerialNumber[100];
+	uint32 ItemCost[100];
+	int32 Charges[100];
 };
 
 const int MaxMercStanceID = 9;
@@ -388,11 +388,12 @@ public:
 	/* Traders  */
 	void	SaveTraderItem(uint32 char_id,uint32 itemid,uint32 uniqueid, int32 charges,uint32 itemcost,uint8 slot);
 	void	UpdateTraderItemCharges(int char_id, uint32 ItemInstID, int32 charges);
-	void	UpdateTraderItemPrice(int CharID, uint32 ItemID, uint32 Charges, uint32 NewPrice);
+	void	UpdateTraderItemPrice(int CharID, uint32 SerialNumber, uint32 ItemID, uint32 Charges, uint32 NewPrice);
 	void	DeleteTraderItem(uint32 char_id);
 	void	DeleteTraderItem(uint32 char_id,uint16 slot_id);
 
 	EQ::ItemInstance* LoadSingleTraderItem(uint32 char_id, int uniqueid);
+	uint32 GetCharIDByItemSerial(int uniqueid);
 	Trader_Struct* LoadTraderItem(uint32 char_id);
 	TraderCharges_Struct* LoadTraderItemWithCharges(uint32 char_id);
 

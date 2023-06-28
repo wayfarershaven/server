@@ -2419,8 +2419,8 @@ struct BazaarSearch_Struct {
 	char	Name[64];
 	int32	MinPrice;
 	int32	MaxPrice;
-	int32	Minlevel;
-	int32	MaxLlevel;
+	int32	MinLevel;
+	int32	MaxLevel;
 };
 struct BazaarInspect_Struct{
 	int32 ItemID;
