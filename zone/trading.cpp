@@ -2049,25 +2049,62 @@ void Client::UpdateTraderCustomerPriceChanged(uint32 TraderID, uint16 CustomerID
 		// If the new price is 0, remove the item(s) from the window.
 		auto outapp = new EQApplicationPacket(OP_TraderDelItem, sizeof(TraderDelItem_Struct));
 		TraderDelItem_Struct* tdis = (TraderDelItem_Struct*)outapp->pBuffer;
+
 		tdis->Unknown000 = 0;
 		tdis->TraderID = Customer->GetID();
 		tdis->Unknown012 = 0;
 		Customer->Message(Chat::Red, "The Trader has withdrawn the %s from sale.", item->Name);
-		tdis->ItemID = SerialNumber;
-		LogTrading("Telling customer to remove item [{}] with [{}] charges and S/N [{}]",
-			ItemID, Charges, SerialNumber);
-		Customer->QueuePacket(outapp);
+
+		for (int i = 0; i < 80; i++) {
+			if (gis->ItemID[i] == ItemID) {
+				if (Customer->ClientVersion() >= EQ::versions::ClientVersion::RoF) {
+					// RoF+ use Item IDs for now
+					tdis->ItemID = gis->ItemID[i];
+				} else {
+					tdis->ItemID = gis->SerialNumber[i];
+				}
+				tdis->ItemID = gis->SerialNumber[i];
+				LogTrading("Telling customer to remove item [{}] with [{}] charges and S/N [{}]", ItemID, Charges, gis->SerialNumber[i]);
+				Customer->QueuePacket(outapp);
+			}
+		}
+
 		safe_delete(outapp);
 		return;
 	}
 
 	LogTrading("Sending price updates to customer [{}]", Customer->GetName());
-	EQ::ItemInstance *inst = FindTraderItemBySerialNumber(SerialNumber);
+	EQ::ItemInstance* inst = database.CreateItem(item);
+
+	if (!inst) { 
+		return;
+	}
+
+	if(Charges > 0) {
+		inst->SetCharges(Charges);
+	}
+
+	inst->SetPrice(NewPrice);
+
+	if(inst->IsStackable()) {
+		inst->SetMerchantCount(Charges);
+	}
 
 	// Let the customer know the price in the window has suddenly just changed on them.
-	//Customer->Message(13, "The Trader has changed the price of %s.", item.Name);
+	Customer->Message(Chat::Red, "The Trader has changed the price of %s.", item->Name);
 
-	Customer->SendItemPacket(EQ::invslot::slotCursor, inst, ItemPacketMerchant); // MainCursor??
+	for(int i = 0; i < 80; i++) {
+		if((gis->ItemID[i] != ItemID) || ((!item->Stackable) && (gis->Charges[i] != Charges))) {
+			continue;
+		}
+
+		inst->SetSerialNumber(gis->SerialNumber[i]);
+		inst->SetMerchantSlot(gis->SerialNumber[i]);
+		LogTrading("Sending price update for [{}], Serial No. [{}] with [{}] charges", item->Name, gis->SerialNumber[i], gis->Charges[i]);
+
+		Customer->SendItemPacket(EQ::invslot::slotCursor, inst, ItemPacketMerchant); // MainCursor??
+	}
+	safe_delete(inst);
 }
 
 void Client::HandleTraderPriceUpdate(const EQApplicationPacket *app) {
@@ -2085,7 +2122,7 @@ void Client::HandleTraderPriceUpdate(const EQApplicationPacket *app) {
 	//
 	TraderCharges_Struct* gis = database.LoadTraderItemWithCharges(CharacterID());
 
-	if (!gis) {
+	if(!gis) {
 		LogDebug("[CLIENT] Error retrieving Trader items details to update price");
 		return;
 	}
@@ -2097,89 +2134,109 @@ void Client::HandleTraderPriceUpdate(const EQApplicationPacket *app) {
 	//
 	uint32 IDOfItemToUpdate = 0;
 	uint32 SerialOfItem = 0;
+
 	int32 ChargesOnItemToUpdate = 0;
+
 	uint32 OldPrice = 0;
 	uint32 SlotOfItem = 0;
 
-	for (int i = 0; i < 100; i++) {
-		if ((gis->SerialNumber[i] == tpus->SerialNumber)) {
+	for(int i = 0; i < 100; i++) {
+
+		if((gis->SerialNumber[i] == tpus->SerialNumber)) {
 			// We found the item that the Trader wants to change the price of (or add back up for sale).
+			//
 			LogTrading("ItemID is [{}], Charges is [{}]", gis->ItemID[i], gis->Charges[i]);
+
 			IDOfItemToUpdate = gis->ItemID[i];
+
 			ChargesOnItemToUpdate = gis->Charges[i];
+
 			SerialOfItem = gis->SerialNumber[i];
 			SlotOfItem = i;
+
 			OldPrice = gis->ItemCost[i];
+
 			break;
 		}
 	}
 
-	if (IDOfItemToUpdate == 0) {
+	if(IDOfItemToUpdate == 0) {
 		// If the item is not currently in the trader table for this Trader, then they must have removed it from sale while
 		// still in Trader mode. Check if the item is in their Trader Satchels, and if so, put it back up.
 		// Now put all Items with a matching ItemID up for trade.
+
 		auto inst = FindTraderItemBySerialNumber(tpus->SerialNumber);
 
-		if (!inst) {
+		if (!inst)
+		{
 			// Acknowledge to the client.
 			tpus->SubAction = BazaarPriceChange_UpdatePrice;
 			QueuePacket(app);
-			return ;
+			return;
 		}
 
 		bool bAdded = false;
 		int i = 0;
 		for (int i = 0; i < 100; i++) {
-			if (gis->ItemID[i] != 0) {
-				if (gis->ItemID[i] == inst->GetID()) {
+			if (gis->ItemID[i] != 0)
+			{
+				if (gis->ItemID[i] == inst->GetID())
+				{
 					auto alsoInst = FindTraderItemBySerialNumber(gis->SerialNumber[i]);
-					if (alsoInst && tpus->NewPrice > 0) {
+					if (alsoInst && tpus->NewPrice > 0)
+					{
 						if (alsoInst->IsStackable()) {
-							if (alsoInst->IsStackable()) {
+							if (alsoInst->IsStackable())
+							{
 								alsoInst->SetMerchantCount(alsoInst->GetCharges());
-							} else {
+							}
+							else
+							{ 
 								alsoInst->SetMerchantCount(1);
 							}
 							alsoInst->SetMerchantSlot(i);
 						}
 						alsoInst->SetPrice(tpus->NewPrice);
-						database.UpdateTraderItemPrice(CharacterID(), alsoInst->GetID(), alsoInst->GetSerialNumber(),
-													   alsoInst->GetMerchantCount(), tpus->NewPrice);
-						for (auto cust : CustomerID) {
-							UpdateTraderCustomerPriceChanged(CharacterID(), cust, gis, alsoInst->GetID(),
-															 alsoInst->GetCharges(), tpus->NewPrice,
-															 alsoInst->GetSerialNumber());
+						database.UpdateTraderItemPrice(CharacterID(), alsoInst->GetID(), alsoInst->GetSerialNumber(), alsoInst->GetMerchantCount(), tpus->NewPrice);
+						for (auto cust : CustomerID)
+						{
+							UpdateTraderCustomerPriceChanged(CharacterID(), cust, gis, alsoInst->GetID(), alsoInst->GetCharges(), tpus->NewPrice, alsoInst->GetSerialNumber());
 						}
 					}
 				}
 				continue;
 			}
-
 			if (tpus->NewPrice > 0 && bAdded == false && inst->GetSerialNumber() == tpus->SerialNumber) {
-				if (inst->IsStackable()) {
-					inst->SetMerchantCount(inst->GetCharges());
-				} else {
-					inst->SetMerchantCount(1);
-				}
-				inst->SetMerchantSlot(i);
+					if (inst->IsStackable())
+					{
+						inst->SetMerchantCount(inst->GetCharges());
+					}
+					else
+					{
+						inst->SetMerchantCount(1);
+					}
+					inst->SetMerchantSlot(i);
 				database.SaveTraderItem(CharacterID(), inst->GetID(), inst->GetSerialNumber(), inst->GetMerchantCount(),
-							tpus->NewPrice, i);
-				
-				for (auto cust : CustomerID) {
-					UpdateTraderCustomerPriceChanged(GetID(), cust, gis, inst->GetID(), inst->GetCharges(),
-													 tpus->NewPrice, inst->GetSerialNumber());
+					tpus->NewPrice, i, inst->GetAugmentItemID(0), inst->GetAugmentItemID(1), inst->GetAugmentItemID(2), inst->GetAugmentItemID(3), inst->GetAugmentItemID(4), inst->GetAugmentItemID(5));
+				for (auto cust : CustomerID)
+				{
+					UpdateTraderCustomerPriceChanged(GetID(), cust, gis, inst->GetID(), inst->GetCharges(), tpus->NewPrice, inst->GetSerialNumber());
 				}
 				bAdded = true;
 			}
 		}
+
 		safe_delete(gis);
+
 		// Acknowledge to the client.
-		if (bAdded) {
+		if (bAdded)
+		{
 			tpus->SubAction = BazaarPriceChange_AddItem;
-		} else {
+		}
+		else
+		{
 			tpus->SubAction = BazaarPriceChange_UpdatePrice;
 		}
-
 		QueuePacket(app);
 
 		return;
@@ -2195,8 +2252,9 @@ void Client::HandleTraderPriceUpdate(const EQApplicationPacket *app) {
 
 	auto inst = FindTraderItemBySerialNumber(SerialOfItem);
 
-	if (!inst) {
-		Message(Chat::Red, "An item for sale went missing! Likely, it was shuffled around. Ending trader mode.");
+	if (!inst)
+	{
+		Message(13, "An item for sale went missing! Likely, it was shuffled around. Ending trader mode.");
 		Trader_EndTrader();
 		return;
 	}
@@ -2204,57 +2262,64 @@ void Client::HandleTraderPriceUpdate(const EQApplicationPacket *app) {
 	bool bAdded = false;
 
 	for (int i = 0; i < 100; i++) {
-		if (gis->ItemID[i] != 0) {
-			if (gis->ItemID[i] == inst->GetID()) {
+		if (gis->ItemID[i] != 0)
+		{
+			if (gis->ItemID[i] == inst->GetID())
+			{
 				auto alsoInst = FindTraderItemBySerialNumber(gis->SerialNumber[i]);
-				if (alsoInst && tpus->NewPrice > 0) {
-					if (alsoInst->IsStackable()) {
+				if (alsoInst && tpus->NewPrice > 0)
+				{
+					if (alsoInst->IsStackable())
+					{
 						alsoInst->SetMerchantCount(alsoInst->GetCharges());
-					} else {
+					}
+					else
+					{
 						alsoInst->SetMerchantCount(1);
 					}
 					alsoInst->SetMerchantSlot(i);
 					alsoInst->SetPrice(tpus->NewPrice);
-					database.UpdateTraderItemPrice(CharacterID(), alsoInst->GetID(), alsoInst->GetSerialNumber(),
-												   alsoInst->GetMerchantCount(), tpus->NewPrice);
-					for (auto cust : CustomerID) {
-						UpdateTraderCustomerPriceChanged(CharacterID(), cust, gis, alsoInst->GetID(),
-														 alsoInst->GetCharges(), tpus->NewPrice,
-														 alsoInst->GetSerialNumber());
+					database.UpdateTraderItemPrice(CharacterID(), alsoInst->GetID(), alsoInst->GetSerialNumber(), alsoInst->GetMerchantCount(), tpus->NewPrice);
+					for (auto cust : CustomerID)
+					{
+						UpdateTraderCustomerPriceChanged(CharacterID(), cust, gis, alsoInst->GetID(), alsoInst->GetCharges(), tpus->NewPrice, alsoInst->GetSerialNumber());
 					}
 				}
 			}
 			continue;
 		}
-
 		if (!bAdded && tpus->NewPrice > 0 && inst->GetSerialNumber() == tpus->SerialNumber) {
 			inst->SetPrice(tpus->NewPrice);
-			if (inst->IsStackable()) {
+			if (inst->IsStackable())
+			{
 				inst->SetMerchantCount(inst->GetCharges());
-			} else {
+			}
+			else
+			{
 				inst->SetMerchantCount(1);
 			}
 			inst->SetMerchantSlot(i);
 			database.SaveTraderItem(CharacterID(), inst->GetID(), inst->GetSerialNumber(), inst->GetMerchantCount(),
-									tpus->NewPrice, i);
+				tpus->NewPrice, i, inst->GetAugmentItemID(0), inst->GetAugmentItemID(1), inst->GetAugmentItemID(2), inst->GetAugmentItemID(3), inst->GetAugmentItemID(4), inst->GetAugmentItemID(5));
 			// If a customer is browsing our goods, send them the updated prices / remove the items from the Merchant window
-			for (auto cust : CustomerID) {
-				UpdateTraderCustomerPriceChanged(CharacterID(), cust, gis, inst->GetID(), inst->GetCharges(),
-												 tpus->NewPrice, inst->GetSerialNumber());
+			for (auto cust : CustomerID)
+			{
+				UpdateTraderCustomerPriceChanged(CharacterID(), cust, gis, inst->GetID(), inst->GetCharges(), tpus->NewPrice, inst->GetSerialNumber());
 			}
 			bAdded = true;
 		}
 	}
-
-	if (bAdded) {
+	if (bAdded)
 		tpus->SubAction = BazaarPriceChange_AddItem;
-	} else if(tpus->NewPrice != 0) {
+	else if (tpus->NewPrice != 0)
 		tpus->SubAction = BazaarPriceChange_UpdatePrice;
-	} else {
+	else
 		tpus->SubAction = BazaarPriceChange_RemoveItem;
-	}
+
 	QueuePacket(app);
+
 	safe_delete(gis);
+
 }
 
 void Client::SendBuyerResults(char* searchString, uint32 searchID) {
