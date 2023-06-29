@@ -982,22 +982,34 @@ void Client::BulkSendMerchantInventory(int merchant_id, int npcid) {
 
 uint8 Client::WithCustomer(uint16 NewCustomer, uint8 clear) {
 	if (NewCustomer == 0) { // just assume we do nothing in this case, bugged client
+		CustomerID = 0;
 		return 1;
 	}
 
+	if(CustomerID == 0) {
+		CustomerID = NewCustomer;
+	}
+
+	Client* c = entity_list.GetClientByID(CustomerID);
+
+	if(!c) {
+		LogTrading("Previous customer has gone away");
+		CustomerID = NewCustomer;
+	}
+
 	if (clear) {
-		auto eraseIt = std::find(CustomerID.begin(), CustomerID.end(), NewCustomer);
-		if (eraseIt != CustomerID.end()) { //already added
+		auto eraseIt = std::find(CustomerList.begin(), CustomerList.end(), NewCustomer);
+		if (eraseIt != CustomerList.end()) { //already added
 			return 1;
 		}
-		CustomerID.push_front(NewCustomer);
+		CustomerList.push_front(NewCustomer);
 		return 1;
 	} else {
-		auto eraseIt = std::find(CustomerID.begin(), CustomerID.end(), NewCustomer);
-		if (eraseIt == CustomerID.end()) { //already removed
+		auto eraseIt = std::find(CustomerList.begin(), CustomerList.end(), NewCustomer);
+		if (eraseIt == CustomerList.end()) { //already removed
 			return 1;
 		}
-		CustomerID.erase(eraseIt);
+		CustomerList.erase(eraseIt);
 		return 1;
 	}
 }

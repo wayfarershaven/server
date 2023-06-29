@@ -953,34 +953,19 @@ void Client::Trader_CustomerBrowsing(Client *Customer) {
 
 
 void Client::Trader_StartTrader() {
-
 	Trader=true;
-
 	auto outapp = new EQApplicationPacket(OP_Trader, sizeof(Trader_ShowItems_Struct));
-
 	Trader_ShowItems_Struct* sis = (Trader_ShowItems_Struct*)outapp->pBuffer;
-
 	sis->Code = BazaarTrader_StartTraderMode;
-
 	sis->TraderID = GetID();
-
 	QueuePacket(outapp);
-
-
 	safe_delete(outapp);
-
 	// Notify other clients we are now in trader mode
-
 	outapp= new EQApplicationPacket(OP_BecomeTrader, sizeof(BecomeTrader_Struct));
-
 	BecomeTrader_Struct* bts = (BecomeTrader_Struct*)outapp->pBuffer;
-
 	bts->Code = 1;
-
 	bts->ID = GetID();
-
 	strn0cpy(bts->Name, GetName(), sizeof(bts->Name));
-
 	entity_list.QueueClients(this, outapp, false);
 	std::list<Client*> client_list;
 	entity_list.GetClientList(client_list);
@@ -996,11 +981,11 @@ void Client::Trader_EndTrader() {
 
 	// If someone is looking at our wares, remove all the items from the window.
 	//
-	for (auto cust : CustomerID) {
+	for (auto cust : CustomerList) {
 		Client* Customer = entity_list.GetClientByID(cust);
 		GetItems_Struct* gis=GetTraderItems();
 
-		if (Customer && gis) {
+		if(Customer && gis) {
 			auto outapp = new EQApplicationPacket(OP_TraderDelItem, sizeof(TraderDelItem_Struct));
 			TraderDelItem_Struct* tdis = (TraderDelItem_Struct*)outapp->pBuffer;
 
@@ -1010,8 +995,8 @@ void Client::Trader_EndTrader() {
 			Customer->Message(Chat::Red, "The Trader is no longer open for business");
 
 			for (int i = 0; i < 100; i++) {
-				if (gis->Items[i] != 0) {
-					tdis->ItemID = gis->SerialNumber[i];
+				if(gis->Items[i] != 0) {
+						tdis->ItemID = gis->SerialNumber[i];
 					Customer->QueuePacket(outapp);
 				}
 			}
@@ -1040,7 +1025,7 @@ void Client::Trader_EndTrader() {
 	sis->TraderID = BazaarTrader_EndTraderMode;
 	QueuePacket(outapp);
 	safe_delete(outapp);
-	CustomerID.clear();
+	CustomerList.clear();
 	Trader = false;
 }
 
@@ -1074,17 +1059,12 @@ void Client::SendSingleTraderItem(uint32 CharID, int SerialNumber) {
 
 	EQ::ItemInstance* inst= database.LoadSingleTraderItem(CharID, SerialNumber);
 	if(inst) {
-		for (auto cust : CustomerID)
+		for (auto cust : CustomerList)
 		{
 			Client* CustomerToTell = entity_list.GetClientByID(cust);
 			if (CustomerToTell && inst) {
 				SendItemPacket(EQ::invslot::slotCursor, inst, ItemPacketMerchant); // MainCursor?
 			}
-			//Client* CustomerToSkip = entity_list.GetClientByID(CharID);
-			//if (CustomerToTell && CustomerToSkip != CustomerToTell)
-			//{
-			//	//Customer->Message(13, "The Trader has sold the %s.", inst->GetItem()->Name);
-			//}
 		}
 	}
 }
@@ -1176,15 +1156,15 @@ GetItems_Struct* Client::GetTraderItems(){
 		if (ndx >= 100) {
 			break;
 		}
-
 		item = GetInv().GetItem(i);
-		if (item && item->GetItem()->BagType == EQ::item::BagTypeTradersSatchel) {
+		if (item && item->GetItem()->BagType == EQ::item::BagTypeTradersSatchel){
 			for (int x = EQ::invbag::SLOT_BEGIN; x <= EQ::invbag::SLOT_END; x++) {
 				if (ndx >= 100) {
 					break;
 				}
 
 				SlotID = EQ::InventoryProfile::CalcSlotId(i, x);
+
 				item = GetInv().GetItem(SlotID);
 
 				if(item){
@@ -1237,7 +1217,7 @@ void Client::NukeTraderItem(uint16 Slot,int16 Charges,uint16 Quantity,Client* Cu
 		Customer->SendSingleTraderItem(Customer->GetID(), SerialNumber);
 		m_inv.DeleteItem(Slot, Quantity);
 	} else {
-		for (auto cust : CustomerID) {
+		for (auto cust : CustomerList) {
 			// If the new price is 0, remove the item(s) from the window.
 			auto outapp = new EQApplicationPacket(OP_TraderDelItem, sizeof(TraderDelItem_Struct));
 			TraderDelItem_Struct* tdis = (TraderDelItem_Struct*)outapp->pBuffer;
@@ -1429,7 +1409,6 @@ void Client::BuyTraderItem(TraderBuy_Struct* tbs, Client* Trader, const EQApplic
 	}
 
 	outtbs->ItemID = BuyItem->GetID();
-
 	LogTrading("Buyitem: Name: [{}], IsStackable: [{}], Requested Quantity: [{}], Charges on Item [{}]",
 					BuyItem->GetItem()->Name, BuyItem->IsStackable(), tbs->Quantity, BuyItem->GetCharges());
 	// If the item is not stackable, then we can only be buying one of them.
@@ -1984,11 +1963,12 @@ void Client::SendBazaarResults(uint32 TraderID, uint32 Class_, uint32 Race, uint
 	SendBazaarTraders();
 }
 
-static void UpdateTraderCustomerItemsAdded(uint32 CustomerID, TraderCharges_Struct* gis, uint32 ItemID, uint32 SerialNumber) {
+static void UpdateTraderCustomerItemsAdded(uint32 Customer_ID, TraderCharges_Struct* gis, uint32 ItemID, uint32 SerialNumber) {
+
 	// Send Item packets to the customer to update the Merchant window with the
 	// new items for sale, and give them a message in their chat window.
 
-	Client* Customer = entity_list.GetClientByID(CustomerID);
+	Client* Customer = entity_list.GetClientByID(Customer_ID);
 	
 	if (!Customer) { 
 		return;
@@ -2008,7 +1988,7 @@ static void UpdateTraderCustomerItemsAdded(uint32 CustomerID, TraderCharges_Stru
 
 	Customer->Message(Chat::Red, "The Trader has put up %s for sale.", item->Name);
 
-	for (int i = 0; i < 100; i++) {
+	for(int i = 0; i < 100; i++) {
 		if (gis->SerialNumber[i] == ItemID) {
 			inst->SetCharges(gis->Charges[i]);
 			inst->SetPrice(gis->ItemCost[i]);
@@ -2018,7 +1998,7 @@ static void UpdateTraderCustomerItemsAdded(uint32 CustomerID, TraderCharges_Stru
 			if(inst->IsStackable()) {
 				inst->SetMerchantCount(gis->Charges[i]);
 			}
-			
+
 			LogTrading("Sending price update for [{}], Serial No. [{}] with [{}] charges",
 							item->Name, gis->SerialNumber[i], gis->Charges[i]);
 
@@ -2029,11 +2009,11 @@ static void UpdateTraderCustomerItemsAdded(uint32 CustomerID, TraderCharges_Stru
 	safe_delete(inst);
 }
 
-void Client::UpdateTraderCustomerPriceChanged(uint32 TraderID, uint16 CustomerID, TraderCharges_Struct* gis, uint32 ItemID, int32 Charges, uint32 NewPrice, uint32 SerialNumber) {
+void Client::UpdateTraderCustomerPriceChanged(uint32 TraderID, uint16 Customer_ID, TraderCharges_Struct* gis, uint32 ItemID, int32 Charges, uint32 NewPrice, uint32 SerialNumber) {
 	// Send ItemPackets to update the customer's Merchant window with the new price (or remove the item if
 	// the new price is 0) and inform them with a chat message.
 
-	Client* Customer = entity_list.GetClientByID(CustomerID);
+	Client* Customer = entity_list.GetClientByID(Customer_ID);
 
 	if (!Customer) { 
 		return;
@@ -2045,7 +2025,7 @@ void Client::UpdateTraderCustomerPriceChanged(uint32 TraderID, uint16 CustomerID
 		return;
 	}
 
-	if (NewPrice == 0) {
+	if(NewPrice == 0) {
 		// If the new price is 0, remove the item(s) from the window.
 		auto outapp = new EQApplicationPacket(OP_TraderDelItem, sizeof(TraderDelItem_Struct));
 		TraderDelItem_Struct* tdis = (TraderDelItem_Struct*)outapp->pBuffer;
@@ -2053,21 +2033,57 @@ void Client::UpdateTraderCustomerPriceChanged(uint32 TraderID, uint16 CustomerID
 		tdis->TraderID = Customer->GetID();
 		tdis->Unknown012 = 0;
 		Customer->Message(Chat::Red, "The Trader has withdrawn the %s from sale.", item->Name);
-		tdis->ItemID = SerialNumber;
-		LogTrading("Telling customer to remove item [{}] with [{}] charges and S/N [{}]",
-			ItemID, Charges, SerialNumber);
-		Customer->QueuePacket(outapp);
+
+		for (int i = 0; i < 100; i++) {
+			if (gis->ItemID[i] == ItemID) {
+				if (Customer->ClientVersion() >= EQ::versions::ClientVersion::RoF) {
+					// RoF+ use Item IDs for now
+					tdis->ItemID = gis->ItemID[i];
+				} else {
+					tdis->ItemID = gis->SerialNumber[i];
+				}
+				tdis->ItemID = gis->SerialNumber[i];
+				LogTrading("Telling customer to remove item [{}] with [{}] charges and S/N [{}]", ItemID, Charges, gis->SerialNumber[i]);
+				Customer->QueuePacket(outapp);
+			}
+		}
+
 		safe_delete(outapp);
 		return;
 	}
 
 	LogTrading("Sending price updates to customer [{}]", Customer->GetName());
-	EQ::ItemInstance *inst = FindTraderItemBySerialNumber(SerialNumber);
 
+	EQ::ItemInstance* inst = database.CreateItem(item);
+
+	if(!inst) { 
+		return;
+	}
+
+	if(Charges > 0) {
+		inst->SetCharges(Charges);
+	}
+	
+	inst->SetPrice(NewPrice);
+
+	if(inst->IsStackable()) {
+		inst->SetMerchantCount(Charges);
+	}
+	
 	// Let the customer know the price in the window has suddenly just changed on them.
-	//Customer->Message(13, "The Trader has changed the price of %s.", item.Name);
+	Customer->Message(Chat::Red, "The Trader has changed the price of %s.", item->Name);
 
-	Customer->SendItemPacket(EQ::invslot::slotCursor, inst, ItemPacketMerchant); // MainCursor??
+	for(int i = 0; i < 100; i++) {
+		if((gis->ItemID[i] != ItemID) || ((!item->Stackable) && (gis->Charges[i] != Charges))) {
+			continue;
+		}
+
+		inst->SetSerialNumber(gis->SerialNumber[i]);
+		inst->SetMerchantSlot(gis->SerialNumber[i]);
+		LogTrading("Sending price update for [{}], Serial No. [{}] with [{}] charges", item->Name, gis->SerialNumber[i], gis->Charges[i]);
+		Customer->SendItemPacket(EQ::invslot::slotCursor, inst, ItemPacketMerchant); // MainCursor??
+	}
+	safe_delete(inst);
 }
 
 void Client::HandleTraderPriceUpdate(const EQApplicationPacket *app) {
@@ -2085,7 +2101,7 @@ void Client::HandleTraderPriceUpdate(const EQApplicationPacket *app) {
 	//
 	TraderCharges_Struct* gis = database.LoadTraderItemWithCharges(CharacterID());
 
-	if (!gis) {
+	if(!gis) {
 		LogDebug("[CLIENT] Error retrieving Trader items details to update price");
 		return;
 	}
@@ -2096,157 +2112,125 @@ void Client::HandleTraderPriceUpdate(const EQApplicationPacket *app) {
 	// update the prices for all items that have the same number of charges.
 	//
 	uint32 IDOfItemToUpdate = 0;
-	uint32 SerialOfItem = 0;
-	int32 ChargesOnItemToUpdate = 0;
-	uint32 OldPrice = 0;
-	uint32 SlotOfItem = 0;
 
-	for (int i = 0; i < 100; i++) {
-		if ((gis->SerialNumber[i] == tpus->SerialNumber)) {
+	int32 ChargesOnItemToUpdate = 0;
+
+	uint32 OldPrice = 0;
+
+	for(int i = 0; i < 100; i++) {
+		if((gis->ItemID[i] > 0) && (gis->SerialNumber[i] == tpus->SerialNumber)) {
 			// We found the item that the Trader wants to change the price of (or add back up for sale).
 			LogTrading("ItemID is [{}], Charges is [{}]", gis->ItemID[i], gis->Charges[i]);
 			IDOfItemToUpdate = gis->ItemID[i];
 			ChargesOnItemToUpdate = gis->Charges[i];
-			SerialOfItem = gis->SerialNumber[i];
-			SlotOfItem = i;
+
 			OldPrice = gis->ItemCost[i];
 			break;
 		}
 	}
 
-	if (IDOfItemToUpdate == 0) {
+	if(IDOfItemToUpdate == 0) {
 		// If the item is not currently in the trader table for this Trader, then they must have removed it from sale while
 		// still in Trader mode. Check if the item is in their Trader Satchels, and if so, put it back up.
-		// Now put all Items with a matching ItemID up for trade.
-		auto inst = FindTraderItemBySerialNumber(tpus->SerialNumber);
 
-		if (!inst) {
-			// Acknowledge to the client.
-			tpus->SubAction = BazaarPriceChange_UpdatePrice;
+		// Quick Sanity check. If the item is not currently up for sale, and the new price is zero, just ack the packet
+		// and do nothing.
+		if(tpus->NewPrice == 0) {
+			tpus->SubAction = BazaarPriceChange_RemoveItem;
 			QueuePacket(app);
+			safe_delete(gis);
 			return ;
 		}
 
-		bool bAdded = false;
-		int i = 0;
-		for (int i = 0; i < 100; i++) {
-			if (gis->ItemID[i] != 0) {
-				if (gis->ItemID[i] == inst->GetID()) {
-					auto alsoInst = FindTraderItemBySerialNumber(gis->SerialNumber[i]);
-					if (alsoInst && tpus->NewPrice > 0) {
-						if (alsoInst->IsStackable()) {
-							if (alsoInst->IsStackable()) {
-								alsoInst->SetMerchantCount(alsoInst->GetCharges());
-							} else {
-								alsoInst->SetMerchantCount(1);
-							}
-							alsoInst->SetMerchantSlot(i);
-						}
-						alsoInst->SetPrice(tpus->NewPrice);
-						database.UpdateTraderItemPrice(CharacterID(), alsoInst->GetID(), alsoInst->GetSerialNumber(),
-													   alsoInst->GetMerchantCount(), tpus->NewPrice);
-						for (auto cust : CustomerID) {
-							UpdateTraderCustomerPriceChanged(CharacterID(), cust, gis, alsoInst->GetID(),
-															 alsoInst->GetCharges(), tpus->NewPrice,
-															 alsoInst->GetSerialNumber());
-						}
-					}
+		LogTrading("Unable to find item to update price for. Rechecking trader satchels");
+
+		// Find what is in their Trader Satchels
+		GetItems_Struct* newgis=GetTraderItems();
+		uint32 IDOfItemToAdd = 0;
+		int32 ChargesOnItemToAdd = 0;
+		for(int i = 0; i < 100; i++) {
+			if((newgis->Items[i] > 0) && (newgis->SerialNumber[i] == tpus->SerialNumber)) {
+				LogTrading("Found new Item to Add, ItemID is [{}], Charges is [{}]", newgis->Items[i], newgis->Charges[i]);
+				IDOfItemToAdd = newgis->Items[i];
+				ChargesOnItemToAdd = newgis->Charges[i];
+				break;
+			}
+		}
+
+		const EQ::ItemData *item = 0;
+		if(IDOfItemToAdd) {
+			item = database.GetItem(IDOfItemToAdd);
+		}
+		
+		if(!IDOfItemToAdd || !item) {
+			LogTrading("Item not found in Trader Satchels either");
+			tpus->SubAction = BazaarPriceChange_Fail;
+			QueuePacket(app);
+			Trader_EndTrader();
+			safe_delete(gis);
+			safe_delete(newgis);
+			return;
+		}
+
+		// It is a limitation of the client that if you have multiple of the same item, but with different charges,
+		// although you can set different prices for them before entering Trader mode. If you Remove them and then
+		// add them back whilst still in Trader mode, they all go up for the same price. We check for this situation
+		// and give the Trader a warning message.
+		//
+		if(!item->Stackable) {
+			bool SameItemWithDifferingCharges = false;
+			for(int i = 0; i < 100; i++) {
+				if((newgis->Items[i] == IDOfItemToAdd) && (newgis->Charges[i] != ChargesOnItemToAdd)) {
+					SameItemWithDifferingCharges = true;
+					break;
 				}
-				continue;
 			}
 
-			if (tpus->NewPrice > 0 && bAdded == false && inst->GetSerialNumber() == tpus->SerialNumber) {
-				if (inst->IsStackable()) {
-					inst->SetMerchantCount(inst->GetCharges());
-				} else {
-					inst->SetMerchantCount(1);
-				}
-				inst->SetMerchantSlot(i);
-				database.SaveTraderItem(CharacterID(), inst->GetID(), inst->GetSerialNumber(), inst->GetMerchantCount(),
-							tpus->NewPrice, i);
-				
-				for (auto cust : CustomerID) {
-					UpdateTraderCustomerPriceChanged(GetID(), cust, gis, inst->GetID(), inst->GetCharges(),
-													 tpus->NewPrice, inst->GetSerialNumber());
-				}
-				bAdded = true;
+			if(SameItemWithDifferingCharges) {
+				Message(Chat::Red, "Warning: You have more than one %s with different charges. They have all been added for sale at the same price.", item->Name);
 			}
+		}
+
+		// Now put all Items with a matching ItemID up for trade.
+		for(int i = 0; i < 100; i++) {
+			if(newgis->Items[i] == IDOfItemToAdd) {
+				database.SaveTraderItem(CharacterID(), newgis->Items[i], newgis->SerialNumber[i], newgis->Charges[i], tpus->NewPrice, i);
+				gis->ItemID[i] = newgis->Items[i];
+				gis->Charges[i] = newgis->Charges[i];
+				gis->SerialNumber[i] = newgis->SerialNumber[i];
+				gis->ItemCost[i] = tpus->NewPrice;
+				LogTrading("Adding new item for [{}]. ItemID [{}], SerialNumber [{}], Charges [{}], Price: [{}], Slot [{}]", GetName(), newgis->Items[i], newgis->SerialNumber[i], newgis->Charges[i], tpus->NewPrice, i);
+			}
+		}
+
+		// If we have a customer currently browsing, update them with the new items.
+		if(CustomerID) {
+			UpdateTraderCustomerItemsAdded(CustomerID, gis, IDOfItemToAdd, tpus->SerialNumber);
 		}
 		safe_delete(gis);
+		safe_delete(newgis);
+
 		// Acknowledge to the client.
-		if (bAdded) {
-			tpus->SubAction = BazaarPriceChange_AddItem;
-		} else {
-			tpus->SubAction = BazaarPriceChange_UpdatePrice;
-		}
-
+		tpus->SubAction = BazaarPriceChange_AddItem;
 		QueuePacket(app);
-
 		return;
 	}
 
 	// This is a safeguard against a Trader increasing the price of an item while a customer is browsing and
 	// unwittingly buying it at a higher price than they were expecting to.
 	//
-	// Update the price for all items we have for sale that have this ItemID and number of charges, or remove
-	// them from the trader table if the new price is zero.
-	//
-	//database.UpdateTraderItemPrice(CharacterID(), IDOfItemToUpdate, SerialOfItem, ChargesOnItemToUpdate, tpus->NewPrice);
-
-	auto inst = FindTraderItemBySerialNumber(SerialOfItem);
-
-	if (!inst) {
-		Message(Chat::Red, "An item for sale went missing! Likely, it was shuffled around. Ending trader mode.");
+	if((OldPrice != 0) && (tpus->NewPrice > OldPrice) && CustomerID) {
+		tpus->SubAction = BazaarPriceChange_Fail;
+		QueuePacket(app);
 		Trader_EndTrader();
+		Message(Chat::Red, "You must remove the item from sale before you can increase the price while a customer is browsing.");
+		Message(Chat::Red, "Click 'Begin Trader' to restart Trader mode with the increased price for this item.");
+		safe_delete(gis);
 		return;
 	}
 
-	bool bAdded = false;
-
-	for (int i = 0; i < 100; i++) {
-		if (gis->ItemID[i] != 0) {
-			if (gis->ItemID[i] == inst->GetID()) {
-				auto alsoInst = FindTraderItemBySerialNumber(gis->SerialNumber[i]);
-				if (alsoInst && tpus->NewPrice > 0) {
-					if (alsoInst->IsStackable()) {
-						alsoInst->SetMerchantCount(alsoInst->GetCharges());
-					} else {
-						alsoInst->SetMerchantCount(1);
-					}
-					alsoInst->SetMerchantSlot(i);
-					alsoInst->SetPrice(tpus->NewPrice);
-					database.UpdateTraderItemPrice(CharacterID(), alsoInst->GetID(), alsoInst->GetSerialNumber(),
-												   alsoInst->GetMerchantCount(), tpus->NewPrice);
-					for (auto cust : CustomerID) {
-						UpdateTraderCustomerPriceChanged(CharacterID(), cust, gis, alsoInst->GetID(),
-														 alsoInst->GetCharges(), tpus->NewPrice,
-														 alsoInst->GetSerialNumber());
-					}
-				}
-			}
-			continue;
-		}
-
-		if (!bAdded && tpus->NewPrice > 0 && inst->GetSerialNumber() == tpus->SerialNumber) {
-			inst->SetPrice(tpus->NewPrice);
-			if (inst->IsStackable()) {
-				inst->SetMerchantCount(inst->GetCharges());
-			} else {
-				inst->SetMerchantCount(1);
-			}
-			inst->SetMerchantSlot(i);
-			database.SaveTraderItem(CharacterID(), inst->GetID(), inst->GetSerialNumber(), inst->GetMerchantCount(),
-									tpus->NewPrice, i);
-			// If a customer is browsing our goods, send them the updated prices / remove the items from the Merchant window
-			for (auto cust : CustomerID) {
-				UpdateTraderCustomerPriceChanged(CharacterID(), cust, gis, inst->GetID(), inst->GetCharges(),
-												 tpus->NewPrice, inst->GetSerialNumber());
-			}
-			bAdded = true;
-		}
-	}
-
-	if (bAdded) {
+	// Send Acknowledgement back to the client.
+	if (OldPrice == 0) {
 		tpus->SubAction = BazaarPriceChange_AddItem;
 	} else if(tpus->NewPrice != 0) {
 		tpus->SubAction = BazaarPriceChange_UpdatePrice;
@@ -2254,7 +2238,22 @@ void Client::HandleTraderPriceUpdate(const EQApplicationPacket *app) {
 		tpus->SubAction = BazaarPriceChange_RemoveItem;
 	}
 	QueuePacket(app);
+
+	if(OldPrice == tpus->NewPrice) {
+		LogTrading("The new price is the same as the old one");
+		safe_delete(gis);
+		return;
+	}
+	// Update the price for all items we have for sale that have this ItemID and number of charges, or remove
+	// them from the trader table if the new price is zero.
+	database.UpdateTraderItemPrice(CharacterID(), tpus->SerialNumber, IDOfItemToUpdate, ChargesOnItemToUpdate, tpus->NewPrice);
+
+	// If a customer is browsing our goods, send them the updated prices / remove the items from the Merchant window
+	if(CustomerID) {
+		UpdateTraderCustomerPriceChanged(CharacterID(), CustomerID, gis, IDOfItemToUpdate, ChargesOnItemToUpdate, tpus->NewPrice, tpus->SerialNumber);
+	}
 	safe_delete(gis);
+
 }
 
 void Client::SendBuyerResults(char* searchString, uint32 searchID) {
@@ -2270,11 +2269,11 @@ void Client::SendBuyerResults(char* searchString, uint32 searchID) {
 							escSearchString, RuleI(Bazaar, MaxBarterSearchResults));
 	safe_delete_array(escSearchString);
 	auto results = database.QueryDatabase(query);
-	if (!results.Success()) {
-		return;
-	}
+    if (!results.Success()) {
+        return;
+    }
 
-	int numberOfRows = results.RowCount();
+    int numberOfRows = results.RowCount();
 
 	if (numberOfRows == RuleI(Bazaar, MaxBarterSearchResults)) {
 		Message(Chat::Yellow, "Your search found too many results; some are not displayed.");
@@ -2288,7 +2287,7 @@ void Client::SendBuyerResults(char* searchString, uint32 searchID) {
 		return;
 	}
 
-	uint32 lastCharID = 0;
+    uint32 lastCharID = 0;
 	Client *buyer = nullptr;
 
 	for (auto row = results.begin(); row != results.end(); ++row) {
@@ -2350,10 +2349,12 @@ void Client::SendBuyerResults(char* searchString, uint32 searchID) {
 }
 
 void Client::ShowBuyLines(const EQApplicationPacket *app) {
+
 	BuyerInspectRequest_Struct* bir = ( BuyerInspectRequest_Struct*)app->pBuffer;
+
 	Client *Buyer = entity_list.GetClientByID(bir->BuyerID);
 
-	if (!Buyer) {
+	if(!Buyer) {
 		bir->Approval = 0; // Tell the client that the Buyer is unavailable
 		QueuePacket(app);
 		Message(Chat::Red, "The Buyer has gone away.");
@@ -2791,8 +2792,11 @@ void Client::SendBuyerPacket(Client* Buyer) {
 }
 
 void Client::ToggleBuyerMode(bool TurnOn) {
+
 	auto outapp = new EQApplicationPacket(OP_Barter, 13 + strlen(GetName()));
+
 	char* Buf = (char*)outapp->pBuffer;
+
 	VARSTRUCT_ENCODE_TYPE(uint32, Buf, Barter_BuyerAppearance);
 	VARSTRUCT_ENCODE_TYPE(uint32, Buf, GetID());
 
@@ -2801,12 +2805,15 @@ void Client::ToggleBuyerMode(bool TurnOn) {
 	} else {
 		VARSTRUCT_ENCODE_TYPE(uint32, Buf, 0x00);
 		database.DeleteBuyLines(CharacterID());
-		CustomerID.clear();
+		CustomerList.clear();
 	}
 
 	VARSTRUCT_ENCODE_STRING(Buf, GetName());
+
 	entity_list.QueueClients(this, outapp, false);
+
 	safe_delete(outapp);
+
 	Buyer = TurnOn;
 }
 

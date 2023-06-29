@@ -259,7 +259,7 @@ public:
 	void Trader_CustomerBrowsing(Client *Customer);
 	void Trader_EndTrader();
 	void Trader_StartTrader();
-	void UpdateTraderCustomerPriceChanged(uint32 TraderID, uint16 CustomerID, TraderCharges_Struct* gis, uint32 ItemID, int32 Charges, uint32 NewPrice, uint32 SerialNumber);
+	void UpdateTraderCustomerPriceChanged(uint32 TraderID, uint16 Customer_ID, TraderCharges_Struct* gis, uint32 ItemID, int32 Charges, uint32 NewPrice, uint32 SerialNumber);
 	uint8 WithCustomer(uint16 NewCustomer, uint8 clear);
 	void KeyRingLoad();
 	void KeyRingAdd(uint32 item_id);
@@ -1755,7 +1755,8 @@ private:
 	uint16 controlling_boat_id;
 	uint16 controlled_mob_id;
 	uint16 TrackingID;
-	std::list<uint16> CustomerID;
+	std::list<uint16> CustomerList;
+	uint16 CustomerID;
 	uint16 TraderID;
 	uint32 account_creation;
 	uint8 firstlogon;
