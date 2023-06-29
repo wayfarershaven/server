@@ -386,12 +386,11 @@ public:
 	Ground_Spawns*	LoadGroundSpawns(uint32 zone_id, int16 version, Ground_Spawns* gs);
 
 	/* Traders  */
-	void	SaveTraderItem(uint32 char_id,uint32 itemid,uint32 uniqueid, int32 charges,uint32 itemcost,uint8 slot, uint32 aug1, uint32 aug2, uint32 aug3, uint32 aug4, uint32 aug5, uint32 aug6);
+	void	SaveTraderItem(uint32 char_id,uint32 itemid,uint32 uniqueid, int32 charges,uint32 itemcost,uint8 slot);
 	void	UpdateTraderItemCharges(int char_id, uint32 ItemInstID, int32 charges);
 	void	UpdateTraderItemPrice(int CharID, uint32 SerialNumber, uint32 ItemID, uint32 Charges, uint32 NewPrice);
 	void	DeleteTraderItem(uint32 char_id);
 	void	DeleteTraderItem(uint32 char_id,uint16 slot_id);
-
 
 	EQ::ItemInstance* LoadSingleTraderItem(uint32 char_id, int uniqueid);
 	uint32 GetCharIDByItemSerial(int uniqueid);

@@ -408,10 +408,10 @@ uint32 ZoneDatabase::GetCharIDByItemSerial(int SerialNumber) {
 	return CharID;
 }
 
-void ZoneDatabase::SaveTraderItem(uint32 CharID, uint32 ItemID, uint32 SerialNumber, int32 Charges, uint32 ItemCost, uint8 Slot, uint32 aug1, uint32 aug2, uint32 aug3, uint32 aug4, uint32 aug5, uint32 aug6){
+void ZoneDatabase::SaveTraderItem(uint32 CharID, uint32 ItemID, uint32 SerialNumber, int32 Charges, uint32 ItemCost, uint8 Slot){
 
-	std::string query = StringFormat("REPLACE INTO trader VALUES(%i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i)",
-                                    CharID, ItemID, SerialNumber, Charges, ItemCost, Slot, aug1, aug2, aug3, aug4, aug5, aug6);
+	std::string query = StringFormat("REPLACE INTO trader VALUES(%i, %i, %i, %i, %i, %i)",
+                                    CharID, ItemID, SerialNumber, Charges, ItemCost, Slot);
     auto results = QueryDatabase(query);
     if (!results.Success())
         LogDebug("[CLIENT] Failed to save trader item: [{}] for char_id: [{}], the error was: [{}]\n", ItemID, CharID, results.ErrorMessage().c_str());
