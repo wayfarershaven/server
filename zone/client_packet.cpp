@@ -15059,53 +15059,39 @@ void Client::Handle_OP_Trader(const EQApplicationPacket *app)
 	//
 	// SoF sends 1 or more unhandled OP_Trader packets of size 96 when a trade has completed.
 	// I don't know what they are for (yet), but it doesn't seem to matter that we ignore them.
-
-
 	uint32 max_items = 100;
 
-	/*
-	if (GetClientVersion() >= EQClientRoF)
-	max_items = 200;
-	*/
-
 	//Show Items
-	if (app->size == sizeof(Trader_ShowItems_Struct))
-	{
+	if (app->size == sizeof(Trader_ShowItems_Struct)) {
 		Trader_ShowItems_Struct* sis = (Trader_ShowItems_Struct*)app->pBuffer;
 
-		switch (sis->Code)
-		{
-		case BazaarTrader_EndTraderMode: {
-			Trader_EndTrader();
-			LogTrading("End Trader Session");
-			break;
-		}
-		case BazaarTrader_EndTransaction: {
-
-			Client* c = entity_list.GetClientByID(sis->TraderID);
-			if (c)
-			{
-				c->WithCustomer(this->GetID(), 0);
-				LogTrading("End Transaction");
+		switch (sis->Code) {
+			case BazaarTrader_EndTraderMode: {
+				Trader_EndTrader();
+				LogTrading("End Trader Session");
+				break;
 			}
-			else
-				LogTrading("Null Client Pointer");
-
-			break;
+			case BazaarTrader_EndTransaction: {
+				Client* c = entity_list.GetClientByID(sis->TraderID);
+				if (c) {
+					c->WithCustomer(this->GetID(), 0);
+					LogTrading("End Transaction");
+				} else {
+					LogTrading("Null Client Pointer");
+				}
+				break;
+			}
+			case BazaarTrader_ShowItems: {
+				Trader_ShowItems();
+				LogTrading("Show Trader Items");
+				break;
+			}
+			default: {
+				LogTrading("Unhandled action code in OP_Trader ShowItems_Struct");
+				break;
+			}
 		}
-		case BazaarTrader_ShowItems: {
-			Trader_ShowItems();
-			LogTrading("Show Trader Items");
-			break;
-		}
-		default: {
-			LogTrading("Unhandled action code in OP_Trader ShowItems_Struct");
-			break;
-		}
-		}
-	}
-	else if (app->size == sizeof(ClickTrader_Struct))
-	{
+	} else if (app->size == sizeof(ClickTrader_Struct)) {
 		if (Buyer) {
 			Trader_EndTrader();
 			Message(Chat::Red, "You cannot be a Trader and Buyer at the same time.");
@@ -15114,8 +15100,7 @@ void Client::Handle_OP_Trader(const EQApplicationPacket *app)
 
 		ClickTrader_Struct* ints = (ClickTrader_Struct*)app->pBuffer;
 
-		if (ints->Code == BazaarTrader_StartTraderMode)
-		{
+		if (ints->Code == BazaarTrader_StartTraderMode) {
 			LogTrading("Start Trader Mode");
 			// Verify there are no NODROP or items with a zero price
 			bool TradeItemsValid = true;
@@ -15139,14 +15124,11 @@ void Client::Handle_OP_Trader(const EQApplicationPacket *app)
 					//return; //sony doesnt memset so assume done on first bad item
 					break;
 				}
-
 			}
-
 			Trader_StartTrader();
 
 			// This refreshes the Trader window to display the End Trader button
-			if (ClientVersion() >= EQ::versions::ClientVersion::RoF)
-			{
+			if (ClientVersion() >= EQ::versions::ClientVersion::RoF) {
 				auto outapp = new EQApplicationPacket(OP_Trader, sizeof(TraderStatus_Struct));
 				TraderStatus_Struct* tss = (TraderStatus_Struct*)outapp->pBuffer;
 				tss->Code = BazaarTrader_StartTraderMode2;
@@ -15154,51 +15136,39 @@ void Client::Handle_OP_Trader(const EQApplicationPacket *app)
 				QueuePacket(outapp);
 				safe_delete(outapp);
 			}
-		}
-		else {
-			LogTrading("Unknown TraderStruct code of: [{}]\n",
-				ints->Code);
-
+		} else {
+			LogTrading("Unknown TraderStruct code of: [{}]\n", ints->Code);
 			LogError("Unknown TraderStruct code of: [{}]\n", ints->Code);
 		}
-	}
-	else if (app->size == sizeof(TraderStatus_Struct))
-	{
+	} else if (app->size == sizeof(TraderStatus_Struct)) {
 		TraderStatus_Struct* tss = (TraderStatus_Struct*)app->pBuffer;
-
 		LogTrading("Trader Status Code: [{}]", tss->Code);
-
-		switch (tss->Code)
-		{
-		case BazaarTrader_EndTraderMode: {
-			Trader_EndTrader();
-			LogTrading("End Trader Session");
-			break;
+		switch (tss->Code) {
+			case BazaarTrader_EndTraderMode: {
+				Trader_EndTrader();
+				LogTrading("End Trader Session");
+				break;
+			}
+			case BazaarTrader_ShowItems: {
+				Trader_ShowItems();
+				LogTrading("Show Trader Items");
+				break;
+			}
+			default: {
+				LogTrading("Unhandled action code in OP_Trader ShowItems_Struct");
+				break;
+			}
 		}
-		case BazaarTrader_ShowItems: {
-			Trader_ShowItems();
-			LogTrading("Show Trader Items");
-			break;
-		}
-		default: {
-			LogTrading("Unhandled action code in OP_Trader ShowItems_Struct");
-			break;
-		}
-		}
-
-
-	}
-	else if (app->size == sizeof(TraderPriceUpdate_Struct))
-	{
+	} else if (app->size == sizeof(TraderPriceUpdate_Struct)) {
 		LogTrading("Trader Price Update");
 		HandleTraderPriceUpdate(app);
-	}
-	else {
+	} else {
 		LogTrading("Unknown size for OP_Trader: [{}]\n", app->size);
 		LogError("Unknown size for OP_Trader: [{}]\n", app->size);
 		DumpPacket(app);
 		return;
 	}
+	HandleTraderPriceUpdate(app);
 
 	return;
 }
