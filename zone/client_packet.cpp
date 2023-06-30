@@ -15107,9 +15107,9 @@ void Client::Handle_OP_Trader(const EQApplicationPacket *app)
 
 			int index = 0;
 			for (uint32 i = 0; i < max_items; i++) {
-				Log(Logs::Detail, Logs::Trading, "[Debug] Client Packet -i = [%i] -  ints->SerialNumber[i] = [%i]",i, ints->SerialNumber[i]);
 				auto inst = FindTraderItemBySerialNumber(ints->SerialNumber[i]);
 				if (inst && database.GetItem(inst->GetItem()->ID ? inst->GetItem()->ID : 0)->ID) {
+					LogTradingDetail("[Debug] Client Packet -i = [{}] -  ints->SerialNumber[i] = [{}] - Item ID [{}] - Item Count [{}]",i, ints->SerialNumber[i], inst->GetItem()->ID, inst->GetCharges());
 					inst->SetPrice(ints->ItemCost[i]);
 					if (inst->IsStackable()) {
 						inst->SetMerchantCount(inst->GetCharges());
@@ -15118,7 +15118,7 @@ void Client::Handle_OP_Trader(const EQApplicationPacket *app)
 						inst->SetMerchantCount(1);
 						inst->SetMerchantSlot(i);
 					}
-					database.SaveTraderItem(this->CharacterID(), inst->GetItem()->ID, inst->GetSerialNumber(), inst->GetMerchantCount(), ints->ItemCost[i], index);
+					database.SaveTraderItem(this->CharacterID(), inst->GetItem()->ID, inst->GetSerialNumber(), inst->GetCharges(), ints->ItemCost[i], index);
 					index++;
 				} else {
 					//return; //sony doesnt memset so assume done on first bad item
