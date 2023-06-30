@@ -15110,6 +15110,10 @@ void Client::Handle_OP_Trader(const EQApplicationPacket *app)
 				auto inst = FindTraderItemBySerialNumber(ints->SerialNumber[i]);
 				if (inst && database.GetItem(inst->GetItem()->ID ? inst->GetItem()->ID : 0)->ID) {
 					LogTradingDetail("[Debug] Client Packet -i = [{}] -  ints->SerialNumber[i] = [{}] - Item ID [{}] - Item Count [{}]",i, ints->SerialNumber[i], inst->GetItem()->ID, inst->GetCharges());
+					if (ints->SerialNumber[i] == 0) {
+						break;
+					}
+
 					inst->SetPrice(ints->ItemCost[i]);
 					if (inst->IsStackable()) {
 						inst->SetMerchantCount(inst->GetCharges());
@@ -15165,10 +15169,10 @@ void Client::Handle_OP_Trader(const EQApplicationPacket *app)
 	} else {
 		LogTrading("Unknown size for OP_Trader: [{}]\n", app->size);
 		LogError("Unknown size for OP_Trader: [{}]\n", app->size);
+		HandleTraderPriceUpdate(app);
 		DumpPacket(app);
 		return;
 	}
-	HandleTraderPriceUpdate(app);
 
 	return;
 }

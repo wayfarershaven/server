@@ -898,20 +898,20 @@ bool Client::CheckTradeNonDroppable()
 }
 
 void Client::Trader_ShowItems(){
-	//auto outapp = new EQApplicationPacket(OP_Trader, sizeof(Trader_Struct));
+	auto outapp = new EQApplicationPacket(OP_Trader, sizeof(Trader_Struct));
 
-	//Trader_Struct* outints = (Trader_Struct*)outapp->pBuffer;
-	//Trader_Struct* TraderItems = database.LoadTraderItem(this->CharacterID());
+	Trader_Struct* outints = (Trader_Struct*)outapp->pBuffer;
+	Trader_Struct* TraderItems = database.LoadTraderItem(this->CharacterID());
 
-	//for(int i = 0; i < 100; i++){
-	//	outints->ItemCost[i] = TraderItems->ItemCost[i];
-	//	outints->Items[i] = TraderItems->Items[i];
-	//}
-	//outints->Code = BazaarTrader_ShowItems;
+	for(int i = 0; i < 100; i++){
+		outints->ItemCost[i] = TraderItems->ItemCost[i];
+		outints->Items[i] = TraderItems->Items[i];
+	}
+	outints->Code = BazaarTrader_ShowItems;
 
-	//QueuePacket(outapp);
-	//safe_delete(outapp);
-	//safe_delete(TraderItems);
+	QueuePacket(outapp);
+	safe_delete(outapp);
+	safe_delete(TraderItems);
 }
 
 void Client::SendTraderPacket(Client* Trader, uint32 Unknown72)
@@ -953,7 +953,7 @@ void Client::Trader_CustomerBrowsing(Client *Customer) {
 
 
 void Client::Trader_StartTrader() {
-	Trader=true;
+	Trader = true;
 	auto outapp = new EQApplicationPacket(OP_Trader, sizeof(Trader_ShowItems_Struct));
 	Trader_ShowItems_Struct* sis = (Trader_ShowItems_Struct*)outapp->pBuffer;
 	sis->Code = BazaarTrader_StartTraderMode;
@@ -2129,7 +2129,7 @@ void Client::HandleTraderPriceUpdate(const EQApplicationPacket *app) {
 		}
 	}
 
-	if(IDOfItemToUpdate == 0) {
+	if (IDOfItemToUpdate == 0) {
 		// If the item is not currently in the trader table for this Trader, then they must have removed it from sale while
 		// still in Trader mode. Check if the item is in their Trader Satchels, and if so, put it back up.
 
