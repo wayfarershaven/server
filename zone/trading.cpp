@@ -898,20 +898,20 @@ bool Client::CheckTradeNonDroppable()
 }
 
 void Client::Trader_ShowItems(){
-	auto outapp = new EQApplicationPacket(OP_Trader, sizeof(Trader_Struct));
+	//auto outapp = new EQApplicationPacket(OP_Trader, sizeof(Trader_Struct));
 
-	Trader_Struct* outints = (Trader_Struct*)outapp->pBuffer;
-	Trader_Struct* TraderItems = database.LoadTraderItem(this->CharacterID());
+	//Trader_Struct* outints = (Trader_Struct*)outapp->pBuffer;
+	//Trader_Struct* TraderItems = database.LoadTraderItem(this->CharacterID());
 
-	for(int i = 0; i < 100; i++){
-		outints->ItemCost[i] = TraderItems->ItemCost[i];
-		outints->Items[i] = TraderItems->Items[i];
-	}
-	outints->Code = BazaarTrader_ShowItems;
+	//for (int i = 0; i < 100; i++) {
+	//	outints->ItemCost[i] = TraderItems->ItemCost[i];
+	//	outints->Items[i] = TraderItems->Items[i];
+	//}
+	//outints->Code = BazaarTrader_ShowItems;
 
-	QueuePacket(outapp);
-	safe_delete(outapp);
-	safe_delete(TraderItems);
+	//QueuePacket(outapp);
+	//safe_delete(outapp);
+	//safe_delete(TraderItems);
 }
 
 void Client::SendTraderPacket(Client* Trader, uint32 Unknown72)
@@ -1077,9 +1077,11 @@ void Client::BulkSendTraderInventory(Client* trader) {
 	TraderCharges_Struct* TraderItems = database.LoadTraderItemWithCharges(trader->CharacterID());
 
 	for (uint8 i = 0; i < 100; i++) { // need to transition away from 'magic number'
-		auto inst = trader->FindTraderItemBySerialNumber(TraderItems->SerialNumber[i]);
-
-		if (inst) {
+		if (TraderItems->SerialNumber[i] == 0) {
+			continue;
+		} else {
+			auto inst = trader->FindTraderItemBySerialNumber(TraderItems->SerialNumber[i]);
+			if (inst) {
 				if(TraderItems->Charges[i] > 0) {
 					inst->SetCharges(TraderItems->Charges[i]);
 				}
@@ -1091,6 +1093,7 @@ void Client::BulkSendTraderInventory(Client* trader) {
 
 				inst->SetPrice(TraderItems->ItemCost[i]);
 				SendItemPacket(EQ::invslot::slotCursor, inst, ItemPacketMerchant); // MainCursor?
+			}
 		}
 	}
 	safe_delete(TraderItems);
@@ -1129,8 +1132,9 @@ EQ::ItemInstance* Client::FindTraderItemBySerialNumber(uint32 SerialNumber) {
 				SlotID = EQ::InventoryProfile::CalcSlotId(i, x);
 				item = GetInv().GetItem(SlotID);
 				if(item) {
-					if(item->GetSerialNumber() == SerialNumber)
+					if(item->GetSerialNumber() == SerialNumber) {
 						return item;
+					}
 				}
 			}
 		}

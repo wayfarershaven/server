@@ -305,7 +305,7 @@ Trader_Struct* ZoneDatabase::LoadTraderItem(uint32 char_id)
 
 	loadti->Code = BazaarTrader_ShowItems;
 	for (auto& row = results.begin(); row != results.end(); ++row) {
-		if (Strings::ToInt(row[5]) >= 80 || Strings::ToInt(row[4]) < 0) {
+		if (Strings::ToInt(row[5]) >= 100 || Strings::ToInt(row[4]) < 0) {
 			LogTrading("Bad Slot number when trying to load trader information!\n");
 			continue;
 		}
