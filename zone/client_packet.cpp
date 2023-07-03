@@ -637,8 +637,8 @@ void Client::CompleteConnect()
 			}
 
 			raid->SendHPManaEndPacketsTo(this);
-			//raid->SendRaidAssisters();
-			//raid->SendRaidMarkers();
+			raid->SendAssistTarget(this);
+			raid->SendMarkTargets(this);
 		}
 	} else {
 		Group *group = nullptr;
@@ -5716,7 +5716,10 @@ void Client::Handle_OP_DeleteSpawn(const EQApplicationPacket *app)
 }
 
 void Client::Handle_OP_Disarm(const EQApplicationPacket *app) {
-	if (dead || bZoning) return;
+	if (dead || bZoning) {
+		return;
+	}
+	
 	if (!HasSkill(EQ::skills::SkillDisarm))
 		return;
 
@@ -5740,6 +5743,7 @@ void Client::Handle_OP_Disarm(const EQApplicationPacket *app) {
 	if (!pmob || !tmob) {
 		return;
 	}
+
 	if (pmob->GetID() != GetID()) {
 		// Client sent a disarm request with an originator ID not matching their own ID.
 		auto message = fmt::format("Player {} ({}) sent OP_Disarm with source ID of: {}", GetCleanName(), GetID(), pmob->GetID());
@@ -5748,11 +5752,13 @@ void Client::Handle_OP_Disarm(const EQApplicationPacket *app) {
 		return;
 	}
 	// No disarm on corpses
-	if (tmob->IsCorpse())
+	if (tmob->IsCorpse()) {
 		return;
+	}
 	// No target
-	if (!GetTarget())
+	if (!GetTarget()) {
 		return;
+	}
 	// Targets don't match (possible hack, but not flagging)
 	if (GetTarget() != tmob) {
 		return;
@@ -5779,8 +5785,7 @@ void Client::Handle_OP_Disarm(const EQApplicationPacket *app) {
 			if (!tmob->CheckAggro(pmob)) {
 				zone->AddAggroMob();
 				tmob->AddToHateList(pmob, p_level);
-			}
-			else {
+			} else {
 				tmob->AddToHateList(pmob, p_level / 3);
 			}
 		}
@@ -5790,14 +5795,16 @@ void Client::Handle_OP_Disarm(const EQApplicationPacket *app) {
 		// Modify chance based on level difference
 		float lvl_mod = p_level / t_level;
 		chance *= lvl_mod;
-		if (chance > 300)
+		if (chance > 300) {
 			chance = 300; // max chance of 30%
+		}
+
 		if (tmob->IsNPC()) {
 			tmob->CastToNPC()->Disarm(this, chance);
-		}
-		else if (tmob->IsClient()) {
+		} else if (tmob->IsClient()) {
 			tmob->CastToClient()->Disarm(this, chance);
 		}
+
 		return;
 	}
 	// Trying to disarm something we can't disarm
@@ -5808,31 +5815,33 @@ void Client::Handle_OP_Disarm(const EQApplicationPacket *app) {
 
 void Client::Handle_OP_DeleteSpell(const EQApplicationPacket *app)
 {
-	if (app->size != sizeof(DeleteSpell_Struct))
+	if (app->size != sizeof(DeleteSpell_Struct)) {
 		return;
+	}
 
 	EQApplicationPacket* outapp = app->Copy();
 	DeleteSpell_Struct* dss = (DeleteSpell_Struct*)outapp->pBuffer;
 
-	if (dss->spell_slot < 0 || dss->spell_slot >= EQ::spells::DynamicLookup(ClientVersion(), GetGM())->SpellbookSize)
+	if (dss->spell_slot < 0 || dss->spell_slot >= EQ::spells::DynamicLookup(ClientVersion(), GetGM())->SpellbookSize) {
 		return;
+	}
 
 	if (m_pp.spell_book[dss->spell_slot] != SPELLBOOK_UNKNOWN) {
 		m_pp.spell_book[dss->spell_slot] = SPELLBOOK_UNKNOWN;
 		database.DeleteCharacterSpell(CharacterID(), m_pp.spell_book[dss->spell_slot], dss->spell_slot);
 		dss->success = 1;
-	}
-	else
+	} else {
 		dss->success = 0;
+	}
 
 	FastQueuePacket(&outapp);
 	return;
 }
 
-void Client::Handle_OP_DisarmTraps(const EQApplicationPacket *app)
-{
-	if (!HasSkill(EQ::skills::SkillDisarmTraps))
+void Client::Handle_OP_DisarmTraps(const EQApplicationPacket *app) {
+	if (!HasSkill(EQ::skills::SkillDisarmTraps)) {
 		return;
+	}
 
 	if (!p_timers.Expired(&database, pTimerDisarmTraps, false)) {
 		Message(Chat::Red, "Ability recovery time not yet met.");
@@ -5841,31 +5850,27 @@ void Client::Handle_OP_DisarmTraps(const EQApplicationPacket *app)
 
 	int reuse = DisarmTrapsReuseTime - GetSkillReuseTime(EQ::skills::SkillDisarmTraps);
 
-	if (reuse < 1)
+	if (reuse < 1) {
 		reuse = 1;
+	}
 
 	p_timers.Start(pTimerDisarmTraps, reuse - 1);
 
 	uint8 success = SKILLUP_FAILURE;
 	float curdist = 0;
 	Trap* trap = entity_list.FindNearbyTrap(this, 250, curdist, true);
-	if (trap && trap->detected)
-	{
+	if (trap && trap->detected) {
 		float max_radius = (trap->radius * 2) * (trap->radius * 2); // radius is used to trigger trap, so disarm radius should be a bit bigger.
 		Log(Logs::General, Logs::Traps, "%s is attempting to disarm trap %d. Curdist is %0.2f maxdist is %0.2f", GetName(), trap->trap_id, curdist, max_radius);
-		if (curdist <= max_radius)
-		{
+		if (curdist <= max_radius) {
 			int uskill = GetSkill(EQ::skills::SkillDisarmTraps);
-			if ((zone->random.Int(0, 49) + uskill) >= (zone->random.Int(0, 49) + trap->skill))
-			{
+			if ((zone->random.Int(0, 49) + uskill) >= (zone->random.Int(0, 49) + trap->skill)) {
 				success = SKILLUP_SUCCESS;
 				MessageString(Chat::Skills, DISARMED_TRAP);
 				trap->disarmed = true;
 				Log(Logs::General, Logs::Traps, "Trap %d is disarmed.", trap->trap_id);
 				trap->UpdateTrap();
-			}
-			else
-			{
+			} else {
 				int fail_rate = 25;
 				int trap_circumvention = spellbonuses.TrapCircumvention + itembonuses.TrapCircumvention + aabonuses.TrapCircumvention;
 				fail_rate -= fail_rate * trap_circumvention / 100;
@@ -5876,14 +5881,10 @@ void Client::Handle_OP_DisarmTraps(const EQApplicationPacket *app)
 			}
 			CheckIncreaseSkill(EQ::skills::SkillDisarmTraps, nullptr);
 			return;
-		}
-		else
-		{
+		} else {
 			MessageString(Chat::Skills, TRAP_TOO_FAR);
 		}
-	}
-	else
-	{
+	} else {
 		MessageString(Chat::Skills, LDON_SENSE_TRAP2);
 	}
 
@@ -5908,11 +5909,11 @@ void Client::Handle_OP_DoGroupLeadershipAbility(const EQApplicationPacket *app)
 	{
 	case GroupLeadershipAbility_MarkNPC:
 	{
-		if (GetTarget())
-		{
+		if (GetTarget()) {
 			Group* g = GetGroup();
-			if (g)
+			if (g) {
 				g->MarkNPC(GetTarget(), dglas->Parameter);
+			}
 		}
 		break;
 	}
@@ -5921,24 +5922,29 @@ void Client::Handle_OP_DoGroupLeadershipAbility(const EQApplicationPacket *app)
 	{
 		Mob *Target = GetTarget();
 
-		if (!Target || !Target->IsClient())
+		if (!Target || !Target->IsClient()) {
 			return;
+		}
 
 		if (IsRaidGrouped()) {
 			Raid *raid = GetRaid();
-			if (!raid)
+			if (!raid) {
 				return;
+			}
+
 			uint32 group_id = raid->GetGroup(this);
-			if (group_id > 11 || raid->GroupCount(group_id) < 3)
+			if (group_id > 11 || raid->GroupCount(group_id) < 3) {
 				return;
+			}
 			Target->CastToClient()->InspectBuffs(this, raid->GetLeadershipAA(groupAAInspectBuffs, group_id));
 			return;
 		}
 
 		Group *g = GetGroup();
 
-		if (!g || (g->GroupCount() < 3))
+		if (!g || (g->GroupCount() < 3)) {
 			return;
+		}
 
 		Target->CastToClient()->InspectBuffs(this, g->GetLeadershipAA(groupAAInspectBuffs));
 
@@ -7436,26 +7442,34 @@ void Client::Handle_OP_GroupMentor(const EQApplicationPacket *app)
 
 	if (IsRaidGrouped()) {
 		Raid *raid = GetRaid();
-		if (!raid)
+		if (!raid) {
 			return;
+		}
+
 		uint32 group_id = raid->GetGroup(this);
-		if (group_id > 11)
+		if (group_id > 11) {
 			return;
-		if (strlen(gms->name))
+		}
+
+		if (strlen(gms->name)) {
 			raid->SetGroupMentor(group_id, gms->percent, gms->name);
-		else
+		} else {
 			raid->ClearGroupMentor(group_id);
+		}
+
 		return;
 	}
 
 	Group *group = GetGroup();
-	if (!group)
+	if (!group) {
 		return;
+	}
 
-	if (strlen(gms->name))
+	if (strlen(gms->name)) {
 		group->SetGroupMentor(gms->percent, gms->name);
-	else
+	} else {
 		group->ClearGroupMentor();
+	}
 
 	return;
 }
@@ -12048,6 +12062,8 @@ void Client::Handle_OP_RaidCommand(const EQApplicationPacket* app)
 							if (raid->IsLocked()) {
 								raid->SendRaidLockTo(c);
 							}
+							raid->SendAssistTarget(c);
+							raid->SendMarkTargets(c);
 						}
 					}
 					group->JoinRaidXTarget(raid);
@@ -12062,6 +12078,8 @@ void Client::Handle_OP_RaidCommand(const EQApplicationPacket* app)
 					if (raid->IsLocked()) {
 						raid->SendRaidLockTo(this);
 					}
+					raid->SendAssistTarget(this);
+					raid->SendMarkTargets(this);
 				}
 			}
 			else
@@ -12087,13 +12105,15 @@ void Client::Handle_OP_RaidCommand(const EQApplicationPacket* app)
 										raid->SetGroupLeader(client_to_be_leader->GetName());
 									}
 								}
+
 								if (player_sending_invite_group->IsLeader(sending_invite_member)) {
 									Client* c = nullptr;
 
-									if (sending_invite_member->IsClient())
+									if (sending_invite_member->IsClient()) {
 										c = sending_invite_member->CastToClient();
-									else
+									} else {
 										continue;
+									}
 
 									raid->SendRaidCreate(c);
 									raid->AddMember(c, raid_free_group_id, true, true, true);
@@ -12102,14 +12122,16 @@ void Client::Handle_OP_RaidCommand(const EQApplicationPacket* app)
 									if (raid->IsLocked()) {
 										raid->SendRaidLockTo(c);
 									}
-								}
-								else {
+									raid->SendAssistTarget(c);
+									raid->SendMarkTargets(c);
+								} else {
 									Client* c = nullptr;
 
-									if (sending_invite_member->IsClient())
+									if (sending_invite_member->IsClient()) {
 										c = sending_invite_member->CastToClient();
-									else
+									} else {
 										continue;
+									}
 
 									raid->SendRaidCreate(c);
 									raid->AddMember(c, raid_free_group_id);
@@ -12118,6 +12140,8 @@ void Client::Handle_OP_RaidCommand(const EQApplicationPacket* app)
 									if (raid->IsLocked()) {
 										raid->SendRaidLockTo(c);
 									}
+									raid->SendAssistTarget(c);
+									raid->SendMarkTargets(c);
 								}
 							}
 						}
@@ -12141,13 +12165,15 @@ void Client::Handle_OP_RaidCommand(const EQApplicationPacket* app)
 									raid->SetGroupLeader(client_to_add->GetName());
 								}
 							}
+
 							if (group->IsLeader(group->members[x])) {
 								Client* c = nullptr;
 
-								if (group->members[x]->IsClient())
+								if (group->members[x]->IsClient()) {
 									c = group->members[x]->CastToClient();
-								else
+								} else {
 									continue;
+								}
 
 								raid->SendRaidCreate(c);
 								raid->AddMember(c, raid_free_group_id, false, true);
@@ -12157,15 +12183,16 @@ void Client::Handle_OP_RaidCommand(const EQApplicationPacket* app)
 								if (raid->IsLocked()) {
 									raid->SendRaidLockTo(c);
 								}
-							}
-							else
-							{
+								raid->SendAssistTarget(c);
+								raid->SendMarkTargets(c);
+							} else {
 								Client* c = nullptr;
 
-								if (group->members[x]->IsClient())
+								if (group->members[x]->IsClient()) {
 									c = group->members[x]->CastToClient();
-								else
+								} else {
 									continue;
+								}
 
 								raid->SendRaidCreate(c);
 								raid->AddMember(c, raid_free_group_id);
@@ -12174,6 +12201,8 @@ void Client::Handle_OP_RaidCommand(const EQApplicationPacket* app)
 								if (raid->IsLocked()) {
 									raid->SendRaidLockTo(c);
 								}
+								raid->SendAssistTarget(c);
+								raid->SendMarkTargets(c);
 							}
 						}
 					}
@@ -12185,9 +12214,7 @@ void Client::Handle_OP_RaidCommand(const EQApplicationPacket* app)
 				/* Target does not have a group */
 				else {
 					if (player_sending_invite_group) {
-
 						raid = new Raid(player_sending_invite);
-
 						entity_list.AddRaid(raid);
 						raid->SetRaidDetails();
 						Client* addClientig = nullptr;
@@ -12202,10 +12229,11 @@ void Client::Handle_OP_RaidCommand(const EQApplicationPacket* app)
 								if (player_sending_invite_group->IsLeader(player_sending_invite_group->members[x])) {
 									Client* c = nullptr;
 
-									if (player_sending_invite_group->members[x]->IsClient())
+									if (player_sending_invite_group->members[x]->IsClient()) {
 										c = player_sending_invite_group->members[x]->CastToClient();
-									else
+									} else {
 										continue;
+									}
 
 									raid->SendRaidCreate(c);
 									raid->AddMember(c, 0, true, true, true);
@@ -12214,14 +12242,15 @@ void Client::Handle_OP_RaidCommand(const EQApplicationPacket* app)
 									if (raid->IsLocked()) {
 										raid->SendRaidLockTo(c);
 									}
-								}
-								else
-								{
+									raid->SendAssistTarget(c);
+									raid->SendMarkTargets(c);
+								} else {
 									Client* c = nullptr;
-									if (player_sending_invite_group->members[x]->IsClient())
+									if (player_sending_invite_group->members[x]->IsClient()) {
 										c = player_sending_invite_group->members[x]->CastToClient();
-									else
+									} else {
 										continue;
+									}
 
 									raid->SendRaidCreate(c);
 									raid->AddMember(c, 0);
@@ -12230,6 +12259,8 @@ void Client::Handle_OP_RaidCommand(const EQApplicationPacket* app)
 									if (raid->IsLocked()) {
 										raid->SendRaidLockTo(c);
 									}
+									raid->SendAssistTarget(c);
+									raid->SendMarkTargets(c);
 								}
 							}
 						}
@@ -12243,8 +12274,9 @@ void Client::Handle_OP_RaidCommand(const EQApplicationPacket* app)
 						if (raid->IsLocked()) {
 							raid->SendRaidLockTo(this);
 						}
-					}
-					else { // neither has a group
+						raid->SendAssistTarget(this);
+						raid->SendMarkTargets(this);
+					} else { // neither has a group
 						raid = new Raid(player_sending_invite);
 						entity_list.AddRaid(raid);
 						raid->SetRaidDetails();
@@ -12257,6 +12289,8 @@ void Client::Handle_OP_RaidCommand(const EQApplicationPacket* app)
 						if (raid->IsLocked()) {
 							raid->SendRaidLockTo(this);
 						}
+						raid->SendAssistTarget(this);
+						raid->SendMarkTargets(this);
 					}
 				}
 			}
@@ -12590,8 +12624,9 @@ void Client::Handle_OP_RaidCommand(const EQApplicationPacket* app)
 	case RaidCommandSetMotd:
 	{
 		Raid* raid = entity_list.GetRaidByClient(this);
-		if (!raid)
+		if (!raid) {
 			break;
+		}
 		// we don't use the RaidGeneral here!
 		RaidMOTD_Struct* motd = (RaidMOTD_Struct*)app->pBuffer;
 		raid->SetRaidMOTD(std::string(motd->motd));
