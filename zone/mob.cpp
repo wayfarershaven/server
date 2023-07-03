@@ -1576,7 +1576,7 @@ void Mob::MakeSpawnUpdate(PlayerPositionUpdateServer_Struct* spu) {
 	spu->delta_z = FloatToEQ13(m_Delta.z);
 	spu->heading = FloatToEQ12(m_Position.w);
 
-	if (IsClient() || IsBot()) {
+	if (IsOfClientBot()) {
 		spu->animation = animation;
 	} else {
 		spu->animation = pRunAnimSpeed;//animation;
@@ -5270,7 +5270,7 @@ void Mob::ExecWeaponProc(const EQ::ItemInstance *inst, uint16 spell_id, Mob *on,
 	bool twinproc = false;
 	int32 twinproc_chance = 0;
 
-	if (IsClient() || IsBot()) {
+	if (IsOfClientBot()) {
 		twinproc_chance = GetFocusEffect(focusTwincast, spell_id);
 	}
 
@@ -5401,7 +5401,7 @@ void Mob::SetTarget(Mob *mob)
 		GetTarget()->SendHPUpdate(true);
 	}
 
-	if (IsClient() || IsBot()) {
+	if (IsOfClientBot()) {
 		Raid* r = GetRaid();
 		if (r) {
 			r->SendRaidAssistTarget();
