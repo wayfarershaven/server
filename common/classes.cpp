@@ -631,12 +631,41 @@ bool IsINTCasterClass(uint8 class_id)
 	}
 }
 
+bool IsHeroicINTCasterClass(uint8 class_id)
+{
+	switch (class_id) {
+		case NECROMANCER:
+		case WIZARD:
+		case MAGICIAN:
+		case ENCHANTER:
+		case SHADOWKNIGHT:
+			return true;
+		default:
+			return false;
+	}
+}
+
 bool IsWISCasterClass(uint8 class_id)
 {
 	switch (class_id) {
 		case CLERIC:
 		case DRUID:
 		case SHAMAN:
+			return true;
+		default:
+			return false;
+	}
+}
+
+bool IsHeroicWISCasterClass(uint8 class_id)
+{
+	switch (class_id) {
+		case CLERIC:
+		case DRUID:
+		case SHAMAN:
+		case PALADIN:
+		case BEASTLORD:
+		case RANGER:
 			return true;
 		default:
 			return false;
@@ -726,7 +755,7 @@ uint8 ClassArmorType(uint8 class_id)
 const std::string GetPlayerClassAbbreviation(uint8 class_id)
 {
 	if (!EQ::ValueWithin(class_id, WARRIOR, BERSERKER)) {
-		return std::string();
+		return std::string("UNK");
 	}
 
 	switch (class_id) {
@@ -764,7 +793,7 @@ const std::string GetPlayerClassAbbreviation(uint8 class_id)
 			return "BER";
 	}
 
-	return std::string();
+	return std::string("UNK");
 }
 
 bool IsPlayerClass(uint8 class_id) {
