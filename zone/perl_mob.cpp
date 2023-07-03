@@ -2944,6 +2944,21 @@ bool Perl_Mob_HasSpellEffect(Mob* self, int effect_id)
 	return self->HasSpellEffect(effect_id);
 }
 
+StatBonuses* Perl_Mob_GetAABonuses(Mob* self)
+{
+	return self->GetAABonusesPtr();
+}
+
+StatBonuses* Perl_Mob_GetItemBonuses(Mob* self)
+{
+	return self->GetItemBonusesPtr();
+}
+
+StatBonuses* Perl_Mob_GetSpellBonuses(Mob* self)
+{
+	return self->GetSpellBonusesPtr();
+}
+
 void perl_register_mob()
 {
 	perl::interpreter perl(PERL_GET_THX);
@@ -3091,6 +3106,7 @@ void perl_register_mob()
 	package.add("GMMove", (void(*)(Mob*, float, float, float, float))&Perl_Mob_GMMove);
 	package.add("Gate", &Perl_Mob_Gate);
 	package.add("GetAA", &Perl_Mob_GetAA);
+	package.add("GetAABonuses", &Perl_Mob_GetAABonuses);
 	package.add("GetAAByAAID", &Perl_Mob_GetAAByAAID);
 	package.add("GetAC", &Perl_Mob_GetAC);
 	package.add("GetAGI", &Perl_Mob_GetAGI);
@@ -3188,6 +3204,7 @@ void perl_register_mob()
 	package.add("GetID", &Perl_Mob_GetID);
 	package.add("GetINT", &Perl_Mob_GetINT);
 	package.add("GetInvul", &Perl_Mob_GetInvul);
+	package.add("GetItemBonuses", &Perl_Mob_GetItemBonuses);
 	package.add("GetItemHPBonuses", &Perl_Mob_GetItemHPBonuses);
 	package.add("GetItemStat", &Perl_Mob_GetItemStat);
 	package.add("GetLastName", &Perl_Mob_GetLastName);
@@ -3239,6 +3256,7 @@ void perl_register_mob()
 	package.add("GetSpecialAbility", &Perl_Mob_GetSpecialAbility);
 	package.add("GetSpecialAbilityParam", &Perl_Mob_GetSpecialAbilityParam);
 	package.add("GetSpecializeSkillValue", &Perl_Mob_GetSpecializeSkillValue);
+	package.add("GetSpellBonuses", &Perl_Mob_GetSpellBonuses);
 	package.add("GetSpellHPBonuses", &Perl_Mob_GetSpellHPBonuses);
 	package.add("GetSpellIDFromSlot", &Perl_Mob_GetSpellIDFromSlot);
 	package.add("GetSpellStat", (int(*)(Mob*, uint32, const char*))&Perl_Mob_GetSpellStat);
