@@ -4532,7 +4532,7 @@ bool Client::IsLeadershipEXPOn() {
 
 }
 
-int Client::GetAggroCount() {
+uint32 Client::GetAggroCount() {
 	return AggroCount;
 }
 
