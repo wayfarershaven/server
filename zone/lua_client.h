@@ -466,6 +466,8 @@ public:
 	uint32 GetItemCooldown(uint32 item_id);
 	void UseAugmentContainer(int container_slot);
 	bool IsAutoFireEnabled();
+	std::string GetClassAbbreviation();
+	std::string GetRaceAbbreviation();
 	
 	void ApplySpell(int spell_id);
 	void ApplySpell(int spell_id, int duration);

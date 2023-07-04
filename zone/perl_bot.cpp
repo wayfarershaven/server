@@ -375,6 +375,16 @@ uint32 Perl_Bot_GetBotID(Bot* self) // @categories Script Utility
 	return self->GetBotID();
 }
 
+std::string Perl_Bot_GetClassAbbreviation(Bot* self)
+{
+	return GetPlayerClassAbbreviation(self->GetClass());
+}
+
+std::string Perl_Bot_GetRaceAbbreviation(Bot* self)
+{
+	return GetPlayerRaceAbbreviation(self->GetBaseRace());
+}
+
 void perl_register_bot()
 {
 	perl::interpreter state(PERL_GET_THX);
@@ -418,6 +428,7 @@ void perl_register_bot()
 	package.add("GetBotID", &Perl_Bot_GetBotID);
 	package.add("GetBotItem", &Perl_Bot_GetBotItem);
 	package.add("GetBotItemIDBySlot", &Perl_Bot_GetBotItemIDBySlot);
+	package.add("GetClassAbbreviation", &Perl_Bot_GetClassAbbreviation);
 	package.add("GetExpansionBitmask", &Perl_Bot_GetExpansionBitmask);
 	package.add("GetGroup", &Perl_Bot_GetGroup);
 	package.add("GetHealAmount", &Perl_Bot_GetHealAmount);
@@ -425,6 +436,7 @@ void perl_register_bot()
 	package.add("GetItemAt", &Perl_Bot_GetItemAt);
 	package.add("GetItemIDAt", &Perl_Bot_GetItemIDAt);
 	package.add("GetOwner", &Perl_Bot_GetOwner);
+	package.add("GetRaceAbbreviation", &Perl_Bot_GetRaceAbbreviation);
 	package.add("GetRawItemAC", &Perl_Bot_GetRawItemAC);
 	package.add("GetSpellDamage", &Perl_Bot_GetSpellDamage);
 	package.add("HasAugmentEquippedByID", &Perl_Bot_HasAugmentEquippedByID);

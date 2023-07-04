@@ -62,6 +62,8 @@ public:
 	Lua_ItemInst GetItemAt(int16 slot_id);
 	int GetItemIDAt(int16 slot_id);
 	void SendSpellAnim(uint16 target_id, uint16 spell_id);
+	std::string GetClassAbbreviation();
+	std::string GetRaceAbbreviation();
 
 	void ApplySpell(int spell_id);
 	void ApplySpell(int spell_id, int duration);

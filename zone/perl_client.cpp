@@ -2887,6 +2887,16 @@ bool Perl_Client_IsAutoFireEnabled(Client* self)
 	return self->AutoFireEnabled();
 }
 
+std::string Perl_Client_GetClassAbbreviation(Client* self)
+{
+	return GetPlayerClassAbbreviation(self->GetBaseClass());
+}
+
+std::string Perl_Client_GetRaceAbbreviation(Client* self)
+{
+	return GetPlayerRaceAbbreviation(self->GetBaseRace());
+}
+
 void perl_register_client()
 {
 	perl::interpreter perl(PERL_GET_THX);
@@ -3034,6 +3044,7 @@ void perl_register_client()
 	package.add("GetCarriedMoney", &Perl_Client_GetCarriedMoney);
 	package.add("GetCarriedPlatinum", &Perl_Client_GetCarriedPlatinum);
 	package.add("GetCharacterFactionLevel", &Perl_Client_GetCharacterFactionLevel);
+	package.add("GetClassAbbreviation", &Perl_Client_GetClassAbbreviation);
 	package.add("GetClassBitmask", &Perl_Client_GetClassBitmask);
 	package.add("GetClientMaxLevel", &Perl_Client_GetClientMaxLevel);
 	package.add("GetClientVersion", &Perl_Client_GetClientVersion);
@@ -3099,6 +3110,7 @@ void perl_register_client()
 	package.add("GetMoney", &Perl_Client_GetMoney);
 	package.add("GetPVP", &Perl_Client_GetPVP);
 	package.add("GetPVPPoints", &Perl_Client_GetPVPPoints);
+	package.add("GetRaceAbbreviation", &Perl_Client_GetRaceAbbreviation);
 	package.add("GetRaceBitmask", &Perl_Client_GetRaceBitmask);
 	package.add("GetRadiantCrystals", &Perl_Client_GetRadiantCrystals);
 	package.add("GetRaid", &Perl_Client_GetRaid);
