@@ -9268,7 +9268,14 @@ void Client::Handle_OP_ItemVerifyRequest(const EQApplicationPacket *app)
 		if ((spell_id <= 0) && (item->ItemType != EQ::item::ItemTypeFood && item->ItemType != EQ::item::ItemTypeDrink && item->ItemType != EQ::item::ItemTypeAlcohol && item->ItemType != EQ::item::ItemTypeSpell)) {
 			LogDebug("Item with no effect right clicked by [{}]", GetName());
 		} else if (inst->IsClassCommon()) {
-			if (!RuleB(Skills, RequireTomeHandin) && item->ItemType == EQ::item::ItemTypeSpell && (strstr((const char*)item->Name, "Tome of ") || strstr((const char*)item->Name, "Skill: "))) {
+			if (
+				!RuleB(Skills, RequireTomeHandin) &&
+				item->ItemType == EQ::item::ItemTypeSpell &&
+				(
+					Strings::BeginsWith(item->Name, "Tome of ") ||
+					Strings::BeginsWith(item->Name, "Skill: ")
+				)
+			) {
 				DeleteItemInInventory(slot_id, 1, true);
 				TrainDiscipline(item->ID);
 			} else if (item->ItemType == EQ::item::ItemTypeSpell) {
