@@ -3071,23 +3071,18 @@ void Client::Handle_OP_AssistGroup(const EQApplicationPacket *app)
 	EntityId_Struct* eid = (EntityId_Struct*)app->pBuffer;
 	Entity* entity = entity_list.GetID(eid->entity_id);
 
-	EQApplicationPacket* outapp = new EQApplicationPacket(OP_Assist, sizeof(EntityId_Struct));
-	eid = (EntityId_Struct*)outapp->pBuffer;
 	if (entity && entity->IsMob()) {
 		Mob* new_target = entity->CastToMob();
 		if (new_target && (GetGM() ||
 			Distance(m_Position, new_target->GetPosition()) <= TARGETING_RANGE)) {
 			cheat_manager.SetExemptStatus(Assist, true);
+			EQApplicationPacket* outapp = new EQApplicationPacket(OP_Assist, sizeof(EntityId_Struct));
+			eid = (EntityId_Struct*)outapp->pBuffer;
 			eid->entity_id = new_target->GetID();
-		} else {
-			eid->entity_id = 0;
+			FastQueuePacket(&outapp);
+			safe_delete(outapp);
 		}
-	} else {
-		eid->entity_id = 0;
 	}
-
-	FastQueuePacket(&outapp);
-	return;
 }
 
 void Client::Handle_OP_AugmentInfo(const EQApplicationPacket *app)
@@ -16160,14 +16155,18 @@ void Client::Handle_OP_RaidDelegateAbility(const EQApplicationPacket* app)
 	{
 	case RaidDelegateMainAssist: 
 	{
-		auto r = entity_list.GetRaidByName(this->GetName());
-		r->DelegateAbilityAssist(this, das->Name);
+		auto r = GetRaid();
+		if (r) {
+			r->DelegateAbilityAssist(this, das->Name);
+		}
 		break;
 	}
 	case RaidDelegateMainMarker: 
 	{
-		auto r = entity_list.GetRaidByName(this->GetName());
-		r->DelegateAbilityMark(this, das->Name);
+		auto r = GetRaid();
+		if (r) {
+			r->DelegateAbilityMark(this, das->Name);
+		}
 		break;
 	}
 	default:
@@ -16177,14 +16176,14 @@ void Client::Handle_OP_RaidDelegateAbility(const EQApplicationPacket* app)
 }
 void Client::Handle_OP_RaidClearNPCMarks(const EQApplicationPacket* app)
 {
-	if (app->size != 0)
-	{
+	if (app->size != 0) {
 		LogDebug("Size mismatch in OP_RaidClearNPCMark expected [{}] got [{}]", 0, app->size);
 		DumpPacket(app);
 		return;
 	}
 
-	auto r = entity_list.GetRaidByName(GetName());
-	r->RaidClearNPCMarks(GetName());
-
+	auto r = GetRaid();
+	if (r) {
+		r->RaidClearNPCMarks(this);
+	}
 }

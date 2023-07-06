@@ -2204,7 +2204,7 @@ Raid* EntityList::GetRaidByName(const char* name)
 {
 	for (const auto& r : raid_list) {
 		for (const auto& m : r->members) {
-			if (strcasecmp(m.member_name, name) == 0) {
+			if (Strings::EqualFold(m.member_name, name)) {
 				return r;
 			}
 		}
