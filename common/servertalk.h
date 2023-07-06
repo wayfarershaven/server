@@ -1903,6 +1903,11 @@ struct ServerOOCMute_Struct {
 	bool is_muted;
 };
 
+struct ServerZoneStatus_Struct {
+	char  name[64];
+	int16 admin;
+};
+
 #pragma pack()
 
 #endif
