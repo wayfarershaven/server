@@ -218,6 +218,7 @@ int command_init(void)
 		command_add("raidloot", "[All|GroupLeader|RaidLeader|Selected] - Sets your Raid Loot Type if you have permission to do so.", AccountStatus::Player, command_raidloot) ||
 		command_add("randomfeatures", "Temporarily randomizes the Facial Features of your target", AccountStatus::QuestTroupe, command_randomfeatures) ||
 		command_add("refreshgroup", "Refreshes Group for you or your player target.", AccountStatus::Player, command_refreshgroup) ||
+		command_add("reimburse", "- Adds items or plat to the Reimbursement table for a character.",  AccountStatus::GMAdmin, command_reimburse) ||
 		command_add("reload", "Reloads different types of server data globally, use no argument for help menu.", AccountStatus::GMMgmt, command_reload) ||
 		command_add("rq", "Reloads quests (alias of #reload quests).", AccountStatus::GMMgmt, command_reload) ||
 		command_add("rl", "Reloads logs (alias of #reload logs).", AccountStatus::GMMgmt, command_reload) ||
@@ -1094,6 +1095,7 @@ void command_bot(Client *c, const Seperator *sep)
 #include "gm_commands/qglobal.cpp"
 #include "gm_commands/race.cpp"
 #include "gm_commands/raidloot.cpp"
+#include "gm_commands/reimburse.cpp"
 #include "gm_commands/randomfeatures.cpp"
 #include "gm_commands/refreshgroup.cpp"
 #include "gm_commands/reload.cpp"

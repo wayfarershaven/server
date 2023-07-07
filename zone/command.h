@@ -166,6 +166,7 @@ void command_race(Client *c, const Seperator *sep);
 void command_raidloot(Client* c, const Seperator* sep);
 void command_randomfeatures(Client *c, const Seperator *sep);
 void command_refreshgroup(Client *c, const Seperator *sep);
+void command_reimburse(Client *c, const Seperator *sep);
 void command_reload(Client *c, const Seperator *sep);
 void command_removeitem(Client *c, const Seperator *sep);
 void command_repop(Client *c, const Seperator *sep);

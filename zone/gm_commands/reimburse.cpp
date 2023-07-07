@@ -41,29 +41,23 @@ void command_reimburse(Client *c, const Seperator *sep) {
 				c->Message(Chat::Red, "--- #reimburse <character_name> <item_id> <reason> - Reimburses a single item ID");
 				return;
 			}
-			std::string message;
-			int i = 3;
-			while(1) {
-				if(sep->arg[i][0] == 0) {
-					break;
-				}
-				if(message.length() > 0) {
-					message.push_back(' ');
-				}
-				message += sep->arg[i];
-				++i;
-			}
 
-			if(message.length() == 0) {
+			std::string message = sep->argplus[3];
+			if (message.empty()) {
 				c->Message(Chat::Red, "ERROR IN COMMAND FORMAT:");
 				c->Message(Chat::Red, "#reimburse usage:");
 				c->Message(Chat::Red, "--- #reimburse <character_name> <item_id> <reason> - Reimburses a single item ID");
 				return;
 			}
 
-			std::string query = StringFormat("INSERT INTO `cust_playerawards` (`CharID`, `Item_id`, `Reason`) VALUES (%i, %i, '%s')",
-											 char_id, item_id, Strings::Escape(message));
+			auto query = fmt::format(
+				"INSERT INTO `cust_playerawards` (`CharID`, `Item_id`, `Reason`) VALUES ({}, {}, '{}')",
+				char_id,
+				item_id
+				Strings::Escape(message)
+			);
 			auto results = database.QueryDatabase(query);
+			
 			c->Message(Chat::Lime, "Successfully added item: %s (%i) to Vhanna for player: %s (%i) For Reason: (%s)", Strings::Escape(item_name), item_id, Strings::Escape(char_name), char_id, Strings::Escape(message));
 		}
 	} else {
