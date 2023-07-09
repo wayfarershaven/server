@@ -237,8 +237,9 @@ int64 Client::CalcHPRegen(bool bCombat)
 
 	int64 base = 0;
 	auto base_data = database.GetBaseData(GetLevel(), GetClass());
-	if (base_data)
+	if (base_data) {
 		base = static_cast<int>(base_data->hp_regen);
+	}
 
 	auto level = GetLevel();
 	bool skip_innate = false;
@@ -246,8 +247,9 @@ int64 Client::CalcHPRegen(bool bCombat)
 	if (IsSitting()) {
 		if (level >= 50) {
 			base++;
-			if (level >= 65)
+			if (level >= 65) {
 				base++;
+			}
 		}
 
 		if ((Timer::GetCurrentTime() - tmSitting) > 60000) {
@@ -255,8 +257,9 @@ int64 Client::CalcHPRegen(bool bCombat)
 				auto tic_diff = std::min((Timer::GetCurrentTime() - tmSitting) / 60000, static_cast<uint32>(9));
 				if (tic_diff != 1) { // starts at 2 mins
 					int tic_bonus = tic_diff * 1.5 * base;
-					if (m_pp.InnateSkills[InnateRegen] != InnateDisabled)
+					if (m_pp.InnateSkills[InnateRegen] != InnateDisabled) {
 						tic_bonus = tic_bonus * 1.2;
+					}
 					base = tic_bonus;
 					skip_innate = true;
 				} else if (m_pp.InnateSkills[InnateRegen] == InnateDisabled) { // no innate regen gets first tick
@@ -277,8 +280,9 @@ int64 Client::CalcHPRegen(bool bCombat)
 		base *= 2;
 	}
 
-	if (IsStarved())
+	if (IsStarved()) {
 		base = 0;
+	}
 
 	base += GroupLeadershipAAHealthRegeneration();
 	// some IsKnockedOut that sets to -1
@@ -288,8 +292,9 @@ int64 Client::CalcHPRegen(bool bCombat)
 	if (!bCombat && CanFastRegen() && (IsSitting() || CanMedOnHorse())) {
 		auto max_hp = GetMaxHP();
 		int64 fast_regen = 6 * (max_hp / (zone ? zone->newzone_data.fast_regen_hp : 180));
-		if (base < fast_regen) // weird, but what the client is doing
+		if (base < fast_regen) { // weird, but what the client is doing
 			base = fast_regen;
+		}
 	}
 
 	int64 regen = base + item_regen + spellbonuses.HPRegen; // TODO: client does this in buff tick
@@ -550,7 +555,7 @@ int64 Client::CalcMaxMana()
 			current_mana = curMana_cap;
 		}
 	}
-	LogSpells("Client::CalcMaxMana() called for [{}] - returning [{}]", GetName(), max_mana);
+	LogSpells("for [{}] returning [{}]", GetName(), max_mana);
 	return max_mana;
 }
 
@@ -997,11 +1002,10 @@ int Client::CalcHaste()
 	}
 
 	// 60+ 100, 51-59 85, 1-50 level+25
-	if (level > 59) { // 60+
+	if (level > 59 || RuleB(Character, IgnoreLevelBasedHasteCaps)) { // 60+
 		cap = RuleI(Character, HasteCap);
 	}
-
-	if (level > 59 || RuleB(Character, IgnoreLevelBasedHasteCaps)) { // 60+
+	else if (level > 50) {  // 51-59
 		cap = 85;
 	} else {   // 1-50
 		cap = level + 25;
@@ -1619,7 +1623,7 @@ uint32 Mob::GetInstrumentMod(uint16 spell_id)
 		}
 	}
 
-	LogSpells("[{}]::GetInstrumentMod() spell=[{}] mod=[{}] modcap=[{}]\n", GetName(), spell_id, effectmod, effectmodcap);
+	LogSpells("Name [{}] spell [{}] mod [{}] modcap [{}]\n", GetName(), spell_id, effectmod, effectmodcap);
 
 	return effectmod;
 }

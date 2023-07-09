@@ -438,7 +438,7 @@ public:
 	int64 CalcMaxMana();
 	int64 CalcBaseMana();
 	const int64& SetMana(int64 amount);
-	int64 CalcManaRegenCap();
+	int64 CalcManaRegenCap() final;
 
 	// guild pool regen shit. Sends a SpawnAppearance with a value that regens to value * 0.001
 	void EnableAreaHPRegen(int value);
@@ -543,8 +543,8 @@ public:
 	inline virtual int32 GetCombatEffects() const { return itembonuses.ProcChance; }
 	inline virtual int32 GetDS() const { return itembonuses.DamageShield; }
 	// Mod3
-	inline virtual int32 GetHealAmt() const { return itembonuses.HealAmt; }
-	inline virtual int32 GetSpellDmg() const { return itembonuses.SpellDmg; }
+	inline int32 GetHealAmt() const override { return itembonuses.HealAmt; }
+	inline int32 GetSpellDmg() const final { return itembonuses.SpellDmg; }
 	inline virtual int32 GetClair() const { return itembonuses.Clairvoyance; }
 	inline virtual int32 GetDSMit() const { return itembonuses.DSMitigation; }
 
@@ -586,8 +586,8 @@ public:
 	int64 CalcEnduranceRegen(bool bCombat = false); //Calculates endurance regen used in DoEnduranceRegen()
 	int64 GetEndurance() const {return current_endurance;} //This gets our current endurance
 	int64 GetMaxEndurance() const {return max_end;} //This gets our endurance from the last CalcMaxEndurance() call
-	int64 CalcEnduranceRegenCap();
-	int64 CalcHPRegenCap();
+	int64 CalcEnduranceRegenCap() final;
+	int64 CalcHPRegenCap() final;
 	inline uint8 GetEndurancePercent() { return (uint8)((float)current_endurance / (float)max_end * 100.0f); }
 	void SetEndurance(int32 newEnd); //This sets the current endurance to the new value
 	void DoEnduranceRegen(); //This Regenerates endurance
@@ -1008,7 +1008,7 @@ public:
 	void SetHunger(int32 in_hunger);
 	void SetThirst(int32 in_thirst);
 	void SetConsumption(int32 in_hunger, int32 in_thirst);
-	bool IsStarved() const { if (GetGM() || !RuleB(Character, EnableHungerPenalties)) return false; return m_pp.hunger_level == 0 || m_pp.thirst_level == 0; }
+	bool IsStarved() const { if (GetGM() || !RuleB(Character, EnableFoodRequirement) || !RuleB(Character, EnableHungerPenalties)) return false; return m_pp.hunger_level == 0 || m_pp.thirst_level == 0; }
 	int32 GetIntoxication() const { return m_pp.intoxication; }
 
 	bool CheckTradeLoreConflict(Client* other);
@@ -1717,7 +1717,7 @@ private:
 
 	void HandleTraderPriceUpdate(const EQApplicationPacket *app);
 
-	int32 CalcItemATKCap();
+	int32 CalcItemATKCap() final;
 	int32 CalcHaste();
 
 	int32 CalcAlcoholPhysicalEffect();

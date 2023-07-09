@@ -175,12 +175,13 @@ Client::Client(EQStreamInterface* ieqs)
   m_dirtyautohaters(false),
   mob_close_scan_timer(6000),
   position_update_timer(10000),
-  tmSitting(0),
-  consent_throttle_timer(2000)
+  consent_throttle_timer(2000),
+  tmSitting(0)
 {
 	for (auto client_filter = FilterNone; client_filter < _FilterCount; client_filter = eqFilterType(client_filter + 1)) {
 		SetFilter(client_filter, FilterShow);
 	}
+
 	cheat_manager.SetClient(this);
 	mMovementManager->AddClient(this);
 	character_id = 0;
@@ -663,7 +664,7 @@ bool Client::Save(uint8 iCommitNow) {
 	/* Total Time Played */
 	TotalSecondsPlayed += (time(nullptr) - m_pp.lastlogin);
 	m_pp.timePlayedMin = (TotalSecondsPlayed / 60);
-	m_pp.RestTimer = rest_timer.GetRemainingTime() / 1000;
+	m_pp.RestTimer = GetRestTimer();
 
 	/* Save Mercs */
 	if (GetMercInfo().MercTimerRemaining > RuleI(Mercs, UpkeepIntervalMS)) {
@@ -692,7 +693,6 @@ bool Client::Save(uint8 iCommitNow) {
 	} else {
 		memset(&m_petinfo, 0, sizeof(struct PetInfo));
 	}
-
 	database.SavePetInfo(this);
 
 	if(tribute_timer.Enabled()) {
@@ -1058,7 +1058,7 @@ void Client::ChannelMessageReceived(uint8 chan_num, uint8 language, uint8 lang_s
 			if(!global_channel_timer.Check())
 			{
 				if(strlen(targetname) == 0)
-					ChannelMessageReceived(7, language, lang_skill, message, "discard"); //Fast typer or spammer??
+					ChannelMessageReceived(ChatChannel_Tell, language, lang_skill, message, "discard"); //Fast typer or spammer??
 				else
 					return;
 			}
@@ -4662,6 +4662,36 @@ void Client::DecrementAggroCount()
 		VARSTRUCT_ENCODE_TYPE(uint32, Buffer, m_pp.RestTimer);
 		QueuePacket(outapp);
 		safe_delete(outapp);
+	}
+}
+
+// when we cast a beneficial spell we need to steal our targets current timer
+// That's what we use this for
+void Client::UpdateRestTimer(uint32 new_timer)
+{
+	// their timer was 0, so we don't do anything
+	if (new_timer == 0)
+		return;
+
+	if (!RuleB(Character, RestRegenEnabled))
+		return;
+
+	// so if we're currently on aggro, we check our saved timer
+	if (AggroCount) {
+		if (m_pp.RestTimer < new_timer) // our timer needs to be updated, don't need to update client here
+			m_pp.RestTimer = new_timer;
+	} else { // if we're not aggro, we need to check if current timer needs updating
+		if (rest_timer.GetRemainingTime() / 1000 < new_timer) {
+			rest_timer.Start(new_timer * 1000);
+			if (ClientVersion() >= EQ::versions::ClientVersion::SoF) {
+				auto outapp = new EQApplicationPacket(OP_RestState, 5);
+				char *Buffer = (char *)outapp->pBuffer;
+				VARSTRUCT_ENCODE_TYPE(uint8, Buffer, 0x00);
+				VARSTRUCT_ENCODE_TYPE(uint32, Buffer, new_timer);
+				QueuePacket(outapp);
+				safe_delete(outapp);
+			}
+		}
 	}
 }
 

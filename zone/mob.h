@@ -724,6 +724,8 @@ public:
 	inline int32 GetHeroicStrikethrough() const  { return heroic_strikethrough; }
 	virtual int32 GetHealAmt() const { return 0; }
 	virtual int32 GetSpellDmg() const { return 0; }
+	void ProcessItemCaps();
+	virtual int32 CalcItemATKCap() { return 0; }
 	virtual bool IsSitting() const { return false; }
 	
 	void CopyHateList(Mob* to);
