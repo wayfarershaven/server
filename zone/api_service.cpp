@@ -662,6 +662,7 @@ Json::Value ApiGetClientListDetail(EQ::Net::WebsocketServerConnection *connectio
 		row["calc_mana_regen_cap"]                     = client->CalcManaRegenCap();
 		row["calc_max_mana"]                           = client->CalcMaxMana();
 		row["can_fish"]                                = client->CanFish();
+		row["can_med_on_horse"]                        = client->CanMedOnHorse();
 		row["carried_money"]                           = client->GetCarriedMoney();
 		row["char_max_level_from_bucket"]              = client->GetCharMaxLevelFromBucket();
 		row["char_max_level_from_q_global"]            = client->GetCharMaxLevelFromQGlobal();

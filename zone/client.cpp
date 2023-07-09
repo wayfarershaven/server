@@ -175,6 +175,7 @@ Client::Client(EQStreamInterface* ieqs)
   m_dirtyautohaters(false),
   mob_close_scan_timer(6000),
   position_update_timer(10000),
+  tmSitting(0),
   consent_throttle_timer(2000)
 {
 	for (auto client_filter = FilterNone; client_filter < _FilterCount; client_filter = eqFilterType(client_filter + 1)) {
@@ -292,9 +293,10 @@ Client::Client(EQStreamInterface* ieqs)
 	m_ClientVersion = EQ::versions::ClientVersion::Unknown;
 	m_ClientVersionBit = 0;
 	AggroCount = 0;
-	RestRegenHP = 0;
-	RestRegenMana = 0;
-	RestRegenEndurance = 0;
+	ooc_regen = false;
+	AreaHPRegen = 1.0f;
+	AreaManaRegen = 1.0f;
+	AreaEndRegen = 1.0f;
 	XPRate = 100;
 	current_endurance = 0;
 
@@ -329,6 +331,10 @@ Client::Client(EQStreamInterface* ieqs)
 	interrogateinv_flag = false;
 
 	trapid = 0;
+
+	for (int i = 0; i < InnateSkillMax; ++i) {
+		m_pp.InnateSkills[i] = InnateDisabled;
+	}
 
 	temp_pvp = false;
 
@@ -4544,34 +4550,40 @@ void Client::UpdateGroupAAs(int32 points, uint32 type) {
 
 bool Client::IsLeadershipEXPOn() {
 
-	if(!m_pp.leadAAActive)
+	if(!m_pp.leadAAActive) {
 		return false;
+	}
 
 	Group *g = GetGroup();
 
-	if (g && g->IsLeader(this) && g->GroupCount() > 2)
+	if (g && g->IsLeader(this) && g->GroupCount() > 2) {
 		return true;
+	}
 
 	Raid *r = GetRaid();
 
-	if (!r)
+	if (!r) {
 		return false;
+	}
 
 	// raid leaders can only gain raid AA XP
 	if (r->IsLeader(this)) {
-		if (r->RaidCount() > 17)
+		if (r->RaidCount() > 17) {
 			return true;
-		else
+		} else {
 			return false;
+		}
 	}
 
 	uint32 gid = r->GetGroup(this);
 
-	if (gid > 11) // not in a group
+	if (gid > 11) { // not in a group
 		return false;
+	}
 
-	if (r->IsGroupLeader(GetName()) && r->GroupCount(gid) > 2)
+	if (r->IsGroupLeader(GetName()) && r->GroupCount(gid) > 2) {
 		return true;
+	}
 
 	return false;
 
@@ -4588,16 +4600,18 @@ void Client::IncrementAggroCount(bool raid_target)
 	// rest state regen is stopped, and for SoF, it sends the opcode to show the crossed swords in-combat indicator.
 	AggroCount++;
 
-	if(!RuleI(Character, RestRegenPercent))
+	if(!RuleB(Character, RestRegenEnabled)) {
 		return;
+	}
 
 	uint32 newtimer = raid_target ? RuleI(Character, RestRegenRaidTimeToActivate) : RuleI(Character, RestRegenTimeToActivate);
 
 	// When our aggro count is 1 here, we are exiting rest state. We need to pause our current timer, if we have time remaining
 	// We should not actually have to do anything to the Timer object since the AggroCount counter blocks it from being checked
 	// and will have it's timer changed when we exit combat so let's not do any extra work
-	if (AggroCount == 1 && rest_timer.GetRemainingTime()) // the Client::rest_timer is never disabled, so don't need to check
+	if (AggroCount == 1 && rest_timer.GetRemainingTime()) { // the Client::rest_timer is never disabled, so don't need to check
 		m_pp.RestTimer = std::max(1u, rest_timer.GetRemainingTime() / 1000); // I guess round up?
+	}
 
 	// save the new timer if it's higher
 	m_pp.RestTimer = std::max(m_pp.RestTimer, newtimer);
@@ -4605,8 +4619,9 @@ void Client::IncrementAggroCount(bool raid_target)
 	// If we already had aggro before this method was called, the combat indicator should already be up for SoF clients,
 	// so we don't need to send it again.
 	//
-	if(AggroCount > 1)
+	if(AggroCount > 1) {
 		return;
+	}
 
 	if (ClientVersion() >= EQ::versions::ClientVersion::SoF) {
 		auto outapp = new EQApplicationPacket(OP_RestState, 1);
@@ -4615,7 +4630,6 @@ void Client::IncrementAggroCount(bool raid_target)
 		QueuePacket(outapp);
 		safe_delete(outapp);
 	}
-
 }
 
 void Client::DecrementAggroCount()
@@ -4630,12 +4644,14 @@ void Client::DecrementAggroCount()
 
 	AggroCount--;
 
-	if(!RuleI(Character, RestRegenPercent))
+	if(!RuleB(Character, RestRegenEnabled)) {
 		return;
+	}
 
 	// Something else is still aggro on us, can't rest yet.
-	if (AggroCount)
+	if (AggroCount) {
 		return;
+	}
 
 	rest_timer.Start(m_pp.RestTimer * 1000);
 
@@ -7976,6 +7992,195 @@ void Client::SetPetCommandState(int button, int state)
 	pcs->button_id = button;
 	pcs->state = state;
 	FastQueuePacket(&app);
+}
+
+bool Client::CanMedOnHorse()
+{
+	// no horse is false
+	if (GetHorseId() == 0)
+		return false;
+
+	// can't med while attacking
+	if (auto_attack)
+		return false;
+
+	return animation == 0 && m_Delta.x == 0.0f && m_Delta.y == 0.0f; // TODO: animation is SpeedRun
+}
+
+void Client::EnableAreaHPRegen(int value)
+{
+	AreaHPRegen = value * 0.001f;
+	SendAppearancePacket(AT_AreaHPRegen, value, false);
+}
+
+void Client::DisableAreaHPRegen()
+{
+	AreaHPRegen = 1.0f;
+	SendAppearancePacket(AT_AreaHPRegen, 1000, false);
+}
+
+void Client::EnableAreaManaRegen(int value)
+{
+	AreaManaRegen = value * 0.001f;
+	SendAppearancePacket(AT_AreaManaRegen, value, false);
+}
+
+void Client::DisableAreaManaRegen()
+{
+	AreaManaRegen = 1.0f;
+	SendAppearancePacket(AT_AreaManaRegen, 1000, false);
+}
+
+void Client::EnableAreaEndRegen(int value)
+{
+	AreaEndRegen = value * 0.001f;
+	SendAppearancePacket(AT_AreaEndRegen, value, false);
+}
+
+void Client::DisableAreaEndRegen()
+{
+	AreaEndRegen = 1.0f;
+	SendAppearancePacket(AT_AreaEndRegen, 1000, false);
+}
+
+void Client::EnableAreaRegens(int value)
+{
+	EnableAreaHPRegen(value);
+	EnableAreaManaRegen(value);
+	EnableAreaEndRegen(value);
+}
+
+void Client::DisableAreaRegens()
+{
+	DisableAreaHPRegen();
+	DisableAreaManaRegen();
+	DisableAreaEndRegen();
+}
+
+void Client::InitInnates()
+{
+	// this function on the client also inits the level one innate skills (like swimming, hide, etc)
+	// we won't do that here, lets just do the InnateSkills for now. Basically translation of what the client is doing
+	// A lot of these we could probably have ignored because they have no known use or are 100% client side
+	// but I figured just in case we'll do them all out
+	//
+	// The client calls this in a few places. When you remove a vision buff and in SetHeights, which is called in
+	// illusions, mounts, and a bunch of other cases. All of the calls to InitInnates are wrapped in restoring regen
+	// besides the call initializing the first time
+	auto race   = GetRace();
+	auto class_ = GetClass();
+
+	for (int i = 0; i < InnateSkillMax; ++i) {
+		m_pp.InnateSkills[i] = InnateDisabled;
+	}
+
+	m_pp.InnateSkills[InnateInspect] = InnateEnabled;
+	m_pp.InnateSkills[InnateOpen] = InnateEnabled;
+
+	if (race >= RT_FROGLOK_3) {
+		if (race == RT_SKELETON_2 || race == RT_FROGLOK_3) {
+			m_pp.InnateSkills[InnateUltraVision] = InnateEnabled;
+		} else {
+			m_pp.InnateSkills[InnateInfravision] = InnateEnabled;
+		}
+	}
+
+	switch (race) {
+		case RT_BARBARIAN:
+		case RT_BARBARIAN_2:
+			m_pp.InnateSkills[InnateSlam] = InnateEnabled;
+			break;
+		case RT_ERUDITE:
+		case RT_ERUDITE_2:
+			m_pp.InnateSkills[InnateLore] = InnateEnabled;
+			break;
+		case RT_WOOD_ELF:
+		case RT_GUARD_3:
+			m_pp.InnateSkills[InnateInfravision] = InnateEnabled;
+			break;
+		case RT_GNOME:
+		case RT_HIGH_ELF:
+		case RT_GUARD_2:
+			m_pp.InnateSkills[InnateInfravision] = InnateEnabled;
+			m_pp.InnateSkills[InnateLore]        = InnateEnabled;
+			break;
+		case RT_TROLL:
+		case RT_TROLL_2:
+			m_pp.InnateSkills[InnateRegen]       = InnateEnabled;
+			m_pp.InnateSkills[InnateSlam]        = InnateEnabled;
+			m_pp.InnateSkills[InnateInfravision] = InnateEnabled;
+			break;
+		case RT_DWARF:
+		case RT_DWARF_2:
+			m_pp.InnateSkills[InnateInfravision] = InnateEnabled;
+			break;
+		case RT_OGRE:
+		case RT_OGRE_2:
+			m_pp.InnateSkills[InnateInfravision] = InnateEnabled;
+			m_pp.InnateSkills[InnateSlam]        = InnateEnabled;
+			m_pp.InnateSkills[InnateNoBash]      = InnateEnabled;
+			m_pp.InnateSkills[InnateBashDoor]    = InnateEnabled;
+			break;
+		case RT_HALFLING:
+		case RT_HALFLING_2:
+			m_pp.InnateSkills[InnateInfravision] = InnateEnabled;
+			break;
+		case RT_IKSAR:
+			m_pp.InnateSkills[InnateRegen]       = InnateEnabled;
+			m_pp.InnateSkills[InnateInfravision] = InnateEnabled;
+			break;
+		case RT_VAH_SHIR:
+			m_pp.InnateSkills[InnateInfravision] = InnateEnabled;
+			break;
+		case RT_DARK_ELF:
+		case RT_DARK_ELF_2:
+		case RT_VAMPIRE_2:
+		case RT_FROGLOK_2:
+		case RT_GHOST:
+		case RT_GHOUL:
+		case RT_SKELETON:
+		case RT_VAMPIRE:
+		case RT_WILL_O_WISP:
+		case RT_ZOMBIE:
+		case RT_SPECTRE:
+		case RT_GHOST_2:
+		case RT_GHOST_3:
+		case RT_DRAGON_2:
+		case RT_INNORUUK:
+			m_pp.InnateSkills[InnateUltraVision] = InnateEnabled;
+			break;
+		case RT_HUMAN:
+		case RT_GUARD:
+		case RT_BEGGAR:
+		case RT_HUMAN_2:
+		case RT_HUMAN_3:
+		case RT_FROGLOK_3: // client does froglok weird, but this should work out fine
+			break;
+		default:
+			m_pp.InnateSkills[InnateInfravision] = InnateEnabled;
+			break;
+	}
+
+	switch (class_) {
+		case DRUID:
+			m_pp.InnateSkills[InnateHarmony] = InnateEnabled;
+			break;
+		case BARD:
+			m_pp.InnateSkills[InnateReveal] = InnateEnabled;
+			break;
+		case ROGUE:
+			m_pp.InnateSkills[InnateSurprise] = InnateEnabled;
+			m_pp.InnateSkills[InnateReveal]   = InnateEnabled;
+			break;
+		case RANGER:
+			m_pp.InnateSkills[InnateAwareness] = InnateEnabled;
+			break;
+		case MONK:
+			m_pp.InnateSkills[InnateSurprise]  = InnateEnabled;
+			m_pp.InnateSkills[InnateAwareness] = InnateEnabled;
+		default:
+			break;
+	}
 }
 
 bool Client::GetDisplayMobInfoWindow() const
