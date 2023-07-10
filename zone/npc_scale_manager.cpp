@@ -255,7 +255,6 @@ bool NpcScaleManager::LoadScaleData()
 		scale_data.min_dmg              = s.min_dmg;
 		scale_data.max_dmg              = s.max_dmg;
 		scale_data.hp_regen_rate        = s.hp_regen_rate;
-		scale_data.hp_regen_per_second  = s.hp_regen_per_second;
 		scale_data.attack_delay         = s.attack_delay;
 		scale_data.spell_scale          = s.spell_scale;
 		scale_data.heal_scale           = s.heal_scale;
