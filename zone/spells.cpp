@@ -4312,6 +4312,17 @@ bool Mob::SpellOnTarget(
 			spelltar->SetHateAmountOnEnt(this, std::max(newhate, static_cast<int64>(1)));
 		}
 	} else if (IsBeneficialSpell(spell_id) && !IsSummonPCSpell(spell_id)) {
+		if (this != spelltar && IsClient()){
+			if (spelltar->IsClient()) {
+				CastToClient()->UpdateRestTimer(spelltar->CastToClient()->GetRestTimer());
+			} else if (spelltar->IsPet()) {
+				auto* owner = spelltar->GetOwner();
+				if (owner && owner != this && owner->IsClient()) {
+					CastToClient()->UpdateRestTimer(owner->CastToClient()->GetRestTimer());
+				}
+			}
+		}
+
 		entity_list.AddHealAggro(
 			spelltar,
 			this,
@@ -4753,22 +4764,6 @@ void Mob::BuffFadeByEffect(int effect_id, int slot_to_skip)
 	}
 }
 
-bool Mob::IsAffectedByBuffByGlobalGroup(GlobalGroup group)
-{
-	int buff_count = GetMaxTotalSlots();
-	for (int buff_slot = 0; buff_slot < buff_count; buff_slot++) {
-		auto current_spell_id = buffs[buff_slot].spellid;
-		if (
-			IsValidSpell(current_spell_id) &&
-			spells[current_spell_id].spell_category == static_cast<int>(group)
-		) {
-			return true;
-		}
-	}
-
-	return false;
-}
-
 void Mob::BuffDetachCaster(Mob *caster)
 {
 	if (!caster)
@@ -4787,6 +4782,22 @@ void Mob::BuffDetachCaster(Mob *caster)
 			}
 		}
 	}
+}
+
+bool Mob::IsAffectedByBuffByGlobalGroup(GlobalGroup group)
+{
+	int buff_count = GetMaxTotalSlots();
+	for (int buff_slot = 0; buff_slot < buff_count; buff_slot++) {
+		auto current_spell_id = buffs[buff_slot].spellid;
+		if (
+			IsValidSpell(current_spell_id) &&
+			spells[current_spell_id].spell_category == static_cast<int>(group)
+		) {
+			return true;
+		}
+	}
+
+	return false;
 }
 
 // checks if 'this' can be affected by spell_id from caster

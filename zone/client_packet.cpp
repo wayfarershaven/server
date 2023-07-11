@@ -1393,15 +1393,17 @@ void Client::Handle_Connect_OP_ZoneEntry(const EQApplicationPacket *app)
 		consume_food_timer.SetTimer(CONSUMPTION_MNK_TIMER);
 	}
 
+	InitInnates();
+
 	/* If GM not set in DB, and does not meet min status to be GM, reset */
-	if (m_pp.gm && admin < minStatusToBeGM)
+	if (m_pp.gm && admin < minStatusToBeGM) {
 		m_pp.gm = 0;
+	}
 
 	/* Load Guild */
 	if (!IsInAGuild()) {
 		m_pp.guild_id = GUILD_NONE;
-	}
-	else {
+	} else {
 		m_pp.guild_id = GuildID();
 		uint8 rank = guild_mgr.GetDisplayedRank(GuildID(), GuildRank(), CharacterID());
 		// FIXME: RoF guild rank
@@ -14350,14 +14352,18 @@ void Client::Handle_OP_SpawnAppearance(const EQApplicationPacket *app)
 		else if (sa->parameter == ANIM_SIT) {
 			SetAppearance(eaSitting);
 			playeraction = 1;
-			if (!UseBardSpellLogic())
+			if (!UseBardSpellLogic()) {
 				InterruptSpell();
+			}
 			SetFeigned(false);
 			BindWound(this, false, true);
+			tmSitting = Timer::GetCurrentTime();
+			BuffFadeBySitModifier();
 		}
 		else if (sa->parameter == ANIM_CROUCH) {
-			if (!UseBardSpellLogic())
+			if (!UseBardSpellLogic()) {
 				InterruptSpell();
+			}
 			SetAppearance(eaCrouching);
 			playeraction = 2;
 			SetFeigned(false);

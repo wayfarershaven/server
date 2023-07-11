@@ -2136,8 +2136,8 @@ void SharedDatabase::LoadBaseData(void *data, int max_level) {
 		bd->base_hp = Strings::ToFloat(row[2]);
 		bd->base_mana = Strings::ToFloat(row[3]);
 		bd->base_end = Strings::ToFloat(row[4]);
-		bd->unk1 = Strings::ToFloat(row[5]);
-		bd->unk2 = Strings::ToFloat(row[6]);
+		bd->hp_regen = Strings::ToFloat(row[5]);
+		bd->end_regen = Strings::ToFloat(row[6]);
 		bd->hp_factor = Strings::ToFloat(row[7]);
 		bd->mana_factor = Strings::ToFloat(row[8]);
 		bd->endurance_factor = Strings::ToFloat(row[9]);

@@ -1688,14 +1688,14 @@ void Mob::SendStatsWindow(Client* c, bool use_window)
 				}
 
 				item_regen_field  = Strings::Commify(itembonuses.HPRegen);
-				cap_regen_field   = Strings::Commify(CastToClient()->CalcHPRegenCap());
+				cap_regen_field   = Strings::Commify(CalcHPRegenCap());
 				spell_regen_field = Strings::Commify(spellbonuses.HPRegen);
 				aa_regen_field    = Strings::Commify(aabonuses.HPRegen);
 
 				if (IsBot()) {
 					total_regen_field = Strings::Commify(CastToBot()->CalcHPRegen());
 				} else if (IsClient()) {
-					total_regen_field = Strings::Commify(CastToClient()->CalcHPRegen());
+					total_regen_field = Strings::Commify(CastToClient()->CalcHPRegen(true));
 				}
 
 				break;
@@ -1712,14 +1712,14 @@ void Mob::SendStatsWindow(Client* c, bool use_window)
 					}
 
 					item_regen_field  = Strings::Commify(itembonuses.ManaRegen);
-					cap_regen_field   = Strings::Commify(CastToClient()->CalcManaRegenCap());
+					cap_regen_field   = Strings::Commify(CalcManaRegenCap());
 					spell_regen_field = Strings::Commify(spellbonuses.ManaRegen);
 					aa_regen_field    = Strings::Commify(aabonuses.ManaRegen);
 
 					if (IsBot()) {
 						total_regen_field = Strings::Commify(CastToBot()->CalcManaRegen());
 					} else if (IsClient()) {
-						total_regen_field = Strings::Commify(CastToClient()->CalcManaRegen());
+						total_regen_field = Strings::Commify(CastToClient()->CalcManaRegen(true));
 					}
 				} else {
 					continue;
@@ -1733,14 +1733,14 @@ void Mob::SendStatsWindow(Client* c, bool use_window)
 
 				base_regen_field  = Strings::Commify(((GetLevel() * 4 / 10) + 2));
 				item_regen_field  = Strings::Commify(itembonuses.EnduranceRegen);
-				cap_regen_field   = Strings::Commify(CastToClient()->CalcEnduranceRegenCap());
+				cap_regen_field   = Strings::Commify(CalcEnduranceRegenCap());
 				spell_regen_field = Strings::Commify(spellbonuses.EnduranceRegen);
 				aa_regen_field    = Strings::Commify(aabonuses.EnduranceRegen);
 
 				if (IsBot()) {
 					total_regen_field = Strings::Commify(CastToBot()->CalcEnduranceRegen());
 				} else if (IsClient()) {
-					total_regen_field = Strings::Commify(CastToClient()->CalcEnduranceRegen());
+					total_regen_field = Strings::Commify(CastToClient()->CalcEnduranceRegen(true));
 				}
 
 				break;
@@ -2303,20 +2303,20 @@ void Mob::SendStatsWindow(Client* c, bool use_window)
 	final_string += DialogueWindow::Table(mod2_table) + DialogueWindow::Break(1);
 
 	// Heal Amount
-	if (CastToClient()->GetHealAmt()) {
+	if (GetHealAmt()) {
 		final_string += fmt::format(
 			"Heal Amount: {} / {}{}",
-			Strings::Commify(CastToClient()->GetHealAmt()),
+			Strings::Commify(GetHealAmt()),
 			Strings::Commify(RuleI(Character, ItemHealAmtCap)),
 			DialogueWindow::Break(1)
 		);
 	}
 
 	// Heal Amount
-	if (CastToClient()->GetSpellDmg()) {
+	if (GetSpellDmg()) {
 		final_string += fmt::format(
 			"Spell Damage: {} / {}{}",
-			Strings::Commify(CastToClient()->GetSpellDmg()),
+			Strings::Commify(GetSpellDmg()),
 			Strings::Commify(RuleI(Character, ItemSpellDmgCap)),
 			DialogueWindow::Break(1)
 		);
@@ -2447,7 +2447,7 @@ void Mob::SendStatsWindow(Client* c, bool use_window)
 			GetHP(),
 			GetMaxHP(),
 			IsBot() ? Strings::Commify(CastToBot()->CalcHPRegen()) : Strings::Commify(CastToClient()->CalcHPRegen()),
-			CastToClient()->CalcHPRegenCap()
+			CalcHPRegenCap()
 		).c_str()
 	);
 
@@ -2508,7 +2508,7 @@ void Mob::SendStatsWindow(Client* c, bool use_window)
 				Strings::Commify(GetMana()),
 				Strings::Commify(GetMaxMana()),
 				IsBot() ? Strings::Commify(CastToBot()->CalcManaRegen()) : Strings::Commify(CastToClient()->CalcManaRegen()),
-				Strings::Commify(CastToClient()->CalcManaRegenCap())
+				Strings::Commify(CalcManaRegenCap())
 			).c_str()
 		);
 	}
@@ -2519,8 +2519,8 @@ void Mob::SendStatsWindow(Client* c, bool use_window)
 			"Endurance: {}/{} Regen: {}/{}",
 			Strings::Commify(GetEndurance()),
 			Strings::Commify(GetMaxEndurance()),
-			IsBot() ? Strings::Commify(CastToBot()->CalcEnduranceRegen()) : Strings::Commify(CastToClient()->CalcEnduranceRegen()),
-			Strings::Commify(CastToClient()->CalcEnduranceRegenCap())
+			IsBot() ? Strings::Commify(CastToBot()->CalcEnduranceRegen()) : Strings::Commify(CastToClient()->CalcEnduranceRegen(true)),
+			Strings::Commify(CalcEnduranceRegenCap())
 		).c_str()
 	);
 
@@ -2619,13 +2619,13 @@ void Mob::SendStatsWindow(Client* c, bool use_window)
 		).c_str()
 	);
 
-	if (CastToClient()->GetHealAmt() || CastToClient()->GetSpellDmg()) {
+	if (GetHealAmt() || GetSpellDmg()) {
 		c->Message(
 			Chat::White,
 			fmt::format(
 				"Heal Amount: {} Spell Damage: {}",
-				Strings::Commify(CastToClient()->GetHealAmt()),
-				Strings::Commify(CastToClient()->GetSpellDmg())
+				Strings::Commify(GetHealAmt()),
+				Strings::Commify(GetSpellDmg())
 			).c_str()
 		);
 	}
