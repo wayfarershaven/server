@@ -1647,31 +1647,17 @@ void Raid::SetRaidDetails()
 
 void Raid::GetRaidDetails()
 {
-	std::string query = StringFormat("SELECT locked, loottype, motd, marked_npc1, marked_npc2, marked_npc3 FROM raid_details WHERE raidid = %lu",
-									 (unsigned long)GetID());
-	auto results = database.QueryDatabase(query);
-
-	if (!results.Success()) {
+	auto raid_details = RaidDetailsRepository::FindOne(database, GetID());
+	if (raid_details.raidid == 0) {
 		return;
 	}
 
-	if (results.RowCount() == 0) {
-		LogError(
-			"Error getting raid details for raid [{}]: [{}]",
-			(unsigned long) GetID(),
-			results.ErrorMessage().c_str()
-		);
-		return;
-	}
-
-	auto row = results.begin();
-
-	locked = Strings::ToInt(row[0]);
-	LootType = Strings::ToInt(row[1]);
-	motd = std::string(row[2]);
-	marked_npcs[0] = Strings::ToUnsignedInt(row[3]);
-	marked_npcs[1] = Strings::ToUnsignedInt(row[4]);
-	marked_npcs[2] = Strings::ToUnsignedInt(row[5]);
+	locked   = raid_details.locked;
+	LootType = raid_details.loottype;
+	motd     = raid_details.motd;
+	marked_npcs[0] = raid_details.marked_npc_1;
+	marked_npcs[1] = raid_details.marked_npc_2;
+	marked_npcs[2] = raid_details.marked_npc_3;
 }
 
 void Raid::SaveRaidMOTD()
@@ -2409,9 +2395,7 @@ void Raid::DelegateAbilityMark(Mob* delegator, const char* delegatee)
 			DELEGATE_OFF
 		);
 		if (!result) {
-			LogError("Unable to clear rain main marker for player: [{}].",
-				delegatee
-			);
+			LogError("Unable to clear rain main marker for player: [{}].", delegatee);
 		}
 	}
 	else {
@@ -2426,10 +2410,7 @@ void Raid::DelegateAbilityMark(Mob* delegator, const char* delegatee)
 				slot + 1
 			);
 			if (!result) {
-				LogError("Unable to set raid main marker for player: [{}] to [{}].",
-					delegatee,
-					slot + 1
-				);
+				LogError("Unable to set raid main marker for player: [{}] to [{}].", delegatee, slot + 1);
 			}
 		}
 	}
@@ -2446,21 +2427,21 @@ int Raid::FindNextRaidDelegateSlot(int option)
 	if (option == FindNextRaidMainMarkerSlot) {
 		for (int i = 0; i < MAX_NO_RAID_MAIN_MARKERS; i++) {
 			if (strlen(main_marker_pcs[i]) == 0) {
-					return i;
+				return i;
 			}
 		}
-		return -1;		
 	} else if (option == FindNextRaidMainAssisterSlot) {
 		for (int i = 0; i < MAX_NO_RAID_MAIN_ASSISTERS; i++) {
 			if (strlen(main_assister_pcs[i]) == 0) {
 				return i;
 			}
 		}
-		return -1;		
 	}
+
+	return -1;
 }
 
-void Raid::UpdateXTargetType(XTargetType Type, Mob* m, const char* Name) {}
+void Raid::UpdateXTargetType(XTargetType Type, Mob *m, const char *name) {}
 
 
 void Raid::RaidMarkNPC(Mob* mob, uint32 parameter)
@@ -2506,10 +2487,13 @@ void Raid::RaidMarkNPC(Mob* mob, uint32 parameter)
 
 void Raid::UpdateXtargetMarkedNPC()  {}
 
-void Raid::RaidClearNPCMarks(Client* c) 
+void Raid::RaidClearNPCMarks(Client* c)
 {
 	auto mob_id = c->GetID();
-	if (Strings::EqualFold(main_marker_pcs[MAIN_MARKER_1_SLOT], c->GetCleanName()) || Strings::EqualFold(main_marker_pcs[MAIN_MARKER_2_SLOT], c->GetCleanName()) || Strings::EqualFold(main_marker_pcs[MAIN_MARKER_3_SLOT], c->GetCleanName())) {
+
+	if (Strings::EqualFold(main_marker_pcs[MAIN_MARKER_1_SLOT], c->GetCleanName()) ||
+		Strings::EqualFold(main_marker_pcs[MAIN_MARKER_2_SLOT], c->GetCleanName()) ||
+		Strings::EqualFold(main_marker_pcs[MAIN_MARKER_3_SLOT], c->GetCleanName())) {
 		for (int i = 0; i < MAX_MARKED_NPCS; i++) {
 			if (marked_npcs[i]) {
 				auto npc_name = entity_list.GetNPCByID(marked_npcs[i])->GetCleanName();
@@ -2522,13 +2506,8 @@ void Raid::RaidClearNPCMarks(Client* c)
 				i + 1,
 				0
 			);
-
 			if (!result) {
-				LogError("Unable to clear MarkedNPC{} from slot: [{}] for guild [{}].",
-					i + 1,
-					i,
-					GetID()
-				);
+				LogError("Unable to clear MarkedNPC{} from slot: [{}] for guild [{}].", i + 1, i, GetID());
 			}
 		}
 
@@ -2538,6 +2517,7 @@ void Raid::RaidClearNPCMarks(Client* c)
 		mnpcs->Number = 0;
 		QueuePacket(outapp);
 		safe_delete(outapp);
+		UpdateXtargetMarkedNPC();
 	} else {
 		c->MessageString(Chat::Cyan, NOT_DELEGATED_MARKER);
 	}
@@ -2563,42 +2543,34 @@ void Raid::SendRemoveRaidXTargets(XTargetType Type) {}
 
 void Raid::SendRemoveAllRaidXTargets() {}
 
+// Send a packet to the entire raid notifying them of the group target selected by the Main Assist.
 void Raid::SendRaidAssistTarget()
 {
-	// Send a packet to the entire raid notifying them of the group target selected by the Main Assist.
-
 	uint16 assist_target_id = 0;
 	uint16 number = 0;
 	Mob* target = nullptr;
 
-	if (strlen(main_assister_pcs[MAIN_ASSIST_1_SLOT]) > 0)
-	{
-		auto player = entity_list.GetMob(main_assister_pcs[MAIN_ASSIST_1_SLOT]);
-		if (player) {
-			target = player->GetTarget();
-			if (target) {
-				assist_target_id = target->GetID();
-				number = MAIN_ASSIST_1;
-			}
-		}
-	}
-	if (!assist_target_id && strlen(main_assister_pcs[MAIN_ASSIST_2_SLOT]) > 0) {
-		auto player = entity_list.GetMob(main_assister_pcs[MAIN_ASSIST_2_SLOT]);
-		if (player) {
-			target = player->GetTarget();
-			if (target) {
-				assist_target_id = target->GetID();
-				number = MAIN_ASSIST_2;
-			}
-		}
-	}
-	if (!assist_target_id && strlen(main_assister_pcs[MAIN_ASSIST_3_SLOT]) > 0) {
-		auto player = entity_list.GetMob(main_assister_pcs[MAIN_ASSIST_3_SLOT]);
-		if (player) {
-			target = player->GetTarget();
-			if (target) {
-				assist_target_id = target->GetID();
-				number = MAIN_ASSIST_3;
+	struct AssistTypes {
+		MainAssistType main_assist_type_slot;
+		MainAssistType main_assist_number;
+	};
+
+	std::vector<AssistTypes> assist_types = {
+		{.main_assist_type_slot = MAIN_ASSIST_1_SLOT, .main_assist_number = MAIN_ASSIST_1},
+		{.main_assist_type_slot = MAIN_ASSIST_2_SLOT, .main_assist_number = MAIN_ASSIST_2},
+		{.main_assist_type_slot = MAIN_ASSIST_3_SLOT, .main_assist_number = MAIN_ASSIST_3}
+	};
+
+	for (auto &a: assist_types) {
+		if (strlen(main_assister_pcs[a.main_assist_type_slot]) > 0) {
+			auto player = entity_list.GetMob(main_assister_pcs[a.main_assist_type_slot]);
+			if (player) {
+				target = player->GetTarget();
+				if (target) {
+					assist_target_id = target->GetID();
+					number           = a.main_assist_number;
+					break;
+				}
 			}
 		}
 	}
@@ -2618,53 +2590,46 @@ void Raid::SendRaidAssistTarget()
 	}
 }
 
-void Raid::SendAssistTarget(Client* c)
+void Raid::SendAssistTarget(Client *c)
 {
 	if (!c || c->IsBot()) {
 		return;
 	}
 
 	uint16 assist_target_id = 0;
-	uint16 number = 0;
-	Mob* target = nullptr;
+	uint16 number           = 0;
+	Mob *target = nullptr;
 
-	if (strlen(main_assister_pcs[MAIN_ASSIST_1_SLOT]) > 0)
-	{
-		auto player = entity_list.GetMob(main_assister_pcs[MAIN_ASSIST_1_SLOT]);
-		if (player) {
-			target = player->GetTarget();
-			if (target) {
-				assist_target_id = target->GetID();
-				number = MAIN_ASSIST_1;
-			}
-		}
-	}
-	if (!assist_target_id && strlen(main_assister_pcs[MAIN_ASSIST_2_SLOT]) > 0) {
-		auto player = entity_list.GetMob(main_assister_pcs[MAIN_ASSIST_2_SLOT]);
-		if (player) {
-			target = player->GetTarget();
-			if (target) {
-				assist_target_id = target->GetID();
-				number = MAIN_ASSIST_2;
-			}
-		}
-	}
-	if (!assist_target_id && strlen(main_assister_pcs[MAIN_ASSIST_3_SLOT]) > 0) {
-		auto player = entity_list.GetMob(main_assister_pcs[MAIN_ASSIST_3_SLOT]);
-		if (player) {
-			target = player->GetTarget();
-			if (target) {
-				assist_target_id = target->GetID();
-				number = MAIN_ASSIST_3;
+	struct AssistTypes {
+		MainAssistType main_assist_type_slot;
+		MainAssistType main_assist_number;
+	};
+
+	std::vector<AssistTypes> assist_types = {
+		{.main_assist_type_slot = MAIN_ASSIST_1_SLOT, .main_assist_number = MAIN_ASSIST_1},
+		{.main_assist_type_slot = MAIN_ASSIST_2_SLOT, .main_assist_number = MAIN_ASSIST_2},
+		{.main_assist_type_slot = MAIN_ASSIST_3_SLOT, .main_assist_number = MAIN_ASSIST_3}
+	};
+
+	for (auto &a: assist_types) {
+		if (strlen(main_assister_pcs[a.main_assist_type_slot]) > 0) {
+			auto player = entity_list.GetMob(main_assister_pcs[a.main_assist_type_slot]);
+			if (player) {
+				target = player->GetTarget();
+				if (target) {
+					assist_target_id = target->GetID();
+					number           = a.main_assist_number;
+					break;
+				}
 			}
 		}
 	}
 
 	if (assist_target_id) {
 		auto outapp = new EQApplicationPacket(OP_SetGroupTarget, sizeof(MarkNPC_Struct));
-		MarkNPC_Struct* mnpcs = (MarkNPC_Struct*)outapp->pBuffer;
+		MarkNPC_Struct *mnpcs = (MarkNPC_Struct *) outapp->pBuffer;
 		mnpcs->TargetID = assist_target_id;
-		mnpcs->Number = number;
+		mnpcs->Number   = number;
 		c->QueuePacket(outapp);
 		safe_delete(outapp);
 	}
@@ -2672,12 +2637,13 @@ void Raid::SendAssistTarget(Client* c)
 
 bool Raid::IsAssister(const char* who) 
 {
-	for (int i = 0; i < MAX_NO_RAID_MAIN_ASSISTERS; i++) {
-		if (Strings::EqualFold(main_assister_pcs[i], who)) {
-			return 1;
+	for (auto & main_assister_pc : main_assister_pcs) {
+		if (strcasecmp(main_assister_pc, who) == 0) {
+			return true;
 		}
 	}
-	return 0;
+
+	return false;
 }
 
 void Raid::SendRaidAssisterTo(const char* assister, Client* to)

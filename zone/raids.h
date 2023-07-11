@@ -90,7 +90,7 @@ typedef enum {
 	MAIN_ASSIST_1 = 1,
 	MAIN_ASSIST_2 = 2,
 	MAIN_ASSIST_3 = 3,
-}MainAssistType;
+} MainAssistType;
 
 typedef enum {
 	MAIN_MARKER_1_SLOT = 0,
@@ -99,7 +99,7 @@ typedef enum {
 	MAIN_MARKER_1 = 1,
 	MAIN_MARKER_2 = 2,
 	MAIN_MARKER_3 = 3,
-}MainMarkerType;
+} MainMarkerType;
 
 enum {
 	ClearDelegate = 1,
@@ -235,7 +235,7 @@ public:
 	void	DelegateAbilityAssist(Mob* mob, const char* who);
 	void	DelegateAbilityMark(Mob* mob, const char* who);
 	void    RaidMarkNPC(Mob* mob, uint32 parameter);
-	void    UpdateXTargetType(XTargetType Type, Mob* m, const char* Name = (const char*)nullptr);
+	void    UpdateXTargetType(XTargetType Type, Mob* m, const char* name = (const char*)nullptr);
 	int     FindNextRaidDelegateSlot(int option);
 	void    UpdateXtargetMarkedNPC();
 	void    RaidClearNPCMarks(Client* c);
