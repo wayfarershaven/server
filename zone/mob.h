@@ -685,10 +685,13 @@ public:
 	inline int64 GetHP() const { return current_hp; }
 	inline int64 GetMaxHP() const { return max_hp; }
 	virtual int64 CalcMaxHP();
+	virtual int64 CalcHPRegenCap() { return 0; }
 	inline int64 GetMaxMana() const { return max_mana; }
+	virtual int64 CalcManaRegenCap() { return 0; }
 	inline int64 GetMana() const { return current_mana; }
 	virtual int64 GetEndurance() const { return 0; }
 	virtual int64 GetMaxEndurance() const { return 0; }
+	virtual int64 CalcEnduranceRegenCap() { return 0; }
 	virtual void SetEndurance(int32 newEnd) { return; }
 	int64 GetItemHPBonuses();
 	int64 GetSpellHPBonuses();
@@ -719,7 +722,10 @@ public:
 	bool IsControllableBoat() const;
 	inline const bool AlwaysAggro() const { return always_aggro; }
 	inline int32 GetHeroicStrikethrough() const  { return heroic_strikethrough; }
-
+	virtual int32 GetHealAmt() const { return 0; }
+	virtual int32 GetSpellDmg() const { return 0; }
+	void ProcessItemCaps();
+	virtual int32 CalcItemATKCap() { return 0; }
 	virtual bool IsSitting() const { return false; }
 	
 	void CopyHateList(Mob* to);
@@ -1272,6 +1278,7 @@ public:
 	void				RotateToRunning(float new_heading);
 	void				StopNavigation();
 	float				CalculateDistance(float x, float y, float z);
+	float				CalculateDistance(Mob* mob);
 	float				GetGroundZ(float new_x, float new_y, float z_offset=0.0);
 	void				SendTo(float new_x, float new_y, float new_z);
 	void				SendToFixZ(float new_x, float new_y, float new_z);
@@ -1402,6 +1409,9 @@ public:
 	inline uint64 GetCombatManaRegen() { return combat_mana_regen; }
 
 	bool HasSpellEffect(int effect_id);
+
+	std::string GetRacePlural();
+	std::string GetClassPlural();
 
 	//Command #Tune functions
 	void TuneGetStats(Mob* defender, Mob *attacker);

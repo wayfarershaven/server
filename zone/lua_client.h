@@ -368,7 +368,7 @@ public:
 	void AssignToInstance(int instance_id);
 	void Freeze();
 	void UnFreeze();
-	int GetAggroCount();
+	uint32 GetAggroCount();
 	uint64 GetCarriedMoney();
 	uint32 GetCarriedPlatinum();
 	uint64 GetAllMoney();
@@ -381,8 +381,10 @@ public:
 	int GetAlternateCurrencyValue(uint32 currency);
 	void SendWebLink(const char *site);
 	bool HasSpellScribed(int spell_id);
-	void SetAccountFlag(std::string flag, std::string val);
-	std::string GetAccountFlag(std::string flag);
+	void ClearAccountFlag(const std::string& flag);
+	void SetAccountFlag(const std::string& flag, const std::string& value);
+	std::string GetAccountFlag(const std::string& flag);
+	luabind::object GetAccountFlags(lua_State* L);
 	int GetAccountAge();
 	Lua_Group GetGroup();
 	Lua_Raid GetRaid();
@@ -466,6 +468,8 @@ public:
 	uint32 GetItemCooldown(uint32 item_id);
 	void UseAugmentContainer(int container_slot);
 	bool IsAutoFireEnabled();
+	std::string GetClassAbbreviation();
+	std::string GetRaceAbbreviation();
 	
 	void ApplySpell(int spell_id);
 	void ApplySpell(int spell_id, int duration);

@@ -694,8 +694,31 @@ std::string Strings::ConvertToDigit(int n, const std::string& suffix)
 		return NUM_TO_ENGLISH_X[n] + suffix;
 	}
 }
+
+bool Strings::BeginsWith(const std::string& subject, const std::string& search)
+{
+	if (subject.length() < search.length()) {
+		return false;
+	}
+
+	return subject.starts_with(search);
+}
+
+bool Strings::EndsWith(const std::string& subject, const std::string& search)
+{
+	if (subject.length() < search.length()) {
+		return false;
+	}
+
+	return subject.ends_with(search);
+}
+
 bool Strings::Contains(const std::string& subject, const std::string& search)
 {
+	if (subject.length() < search.length()) {
+		return false;
+	}
+	
 	return subject.find(search) != std::string::npos;
 }
 
@@ -857,4 +880,18 @@ std::string Strings::RemoveNumbers(std::string s)
 	}
 
 	return s.substr(0, current);
+}
+
+std::string Strings::ZoneTime(const uint8 hours, const uint8 minutes)
+{
+	return fmt::format(
+		"{:02}:{:02} {}",
+		(
+			(hours % 12) == 0 ?
+			12 :
+			(hours % 12)
+		),
+		minutes,
+		hours >= 13 ? "PM" : "AM"
+	);
 }

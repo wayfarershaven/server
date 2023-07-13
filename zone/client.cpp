@@ -58,6 +58,7 @@ extern volatile bool RunLoops;
 #include "mob_movement_manager.h"
 #include "cheat_manager.h"
 
+#include "../common/repositories/account_flags_repository.h"
 #include "../common/repositories/bug_reports_repository.h"
 #include "../common/repositories/char_recipe_list_repository.h"
 #include "../common/repositories/character_spells_repository.h"
@@ -174,11 +175,13 @@ Client::Client(EQStreamInterface* ieqs)
   m_dirtyautohaters(false),
   mob_close_scan_timer(6000),
   position_update_timer(10000),
-  consent_throttle_timer(2000)
+  consent_throttle_timer(2000),
+  tmSitting(0)
 {
 	for (auto client_filter = FilterNone; client_filter < _FilterCount; client_filter = eqFilterType(client_filter + 1)) {
 		SetFilter(client_filter, FilterShow);
 	}
+
 	cheat_manager.SetClient(this);
 	mMovementManager->AddClient(this);
 	character_id = 0;
@@ -291,9 +294,10 @@ Client::Client(EQStreamInterface* ieqs)
 	m_ClientVersion = EQ::versions::ClientVersion::Unknown;
 	m_ClientVersionBit = 0;
 	AggroCount = 0;
-	RestRegenHP = 0;
-	RestRegenMana = 0;
-	RestRegenEndurance = 0;
+	ooc_regen = false;
+	AreaHPRegen = 1.0f;
+	AreaManaRegen = 1.0f;
+	AreaEndRegen = 1.0f;
 	XPRate = 100;
 	current_endurance = 0;
 
@@ -328,6 +332,10 @@ Client::Client(EQStreamInterface* ieqs)
 	interrogateinv_flag = false;
 
 	trapid = 0;
+
+	for (int i = 0; i < InnateSkillMax; ++i) {
+		m_pp.InnateSkills[i] = InnateDisabled;
+	}
 
 	temp_pvp = false;
 
@@ -656,7 +664,7 @@ bool Client::Save(uint8 iCommitNow) {
 	/* Total Time Played */
 	TotalSecondsPlayed += (time(nullptr) - m_pp.lastlogin);
 	m_pp.timePlayedMin = (TotalSecondsPlayed / 60);
-	m_pp.RestTimer = rest_timer.GetRemainingTime() / 1000;
+	m_pp.RestTimer = GetRestTimer();
 
 	/* Save Mercs */
 	if (GetMercInfo().MercTimerRemaining > RuleI(Mercs, UpkeepIntervalMS)) {
@@ -685,7 +693,6 @@ bool Client::Save(uint8 iCommitNow) {
 	} else {
 		memset(&m_petinfo, 0, sizeof(struct PetInfo));
 	}
-
 	database.SavePetInfo(this);
 
 	if(tribute_timer.Enabled()) {
@@ -1051,7 +1058,7 @@ void Client::ChannelMessageReceived(uint8 chan_num, uint8 language, uint8 lang_s
 			if(!global_channel_timer.Check())
 			{
 				if(strlen(targetname) == 0)
-					ChannelMessageReceived(7, language, lang_skill, message, "discard"); //Fast typer or spammer??
+					ChannelMessageReceived(ChatChannel_Tell, language, lang_skill, message, "discard"); //Fast typer or spammer??
 				else
 					return;
 			}
@@ -1521,6 +1528,50 @@ bool Client::UpdateLDoNPoints(uint32 theme_id, int points) {
 	QueuePacket(outapp);
 	safe_delete(outapp);
 	return true;
+}
+
+void Client::SetLDoNPoints(uint32 theme_id, uint32 points)
+{
+	switch (theme_id) {
+		case LDoNThemes::GUK: {
+			m_pp.ldon_points_guk = points;
+			break;
+		}
+		case LDoNThemes::MIR: {
+			m_pp.ldon_points_mir = points;
+			break;
+		}
+		case LDoNThemes::MMC: {
+			m_pp.ldon_points_mmc = points;
+			break;
+		}
+		case LDoNThemes::RUJ: {
+			m_pp.ldon_points_ruj = points;
+			break;
+		}
+		case LDoNThemes::TAK: {
+			m_pp.ldon_points_tak = points;
+			break;
+		}
+	}
+
+	m_pp.ldon_points_available += points;
+
+	auto outapp = new EQApplicationPacket(OP_AdventurePointsUpdate, sizeof(AdventurePoints_Update_Struct));
+
+	auto a = (AdventurePoints_Update_Struct*) outapp->pBuffer;
+
+	a->ldon_available_points = m_pp.ldon_points_available;
+	a->ldon_guk_points       = m_pp.ldon_points_guk;
+	a->ldon_mirugal_points   = m_pp.ldon_points_mir;
+	a->ldon_mistmoore_points = m_pp.ldon_points_mmc;
+	a->ldon_rujarkian_points = m_pp.ldon_points_ruj;
+	a->ldon_takish_points    = m_pp.ldon_points_tak;
+
+	outapp->priority = 6;
+
+	QueuePacket(outapp);
+	safe_delete(outapp);
 }
 
 void Client::SetSkill(EQ::skills::SkillType skillid, uint16 value) {
@@ -4499,40 +4550,46 @@ void Client::UpdateGroupAAs(int32 points, uint32 type) {
 
 bool Client::IsLeadershipEXPOn() {
 
-	if(!m_pp.leadAAActive)
+	if(!m_pp.leadAAActive) {
 		return false;
+	}
 
 	Group *g = GetGroup();
 
-	if (g && g->IsLeader(this) && g->GroupCount() > 2)
+	if (g && g->IsLeader(this) && g->GroupCount() > 2) {
 		return true;
+	}
 
 	Raid *r = GetRaid();
 
-	if (!r)
+	if (!r) {
 		return false;
+	}
 
 	// raid leaders can only gain raid AA XP
 	if (r->IsLeader(this)) {
-		if (r->RaidCount() > 17)
+		if (r->RaidCount() > 17) {
 			return true;
-		else
+		} else {
 			return false;
+		}
 	}
 
 	uint32 gid = r->GetGroup(this);
 
-	if (gid > 11) // not in a group
+	if (gid > 11) { // not in a group
 		return false;
+	}
 
-	if (r->IsGroupLeader(GetName()) && r->GroupCount(gid) > 2)
+	if (r->IsGroupLeader(GetName()) && r->GroupCount(gid) > 2) {
 		return true;
+	}
 
 	return false;
 
 }
 
-int Client::GetAggroCount() {
+uint32 Client::GetAggroCount() {
 	return AggroCount;
 }
 
@@ -4543,16 +4600,18 @@ void Client::IncrementAggroCount(bool raid_target)
 	// rest state regen is stopped, and for SoF, it sends the opcode to show the crossed swords in-combat indicator.
 	AggroCount++;
 
-	if(!RuleI(Character, RestRegenPercent))
+	if(!RuleB(Character, RestRegenEnabled)) {
 		return;
+	}
 
 	uint32 newtimer = raid_target ? RuleI(Character, RestRegenRaidTimeToActivate) : RuleI(Character, RestRegenTimeToActivate);
 
 	// When our aggro count is 1 here, we are exiting rest state. We need to pause our current timer, if we have time remaining
 	// We should not actually have to do anything to the Timer object since the AggroCount counter blocks it from being checked
 	// and will have it's timer changed when we exit combat so let's not do any extra work
-	if (AggroCount == 1 && rest_timer.GetRemainingTime()) // the Client::rest_timer is never disabled, so don't need to check
+	if (AggroCount == 1 && rest_timer.GetRemainingTime()) { // the Client::rest_timer is never disabled, so don't need to check
 		m_pp.RestTimer = std::max(1u, rest_timer.GetRemainingTime() / 1000); // I guess round up?
+	}
 
 	// save the new timer if it's higher
 	m_pp.RestTimer = std::max(m_pp.RestTimer, newtimer);
@@ -4560,8 +4619,9 @@ void Client::IncrementAggroCount(bool raid_target)
 	// If we already had aggro before this method was called, the combat indicator should already be up for SoF clients,
 	// so we don't need to send it again.
 	//
-	if(AggroCount > 1)
+	if(AggroCount > 1) {
 		return;
+	}
 
 	if (ClientVersion() >= EQ::versions::ClientVersion::SoF) {
 		auto outapp = new EQApplicationPacket(OP_RestState, 1);
@@ -4570,7 +4630,6 @@ void Client::IncrementAggroCount(bool raid_target)
 		QueuePacket(outapp);
 		safe_delete(outapp);
 	}
-
 }
 
 void Client::DecrementAggroCount()
@@ -4585,12 +4644,14 @@ void Client::DecrementAggroCount()
 
 	AggroCount--;
 
-	if(!RuleI(Character, RestRegenPercent))
+	if(!RuleB(Character, RestRegenEnabled)) {
 		return;
+	}
 
 	// Something else is still aggro on us, can't rest yet.
-	if (AggroCount)
+	if (AggroCount) {
 		return;
+	}
 
 	rest_timer.Start(m_pp.RestTimer * 1000);
 
@@ -4601,6 +4662,36 @@ void Client::DecrementAggroCount()
 		VARSTRUCT_ENCODE_TYPE(uint32, Buffer, m_pp.RestTimer);
 		QueuePacket(outapp);
 		safe_delete(outapp);
+	}
+}
+
+// when we cast a beneficial spell we need to steal our targets current timer
+// That's what we use this for
+void Client::UpdateRestTimer(uint32 new_timer)
+{
+	// their timer was 0, so we don't do anything
+	if (new_timer == 0)
+		return;
+
+	if (!RuleB(Character, RestRegenEnabled))
+		return;
+
+	// so if we're currently on aggro, we check our saved timer
+	if (AggroCount) {
+		if (m_pp.RestTimer < new_timer) // our timer needs to be updated, don't need to update client here
+			m_pp.RestTimer = new_timer;
+	} else { // if we're not aggro, we need to check if current timer needs updating
+		if (rest_timer.GetRemainingTime() / 1000 < new_timer) {
+			rest_timer.Start(new_timer * 1000);
+			if (ClientVersion() >= EQ::versions::ClientVersion::SoF) {
+				auto outapp = new EQApplicationPacket(OP_RestState, 5);
+				char *Buffer = (char *)outapp->pBuffer;
+				VARSTRUCT_ENCODE_TYPE(uint8, Buffer, 0x00);
+				VARSTRUCT_ENCODE_TYPE(uint32, Buffer, new_timer);
+				QueuePacket(outapp);
+				safe_delete(outapp);
+			}
+		}
 	}
 }
 
@@ -5910,90 +6001,64 @@ void Client::AdventureFinish(bool win, int theme, int points)
 	FastQueuePacket(&outapp);
 }
 
-void Client::CheckLDoNHail(Mob *target)
+void Client::CheckLDoNHail(NPC* n)
 {
-	if(!zone->adv_data)
-	{
+	if (!zone->adv_data || !n || n->GetOwnerID()) {
 		return;
 	}
 
-	if(!target || !target->IsNPC())
-	{
+	auto* ds = (ServerZoneAdventureDataReply_Struct*) zone->adv_data;
+	if (ds->type != Adventure_Rescue || ds->data_id != n->GetNPCTypeID()) {
 		return;
 	}
 
-	if(target->GetOwnerID() != 0)
-	{
+	if (entity_list.CheckNPCsClose(n)) {
+		n->Say(
+			"You're here to save me? I couldn't possibly risk leaving yet. There are "
+			"far too many of those horrid things out there waiting to recapture me! Please get "
+			"rid of some more of those vermin and then we can try to leave."
+		);
 		return;
 	}
 
-	ServerZoneAdventureDataReply_Struct* ds = (ServerZoneAdventureDataReply_Struct*)zone->adv_data;
-	if(ds->type != Adventure_Rescue)
-	{
-		return;
-	}
-
-	if(ds->data_id != target->GetNPCTypeID())
-	{
-		return;
-	}
-
-	if(entity_list.CheckNPCsClose(target) != 0)
-	{
-		target->Say("You're here to save me? I couldn't possibly risk leaving yet. There are "
-			"far too many of those horrid things out there waiting to recapture me! Please get"
-			" rid of some more of those vermin and then we can try to leave.");
-		return;
-	}
-
-	Mob *pet = GetPet();
-	if(pet)
-	{
-		if(pet->GetPetType() == petCharmed)
-		{
+	auto pet = GetPet();
+	if (pet) {
+		if (pet->GetPetType() == petCharmed) {
 			pet->BuffFadeByEffect(SE_Charm);
-		}
-		else if(pet->GetPetType() == petNPCFollow)
-		{
+		} else if (pet->GetPetType() == petNPCFollow) {
 			pet->SetOwnerID(0);
-		}
-		else
-		{
+		} else {
 			pet->Depop();
 		}
 	}
 
-	SetPet(target);
-	target->SetOwnerID(GetID());
-	target->Say("Wonderful! Someone to set me free! I feared for my life for so long,"
-		" never knowing when they might choose to end my life. Now that you're here though"
-		" I can rest easy. Please help me find my way out of here as soon as you can"
-		" I'll stay close behind you!");
+	SetPet(n);
+	n->SetOwnerID(GetID());
+	n->Say(
+		"Wonderful! Someone to set me free! I feared for my life for so long, "
+		"never knowing when they might choose to end my life. Now that you're here though "
+		"I can rest easy. Please help me find my way out of here as soon as you can "
+		"I'll stay close behind you!"
+	);
 }
 
-void Client::CheckEmoteHail(Mob *target, const char* message)
+void Client::CheckEmoteHail(NPC* n, const char* message)
 {
-	if(
-		(message[0] != 'H'	&&
-		message[0] != 'h')	||
-		message[1] != 'a'	||
-		message[2] != 'i'	||
-		message[3] != 'l'){
+	if (
+		!Strings::BeginsWith(message, "hail") &&
+		!Strings::BeginsWith(message, "Hail")
+	) {
 		return;
 	}
 
-	if(!target || !target->IsNPC())
-	{
+	if (!n || n->GetOwnerID()) {
 		return;
 	}
 
-	if(target->GetOwnerID() != 0)
-	{
-		return;
+	const auto emote_id = n->GetEmoteID();
+	if (emote_id) {
+		n->DoNPCEmote(EQ::constants::EmoteEventTypes::Hailed, emote_id);
 	}
-	uint32 emoteid = target->GetEmoteID();
-	if(emoteid != 0)
-		target->CastToNPC()->DoNPCEmote(EQ::constants::EmoteEventTypes::Hailed, emoteid);
 }
 
 void Client::MarkSingleCompassLoc(float in_x, float in_y, float in_z, uint8 count)
@@ -6500,87 +6565,6 @@ void Client::LeaveGroupXTargets(Group *g) {}
 void Client::LeaveRaidXTargets(Raid *r) {}
 
 void Client::SetMaxXTargets(uint8 NewMax) {}
-
-const char* Client::GetRacePlural(Client* client) {
-
-	switch (client->CastToMob()->GetRace()) {
-		case HUMAN:
-			return "Humans"; break;
-		case BARBARIAN:
-			return "Barbarians"; break;
-		case ERUDITE:
-			return "Erudites"; break;
-		case WOOD_ELF:
-			return "Wood Elves"; break;
-		case HIGH_ELF:
-			return "High Elves"; break;
-		case DARK_ELF:
-			return "Dark Elves"; break;
-		case HALF_ELF:
-			return "Half Elves"; break;
-		case DWARF:
-			return "Dwarves"; break;
-		case TROLL:
-			return "Trolls"; break;
-		case OGRE:
-			return "Ogres"; break;
-		case HALFLING:
-			return "Halflings"; break;
-		case GNOME:
-			return "Gnomes"; break;
-		case IKSAR:
-			return "Iksar"; break;
-		case VAHSHIR:
-			return "Vah Shir"; break;
-		case FROGLOK:
-			return "Frogloks"; break;
-		case DRAKKIN:
-			return "Drakkin"; break;
-		default:
-			return "Races"; break;
-	}
-}
-
-const char* Client::GetClassPlural(Client* client) {
-
-	switch (client->CastToMob()->GetClass()) {
-		case WARRIOR:
-			return "Warriors"; break;
-		case CLERIC:
-			return "Clerics"; break;
-		case PALADIN:
-			return "Paladins"; break;
-		case RANGER:
-			return "Rangers"; break;
-		case SHADOWKNIGHT:
-			return "Shadowknights"; break;
-		case DRUID:
-			return "Druids"; break;
-		case MONK:
-			return "Monks"; break;
-		case BARD:
-			return "Bards"; break;
-		case ROGUE:
-			return "Rogues"; break;
-		case SHAMAN:
-			return "Shamen"; break;
-		case NECROMANCER:
-			return "Necromancers"; break;
-		case WIZARD:
-			return "Wizards"; break;
-		case MAGICIAN:
-			return "Magicians"; break;
-		case ENCHANTER:
-			return "Enchanters"; break;
-		case BEASTLORD:
-			return "Beastlords"; break;
-		case BERSERKER:
-			return "Berserkers"; break;
-		default:
-			return "Classes"; break;
-	}
-}
-
 
 void Client::SendWebLink(const char *website)
 {
@@ -7163,36 +7147,54 @@ void Client::SendFactionMessage(int32 tmpvalue, int32 faction_id, int32 faction_
 
 void Client::LoadAccountFlags()
 {
-
 	accountflags.clear();
-	std::string query = StringFormat("SELECT p_flag, p_value "
-									"FROM account_flags WHERE p_accid = '%d'",
-									account_id);
-	auto results = database.QueryDatabase(query);
-	if (!results.Success()) {
+	const auto& l = AccountFlagsRepository::GetWhere(database, fmt::format("p_accid = {}", account_id));
+	if (l.empty()) {
 		return;
 	}
 
-	for (auto row = results.begin(); row != results.end(); ++row)
-		accountflags[row[0]] = row[1];
-}
-
-void Client::SetAccountFlag(std::string flag, std::string val) {
-
-	std::string query = StringFormat("REPLACE INTO account_flags (p_accid, p_flag, p_value) "
-									"VALUES( '%d', '%s', '%s')",
-									account_id, flag.c_str(), val.c_str());
-	auto results = database.QueryDatabase(query);
-	if(!results.Success()) {
-		return;
+	for (const auto& e : l) {
+		accountflags[e.p_flag] = e.p_value;
 	}
-
-	accountflags[flag] = val;
 }
 
-std::string Client::GetAccountFlag(std::string flag)
+void Client::ClearAccountFlag(const std::string& flag)
 {
-	return(accountflags[flag]);
+	auto e = AccountFlagsRepository::NewEntity();
+	e.p_accid = account_id;
+	e.p_flag  = flag;
+
+	AccountFlagsRepository::ClearFlag(database, e);
+}
+
+void Client::SetAccountFlag(const std::string& flag, const std::string& value)
+{
+	auto e = AccountFlagsRepository::NewEntity();
+	e.p_accid = account_id;
+	e.p_flag  = flag;
+	e.p_value = value;
+
+	AccountFlagsRepository::ReplaceFlag(database, e);
+
+	accountflags[flag] = value;
+}
+
+std::string Client::GetAccountFlag(const std::string& flag)
+{
+	return accountflags[flag];
+}
+
+std::vector<std::string> Client::GetAccountFlags()
+{
+	std::vector<std::string> l;
+
+	l.reserve(accountflags.size());
+
+	for (const auto& e : accountflags) {
+		l.emplace_back(e.first);
+	}
+
+	return l;
 }
 
 void Client::TickItemCheck()
@@ -8020,6 +8022,195 @@ void Client::SetPetCommandState(int button, int state)
 	pcs->button_id = button;
 	pcs->state = state;
 	FastQueuePacket(&app);
+}
+
+bool Client::CanMedOnHorse()
+{
+	// no horse is false
+	if (GetHorseId() == 0)
+		return false;
+
+	// can't med while attacking
+	if (auto_attack)
+		return false;
+
+	return animation == 0 && m_Delta.x == 0.0f && m_Delta.y == 0.0f; // TODO: animation is SpeedRun
+}
+
+void Client::EnableAreaHPRegen(int value)
+{
+	AreaHPRegen = value * 0.001f;
+	SendAppearancePacket(AT_AreaHPRegen, value, false);
+}
+
+void Client::DisableAreaHPRegen()
+{
+	AreaHPRegen = 1.0f;
+	SendAppearancePacket(AT_AreaHPRegen, 1000, false);
+}
+
+void Client::EnableAreaManaRegen(int value)
+{
+	AreaManaRegen = value * 0.001f;
+	SendAppearancePacket(AT_AreaManaRegen, value, false);
+}
+
+void Client::DisableAreaManaRegen()
+{
+	AreaManaRegen = 1.0f;
+	SendAppearancePacket(AT_AreaManaRegen, 1000, false);
+}
+
+void Client::EnableAreaEndRegen(int value)
+{
+	AreaEndRegen = value * 0.001f;
+	SendAppearancePacket(AT_AreaEndRegen, value, false);
+}
+
+void Client::DisableAreaEndRegen()
+{
+	AreaEndRegen = 1.0f;
+	SendAppearancePacket(AT_AreaEndRegen, 1000, false);
+}
+
+void Client::EnableAreaRegens(int value)
+{
+	EnableAreaHPRegen(value);
+	EnableAreaManaRegen(value);
+	EnableAreaEndRegen(value);
+}
+
+void Client::DisableAreaRegens()
+{
+	DisableAreaHPRegen();
+	DisableAreaManaRegen();
+	DisableAreaEndRegen();
+}
+
+void Client::InitInnates()
+{
+	// this function on the client also inits the level one innate skills (like swimming, hide, etc)
+	// we won't do that here, lets just do the InnateSkills for now. Basically translation of what the client is doing
+	// A lot of these we could probably have ignored because they have no known use or are 100% client side
+	// but I figured just in case we'll do them all out
+	//
+	// The client calls this in a few places. When you remove a vision buff and in SetHeights, which is called in
+	// illusions, mounts, and a bunch of other cases. All of the calls to InitInnates are wrapped in restoring regen
+	// besides the call initializing the first time
+	auto race   = GetRace();
+	auto class_ = GetClass();
+
+	for (int i = 0; i < InnateSkillMax; ++i) {
+		m_pp.InnateSkills[i] = InnateDisabled;
+	}
+
+	m_pp.InnateSkills[InnateInspect] = InnateEnabled;
+	m_pp.InnateSkills[InnateOpen] = InnateEnabled;
+
+	if (race >= RT_FROGLOK_3) {
+		if (race == RT_SKELETON_2 || race == RT_FROGLOK_3) {
+			m_pp.InnateSkills[InnateUltraVision] = InnateEnabled;
+		} else {
+			m_pp.InnateSkills[InnateInfravision] = InnateEnabled;
+		}
+	}
+
+	switch (race) {
+		case RT_BARBARIAN:
+		case RT_BARBARIAN_2:
+			m_pp.InnateSkills[InnateSlam] = InnateEnabled;
+			break;
+		case RT_ERUDITE:
+		case RT_ERUDITE_2:
+			m_pp.InnateSkills[InnateLore] = InnateEnabled;
+			break;
+		case RT_WOOD_ELF:
+		case RT_GUARD_3:
+			m_pp.InnateSkills[InnateInfravision] = InnateEnabled;
+			break;
+		case RT_GNOME:
+		case RT_HIGH_ELF:
+		case RT_GUARD_2:
+			m_pp.InnateSkills[InnateInfravision] = InnateEnabled;
+			m_pp.InnateSkills[InnateLore]        = InnateEnabled;
+			break;
+		case RT_TROLL:
+		case RT_TROLL_2:
+			m_pp.InnateSkills[InnateRegen]       = InnateEnabled;
+			m_pp.InnateSkills[InnateSlam]        = InnateEnabled;
+			m_pp.InnateSkills[InnateInfravision] = InnateEnabled;
+			break;
+		case RT_DWARF:
+		case RT_DWARF_2:
+			m_pp.InnateSkills[InnateInfravision] = InnateEnabled;
+			break;
+		case RT_OGRE:
+		case RT_OGRE_2:
+			m_pp.InnateSkills[InnateInfravision] = InnateEnabled;
+			m_pp.InnateSkills[InnateSlam]        = InnateEnabled;
+			m_pp.InnateSkills[InnateNoBash]      = InnateEnabled;
+			m_pp.InnateSkills[InnateBashDoor]    = InnateEnabled;
+			break;
+		case RT_HALFLING:
+		case RT_HALFLING_2:
+			m_pp.InnateSkills[InnateInfravision] = InnateEnabled;
+			break;
+		case RT_IKSAR:
+			m_pp.InnateSkills[InnateRegen]       = InnateEnabled;
+			m_pp.InnateSkills[InnateInfravision] = InnateEnabled;
+			break;
+		case RT_VAH_SHIR:
+			m_pp.InnateSkills[InnateInfravision] = InnateEnabled;
+			break;
+		case RT_DARK_ELF:
+		case RT_DARK_ELF_2:
+		case RT_VAMPIRE_2:
+		case RT_FROGLOK_2:
+		case RT_GHOST:
+		case RT_GHOUL:
+		case RT_SKELETON:
+		case RT_VAMPIRE:
+		case RT_WILL_O_WISP:
+		case RT_ZOMBIE:
+		case RT_SPECTRE:
+		case RT_GHOST_2:
+		case RT_GHOST_3:
+		case RT_DRAGON_2:
+		case RT_INNORUUK:
+			m_pp.InnateSkills[InnateUltraVision] = InnateEnabled;
+			break;
+		case RT_HUMAN:
+		case RT_GUARD:
+		case RT_BEGGAR:
+		case RT_HUMAN_2:
+		case RT_HUMAN_3:
+		case RT_FROGLOK_3: // client does froglok weird, but this should work out fine
+			break;
+		default:
+			m_pp.InnateSkills[InnateInfravision] = InnateEnabled;
+			break;
+	}
+
+	switch (class_) {
+		case DRUID:
+			m_pp.InnateSkills[InnateHarmony] = InnateEnabled;
+			break;
+		case BARD:
+			m_pp.InnateSkills[InnateReveal] = InnateEnabled;
+			break;
+		case ROGUE:
+			m_pp.InnateSkills[InnateSurprise] = InnateEnabled;
+			m_pp.InnateSkills[InnateReveal]   = InnateEnabled;
+			break;
+		case RANGER:
+			m_pp.InnateSkills[InnateAwareness] = InnateEnabled;
+			break;
+		case MONK:
+			m_pp.InnateSkills[InnateSurprise]  = InnateEnabled;
+			m_pp.InnateSkills[InnateAwareness] = InnateEnabled;
+		default:
+			break;
+	}
 }
 
 bool Client::GetDisplayMobInfoWindow() const

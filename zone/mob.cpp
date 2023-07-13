@@ -1576,7 +1576,7 @@ void Mob::MakeSpawnUpdate(PlayerPositionUpdateServer_Struct* spu) {
 	spu->delta_z = FloatToEQ13(m_Delta.z);
 	spu->heading = FloatToEQ12(m_Position.w);
 
-	if (IsClient() || IsBot()) {
+	if (IsOfClientBot()) {
 		spu->animation = animation;
 	} else {
 		spu->animation = pRunAnimSpeed;//animation;
@@ -1688,14 +1688,14 @@ void Mob::SendStatsWindow(Client* c, bool use_window)
 				}
 
 				item_regen_field  = Strings::Commify(itembonuses.HPRegen);
-				cap_regen_field   = Strings::Commify(CastToClient()->CalcHPRegenCap());
+				cap_regen_field   = Strings::Commify(CalcHPRegenCap());
 				spell_regen_field = Strings::Commify(spellbonuses.HPRegen);
 				aa_regen_field    = Strings::Commify(aabonuses.HPRegen);
 
 				if (IsBot()) {
 					total_regen_field = Strings::Commify(CastToBot()->CalcHPRegen());
 				} else if (IsClient()) {
-					total_regen_field = Strings::Commify(CastToClient()->CalcHPRegen());
+					total_regen_field = Strings::Commify(CastToClient()->CalcHPRegen(true));
 				}
 
 				break;
@@ -1712,14 +1712,14 @@ void Mob::SendStatsWindow(Client* c, bool use_window)
 					}
 
 					item_regen_field  = Strings::Commify(itembonuses.ManaRegen);
-					cap_regen_field   = Strings::Commify(CastToClient()->CalcManaRegenCap());
+					cap_regen_field   = Strings::Commify(CalcManaRegenCap());
 					spell_regen_field = Strings::Commify(spellbonuses.ManaRegen);
 					aa_regen_field    = Strings::Commify(aabonuses.ManaRegen);
 
 					if (IsBot()) {
 						total_regen_field = Strings::Commify(CastToBot()->CalcManaRegen());
 					} else if (IsClient()) {
-						total_regen_field = Strings::Commify(CastToClient()->CalcManaRegen());
+						total_regen_field = Strings::Commify(CastToClient()->CalcManaRegen(true));
 					}
 				} else {
 					continue;
@@ -1733,14 +1733,14 @@ void Mob::SendStatsWindow(Client* c, bool use_window)
 
 				base_regen_field  = Strings::Commify(((GetLevel() * 4 / 10) + 2));
 				item_regen_field  = Strings::Commify(itembonuses.EnduranceRegen);
-				cap_regen_field   = Strings::Commify(CastToClient()->CalcEnduranceRegenCap());
+				cap_regen_field   = Strings::Commify(CalcEnduranceRegenCap());
 				spell_regen_field = Strings::Commify(spellbonuses.EnduranceRegen);
 				aa_regen_field    = Strings::Commify(aabonuses.EnduranceRegen);
 
 				if (IsBot()) {
 					total_regen_field = Strings::Commify(CastToBot()->CalcEnduranceRegen());
 				} else if (IsClient()) {
-					total_regen_field = Strings::Commify(CastToClient()->CalcEnduranceRegen());
+					total_regen_field = Strings::Commify(CastToClient()->CalcEnduranceRegen(true));
 				}
 
 				break;
@@ -1751,15 +1751,12 @@ void Mob::SendStatsWindow(Client* c, bool use_window)
 		}
 
 		regen_string += DialogueWindow::TableRow(
-			fmt::format(
-				"{}{}{}{}{}{}",
-				DialogueWindow::TableCell(DialogueWindow::ColorMessage(regen_row_color, regen_row_header)),
-				DialogueWindow::TableCell(DialogueWindow::ColorMessage(regen_row_color, base_regen_field)),
-				DialogueWindow::TableCell(DialogueWindow::ColorMessage(regen_row_color, fmt::format("{} ({})", item_regen_field, cap_regen_field))),
-				DialogueWindow::TableCell(DialogueWindow::ColorMessage(regen_row_color, spell_regen_field)),
-				DialogueWindow::TableCell(DialogueWindow::ColorMessage(regen_row_color, aa_regen_field)),
-				DialogueWindow::TableCell(DialogueWindow::ColorMessage(regen_row_color, total_regen_field))
-			)
+			DialogueWindow::TableCell(DialogueWindow::ColorMessage(regen_row_color, regen_row_header)) +
+			DialogueWindow::TableCell(DialogueWindow::ColorMessage(regen_row_color, base_regen_field)) +
+			DialogueWindow::TableCell(DialogueWindow::ColorMessage(regen_row_color, fmt::format("{} ({})", item_regen_field, cap_regen_field))) +
+			DialogueWindow::TableCell(DialogueWindow::ColorMessage(regen_row_color, spell_regen_field)) +
+			DialogueWindow::TableCell(DialogueWindow::ColorMessage(regen_row_color, aa_regen_field)) +
+			DialogueWindow::TableCell(DialogueWindow::ColorMessage(regen_row_color, total_regen_field))
 		);
 	}
 
@@ -1865,23 +1862,20 @@ void Mob::SendStatsWindow(Client* c, bool use_window)
 		}
 
 		stat_table += DialogueWindow::TableRow(
-			fmt::format(
-				"{}{}{}{}",
-				DialogueWindow::TableCell(a_stat_name),
-				DialogueWindow::TableCell(
-					fmt::format(
-						"{} {}",
-						a_stat,
-						DialogueWindow::ColorMessage(heroic_color, fmt::format("+{}", h_stat))
-					)
-				),
-				DialogueWindow::TableCell(a_resist_name),
-				DialogueWindow::TableCell(
-					fmt::format(
-						"{} {}",
-						a_resist,
-						DialogueWindow::ColorMessage(heroic_color, fmt::format("+{}", h_resist_field))
-					)
+			DialogueWindow::TableCell(a_stat_name) +
+			DialogueWindow::TableCell(
+				fmt::format(
+					"{} {}",
+					a_stat,
+					DialogueWindow::ColorMessage(heroic_color, fmt::format("+{}", h_stat))
+				)
+			) +
+			DialogueWindow::TableCell(a_resist_name) +
+			DialogueWindow::TableCell(
+				fmt::format(
+					"{} {}",
+					a_resist,
+					DialogueWindow::ColorMessage(heroic_color, fmt::format("+{}", h_resist_field))
 				)
 			)
 		);
@@ -1984,23 +1978,20 @@ void Mob::SendStatsWindow(Client* c, bool use_window)
 		}
 
 		mod2_table += DialogueWindow::TableRow(
-			fmt::format(
-				"{}{}",
-				DialogueWindow::TableCell(
-					fmt::format(
-						"{}: {} / {}",
-						mod2a_name,
-						Strings::Commify(mod2a),
-						Strings::Commify(mod2a_cap)
-					)
-				),
-				DialogueWindow::TableCell(
-					fmt::format(
-						"{}: {} / {}",
-						mod2b_name,
-						Strings::Commify(mod2b),
-						Strings::Commify(mod2b_cap)
-					)
+			DialogueWindow::TableCell(
+				fmt::format(
+					"{}: {} / {}",
+					mod2a_name,
+					Strings::Commify(mod2a),
+					Strings::Commify(mod2a_cap)
+				)
+			) +
+			DialogueWindow::TableCell(
+				fmt::format(
+					"{}: {} / {}",
+					mod2b_name,
+					Strings::Commify(mod2b),
+					Strings::Commify(mod2b_cap)
 				)
 			)
 		);
@@ -2166,12 +2157,9 @@ void Mob::SendStatsWindow(Client* c, bool use_window)
 	// Class, Level, and Race
 	final_string += DialogueWindow::Table(
 		DialogueWindow::TableRow(
-			fmt::format(
-				"{}{}{}",
-				DialogueWindow::TableCell(fmt::format("Race: {}", GetPlayerRaceAbbreviation(GetBaseRace()))),
-				DialogueWindow::TableCell(fmt::format("Class: {}", GetPlayerClassAbbreviation(GetClass()))),
-				DialogueWindow::TableCell(fmt::format("Level: {}", std::to_string(GetLevel())))
-			)
+			DialogueWindow::TableCell(fmt::format("Race: {}", GetPlayerRaceAbbreviation(GetBaseRace()))) +
+			DialogueWindow::TableCell(fmt::format("Class: {}", GetPlayerClassAbbreviation(GetClass()))) +
+			DialogueWindow::TableCell(fmt::format("Level: {}", std::to_string(GetLevel())))
 		)
 	);
 
@@ -2179,15 +2167,12 @@ void Mob::SendStatsWindow(Client* c, bool use_window)
 	if (rune_number || magic_rune_number) {
 		final_string += DialogueWindow::Table(
 			DialogueWindow::TableRow(
-				fmt::format(
-					"{}{}{}",
-					DialogueWindow::TableCell(
-						fmt::format("Rune: {}", rune_number)
-					),
-					DialogueWindow::TableCell(""),
-					DialogueWindow::TableCell(
-						fmt::format("Spell Rune: {}", magic_rune_number)
-					)
+				DialogueWindow::TableCell(
+					fmt::format("Rune: {}", rune_number)
+				) +
+				DialogueWindow::TableCell("") +
+				DialogueWindow::TableCell(
+					fmt::format("Spell Rune: {}", magic_rune_number)
 				)
 			)
 		);
@@ -2271,21 +2256,21 @@ void Mob::SendStatsWindow(Client* c, bool use_window)
 		fmt::format(
 			"{}{}",
 			DialogueWindow::TableRow(
-				fmt::format(
-					"{}{}{}{}",
-					DialogueWindow::TableCell("Item"),
-					DialogueWindow::TableCell("Spell"),
-					DialogueWindow::TableCell("Over"),
-					DialogueWindow::TableCell("Total (Cap)")
-				)
+				DialogueWindow::TableCell("Item") +
+				DialogueWindow::TableCell("Spell") +
+				DialogueWindow::TableCell("Over") +
+				DialogueWindow::TableCell("Total (Cap)")
 			),
 			DialogueWindow::TableRow(
-				fmt::format(
-					"{}{}{}{}",
-					DialogueWindow::TableCell(Strings::Commify(itembonuses.haste)),
-					DialogueWindow::TableCell(Strings::Commify(spellbonuses.haste + spellbonuses.hastetype2)),
-					DialogueWindow::TableCell(Strings::Commify(spellbonuses.hastetype3 + ExtraHaste)),
-					DialogueWindow::TableCell(fmt::format("{} ({})", Strings::Commify(GetHaste()), Strings::Commify(RuleI(Character, HasteCap))))
+				DialogueWindow::TableCell(Strings::Commify(itembonuses.haste)) +
+				DialogueWindow::TableCell(Strings::Commify(spellbonuses.haste + spellbonuses.hastetype2)) +
+				DialogueWindow::TableCell(Strings::Commify(spellbonuses.hastetype3 + ExtraHaste)) +
+				DialogueWindow::TableCell(
+					fmt::format(
+						"{} ({})",
+						Strings::Commify(GetHaste()),
+						Strings::Commify(RuleI(Character, HasteCap))
+					)
 				)
 			)
 		)
@@ -2297,21 +2282,15 @@ void Mob::SendStatsWindow(Client* c, bool use_window)
 	final_string += DialogueWindow::CenterMessage("Regen");
 
 	const auto& regen_table = DialogueWindow::Table(
-		fmt::format(
-			"{}{}",
-			DialogueWindow::TableRow(
-				fmt::format(
-					"{}{}{}{}{}{}",
-					DialogueWindow::TableCell("Type"),
-					DialogueWindow::TableCell("Base"),
-					DialogueWindow::TableCell("Items (Cap)"),
-					DialogueWindow::TableCell("Spell"),
-					DialogueWindow::TableCell("AAs"),
-					DialogueWindow::TableCell("Total")
-				)
-			),
-			regen_string
-		)
+		DialogueWindow::TableRow(
+			DialogueWindow::TableCell("Type") +
+			DialogueWindow::TableCell("Base") +
+			DialogueWindow::TableCell("Items (Cap)") +
+			DialogueWindow::TableCell("Spell") +
+			DialogueWindow::TableCell("AAs") +
+			DialogueWindow::TableCell("Total")
+		) +
+		regen_string
 	);
 
 	// Regen
@@ -2324,20 +2303,20 @@ void Mob::SendStatsWindow(Client* c, bool use_window)
 	final_string += DialogueWindow::Table(mod2_table) + DialogueWindow::Break(1);
 
 	// Heal Amount
-	if (CastToClient()->GetHealAmt()) {
+	if (GetHealAmt()) {
 		final_string += fmt::format(
 			"Heal Amount: {} / {}{}",
-			Strings::Commify(CastToClient()->GetHealAmt()),
+			Strings::Commify(GetHealAmt()),
 			Strings::Commify(RuleI(Character, ItemHealAmtCap)),
 			DialogueWindow::Break(1)
 		);
 	}
 
 	// Heal Amount
-	if (CastToClient()->GetSpellDmg()) {
+	if (GetSpellDmg()) {
 		final_string += fmt::format(
 			"Spell Damage: {} / {}{}",
-			Strings::Commify(CastToClient()->GetSpellDmg()),
+			Strings::Commify(GetSpellDmg()),
 			Strings::Commify(RuleI(Character, ItemSpellDmgCap)),
 			DialogueWindow::Break(1)
 		);
@@ -2468,7 +2447,7 @@ void Mob::SendStatsWindow(Client* c, bool use_window)
 			GetHP(),
 			GetMaxHP(),
 			IsBot() ? Strings::Commify(CastToBot()->CalcHPRegen()) : Strings::Commify(CastToClient()->CalcHPRegen()),
-			CastToClient()->CalcHPRegenCap()
+			CalcHPRegenCap()
 		).c_str()
 	);
 
@@ -2529,7 +2508,7 @@ void Mob::SendStatsWindow(Client* c, bool use_window)
 				Strings::Commify(GetMana()),
 				Strings::Commify(GetMaxMana()),
 				IsBot() ? Strings::Commify(CastToBot()->CalcManaRegen()) : Strings::Commify(CastToClient()->CalcManaRegen()),
-				Strings::Commify(CastToClient()->CalcManaRegenCap())
+				Strings::Commify(CalcManaRegenCap())
 			).c_str()
 		);
 	}
@@ -2540,8 +2519,8 @@ void Mob::SendStatsWindow(Client* c, bool use_window)
 			"Endurance: {}/{} Regen: {}/{}",
 			Strings::Commify(GetEndurance()),
 			Strings::Commify(GetMaxEndurance()),
-			IsBot() ? Strings::Commify(CastToBot()->CalcEnduranceRegen()) : Strings::Commify(CastToClient()->CalcEnduranceRegen()),
-			Strings::Commify(CastToClient()->CalcEnduranceRegenCap())
+			IsBot() ? Strings::Commify(CastToBot()->CalcEnduranceRegen()) : Strings::Commify(CastToClient()->CalcEnduranceRegen(true)),
+			Strings::Commify(CalcEnduranceRegenCap())
 		).c_str()
 	);
 
@@ -2640,13 +2619,13 @@ void Mob::SendStatsWindow(Client* c, bool use_window)
 		).c_str()
 	);
 
-	if (CastToClient()->GetHealAmt() || CastToClient()->GetSpellDmg()) {
+	if (GetHealAmt() || GetSpellDmg()) {
 		c->Message(
 			Chat::White,
 			fmt::format(
 				"Heal Amount: {} Spell Damage: {}",
-				Strings::Commify(CastToClient()->GetHealAmt()),
-				Strings::Commify(CastToClient()->GetSpellDmg())
+				Strings::Commify(GetHealAmt()),
+				Strings::Commify(GetSpellDmg())
 			).c_str()
 		);
 	}
@@ -5270,7 +5249,7 @@ void Mob::ExecWeaponProc(const EQ::ItemInstance *inst, uint16 spell_id, Mob *on,
 	bool twinproc = false;
 	int32 twinproc_chance = 0;
 
-	if (IsClient() || IsBot()) {
+	if (IsOfClientBot()) {
 		twinproc_chance = GetFocusEffect(focusTwincast, spell_id);
 	}
 
@@ -5401,7 +5380,7 @@ void Mob::SetTarget(Mob *mob)
 		GetTarget()->SendHPUpdate(true);
 	}
 
-	if (IsClient() || IsBot()) {
+	if (IsOfClientBot()) {
 		Raid* r = GetRaid();
 		if (r) {
 			r->SendRaidAssistTarget();
@@ -8187,4 +8166,84 @@ int Mob::DispatchZoneControllerEvent(
 	}
 
 	return ret;
+}
+
+std::string Mob::GetRacePlural()
+{
+	switch (GetBaseRace()) {
+		case RACE_HUMAN_1:
+			return "Humans";
+		case RACE_BARBARIAN_2:
+			return "Barbarians";
+		case RACE_ERUDITE_3:
+			return "Erudites";
+		case RACE_WOOD_ELF_4:
+			return "Wood Elves";
+		case RACE_HIGH_ELF_5:
+			return "High Elves";
+		case RACE_DARK_ELF_6:
+			return "Dark Elves";
+		case RACE_HALF_ELF_7:
+			return "Half Elves";
+		case RACE_DWARF_8:
+			return "Dwarves";
+		case RACE_TROLL_9:
+			return "Trolls";
+		case RACE_OGRE_10:
+			return "Ogres";
+		case RACE_HALFLING_11:
+			return "Halflings";
+		case RACE_GNOME_12:
+			return "Gnomes";
+		case RACE_IKSAR_128:
+			return "Iksar";
+		case RACE_VAH_SHIR_130:
+			return "Vah Shir";
+		case RACE_FROGLOK_330:
+			return "Frogloks";
+		case RACE_DRAKKIN_522:
+			return "Drakkin";
+		default:
+			return "Races";
+	}
+}
+
+std::string Mob::GetClassPlural()
+{
+	switch (GetClass()) {
+		case WARRIOR:
+			return "Warriors";
+		case CLERIC:
+			return "Clerics";
+		case PALADIN:
+			return "Paladins";
+		case RANGER:
+			return "Rangers";
+		case SHADOWKNIGHT:
+			return "Shadowknights";
+		case DRUID:
+			return "Druids";
+		case MONK:
+			return "Monks";
+		case BARD:
+			return "Bards";
+		case ROGUE:
+			return "Rogues";
+		case SHAMAN:
+			return "Shamans";
+		case NECROMANCER:
+			return "Necromancers";
+		case WIZARD:
+			return "Wizards";
+		case MAGICIAN:
+			return "Magicians";
+		case ENCHANTER:
+			return "Enchanters";
+		case BEASTLORD:
+			return "Beastlords";
+		case BERSERKER:
+			return "Berserkers";
+		default:
+			return "Classes";
+	}
 }

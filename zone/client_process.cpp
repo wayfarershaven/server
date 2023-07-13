@@ -1858,16 +1858,18 @@ void Client::OPGMSummon(const EQApplicationPacket *app)
 }
 
 void Client::DoHPRegen() {
-	SetHP(GetHP() + CalcHPRegen() + RestRegenHP);
+	SetHP(GetHP() + CalcHPRegen());
 	SendHPUpdate();
 }
 
 void Client::DoManaRegen() {
-	if (GetMana() >= max_mana && spellbonuses.ManaRegen >= 0) {
+	if (GetMana() >= max_mana && spellbonuses.ManaRegen >= 0)
 		return;
-	}
 
-	SetMana(GetMana() + CalcManaRegen() + RestRegenMana);
+	if (GetMana() < max_mana && (IsSitting() || CanMedOnHorse()) && HasSkill(EQ::skills::SkillMeditate))
+		CheckIncreaseSkill(EQ::skills::SkillMeditate, nullptr, -5);
+
+	SetMana(GetMana() + CalcManaRegen());
 	CheckManaEndUpdate();
 }
 
@@ -1905,11 +1907,12 @@ void Client::DoStaminaHungerUpdate()
 
 void Client::DoEnduranceRegen()
 {
-	if(GetEndurance() >= GetMaxEndurance()) {
-		return;
-	}
+	// endurance has some negative mods that could result in a negative regen when starved
+	int64 regen = CalcEnduranceRegen();
 
-	SetEndurance(GetEndurance() + CalcEnduranceRegen() + RestRegenEndurance);
+	if (regen < 0 || (regen > 0 && GetEndurance() < GetMaxEndurance())) {
+		SetEndurance(GetEndurance() + regen);
+	}
 }
 
 void Client::DoEnduranceUpkeep() {
@@ -1960,20 +1963,16 @@ void Client::CalcRestState()
 	// This method calculates rest state HP and mana regeneration.
 	// The client must have been out of combat for RuleI(Character, RestRegenTimeToActivate) seconds,
 	// must be sitting down, and must not have any detrimental spells affecting them.
-	//
-	if(!RuleI(Character, RestRegenPercent)) {
+	if(!RuleB(Character, RestRegenEnabled))
 		return;
-	}
 
-	RestRegenHP = RestRegenMana = RestRegenEndurance = 0;
+	ooc_regen = false;
 
-	if(AggroCount || !IsSitting()) {
+	if(AggroCount || !(IsSitting() || CanMedOnHorse()))
 		return;
-	}
 
-	if(!rest_timer.Check(false)) {
+	if(!rest_timer.Check(false))
 		return;
-	}
 
 	// so we don't have aggro, our timer has expired, we do not want this to cause issues
 	m_pp.RestTimer = 0;
@@ -1981,18 +1980,13 @@ void Client::CalcRestState()
 	uint32 buff_count = GetMaxTotalSlots();
 	for (unsigned int j = 0; j < buff_count; j++) {
 		if(IsValidSpell(buffs[j].spellid)) {
-			if(IsDetrimentalSpell(buffs[j].spellid) && (buffs[j].ticsremaining > 0)) {
-				if(!IsRestAllowedSpell(buffs[j].spellid)) {
+			if(IsDetrimentalSpell(buffs[j].spellid) && (buffs[j].ticsremaining > 0))
+				if(!IsRestAllowedSpell(buffs[j].spellid))
 					return;
-				}
-			}
 		}
 	}
-	RestRegenHP = (GetMaxHP() * RuleI(Character, RestRegenPercent) / 100);
-	RestRegenMana = (GetMaxMana() * RuleI(Character, RestRegenPercent) / 100);
-	if(RuleB(Character, RestRegenEndurance)) {
-		RestRegenEndurance = (GetMaxEndurance() * RuleI(Character, RestRegenPercent) / 100);
-	}
+
+	ooc_regen = true;
 }
 
 void Client::DoTracking() {

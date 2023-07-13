@@ -83,11 +83,38 @@ enum {
 	RaidDelegateMainMarker = 4
 };
 
+typedef enum {
+	MAIN_ASSIST_1_SLOT = 0,
+	MAIN_ASSIST_2_SLOT = 1,
+	MAIN_ASSIST_3_SLOT = 2,
+	MAIN_ASSIST_1 = 1,
+	MAIN_ASSIST_2 = 2,
+	MAIN_ASSIST_3 = 3,
+} MainAssistType;
+
+typedef enum {
+	MAIN_MARKER_1_SLOT = 0,
+	MAIN_MARKER_2_SLOT = 1,
+	MAIN_MARKER_3_SLOT = 2,
+	MAIN_MARKER_1 = 1,
+	MAIN_MARKER_2 = 2,
+	MAIN_MARKER_3 = 3,
+} MainMarkerType;
+
+enum {
+	ClearDelegate = 1,
+	SetDelegate = 0,
+	FindNextRaidMainMarkerSlot = 1,
+	FindNextRaidMainAssisterSlot = 2,
+	DELEGATE_OFF = 0,
+	DELEGATE_ON  = 1
+};
+
 constexpr uint8_t MAX_RAID_GROUPS = 12;
 constexpr uint8_t MAX_RAID_MEMBERS = 72;
 const uint32 RAID_GROUPLESS = 0xFFFFFFFF;
-#define MAX_RAID_MAIN_ASSISTERS 3
-#define MAX_RAID_MAIN_MARKERS 3
+#define MAX_NO_RAID_MAIN_ASSISTERS 3
+#define MAX_NO_RAID_MAIN_MARKERS 3
 
 struct RaidMember{
 	char member_name[64];
@@ -99,8 +126,8 @@ struct RaidMember{
 	bool is_group_leader;
 	bool is_raid_leader;
 	bool is_looter;
-	uint8 mainmarker;
-	uint8 mainassister;
+	uint8 main_marker;
+	uint8 main_assister;
 	bool is_bot = false;
 	bool is_raid_main_assist_one = false;
 };
@@ -203,17 +230,15 @@ public:
 	void	SendEndurancePacketFrom(Mob *mob);
 	void	RaidSay(const char *msg, Client *c, uint8 language, uint8 lang_skill);
 	void	RaidGroupSay(const char *msg, Client *c, uint8 language, uint8 lang_skill);
-	void    SaveRaidNote(const char* who, const char* note);
+	void    SaveRaidNote(std::string who, std::string note);
 	std::vector<RaidMember> GetMembersWithNotes();
-	std::vector<RaidMember> GetAssisters();
-	std::vector<RaidMember> GetMarkers();
 	void	DelegateAbilityAssist(Mob* mob, const char* who);
 	void	DelegateAbilityMark(Mob* mob, const char* who);
 	void    RaidMarkNPC(Mob* mob, uint32 parameter);
-	void    UpdateXTargetType(XTargetType Type, Mob* m, const char* Name = (const char*)nullptr);
+	void    UpdateXTargetType(XTargetType Type, Mob* m, const char* name = (const char*)nullptr);
 	int     FindNextRaidDelegateSlot(int option);
 	void    UpdateXtargetMarkedNPC();
-	void    RaidClearNPCMarks(const char* client_name);
+	void    RaidClearNPCMarks(Client* c);
 	void    RemoveRaidDelegates(const char* delegatee);
 	void	UpdateRaidXTargets();
 
@@ -230,8 +255,6 @@ public:
 	void	SendBulkRaid(Client *to);
 	void    SendRaidNotes();
 	void    SendRaidNotesToWorld();
-	void    SendRaidAssisters();
-	void    SendRaidMarkers();
 	void    SendRemoveRaidXTargets(XTargetType Type);
 	void    SendRemoveAllRaidXTargets();
 	void    SendRemoveAllRaidXTargets(const char* client_name);
@@ -258,7 +281,8 @@ public:
 	void    SendRaidAssister(const char* assister);
 	void    SendRaidMarkerTo(const char* marker, Client* to);
 	void    SendRaidMarker(const char* marker);
-
+	void    SendMarkTargets(Client* c);
+	
 	void	QueuePacket(const EQApplicationPacket *app, bool ack_req = true);
 
 	// Leadership
@@ -299,9 +323,9 @@ public:
 
 	RaidMember members[MAX_RAID_MEMBERS];
 	char leadername[64];
-	char MainAssisterPCs[MAX_RAID_MAIN_ASSISTERS][64];
-	char MainMarkerPCs[MAX_RAID_MAIN_MARKERS][64];
-	uint32	MarkedNPCs[MAX_MARKED_NPCS];
+	char main_assister_pcs[MAX_NO_RAID_MAIN_ASSISTERS][64];
+	char main_marker_pcs[MAX_NO_RAID_MAIN_MARKERS][64];
+	uint32	marked_npcs[MAX_MARKED_NPCS];
 protected:
 	Client *leader;
 	bool locked;

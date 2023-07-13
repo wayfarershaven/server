@@ -196,6 +196,28 @@ struct RespawnOption
 	float heading;
 };
 
+// do not ask what all these mean because I have no idea!
+// named from the client's CEverQuest::GetInnateDesc, they're missing some
+enum eInnateSkill {
+	InnateEnabled = 0,
+	InnateAwareness = 1,
+	InnateBashDoor = 2,
+	InnateBreathFire = 3,
+	InnateHarmony = 4,
+	InnateInfravision = 6,
+	InnateLore = 8,
+	InnateNoBash = 9,
+	InnateRegen = 10,
+	InnateSlam = 11,
+	InnateSurprise = 12,
+	InnateUltraVision = 13,
+	InnateInspect = 14,
+	InnateOpen = 15,
+	InnateReveal = 16,
+	InnateSkillMax = 25, // size of array in client
+	InnateDisabled = 255
+};
+
 inline const std::string DIAWIND_RESPONSE_ONE_KEY       = "diawind_npc_response_one";
 inline const std::string DIAWIND_RESPONSE_TWO_KEY       = "diawind_npc_response_two";
 const uint32      POPUPID_DIAWIND_ONE            = 99999;
@@ -416,7 +438,17 @@ public:
 	int64 CalcMaxMana();
 	int64 CalcBaseMana();
 	const int64& SetMana(int64 amount);
-	int64 CalcManaRegenCap();
+	int64 CalcManaRegenCap() final;
+
+	// guild pool regen shit. Sends a SpawnAppearance with a value that regens to value * 0.001
+	void EnableAreaHPRegen(int value);
+	void DisableAreaHPRegen();
+	void EnableAreaManaRegen(int value);
+	void DisableAreaManaRegen();
+	void EnableAreaEndRegen(int value);
+	void DisableAreaEndRegen();
+	void EnableAreaRegens(int value);
+	void DisableAreaRegens();
 
 	void ServerFilter(SetServerFilter_Struct* filter);
 	void BulkSendTraderInventory(uint32 char_id);
@@ -511,8 +543,8 @@ public:
 	inline virtual int32 GetCombatEffects() const { return itembonuses.ProcChance; }
 	inline virtual int32 GetDS() const { return itembonuses.DamageShield; }
 	// Mod3
-	inline virtual int32 GetHealAmt() const { return itembonuses.HealAmt; }
-	inline virtual int32 GetSpellDmg() const { return itembonuses.SpellDmg; }
+	inline int32 GetHealAmt() const override { return itembonuses.HealAmt; }
+	inline int32 GetSpellDmg() const final { return itembonuses.SpellDmg; }
 	inline virtual int32 GetClair() const { return itembonuses.Clairvoyance; }
 	inline virtual int32 GetDSMit() const { return itembonuses.DSMitigation; }
 
@@ -551,11 +583,11 @@ public:
 	/*Endurance and such*/
 	void CalcMaxEndurance(); //This calculates the maximum endurance we can have
 	int64 CalcBaseEndurance(); //Calculates Base End
-	int64 CalcEnduranceRegen(); //Calculates endurance regen used in DoEnduranceRegen()
+	int64 CalcEnduranceRegen(bool bCombat = false); //Calculates endurance regen used in DoEnduranceRegen()
 	int64 GetEndurance() const {return current_endurance;} //This gets our current endurance
 	int64 GetMaxEndurance() const {return max_end;} //This gets our endurance from the last CalcMaxEndurance() call
-	int64 CalcEnduranceRegenCap();
-	int64 CalcHPRegenCap();
+	int64 CalcEnduranceRegenCap() final;
+	int64 CalcHPRegenCap() final;
 	inline uint8 GetEndurancePercent() { return (uint8)((float)current_endurance / (float)max_end * 100.0f); }
 	void SetEndurance(int32 newEnd); //This sets the current endurance to the new value
 	void DoEnduranceRegen(); //This Regenerates endurance
@@ -578,6 +610,7 @@ public:
 	inline void SetEXPModifier(uint32 zone_id, double exp_modifier, int16 instance_version = -1) { database.SetEXPModifier(CharacterID(), zone_id, exp_modifier, instance_version); };
 
 	bool UpdateLDoNPoints(uint32 theme_id, int points);
+	void SetLDoNPoints(uint32 theme_id, uint32 points);
 	void SetPVPPoints(uint32 Points) { m_pp.PVPCurrentPoints = Points; }
 	uint32 GetPVPPoints() { return m_pp.PVPCurrentPoints; }
 	void AddPVPPoints(uint32 Points);
@@ -755,6 +788,7 @@ public:
 	bool TradeskillExecute(DBTradeskillRecipe_Struct *spec);
 	void CheckIncreaseTradeskill(int16 bonusstat, int16 stat_modifier, float skillup_modifier, uint16 success_modifier, EQ::skills::SkillType tradeskill);
 	bool CheckTradeskillLoreConflict(int32 recipe_id);
+	void InitInnates();
 
 	void GMKill();
 	inline bool IsMedding() const {return medding;}
@@ -827,6 +861,9 @@ public:
 	inline void SetControlledMobId(uint16 mob_id_in) { controlled_mob_id = mob_id_in; }
 	uint16 GetControlledMobId() const{ return controlled_mob_id; }
 	uint16 GetHorseId() const { return horseId; }
+	bool CanMedOnHorse();
+
+	bool CanFastRegen() const { return ooc_regen; }
 
 	void NPCSpawn(NPC *target_npc, const char *identifier, uint32 extra = 0);
 
@@ -971,6 +1008,7 @@ public:
 	void SetHunger(int32 in_hunger);
 	void SetThirst(int32 in_thirst);
 	void SetConsumption(int32 in_hunger, int32 in_thirst);
+	bool IsStarved() const { if (GetGM() || !RuleB(Character, EnableFoodRequirement) || !RuleB(Character, EnableHungerPenalties)) return false; return m_pp.hunger_level == 0 || m_pp.thirst_level == 0; }
 	int32 GetIntoxication() const { return m_pp.intoxication; }
 
 	bool CheckTradeLoreConflict(Client* other);
@@ -1316,7 +1354,7 @@ public:
 
 	bool CanEnterZone(const std::string& zone_short_name = "", int16 instance_version = -1);
 
-	int GetAggroCount();
+	uint32 GetAggroCount();
 	void IncrementAggroCount(bool raid_target = false);
 	void DecrementAggroCount();
 	void SendPVPStats();
@@ -1329,8 +1367,8 @@ public:
 	uint32 GetLDoNLossesTheme(uint32 t);
 	uint32 GetLDoNPointsTheme(uint32 t);
 	void UpdateLDoNWinLoss(uint32 theme_id, bool win = false, bool remove = false);
-	void CheckLDoNHail(Mob *target);
-	void CheckEmoteHail(Mob *target, const char* message);
+	void CheckLDoNHail(NPC* n);
+	void CheckEmoteHail(NPC* n, const char* message);
 
 	void HandleLDoNOpen(NPC *target);
 	void HandleLDoNSenseTraps(NPC *target, uint16 skill, uint8 type);
@@ -1526,8 +1564,6 @@ public:
 	Timer* GetMercTimer() { return &merc_timer; };
 	Timer* GetPickLockTimer() { return &pick_lock_timer; };
 
-	const char* GetRacePlural(Client* client);
-	const char* GetClassPlural(Client* client);
 	void SendWebLink(const char* website);
 	void SendMarqueeMessage(uint32 type, std::string message, uint32 duration = 3000);
 	void SendMarqueeMessage(uint32 type, uint32 priority, uint32 fade_in, uint32 fade_out, uint32 duration, std::string message);
@@ -1550,8 +1586,10 @@ public:
 	int32 GetActWIS() { return( std::min(GetMaxWIS(), GetWIS()) ); }
 	int32 GetActCHA() { return( std::min(GetMaxCHA(), GetCHA()) ); }
 	void LoadAccountFlags();
-	void SetAccountFlag(std::string flag, std::string val);
-	std::string GetAccountFlag(std::string flag);
+	void ClearAccountFlag(const std::string& flag);
+	void SetAccountFlag(const std::string& flag, const std::string& value);
+	std::string GetAccountFlag(const std::string& flag);
+	std::vector<std::string> GetAccountFlags();
 	void SetGMStatus(int16 new_status);
 	void Consume(const EQ::ItemData *item, uint8 type, int16 slot, bool auto_consume);
 	void PlayMP3(const char* fname);
@@ -1679,7 +1717,7 @@ private:
 
 	void HandleTraderPriceUpdate(const EQApplicationPacket *app);
 
-	int32 CalcItemATKCap();
+	int32 CalcItemATKCap() final;
 	int32 CalcHaste();
 
 	int32 CalcAlcoholPhysicalEffect();
@@ -1699,14 +1737,16 @@ private:
 	int32 CalcCorrup();
 	int64 CalcMaxHP();
 	int64 CalcBaseHP();
-	int64 CalcHPRegen();
-	int64 CalcManaRegen();
+	int64 CalcHPRegen(bool bCombat = false);
+	int64 CalcManaRegen(bool bCombat = false);
 	int64 CalcBaseManaRegen();
 	void DoHPRegen();
 	void DoManaRegen();
 	void DoStaminaHungerUpdate();
 	void CalcRestState();
-
+	// if they have aggro (AggroCount != 0) their timer is saved in m_pp.RestTimer, else we need to get current timer
+	inline uint32 GetRestTimer() const { return AggroCount ? m_pp.RestTimer : rest_timer.GetRemainingTime() / 1000; }
+	void UpdateRestTimer(uint32 new_timer);
 	uint8 playeraction;
 
 	EQStreamInterface* eqs;
@@ -1762,6 +1802,7 @@ private:
 	bool Buyer;
 	std::string BuyerWelcomeMessage;
 	int Haste; //precalced value
+	uint32 tmSitting; // time stamp started sitting, used for HP regen bonus added on MAY 5, 2004
 
 	int32 environment_damage_modifier;
 	bool invulnerable_environment_damage;
@@ -1879,11 +1920,12 @@ private:
 	int8 last_reported_mana_percent;
 	int8 last_reported_endurance_percent;
 
-	unsigned int AggroCount; // How many mobs are aggro on us.
+	uint32 AggroCount; // How many mobs are aggro on us.
 
-	unsigned int RestRegenHP;
-	unsigned int RestRegenMana;
-	unsigned int RestRegenEndurance;
+	bool ooc_regen;
+	float AreaHPRegen;
+	float AreaManaRegen;
+	float AreaEndRegen;
 
 	std::set<uint32> zone_flags;
 	std::set<uint32> peqzone_flags;

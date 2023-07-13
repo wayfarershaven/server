@@ -228,18 +228,92 @@ int32 Client::LevelRegen()
 	return hp;
 }
 
-int64 Client::CalcHPRegen()
+int64 Client::CalcHPRegen(bool bCombat)
 {
-	int64 regen = LevelRegen() + itembonuses.HPRegen + spellbonuses.HPRegen;
-	regen += aabonuses.HPRegen + GroupLeadershipAAHealthRegeneration();
+	int64 item_regen = itembonuses.HPRegen; // worn spells and +regen, already capped
+	item_regen += GetHeroicSTA() / 20;
+
+	item_regen += aabonuses.HPRegen;
+
+	int64 base = 0;
+	auto base_data = database.GetBaseData(GetLevel(), GetClass());
+	if (base_data) {
+		base = static_cast<int>(base_data->hp_regen);
+	}
+
+	auto level = GetLevel();
+	bool skip_innate = false;
+
+	if (IsSitting()) {
+		if (level >= 50) {
+			base++;
+			if (level >= 65) {
+				base++;
+			}
+		}
+
+		if ((Timer::GetCurrentTime() - tmSitting) > 60000) {
+			if (!IsAffectedByBuffByGlobalGroup(GlobalGroup::Lich)) {
+				auto tic_diff = std::min((Timer::GetCurrentTime() - tmSitting) / 60000, static_cast<uint32>(9));
+				if (tic_diff != 1) { // starts at 2 mins
+					int tic_bonus = tic_diff * 1.5 * base;
+					if (m_pp.InnateSkills[InnateRegen] != InnateDisabled) {
+						tic_bonus = tic_bonus * 1.2;
+					}
+					base = tic_bonus;
+					skip_innate = true;
+				} else if (m_pp.InnateSkills[InnateRegen] == InnateDisabled) { // no innate regen gets first tick
+					int tic_bonus = base * 1.5;
+					base = tic_bonus;
+				}
+			}
+		}
+	}
+
+	if (!skip_innate && m_pp.InnateSkills[InnateRegen] != InnateDisabled) {
+		if (level >= 50) {
+			++base;
+			if (level >= 55) {
+				++base;
+			}
+		}
+		base *= 2;
+	}
+
+	if (IsStarved()) {
+		base = 0;
+	}
+
+	base += GroupLeadershipAAHealthRegeneration();
+	// some IsKnockedOut that sets to -1
+	base = base * 100.0f * AreaHPRegen * 0.01f + 0.5f;
+	// another check for IsClient && !(base + item_regen) && Cur_HP <= 0 do --base; do later
+
+	if (!bCombat && CanFastRegen() && (IsSitting() || CanMedOnHorse())) {
+		auto max_hp = GetMaxHP();
+		int64 fast_regen = 6 * (max_hp / (zone ? zone->newzone_data.fast_regen_hp : 180));
+		if (base < fast_regen) { // weird, but what the client is doing
+			base = fast_regen;
+		}
+	}
+
+	int64 regen = base + item_regen + spellbonuses.HPRegen; // TODO: client does this in buff tick
 	return (regen * RuleI(Character, HPRegenMultiplier) / 100);
 }
 
 int64 Client::CalcHPRegenCap()
 {
 	int64 cap = RuleI(Character, ItemHealthRegenCap);
-	cap = std::max(cap, static_cast<int64>(itembonuses.HeroicSTA / 25));
-	cap += static_cast<int64>(aabonuses.ItemHPRegenCap + spellbonuses.ItemHPRegenCap + itembonuses.ItemHPRegenCap);
+	if (GetLevel() > 60) {
+		cap = std::max(cap, static_cast<int64>(GetLevel() - 30)); // if the rule is set greater than normal I guess
+	}
+
+	if (GetLevel() > 65) {
+		cap += GetLevel() - 65;
+	}
+
+	cap += aabonuses.ItemHPRegenCap + spellbonuses.ItemHPRegenCap + itembonuses.ItemHPRegenCap;
+
 	return (cap * RuleI(Character, HPRegenMultiplier) / 100);
 }
 
@@ -481,7 +555,7 @@ int64 Client::CalcMaxMana()
 			current_mana = curMana_cap;
 		}
 	}
-	LogSpells("Client::CalcMaxMana() called for [{}] - returning [{}]", GetName(), max_mana);
+	LogSpells("for [{}] returning [{}]", GetName(), max_mana);
 	return max_mana;
 }
 
@@ -592,41 +666,81 @@ int64 Client::CalcBaseManaRegen()
 	return regen;
 }
 
-int64 Client::CalcManaRegen()
+int64 Client::CalcManaRegen(bool bCombat)
 {
-	uint8 clevel = GetLevel();
 	int64 regen = 0;
-	//this should be changed so we dont med while camping, etc...
-	if (IsSitting() || (GetHorseId() != 0)) {
-		BuffFadeBySitModifier();
-		if (HasSkill(EQ::skills::SkillMeditate)) {
-			this->medding = true;
-			regen = (((GetSkill(EQ::skills::SkillMeditate) / 10) + (clevel - (clevel / 4))) / 4) + 4;
-			regen += spellbonuses.ManaRegen + itembonuses.ManaRegen;
-			CheckIncreaseSkill(EQ::skills::SkillMeditate, nullptr, -5);
-		} else {
-			regen = 2 + spellbonuses.ManaRegen + itembonuses.ManaRegen;
+	auto level = GetLevel();
+	// so the new formulas break down with older skill caps where you don't have the skill until 4 or 8
+	// so for servers that want to use the old skill progression they can set this rule so they
+	// will get at least 1 for standing and 2 for sitting.
+	bool old = RuleB(Character, OldMinMana);
+	if (!IsStarved()) {
+		// client does some base regen for shrouds here
+		if (IsSitting() || CanMedOnHorse()) {
+			// kind of weird to do it here w/e
+			// client does some base medding regen for shrouds here
+			if (GetClass() != BARD) {
+				auto skill = GetSkill(EQ::skills::SkillMeditate);
+				if (skill > 0) {
+					regen++;
+					if (skill > 1)
+						regen++;
+					if (skill >= 15)
+						regen += skill / 15;
+				}
+			}
+			if (old)
+				regen = std::max(regen, static_cast<int64>(2));
+		} else if (old) {
+			regen = std::max(regen, static_cast<int64>(1));
 		}
-	} else {
-		this->medding = false;
-		regen = 2 + spellbonuses.ManaRegen + itembonuses.ManaRegen;
+	}
+
+	if (level > 61) {
+		regen++;
+		if (level > 63)
+			regen++;
 	}
 
 	regen += aabonuses.ManaRegen;
+	// add in + 1 bonus for SE_CompleteHeal, but we don't do anything for it yet?
+
+	int item_bonus = itembonuses.ManaRegen; // this is capped already
+	int heroic_bonus = 0;
+
+	switch (GetCasterClass()) {
+		case 'W':
+			heroic_bonus = GetHeroicWIS();
+			break;
+		default:
+			heroic_bonus = GetHeroicINT();
+			break;
+	}
+
+	item_bonus += heroic_bonus / 25;
+	regen += item_bonus;
+
+	if (level <= 70 && regen > 65) {
+		regen = 65;
+	}
+
+	regen = regen * 100.0f * AreaManaRegen * 0.01f + 0.5f;
+
+	if (!bCombat && CanFastRegen() && (IsSitting() || CanMedOnHorse())) {
+		auto max_mana = GetMaxMana();
+		int fast_regen = 6 * (max_mana / zone->newzone_data.fast_regen_mana);
+		if (regen < fast_regen) { // weird, but what the client is doing
+			regen = fast_regen;
+		}
+	}
+
+	regen += spellbonuses.ManaRegen; // TODO: live does this in buff tick
 	return (regen * RuleI(Character, ManaRegenMultiplier) / 100);
 }
 
 int64 Client::CalcManaRegenCap()
 {
 	int64 cap = RuleI(Character, ItemManaRegenCap) + aabonuses.ItemManaRegenCap + itembonuses.ItemManaRegenCap + spellbonuses.ItemManaRegenCap;
-	switch (GetCasterClass()) {
-		case 'I':
-			cap += (itembonuses.HeroicINT / 25);
-			break;
-		case 'W':
-			cap += (itembonuses.HeroicWIS / 25);
-			break;
-	}
 	return (cap * RuleI(Character, ManaRegenMultiplier) / 100);
 }
 
@@ -888,11 +1002,10 @@ int Client::CalcHaste()
 	}
 
 	// 60+ 100, 51-59 85, 1-50 level+25
-	if (level > 59) { // 60+
+	if (level > 59 || RuleB(Character, IgnoreLevelBasedHasteCaps)) { // 60+
 		cap = RuleI(Character, HasteCap);
 	}
-
-	if (level > 59 || RuleB(Character, IgnoreLevelBasedHasteCaps)) { // 60+
+	else if (level > 50) {  // 51-59
 		cap = 85;
 	} else {   // 1-50
 		cap = level + 25;
@@ -1510,7 +1623,7 @@ uint32 Mob::GetInstrumentMod(uint16 spell_id)
 		}
 	}
 
-	LogSpells("[{}]::GetInstrumentMod() spell=[{}] mod=[{}] modcap=[{}]\n", GetName(), spell_id, effectmod, effectmodcap);
+	LogSpells("Name [{}] spell [{}] mod [{}] modcap [{}]\n", GetName(), spell_id, effectmod, effectmodcap);
 
 	return effectmod;
 }
@@ -1578,16 +1691,93 @@ int64 Client::CalcBaseEndurance()
 	return base_end;
 }
 
-int64 Client::CalcEnduranceRegen()
+int64 Client::CalcEnduranceRegen(bool bCombat)
 {
-	int64 regen = int32(GetLevel() * 4 / 10) + 2;
-	regen += aabonuses.EnduranceRegen + spellbonuses.EnduranceRegen + itembonuses.EnduranceRegen;
+	int64 base = 0;
+	if (!IsStarved()) {
+		auto base_data = database.GetBaseData(GetLevel(), GetClass());
+		if (base_data) {
+			base = static_cast<int>(base_data->end_regen);
+			if (!auto_attack && base > 0)
+				base += base / 2;
+		}
+	}
+
+	// so when we are mounted, our local client SpeedRun is always 0, so this is always false, but the packets we process it to our own shit :P
+	bool is_running = runmode && animation != 0 && GetHorseId() == 0; // TODO: animation is really what MQ2 calls SpeedRun
+
+	int weight_limit = GetSTR();
+	auto level = GetLevel();
+	if (GetClass() == MONK) {
+		if (level > 99)
+			weight_limit = 58;
+		else if (level > 94)
+			weight_limit = 57;
+		else if (level > 89)
+			weight_limit = 56;
+		else if (level > 84)
+			weight_limit = 55;
+		else if (level > 79)
+			weight_limit = 54;
+		else if (level > 64)
+			weight_limit = 53;
+		else if (level > 63)
+			weight_limit = 50;
+		else if (level > 61)
+			weight_limit = 47;
+		else if (level > 59)
+			weight_limit = 45;
+		else if (level > 54)
+			weight_limit = 40;
+		else if (level > 50)
+			weight_limit = 38;
+		else if (level > 44)
+			weight_limit = 36;
+		else if (level > 29)
+			weight_limit = 34;
+		else if (level > 14)
+			weight_limit = 32;
+		else
+			weight_limit = 30;
+	}
+
+	bool encumbered = (CalcCurrentWeight() / 10) >= weight_limit;
+
+	if (is_running) {
+		base += level / -15;
+	}
+
+	if (encumbered) {
+		base += level / -15;
+	}
+	
+	auto item_bonus = GetHeroicAGI() + GetHeroicDEX() + GetHeroicSTA() + GetHeroicSTR();
+	item_bonus = item_bonus / 4 / 50;
+	item_bonus += itembonuses.EnduranceRegen; // this is capped already
+	base += item_bonus;
+
+	base = base * AreaEndRegen + 0.5f;
+
+	auto aa_regen = aabonuses.EnduranceRegen;
+
+	int64 regen = base;
+	if (!bCombat && CanFastRegen() && (IsSitting() || CanMedOnHorse())) {
+		auto max_end = GetMaxEndurance();
+		int fast_regen = 6 * (max_end / zone->newzone_data.fast_regen_endurance);
+		if (aa_regen < fast_regen) { // weird, but what the client is doing
+			aa_regen = fast_regen;
+		}
+	}
+
+	regen += aa_regen;
+	regen += spellbonuses.EnduranceRegen; // TODO: client does this in buff tick
+
 	return (regen * RuleI(Character, EnduranceRegenMultiplier) / 100);
 }
 
 int64 Client::CalcEnduranceRegenCap()
 {
-	int64 cap = (RuleI(Character, ItemEnduranceRegenCap) + itembonuses.HeroicSTR / 25 + itembonuses.HeroicDEX / 25 + itembonuses.HeroicAGI / 25 + itembonuses.HeroicSTA / 25);
+	int64 cap = RuleI(Character, ItemEnduranceRegenCap) + aabonuses.ItemEnduranceRegenCap + itembonuses.ItemEnduranceRegenCap + spellbonuses.ItemEnduranceRegenCap;
 	return (cap * RuleI(Character, EnduranceRegenMultiplier) / 100);
 }
 

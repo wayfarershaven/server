@@ -68,7 +68,7 @@ const char* GetRaceIDName(uint16 race_id)
 	//	return "Froglok";
 	//case DRAKKIN:
 	//	return "Drakkin";
-	
+
 	// RoF2 Race Labels
 	case RT_ABHORRENT:
 		return "Abhorrent";
@@ -1697,7 +1697,7 @@ bool PlayerAppearance::IsValidBeardColor(uint16 race_id, uint8 gender_id, uint8 
 {
 	if (beard_color_value == 0xFF)
 	return true;
-	
+
 	switch (BINDRG(race_id, gender_id)) {
 	case GNOME_MALE:
 		if (beard_color_value <= 24)
@@ -1784,7 +1784,7 @@ bool PlayerAppearance::IsValidEyeColor(uint16 race_id, uint8 gender_id, uint8 ey
 	case VAHSHIR_FEMALE:
 		if (eye_color_value <= 9)
 			return true;
-		break;	
+		break;
 	case TROLL_MALE:
 	case TROLL_FEMALE:
 		if (eye_color_value <= 10)
@@ -2110,7 +2110,7 @@ bool PlayerAppearance::IsValidTexture(uint16 race_id, uint8 gender_id, uint8 tex
 {
 	if (texture_value == 0xFF)
 		return true;
-	
+
 	if (use_luclin) {
 		switch (BINDRG(race_id, gender_id)) {
 		case HUMAN_MALE:
@@ -2215,44 +2215,6 @@ bool PlayerAppearance::IsValidTexture(uint16 race_id, uint8 gender_id, uint8 tex
 	}
 }
 
-uint32 GetArrayRace(uint16 race) {
-	switch(race) {
-		case HUMAN:
-			return PLAYER_RACE_HUMAN;
-		case BARBARIAN:
-			return PLAYER_RACE_BARBARIAN;
-		case ERUDITE:
-			return PLAYER_RACE_ERUDITE;
-		case WOOD_ELF:
-			return PLAYER_RACE_WOOD_ELF;
-		case HIGH_ELF:
-			return PLAYER_RACE_HIGH_ELF;
-		case DARK_ELF:
-			return PLAYER_RACE_DARK_ELF;
-		case HALF_ELF:
-			return PLAYER_RACE_HALF_ELF;
-		case DWARF:
-			return PLAYER_RACE_DWARF;
-		case TROLL:
-			return PLAYER_RACE_TROLL;
-		case OGRE:
-			return PLAYER_RACE_OGRE;
-		case HALFLING:
-			return PLAYER_RACE_HALFLING;
-		case GNOME:
-			return PLAYER_RACE_GNOME;
-		case IKSAR:
-			return PLAYER_RACE_IKSAR;
-		case VAHSHIR:
-			return PLAYER_RACE_VAHSHIR;
-		case FROGLOK:
-		case FROGLOK2:
-			return PLAYER_RACE_FROGLOK;
-		default:
-			return PLAYER_RACE_UNKNOWN;
-	}
-}
-
 bool PlayerAppearance::IsValidWoad(uint16 race_id, uint8 gender_id, uint8 woad_value, bool use_luclin)
 {
 	if (woad_value == 0xFF)
@@ -2287,7 +2249,7 @@ const char* GetGenderName(uint32 gender_id) {
 const std::string GetPlayerRaceAbbreviation(uint16 race_id)
 {
 	if (!IsPlayerRace(race_id)) {
-		return std::string();
+		return std::string("UNK");
 	}
 
 	switch (race_id) {
@@ -2325,7 +2287,7 @@ const std::string GetPlayerRaceAbbreviation(uint16 race_id)
 			return "DRK";
 	}
 
-	return std::string();
+	return std::string("UNK");
 }
 
 bool IsPlayerRace(uint16 race_id) {
