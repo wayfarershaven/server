@@ -19,7 +19,7 @@ void FindZone(Client *c, const Seperator *sep)
 		);
 
 		search_string = Expansion::ExpansionName[Strings::ToInt(sep->arg[3])];
-		search_type   = "expansion";
+		search_type   = "Expansion";
 	} else if (is_id_search) {
 		query += fmt::format(
 			"zoneidnumber = {}",
@@ -27,7 +27,7 @@ void FindZone(Client *c, const Seperator *sep)
 		);
 
 		search_string = sep->arg[2];
-		search_type   = "ID";
+		search_type   = "Expansion";
 	} else if (is_short_name_search) {
 		query += fmt::format(
 			"LOWER(`long_name`) LIKE '%%{}%%' OR LOWER(`short_name`) LIKE '%%{}%%'",
@@ -36,7 +36,7 @@ void FindZone(Client *c, const Seperator *sep)
 		);
 
 		search_string = sep->argplus[2];
-		search_type   = "name";
+		search_type   = "Expansion";
 	}
 
 	query += " ORDER BY `zoneidnumber` ASC LIMIT 50";
