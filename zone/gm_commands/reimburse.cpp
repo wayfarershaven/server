@@ -53,7 +53,7 @@ void command_reimburse(Client *c, const Seperator *sep) {
 			auto query = fmt::format(
 				"INSERT INTO `cust_playerawards` (`CharID`, `Item_id`, `Reason`) VALUES ({}, {}, '{}')",
 				char_id,
-				item_id,
+				item_id
 				Strings::Escape(message)
 			);
 			auto results = database.QueryDatabase(query);

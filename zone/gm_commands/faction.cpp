@@ -167,3 +167,4 @@ void command_faction(Client *c, const Seperator *sep)
 		}
 	}
 }
+
