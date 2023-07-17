@@ -1487,8 +1487,6 @@ public:
 	/// this cures timing issues cuz dead animation isn't done but server side feigning is?
 	inline bool GetFeigned() const { return(feigned); }
 
-	std::vector<DataBucketCache> m_data_bucket_cache;
-
 	// Data Bucket Methods
 	void DeleteBucket(std::string bucket_name);
 	std::string GetBucket(std::string bucket_name);
@@ -1496,6 +1494,8 @@ public:
 	std::string GetBucketRemaining(std::string bucket_name);
 	void SetBucket(std::string bucket_name, std::string bucket_value, std::string expiration = "");
 
+	uint32 GetMobTypeIdentifier();
+	
 	int DispatchZoneControllerEvent(QuestEventID evt, Mob* init, const std::string& data, uint32 extra, std::vector<std::any>* pointers);
 	
 	// Bots HealRotation methods
