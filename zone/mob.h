@@ -20,6 +20,7 @@
 #define MOB_H
 
 #include "common.h"
+#include "data_bucket.h"
 #include "entity.h"
 #include "hate_list.h"
 #include "pathfinder_interface.h"
@@ -143,6 +144,7 @@ const uint8 CON_LEVELS_MAP[MAX_CON_LEVELS][4] = {
 		{ 54, 59, 49, 54 }  // 70 
 };
 
+class DataBucketKey;
 class Mob : public Entity {
 public:
 	enum CLIENT_CONN_STATUS { CLIENT_CONNECTING, CLIENT_CONNECTED, CLIENT_LINKDEAD,
@@ -1485,10 +1487,12 @@ public:
 	/// this cures timing issues cuz dead animation isn't done but server side feigning is?
 	inline bool GetFeigned() const { return(feigned); }
 
+	std::vector<DataBucketCache> m_data_bucket_cache;
+
+	// Data Bucket Methods
 	void DeleteBucket(std::string bucket_name);
 	std::string GetBucket(std::string bucket_name);
 	std::string GetBucketExpires(std::string bucket_name);
-	std::string GetBucketKey();
 	std::string GetBucketRemaining(std::string bucket_name);
 	void SetBucket(std::string bucket_name, std::string bucket_value, std::string expiration = "");
 
@@ -1512,6 +1516,8 @@ public:
 	bool GetManualFollow() const { return m_manual_follow; }
 
 	void DrawDebugCoordinateNode(std::string node_name, const glm::vec4 vec);
+
+	DataBucketKey GetScopedBucketKeys();
 
 protected:
 	void CommonDamage(Mob* other, int64 &damage, const uint16 spell_id, const EQ::skills::SkillType attack_skill, bool &avoidable, const int8 buffslot, const bool iBuffTic, eSpecialAttacks specal = eSpecialAttacks::None);

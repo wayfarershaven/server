@@ -265,8 +265,8 @@ public:
 	int32	CalcPR();
 	int32	CalcCR();
 	int32	CalcCorrup();
-	int64	CalcHPRegenCap();
-	int64	CalcManaRegenCap();
+	int64	CalcHPRegenCap() final;
+	int64	CalcManaRegenCap() final;
 	int32	LevelRegen();
 	int64	CalcHPRegen();
 	int64	CalcManaRegen();
@@ -378,9 +378,7 @@ public:
 	[[nodiscard]] int GetMaxDiscSlots() const final { return EQ::spells::DISC_BUFFS; }
 	[[nodiscard]] int GetMaxTotalSlots() const final { return EQ::spells::TOTAL_BUFFS; }
 
-	bool GetBotOwnerDataBuckets();
-	bool GetBotDataBuckets();
-	bool CheckDataBucket(const std::string& bucket_name, const std::string& bucket_value, uint8 bucket_comparison);
+	bool CheckDataBucket(std::string bucket_name, const std::string& bucket_value, uint8 bucket_comparison);
 
 	// Bot Equipment & Inventory Class Methods
 	void BotTradeAddItem(const EQ::ItemInstance* inst, uint16 slot_id, std::string* error_message, bool save_to_database = true);
@@ -567,8 +565,8 @@ public:
 	inline virtual int32	GetCombatEffects()	const { return itembonuses.ProcChance; }
 	inline virtual int32	GetDS()				const { return itembonuses.DamageShield; }
 	// Mod3
-	inline virtual int32	GetHealAmt()		const { return itembonuses.HealAmt; }
-	inline virtual int32	GetSpellDmg()		const { return itembonuses.SpellDmg; }
+	inline int32 GetHealAmt() const override { return itembonuses.HealAmt; }
+	inline int32 GetSpellDmg() const override { return itembonuses.SpellDmg; }
 	inline virtual int32	GetClair()			const { return itembonuses.Clairvoyance; }
 	inline virtual int32	GetDSMit()			const { return itembonuses.DSMitigation; }
 
@@ -877,8 +875,6 @@ private:
 	eStandingPetOrder m_previous_pet_order;
 	uint32 m_bot_caster_range;
 	BotCastingRoles m_CastingRoles;
-	std::map<std::string,std::string> bot_data_buckets;
-	std::map<std::string,std::string> bot_owner_data_buckets;
 
 	std::map<uint16, BotSpellSetting> bot_spell_settings;
 

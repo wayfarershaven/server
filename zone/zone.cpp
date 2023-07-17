@@ -1177,9 +1177,12 @@ bool Zone::Init(bool is_static) {
 	{
 		LogError("Loading World Objects failed. continuing");
 	}
+
 	database.QueryDatabase("DELETE FROM `respawn_times` WHERE (`start` + `duration`) < UNIX_TIMESTAMP(NOW())");
+
 	LoadZoneDoors();
 	LoadZoneBlockedSpells();
+
 	//clear trader items if we are loading the bazaar
 	if (strncasecmp(short_name, "bazaar", 6) == 0) {
 		database.DeleteTraderItem(0);
@@ -1191,8 +1194,11 @@ bool Zone::Init(bool is_static) {
 	LoadVeteranRewards();
 	LoadAlternateCurrencies();
 	LoadNPCEmotes(&NPCEmoteList);
+
 	LoadAlternateAdvancement();
+
 	content_db.LoadGlobalLoot();
+
 	//Load merchant data
 	GetMerchantDataForZoneLoad();
 
@@ -1211,14 +1217,21 @@ bool Zone::Init(bool is_static) {
 
 	petition_list.ClearPetitions();
 	petition_list.ReadDatabase();
+
 	LoadDynamicZoneTemplates();
+
 	DynamicZone::CacheAllFromDatabase();
 	Expedition::CacheAllFromDatabase();
+
 	LogInfo("Loading timezone data");
 	zone_time.setEQTimeZone(content_db.GetZoneTZ(zoneid, GetInstanceVersion()));
+
 	LogInfo("Zone booted successfully zone_id [{}] time_offset [{}]", zoneid, zone_time.getEQTimeZone());
+
 	LoadGrids();
 	LoadTickItems();
+
+	npc_scale_manager->LoadScaleData();
 
 	// logging origination information
 	LogSys.origination_info.zone_short_name = zone->short_name;
@@ -2516,24 +2529,28 @@ void Zone::DoAdventureAssassinationCountIncrease()
 
 void Zone::DoAdventureActions()
 {
-	ServerZoneAdventureDataReply_Struct* ds = (ServerZoneAdventureDataReply_Struct*)adv_data;
-	if(ds->type == Adventure_Collect)
-	{
-		int count = (ds->total - ds->count) * 25 / 10;
+	const auto* ds = (ServerZoneAdventureDataReply_Struct*) adv_data;
+	if (ds->type == Adventure_Collect) {
+		int count = (ds->total - ds->count) * 25 / RuleI(Adventure, LDoNLootCountModifier);
 		entity_list.AddLootToNPCS(ds->data_id, count);
 		did_adventure_actions = true;
-	}
-	else if(ds->type == Adventure_Assassinate)
-	{
-		if(ds->assa_count >= RuleI(Adventure, NumberKillsForBossSpawn))
-		{
-			const NPCType* tmp = content_db.LoadNPCTypesData(ds->data_id);
-			if(tmp)
-			{
-				NPC* npc = new NPC(tmp, nullptr, glm::vec4(ds->assa_x, ds->assa_y, ds->assa_z, ds->assa_h), GravityBehavior::Water);
+	} else if (ds->type == Adventure_Assassinate) {
+		if (ds->assa_count >= RuleI(Adventure, NumberKillsForBossSpawn)) {
+			const auto* d = content_db.LoadNPCTypesData(ds->data_id);
+			if (d) {
+				NPC* npc = new NPC(
+					d,
+					nullptr,
+					glm::vec4(ds->assa_x, ds->assa_y, ds->assa_z, ds->assa_h),
+					GravityBehavior::Water
+				);
+
 				npc->AddLootTable();
-				if (npc->DropsGlobalLoot())
+
+				if (npc->DropsGlobalLoot()) {
 					npc->CheckGlobalLootTables();
+				}
+
 				entity_list.AddNPC(npc);
 				npc->Shout("Rarrrgh!");
 				did_adventure_actions = true;
@@ -2966,7 +2983,7 @@ std::string Zone::GetAAName(int aa_id)
 	return std::string();
 }
 
-bool Zone::CheckDataBucket(uint8 bucket_comparison, std::string bucket_value, std::string player_value)
+bool Zone::CompareDataBucket(uint8 bucket_comparison, const std::string& bucket_value, const std::string& player_value)
 {
 	std::vector<std::string> bucket_checks;
 	bool found = false;
