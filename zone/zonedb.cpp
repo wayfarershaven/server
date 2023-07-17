@@ -1931,6 +1931,8 @@ const NPCType *ZoneDatabase::LoadNPCTypesData(uint32 npc_type_id, bool bulk_load
 		);
 	}
 
+	std::vector<uint32> npc_ids;
+
 	for (NpcTypesRepository::NpcTypes &n : NpcTypesRepository::GetWhere((Database &) content_db, filter)) {
 		NPCType *t;
 		t = new NPCType;
@@ -2145,8 +2147,15 @@ const NPCType *ZoneDatabase::LoadNPCTypesData(uint32 npc_type_id, bool bulk_load
 
 		zone->npctable[t->npc_id] = t;
 		npc = t;
+
+		// If NPC ID is not in npc_ids, add to vector
+		if (!std::count(npc_ids.begin(), npc_ids.end(), t->npc_id)) {
+			npc_ids.emplace_back(t->npc_id);
+		}
 	}
 
+	DataBucket::BulkLoadEntities(DataBucketLoadType::NPC, npc_ids);
+	
 	return npc;
 }
 
@@ -2277,8 +2286,8 @@ const NPCType* ZoneDatabase::GetMercType(uint32 id, uint16 raceid, uint32 client
 		else
 			tmpNPCType->special_abilities[0] = '\0';
 
-		tmpNPCType->d_melee_texture1 = Strings::ToInt(row[28]);
-		tmpNPCType->d_melee_texture2 = Strings::ToInt(row[29]);
+		tmpNPCType->d_melee_texture1 = Strings::ToUnsignedInt(row[28]);
+		tmpNPCType->d_melee_texture2 = Strings::ToUnsignedInt(row[29]);
 		tmpNPCType->prim_melee_type = Strings::ToInt(row[30]);
 		tmpNPCType->sec_melee_type = Strings::ToInt(row[31]);
 		tmpNPCType->runspeed = Strings::ToFloat(row[32]);

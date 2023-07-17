@@ -9187,7 +9187,7 @@ bool helper_cast_standard_spell(Bot* casting_bot, Mob* target_mob, int spell_id,
 
 bool helper_command_disabled(Client* bot_owner, bool rule_value, const char* command)
 {
-	if (rule_value) {
+	if (!rule_value) {
 		bot_owner->Message(Chat::White, "Bot command %s is not enabled on this server.", command);
 		return true;
 	}
@@ -10016,6 +10016,10 @@ void bot_command_caster_range(Client* c, const Seperator* sep)
 
 void bot_command_pickpocket(Client *c, const Seperator *sep)
 {
+	if (helper_command_disabled(c, RuleB(Bots, AllowPickpocketCommand), "pickpocket")) {
+		return;
+	}
+
 	if (helper_command_alias_fail(c, "bot_command_pickpocket", sep->arg[0], "pickpocket")) {
 		return;
 	}
@@ -10049,7 +10053,9 @@ void bot_command_pickpocket(Client *c, const Seperator *sep)
 	glm::vec4 mob_distance    = (c->GetPosition() - target_mob->GetPosition());
 	float     mob_xy_distance = ((mob_distance.x * mob_distance.x) + (mob_distance.y * mob_distance.y));
 	float     mob_z_distance  = (mob_distance.z * mob_distance.z);
-	if (mob_z_distance >= 25 || mob_xy_distance > 250) {
+	float     z_offset_diff   = target_mob->GetZOffset() - c->GetZOffset();
+
+	if (mob_z_distance >= (35-z_offset_diff) || mob_xy_distance > 250) {
 		c->Message(Chat::White, "You must be closer to an enemy to use this command");
 		return;
 	}

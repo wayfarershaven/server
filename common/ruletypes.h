@@ -718,6 +718,7 @@ RULE_BOOL(Bots, OldRaceRezEffects, false, "Older clients had ID 757 for races wi
 RULE_BOOL(Bots, ResurrectionSickness, true, "Use Resurrection Sickness based on Resurrection spell cast, set to false to disable Resurrection Sickness.")
 RULE_INT(Bots, OldResurrectionSicknessSpell, 757, "757 is Default Old Resurrection Sickness Spell")
 RULE_INT(Bots, ResurrectionSicknessSpell, 756, "756 is Default Resurrection Sickness Spell")
+RULE_BOOL(Bots, AllowPickpocketCommand, true, "Allows the use of the bot command 'pickpocket'")
 RULE_CATEGORY_END()
 
 RULE_CATEGORY(Chat)
@@ -792,6 +793,7 @@ RULE_INT(Adventure, ItemIDToEnablePorts, 41000, "ItemID to enable adventure port
 RULE_INT(Adventure, LDoNTrapDistanceUse, 625, "LDoN trap distance use")
 RULE_REAL(Adventure, LDoNBaseTrapDifficulty, 15.0, "LDoN base trap difficulty")
 RULE_REAL(Adventure, LDoNCriticalFailTrapThreshold, 10.0, "LDoN critical fail trap threshold")
+RULE_INT(Adventure, LDoNLootCountModifier, 10, "LDoN Loot Count Modifier, lower is better (default is 10)")
 RULE_CATEGORY_END()
 
 RULE_CATEGORY(AA)

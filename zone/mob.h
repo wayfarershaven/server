@@ -20,6 +20,7 @@
 #define MOB_H
 
 #include "common.h"
+#include "data_bucket.h"
 #include "entity.h"
 #include "hate_list.h"
 #include "pathfinder_interface.h"
@@ -143,6 +144,7 @@ const uint8 CON_LEVELS_MAP[MAX_CON_LEVELS][4] = {
 		{ 54, 59, 49, 54 }  // 70 
 };
 
+class DataBucketKey;
 class Mob : public Entity {
 public:
 	enum CLIENT_CONN_STATUS { CLIENT_CONNECTING, CLIENT_CONNECTED, CLIENT_LINKDEAD,
@@ -351,15 +353,15 @@ public:
 	inline bool SeeInvisibleUndead() const { return see_invis_undead; }
 	uint8 SeeInvisible();
 
-	int32 GetTextureProfileMaterial(uint8 material_slot) const;
-	int32 GetTextureProfileColor(uint8 material_slot) const;
-	int32 GetTextureProfileHeroForgeModel(uint8 material_slot) const;
+	uint32 GetTextureProfileMaterial(uint8 material_slot) const;
+	uint32 GetTextureProfileColor(uint8 material_slot) const;
+	uint32 GetTextureProfileHeroForgeModel(uint8 material_slot) const;
 
 	virtual void SendArmorAppearance(Client *one_client = nullptr);
-	virtual void SendTextureWC(uint8 slot, uint16 texture, uint32 hero_forge_model = 0, uint32 elite_material = 0, uint32 unknown06 = 0, uint32 unknown18 = 0);
+	virtual void SendTextureWC(uint8 slot, uint32 texture, uint32 hero_forge_model = 0, uint32 elite_material = 0, uint32 unknown06 = 0, uint32 unknown18 = 0);
 	virtual void SendWearChange(uint8 material_slot, Client *one_client = nullptr);
 	virtual void SetSlotTint(uint8 material_slot, uint8 red_tint, uint8 green_tint, uint8 blue_tint);
-	virtual void WearChange(uint8 material_slot, uint16 texture, uint32 color = 0, uint32 hero_forge_model = 0);
+	virtual void WearChange(uint8 material_slot, uint32 texture, uint32 color = 0, uint32 hero_forge_model = 0);
 
 	void ChangeSize(float in_size, bool bNoRestriction = false);
 	void DoAnim(const int animation_id, int animation_speed = 0, bool ackreq = true, eqFilterType filter = FilterNone);
@@ -370,7 +372,7 @@ public:
 	void SendStunAppearance();
 	void SendTargetable(bool on, Client *specific_target = nullptr);
 	void SetInvisible(uint8 state = 0, uint8 type = 0);
-	void SetMobTextureProfile(uint8 material_slot, uint16 texture, uint32 color = 0, uint32 hero_forge_model = 0);
+	void SetMobTextureProfile(uint8 material_slot, uint32 texture, uint32 color = 0, uint32 hero_forge_model = 0);
 
 	//Spell
 	void SendSpellEffect(uint32 effect_id, uint32 duration, uint32 finish_delay, bool zone_wide,
@@ -567,9 +569,9 @@ public:
 	virtual uint8 ConvertItemTypeToSkillID(uint8 item_type);
 	virtual uint16 GetSkill(EQ::skills::SkillType skill_num) const { return 0; }
 	virtual uint32 GetEquippedItemFromTextureSlot(uint8 material_slot) const { return(0); }
-	virtual int32 GetEquipmentMaterial(uint8 material_slot) const;
+	virtual uint32 GetEquipmentMaterial(uint8 material_slot) const;
 	virtual uint8 GetEquipmentType(uint8 material_slot) const;
-	virtual int32 GetHerosForgeModel(uint8 material_slot) const;
+	virtual uint32 GetHerosForgeModel(uint8 material_slot) const;
 	virtual uint32 GetEquipmentColor(uint8 material_slot) const;
 	virtual uint32 IsEliteMaterialItem(uint8 material_slot) const;
 	bool CanClassEquipItem(uint32 item_id);
@@ -1485,13 +1487,15 @@ public:
 	/// this cures timing issues cuz dead animation isn't done but server side feigning is?
 	inline bool GetFeigned() const { return(feigned); }
 
+	// Data Bucket Methods
 	void DeleteBucket(std::string bucket_name);
 	std::string GetBucket(std::string bucket_name);
 	std::string GetBucketExpires(std::string bucket_name);
-	std::string GetBucketKey();
 	std::string GetBucketRemaining(std::string bucket_name);
 	void SetBucket(std::string bucket_name, std::string bucket_value, std::string expiration = "");
 
+	uint32 GetMobTypeIdentifier();
+	
 	int DispatchZoneControllerEvent(QuestEventID evt, Mob* init, const std::string& data, uint32 extra, std::vector<std::any>* pointers);
 	
 	// Bots HealRotation methods
@@ -1512,6 +1516,8 @@ public:
 	bool GetManualFollow() const { return m_manual_follow; }
 
 	void DrawDebugCoordinateNode(std::string node_name, const glm::vec4 vec);
+
+	DataBucketKey GetScopedBucketKeys();
 
 protected:
 	void CommonDamage(Mob* other, int64 &damage, const uint16 spell_id, const EQ::skills::SkillType attack_skill, bool &avoidable, const int8 buffslot, const bool iBuffTic, eSpecialAttacks specal = eSpecialAttacks::None);

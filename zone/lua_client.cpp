@@ -3065,6 +3065,12 @@ std::string Lua_Client::GetRaceAbbreviation()
 	return GetPlayerRaceAbbreviation(self->GetBaseRace());
 }
 
+void Lua_Client::SetLDoNPoints(uint32 theme_id, uint32 points)
+{
+	Lua_Safe_Call_Void();
+	self->SetLDoNPoints(theme_id, points);
+}
+
 luabind::scope lua_register_client() {
 	return luabind::class_<Lua_Client, Lua_Mob>("Client")
 	.def(luabind::constructor<>())

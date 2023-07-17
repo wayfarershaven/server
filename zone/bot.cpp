@@ -422,6 +422,7 @@ Bot::Bot(uint32 botID, uint32 botOwnerCharacterID, uint32 botSpellsID, double to
 Bot::~Bot() {
 	AI_Stop();
 	LeaveHealRotationMemberPool();
+	DataBucket::DeleteCachedBuckets(DataBucketLoadType::Bot, GetBotID());
 
 	if (HasPet()) {
 		GetPet()->Depop();
@@ -3135,7 +3136,7 @@ void Bot::SetOwnerTarget(Client* bot_owner) {
 			AddToHateList(attack_target, 1);
 			SetTarget(attack_target);
 			SetAttackingFlag();
-			if (HasPet() && (GetClass() != ENCHANTER || GetPet()->GetPetType() != petAnimation || GetAA(aaAnimationEmpathy) >= 2)) {
+			if (GetPet() && (GetClass() != ENCHANTER || GetPet()->GetPetType() != petAnimation || GetAA(aaAnimationEmpathy) >= 2)) {
 				GetPet()->WipeHateList();
 				GetPet()->AddToHateList(attack_target, 1);
 				GetPet()->SetTarget(attack_target);
@@ -3262,8 +3263,7 @@ bool Bot::Spawn(Client* botCharacterOwner) {
 		m_targetable = true;
 		entity_list.AddBot(this, true, true);
 
-		GetBotOwnerDataBuckets();
-		GetBotDataBuckets();
+		DataBucket::GetDataBuckets(this);
 		LoadBotSpellSettings();
 		if (!AI_AddBotSpells(GetBotSpellID())) {
 			GetBotOwner()->CastToClient()->Message(
@@ -6370,6 +6370,9 @@ int32 Bot::CalcATK() {
 }
 
 void Bot::CalcRestState() {
+	if (!RuleB(Character, RestRegenEnabled))
+		return;
+
 	RestRegenHP = RestRegenMana = RestRegenEndurance = 0;
 	if(IsEngaged() || !IsSitting() || !rest_timer.Check(false)) {
 		return;
@@ -8267,85 +8270,25 @@ void Bot::OwnerMessage(const std::string& message)
 	);
 }
 
-bool Bot::GetBotOwnerDataBuckets()
-{
-	auto bot_owner = GetBotOwner();
-	if (!bot_owner) {
-		return false;
-	}
-
-	const auto query = fmt::format(
-		"SELECT `key`, `value` FROM data_buckets WHERE `key` LIKE '{}-%'",
-		Strings::Escape(bot_owner->GetBucketKey())
-	);
-
-	auto results = database.QueryDatabase(query);
-	if (!results.Success()) {
-		return false;
-	}
-
-	bot_owner_data_buckets.clear();
-
-	if (!results.RowCount()) {
-		return true;
-	}
-
-	for (auto row : results) {
-		bot_owner_data_buckets.insert(std::pair<std::string,std::string>(row[0], row[1]));
-	}
-
-	return true;
-}
-
-bool Bot::GetBotDataBuckets()
-{
-	const auto query = fmt::format(
-		"SELECT `key`, `value` FROM data_buckets WHERE `key` LIKE '{}-%'",
-		Strings::Escape(GetBucketKey())
-	);
-
-	auto results = database.QueryDatabase(query);
-	if (!results.Success()) {
-		return false;
-	}
-
-	bot_data_buckets.clear();
-
-	if (!results.RowCount()) {
-		return true;
-	}
-
-	for (auto row : results) {
-		bot_data_buckets.insert(std::pair<std::string,std::string>(row[0], row[1]));
-	}
-
-	return true;
-}
-
-bool Bot::CheckDataBucket(const std::string& bucket_name, const std::string& bucket_value, uint8 bucket_comparison)
+bool Bot::CheckDataBucket(std::string bucket_name, const std::string& bucket_value, uint8 bucket_comparison)
 {
 	if (!bucket_name.empty() && !bucket_value.empty()) {
-		auto full_name = fmt::format(
-			"{}-{}",
-			GetBucketKey(),
-			bucket_name
-		);
+		// try to fetch from bot first
+		DataBucketKey k = GetScopedBucketKeys();
+		k.key = bucket_name;
 
-		auto player_value = bot_data_buckets[full_name];
-		if (player_value.empty() && GetBotOwner()) {
-			full_name = fmt::format(
-				"{}-{}",
-				GetBotOwner()->GetBucketKey(),
-				bucket_name
-			);
+		auto b = DataBucket::GetData(k);
+		if (b.value.empty() && GetBotOwner()) {
+			// fetch from owner
+			k = GetBotOwner()->GetScopedBucketKeys();
 
-			player_value = bot_owner_data_buckets[full_name];
-			if (player_value.empty()) {
+			b = DataBucket::GetData(k);
+			if (b.value.empty()) {
 				return false;
 			}
 		}
 
-		if (zone->CheckDataBucket(bucket_comparison, bucket_value, player_value)) {
+		if (zone->CompareDataBucket(bucket_comparison, bucket_value, b.value)) {
 			return true;
 		}
 	}

@@ -66,8 +66,8 @@ public:
 		uint8_t     armortint_red;
 		uint8_t     armortint_green;
 		uint8_t     armortint_blue;
-		int32_t     d_melee_texture1;
-		int32_t     d_melee_texture2;
+		uint32_t    d_melee_texture1;
+		uint32_t    d_melee_texture2;
 		std::string ammo_idfile;
 		uint8_t     prim_melee_type;
 		uint8_t     sec_melee_type;
@@ -690,8 +690,8 @@ public:
 			e.armortint_red          = static_cast<uint8_t>(strtoul(row[43], nullptr, 10));
 			e.armortint_green        = static_cast<uint8_t>(strtoul(row[44], nullptr, 10));
 			e.armortint_blue         = static_cast<uint8_t>(strtoul(row[45], nullptr, 10));
-			e.d_melee_texture1       = static_cast<int32_t>(atoi(row[46]));
-			e.d_melee_texture2       = static_cast<int32_t>(atoi(row[47]));
+			e.d_melee_texture1       = static_cast<uint32_t>(strtoul(row[46], nullptr, 10));
+			e.d_melee_texture2       = static_cast<uint32_t>(strtoul(row[47], nullptr, 10));
 			e.ammo_idfile            = row[48] ? row[48] : "";
 			e.prim_melee_type        = static_cast<uint8_t>(strtoul(row[49], nullptr, 10));
 			e.sec_melee_type         = static_cast<uint8_t>(strtoul(row[50], nullptr, 10));
@@ -1337,8 +1337,8 @@ public:
 			e.armortint_red          = static_cast<uint8_t>(strtoul(row[43], nullptr, 10));
 			e.armortint_green        = static_cast<uint8_t>(strtoul(row[44], nullptr, 10));
 			e.armortint_blue         = static_cast<uint8_t>(strtoul(row[45], nullptr, 10));
-			e.d_melee_texture1       = static_cast<int32_t>(atoi(row[46]));
-			e.d_melee_texture2       = static_cast<int32_t>(atoi(row[47]));
+			e.d_melee_texture1       = static_cast<uint32_t>(strtoul(row[46], nullptr, 10));
+			e.d_melee_texture2       = static_cast<uint32_t>(strtoul(row[47], nullptr, 10));
 			e.ammo_idfile            = row[48] ? row[48] : "";
 			e.prim_melee_type        = static_cast<uint8_t>(strtoul(row[49], nullptr, 10));
 			e.sec_melee_type         = static_cast<uint8_t>(strtoul(row[50], nullptr, 10));
@@ -1494,8 +1494,8 @@ public:
 			e.armortint_red          = static_cast<uint8_t>(strtoul(row[43], nullptr, 10));
 			e.armortint_green        = static_cast<uint8_t>(strtoul(row[44], nullptr, 10));
 			e.armortint_blue         = static_cast<uint8_t>(strtoul(row[45], nullptr, 10));
-			e.d_melee_texture1       = static_cast<int32_t>(atoi(row[46]));
-			e.d_melee_texture2       = static_cast<int32_t>(atoi(row[47]));
+			e.d_melee_texture1       = static_cast<uint32_t>(strtoul(row[46], nullptr, 10));
+			e.d_melee_texture2       = static_cast<uint32_t>(strtoul(row[47], nullptr, 10));
 			e.ammo_idfile            = row[48] ? row[48] : "";
 			e.prim_melee_type        = static_cast<uint8_t>(strtoul(row[49], nullptr, 10));
 			e.sec_melee_type         = static_cast<uint8_t>(strtoul(row[50], nullptr, 10));
