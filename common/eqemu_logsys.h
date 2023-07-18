@@ -140,7 +140,6 @@ namespace Logs {
 		PlayerEvents,
 		AccountEvents,
 		Petitions,
-		DataBuckets,
 		MaxCategoryID /* Don't Remove this */
 	};
 
@@ -240,7 +239,6 @@ namespace Logs {
 		"PlayerEvents",
 		"AccountEvents",
 		"Petitions",
-		"DataBuckets",
 	};
 }
 

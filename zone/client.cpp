@@ -370,8 +370,6 @@ Client::Client(EQStreamInterface* ieqs) : Mob(
 Client::~Client() {
 	mMovementManager->RemoveClient(this);
 
-	DataBucket::DeleteCachedBuckets(DataBucketLoadType::Client, CharacterID());
-
 	if (RuleB(Bots, Enabled)) {
 		Bot::ProcessBotOwnerRefDelete(this);
 	}

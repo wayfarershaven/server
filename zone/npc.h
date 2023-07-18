@@ -552,6 +552,8 @@ public:
 	
 	static LootDropEntries_Struct NewLootDropEntry();
 
+	bool CanPathTo(float x, float y, float z);
+
 protected:
 
 	void HandleRoambox();
