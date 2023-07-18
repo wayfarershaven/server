@@ -422,7 +422,6 @@ Bot::Bot(uint32 botID, uint32 botOwnerCharacterID, uint32 botSpellsID, double to
 Bot::~Bot() {
 	AI_Stop();
 	LeaveHealRotationMemberPool();
-	DataBucket::DeleteCachedBuckets(DataBucketLoadType::Bot, GetBotID());
 
 	if (HasPet()) {
 		GetPet()->Depop();
@@ -8277,18 +8276,18 @@ bool Bot::CheckDataBucket(std::string bucket_name, const std::string& bucket_val
 		DataBucketKey k = GetScopedBucketKeys();
 		k.key = bucket_name;
 
-		auto b = DataBucket::GetData(k);
-		if (b.value.empty() && GetBotOwner()) {
+		auto player_value = DataBucket::CheckBucketKey(this, k);
+		if (player_value.empty() && GetBotOwner()) {
 			// fetch from owner
 			k = GetBotOwner()->GetScopedBucketKeys();
 
-			b = DataBucket::GetData(k);
-			if (b.value.empty()) {
+			player_value = DataBucket::CheckBucketKey(GetBotOwner(), k);
+			if (player_value.empty()) {
 				return false;
 			}
 		}
 
-		if (zone->CompareDataBucket(bucket_comparison, bucket_value, b.value)) {
+		if (zone->CompareDataBucket(bucket_comparison, bucket_value, player_value)) {
 			return true;
 		}
 	}
