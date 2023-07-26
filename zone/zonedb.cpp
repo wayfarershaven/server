@@ -343,15 +343,18 @@ TraderCharges_Struct* ZoneDatabase::LoadTraderItemWithCharges(uint32 char_id)
 }
 
 EQ::ItemInstance* ZoneDatabase::LoadSingleTraderItem(uint32 CharID, int SerialNumber) {
-	std::string query = StringFormat("SELECT * FROM trader WHERE char_id = %i AND serialnumber = %i "
-									"ORDER BY slot_id LIMIT 100", CharID, SerialNumber);
+	LogTrading("[Debug] SELECT * FROM trader WHERE char_id = %i AND serialnumber = %i ORDER BY slot_id LIMIT 100", CharID, SerialNumber);
+
+	std::string query = StringFormat("SELECT * FROM trader WHERE char_id = %i AND serialnumber = %i ORDER BY slot_id LIMIT 100", CharID, SerialNumber);
 	auto results = QueryDatabase(query);
+
 	if (!results.Success()) {
 		return nullptr;
 	}
 
 	if (results.RowCount() == 0) {
-		LogTrading("Bad result from query\n"); fflush(stdout);
+		LogTrading("Bad result from query"); 
+		fflush(stdout);
 		return nullptr;
 	}
 

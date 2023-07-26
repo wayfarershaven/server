@@ -1055,11 +1055,9 @@ void Client::SendTraderItem(uint32 ItemID, uint16 Quantity) {
 }
 
 void Client::SendSingleTraderItem(uint32 CharID, int SerialNumber) {
-
 	EQ::ItemInstance* inst= database.LoadSingleTraderItem(CharID, SerialNumber);
 	if(inst) {
-		for (auto cust : CustomerList)
-		{
+		for (auto cust : CustomerList) {
 			Client* CustomerToTell = entity_list.GetClientByID(cust);
 			if (CustomerToTell && inst) {
 				SendItemPacket(EQ::invslot::slotCursor, inst, ItemPacketMerchant); // MainCursor?
