@@ -2853,7 +2853,7 @@ struct BazaarTraderInspect_Struct {
 	uint32	Code;
 	uint32	SubCode;
 	uint32	ItemID;
-	char	SerialNumber[16];
+	uint32	SerialNumber;
 	uint32  Icon;
 	uint32	Unknown;
 	uint32	Unknown2;

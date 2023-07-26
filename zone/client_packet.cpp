@@ -15362,7 +15362,7 @@ void Client::Handle_OP_TraderShop(const EQApplicationPacket *app) {
 	} else if (app->size == sizeof(BazaarTraderInspect_Struct)) {
 		BazaarTraderInspect_Struct *tis = (BazaarTraderInspect_Struct *) app->pBuffer;
 
-		auto serial = std::stoi(tis->SerialNumber);
+		auto serial = tis->SerialNumber;
 
 		auto charIdForSerial = database.GetCharIDByItemSerial(serial);
 		if (charIdForSerial > 0) {

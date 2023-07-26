@@ -1443,7 +1443,7 @@ void Client::BuyTraderItem(TraderBuy_Struct* tbs, Client* Trader, const EQApplic
 		return;
 	}
 
-	uint64 TotalTransactionValue = static_cast<uint64>(tbs->Price) * static_cast<uint64>(outtbs->Quantity);
+	auto TotalTransactionValue = tbs->Price * outtbs->Quantity;
 
 	if(TotalTransactionValue > MAX_TRANSACTION_VALUE) {
 		Message(Chat::Red, "That would exceed the single transaction limit of %u platinum.", MAX_TRANSACTION_VALUE / 1000);
@@ -1455,12 +1455,7 @@ void Client::BuyTraderItem(TraderBuy_Struct* tbs, Client* Trader, const EQApplic
 	// This cannot overflow assuming MAX_TRANSACTION_VALUE, checked above, is the default of 2000000000
 	uint32 TotalCost = tbs->Price * outtbs->Quantity;
 
-	if (Trader->ClientVersion() >= EQ::versions::ClientVersion::RoF) {
-		// RoF+ uses individual item price where older clients use total price
-		outtbs->Price = tbs->Price;
-	} else {
-		outtbs->Price = TotalCost;
-	}
+	outtbs->Price = TotalCost;
 
 	if(!TakeMoneyFromPP(TotalCost)) {
 		RecordPlayerEventLog(PlayerEvent::POSSIBLE_HACK, PlayerEvent::PossibleHackEvent{.message = "Attempted to buy something in bazaar but did not have enough money."});
