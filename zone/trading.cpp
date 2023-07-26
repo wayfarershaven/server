@@ -1029,20 +1029,19 @@ void Client::Trader_EndTrader() {
 	Trader = false;
 }
 
-void Client::SendTraderItem(const EQ::ItemInstance* iinst, int16 Quantity) {
+void Client::SendTraderItem(uint32 ItemID, uint16 Quantity) {
 	std::string Packet;
-	int16 FreeSlotID=0;
-	const EQ::ItemData* item = database.GetItem(iinst->GetID());
+	int16 FreeSlotID = 0;
+	const EQ::ItemData* item = database.GetItem(ItemID);
 
-	if(!item){
+	if(!item) {
 		LogTrading("Bogus item deleted in Client::SendTraderItem!\n");
 		return;
 	}
 
 	EQ::ItemInstance* inst = database.CreateItem(item, Quantity);
 
-	if (inst)
-	{
+	if (inst) {
 		bool is_arrow = (inst->GetItem()->ItemType == EQ::item::ItemTypeArrow) ? true : false;
 		FreeSlotID = m_inv.FindFreeSlot(false, true, inst->GetItem()->Size, is_arrow);
 
@@ -1397,10 +1396,12 @@ void Client::BuyTraderItem(TraderBuy_Struct* tbs, Client* Trader, const EQApplic
 		return;
 	}
 
-	strn0cpy(tbs->BuyerName, this->GetCleanName(), 64);
-	strn0cpy(tbs->SellerName, Trader->GetCleanName(), 64);
 	auto outapp = new EQApplicationPacket(OP_Trader, sizeof(TraderBuy_Struct));
+
 	TraderBuy_Struct* outtbs = (TraderBuy_Struct*)outapp->pBuffer;
+
+	outtbs->ItemID = tbs->ItemID;
+
 	const EQ::ItemInstance* BuyItem = nullptr;
 	uint32 ItemID = 0;
 	BuyItem = Trader->FindTraderItemBySerialNumber(tbs->SerialNumber);
@@ -1412,7 +1413,6 @@ void Client::BuyTraderItem(TraderBuy_Struct* tbs, Client* Trader, const EQApplic
 		return;
 	}
 
-	outtbs->ItemID = BuyItem->GetID();
 	LogTrading("Buyitem: Name: [{}], IsStackable: [{}], Requested Quantity: [{}], Charges on Item [{}]",
 					BuyItem->GetItem()->Name, BuyItem->IsStackable(), tbs->Quantity, BuyItem->GetCharges());
 	// If the item is not stackable, then we can only be buying one of them.
@@ -1434,7 +1434,7 @@ void Client::BuyTraderItem(TraderBuy_Struct* tbs, Client* Trader, const EQApplic
 
 	LogTrading("Actual quantity that will be traded is [{}]", outtbs->Quantity);
 
-	if ((BuyItem->GetPrice() * outtbs->Quantity) <= 0) {
+	if((tbs->Price * outtbs->Quantity) <= 0) {
 		Message(Chat::Red, "Internal error. Aborting trade. Please report this to the ServerOP. Error code is 1");
 		Trader->Message(Chat::Red, "Internal error. Aborting trade. Please report this to the ServerOP. Error code is 1");
 		LogError("Bazaar: Zero price transaction between [{}] and [{}] aborted. Item: [{}], Charges: [{}], TBS: Qty [{}], Price: [{}]",
@@ -1455,7 +1455,7 @@ void Client::BuyTraderItem(TraderBuy_Struct* tbs, Client* Trader, const EQApplic
 	}
 
 	// This cannot overflow assuming MAX_TRANSACTION_VALUE, checked above, is the default of 2000000000
-	uint32 TotalCost = BuyItem->GetPrice() * outtbs->Quantity;
+	uint32 TotalCost = tbs->Price * outtbs->Quantity;
 
 	if (Trader->ClientVersion() >= EQ::versions::ClientVersion::RoF) {
 		// RoF+ uses individual item price where older clients use total price
@@ -1515,20 +1515,19 @@ void Client::BuyTraderItem(TraderBuy_Struct* tbs, Client* Trader, const EQApplic
 	
 	LogTrading("Trader Received: [{}] Platinum, [{}] Gold, [{}] Silver, [{}] Copper", platinum, gold, silver, copper);
 
-	strn0cpy(outtbs->BuyerName, this->GetCleanName(), 64);
-	strn0cpy(outtbs->SellerName, Trader->GetCleanName(), 64);
 	outtbs->SerialNumber = BuyItem->GetSerialNumber();
-	strn0cpy(outtbs->ItemName, BuyItem->GetItem()->Name, 64);
 	ReturnTraderReq(app, outtbs->Quantity, ItemID);
 
 	outtbs->TraderID = GetID();
 	outtbs->Action = BazaarBuyItem;
+	strn0cpy(outtbs->ItemName, BuyItem->GetItem()->Name, 64);
+
 	int TraderSlot = 0;
 
 	if (BuyItem->IsStackable()) {
-		SendTraderItem(BuyItem, outtbs->Quantity);
+		SendTraderItem(BuyItem->GetItem()->ID, outtbs->Quantity);
 	} else {
-		SendTraderItem(BuyItem, BuyItem->GetCharges());
+		SendTraderItem(BuyItem->GetItem()->ID, BuyItem->GetCharges());
 	}
 
 	TraderSlot = Trader->FindTraderItem(tbs->SerialNumber, outtbs->Quantity);

@@ -292,7 +292,7 @@ public:
 	void SendColoredText(uint32 color, std::string message);
 	void SendBazaarTraders();
 	void SendBazaarResults(uint32 trader_id,uint32 class_,uint32 race,uint32 stat,uint32 slot,uint32 type,char name[64],uint32 minlevel, uint32 maxlevel, uint32 minprice,uint32 maxprice);
-	void SendTraderItem(const EQ::ItemInstance* iinst,int16 quantity);
+	void SendTraderItem(uint32 item_id,uint16 quantity);
 	uint16 FindTraderItem(uint32 SerialNumber,uint16 Quantity);
 	uint32 FindTraderItemSerialNumber(uint32 ItemID);
 	EQ::ItemInstance* FindTraderItemBySerialNumber(uint32 SerialNumber);
