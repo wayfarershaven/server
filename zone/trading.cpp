@@ -1088,7 +1088,7 @@ void Client::BulkSendTraderInventory(Client* trader) {
 
 				if(inst->IsStackable()) {
 					inst->SetMerchantCount(TraderItems->Charges[i]);
-					inst->SetMerchantSlot(i);
+					inst->SetMerchantSlot(TraderItems->SerialNumber[i]);
 				}
 
 				inst->SetPrice(TraderItems->ItemCost[i]);

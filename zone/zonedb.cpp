@@ -321,7 +321,7 @@ TraderCharges_Struct* ZoneDatabase::LoadTraderItemWithCharges(uint32 char_id)
 	auto loadti = new TraderCharges_Struct;
 	memset(loadti,0,sizeof(TraderCharges_Struct));
 
-	std::string query = StringFormat("SELECT * FROM trader WHERE char_id=%i ORDER BY slot_id LIMIT 100", char_id);
+	std::string query = StringFormat("SELECT * FROM trader WHERE char_id = %i ORDER BY slot_id LIMIT 100", char_id);
 	auto results = QueryDatabase(query);
 	if (!results.Success()) {
 		LogTrading("Failed to load trader information!\n");
@@ -344,21 +344,23 @@ TraderCharges_Struct* ZoneDatabase::LoadTraderItemWithCharges(uint32 char_id)
 
 EQ::ItemInstance* ZoneDatabase::LoadSingleTraderItem(uint32 CharID, int SerialNumber) {
 	std::string query = StringFormat("SELECT * FROM trader WHERE char_id = %i AND serialnumber = %i "
-                                    "ORDER BY slot_id LIMIT 100", CharID, SerialNumber);
-    auto results = QueryDatabase(query);
-    if (!results.Success())
-        return nullptr;
+									"ORDER BY slot_id LIMIT 100", CharID, SerialNumber);
+	auto results = QueryDatabase(query);
+	if (!results.Success()) {
+		return nullptr;
+	}
 
 	if (results.RowCount() == 0) {
-    LogTrading("Bad result from query\n"); fflush(stdout);
-        return nullptr;
-    }
+		LogTrading("Bad result from query\n"); fflush(stdout);
+		return nullptr;
+	}
 
-    auto& row = results.begin();
+	auto& row = results.begin();
 
-    int ItemID = Strings::ToInt(row[1]);
-	int Charges = Strings::ToInt(row[3]);
-	int Cost = Strings::ToInt(row[4]);
+	auto ItemID = Strings::ToInt(row[1]);
+	auto Charges = Strings::ToInt(row[3]);
+	auto Cost = Strings::ToInt(row[4]);
+	auto Slot_ID = Strings::ToInt(row[5]);
 
 	const EQ::ItemData *item = database.GetItem(ItemID);
 
@@ -368,23 +370,26 @@ EQ::ItemInstance* ZoneDatabase::LoadSingleTraderItem(uint32 CharID, int SerialNu
 		return nullptr;
 	}
 
-    if (item->NoDrop == 0)
-        return nullptr;
+	if (item->NoDrop == 0) {
+		return nullptr;
+	}
 
-    EQ::ItemInstance* inst = database.CreateItem(item);
+	EQ::ItemInstance* inst = database.CreateItem(item);
 	if(!inst) {
 		LogTrading("Unable to create item instance\n");
 		fflush(stdout);
 		return nullptr;
 	}
 
-    inst->SetCharges(Charges);
-	inst->SetSerialNumber(SerialNumber);
-	inst->SetMerchantSlot(SerialNumber);
+		inst->SetSerialNumber(SerialNumber);
+	inst->SetMerchantSlot(Slot_ID);
 	inst->SetPrice(Cost);
 
-	if(inst->IsStackable())
+	if(inst->IsStackable()) {
 		inst->SetMerchantCount(Charges);
+	} else {
+		inst->SetCharges(Charges);
+	}
 
 	return inst;
 }
