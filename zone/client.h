@@ -311,13 +311,14 @@ public:
 					const char *message9 = nullptr);
 	void Tell_StringID(uint32 string_id, const char *who, const char *message);
 	void SendColoredText(uint32 color, std::string message);
+	void SendBazaarTraders();
 	void SendBazaarResults(uint32 trader_id,uint32 class_,uint32 race,uint32 stat,uint32 slot,uint32 type,char name[64],uint32 minlevel, uint32 maxlevel, uint32 minprice,uint32 maxprice);
 	void SendTraderItem(uint32 item_id,uint16 quantity);
-	uint16 FindTraderItem(int32 SerialNumber,uint16 Quantity);
-	uint32 FindTraderItemSerialNumber(int32 ItemID);
-	EQ::ItemInstance* FindTraderItemBySerialNumber(int32 SerialNumber);
-	void FindAndNukeTraderItem(int32 item_id,int16 quantity,Client* customer,uint16 traderslot);
-	void NukeTraderItem(uint16 slot, int16 charges, int16 quantity, Client* customer, uint16 traderslot, int32 uniqueid, int32 itemid = 0);
+	uint16 FindTraderItem(uint32 SerialNumber,uint16 Quantity);
+	uint32 FindTraderItemSerialNumber(uint32 ItemID);
+	EQ::ItemInstance* FindTraderItemBySerialNumber(uint32 SerialNumber);
+	void FindAndNukeTraderItem(uint32 item_id,uint16 quantity,Client* customer,uint16 traderslot);
+	void NukeTraderItem(uint16 slot, int16 charges, uint16 quantity, Client* customer, uint16 traderslot, uint32 uniqueid, uint32 itemid = 0);
 	void ReturnTraderReq(const EQApplicationPacket* app,int16 traderitemcharges, uint32 itemid = 0);
 	void TradeRequestFailed(const EQApplicationPacket* app);
 	void BuyTraderItem(TraderBuy_Struct* tbs,Client* trader,const EQApplicationPacket* app);
@@ -959,6 +960,7 @@ public:
 	void Undye();
 	int32 GetItemIDAt(int16 slot_id);
 	int32 GetAugmentIDAt(int16 slot_id, uint8 augslot);
+	std::list<BazaarSearchResultsNew_Struct> QueryBazaar(uint32 TraderID, uint32 Class_, uint32 Race, uint32 ItemStat, uint32 Slot, uint32 Type, char Name[64],uint32 minlevel, uint32 maxlevel, uint32 MinPrice, uint32 MaxPrice);
 	bool PutItemInInventory(int16 slot_id, const EQ::ItemInstance& inst, bool client_update = false);
 	bool PushItemOnCursor(const EQ::ItemInstance& inst, bool client_update = false);
 	void SendCursorBuffer();

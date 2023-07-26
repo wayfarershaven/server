@@ -305,7 +305,7 @@ Trader_Struct* ZoneDatabase::LoadTraderItem(uint32 char_id)
 
 	loadti->Code = BazaarTrader_ShowItems;
 	for (auto& row = results.begin(); row != results.end(); ++row) {
-		if (Strings::ToInt(row[5]) >= 80 || Strings::ToInt(row[4]) < 0) {
+		if (Strings::ToInt(row[5]) >= 100 || Strings::ToInt(row[4]) < 0) {
 			LogTrading("Bad Slot number when trying to load trader information!\n");
 			continue;
 		}
@@ -321,7 +321,7 @@ TraderCharges_Struct* ZoneDatabase::LoadTraderItemWithCharges(uint32 char_id)
 	auto loadti = new TraderCharges_Struct;
 	memset(loadti,0,sizeof(TraderCharges_Struct));
 
-	std::string query = StringFormat("SELECT * FROM trader WHERE char_id=%i ORDER BY slot_id LIMIT 80", char_id);
+	std::string query = StringFormat("SELECT * FROM trader WHERE char_id = %i ORDER BY slot_id LIMIT 100", char_id);
 	auto results = QueryDatabase(query);
 	if (!results.Success()) {
 		LogTrading("Failed to load trader information!\n");
@@ -329,7 +329,7 @@ TraderCharges_Struct* ZoneDatabase::LoadTraderItemWithCharges(uint32 char_id)
 	}
 
 	for (auto& row = results.begin(); row != results.end(); ++row) {
-		if (Strings::ToInt(row[5]) >= 80 || Strings::ToInt(row[5]) < 0) {
+		if (Strings::ToInt(row[5]) >= 100 || Strings::ToInt(row[5]) < 0) {
 			LogTrading("Bad Slot number when trying to load trader information!\n");
 			continue;
 		}
@@ -343,8 +343,9 @@ TraderCharges_Struct* ZoneDatabase::LoadTraderItemWithCharges(uint32 char_id)
 }
 
 EQ::ItemInstance* ZoneDatabase::LoadSingleTraderItem(uint32 CharID, int SerialNumber) {
+	LogTrading("[Debug] SELECT * FROM trader WHERE char_id = %i AND serialnumber = %i ORDER BY slot_id LIMIT 100", CharID, SerialNumber);
 	std::string query = StringFormat("SELECT * FROM trader WHERE char_id = %i AND serialnumber = %i "
-                                    "ORDER BY slot_id LIMIT 80", CharID, SerialNumber);
+                                    "ORDER BY slot_id LIMIT 100", CharID, SerialNumber);
     auto results = QueryDatabase(query);
     if (!results.Success())
         return nullptr;
@@ -359,6 +360,7 @@ EQ::ItemInstance* ZoneDatabase::LoadSingleTraderItem(uint32 CharID, int SerialNu
     int ItemID = Strings::ToInt(row[1]);
 	int Charges = Strings::ToInt(row[3]);
 	int Cost = Strings::ToInt(row[4]);
+	int Slot_ID = Strings::ToInt(row[5]);
 
 	const EQ::ItemData *item = database.GetItem(ItemID);
 
@@ -378,15 +380,34 @@ EQ::ItemInstance* ZoneDatabase::LoadSingleTraderItem(uint32 CharID, int SerialNu
 		return nullptr;
 	}
 
-    inst->SetCharges(Charges);
+    	inst->SetCharges(Charges);
 	inst->SetSerialNumber(SerialNumber);
-	inst->SetMerchantSlot(SerialNumber);
+	inst->SetMerchantSlot(Slot_ID);
 	inst->SetPrice(Cost);
 
 	if(inst->IsStackable())
 		inst->SetMerchantCount(Charges);
 
 	return inst;
+}
+
+uint32 ZoneDatabase::GetCharIDByItemSerial(uint32 SerialNumber) {
+	std::string query = StringFormat("SELECT char_id FROM trader WHERE serialnumber = %i "
+									 "ORDER BY slot_id LIMIT 1", SerialNumber);
+	auto results = QueryDatabase(query);
+	if (!results.Success())
+		return 0;
+
+	if (results.RowCount() == 0) {
+		// LogTrading("Bad result from query\n");
+		fflush(stdout);
+		return 0;
+	}
+
+	auto row = results.begin();
+
+	int CharID = atoi(row[0]) > 0 ? atoi(row[0]) : 0;
+	return CharID;
 }
 
 void ZoneDatabase::SaveTraderItem(uint32 CharID, uint32 ItemID, uint32 SerialNumber, int32 Charges, uint32 ItemCost, uint8 Slot){
