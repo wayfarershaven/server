@@ -1141,9 +1141,8 @@ void Mob::AI_Process() {
 
 	if (engaged) {
 		if (IsNPC() && m_z_clip_check_timer.Check()) {
-			bool is_moving = IsMoving() && !(IsRooted() || IsStunned() || IsMezzed());
-			auto t         = GetTarget();
-			if (is_moving && t) {
+			auto t = GetTarget();
+			if (t) {
 				float self_z   = GetZ() - GetZOffset();
 				float target_z = t->GetPosition().z - t->GetZOffset();
 				if (DistanceNoZ(GetPosition(), t->GetPosition()) < 75 &&
