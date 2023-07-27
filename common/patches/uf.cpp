@@ -1133,6 +1133,12 @@ namespace UF
 				PutFieldN(level);
 				PutFieldN(banker);
 				PutFieldN(class_);
+				//Translate older ranks to new values* /
+				switch (emu_e->rank) {
+					case 8: case 7: case 6: case 5: case 4: { emu_e->rank = 0; break; }
+					case 3: case 2: { emu_e->rank = 1; break; }  // GUILD_OFFICER	1
+					case 1: { emu_e->rank = 2; break; }  // GUILD_LEADER	2
+				}
 				PutFieldN(rank);
 				PutFieldN(time_last_on);
 				PutFieldN(tribute_enable);
@@ -1828,6 +1834,12 @@ namespace UF
 		OUT(pvp);
 		OUT(anon);
 		OUT(gm);
+		//Translate older ranks to new values* /
+		switch (emu->guildrank) {
+			case 8: case 7: case 6: case 5: case 4: { emu->guildrank = 0; break; }
+			case 3: case 2: { emu->guildrank = 1; break; }  // GUILD_OFFICER	1
+			case 1: { emu->guildrank = 2; break; }  // GUILD_LEADER	2
+		}
 		OUT(guildrank);
 		OUT(guildbanker);
 		//	OUT(unknown13054[12]);
@@ -2299,6 +2311,17 @@ namespace UF
 
 		SpawnAppearance_Struct *sas = (SpawnAppearance_Struct *)emu_buffer;
 
+		if (sas->type == AT_GuildRank) {
+			//Translate older ranks to new values* /
+			switch (sas->parameter) {
+				case 8: case 7: case 6: case 5: case 4: { sas->parameter = 0; break; }
+				case 3: case 2: { sas->parameter = 1; break; }  // GUILD_OFFICER	1
+				case 1: { sas->parameter = 2; break; }  // GUILD_LEADER	2
+			}
+			dest->FastQueuePacket(&in, ack_req);
+			return;
+		}
+
 		if (sas->type != AT_Size)
 		{
 			dest->FastQueuePacket(&in, ack_req);
@@ -2315,6 +2338,27 @@ namespace UF
 
 		dest->FastQueuePacket(&outapp, ack_req);
 		delete in;
+	}
+
+	ENCODE(OP_SetGuildRank)
+	{
+		ENCODE_LENGTH_EXACT(GuildSetRank_Struct);
+		SETUP_DIRECT_ENCODE(GuildSetRank_Struct, structs::GuildSetRank_Struct);
+
+		eq->Unknown00 = 0;
+		eq->Unknown04 = 0;
+
+		//Translate older ranks to new values* /
+		switch (emu->Rank) {
+			case 8: case 7: case 6: case 5: case 4: { eq->Rank = 0; break; }	// GUILD_MEMBER  0
+			case 3: case 2: { eq->Rank = 1; break; }							// GUILD_OFFICER 1
+			case 1: { eq->Rank = 2; break; }									// GUILD_LEADER	 2
+		}
+
+		memcpy(eq->MemberName, emu->MemberName, sizeof(eq->MemberName));
+		OUT(Banker);
+
+		FINISH_ENCODE();
 	}
 
 	ENCODE(OP_SpawnDoor)
@@ -2907,6 +2951,12 @@ namespace UF
 			else
 			{
 				VARSTRUCT_ENCODE_TYPE(uint32, Buffer, emu->guildID);
+				//Translate older ranks to new values* /
+				switch (emu->guildrank) {
+					case 8: case 7: case 6: case 5: case 4: { emu->guildrank = 0; break; }
+					case 3: case 2: { emu->guildrank = 1; break; }  // GUILD_OFFICER	1
+					case 1: { emu->guildrank = 2; break; }  // GUILD_LEADER	2
+				}
 				VARSTRUCT_ENCODE_TYPE(uint32, Buffer, emu->guildrank);
 			}
 			VARSTRUCT_ENCODE_TYPE(uint8, Buffer, emu->class_);
@@ -3528,6 +3578,18 @@ namespace UF
 		DECODE_FORWARD(OP_GroupInvite);
 	}
 
+	DECODE(OP_GuildDemote)
+	{
+		DECODE_LENGTH_EXACT(structs::GuildDemoteStruct);
+		SETUP_DIRECT_DECODE(GuildDemoteStruct, structs::GuildDemoteStruct);
+
+		memcpy(emu->name, eq->name, sizeof(emu->name));
+		memcpy(emu->target, eq->target, sizeof(emu->target));
+		emu->rank = 5;
+
+		FINISH_DIRECT_DECODE();
+	}
+	
 	DECODE(OP_InspectRequest)
 	{
 		DECODE_LENGTH_EXACT(structs::Inspect_Struct);
