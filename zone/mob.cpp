@@ -5276,6 +5276,10 @@ uint32 Mob::GetZoneID() const {
 	return(zone->GetZoneID());
 }
 
+uint16 Mob::GetInstanceVersion() const {
+	return zone->GetInstanceVersion();
+}
+
 int Mob::GetHaste()
 {
 	// See notes in Client::CalcHaste
