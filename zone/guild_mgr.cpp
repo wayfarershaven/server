@@ -1589,8 +1589,8 @@ void ZoneGuildManager::UpdateRankPermission(uint32 gid, uint32 charid, uint32 fi
 		res->second->functions[fid] &= ~(1UL << (8 - rank));
 	}
 
-	auto query = fmt::format("REPLACE INTO guild_permissions (perm_id, guild_id, permission) "
-			"VALUES('{}','{}','{}');",
+	auto query = fmt::format("INSERT INTO guild_permissions (perm_id, guild_id, permission) "
+			"VALUES('{}','{}','{}') ON DUPLICATE KEY UPDATE guild_permissions.permission = VALUES(permission);",
 			fid,
 			gid,
 			res->second->functions[fid]
