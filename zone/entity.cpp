@@ -2231,8 +2231,11 @@ void EntityList::ChannelMessageFromWorld(const char *from, const char *to,
 		if (chan_num == ChatChannel_Guild) {
 			if (!client->IsInGuild(guild_id))
 				continue;
-			if (!guild_mgr.CheckPermission(guild_id, client->GuildRank(), GUILD_HEAR))
-				continue;
+			if (client->ClientVersion() >= EQ::versions::ClientVersion::RoF) {
+				if (!guild_mgr.CheckPermission(guild_id, client->GuildRank(), GUILD_ACTION_GUILD_CHAT_SEE)) {
+					continue;
+				}
+			}
 			if (client->GetFilter(FilterGuildChat) == FilterHide)
 				continue;
 		} else if (chan_num == ChatChannel_OOC) {
@@ -5783,5 +5786,83 @@ void EntityList::DamageArea(
 		} else {
 			e->Damage(sender, damage, SPELL_UNKNOWN, EQ::skills::SkillEagleStrike);
 		}
+	}
+}
+
+void EntityList::SendToGuildTitleDisplay(Client* c)
+{
+	if (c) {
+		if (c->ClientVersion() < EQ::versions::ClientVersion::RoF) {
+			return;
+		}
+
+		for (auto& client : client_list) {
+			if (client.second->IsInAGuild()) {
+				if (client.second->GuildID() == c->GuildID()) {
+					c->SendAppearancePacket(AT_GuildID, client.second->GuildID(), false);
+				}
+				else if (!guild_mgr.CheckPermission(client.second->GuildID(), client.second->GuildRank(), GUILD_ACTION_DISPLAY_GUILD_NAME)) {
+					c->SendAppearancePacket(AT_GuildID, 0, false);
+				}
+			}
+		}
+	}
+}
+
+void EntityList::SendAllGuildTitleDisplay(uint32 guild_id)
+{
+
+	auto gm = [&]() {
+		std::vector<Client*> guild_members;
+		for (auto& client : client_list) {
+			if (client.second->GuildID() == guild_id) {
+				guild_members.push_back(client.second);
+			}
+		}
+		return guild_members;
+	};
+
+	auto ngm = [&]() {
+		std::vector<Client*> guild_members;
+		for (auto& client : client_list) {
+			if (client.second->GuildID() != guild_id) {
+				guild_members.push_back(client.second);
+			}
+		}
+		return guild_members;
+	};
+
+	for (auto& c : client_list) {
+		if (c.second->IsInAGuild()) {
+			if (!guild_mgr.CheckPermission(c.second->GuildID(), c.second->GuildRank(), GUILD_ACTION_DISPLAY_GUILD_NAME))
+			{
+				c.second->SendAppearancePacket(AT_GuildShow, 0, false, true, nullptr, true);
+			}
+			else {
+				c.second->SendAppearancePacket(AT_GuildShow, 1, false, true, nullptr, true);
+			}
+		}
+	}
+
+	//	for (auto& m : gm()) 
+	//	{
+	//		if (!guild_mgr.CheckPermission(m->GuildID(), m->GuildRank(), GUILD_ACTION_DISPLAY_GUILD_NAME))
+	//		{
+	//			m->SendAppearancePacket(AT_GuildShow, 0, true, true);
+	//		}
+	//		else {
+	//			m->SendAppearancePacket(AT_GuildShow, 1, true, true);
+	//		}
+	//}
+}
+
+void EntityList::QueueClientsNotInGuild(Mob* sender, const EQApplicationPacket* app, bool ignore_sender, uint32 guild_id)
+{
+	auto it = client_list.begin();
+	while (it != client_list.end()) {
+		Client* client = it->second;
+		if (!client->IsInGuild(guild_id))
+			client->QueuePacket(app);
+		++it;
 	}
 }

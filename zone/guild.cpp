@@ -122,15 +122,16 @@ void Client::SendGuildRanks()
 			while(i < permissions)
 			{
 				auto outapp = new EQApplicationPacket(OP_GuildUpdateURLAndChannel,
-								      sizeof(GuildUpdateRanks_Struct));
-				GuildUpdateRanks_Struct *guuacs = (GuildUpdateRanks_Struct*) outapp->pBuffer;
+					sizeof(GuildUpdateRanks_Struct));
+				GuildUpdateRanks_Struct* guuacs = (GuildUpdateRanks_Struct*)outapp->pBuffer;
 				//guuacs->Unknown0008 = GuildID();
 				strncpy(guuacs->Unknown0012, GetCleanName(), 64);
 				guuacs->Action = 5;
 				guuacs->RankID = j;
 				guuacs->GuildID = GuildID();
 				guuacs->PermissionID = i;
-				guuacs->PermissionVal = 1;
+				//				guuacs->PermissionVal = 1;
+				guuacs->PermissionVal = guild_mgr.CheckPermission(GuildID(), j, (GuildAction)i);
 				guuacs->Unknown0089[0] = 0x2c;
 				guuacs->Unknown0089[1] = 0x01;
 				guuacs->Unknown0089[2] = 0x00;
@@ -139,6 +140,26 @@ void Client::SendGuildRanks()
 			}
 			j++;
 			i = 1;
+		}
+	}
+}
+
+void Client::SendGuildRankNames() 
+{
+	if (IsInAGuild() && (ClientVersion() >= EQ::versions::ClientVersion::RoF))
+	{
+		auto guild = guild_mgr.GetGuildByGuildID(GuildID());
+		for (int i = 1; i <= 8; i++)
+		{
+			auto outapp = new EQApplicationPacket(OP_GuildUpdateURLAndChannel, sizeof(GuildUpdateUCP));
+			GuildUpdateUCP* gucp = (GuildUpdateUCP*)outapp->pBuffer;
+
+			gucp->payload.rank_name.rank = i;
+			strcpy(gucp->payload.rank_name.rank_name, guild->ranks[i].name.c_str());
+			gucp->action = 4;
+
+			QueuePacket(outapp);
+			safe_delete(outapp);
 		}
 	}
 }
@@ -152,15 +173,23 @@ void Client::SendGuildSpawnAppearance() {
 		uint8 rank = guild_mgr.GetDisplayedRank(GuildID(), GuildRank(), CharacterID());
 		LogGuilds("Sending spawn appearance for guild [{}] at rank [{}]", GuildID(), rank);
 		SendAppearancePacket(AT_GuildID, GuildID());
-		if (ClientVersion() >= EQ::versions::ClientVersion::RoF)
-		{
-			switch (rank) {
-				case 0: { rank = 5; break; }	// GUILD_MEMBER	0
-				case 1: { rank = 3; break; }	// GUILD_OFFICER 1
-				case 2: { rank = 1; break; }	// GUILD_LEADER	2
-				default: { break; }				// GUILD_NONE
-			}
-		}
+		//if (ClientVersion() >= EQ::versions::ClientVersion::RoF)
+		//{
+		//	switch (rank) {
+		//		case 0: { rank = 5; break; }	// GUILD_MEMBER	0
+		//		case 1: { rank = 3; break; }	// GUILD_OFFICER 1
+		//		case 2: { rank = 1; break; }	// GUILD_LEADER	2
+		//		default: { break; }				// GUILD_NONE
+		//	}
+		//}
+		//if (ClientVersion() < EQ::versions::ClientVersion::RoF)
+		//{
+		//	switch (rank) {
+		//	case 1: { rank = 2; break; }
+		//	case 3: { rank = 1; break; }
+		//	case 5: { rank = 0; break; }
+		//	}
+		//}
 		SendAppearancePacket(AT_GuildRank, rank);
 	}
 	UpdateWho();
@@ -234,7 +263,9 @@ void Client::RefreshGuildInfo()
 
 	guildrank = info.rank;
 	guild_id = info.guild_id;
-	GuildBanker = info.banker || guild_mgr.IsGuildLeader(GuildID(), CharacterID());
+	GuildBanker = info.banker || 
+		guild_mgr.IsGuildLeader(GuildID(), CharacterID()) || 
+		guild_mgr.CheckPermission(info.guild_id, info.rank, GUILD_ACTION_BANK_PROMOTE_ITEMS);
 
 	if(zone->GetZoneID() == Zones::GUILDHALL) {
 		if(WasBanker != GuildBanker) {

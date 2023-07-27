@@ -93,6 +93,9 @@
 #define ServerOP_WebInterfaceEvent  0x0066
 #define ServerOP_WebInterfaceSubscribe 0x0067
 #define ServerOP_WebInterfaceUnsubscribe 0x0068
+#define ServerOP_GuildPermissionUpdate 0x0069
+#define ServerOP_GuildCharRefresh2 0x0070
+#define ServerOP_GuildRankNameChange 0x0071
 
 #define ServerOP_RaidAdd			0x0100 //in use
 #define ServerOP_RaidRemove			0x0101 //in use
@@ -1007,6 +1010,13 @@ struct ServerGuildCharRefresh_Struct {
 	uint32 char_id;
 };
 
+struct ServerGuildCharRefresh2_Struct {
+	uint32 guild_id;
+	uint32 old_guild_id;
+	uint32 char_id;
+	uint32 rank;
+};
+
 struct ServerGuildRankUpdate_Struct
 {
 	uint32 GuildID;
@@ -1020,6 +1030,22 @@ struct ServerGuildMemberUpdate_Struct {
 	char MemberName[64];
 	uint32 ZoneID;
 	uint32 LastSeen;
+};
+
+struct ServerGuildPermissionUpdate_Struct
+{
+	uint32 GuildID;
+	char   MemberName[64];
+	uint32 Rank;
+	uint32 FunctionID;
+	uint32 FunctionValue;
+};
+
+struct ServerGuildRankNameChange
+{
+	uint32		guild_id;
+	uint32		rank;
+	char		rank_name[76];
 };
 
 struct SpawnPlayerCorpse_Struct {

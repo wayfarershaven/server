@@ -89,11 +89,8 @@ void WorldGuildManager::ProcessZonePacket(ServerPacket *pack) {
 		break;
 	}
 
-	case ServerOP_GuildCharRefresh: {
-		if(pack->size != sizeof(ServerGuildCharRefresh_Struct)) {
-			LogGuilds("Received ServerOP_RefreshGuild of incorrect size [{}], expected [{}]", pack->size, sizeof(ServerGuildCharRefresh_Struct));
-			return;
-		}
+	case ServerOP_GuildCharRefresh:
+	case ServerOP_GuildCharRefresh2: {
 		ServerGuildCharRefresh_Struct *s = (ServerGuildCharRefresh_Struct *) pack->pBuffer;
 		LogGuilds("Received and broadcasting guild member refresh for char [{}] to all zones with members of guild [{}]", s->char_id, s->guild_id);
 
@@ -139,9 +136,54 @@ void WorldGuildManager::ProcessZonePacket(ServerPacket *pack) {
 		break;
 	}
 
+	case ServerOP_GuildPermissionUpdate: {
+		if (pack->size != sizeof(ServerGuildPermissionUpdate_Struct)) {
+			LogGuilds("Received ServerOP_GuildPermissionUpdate of incorrect size [{}], expected [{}]", pack->size, sizeof(ServerGuildPermissionUpdate_Struct));
+			return;
+		}
+
+		ServerGuildPermissionUpdate_Struct* sg = (ServerGuildPermissionUpdate_Struct*)pack->pBuffer;
+
+		LogGuilds("World Received ServerOP_GuildPermissionUpdate for guild [{}] function id {} with value of {}",
+			sg->GuildID,
+			sg->FunctionID,
+			sg->FunctionValue
+		);
+
+		auto res = m_guilds.find(sg->GuildID);
+
+		if (sg->FunctionValue) {
+			res->second->functions[sg->FunctionID] |= (1UL << (8 - sg->Rank));
+		} else {
+			res->second->functions[sg->FunctionID] &= ~(1UL << (8 - sg->Rank));
+		}
+
+		zoneserver_list.SendPacket(pack);
+
+		break;
+	}
+
+	case ServerOP_GuildRankNameChange: {
+		ServerGuildRankNameChange* rnc = (ServerGuildRankNameChange*)pack->pBuffer;
+
+		LogGuilds("World Received ServerOP_GuildRankNameChange from zone for guild [{}] rank id {} with new name of {}",
+			rnc->guild_id,
+			rnc->rank,
+			rnc->rank_name
+		);
+
+		zoneserver_list.SendPacket(pack);
+
+		break;
+	}
+
 	default:
 		LogGuilds("Unknown packet {:#04x} received from zone??", pack->opcode);
 		break;
 	}
 }
 
+WorldGuildManager::GuildInfo WorldGuildManager::GetGuildJson(int guild_id) {
+	auto guild = m_guilds.find(guild_id);
+	return *guild->second;
+}
