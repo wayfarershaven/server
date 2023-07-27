@@ -27,9 +27,11 @@
 #include "../common/database_schema.h"
 #include "../common/zone_store.h"
 #include "worlddb.h"
+#include "wguild_mgr.h"
 
 extern ZSList     zoneserver_list;
 extern ClientList client_list;
+extern WorldGuildManager guild_mgr;
 
 void callGetZoneList(Json::Value &response)
 {
@@ -273,4 +275,34 @@ void EQEmuApiWorldDataService::get(Json::Value &r, const std::vector<std::string
 	if (m == "reload") {
 		reload(r, args);
 	}
+	if (m == "get_guild_details") {
+		callGetGuildDetails(r);
+	}
+}
+
+void EQEmuApiWorldDataService::callGetGuildDetails(Json::Value& response)
+{
+	auto guild = guild_mgr.GetGuildJson(98);
+	Json::Value row;
+
+	row["guild_id"] = "98";
+	row["guild_name"] = guild.name;
+	row["leader_id"] = guild.leader_char_id;
+	row["min_status"] = guild.minstatus;
+	row["motd"] = guild.motd;
+	row["motd_setter"] = guild.motd_setter;
+	row["url"] = guild.url;
+	row["channel"] = guild.channel;
+
+	for (int i = 0; i <= 8; i++) {
+		auto st = fmt::format("Rank-{}", i);
+		row[st] = guild.ranks[i].name;
+	}
+
+	for (int i = 0; i <= 31; i++) {
+		auto st = fmt::format("Function-{}", i);
+		row[st] = guild.functions[i];
+	}
+
+	response.append(row);
 }

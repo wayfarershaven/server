@@ -23,6 +23,8 @@
 #include "guild_mgr.h"
 #include "worldserver.h"
 #include "zonedb.h"
+#include "../common/emu_versions.h"
+
 
 ZoneGuildManager guild_mgr;
 GuildBankManager *GuildBanks;
@@ -168,6 +170,30 @@ uint8 *ZoneGuildManager::MakeGuildMembers(uint32 guild_id, const char *prefix_na
 		PutField(level);
 		e->banker = ci->banker + (ci->alt * 2);	// low bit is banker flag, next bit is 'alt' flag.
 		PutField(class_);
+		auto c = entity_list.GetClientByID(ci->char_id);
+		if (c && c->ClientVersion() < EQ::versions::ClientVersion::RoF) {
+			switch (ci->rank) {
+			case 8:
+			case 7:
+			case 6:
+			case 5:
+			case 4: {
+				ci->rank = 0; //GUILD MEMBER 0
+				break;
+			}
+			case 3:
+			case 2: {
+				ci->rank = 1; //GUILD OFFICER 1
+				break;
+			}
+			case 1: {
+				ci->rank = 2; //GUILD LEADER 2
+				break;
+			}
+			default:
+				break;
+			}
+		}
 		PutField(rank);
 		PutField(time_last_on);
 		PutField(tribute_enable);
@@ -237,7 +263,7 @@ void ZoneGuildManager::ListGuilds(Client *c, std::string search_criteria) const 
 			);
 		}
 
-		auto found_count = 0;	
+		auto found_count = 0;
 
 		for (const auto& guild : m_guilds) {
 			if (
@@ -268,6 +294,7 @@ void ZoneGuildManager::ListGuilds(Client *c, std::string search_criteria) const 
 					guild.second->name
 				).c_str()
 			);
+
 			found_count++;
 		}
 
@@ -396,35 +423,35 @@ bool ZoneGuildManager::VerifyAndClearInvite(uint32 char_id, uint32 guild_id, uin
 }
 
 void ZoneGuildManager::ProcessWorldPacket(ServerPacket *pack) {
-	switch(pack->opcode) {
+	switch (pack->opcode) {
 	case ServerOP_RefreshGuild: {
-		if(pack->size != sizeof(ServerGuildRefresh_Struct)) {
+		if (pack->size != sizeof(ServerGuildRefresh_Struct)) {
 			LogError("Received ServerOP_RefreshGuild of incorrect size [{}], expected [{}]", pack->size, sizeof(ServerGuildRefresh_Struct));
 			return;
 		}
-		ServerGuildRefresh_Struct *s = (ServerGuildRefresh_Struct *) pack->pBuffer;
+		ServerGuildRefresh_Struct* s = (ServerGuildRefresh_Struct*)pack->pBuffer;
 
 		LogGuilds("Received guild refresh from world for [{}], changes: name=[{}], motd=[{}], rank=[{}], relation=[{}]", s->guild_id, s->name_change, s->motd_change, s->rank_change, s->relation_change);
 
 		//reload all the guild details from the database.
 		RefreshGuild(s->guild_id);
-
-		if(s->motd_change) {
+		
+		if (s->motd_change) {
 			//resend guild MOTD to all guild members in this zone.
 			entity_list.SendGuildMOTD(s->guild_id);
 		}
 
-		if(s->name_change) {
+		if (s->name_change) {
 			//until we figure out the guild update packet, we resend the whole guild list.
 			entity_list.SendGuildList();
 		}
 
-		if(s->rank_change) {
+		if (s->rank_change) {
 			//we need to send spawn appearance packets for all members of this guild in the zone, to everybody.
 			entity_list.SendGuildSpawnAppearance(s->guild_id);
 		}
 
-		if(s->relation_change) {
+		if (s->relation_change) {
 			//unknown until we implement guild relations.
 		}
 
@@ -432,37 +459,40 @@ void ZoneGuildManager::ProcessWorldPacket(ServerPacket *pack) {
 	}
 
 	case ServerOP_GuildCharRefresh: {
-		if(pack->size != sizeof(ServerGuildCharRefresh_Struct)) {
+		if (pack->size != sizeof(ServerGuildCharRefresh_Struct)) {
 			LogError("Received ServerOP_RefreshGuild of incorrect size [{}], expected [{}]", pack->size, sizeof(ServerGuildCharRefresh_Struct));
 			return;
 		}
-		ServerGuildCharRefresh_Struct *s = (ServerGuildCharRefresh_Struct *) pack->pBuffer;
+		ServerGuildCharRefresh_Struct* s = (ServerGuildCharRefresh_Struct*)pack->pBuffer;
 
 		LogGuilds("Received guild member refresh from world for char [{}] from guild [{}]", s->char_id, s->guild_id);
 
-		Client *c = entity_list.GetClientByCharID(s->char_id);
+		Client* c = entity_list.GetClientByCharID(s->char_id);
 
-		if(c != nullptr) {
+		if (c != nullptr) {
 			//this reloads the char's guild info from the database and sends appearance updates
 			c->RefreshGuildInfo();
 		}
 
 		//it would be nice if we had the packet to send just a one-person update
-		if(s->guild_id == GUILD_NONE) {
-			if(c != nullptr)
+		if (s->guild_id == GUILD_NONE) {
+			if (c != nullptr)
 				c->SendGuildMembers();	//only need to update this player's list (trying to clear it)
-		} else {
+		}
+		else {
 			entity_list.SendGuildMembers(s->guild_id);		//even send GUILD_NONE (empty)
+
 		}
 
-		if(s->old_guild_id != 0 && s->old_guild_id != GUILD_NONE && s->old_guild_id != s->guild_id)
+		if (s->old_guild_id != 0 && s->old_guild_id != GUILD_NONE && s->old_guild_id != s->guild_id)
 			entity_list.SendGuildMembers(s->old_guild_id);
-		else if(c != nullptr && s->guild_id != GUILD_NONE) {
+		else if (c != nullptr && s->guild_id != GUILD_NONE) {
 			//char is in zone, and has changed into a new guild, send MOTD.
 			c->SendGuildMOTD();
 			if (c->ClientVersion() >= EQ::versions::ClientVersion::RoF)
 			{
 				c->SendGuildRanks();
+//				entity_list.SendToGuildTitleDisplay(c);
 			}
 		}
 
@@ -472,9 +502,11 @@ void ZoneGuildManager::ProcessWorldPacket(ServerPacket *pack) {
 
 	case ServerOP_GuildRankUpdate:
 	{
-		if(is_zone_loaded)
+		ServerGuildRankUpdate_Struct* sgrus = (ServerGuildRankUpdate_Struct*)pack->pBuffer;
+
+		if (is_zone_loaded)
 		{
-			if(pack->size != sizeof(ServerGuildRankUpdate_Struct))
+			if (pack->size != sizeof(ServerGuildRankUpdate_Struct))
 			{
 				LogError("Received ServerOP_RankUpdate of incorrect size [{}], expected [{}]",
 					pack->size, sizeof(ServerGuildRankUpdate_Struct));
@@ -482,11 +514,9 @@ void ZoneGuildManager::ProcessWorldPacket(ServerPacket *pack) {
 				return;
 			}
 
-			ServerGuildRankUpdate_Struct *sgrus = (ServerGuildRankUpdate_Struct*)pack->pBuffer;
-
 			auto outapp = new EQApplicationPacket(OP_SetGuildRank, sizeof(GuildSetRank_Struct));
 
-			GuildSetRank_Struct *gsrs = (GuildSetRank_Struct*)outapp->pBuffer;
+			GuildSetRank_Struct* gsrs = (GuildSetRank_Struct*)outapp->pBuffer;
 
 			gsrs->Rank = sgrus->Rank;
 			strn0cpy(gsrs->MemberName, sgrus->MemberName, sizeof(gsrs->MemberName));
@@ -497,15 +527,21 @@ void ZoneGuildManager::ProcessWorldPacket(ServerPacket *pack) {
 			safe_delete(outapp);
 		}
 
+		Client* c = entity_list.GetClientByName(sgrus->MemberName);
+		if (c) {
+			c->RefreshGuildInfo();
+		}
+		entity_list.SendAllGuildTitleDisplay(sgrus->GuildID);
+
 		break;
 	}
 
 	case ServerOP_DeleteGuild: {
-		if(pack->size != sizeof(ServerGuildID_Struct)) {
+		if (pack->size != sizeof(ServerGuildID_Struct)) {
 			LogError("Received ServerOP_DeleteGuild of incorrect size [{}], expected [{}]", pack->size, sizeof(ServerGuildID_Struct));
 			return;
 		}
-		ServerGuildID_Struct *s = (ServerGuildID_Struct *) pack->pBuffer;
+		ServerGuildID_Struct* s = (ServerGuildID_Struct*)pack->pBuffer;
 
 		LogGuilds("Received guild delete from world for guild [{}]", s->guild_id);
 
@@ -524,13 +560,13 @@ void ZoneGuildManager::ProcessWorldPacket(ServerPacket *pack) {
 
 	case ServerOP_GuildMemberUpdate:
 	{
-		ServerGuildMemberUpdate_Struct *sgmus = (ServerGuildMemberUpdate_Struct*)pack->pBuffer;
+		ServerGuildMemberUpdate_Struct* sgmus = (ServerGuildMemberUpdate_Struct*)pack->pBuffer;
 
-		if(is_zone_loaded)
+		if (is_zone_loaded)
 		{
 			auto outapp = new EQApplicationPacket(OP_GuildMemberUpdate, sizeof(GuildMemberUpdate_Struct));
 
-			GuildMemberUpdate_Struct *gmus = (GuildMemberUpdate_Struct*)outapp->pBuffer;
+			GuildMemberUpdate_Struct* gmus = (GuildMemberUpdate_Struct*)outapp->pBuffer;
 
 			gmus->GuildID = sgmus->GuildID;
 			strn0cpy(gmus->MemberName, sgmus->MemberName, sizeof(gmus->MemberName));
@@ -547,11 +583,11 @@ void ZoneGuildManager::ProcessWorldPacket(ServerPacket *pack) {
 	case ServerOP_OnlineGuildMembersResponse:
 		if (is_zone_loaded)
 		{
-			char *Buffer = (char *)pack->pBuffer;
+			char* Buffer = (char*)pack->pBuffer;
 
 			uint32 FromID = VARSTRUCT_DECODE_TYPE(uint32, Buffer);
 			uint32 Count = VARSTRUCT_DECODE_TYPE(uint32, Buffer);
-			Client *c = entity_list.GetClientByCharID(FromID);
+			Client* c = entity_list.GetClientByCharID(FromID);
 
 			if (!c || !c->IsInAGuild())
 			{
@@ -560,7 +596,7 @@ void ZoneGuildManager::ProcessWorldPacket(ServerPacket *pack) {
 			}
 			LogGuilds("Processing ServerOP_OnlineGuildMembersResponse");
 			auto outapp = new EQApplicationPacket(OP_GuildMemberUpdate, sizeof(GuildMemberUpdate_Struct));
-			GuildMemberUpdate_Struct *gmus = (GuildMemberUpdate_Struct*)outapp->pBuffer;
+			GuildMemberUpdate_Struct* gmus = (GuildMemberUpdate_Struct*)outapp->pBuffer;
 			char Name[64];
 			gmus->LastSeen = time(nullptr);
 			gmus->InstanceID = 0;
@@ -580,7 +616,7 @@ void ZoneGuildManager::ProcessWorldPacket(ServerPacket *pack) {
 
 	case ServerOP_LFGuildUpdate:
 	{
-		if(is_zone_loaded)
+		if (is_zone_loaded)
 		{
 			char GuildName[33];
 			char Comments[257];
@@ -598,12 +634,12 @@ void ZoneGuildManager::ProcessWorldPacket(ServerPacket *pack) {
 
 			uint32 GuildID = GetGuildIDByName(GuildName);
 
-			if(GuildID == GUILD_NONE)
+			if (GuildID == GUILD_NONE)
 				break;
 
 			auto outapp = new EQApplicationPacket(OP_LFGuild, sizeof(LFGuild_GuildToggle_Struct));
 
-			LFGuild_GuildToggle_Struct *gts = (LFGuild_GuildToggle_Struct *)outapp->pBuffer;
+			LFGuild_GuildToggle_Struct* gts = (LFGuild_GuildToggle_Struct*)outapp->pBuffer;
 			gts->Command = 1;
 			strcpy(gts->Comment, Comments);
 			gts->FromLevel = FromLevel;
@@ -618,6 +654,95 @@ void ZoneGuildManager::ProcessWorldPacket(ServerPacket *pack) {
 			safe_delete(outapp);
 			break;
 		}
+	}
+	case ServerOP_GuildPermissionUpdate:
+	{
+		if (is_zone_loaded)
+		{
+			ServerGuildPermissionUpdate_Struct* sgpus = (ServerGuildPermissionUpdate_Struct*)pack->pBuffer;
+			auto client = entity_list.GetMob(sgpus->MemberName);
+
+			auto outapp = new EQApplicationPacket(OP_GuildUpdateURLAndChannel, sizeof(GuildPermission_Struct));
+			GuildPermission_Struct* guuacs = (GuildPermission_Struct*)outapp->pBuffer;
+			guuacs->Action = 5;
+			guuacs->rank = sgpus->Rank;
+			guuacs->function_id = sgpus->FunctionID;
+			guuacs->value = sgpus->FunctionValue;
+
+			entity_list.QueueClientsGuild(client, outapp, true, sgpus->GuildID);
+			delete(outapp);
+
+			LogGuilds("Zone Received guild permission update from world for rank {} function id [{}] and value [{}]",
+				guuacs->rank = sgpus->Rank,
+				guuacs->function_id = sgpus->FunctionID,
+				guuacs->value = sgpus->FunctionValue
+			);
+			RefreshGuild(sgpus->GuildID);
+			if (sgpus->FunctionID == 4) {
+				entity_list.SendAllGuildTitleDisplay(sgpus->GuildID);
+			}
+		}
+		break;
+	}
+	case ServerOP_GuildCharRefresh2: {
+		if (pack->size != sizeof(ServerGuildCharRefresh2_Struct)) {
+			LogError("Received ServerOP_RefreshGuild of incorrect size [{}], expected [{}]", pack->size, sizeof(ServerGuildCharRefresh2_Struct));
+			return;
+		}
+		ServerGuildCharRefresh2_Struct* s = (ServerGuildCharRefresh2_Struct*)pack->pBuffer;
+
+		LogGuilds("Received guild member refresh from world for char [{}] from guild [{}]", s->char_id, s->guild_id);
+
+		Client* c = entity_list.GetClientByCharID(s->char_id);
+
+		if (c != nullptr) {
+			//this reloads the char's guild info from the database and sends appearance updates
+			c->RefreshGuildInfo();
+//			entity_list.SendToGuildTitleDisplay(c);
+		}
+
+		//it would be nice if we had the packet to send just a one-person update
+		//if (s->guild_id == GUILD_NONE) {
+		//	if (c != nullptr)
+		//		c->SendGuildMembers();	//only need to update this player's list (trying to clear it)
+		//}
+		//else {
+		////////entity_list.SendGuildMembers(s->guild_id);		//even send GUILD_NONE (empty)
+		//}
+
+		//if (s->old_guild_id != 0 && s->old_guild_id != GUILD_NONE && s->old_guild_id != s->guild_id)
+		//	entity_list.SendGuildMembers(s->old_guild_id);
+		//else if (c != nullptr && s->guild_id != GUILD_NONE) {
+		//	//char is in zone, and has changed into a new guild, send MOTD.
+		//	c->SendGuildMOTD();
+		//	if (c->ClientVersion() >= EQ::versions::ClientVersion::RoF)
+		//	{
+		//		c->SendGuildRanks();
+		//	}
+		//}
+
+
+		break;
+	}
+	case ServerOP_GuildRankNameChange:
+	{
+		//if (pack->size != sizeof(ServerGuildCharRefresh2_Struct)) {
+		//	LogError("Received ServerOP_RefreshGuild of incorrect size [{}], expected [{}]", pack->size, sizeof(ServerGuildCharRefresh2_Struct));
+		//	return;
+		//}
+		ServerGuildRankNameChange* s = (ServerGuildRankNameChange*)pack->pBuffer;
+
+		LogGuilds("Received guild rank name change from world for rank [{}] from guild [{}]", s->rank, s->guild_id);
+
+		auto outapp = new EQApplicationPacket(OP_GuildUpdateURLAndChannel, sizeof(GuildUpdateUCP));
+		GuildUpdateUCP* gucp = (GuildUpdateUCP*)outapp->pBuffer;
+		gucp->payload.rank_name.rank = s->rank;
+		strcpy(gucp->payload.rank_name.rank_name, s->rank_name);
+		gucp->action = 4;
+
+		entity_list.QueueClientsGuild(nullptr, outapp, false, s->guild_id);
+
+		break;
 	}
 	}
 }
@@ -1452,4 +1577,77 @@ bool GuildBankManager::AllowedToWithdraw(uint32 GuildID, uint16 Area, uint16 Slo
 		return true;
 
 	return false;
+}
+
+void ZoneGuildManager::UpdateRankPermission(uint32 gid, uint32 charid, uint32 fid, uint32 rank, uint32 value) {
+
+	auto res = m_guilds.find(gid);
+	if (value) {
+		res->second->functions[fid] |= (1UL << (8 - rank));
+	}
+	else {
+		res->second->functions[fid] &= ~(1UL << (8 - rank));
+	}
+	auto query = fmt::format("UPDATE guild_permissions SET permission = {} WHERE perm_id = {} AND guild_id = {};", res->second->functions[fid], fid, gid);
+	auto results = m_db->QueryDatabase(query);
+
+}
+
+void ZoneGuildManager::SendPermissionUpdate(uint32 guild_id, uint32 rank, uint32 function_id, uint32 value)
+{
+
+	auto pack = new ServerPacket(ServerOP_GuildPermissionUpdate, sizeof(ServerGuildPermissionUpdate_Struct));
+	ServerGuildPermissionUpdate_Struct* sgpus = (ServerGuildPermissionUpdate_Struct*)pack->pBuffer;
+
+	sgpus->GuildID = guild_id;
+	sgpus->Rank = rank;
+	sgpus->FunctionID = function_id;
+	sgpus->FunctionValue = value;
+	worldserver.SendPacket(pack);
+	safe_delete(pack);
+}
+
+void ZoneGuildManager::UpdateRankName(uint32 guild_id, uint32 rank, std::string rank_name) 
+{
+	auto query = fmt::format("UPDATE guild_ranks gr SET gr.title = '{}' WHERE gr.guild_id = {} AND gr.`rank` = {};", rank_name, guild_id, rank);
+	auto results = m_db->QueryDatabase(query);
+
+}
+
+void ZoneGuildManager::SendRankName(uint32 guild_id, uint32 rank, std::string rank_name)
+{
+	auto pack = new ServerPacket(ServerOP_GuildRankNameChange, sizeof(ServerGuildRankNameChange));
+	ServerGuildRankNameChange* sgpus = (ServerGuildRankNameChange*)pack->pBuffer;
+
+	sgpus->guild_id = guild_id;
+	sgpus->rank = rank;
+	strcpy(sgpus->rank_name, rank_name.c_str());
+	worldserver.SendPacket(pack);
+	safe_delete(pack);
+}
+
+void ZoneGuildManager::SendAllRankNames(uint32 guild_id, uint32 char_id)
+{
+	auto guild = m_guilds.find(guild_id);
+	auto c = entity_list.GetClientByCharID(char_id);
+	if (c) 
+	{
+		auto outapp = new EQApplicationPacket(OP_GuildUpdateURLAndChannel, sizeof(GuildUpdateUCP));
+		GuildUpdateUCP* gucp = (GuildUpdateUCP*)outapp->pBuffer;
+		for (int i = 1; i <= 8; i++)
+		{
+			gucp->payload.rank_name.rank = i;
+			strcpy(gucp->payload.rank_name.rank_name, guild->second->ranks[i].name.c_str());
+			gucp->action = 4;
+			c->QueuePacket(outapp);
+		}
+		safe_delete(outapp);
+	}
+}
+
+BaseGuildManager::GuildInfo* ZoneGuildManager::GetGuildByGuildID(uint32 guild_id)
+{
+	auto guild = m_guilds.find(guild_id);
+	return guild->second;
+
 }
