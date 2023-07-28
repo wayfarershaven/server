@@ -1670,6 +1670,15 @@ struct Surname_Struct
 /*0100*/
 };
 
+struct GuildSetRank_Struct
+{
+	/*00*/	uint32	Unknown00;
+	/*04*/	uint32	Unknown04;
+	/*08*/	uint32	Rank; 
+	/*72*/	char	MemberName[64]; 
+	/*76*/	uint32	Banker;
+};
+
 struct GuildsListEntry_Struct {
 	char name[64];
 };

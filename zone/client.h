@@ -721,6 +721,7 @@ public:
 	void SendGuildList();
 	void SendGuildJoin(GuildJoin_Struct* gj);
 	void RefreshGuildInfo();
+	void SendGuildRankNames();
 
 	uint8 GetClientMaxLevel() const { return client_max_level; }
 	void SetClientMaxLevel(uint8 max_level) { client_max_level = max_level; }

@@ -1044,17 +1044,16 @@ void Client::OPRezzAnswer(uint32 Action, uint32 SpellID, uint16 ZoneID, uint16 I
 				RuleI(Character, ResurrectionSicknessSpellID)
 			);
 			SpellOnTarget(resurrection_sickness_spell_id, this); // Rezz effects
+		} else {
+			SetHP(GetMaxHP() / 20);
+			SetMana(GetMaxMana() / 20);
+			SetEndurance(GetMaxEndurance() / 20);
 		}
-		else {
-			SetHP(GetMaxHP());
-			SetMana(GetMaxMana());
-		}
-		if(spells[SpellID].base_value[0] < 100 && spells[SpellID].base_value[0] > 0 && PendingRezzXP > 0)
-		{
+
+		if(spells[SpellID].base_value[0] < 100 && spells[SpellID].base_value[0] > 0 && PendingRezzXP > 0) {
 				SetEXP(((int)(GetEXP()+((float)((PendingRezzXP / 100) * spells[SpellID].base_value[0])))),
 						GetAAXP(),true);
-		}
-		else if (spells[SpellID].base_value[0] == 100 && PendingRezzXP > 0) {
+		} else if (spells[SpellID].base_value[0] == 100 && PendingRezzXP > 0) {
 			SetEXP((GetEXP() + PendingRezzXP), GetAAXP(), true);
 		}
 

@@ -9,54 +9,45 @@
  * @docs https://eqemu.gitbook.io/server/in-development/developer-area/repositories
  */
 
-#ifndef EQEMU_BASE_RAID_DETAILS_REPOSITORY_H
-#define EQEMU_BASE_RAID_DETAILS_REPOSITORY_H
+#ifndef EQEMU_BASE_GUILD_PERMISSIONS_REPOSITORY_H
+#define EQEMU_BASE_GUILD_PERMISSIONS_REPOSITORY_H
 
 #include "../../database.h"
 #include "../../strings.h"
 #include <ctime>
 
 
-class BaseRaidDetailsRepository {
+class BaseGuildPermissionsRepository {
 public:
-	struct RaidDetails {
-		int32_t     raidid;
-		int32_t     loottype;
-		int8_t      locked;
-		std::string motd;
-		uint32_t    marked_npc_1;
-		uint32_t    marked_npc_2;
-		uint32_t    marked_npc_3;
+	struct GuildPermissions {
+		int32_t id;
+		int32_t perm_id;
+		int32_t guild_id;
+		int32_t permission;
 	};
 
 	static std::string PrimaryKey()
 	{
-		return std::string("raidid");
+		return std::string("id");
 	}
 
 	static std::vector<std::string> Columns()
 	{
 		return {
-			"raidid",
-			"loottype",
-			"locked",
-			"motd",
-			"marked_npc_1",
-			"marked_npc_2",
-			"marked_npc_3",
+			"id",
+			"perm_id",
+			"guild_id",
+			"permission",
 		};
 	}
 
 	static std::vector<std::string> SelectColumns()
 	{
 		return {
-			"raidid",
-			"loottype",
-			"locked",
-			"motd",
-			"marked_npc_1",
-			"marked_npc_2",
-			"marked_npc_3",
+			"id",
+			"perm_id",
+			"guild_id",
+			"permission",
 		};
 	}
 
@@ -72,7 +63,7 @@ public:
 
 	static std::string TableName()
 	{
-		return std::string("raid_details");
+		return std::string("guild_permissions");
 	}
 
 	static std::string BaseSelect()
@@ -93,38 +84,35 @@ public:
 		);
 	}
 
-	static RaidDetails NewEntity()
+	static GuildPermissions NewEntity()
 	{
-		RaidDetails e{};
+		GuildPermissions e{};
 
-		e.raidid       = 0;
-		e.loottype     = 0;
-		e.locked       = 0;
-		e.motd         = "";
-		e.marked_npc_1 = 0;
-		e.marked_npc_2 = 0;
-		e.marked_npc_3 = 0;
+		e.id         = 0;
+		e.perm_id    = 0;
+		e.guild_id   = 0;
+		e.permission = 0;
 
 		return e;
 	}
 
-	static RaidDetails GetRaidDetails(
-		const std::vector<RaidDetails> &raid_detailss,
-		int raid_details_id
+	static GuildPermissions GetGuildPermissions(
+		const std::vector<GuildPermissions> &guild_permissionss,
+		int guild_permissions_id
 	)
 	{
-		for (auto &raid_details : raid_detailss) {
-			if (raid_details.raidid == raid_details_id) {
-				return raid_details;
+		for (auto &guild_permissions : guild_permissionss) {
+			if (guild_permissions.id == guild_permissions_id) {
+				return guild_permissions;
 			}
 		}
 
 		return NewEntity();
 	}
 
-	static RaidDetails FindOne(
+	static GuildPermissions FindOne(
 		Database& db,
-		int raid_details_id
+		int guild_permissions_id
 	)
 	{
 		auto results = db.QueryDatabase(
@@ -132,21 +120,18 @@ public:
 				"{} WHERE {} = {} LIMIT 1",
 				BaseSelect(),
 				PrimaryKey(),
-				raid_details_id
+				guild_permissions_id
 			)
 		);
 
 		auto row = results.begin();
 		if (results.RowCount() == 1) {
-			RaidDetails e{};
+			GuildPermissions e{};
 
-			e.raidid       = static_cast<int32_t>(atoi(row[0]));
-			e.loottype     = static_cast<int32_t>(atoi(row[1]));
-			e.locked       = static_cast<int8_t>(atoi(row[2]));
-			e.motd         = row[3] ? row[3] : "";
-			e.marked_npc_1 = static_cast<uint32_t>(strtoul(row[4], nullptr, 10));
-			e.marked_npc_2 = static_cast<uint32_t>(strtoul(row[5], nullptr, 10));
-			e.marked_npc_3 = static_cast<uint32_t>(strtoul(row[6], nullptr, 10));
+			e.id         = static_cast<int32_t>(atoi(row[0]));
+			e.perm_id    = static_cast<int32_t>(atoi(row[1]));
+			e.guild_id   = static_cast<int32_t>(atoi(row[2]));
+			e.permission = static_cast<int32_t>(atoi(row[3]));
 
 			return e;
 		}
@@ -156,7 +141,7 @@ public:
 
 	static int DeleteOne(
 		Database& db,
-		int raid_details_id
+		int guild_permissions_id
 	)
 	{
 		auto results = db.QueryDatabase(
@@ -164,7 +149,7 @@ public:
 				"DELETE FROM {} WHERE {} = {}",
 				TableName(),
 				PrimaryKey(),
-				raid_details_id
+				guild_permissions_id
 			)
 		);
 
@@ -173,20 +158,16 @@ public:
 
 	static int UpdateOne(
 		Database& db,
-		const RaidDetails &e
+		const GuildPermissions &e
 	)
 	{
 		std::vector<std::string> v;
 
 		auto columns = Columns();
 
-		v.push_back(columns[0] + " = " + std::to_string(e.raidid));
-		v.push_back(columns[1] + " = " + std::to_string(e.loottype));
-		v.push_back(columns[2] + " = " + std::to_string(e.locked));
-		v.push_back(columns[3] + " = '" + Strings::Escape(e.motd) + "'");
-		v.push_back(columns[4] + " = " + std::to_string(e.marked_npc_1));
-		v.push_back(columns[5] + " = " + std::to_string(e.marked_npc_2));
-		v.push_back(columns[6] + " = " + std::to_string(e.marked_npc_3));
+		v.push_back(columns[1] + " = " + std::to_string(e.perm_id));
+		v.push_back(columns[2] + " = " + std::to_string(e.guild_id));
+		v.push_back(columns[3] + " = " + std::to_string(e.permission));
 
 		auto results = db.QueryDatabase(
 			fmt::format(
@@ -194,27 +175,24 @@ public:
 				TableName(),
 				Strings::Implode(", ", v),
 				PrimaryKey(),
-				e.raidid
+				e.id
 			)
 		);
 
 		return (results.Success() ? results.RowsAffected() : 0);
 	}
 
-	static RaidDetails InsertOne(
+	static GuildPermissions InsertOne(
 		Database& db,
-		RaidDetails e
+		GuildPermissions e
 	)
 	{
 		std::vector<std::string> v;
 
-		v.push_back(std::to_string(e.raidid));
-		v.push_back(std::to_string(e.loottype));
-		v.push_back(std::to_string(e.locked));
-		v.push_back("'" + Strings::Escape(e.motd) + "'");
-		v.push_back(std::to_string(e.marked_npc_1));
-		v.push_back(std::to_string(e.marked_npc_2));
-		v.push_back(std::to_string(e.marked_npc_3));
+		v.push_back(std::to_string(e.id));
+		v.push_back(std::to_string(e.perm_id));
+		v.push_back(std::to_string(e.guild_id));
+		v.push_back(std::to_string(e.permission));
 
 		auto results = db.QueryDatabase(
 			fmt::format(
@@ -225,7 +203,7 @@ public:
 		);
 
 		if (results.Success()) {
-			e.raidid = results.LastInsertedID();
+			e.id = results.LastInsertedID();
 			return e;
 		}
 
@@ -236,7 +214,7 @@ public:
 
 	static int InsertMany(
 		Database& db,
-		const std::vector<RaidDetails> &entries
+		const std::vector<GuildPermissions> &entries
 	)
 	{
 		std::vector<std::string> insert_chunks;
@@ -244,13 +222,10 @@ public:
 		for (auto &e: entries) {
 			std::vector<std::string> v;
 
-			v.push_back(std::to_string(e.raidid));
-			v.push_back(std::to_string(e.loottype));
-			v.push_back(std::to_string(e.locked));
-			v.push_back("'" + Strings::Escape(e.motd) + "'");
-			v.push_back(std::to_string(e.marked_npc_1));
-			v.push_back(std::to_string(e.marked_npc_2));
-			v.push_back(std::to_string(e.marked_npc_3));
+			v.push_back(std::to_string(e.id));
+			v.push_back(std::to_string(e.perm_id));
+			v.push_back(std::to_string(e.guild_id));
+			v.push_back(std::to_string(e.permission));
 
 			insert_chunks.push_back("(" + Strings::Implode(",", v) + ")");
 		}
@@ -268,9 +243,9 @@ public:
 		return (results.Success() ? results.RowsAffected() : 0);
 	}
 
-	static std::vector<RaidDetails> All(Database& db)
+	static std::vector<GuildPermissions> All(Database& db)
 	{
-		std::vector<RaidDetails> all_entries;
+		std::vector<GuildPermissions> all_entries;
 
 		auto results = db.QueryDatabase(
 			fmt::format(
@@ -282,15 +257,12 @@ public:
 		all_entries.reserve(results.RowCount());
 
 		for (auto row = results.begin(); row != results.end(); ++row) {
-			RaidDetails e{};
+			GuildPermissions e{};
 
-			e.raidid       = static_cast<int32_t>(atoi(row[0]));
-			e.loottype     = static_cast<int32_t>(atoi(row[1]));
-			e.locked       = static_cast<int8_t>(atoi(row[2]));
-			e.motd         = row[3] ? row[3] : "";
-			e.marked_npc_1 = static_cast<uint32_t>(strtoul(row[4], nullptr, 10));
-			e.marked_npc_2 = static_cast<uint32_t>(strtoul(row[5], nullptr, 10));
-			e.marked_npc_3 = static_cast<uint32_t>(strtoul(row[6], nullptr, 10));
+			e.id         = static_cast<int32_t>(atoi(row[0]));
+			e.perm_id    = static_cast<int32_t>(atoi(row[1]));
+			e.guild_id   = static_cast<int32_t>(atoi(row[2]));
+			e.permission = static_cast<int32_t>(atoi(row[3]));
 
 			all_entries.push_back(e);
 		}
@@ -298,9 +270,9 @@ public:
 		return all_entries;
 	}
 
-	static std::vector<RaidDetails> GetWhere(Database& db, const std::string &where_filter)
+	static std::vector<GuildPermissions> GetWhere(Database& db, const std::string &where_filter)
 	{
-		std::vector<RaidDetails> all_entries;
+		std::vector<GuildPermissions> all_entries;
 
 		auto results = db.QueryDatabase(
 			fmt::format(
@@ -313,15 +285,12 @@ public:
 		all_entries.reserve(results.RowCount());
 
 		for (auto row = results.begin(); row != results.end(); ++row) {
-			RaidDetails e{};
+			GuildPermissions e{};
 
-			e.raidid       = static_cast<int32_t>(atoi(row[0]));
-			e.loottype     = static_cast<int32_t>(atoi(row[1]));
-			e.locked       = static_cast<int8_t>(atoi(row[2]));
-			e.motd         = row[3] ? row[3] : "";
-			e.marked_npc_1 = static_cast<uint32_t>(strtoul(row[4], nullptr, 10));
-			e.marked_npc_2 = static_cast<uint32_t>(strtoul(row[5], nullptr, 10));
-			e.marked_npc_3 = static_cast<uint32_t>(strtoul(row[6], nullptr, 10));
+			e.id         = static_cast<int32_t>(atoi(row[0]));
+			e.perm_id    = static_cast<int32_t>(atoi(row[1]));
+			e.guild_id   = static_cast<int32_t>(atoi(row[2]));
+			e.permission = static_cast<int32_t>(atoi(row[3]));
 
 			all_entries.push_back(e);
 		}
@@ -382,4 +351,4 @@ public:
 
 };
 
-#endif //EQEMU_BASE_RAID_DETAILS_REPOSITORY_H
+#endif //EQEMU_BASE_GUILD_PERMISSIONS_REPOSITORY_H

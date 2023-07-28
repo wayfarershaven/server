@@ -1357,15 +1357,7 @@ namespace RoF2
 				PutFieldN(level);
 				PutFieldN(banker);
 				PutFieldN(class_);
-
-				/* Translate older ranks to new values */
-				switch (emu_e->rank) {
-				case 0: { e->rank = htonl(5); break; }  // GUILD_MEMBER	0
-				case 1: { e->rank = htonl(3); break; }  // GUILD_OFFICER 1
-				case 2: { e->rank = htonl(1); break; }  // GUILD_LEADER	2
-				default: { e->rank = htonl(emu_e->rank); break; } // GUILD_NONE
-				}
-
+				PutFieldN(rank);
 				PutFieldN(time_last_on);
 				PutFieldN(tribute_enable);
 				e->unknown01 = 0;
@@ -1422,7 +1414,7 @@ namespace RoF2
 			if (InBuffer[0])
 			{
 				PacketSize += (5 + strlen(InBuffer));
-				HighestGuildID = i - 1;
+				HighestGuildID += 1;
 			}
 			InBuffer += 64;
 		}
@@ -3069,15 +3061,7 @@ namespace RoF2
 		SETUP_DIRECT_ENCODE(GuildSetRank_Struct, structs::GuildSetRank_Struct);
 
 		eq->GuildID = emu->Unknown00;
-
-		/* Translate older ranks to new values */
-		switch (emu->Rank) {
-		case 0: { eq->Rank = 5; break; }  // GUILD_MEMBER	0
-		case 1: { eq->Rank = 3; break; }  // GUILD_OFFICER	1
-		case 2: { eq->Rank = 1; break; }  // GUILD_LEADER	2
-		default: { eq->Rank = emu->Rank; break; }
-		}
-
+		eq->Rank = emu->Rank;
 		memcpy(eq->MemberName, emu->MemberName, sizeof(eq->MemberName));
 		OUT(Banker);
 		eq->Unknown76 = 1;
@@ -4142,14 +4126,7 @@ namespace RoF2
 			else
 			{
 				VARSTRUCT_ENCODE_TYPE(uint32, Buffer, emu->guildID);
-
-				/* Translate older ranks to new values */
-				switch (emu->guildrank) {
-				case 0: { VARSTRUCT_ENCODE_TYPE(uint32, Buffer, 5);  break; }  // GUILD_MEMBER	0
-				case 1: { VARSTRUCT_ENCODE_TYPE(uint32, Buffer, 3);  break; }  // GUILD_OFFICER	1
-				case 2: { VARSTRUCT_ENCODE_TYPE(uint32, Buffer, 1);  break; }  // GUILD_LEADER	2
-				default: { VARSTRUCT_ENCODE_TYPE(uint32, Buffer, emu->guildrank); break; }  //
-				}
+				VARSTRUCT_ENCODE_TYPE(uint32, Buffer, emu->guildrank);
 			}
 
 			VARSTRUCT_ENCODE_TYPE(uint8, Buffer, emu->class_);
@@ -4910,7 +4887,7 @@ namespace RoF2
 
 		strn0cpy(emu->target, eq->target, sizeof(emu->target));
 		strn0cpy(emu->name, eq->name, sizeof(emu->name));
-		// IN(rank);
+		IN(rank);
 
 		FINISH_DIRECT_DECODE();
 	}

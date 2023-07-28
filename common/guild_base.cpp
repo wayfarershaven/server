@@ -27,8 +27,8 @@
 //until we move MAX_NUMBER_GUILDS
 #include "eq_packet_structs.h"
 
-const char *const BaseGuildManager::GuildActionNames[_MaxGuildAction] =
-{ "HearGuildChat", "SpeakGuildChat", "Invite", "Remove", "Promote", "Demote", "Set_MOTD", "War/Peace" };
+//const char *const BaseGuildManager::GuildActionNames[_MaxGuildAction] =
+//{ "HearGuildChat", "SpeakGuildChat", "Invite", "Remove", "Promote", "Demote", "Set_MOTD", "War/Peace" };
 
 BaseGuildManager::BaseGuildManager()
 : m_db(nullptr)
@@ -91,16 +91,51 @@ bool BaseGuildManager::LoadGuilds() {
 
 		RankInfo &rank = res->second->ranks[rankn];
 
-		rank.name = row[2];
-		rank.permissions[GUILD_HEAR] = (row[3][0] == '1')?true:false;
-		rank.permissions[GUILD_SPEAK] = (row[4][0] == '1')?true:false;
-		rank.permissions[GUILD_INVITE] = (row[5][0] == '1')?true:false;
-		rank.permissions[GUILD_REMOVE] = (row[6][0] == '1')?true:false;
-		rank.permissions[GUILD_PROMOTE] = (row[7][0] == '1')?true:false;
-		rank.permissions[GUILD_DEMOTE] = (row[8][0] == '1')?true:false;
-		rank.permissions[GUILD_MOTD] = (row[9][0] == '1')?true:false;
-		rank.permissions[GUILD_WARPEACE] = (row[10][0] == '1')?true:false;
+		//rank.name = row[2];
+		//rank.permissions[GUILD_HEAR] = (row[3][0] == '1')?true:false;
+		//rank.permissions[GUILD_SPEAK] = (row[4][0] == '1')?true:false;
+		//rank.permissions[GUILD_INVITE] = (row[5][0] == '1')?true:false;
+		//rank.permissions[GUILD_REMOVE] = (row[6][0] == '1')?true:false;
+		//rank.permissions[GUILD_PROMOTE] = (row[7][0] == '1')?true:false;
+		//rank.permissions[GUILD_DEMOTE] = (row[8][0] == '1')?true:false;
+		//rank.permissions[GUILD_MOTD] = (row[9][0] == '1')?true:false;
+		//rank.permissions[GUILD_WARPEACE] = (row[10][0] == '1')?true:false;
+
+		auto query_rank_names = fmt::format("SELECT `rank`,title FROM guild_ranks gr WHERE gr.guild_id = {};",
+			guild_id
+		);
+		auto results_rank_names = m_db->QueryDatabase(query_rank_names);
+		for (auto row : results_rank_names) 
+		{
+			auto row_rank = Strings::ToUnsignedInt(row[0]);
+			auto row_rank_name = row[1];
+			res->second->ranks[row_rank].name = std::string(row_rank_name);
+		}
+
+		//res->second->ranks[0].name = "Unknown";
+		//res->second->ranks[1].name = "Leader";
+		//res->second->ranks[2].name = "Senior Officer";
+		//res->second->ranks[3].name = "Officer";
+		//res->second->ranks[4].name = "Senior Member";
+		//res->second->ranks[5].name = "Member";
+		//res->second->ranks[6].name = "Junior Member";
+		//res->second->ranks[7].name = "Initiate";
+		//res->second->ranks[8].name = "Recruit";
+
+		auto query_actions = fmt::format("SELECT perm_id, permission FROM guild_permissions WHERE guild_id = '{}';",
+			guild_id
+		);
+		auto results_actions = m_db->QueryDatabase(query_actions);
+		auto guild = m_guilds[guild_id];
+		for (auto row : results_actions)
+		{
+			uint32 perm_id = Strings::ToUnsignedInt(row[0]);
+			uint32 permission = Strings::ToUnsignedInt(row[1]);
+			permission = permission | 128;	// ensure that the leader always has permission regardless of db setting
+			guild->functions[perm_id] = permission;
+		}
 	}
+
 
 	return true;
 }
@@ -153,15 +188,39 @@ bool BaseGuildManager::RefreshGuild(uint32 guild_id) {
 
 		RankInfo &rank = info->ranks[rankn];
 
-		rank.name = row[2];
-		rank.permissions[GUILD_HEAR] = (row[3][0] == '1') ? true: false;
-		rank.permissions[GUILD_SPEAK] = (row[4][0] == '1') ? true: false;
-		rank.permissions[GUILD_INVITE] = (row[5][0] == '1') ? true: false;
-		rank.permissions[GUILD_REMOVE] = (row[6][0] == '1') ? true: false;
-		rank.permissions[GUILD_PROMOTE] = (row[7][0] == '1') ? true: false;
-		rank.permissions[GUILD_DEMOTE] = (row[8][0] == '1') ? true: false;
-		rank.permissions[GUILD_MOTD] = (row[9][0] == '1') ? true: false;
-		rank.permissions[GUILD_WARPEACE] = (row[10][0] == '1') ? true: false;
+		//rank.name = row[2];
+		//rank.permissions[GUILD_HEAR] = (row[3][0] == '1') ? true: false;
+		//rank.permissions[GUILD_SPEAK] = (row[4][0] == '1') ? true: false;
+		//rank.permissions[GUILD_INVITE] = (row[5][0] == '1') ? true: false;
+		//rank.permissions[GUILD_REMOVE] = (row[6][0] == '1') ? true: false;
+		//rank.permissions[GUILD_PROMOTE] = (row[7][0] == '1') ? true: false;
+		//rank.permissions[GUILD_DEMOTE] = (row[8][0] == '1') ? true: false;
+		//rank.permissions[GUILD_MOTD] = (row[9][0] == '1') ? true: false;
+		//rank.permissions[GUILD_WARPEACE] = (row[10][0] == '1') ? true: false;
+
+		auto query_rank_names = fmt::format("SELECT `rank`,title FROM guild_ranks gr WHERE gr.guild_id = {};",
+			guild_id
+		);
+		auto results_rank_names = m_db->QueryDatabase(query_rank_names);
+		auto guild = m_guilds.find(guild_id);
+		for (auto row : results_rank_names)
+		{
+			auto row_rank = Strings::ToUnsignedInt(row[0]);
+			auto row_rank_name = row[1];
+			guild->second->ranks[row_rank].name = std::string(row_rank_name);
+		}
+
+		auto query_actions = fmt::format("SELECT perm_id, permission FROM guild_permissions WHERE guild_id = '{}';",
+			guild_id
+		);
+		auto results_actions = m_db->QueryDatabase(query_actions);
+		for (auto row : results_actions)
+		{
+			uint32 perm_id = Strings::ToUnsignedInt(row[0]);
+			uint32 permission = Strings::ToUnsignedInt(row[1]);
+			permission = permission | 128;	// ensure that the leader always has permission regardless of db setting
+			info->functions[perm_id] = permission;
+		}
 	}
 
 	LogGuilds("Successfully refreshed guild [{}] from the database", guild_id);
@@ -169,13 +228,13 @@ bool BaseGuildManager::RefreshGuild(uint32 guild_id) {
 	return true;
 }
 
-BaseGuildManager::GuildInfo *BaseGuildManager::_CreateGuild(uint32 guild_id, const char *guild_name, uint32 leader_char_id, uint8 minstatus, const char *guild_motd, const char *motd_setter, const char *Channel, const char *URL)
+BaseGuildManager::GuildInfo* BaseGuildManager::_CreateGuild(uint32 guild_id, const char* guild_name, uint32 leader_char_id, uint8 minstatus, const char* guild_motd, const char* motd_setter, const char* Channel, const char* URL)
 {
-	std::map<uint32, GuildInfo *>::iterator res;
+	std::map<uint32, GuildInfo*>::iterator res;
 
 	//remove any old entry.
 	res = m_guilds.find(guild_id);
-	if(res != m_guilds.end()) {
+	if (res != m_guilds.end()) {
 		delete res->second;
 		m_guilds.erase(res);
 	}
@@ -192,24 +251,37 @@ BaseGuildManager::GuildInfo *BaseGuildManager::_CreateGuild(uint32 guild_id, con
 	m_guilds[guild_id] = info;
 
 	//now setup default ranks (everything defaults to false)
-	info->ranks[0].name = "Member";
-	info->ranks[0].permissions[GUILD_HEAR] = true;
-	info->ranks[0].permissions[GUILD_SPEAK] = true;
-	info->ranks[1].name = "Officer";
-	info->ranks[1].permissions[GUILD_HEAR] = true;
-	info->ranks[1].permissions[GUILD_SPEAK] = true;
-	info->ranks[1].permissions[GUILD_INVITE] = true;
-	info->ranks[1].permissions[GUILD_REMOVE] = true;
-	info->ranks[1].permissions[GUILD_MOTD] = true;
-	info->ranks[2].name = "Leader";
-	info->ranks[2].permissions[GUILD_HEAR] = true;
-	info->ranks[2].permissions[GUILD_SPEAK] = true;
-	info->ranks[2].permissions[GUILD_INVITE] = true;
-	info->ranks[2].permissions[GUILD_REMOVE] = true;
-	info->ranks[2].permissions[GUILD_PROMOTE] = true;
-	info->ranks[2].permissions[GUILD_DEMOTE] = true;
-	info->ranks[2].permissions[GUILD_MOTD] = true;
-	info->ranks[2].permissions[GUILD_WARPEACE] = true;
+	//info->ranks[0].name = "Member";
+	//info->ranks[0].permissions[GUILD_HEAR] = true;
+	//info->ranks[0].permissions[GUILD_SPEAK] = true;
+	//info->ranks[1].name = "Officer";
+	//info->ranks[1].permissions[GUILD_HEAR] = true;
+	//info->ranks[1].permissions[GUILD_SPEAK] = true;
+	//info->ranks[1].permissions[GUILD_INVITE] = true;
+	//info->ranks[1].permissions[GUILD_REMOVE] = true;
+	//info->ranks[1].permissions[GUILD_MOTD] = true;
+	//info->ranks[2].name = "Leader";
+	//info->ranks[2].permissions[GUILD_HEAR] = true;
+	//info->ranks[2].permissions[GUILD_SPEAK] = true;
+	//info->ranks[2].permissions[GUILD_INVITE] = true;
+	//info->ranks[2].permissions[GUILD_REMOVE] = true;
+	//info->ranks[2].permissions[GUILD_PROMOTE] = true;
+	//info->ranks[2].permissions[GUILD_DEMOTE] = true;
+	//info->ranks[2].permissions[GUILD_MOTD] = true;
+	//info->ranks[2].permissions[GUILD_WARPEACE] = true;
+
+	info->ranks[1].name = "Leader";
+	info->ranks[2].name = "Senior Officer";
+	info->ranks[3].name = "Officer";
+	info->ranks[4].name = "Senior Member";
+	info->ranks[5].name = "Member";
+	info->ranks[6].name = "Junior Member";
+	info->ranks[7].name = "Initiate";
+	info->ranks[8].name = "Recruit";
+
+	for (int i = 0; i < GUILD_MAX_FUNCTIONS; i++) {
+		info->functions[i] = 128;
+	}
 
 	return(info);
 }
@@ -232,10 +304,17 @@ bool BaseGuildManager::_StoreGuildDB(uint32 guild_id) {
 
 	//clear out old `guilds` entry
 	auto results = m_db->QueryDatabase(query);
+	LogGuilds("Delete guild [{}] from database.", guild_id);
 
 	//clear out old `guild_ranks` entries
 	query = StringFormat("DELETE FROM guild_ranks WHERE guild_id=%lu", (unsigned long)guild_id);
 	results = m_db->QueryDatabase(query);
+	LogGuilds("Delete guild_ranks [{}] from database.", guild_id);
+
+	//clear out old `guild_permissions` entries
+	query = StringFormat("DELETE FROM guild_permissions WHERE guild_id=%lu", (unsigned long)guild_id);
+	results = m_db->QueryDatabase(query);
+	LogGuilds("Delete guild_permissions [{}] from database.", guild_id);
 
 	//escape our strings.
 	auto name_esc = new char[info->name.length() * 2 + 1];
@@ -249,6 +328,7 @@ bool BaseGuildManager::_StoreGuildDB(uint32 guild_id) {
 	query = StringFormat("INSERT INTO guilds (id,name,leader,minstatus,motd,motd_setter) VALUES(%lu,'%s',%lu,%d,'%s', '%s')",
 		(unsigned long)guild_id, name_esc, (unsigned long)info->leader_char_id, info->minstatus, motd_esc, motd_set_esc);
 	results = m_db->QueryDatabase(query);
+	LogGuilds("Created guild [{}] in database.", guild_id);
 
 	if (!results.Success())
 	{
@@ -269,19 +349,10 @@ bool BaseGuildManager::_StoreGuildDB(uint32 guild_id) {
 		auto title_esc = new char[rankInfo.name.length() * 2 + 1];
 		m_db->DoEscapeString(title_esc, rankInfo.name.c_str(), rankInfo.name.length());
 
-        query = StringFormat("INSERT INTO guild_ranks "
-        "(guild_id,`rank`,title,can_hear,can_speak,can_invite,can_remove,can_promote,can_demote,can_motd,can_warpeace)"
-		" VALUES(%d,%d,'%s',%d,%d,%d,%d,%d,%d,%d,%d)",
-			guild_id, rank, title_esc,
-			rankInfo.permissions[GUILD_HEAR],
-			rankInfo.permissions[GUILD_SPEAK],
-			rankInfo.permissions[GUILD_INVITE],
-			rankInfo.permissions[GUILD_REMOVE],
-			rankInfo.permissions[GUILD_PROMOTE],
-			rankInfo.permissions[GUILD_DEMOTE],
-			rankInfo.permissions[GUILD_MOTD],
-			rankInfo.permissions[GUILD_WARPEACE]);
+		query = StringFormat("INSERT INTO guild_ranks (guild_id,`rank`,title) VALUES(%d,%d,'%s')",
+			guild_id, rank, title_esc);
 		results = m_db->QueryDatabase(query);
+		LogGuilds("Created guild_rank [{}] in database.", rank);
 
 		if (!results.Success())
 		{
@@ -289,6 +360,18 @@ bool BaseGuildManager::_StoreGuildDB(uint32 guild_id) {
 			return false;
 		}
 		safe_delete_array(title_esc);
+	}
+
+	for (int i = 0; i < GUILD_MAX_FUNCTIONS; i++) {
+		auto permission = info->functions[i];
+		auto query_actions = fmt::format("REPLACE INTO guild_permissions (perm_id, guild_id, permission) "
+			"VALUES('{}','{}','{}');",
+			i,
+			guild_id,
+			permission
+		);
+		auto results = m_db->QueryDatabase(query_actions);
+		LogGuilds("Created guild_permissions [{}][{}] in database.", i, permission);
 	}
 
 	LogGuilds("Stored guild [{}] in the database", guild_id);
@@ -546,6 +629,10 @@ bool BaseGuildManager::DBDeleteGuild(uint32 guild_id) {
 	// Delete the guild bank
 	query = StringFormat("DELETE FROM guild_bank WHERE guildid=%lu", (unsigned long)guild_id);
 	QueryWithLogging(query, "deleting guild bank");
+
+ 	//clear out permissions belonging to this guild.
+	query = StringFormat("DELETE FROM guild_permissions WHERE guild_id=%lu", (unsigned long)guild_id);
+	QueryWithLogging(query, "clearing permissions in guild");
 
 	LogGuilds("Deleted guild [{}] from the database", guild_id);
 
@@ -878,7 +965,7 @@ static void ProcessGuildMember(MySQLRequestRow row, CharGuildInfo &into) {
 
 	//fields from `guild_members`, leave at defaults if missing
 	into.guild_id		= row[6] ? Strings::ToUnsignedInt(row[6]) : GUILD_NONE;
-	into.rank			= row[7] ? Strings::ToUnsignedInt(row[7]) : (GUILD_MAX_RANK+1);
+	into.rank			= row[7] ? Strings::ToUnsignedInt(row[7]) : (GUILD_MAX_RANK);
 	into.tribute_enable = row[8] ? (row[8][0] == '0'?false:true) : false;
 	into.total_tribute	= row[9] ? Strings::ToUnsignedInt(row[9]) : 0;
 	into.last_tribute	= row[10]? Strings::ToUnsignedInt(row[10]) : 0;		//timestamp
@@ -1108,15 +1195,17 @@ uint32 BaseGuildManager::FindGuildByLeader(uint32 leader) const {
 
 //returns the rank to be sent to the client for display purposes, given their eqemu rank.
 uint8 BaseGuildManager::GetDisplayedRank(uint32 guild_id, uint8 rank, uint32 char_id) const {
-	std::map<uint32, GuildInfo *>::const_iterator res;
-	res = m_guilds.find(guild_id);
-	if(res == m_guilds.end())
-		return(3);	//invalid guild rank
-	if (res->second->ranks[rank].permissions[GUILD_WARPEACE] || res->second->leader_char_id == char_id)
-		return(2);	//leader rank
-	else if (res->second->ranks[rank].permissions[GUILD_INVITE] || res->second->ranks[rank].permissions[GUILD_REMOVE] || res->second->ranks[rank].permissions[GUILD_MOTD])
-		return(1);	//officer rank
-	return(0);	//member rank
+	
+	return rank;
+	//std::map<uint32, GuildInfo *>::const_iterator res;
+	//res = m_guilds.find(guild_id);
+	//if(res == m_guilds.end())
+	//	return(3);	//invalid guild rank
+	//if (res->second->ranks[rank].permissions[GUILD_WARPEACE] || res->second->leader_char_id == char_id)
+	//	return(2);	//leader rank
+	//else if (res->second->ranks[rank].permissions[GUILD_INVITE] || res->second->ranks[rank].permissions[GUILD_REMOVE] || res->second->ranks[rank].permissions[GUILD_MOTD])
+	//	return(1);	//officer rank
+	//return(0);	//member rank
 }
 
 bool BaseGuildManager::CheckGMStatus(uint32 guild_id, uint8 status) const {
@@ -1142,25 +1231,27 @@ bool BaseGuildManager::CheckGMStatus(uint32 guild_id, uint8 status) const {
 
 bool BaseGuildManager::CheckPermission(uint32 guild_id, uint8 rank, GuildAction act) const {
 	if(rank > GUILD_MAX_RANK) {
-		LogGuilds("Check permission on guild [{}] and rank [{}] for action [{}] ([{}]): Invalid rank, denied",
-			guild_id, rank, GuildActionNames[act], act);
+		LogGuilds("Check permission on guild [{}] and rank [{}] for action ([{}]): Invalid rank, denied",
+			guild_id, rank, act);
 		return(false);	//invalid rank
 	}
 	std::map<uint32, GuildInfo *>::const_iterator res;
 	res = m_guilds.find(guild_id);
 	if(res == m_guilds.end()) {
-		LogGuilds("Check permission on guild [{}] and rank [{}] for action [{}] ([{}]): Invalid guild, denied",
-			guild_id, rank, GuildActionNames[act], act);
+		LogGuilds("Check permission on guild [{}] and rank [{}] for action ([{}]): Invalid guild, denied",
+			guild_id, rank, act);
 		return(false);	//invalid guild
 	}
 
-	bool granted = res->second->ranks[rank].permissions[act];
+//	bool granted = res->second->ranks[rank].permissions[act];
+	bool granted = (res->second->functions[act] >> (8 - rank)) & 1;
 
-	LogGuilds("Check permission on guild [{}] ([{}]) and rank [{}] ([{}]) for action [{}] ([{}]): [{}]",
-		res->second->name.c_str(), guild_id,
-		res->second->ranks[rank].name.c_str(), rank,
-		GuildActionNames[act], act,
-		granted?"granted":"denied");
+
+	//LogGuilds("Check permission on guild [{}] ([{}]) and rank [{}] ([{}]) for action [{}] ([{}]): [{}]",
+	//	res->second->name, guild_id,
+	//	res->second->ranks[rank].name, rank,
+	//	GuildActionNames[act], act,
+	//	granted?"granted":"denied");
 
 	return(granted);
 }
@@ -1193,13 +1284,15 @@ BaseGuildManager::RankInfo::RankInfo() {
 BaseGuildManager::GuildInfo::GuildInfo() {
 	leader_char_id = 0;
 	minstatus = AccountStatus::Player;
+	functions[31] = { 0 };
 }
 
 uint32 BaseGuildManager::DoesAccountContainAGuildLeader(uint32 AccountID)
 {
+	
 	std::string query = StringFormat("SELECT guild_id FROM guild_members WHERE char_id IN "
-		"(SELECT id FROM `character_data` WHERE account_id = %i) AND rank = 2",
-                                    AccountID);
+		"(SELECT id FROM `character_data` WHERE account_id = %i) AND rank = 1",
+		AccountID);
     auto results = m_db->QueryDatabase(query);
 	if (!results.Success())
 	{

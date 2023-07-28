@@ -188,6 +188,7 @@ int command_init(void)
 		command_add("profanity", "Manage censored language.", AccountStatus::GMLeadAdmin, command_profanity) ||
 		command_add("push", "[Back Push] [Up Push] - Lets you do spell push on an NPC", AccountStatus::GMLeadAdmin, command_push) ||
 		command_add("raidloot", "[All|GroupLeader|RaidLeader|Selected] - Sets your Raid Loot Type if you have permission to do so.", AccountStatus::Player, command_raidloot) ||
+		command_add("raiddelegates", "Displays Raid Delegate and Mark Informationo.", AccountStatus::ApprenticeGuide, command_raiddelegates) ||
 		command_add("randomfeatures", "Temporarily randomizes the Facial Features of your target", AccountStatus::QuestTroupe, command_randomfeatures) ||
 		command_add("refreshgroup", "Refreshes Group for you or your player target.", AccountStatus::Player, command_refreshgroup) ||
 		command_add("reimburse", "- Adds items or plat to the Reimbursement table for a character.",  AccountStatus::GMAdmin, command_reimburse) ||

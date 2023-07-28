@@ -1085,7 +1085,7 @@ public:
 	uint8 GetFlurryChance() { return GetSpecialAbilityParam(SPECATK_FLURRY, 0); }
 
 	static uint32 GetAppearanceValue(EmuAppearance iAppearance);
-	void SendAppearancePacket(uint32 type, uint32 value, bool WholeZone = true, bool iIgnoreSelf = false, Client *specific_target=nullptr);
+	void SendAppearancePacket(uint32 type, uint32 value, bool WholeZone = true, bool iIgnoreSelf = false, Client *specific_target=nullptr, bool WholeZoneMinusMyGuild = false);
 	void SetAppearance(EmuAppearance app, bool iIgnoreSelf = true);
 	inline EmuAppearance GetAppearance() const { return _appearance; }
 	inline const int GetAnimation() const { return animation; }
@@ -1322,6 +1322,7 @@ public:
 	bool Charmed() const { return typeofpet == petCharmed; }
 	static uint32 GetLevelHP(uint8 tlevel);
 	uint32 GetZoneID() const; //for perl
+	uint16 GetInstanceVersion() const; //for perl
 	virtual int32 CheckAggroAmount(uint16 spell_id, Mob *target, bool isproc = false);
 	virtual int32 CheckHealAggroAmount(uint16 spell_id, Mob *target, uint32 heal_possible = 0);
 

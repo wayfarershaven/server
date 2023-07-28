@@ -30,6 +30,7 @@ void command_guild(Client *c, const Seperator *sep)
 	bool is_set_leader = !strcasecmp(sep->arg[1], "setleader");
 	bool is_set_rank = !strcasecmp(sep->arg[1], "setrank");
 	bool is_status = !strcasecmp(sep->arg[1], "status");
+	bool is_test = !strcasecmp(sep->arg[1], "test");
 	if (
 		!is_create &&
 		!is_delete &&
@@ -41,7 +42,8 @@ void command_guild(Client *c, const Seperator *sep)
 		!is_set &&
 		!is_set_leader &&
 		!is_set_rank &&
-		!is_status
+		!is_status &&
+		!is_test
 	) {
 		SendGuildSubCommands(c);
 		return;
@@ -532,6 +534,20 @@ void command_guild(Client *c, const Seperator *sep)
 				);
 			}
 		}
+	}
+	else if (is_test) 
+	{
+		auto client = (t ? t : (arguments == 2 ? entity_list.GetClientByName(sep->arg[2]) :	c));
+		if (!client) {
+			return;
+		}
+		auto guild_id = client->GuildID();
+		auto guild_rank = client->GuildRank();
+		auto guild = guild_mgr.GetGuildByGuildID(guild_id);
+
+		c->Message(Chat::Yellow, fmt::format("Character has guild_id of:   {}.", guild_id).c_str());
+		c->Message(Chat::Yellow, fmt::format("Character has guild_rank of: {}.", guild_rank).c_str());
+
 	}
 }
 
