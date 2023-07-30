@@ -608,6 +608,7 @@ public:
 	/* Merchants  */
 	void	SaveMerchantTemp(uint32 npcid, uint32 slot, uint32 item, uint32 charges, uint32 itemcharges);
 	void	DeleteMerchantTemp(uint32 npcid, uint32 slot);
+	void	DeleteMerchantTempList(uint32 npcid);
 
 	/* Tradeskills  */
 	bool	GetTradeRecipe(const EQ::ItemInstance* container, uint8 c_type, uint32 some_id, Client* c, DBTradeskillRecipe_Struct* spec, bool* is_augmented);

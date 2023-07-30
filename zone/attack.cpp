@@ -2376,6 +2376,7 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 			  ((killer_mob) ? (killer_mob->GetName()) : ("[nullptr]")), damage, spell, attack_skill);
 
 	Mob *oos = killer_mob ? killer_mob->GetOwnerOrSelf() : nullptr;
+	bool ismerchant = class_ == MERCHANT || MerchantType > 0;
 
 	if (IsNPC()) {
 		if (parse->HasQuestSub(GetNPCTypeID(), EVENT_DEATH)) {
@@ -2533,6 +2534,11 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 	//do faction hits even if we are a merchant, so long as a player killed us
 	if (!IsCharmed() && give_exp_client && !RuleB(NPC, EnableMeritBasedFaction) && !charmedNoXp) {
 		hate_list.DoFactionHits(GetNPCFactionID(), GetPrimaryFaction(), GetFactionAmount());
+	}
+
+	if (IsNPC() && ismerchant && RuleB(Merchant, ClearTempList)) {
+		database.DeleteMerchantTempList(GetNPCTypeID());
+		zone->tmpmerchanttable[GetNPCTypeID()].clear();
 	}
 
 	bool IsLdonTreasure = (GetClass() == LDON_TREASURE);

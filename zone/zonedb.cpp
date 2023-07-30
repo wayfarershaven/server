@@ -2727,6 +2727,11 @@ void ZoneDatabase::DeleteMerchantTemp(uint32 npcid, uint32 slot){
 	QueryDatabase(query);
 }
 
+void ZoneDatabase::DeleteMerchantTempList(uint32 npcid) {
+	std::string query = StringFormat("DELETE FROM merchantlist_temp WHERE npcid=%d", npcid);
+	QueryDatabase(query);
+}
+
 //New functions for timezone
 uint32 ZoneDatabase::GetZoneTZ(uint32 zoneid, uint32 version) {
 
