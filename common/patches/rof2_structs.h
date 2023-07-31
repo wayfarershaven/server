@@ -5038,6 +5038,59 @@ struct DynamicZoneChooseZoneReply_Struct
 /*048*/ uint32 unknown048;     // seen 01 00 00 00 and 02 00 00 00
 };
 
+struct LFGuild_SearchPlayer_Struct
+{
+/*00*/	uint32	Command;
+/*04*/	uint32	Unknown04;
+/*08*/	uint32	FromLevel;
+/*12*/	uint32	ToLevel;
+/*16*/	uint32	MinAA;
+/*20*/	uint32	TimeZone;
+/*24*/	uint32	Classes;
+};
+
+struct LFGuild_SearchGuild_Struct
+{
+/*00*/	uint32	Command;
+/*04*/	uint32	Unknown04;
+/*08*/	uint32	Level;
+/*12*/	uint32	AAPoints;
+/*16*/	uint32	TimeZone;
+/*20*/	uint32	Class;
+/*24*/
+};
+
+struct LFGuild_PlayerToggle_Struct
+{
+/*000*/ uint32	Command;
+/*004*/ uint8	Unknown004[68];
+/*072*/ char	Comment[256];
+/*328*/ uint8	Unknown328[268];
+/*596*/ uint32	TimeZone;
+/*600*/ uint8	Toggle;
+/*601*/ uint8	Unknown601[7];
+/*608*/ uint32	Expires;
+/*612*/
+};
+
+struct LFGuild_GuildToggle_Struct
+{
+/*000*/ uint32	Command;
+/*004*/ uint8	Unknown004[8];
+/*012*/ char	Comment[256];
+/*268*/ uint8	Unknown268[256];
+/*524*/ uint32	FromLevel;
+/*528*/ uint32	 ToLevel;
+/*532*/ uint32	Classes;
+/*536*/ uint32	AACount;
+/*540*/ uint32	TimeZone;
+/*544*/ uint8	Toggle;
+/*545*/ uint8	Unknown545[3];
+/*548*/ uint32	Expires;
+/*552*/ char	Name[64];
+/*616*/
+};
+
 struct KickPlayers_Struct
 {
 /*000*/ char   char_name[64];

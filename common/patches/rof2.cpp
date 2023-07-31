@@ -1601,6 +1601,26 @@ namespace RoF2
 		FINISH_ENCODE();
 	}
 
+	ENCODE(OP_LFGuild)
+	{
+		EQApplicationPacket *in = *p;
+		*p = nullptr;
+
+		uint32 Command = in->ReadUInt32();
+
+		if (Command != 0) {
+			dest->FastQueuePacket(&in, ack_req);
+			return;
+		}
+
+		auto outapp = new EQApplicationPacket(OP_LFGuild, sizeof(structs::LFGuild_PlayerToggle_Struct));
+
+		memcpy(outapp->pBuffer, in->pBuffer, sizeof(structs::LFGuild_PlayerToggle_Struct));
+
+		dest->FastQueuePacket(&outapp, ack_req);
+		delete in;
+	}
+
 	ENCODE(OP_LogServer)
 	{
 		ENCODE_LENGTH_EXACT(LogServer_Struct);
@@ -4970,6 +4990,21 @@ namespace RoF2
 		}
 		IN(link_hash);
 		IN(icon);
+
+		FINISH_DIRECT_DECODE();
+	}
+
+	DECODE(OP_LFGuild)
+	{
+		uint32 Command = __packet->ReadUInt32();
+
+		if (Command != 0) {
+			return;
+		}
+
+		SETUP_DIRECT_DECODE(LFGuild_PlayerToggle_Struct, structs::LFGuild_PlayerToggle_Struct);
+		memcpy(emu, eq, sizeof(structs::LFGuild_PlayerToggle_Struct));
+		memset(emu->Unknown612, 0, sizeof(emu->Unknown612));
 
 		FINISH_DIRECT_DECODE();
 	}
