@@ -3234,6 +3234,11 @@ void Client::Handle_OP_AugmentItem(const EQApplicationPacket *app)
 
 						aug = tobe_auged->GetAugment(in_augment->augment_index);
 						if (aug) {
+
+							if (new_aug->GetItem()->Attuneable) {
+								new_aug->SetAttuned(true);
+							}
+
 							std::vector<std::any> args;
 							args.push_back(aug);
 							if (parse->ItemHasQuestSub(tobe_auged, EVENT_AUGMENT_ITEM)) {
