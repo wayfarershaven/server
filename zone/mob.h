@@ -1936,6 +1936,7 @@ private:
 	bool m_manual_follow;
 
 	void DoSpellInterrupt(uint16 spell_id, int32 mana_cost, int my_curmana);
+	void HandleDoorOpen();
 };
 
 #endif
