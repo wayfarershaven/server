@@ -66,6 +66,7 @@ namespace DatabaseSchema {
 			{"character_potionbelt",           "id"},
 			{"character_skills",               "id"},
 			{"character_spells",               "id"},
+			{"character_stats_record",         "character_id"},
 			{"character_task_timers",          "character_id"},
 			{"character_tasks",                "charid"},
 			{"character_tribute",              "character_id"},
@@ -257,6 +258,7 @@ namespace DatabaseSchema {
 		return {
 			"chatchannels",
 			"command_settings",
+			"command_subsettings",
 			"content_flags",
 			"db_str",
 			"eqtime",

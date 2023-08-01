@@ -1352,6 +1352,7 @@ void ZoneServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p) {
 		case ServerOP_ReloadBlockedSpells:
 		case ServerOP_ReloadCommands:
 		case ServerOP_ReloadDoors:
+		case ServerOP_ReloadDataBucketsCache:
 		case ServerOP_ReloadGroundSpawns:
 		case ServerOP_ReloadLevelEXPMods:
 		case ServerOP_ReloadMerchants:

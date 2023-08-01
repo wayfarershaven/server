@@ -746,6 +746,8 @@ void Client::OnDisconnect(bool hard_disconnect) {
 		parse->EventPlayer(EVENT_DISCONNECT, this, "", 0);
 	}
 	
+	RecordStats();
+	
 	Disconnect();
 }
 
@@ -1044,6 +1046,10 @@ void Client::OPRezzAnswer(uint32 Action, uint32 SpellID, uint16 ZoneID, uint16 I
 				RuleI(Character, ResurrectionSicknessSpellID)
 			);
 			SpellOnTarget(resurrection_sickness_spell_id, this); // Rezz effects
+		} else if (SpellEffectDescNum == 2738) { // Divine Rez
+			SetHP(GetMaxHP());
+			SetMana(GetMaxMana());
+			SetEndurance(GetMaxEndurance());
 		} else {
 			SetHP(GetMaxHP() / 20);
 			SetMana(GetMaxMana() / 20);

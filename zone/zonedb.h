@@ -12,6 +12,7 @@
 #include "event_codes.h"
 #include "../common/repositories/doors_repository.h"
 #include "bot_database.h"
+#include "../common/races.h"
 
 #define WOLF 42
 
@@ -342,7 +343,7 @@ namespace BeastlordPetData {
 		uint16 race_id = WOLF;
 		uint8 texture = 0;
 		uint8 helm_texture = 0;
-		uint8 gender = 2;
+		uint8 gender = NEUTER;
 		float size_modifier = 1.0f;
 		uint8 face = 0;
 	};
@@ -608,6 +609,7 @@ public:
 	/* Merchants  */
 	void	SaveMerchantTemp(uint32 npcid, uint32 slot, uint32 item, uint32 charges, uint32 itemcharges);
 	void	DeleteMerchantTemp(uint32 npcid, uint32 slot);
+	void	DeleteMerchantTempList(uint32 npcid);
 
 	/* Tradeskills  */
 	bool	GetTradeRecipe(const EQ::ItemInstance* container, uint8 c_type, uint32 some_id, Client* c, DBTradeskillRecipe_Struct* spec, bool* is_augmented);

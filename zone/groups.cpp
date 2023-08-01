@@ -113,7 +113,7 @@ Group::~Group()
 }
 
 //Split money used in OP_Split (/split and /autosplit).
-void Group::SplitMoney(uint32 copper, uint32 silver, uint32 gold, uint32 platinum, Client *splitter) {
+void Group::SplitMoney(uint32 copper, uint32 silver, uint32 gold, uint32 platinum, Client *splitter, bool share) {
 	//avoid unneeded work
 	if (
 		!copper &&
@@ -136,45 +136,28 @@ void Group::SplitMoney(uint32 copper, uint32 silver, uint32 gold, uint32 platinu
 		return;
 	}
 
-	uint32 modifier;
-	if (member_count > 1) {
-		modifier = platinum % member_count;
+	// get remainder of coin types.
+	uint32 copper_remainder = copper % member_count;
+	uint32 silver_remainder = silver % member_count;
+	uint32 gold_remainder = gold % member_count;
+	uint32 platinum_remainder = platinum % member_count;
 
-		if (modifier) {
-			platinum -= modifier;
-			gold += 10 * modifier;
-		}
+	// calculate coin split plus remainder for splitter or a random member of group.
+	auto splitter_copper = ((copper - copper_remainder) / member_count) + copper_remainder;
+	auto splitter_silver = ((silver - silver_remainder) / member_count) + silver_remainder;
+	auto splitter_gold = ((gold - gold_remainder) / member_count) + gold_remainder;
+	auto splitter_platinum = ((platinum - platinum_remainder) / member_count) + platinum_remainder;
 
-		modifier = gold % member_count;
+	// calculate coin split minus remainder for rest of group.
+	auto copper_split = (copper - copper_remainder) / member_count;
+	auto silver_split = (silver - silver_remainder) / member_count;
+	auto gold_split = (gold - gold_remainder) / member_count;
+	auto platinum_split = (platinum - platinum_remainder) / member_count;
 
-		if (modifier) {
-			gold -= modifier;
-			silver += 10 * modifier;
-		}
-
-		modifier = silver % member_count;
-
-		if (modifier) {
-			silver -= modifier;
-			copper += 10 * modifier;
-		}
-	}
-
-	auto copper_split = copper / member_count;
-	auto silver_split = silver / member_count;
-	auto gold_split = gold / member_count;
-	auto platinum_split = platinum / member_count;
+	uint8 random_member = zone->random.Int(0, member_count - 1);
 
 	for (uint32 i = 0; i < MAX_GROUP_MEMBERS; i++) {
 		if (members[i] && members[i]->IsClient()) { // If Group Member is Client
-			members[i]->CastToClient()->AddMoneyToPP(
-				copper_split,
-				silver_split,
-				gold_split,
-				platinum_split,
-				true
-			);
-
 			if (player_event_logs.IsEventEnabled(PlayerEvent::SPLIT_MONEY)) {
 				auto e = PlayerEvent::SplitMoneyEvent{
 					.copper = copper_split,
@@ -183,20 +166,23 @@ void Group::SplitMoney(uint32 copper, uint32 silver, uint32 gold, uint32 platinu
 					.platinum = platinum_split,
 					.player_money_balance = members[i]->CastToClient()->GetCarriedMoney(),
 				};
-
 				RecordPlayerEventLogWithClient(members[i]->CastToClient(), PlayerEvent::SPLIT_MONEY, e);
 			}
-			
-			members[i]->CastToClient()->MessageString(
-				Chat::MoneySplit,
-				YOU_RECEIVE_AS_SPLIT,
-				Strings::Money(
-					platinum_split,
-					gold_split,
-					silver_split,
-					copper_split
-				).c_str()
-			);
+
+			if (share ? members[i] != splitter : members[i] != members[random_member]) {
+				// if /split is used, send message to group that the coin were shared.  message is excluded for /autosplit.
+				if (share) {
+					members[i]->CastToClient()->MessageString(Chat::MoneySplit, SHARE_MONEY, splitter->GetCleanName());
+				}
+
+				if (copper_split || silver_split || gold_split || platinum_split) {
+					members[i]->CastToClient()->AddMoneyToPP(copper_split, silver_split, gold_split, platinum_split, true);
+					members[i]->CastToClient()->MessageString(Chat::MoneySplit, YOU_RECEIVE_AS_SPLIT, Strings::Money(platinum_split, gold_split, silver_split, copper_split).c_str());
+				}
+			} else { // either the splitter (/split) or a random member (/autosplit) gets this portion that includes the remainder.
+				members[i]->CastToClient()->AddMoneyToPP(splitter_copper, splitter_silver, splitter_gold, splitter_platinum, true);
+				members[i]->CastToClient()->MessageString(Chat::MoneySplit, YOU_RECEIVE_AS_SPLIT, Strings::Money(splitter_platinum, splitter_gold, splitter_silver, splitter_copper).c_str());
+			}
 		}
 	}
 }

@@ -754,6 +754,7 @@ RULE_REAL(Merchant, ChaBonusMod, 3.45, "Determines CHA cap, from 104 CHA. 3.45 i
 RULE_REAL(Merchant, ChaPenaltyMod, 1.52, "Determines CHA bottom, up to 102 CHA. 1.52 is 37 CHA at apprehensive. 0.98 is 0 CHA at apprehensive")
 RULE_BOOL(Merchant, EnableAltCurrencySell, true, "Enables the ability to resell items to alternate currency merchants")
 RULE_BOOL(Merchant, AllowCorpse, false, "Setting whether dealers leave a corpse behind ")
+RULE_BOOL(Merchant, ClearTempList, true, "clear temp list after death if set true.")
 RULE_CATEGORY_END()
 
 RULE_CATEGORY(Bazaar)
