@@ -746,6 +746,8 @@ void Client::OnDisconnect(bool hard_disconnect) {
 		parse->EventPlayer(EVENT_DISCONNECT, this, "", 0);
 	}
 	
+	RecordStats();
+	
 	Disconnect();
 }
 
