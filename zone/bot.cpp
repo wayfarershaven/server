@@ -268,48 +268,73 @@ Bot::Bot(uint32 botID, uint32 botOwnerCharacterID, uint32 botSpellsID, double to
 				case SE_IllusionCopy:
 				case SE_Illusion: {
 					if (spell.base_value[x1] == -1) {
-						if (gender == 1) {
-							gender = 0;
-						} else if (gender == 0) {
-							gender = 1;
+						if (gender == FEMALE) {
+							gender = MALE;
+						} else if (gender == MALE) {
+							gender = FEMALE;
 						}
-						SendIllusionPacket(GetRace(), gender, 0xFF, 0xFF);
+
+						SendIllusionPacket(
+							AppearanceStruct{
+								.gender_id = gender,
+								.race_id = GetRace(),
+							}
+						);
 					} else if (spell.base_value[x1] == -2) { // WTF IS THIS
 						if (GetRace() == IKSAR || GetRace() == VAHSHIR || GetRace() <= GNOME) {
-							SendIllusionPacket(GetRace(), GetGender(), spell.limit_value[x1], spell.max_value[x1]);
+							SendIllusionPacket(
+								AppearanceStruct{
+									.gender_id = GetGender(),
+									.helmet_texture = static_cast<uint8>(spell.max_value[x1]),
+									.race_id = GetRace(),
+									.texture = static_cast<uint8>(spell.limit_value[x1]),
+								}
+							);
 						}
 					} else if (spell.max_value[x1] > 0) {
-						SendIllusionPacket(spell.base_value[x1], 0xFF, spell.limit_value[x1], spell.max_value[x1]);
+						SendIllusionPacket(
+							AppearanceStruct{
+								.helmet_texture = static_cast<uint8>(spell.max_value[x1]),
+								.race_id = static_cast<uint16>(spell.base_value[x1]),
+								.texture = static_cast<uint8>(spell.limit_value[x1]),
+							}
+						);
 					} else {
-						SendIllusionPacket(spell.base_value[x1], 0xFF, 0xFF, 0xFF);
+						SendIllusionPacket(
+							AppearanceStruct{
+								.helmet_texture = static_cast<uint8>(spell.max_value[x1]),
+								.race_id = static_cast<uint16>(spell.base_value[x1]),
+								.texture = static_cast<uint8>(spell.limit_value[x1]),
+							}
+						);
 					}
 					switch (spell.base_value[x1]) {
-					case OGRE:
-						SendAppearancePacket(AT_Size, 9);
-						break;
-					case TROLL:
-						SendAppearancePacket(AT_Size, 8);
-						break;
-					case VAHSHIR:
-					case BARBARIAN:
-						SendAppearancePacket(AT_Size, 7);
-						break;
-					case HALF_ELF:
-					case WOOD_ELF:
-					case DARK_ELF:
-					case FROGLOK:
-						SendAppearancePacket(AT_Size, 5);
-						break;
-					case DWARF:
-						SendAppearancePacket(AT_Size, 4);
-						break;
-					case HALFLING:
-					case GNOME:
-						SendAppearancePacket(AT_Size, 3);
-						break;
-					default:
-						SendAppearancePacket(AT_Size, 6);
-						break;
+						case OGRE:
+							SendAppearancePacket(AT_Size, 9);
+							break;
+						case TROLL:
+							SendAppearancePacket(AT_Size, 8);
+							break;
+						case VAHSHIR:
+						case BARBARIAN:
+							SendAppearancePacket(AT_Size, 7);
+							break;
+						case HALF_ELF:
+						case WOOD_ELF:
+						case DARK_ELF:
+						case FROGLOK:
+							SendAppearancePacket(AT_Size, 5);
+							break;
+						case DWARF:
+							SendAppearancePacket(AT_Size, 4);
+							break;
+						case HALFLING:
+						case GNOME:
+							SendAppearancePacket(AT_Size, 3);
+							break;
+						default:
+							SendAppearancePacket(AT_Size, 6);
+							break;
 					}
 					break;
 				}
