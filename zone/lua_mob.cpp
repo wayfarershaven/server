@@ -3062,6 +3062,12 @@ std::string Lua_Mob::GetRacePlural()
 	return self->GetRacePlural();
 }
 
+uint32 Lua_Mob::GetMobTypeIdentifier()
+{
+	Lua_Safe_Call_Int();
+	return self->GetMobTypeIdentifier();
+}
+
 luabind::scope lua_register_mob() {
 	return luabind::class_<Lua_Mob, Lua_Entity>("Mob")
 	.def(luabind::constructor<>())
@@ -3348,6 +3354,7 @@ luabind::scope lua_register_mob() {
 	.def("GetMeleeDamageMod_SE", &Lua_Mob::GetMeleeDamageMod_SE)
 	.def("GetMeleeMinDamageMod_SE", &Lua_Mob::GetMeleeMinDamageMod_SE)
 	.def("GetMeleeMitigation", (int32(Lua_Mob::*)(void))&Lua_Mob::GetMeleeMitigation)
+	.def("GetMobTypeIdentifier", (uint32(Lua_Mob::*)(void))&Lua_Mob::GetMobTypeIdentifier)
 	.def("GetModSkillDmgTaken", (int(Lua_Mob::*)(int))&Lua_Mob::GetModSkillDmgTaken)
 	.def("GetModVulnerability", (int(Lua_Mob::*)(int))&Lua_Mob::GetModVulnerability)
 	.def("GetNPCTypeID", &Lua_Mob::GetNPCTypeID)
