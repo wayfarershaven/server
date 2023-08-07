@@ -45,6 +45,63 @@ public:
 
 	// Custom extended repository methods here
 
+	static int ReplaceOne(
+		Database& db,
+		const GuildRanks& e
+	)
+	{
+		std::vector<std::string> v;
+
+		std::vector<std::string> columns = { "guild_id", "rank", "title"};
+
+		v.push_back(std::to_string(e.guild_id));
+		v.push_back(std::to_string(e.rank));
+		v.push_back("'" + Strings::Escape(e.title) + "'");
+
+		auto results = db.QueryDatabase(
+			fmt::format(
+				"REPLACE INTO {} ({}) VALUES({})",
+				TableName(),
+				Strings::Implode(", ", columns),
+				Strings::Implode(", ", v)
+			)
+		);
+
+		return (results.Success() ? results.RowsAffected() : 0);
+	}
+
+	static int ReplaceMany(
+		Database& db,
+		const std::vector<GuildRanks>& entries
+	)
+	{
+		std::vector<std::string> insert_chunks;
+		std::vector<std::string> columns = { "guild_id", "rank", "title" };
+
+		for (auto& e : entries) {
+			std::vector<std::string> v;
+
+			v.push_back(std::to_string(e.guild_id));
+			v.push_back(std::to_string(e.rank));
+			v.push_back("'" + Strings::Escape(e.title) + "'");
+
+			insert_chunks.push_back("(" + Strings::Implode(",", v) + ")");
+		}
+
+		std::vector<std::string> v;
+
+		auto results = db.QueryDatabase(
+			fmt::format(
+				"REPLACE INTO {} ({}) VALUES{}",
+				TableName(),
+				Strings::Implode(", ", columns),
+				Strings::Implode(", ", insert_chunks)
+			)
+		);
+
+		return (results.Success() ? results.RowsAffected() : 0);
+	}
+
 };
 
 #endif //EQEMU_GUILD_RANKS_REPOSITORY_H

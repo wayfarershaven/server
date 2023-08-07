@@ -5811,27 +5811,6 @@ void EntityList::SendToGuildTitleDisplay(Client* c)
 
 void EntityList::SendAllGuildTitleDisplay(uint32 guild_id)
 {
-
-	auto gm = [&]() {
-		std::vector<Client*> guild_members;
-		for (auto& client : client_list) {
-			if (client.second->GuildID() == guild_id) {
-				guild_members.push_back(client.second);
-			}
-		}
-		return guild_members;
-	};
-
-	auto ngm = [&]() {
-		std::vector<Client*> guild_members;
-		for (auto& client : client_list) {
-			if (client.second->GuildID() != guild_id) {
-				guild_members.push_back(client.second);
-			}
-		}
-		return guild_members;
-	};
-
 	for (auto& c : client_list) {
 		if (c.second->IsInAGuild()) {
 			if (!guild_mgr.CheckPermission(c.second->GuildID(), c.second->GuildRank(), GUILD_ACTION_DISPLAY_GUILD_NAME))
@@ -5843,17 +5822,6 @@ void EntityList::SendAllGuildTitleDisplay(uint32 guild_id)
 			}
 		}
 	}
-
-	//	for (auto& m : gm()) 
-	//	{
-	//		if (!guild_mgr.CheckPermission(m->GuildID(), m->GuildRank(), GUILD_ACTION_DISPLAY_GUILD_NAME))
-	//		{
-	//			m->SendAppearancePacket(AT_GuildShow, 0, true, true);
-	//		}
-	//		else {
-	//			m->SendAppearancePacket(AT_GuildShow, 1, true, true);
-	//		}
-	//}
 }
 
 void EntityList::QueueClientsNotInGuild(Mob* sender, const EQApplicationPacket* app, bool ignore_sender, uint32 guild_id)

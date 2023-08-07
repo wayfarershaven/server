@@ -7985,6 +7985,7 @@ void Client::Handle_OP_GuildDemote(const EQApplicationPacket *app)
 		auto c = entity_list.GetClientByName(demote->target);
 		if (c) {
 			c->guildrank = rank;
+			c->SendAppearancePacket(AT_GuildRank, rank, false);
 		}
 
 		auto outapp = new ServerPacket(ServerOP_GuildRankUpdate, sizeof(ServerGuildRankUpdate_Struct));
@@ -7992,7 +7993,7 @@ void Client::Handle_OP_GuildDemote(const EQApplicationPacket *app)
 		sr->GuildID = GuildID();
 		strcpy(sr->MemberName, demote->target);
 		sr->Rank = rank;
-		sr->Banker = gci.banker;
+		sr->Banker = gci.banker + (gci.alt * 2);
 		worldserver.SendPacket(outapp);
 		safe_delete(outapp);
 	}
@@ -8168,7 +8169,6 @@ void Client::Handle_OP_GuildInviteAccept(const EQApplicationPacket *app)
 
 	if (app->size != sizeof(GuildInviteAccept_Struct)) {
 		LogGuilds("Wrong size: OP_GuildInviteAccept, size={}, expected {}.", app->size, sizeof(GuildJoin_Struct));
-//		std::cout << "Wrong size: OP_GuildInviteAccept, size=" << app->size << ", expected " << sizeof(GuildJoin_Struct) << std::endl;
 		return;
 	}
 
@@ -8196,7 +8196,6 @@ void Client::Handle_OP_GuildInviteAccept(const EQApplicationPacket *app)
 		return;
 	}
 
-//	if (response == 9 || response == 5 || response == 4) {
 	if (response == 9) {
 		guild_mgr.VerifyAndClearInvite(CharacterID(), guild_id, gj->response);
 		Message(Chat::Yellow, "You declined the guild invite.");
@@ -8211,8 +8210,6 @@ void Client::Handle_OP_GuildInviteAccept(const EQApplicationPacket *app)
 		return;
 	}
 
-//	if (response == 0 || response == 8) {
-		//accept guild invite
 		guild_mgr.VerifyAndClearInvite(CharacterID(), guild_id, gj->response);
 		if (!guild_mgr.SetGuild(CharacterID(), guild_id, response)) {
 			Message(Chat::Red, "There was an error during the invite, DB may now be inconsistent.");
@@ -8235,165 +8232,45 @@ void Client::Handle_OP_GuildInviteAccept(const EQApplicationPacket *app)
 		guild_id,	
 		response
 		);
-//	}
-
-//	uint32 guildrank = gj->response == 0 ? GUILD_RECRUIT : gj->response;
-
-	//if (ClientVersion() >= EQ::versions::ClientVersion::RoF)
-	//{
-	//	if (gj->response > 9)
-	//	{
-	//		//dont care if the check fails (since we dont know the rank), just want to clear the entry.
-	//		guild_mgr.VerifyAndClearInvite(CharacterID(), gj->guildeqid, gj->response);
-	//		worldserver.SendEmoteMessage(
-	//			gj->inviter,
-	//			0,
-	//			Chat::White,
-	//			fmt::format(
-	//				"{} has declined to join the guild.",
-	//				GetCleanName()
-	//			).c_str()
-	//		);
-	//		return;
-	//	}
-	//}
-	//if (gj->response == 5 || gj->response == 4) {
-	//	//dont care if the check fails (since we dont know the rank), just want to clear the entry.
-	//	guild_mgr.VerifyAndClearInvite(CharacterID(), gj->guildeqid, gj->response);
-	//	worldserver.SendEmoteMessage(
-	//		gj->inviter,
-	//		0,
-	//		Chat::White,
-	//		fmt::format(
-	//			"{} has declined to join the guild.",
-	//			GetCleanName()
-	//		).c_str()
-	//	);
-	//	return;
-	//}
-
-	////uint32 tmpeq = gj->guildeqid;
-	//if (IsInAGuild() && gj->response == GuildRank())
-	//	Message(Chat::Red, "Error: You're already in a guild!");
-	//else if (!worldserver.Connected())
-	//	Message(Chat::Red, "Error: World server disconnected");
-	//else {
-	//	LogGuilds("Guild Invite Accept: guild [{}], response [{}], inviter [{}], person [{}]",
-	//		gj->guildeqid, gj->response, gj->inviter, gj->newmember);
-
-	//	//ok, the invite is also used for changing rank as well.
-	//	Mob* inviter = entity_list.GetMob(gj->inviter);
-
-	//	//if (inviter && inviter->IsClient())
-	//	//{
-	//	//	Client* client = inviter->CastToClient();
-	//	//	// Convert Membership Level between RoF and previous clients.
-	//	//	if (client->ClientVersion() < EQ::versions::ClientVersion::RoF && ClientVersion() >= EQ::versions::ClientVersion::RoF)
-	//	//	{
-	//	//		guildrank = 0;
-	//	//	}
-	//	//	if (client->ClientVersion() >= EQ::versions::ClientVersion::RoF && ClientVersion() < EQ::versions::ClientVersion::RoF)
-	//	//	{
-	//	//		guildrank = 8;
-	//	//	}
-	//	//}
-	//	//we dont really care a lot about what this packet means, as long as
-	//	//it has been authorized with the guild manager
-	//	if (!guild_mgr.VerifyAndClearInvite(CharacterID(), gj->guildeqid, guildrank)) {
-	//		worldserver.SendEmoteMessage(
-	//			gj->inviter,
-	//			0,
-	//			Chat::White,
-	//			fmt::format(
-	//				"{} has sent an invalid response to your invite!",
-	//				GetCleanName()
-	//			).c_str()
-	//		);
-	//		Message(Chat::Red, "Invalid invite response packet!");
-	//		return;
-	//	}
-
-	//	if (gj->guildeqid == GuildID()) {
-	//		//only need to change rank.
-
-	//		LogGuilds("Changing guild rank of [{}] ([{}]) to rank [{}] in guild [{}] ([{}])",
-	//			GetName(), CharacterID(),
-	//			gj->response,
-	//			guild_mgr.GetGuildName(GuildID()), GuildID());
-
-	//		if (!guild_mgr.SetGuildRank(CharacterID(), gj->response)) {
-	//			Message(Chat::Red, "There was an error during the rank change, DB may now be inconsistent.");
-	//			return;
-	//		}
-	//	}
-	//	else {
-
-	//		LogGuilds("Adding [{}] ([{}]) to guild [{}] ([{}]) at rank [{}]",
-	//			GetName(), CharacterID(),
-	//			guild_mgr.GetGuildName(gj->guildeqid), gj->guildeqid,
-	//			gj->response);
-
-	//		//change guild and rank
-
-	//		/*guildrank = gj->response;
-
-	//		if (ClientVersion() >= EQ::versions::ClientVersion::RoF)
-	//		{
-	//			if (gj->response == 8)
-	//			{
-	//				guildrank = 8;
-	//			}
-	//		}*/
-
-	//		if (!guild_mgr.SetGuild(CharacterID(), gj->guildeqid, guildrank)) {
-	//			Message(Chat::Red, "There was an error during the invite, DB may now be inconsistent.");
-	//			return;
-	//		}
-	//		if (zone->GetZoneID() == Zones::GUILDHALL && GuildBanks)
-	//			GuildBanks->SendGuildBank(this);
-	//	}
-	//}
 }
 
 void Client::Handle_OP_GuildLeader(const EQApplicationPacket *app)
 {
 	LogGuilds("Received OP_GuildLeader");
 
-	if (app->size < 2) {
-		LogGuilds("Invalid length [{}] on OP_GuildLeader", app->size);
+	if (app->size != sizeof(GuildMakeLeader_Struct)) {
+		LogError("Received OP_Handle_GuildLeader packet of size {} which should be {}", app->size, sizeof(GuildMakeLeader_Struct));
 		return;
 	}
 
-	app->pBuffer[app->size - 1] = 0;
-	GuildMakeLeader* gml = (GuildMakeLeader*)app->pBuffer;
-	if (!IsInAGuild())
-		Message(Chat::Red, "Error: You aren't in a guild!");
-	else if (GuildRank() != GUILD_LEADER)
-		Message(Chat::Red, "Error: You aren't the guild leader!");
-	else if (!worldserver.Connected())
-		Message(Chat::Red, "Error: World server disconnected");
-	else {
-
-		//NOTE: we could do cross-zone lookups here...
-
-		Client* newleader = entity_list.GetClientByName(gml->target);
-		if (newleader) {
-
-			LogGuilds("Transfering leadership of [{}] ([{}]) to [{}] ([{}])",
-				guild_mgr.GetGuildName(GuildID()), GuildID(),
-				newleader->GetName(), newleader->CharacterID());
-
-			if (guild_mgr.SetGuildLeader(GuildID(), newleader->CharacterID())) {
-				Message(Chat::White, "Successfully Transfered Leadership to %s.", gml->target);
-				newleader->Message(Chat::Yellow, "%s has transfered the guild leadership into your hands.", GetName());
-			}
-			else
-				Message(Chat::Red, "Could not change leadership at this time.");
-		}
-		else
-			Message(Chat::Red, "Failed to change leader, could not find target.");
+	GuildMakeLeader_Struct* gcl = (GuildMakeLeader_Struct*)app->pBuffer;
+	auto new_leader = entity_list.GetClientByName(gcl->new_leader);
+	if (!new_leader) {
+		Message(Chat::Red, "Both players must be in the same zone to transfer guild leadership.");
+		return;
 	}
-	//	SendGuildMembers(GuildID(), true);
+
+	if (GuildRank() != GUILD_LEADER) {
+		Message(Chat::Red, "You must be the guild leader to reassign guild leadership.");
+		return;
+	}
+
+	if (guild_mgr.SetGuildLeader(GuildID(), new_leader->CharacterID())) {
+		Message(Chat::White, "Successfully Transfered Leadership to %s.", new_leader->GetCleanName());
+		new_leader->Message(Chat::Yellow, "%s has transfered the guild leadership into your hands.", GetName());
+		LogGuilds("Transfering leadership of [{}] ([{}]) to [{}] ([{}])", 
+			guild_mgr.GetGuildName(GuildID()), 
+			GuildID(),
+			new_leader->GetCleanName(),
+			new_leader->CharacterID()								
+		);
+	}
+	else
+	{
+		Message(Chat::Red, "Could not change leadership at this time.");
+		LogGuilds("Tranfer of guild leadership for guild id {} failed.", GuildID());
+	}
+
 	return;
 }
 
@@ -8544,6 +8421,7 @@ void Client::Handle_OP_GuildPromote(const EQApplicationPacket *app)
 		auto c = entity_list.GetClientByName(promote->target);
 		if (c) {
 			c->guildrank = rank;
+			c->SendAppearancePacket(AT_GuildRank, rank, false);
 		}
 
 		auto outapp = new ServerPacket(ServerOP_GuildRankUpdate, sizeof(ServerGuildRankUpdate_Struct));
@@ -8551,7 +8429,7 @@ void Client::Handle_OP_GuildPromote(const EQApplicationPacket *app)
 		sr->GuildID = GuildID();
 		strcpy(sr->MemberName, promote->target);
 		sr->Rank = rank;
-		sr->Banker = gci.banker;
+		sr->Banker = gci.banker + (gci.alt * 2);
 		worldserver.SendPacket(outapp);
 		safe_delete(outapp);
 	}
@@ -8579,6 +8457,13 @@ void Client::Handle_OP_GuildPublicNote(const EQApplicationPacket *app)
 		return;
 	}
 
+	if(!guild_mgr.CheckPermission(GuildID(), GuildRank(), GUILD_ACTION_EDIT_PUBLIC_NOTES) ||
+		(ClientVersion() < EQ::versions::ClientVersion::RoF && GuildRank() > GUILD_OFFICER))
+	{
+		Message(Chat::Red, "You do not have access to update public guild notes.");
+		return;
+	}
+	
 	LogGuilds("Setting public note on [{}] ([{}]) in guild [{}] ([{}]) to: [{}]",
 		gpn->target, gci.char_id,
 		guild_mgr.GetGuildName(GuildID()), GuildID(),
@@ -8594,7 +8479,7 @@ void Client::Handle_OP_GuildPublicNote(const EQApplicationPacket *app)
 	return;
 }
 
-void Client::Handle_OP_GuildRemove(const EQApplicationPacket *app)
+void Client::Handle_OP_GuildRemove(const EQApplicationPacket* app)
 {
 	LogGuilds("Received OP_GuildRemove");
 
@@ -8603,16 +8488,18 @@ void Client::Handle_OP_GuildRemove(const EQApplicationPacket *app)
 		return;
 	}
 	GuildCommand_Struct* gc = (GuildCommand_Struct*)app->pBuffer;
-	if (!IsInAGuild())
+	if (!IsInAGuild()) {
 		Message(Chat::Red, "Error: You aren't in a guild!");
-	// we can always remove ourself, otherwise, our rank needs remove permissions
+	}
 	else if ((strcasecmp(gc->othername, GetName()) != 0 &&
 		!guild_mgr.CheckPermission(GuildID(), GuildRank(), GUILD_ACTION_MEMBERS_REMOVE)) ||
-		(ClientVersion() < EQ::versions::ClientVersion::RoF && GuildRank() > GUILD_OFFICER) && 
-		strcasecmp(gc->othername, GetName()) != 0)
+		(ClientVersion() < EQ::versions::ClientVersion::RoF && GuildRank() > GUILD_OFFICER) &&
+		strcasecmp(gc->othername, GetName()) != 0) {
 		Message(Chat::Red, "You don't have permission to remove guild members.");
-	else if (!worldserver.Connected())
+	}
+	else if (!worldserver.Connected()) {
 		Message(Chat::Red, "Error: World server disconnected");
+	}
 	else {
 		uint32 char_id;
 		Client* client = entity_list.GetClientByName(gc->othername);
@@ -8645,7 +8532,7 @@ void Client::Handle_OP_GuildRemove(const EQApplicationPacket *app)
 				guild_mgr.GetGuildName(GuildID()), GuildID());
 		}
 
-		if (!guild_mgr.SetGuild(char_id, GUILD_NONE, 0)) {
+		if (guild_mgr.SetGuild(char_id, GUILD_NONE, 0)) {
 			auto outapp = new EQApplicationPacket(OP_GuildManageRemove, sizeof(GuildManageRemove_Struct));
 			GuildManageRemove_Struct* gm = (GuildManageRemove_Struct*)outapp->pBuffer;
 			gm->guildeqid = GuildID();

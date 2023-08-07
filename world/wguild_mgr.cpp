@@ -153,9 +153,9 @@ void WorldGuildManager::ProcessZonePacket(ServerPacket *pack) {
 		auto res = m_guilds.find(sg->GuildID);
 
 		if (sg->FunctionValue) {
-			res->second->functions[sg->FunctionID] |= (1UL << (8 - sg->Rank));
+			res->second->functions[sg->FunctionID].perm_value |= (1UL << (8 - sg->Rank));
 		} else {
-			res->second->functions[sg->FunctionID] &= ~(1UL << (8 - sg->Rank));
+			res->second->functions[sg->FunctionID].perm_value &= ~(1UL << (8 - sg->Rank));
 		}
 
 		zoneserver_list.SendPacket(pack);
