@@ -537,17 +537,32 @@ void command_guild(Client *c, const Seperator *sep)
 	}
 	else if (is_test) 
 	{
-		auto client = (t ? t : (arguments == 2 ? entity_list.GetClientByName(sep->arg[2]) :	c));
-		if (!client) {
-			return;
+		auto guild = guild_mgr.GetGuildByGuildID(Strings::ToUnsignedInt(sep->arg[2]));
+		if (guild) {
+			c->Message(Chat::Yellow, fmt::format("Guild ID:         {}.", sep->arg[2]).c_str());
+			c->Message(Chat::Yellow, fmt::format("Guild Name:       {}.", guild->name.c_str()).c_str());
+			c->Message(Chat::Yellow, fmt::format("Guild Leader ID:  {}.", guild->leader).c_str());
+			c->Message(Chat::Yellow, fmt::format("Guild MinStatus:  {}.", guild->minstatus).c_str());
+			c->Message(Chat::Yellow, fmt::format("Guild MOTD:       {}.", guild->motd.c_str()).c_str());
+			c->Message(Chat::Yellow, fmt::format("Guild MOTD Setter:{}.", guild->motd_setter.c_str()).c_str());
+			c->Message(Chat::Yellow, fmt::format("Guild Channel:    {}.", guild->channel.c_str()).c_str());
+			c->Message(Chat::Yellow, fmt::format("Guild URL:        {}.", guild->url.c_str()).c_str());
+
+			for (int i = 1; i <= GUILD_MAX_RANK; i++) {
+				c->Message(Chat::Yellow, fmt::format("Guild Rank:       {} - {}.", i, guild->rank_names[i].c_str()).c_str());
+			}
+
+			c->Message(Chat::Yellow, "Guild Functions:   {db_id} - {guild_id} - {perm_id} - {perm_value}.");
+
+			for (int i = 1; i <= GUILD_MAX_FUNCTIONS; i++) {
+				c->Message(Chat::Yellow, fmt::format("Guild Function:   {} - {} - {} - {}.",
+				guild->functions[i].id,
+				guild->functions[i].guild_id,
+				guild->functions[i].perm_id,
+				guild->functions[i].perm_value
+				).c_str());
+			}
 		}
-		auto guild_id = client->GuildID();
-		auto guild_rank = client->GuildRank();
-		auto guild = guild_mgr.GetGuildByGuildID(guild_id);
-
-		c->Message(Chat::Yellow, fmt::format("Character has guild_id of:   {}.", guild_id).c_str());
-		c->Message(Chat::Yellow, fmt::format("Character has guild_rank of: {}.", guild_rank).c_str());
-
 	}
 }
 

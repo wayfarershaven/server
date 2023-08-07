@@ -3423,9 +3423,9 @@ struct GuildRemoveStruct{
 	uint32	leaderstatus; //?
 };
 
-struct GuildMakeLeader{
-	char	name[64];
-	char	target[64];
+struct GuildMakeLeader_Struct{
+	char	requestor[64];
+	char	new_leader[64];
 };
 
 struct BugReport_Struct {

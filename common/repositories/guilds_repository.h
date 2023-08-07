@@ -45,6 +45,37 @@ public:
 
 	// Custom extended repository methods here
 
+	static int ReplaceOne(
+		Database& db,
+		const Guilds& e
+	)
+	{
+		std::vector<std::string> v;
+
+		auto columns = Columns();
+
+		v.push_back(std::to_string(e.id));
+		v.push_back("'" + Strings::Escape(e.name) + "'");
+		v.push_back(std::to_string(e.leader));
+		v.push_back(std::to_string(e.minstatus));
+		v.push_back("'" + Strings::Escape(e.motd) + "'");
+		v.push_back(std::to_string(e.tribute));
+		v.push_back("'" + Strings::Escape(e.motd_setter) + "'");
+		v.push_back("'" + Strings::Escape(e.channel) + "'");
+		v.push_back("'" + Strings::Escape(e.url) + "'");
+
+		auto results = db.QueryDatabase(
+			fmt::format(
+				"REPLACE INTO {} ({}) VALUES({})",
+				TableName(),
+				ColumnsRaw(),
+				Strings::Implode(", ", v)
+			)
+		);
+
+		return (results.Success() ? results.RowsAffected() : 0);
+	}
+
 };
 
 #endif //EQEMU_GUILDS_REPOSITORY_H

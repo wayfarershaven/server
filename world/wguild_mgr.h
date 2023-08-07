@@ -1,5 +1,5 @@
-#ifndef GUILD_MGR_H_
-#define GUILD_MGR_H_
+#ifndef WGUILD_MGR_H_
+#define WGUILD_MGR_H_
 
 #include "../common/types.h"
 #include "../common/guild_base.h"
@@ -24,5 +24,4 @@ protected:
 extern WorldGuildManager guild_mgr;
 
 
-#endif /*GUILD_MGR_H_*/
-
+#endif /*WGUILD_MGR_H_*/

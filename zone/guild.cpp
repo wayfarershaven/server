@@ -155,7 +155,7 @@ void Client::SendGuildRankNames()
 			GuildUpdateUCP* gucp = (GuildUpdateUCP*)outapp->pBuffer;
 
 			gucp->payload.rank_name.rank = i;
-			strcpy(gucp->payload.rank_name.rank_name, guild->ranks[i].name.c_str());
+			strcpy(gucp->payload.rank_name.rank_name, guild->rank_names[i].c_str());
 			gucp->action = 4;
 
 			QueuePacket(outapp);
@@ -173,23 +173,6 @@ void Client::SendGuildSpawnAppearance() {
 		uint8 rank = guild_mgr.GetDisplayedRank(GuildID(), GuildRank(), CharacterID());
 		LogGuilds("Sending spawn appearance for guild [{}] at rank [{}]", GuildID(), rank);
 		SendAppearancePacket(AT_GuildID, GuildID());
-		//if (ClientVersion() >= EQ::versions::ClientVersion::RoF)
-		//{
-		//	switch (rank) {
-		//		case 0: { rank = 5; break; }	// GUILD_MEMBER	0
-		//		case 1: { rank = 3; break; }	// GUILD_OFFICER 1
-		//		case 2: { rank = 1; break; }	// GUILD_LEADER	2
-		//		default: { break; }				// GUILD_NONE
-		//	}
-		//}
-		//if (ClientVersion() < EQ::versions::ClientVersion::RoF)
-		//{
-		//	switch (rank) {
-		//	case 1: { rank = 2; break; }
-		//	case 3: { rank = 1; break; }
-		//	case 5: { rank = 0; break; }
-		//	}
-		//}
 		SendAppearancePacket(AT_GuildRank, rank);
 	}
 	UpdateWho();
