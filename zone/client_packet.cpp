@@ -1405,10 +1405,7 @@ void Client::Handle_Connect_OP_ZoneEntry(const EQApplicationPacket *app)
 	} else {
 		m_pp.guild_id = GuildID();
 		uint8 rank = guild_mgr.GetDisplayedRank(GuildID(), GuildRank(), CharacterID());
-		CharGuildInfo cgi;
-		if (guild_mgr.GetCharInfo(CharacterID(), cgi)) {
-			m_pp.guildrank = cgi.rank;
-		}
+		m_pp.guildrank = rank;
 		if (zone->GetZoneID() == Zones::GUILDHALL) {
 			GuildBanker =  (guild_mgr.IsGuildLeader(GuildID(), CharacterID()) || 
 							guild_mgr.GetBankerFlag(CharacterID()) ||
@@ -7909,11 +7906,9 @@ void Client::Handle_OP_GuildDelete(const EQApplicationPacket *app)
 {
 	LogGuilds("Received OP_GuildDelete");
 
-	if (!IsInAGuild() || !guild_mgr.IsGuildLeader(GuildID(), CharacterID())) {
+	if (!IsInAGuild() || !guild_mgr.IsGuildLeader(GuildID(), CharacterID()))
 		Message(Chat::Red, "You are not a guild leader or not in a guild.");
-	}
-	else 
-	{
+	else {
 		LogGuilds("Deleting guild [{}] ([{}])", guild_mgr.GetGuildName(GuildID()), GuildID());
 		if (!guild_mgr.DeleteGuild(GuildID()))
 			Message(Chat::Red, "Guild delete failed.");
@@ -8225,8 +8220,6 @@ void Client::Handle_OP_GuildInviteAccept(const EQApplicationPacket *app)
 		}
 		c_invitee->guild_id = guild_id;
 		c_invitee->guildrank = response;
-		SendAppearancePacket(AT_GuildID, guild_id,true, false, c_invitee, false);
-		SendAppearancePacket(AT_GuildRank, response, true, false, c_invitee, false);
 		if (ClientVersion() >= EQ::versions::ClientVersion::RoF) {
 			SendGuildRankNames();
 			entity_list.SendAllGuildTitleDisplay(GuildID());
@@ -8517,9 +8510,7 @@ void Client::Handle_OP_GuildRemove(const EQApplicationPacket* app)
 				return;
 			}
 			char_id = client->CharacterID();
-			client->guild_id = GUILD_NONE;
-			client->guildrank = 0;
-			client->SendGuildMOTD();
+
 			LogGuilds("Removing [{}] ([{}]) from guild [{}] ([{}])",
 				client->GetName(), client->CharacterID(),
 				guild_mgr.GetGuildName(GuildID()), GuildID());
@@ -8542,9 +8533,16 @@ void Client::Handle_OP_GuildRemove(const EQApplicationPacket* app)
 		}
 
 		if (guild_mgr.SetGuild(char_id, GUILD_NONE, 0)) {
+			auto outapp = new EQApplicationPacket(OP_GuildManageRemove, sizeof(GuildManageRemove_Struct));
+			GuildManageRemove_Struct* gm = (GuildManageRemove_Struct*)outapp->pBuffer;
+			gm->guildeqid = GuildID();
+			strcpy(gm->member, gc->othername);
 			Message(Chat::White, "%s successfully removed from your guild.", gc->othername);
+			entity_list.QueueClientsGuild(this, outapp, false, GuildID());
+			safe_delete(outapp);
 		}
 	}
+	//	SendGuildMembers(GuildID(), true);
 	return;
 }
 
@@ -8657,7 +8655,7 @@ void Client::Handle_OP_GuildUpdateURLAndChannel(const EQApplicationPacket* app)
 			return;
 		}
 		auto rank = gup->payload.rank_name.rank;
-		std::string rank_name(gup->payload.rank_name.rank_name);
+		auto rank_name = gup->payload.rank_name.rank_name;
 
 		guild_mgr.UpdateRankName(guild_id, rank, rank_name);
 		guild_mgr.SendRankName(guild_id, rank, rank_name);

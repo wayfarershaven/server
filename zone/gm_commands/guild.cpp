@@ -30,7 +30,6 @@ void command_guild(Client *c, const Seperator *sep)
 	bool is_set_leader = !strcasecmp(sep->arg[1], "setleader");
 	bool is_set_rank = !strcasecmp(sep->arg[1], "setrank");
 	bool is_status = !strcasecmp(sep->arg[1], "status");
-	bool is_details = !strcasecmp(sep->arg[1], "details");
 	bool is_test = !strcasecmp(sep->arg[1], "test");
 	if (
 		!is_create &&
@@ -44,7 +43,6 @@ void command_guild(Client *c, const Seperator *sep)
 		!is_set_leader &&
 		!is_set_rank &&
 		!is_status &&
-		!is_details &&
 		!is_test
 	) {
 		SendGuildSubCommands(c);
@@ -537,70 +535,35 @@ void command_guild(Client *c, const Seperator *sep)
 			}
 		}
 	}
-	else if (is_details) 
+	else if (is_test) 
 	{
-	auto guild_id = Strings::ToUnsignedInt(sep->arg[2]);
-	auto guild = guild_mgr.GetGuildByGuildID(guild_id);
-	if (!guild) {
-		c->Message(Chat::Yellow, fmt::format("Guild {} not found.  #guild list can be used to get guild ids.", guild_id).c_str());
-		return;
-	}
+		auto guild = guild_mgr.GetGuildByGuildID(Strings::ToUnsignedInt(sep->arg[2]));
+		if (guild) {
+			c->Message(Chat::Yellow, fmt::format("Guild ID:         {}.", sep->arg[2]).c_str());
+			c->Message(Chat::Yellow, fmt::format("Guild Name:       {}.", guild->name.c_str()).c_str());
+			c->Message(Chat::Yellow, fmt::format("Guild Leader ID:  {}.", guild->leader).c_str());
+			c->Message(Chat::Yellow, fmt::format("Guild MinStatus:  {}.", guild->minstatus).c_str());
+			c->Message(Chat::Yellow, fmt::format("Guild MOTD:       {}.", guild->motd.c_str()).c_str());
+			c->Message(Chat::Yellow, fmt::format("Guild MOTD Setter:{}.", guild->motd_setter.c_str()).c_str());
+			c->Message(Chat::Yellow, fmt::format("Guild Channel:    {}.", guild->channel.c_str()).c_str());
+			c->Message(Chat::Yellow, fmt::format("Guild URL:        {}.", guild->url.c_str()).c_str());
 
-	if (guild) {
-		c->Message(Chat::Yellow, fmt::format("Guild ID:         {}.", sep->arg[2]).c_str());
-		c->Message(Chat::Yellow, fmt::format("Guild Name:       {}.", guild->name.c_str()).c_str());
-		c->Message(Chat::Yellow, fmt::format("Guild Leader ID:  {}.", guild->leader).c_str());
-		c->Message(Chat::Yellow, fmt::format("Guild MinStatus:  {}.", guild->minstatus).c_str());
-		c->Message(Chat::Yellow, fmt::format("Guild MOTD:       {}.", guild->motd.c_str()).c_str());
-		c->Message(Chat::Yellow, fmt::format("Guild MOTD Setter:{}.", guild->motd_setter.c_str()).c_str());
-		c->Message(Chat::Yellow, fmt::format("Guild Channel:    {}.", guild->channel.c_str()).c_str());
-		c->Message(Chat::Yellow, fmt::format("Guild URL:        {}.", guild->url.c_str()).c_str());
+			for (int i = 1; i <= GUILD_MAX_RANK; i++) {
+				c->Message(Chat::Yellow, fmt::format("Guild Rank:       {} - {}.", i, guild->rank_names[i].c_str()).c_str());
+			}
 
-		for (int i = 1; i <= GUILD_MAX_RANK; i++) {
-			c->Message(Chat::Yellow, fmt::format("Guild Rank:       {} - {}.", i, guild->rank_names[i].c_str()).c_str());
-		}
+			c->Message(Chat::Yellow, "Guild Functions:   {db_id} - {guild_id} - {perm_id} - {perm_value}.");
 
-		c->Message(Chat::Yellow, "Guild Functions:   {db_id} - {guild_id} - {perm_id} - {perm_value}.");
-		for (int i = 1; i <= GUILD_MAX_FUNCTIONS; i++) {
-		c->Message(Chat::Yellow, fmt::format("Guild Function:   {} - {} - {} - {}.",
-			guild->functions[i].id,
-			guild->functions[i].guild_id,
-			guild->functions[i].perm_id,
-			guild->functions[i].perm_value
-			).c_str());
-		}
-	}	
-	for (auto& c1 : entity_list.GetClientList()) {
-		if (c1.second->GuildID() == guild_id) {
-			c->Message(Chat::Yellow, fmt::format("PlayerName: {} ID: {} Rank: {}.", 
-				c1.second->GetCleanName(),
-				c1.second->GuildID(),
-				c1.second->GuildRank()
+			for (int i = 1; i <= GUILD_MAX_FUNCTIONS; i++) {
+				c->Message(Chat::Yellow, fmt::format("Guild Function:   {} - {} - {} - {}.",
+				guild->functions[i].id,
+				guild->functions[i].guild_id,
+				guild->functions[i].perm_id,
+				guild->functions[i].perm_value
 				).c_str());
+			}
 		}
 	}
-	}
-	else if (is_test)
-	{
-		auto guild_id = Strings::ToUnsignedInt(sep->arg[2]);
-		auto command3  = Strings::ToUnsignedInt(sep->arg[3]);
-		auto command4  = Strings::ToUnsignedInt(sep->arg[4]);
-		auto command5  = Strings::ToUnsignedInt(sep->arg[5]);
-
-		auto target = c->GetTarget();
-		if (!target) {
-			return;
-		}
-
-		if (command3 == 1) {
-			target->SendAppearancePacket(command4, command5);
-			c->Message(Chat::Yellow, "SendAppearancePacket sent.");
-		}
-		if (command3 == 2) {
-			target->SendAppearancePacket(command4, command5, true, false, target->CastToClient(), false );
-			c->Message(Chat::Yellow, "SendAppearancePacket sent.");
-		}
-							}
 }
 
 void SendGuildSubCommands(Client *c)

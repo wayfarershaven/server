@@ -284,39 +284,34 @@ void EQEmuApiWorldDataService::callGetGuildDetails(Json::Value& response, const 
 {
 
 	std::string command = !args[1].empty() ? args[1] : "";
-	if (command.empty()) {
-		return;
-	}
 
-	auto guild_id = Strings::ToUnsignedInt(command);
-	auto guild = guild_mgr.GetGuildJson(guild_id);
-	if (!guild) {
-		return;
-	}
-
+	auto guild = guild_mgr.GetGuildJson(Strings::ToUnsignedInt(command));
 	Json::Value row;
 
 	row["guild_id"] = command;
-	row["guild_name"] = guild->name;
-	row["leader_id"] = guild->leader;
-	row["min_status"] = guild->minstatus;
-	row["motd"] = guild->motd;
-	row["motd_setter"] = guild->motd_setter;
-	row["url"] = guild->url;
-	row["channel"] = guild->channel;
+	row["guild_name"] = guild.name;
+	row["leader_id"] = guild.leader;
+	row["min_status"] = guild.minstatus;
+	row["motd"] = guild.motd;
+	row["motd_setter"] = guild.motd_setter;
+	row["url"] = guild.url;
+	row["channel"] = guild.channel;
 
-	for (int i = 1; i <= 8; i++) {
-		row["Ranks"][i] = guild->rank_names[i].c_str();
+	for (int i = 0; i <= 8; i++) {
+		auto st = fmt::format("Rank-{}", i);
+		row[st] = guild.rank_names[i].c_str();
 	}
 
 	for (int i = 1; i <= 30; i++) {
-		row["Functions"][i]["db_id"]		= guild->functions[i].id;
-		row["Functions"][i]["perm_id"]		= guild->functions[i].perm_id;
-		row["Functions"][i]["guild_id"]		= guild->functions[i].guild_id;
-		row["Functions"][i]["perm_value"]	= guild->functions[i].perm_value;
+		auto st1 = fmt::format("Function-{} db_id:", i);
+		row[st1] = guild.functions[i].id;
+		auto st2 = fmt::format("Function-{} perm_id:", i);
+		row[st2] = guild.functions[i].perm_id;
+		auto st3 = fmt::format("Function-{} guild_id:", i);
+		row[st3] = guild.functions[i].guild_id;
+		auto st4 = fmt::format("Function-{} value:", i);
+		row[st4] = guild.functions[i].perm_value;
 	}
-
-	client_list.GetGuildClientList(response, guild_id);
 
 	response.append(row);
 }
