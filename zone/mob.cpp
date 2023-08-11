@@ -3950,13 +3950,16 @@ void Mob::SendAppearancePacket(uint32 type, uint32 value, bool WholeZone, bool i
 			entity_list.QueueClientsNotInGuild(this, outapp, iIgnoreSelf, CastToClient()->GuildID());
 		}
 	}
-	else if (WholeZone) {
+
+	if (WholeZone) {
 		entity_list.QueueClients(this, outapp, iIgnoreSelf);
 	}
-	else if (specific_target != nullptr) {
+
+	if (specific_target != nullptr) {
 		specific_target->QueuePacket(outapp, false, Client::CLIENT_CONNECTED);
 	}
-	else if (IsClient()) {
+	
+	if (IsClient()) {
 		CastToClient()->QueuePacket(outapp, false, Client::CLIENT_CONNECTED);
 	}
 	safe_delete(outapp);
