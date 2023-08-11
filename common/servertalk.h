@@ -572,6 +572,7 @@ struct ServerClientList_Struct {
 	uint8	anon;
 	bool	tellsoff;
 	uint32	guild_id;
+	uint32	guild_rank;
 	bool	LFG;
 	uint8	gm;
 	uint8	ClientVersion;
@@ -1046,7 +1047,7 @@ struct ServerGuildRankNameChange
 {
 	uint32		guild_id;
 	uint32		rank;
-	char		rank_name[76];
+	std::string	rank_name;
 };
 
 struct SpawnPlayerCorpse_Struct {

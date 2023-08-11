@@ -346,7 +346,7 @@ int main(int argc, char** argv) {
 		return 1;
 	}
 
-	guild_mgr.LoadGuilds();
+	//guild_mgr.LoadGuilds();
 
 	content_db.LoadFactionData();
 

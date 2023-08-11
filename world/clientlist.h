@@ -65,6 +65,7 @@ public:
 	void GetClients(const char *zone_name, std::vector<ClientListEntry *> &into);
 
 	void GetClientList(Json::Value &response);
+	void GetGuildClientList(Json::Value& response, uint32 guild_id);
 
 	void SendCharacterMessage(uint32_t character_id, int chat_type, const std::string& message);
 	void SendCharacterMessage(const std::string& character_name, int chat_type, const std::string& message);
