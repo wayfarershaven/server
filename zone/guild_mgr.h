@@ -70,7 +70,7 @@ public:
 	void UpdateRankPermission(uint32 gid, uint32 charid, uint32 fid, uint32 rank, uint32 value);
 	void SendPermissionUpdate(uint32 guild_id, uint32 rank, uint32 function_id, uint32 value);
 	void UpdateRankName(uint32 gid, uint32 rank, std::string rank_name);
-	void SendRankName(uint32 guild_id, uint32 rank, std::string rank_name);
+	void SendRankName(uint32 guild_id, uint32 rank, std::string& rank_name);
 	void SendAllRankNames(uint32 guild_id, uint32 char_id);
 	BaseGuildManager::GuildInfo* GetGuildByGuildID(uint32 guild_id);
 

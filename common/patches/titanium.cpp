@@ -686,23 +686,33 @@ namespace Titanium
 
 	ENCODE(OP_SpawnAppearance)
 	{
-		EQApplicationPacket* in = *p;
-		*p = nullptr;
+		ENCODE_LENGTH_EXACT(SpawnAppearance_Struct);
+		SETUP_DIRECT_ENCODE(SpawnAppearance_Struct, structs::SpawnAppearance_Struct);
 
-		unsigned char* emu_buffer = in->pBuffer;
-
-		SpawnAppearance_Struct* sas = (SpawnAppearance_Struct*)emu_buffer;
-
-		if (sas->type == AT_GuildRank) {
-			//Translate older ranks to new values* /
-			switch (sas->parameter) {
-			case 8: case 7: case 6: case 5: case 4: { sas->parameter = 0; break; }
-			case 3: case 2: { sas->parameter = 1; break; }  // GUILD_OFFICER	1
-			case 1: { sas->parameter = 2; break; }  // GUILD_LEADER	2
+		OUT(spawn_id);
+		OUT(type);
+		OUT(parameter);
+		switch (emu->type)
+		{
+			case AT_GuildRank:
+			{
+				//Translate new ranks to old values* /
+				switch (emu->parameter)
+				{
+				case 8: case 7: case 6: case 5: case 4: { eq->parameter = 0; break; }	// GUILD_MEMBER	 0
+				case 3: case 2: { eq->parameter = 1; break; }							// GUILD_OFFICER 1
+				case 1: { eq->parameter = 2; break; }									// GUILD_LEADER	 2
+				default: { break; }
+				}
 			}
-			dest->FastQueuePacket(&in, ack_req);
-			return;
+
+			default:
+			{
+				break;
+			}
 		}
+
+		FINISH_ENCODE();
 	}
 
 	ENCODE(OP_GuildMemberList)
