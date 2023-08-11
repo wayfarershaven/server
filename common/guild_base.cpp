@@ -18,10 +18,15 @@
 
 #include "guild_base.h"
 #include "database.h"
+#include "../common/repositories/base/base_guilds_repository.h"
 #include "../common/repositories/guilds_repository.h"
+#include "../common/repositories/base/base_guild_ranks_repository.h"
 #include "../common/repositories/guild_ranks_repository.h"
+#include "../common/repositories/base/base_guild_permissions_repository.h"
 #include "../common/repositories/guild_permissions_repository.h"
+#include "../common/repositories/base/base_guild_members_repository.h"
 #include "../common/repositories/guild_members_repository.h"
+#include "../common/repositories/base/base_guild_bank_repository.h"
 #include "../common/repositories/guild_bank_repository.h"
 
 
@@ -321,14 +326,15 @@ uint32 BaseGuildManager::CreateGuild(std::string name, uint32 leader_char_id)
 
 	return guild_id;
 }
-	
+
 bool BaseGuildManager::DeleteGuild(uint32 guild_id) 
 {
+	SendGuildDelete(guild_id);
+
 	if (!DBDeleteGuild(guild_id)) {
 		return false;
 	}
 
-	SendGuildDelete(guild_id);
 	return true;
 }
 
@@ -382,12 +388,13 @@ bool BaseGuildManager::SetGuildURL(uint32 GuildID, std::string URL)
 
 bool BaseGuildManager::SetGuildChannel(uint32 GuildID, std::string Channel)
 {
-	if(!DBSetGuildChannel(GuildID, Channel))
+	if(!DBSetGuildChannel(GuildID, Channel)) {
 		return false;
+	}
 
 	SendGuildRefresh(GuildID, false, true, false, false);
 
-	return(true);
+	return true;
 }
 
 bool BaseGuildManager::SetGuild(uint32 charid, uint32 guild_id, uint8 rank) 
@@ -413,6 +420,7 @@ bool BaseGuildManager::SetGuild(uint32 charid, uint32 guild_id, uint8 rank)
 	return true;
 }
 
+//changes rank, but not guild.
 bool BaseGuildManager::SetGuildRank(uint32 charid, uint8 rank) {
 	if(rank > GUILD_MAX_RANK)
 		return(false);
@@ -420,9 +428,7 @@ bool BaseGuildManager::SetGuildRank(uint32 charid, uint8 rank) {
 	if(!DBSetGuildRank(charid, rank))
 		return(false);
 
-	auto guild_id = GetGuildIDByCharacterID(charid);
-	
-	SendGuildRefresh(guild_id,false, false, false, false);
+	//SendCharRefresh(GUILD_NONE, 0, charid);
 
 	return(true);
 }
@@ -616,11 +622,11 @@ bool BaseGuildManager::DBSetGuildLeader(uint32 guild_id, uint32 leader)
 	{
 		return false;
 	}
-	
+
 	if (!DBSetGuildRank(out.leader, GUILD_LEADER)) {
 		return false;
 	}
-	
+
 	LogGuilds("Set guild leader for guild [{}] to [{}] in the database", guild_id, leader);
 
 	return true;
@@ -723,6 +729,7 @@ bool BaseGuildManager::DBSetGuild(uint32 char_id, uint32 guild_id, uint8 rank)
 		LogGuilds("Requested to set char [{}] to guild [{}] when we have no database object", char_id, guild_id);
 		return false;
 	}
+
 	if (guild_id == GUILD_NONE) {
 		if (!GuildMembersRepository::DeleteOne(*m_db, char_id)) {
 			LogError("Request to remove a character id {} from guild_members who is not in a guild {}.", char_id, guild_id);
@@ -1145,7 +1152,15 @@ bool BaseGuildManager::CheckPermission(uint32 guild_id, uint8 rank, GuildAction 
 		return(false);	//invalid guild
 	}
 
+//	bool granted = res->second->ranks[rank].permissions[act];
 	bool granted = (res->second->functions[act].perm_value >> (8 - rank)) & 1;
+
+
+	//LogGuilds("Check permission on guild [{}] ([{}]) and rank [{}] ([{}]) for action [{}] ([{}]): [{}]",
+	//	res->second->name, guild_id,
+	//	res->second->ranks[rank].name, rank,
+	//	GuildActionNames[act], act,
+	//	granted?"granted":"denied");
 
 	return(granted);
 }

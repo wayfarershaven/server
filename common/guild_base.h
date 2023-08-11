@@ -163,7 +163,7 @@ class BaseGuildManager
 				std::string		rank_names[GUILD_MAX_RANK + 1];
 				Functions		functions[GUILD_MAX_FUNCTIONS + 1];
 		};
-	virtual BaseGuildManager::GuildInfo* GetGuildByGuildID(uint32 guild_id);
+	virtual GuildInfo* GetGuildByGuildID(uint32 guild_id);
 
 	protected:
 		std::map<uint32, GuildInfo *> m_guilds;	//we own the pointers in this map

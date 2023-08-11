@@ -220,7 +220,6 @@ void ClientListEntry::Update(ZoneServer *iZS, ServerClientList_Struct *scl, CLE_
 	panon          = scl->anon;
 	ptellsoff      = scl->tellsoff;
 	pguild_id      = scl->guild_id;
-	pguild_rank    = scl->guild_rank;
 	pLFG           = scl->LFG;
 	gm             = scl->gm;
 	pClientVersion = scl->ClientVersion;
@@ -278,7 +277,6 @@ void ClientListEntry::ClearVars(bool iAll)
 	panon          = 0;
 	ptellsoff      = 0;
 	pguild_id      = GUILD_NONE;
-	pguild_rank    = 0;
 	pLFG           = 0;
 	gm             = 0;
 	pClientVersion = 0;

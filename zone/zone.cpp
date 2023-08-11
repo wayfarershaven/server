@@ -1223,8 +1223,6 @@ bool Zone::Init(bool is_static) {
 	DynamicZone::CacheAllFromDatabase();
 	Expedition::CacheAllFromDatabase();
 
-	guild_mgr.LoadGuilds();
-
 	LogInfo("Loading timezone data");
 	zone_time.setEQTimeZone(content_db.GetZoneTZ(zoneid, GetInstanceVersion()));
 

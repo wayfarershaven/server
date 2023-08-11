@@ -102,30 +102,6 @@ public:
 		return (results.Success() ? results.RowsAffected() : 0);
 	}
 
-	static int UpdateTitle(
-		Database& db,
-		const GuildRanks& e
-	)
-	{
-		std::vector<std::string> v;
-
-		auto columns = Columns();
-
-		v.push_back(columns[2] + " = '" + Strings::Escape(e.title) + "'");
-
-		auto results = db.QueryDatabase(
-			fmt::format(
-				"UPDATE {} SET {} WHERE `guild_id` = {} AND `rank` = {}",
-				TableName(),
-				Strings::Implode(", ", v),
-				e.guild_id,
-				e.rank
-			)
-		);
-
-		return (results.Success() ? results.RowsAffected() : 0);
-	}
-
 };
 
 #endif //EQEMU_GUILD_RANKS_REPOSITORY_H
