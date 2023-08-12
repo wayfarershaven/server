@@ -284,34 +284,43 @@ void EQEmuApiWorldDataService::callGetGuildDetails(Json::Value& response, const 
 {
 
 	std::string command = !args[1].empty() ? args[1] : "";
-
-	auto guild = guild_mgr.GetGuildJson(Strings::ToUnsignedInt(command));
+	if (command.empty()) {
+		return;
+	}
 	Json::Value row;
 
-	row["guild_id"] = command;
-	row["guild_name"] = guild.name;
-	row["leader_id"] = guild.leader;
-	row["min_status"] = guild.minstatus;
-	row["motd"] = guild.motd;
-	row["motd_setter"] = guild.motd_setter;
-	row["url"] = guild.url;
-	row["channel"] = guild.channel;
+	auto guild_id = Strings::ToUnsignedInt(command);
+	if (guild_id) {
+		row = "useage is: api get_guild_details ### where ### is a valid guild id.";
+		return;
+	}
+	auto guild = guild_mgr.GetGuildByGuildID(guild_id);
+	if (!guild) {
+		row = fmt::format("Could not find guild id {}", guild_id);
+		return;
+	}
 
-	for (int i = 0; i <= 8; i++) {
-		auto st = fmt::format("Rank-{}", i);
-		row[st] = guild.rank_names[i].c_str();
+	row["guild_id"]    = command;
+	row["guild_name"]  = guild->name;
+	row["leader_id"]   = guild->leader;
+	row["min_status"]  = guild->minstatus;
+	row["motd"]        = guild->motd;
+	row["motd_setter"] = guild->motd_setter;
+	row["url"]         = guild->url;
+	row["channel"]     = guild->channel;
+
+	for (int i = 1; i <= 8; i++) {
+		row["Ranks"][i] = guild->rank_names[i].c_str();
 	}
 
 	for (int i = 1; i <= 30; i++) {
-		auto st1 = fmt::format("Function-{} db_id:", i);
-		row[st1] = guild.functions[i].id;
-		auto st2 = fmt::format("Function-{} perm_id:", i);
-		row[st2] = guild.functions[i].perm_id;
-		auto st3 = fmt::format("Function-{} guild_id:", i);
-		row[st3] = guild.functions[i].guild_id;
-		auto st4 = fmt::format("Function-{} value:", i);
-		row[st4] = guild.functions[i].perm_value;
+		row["Functions"][i]["db_id"]		= guild->functions[i].id;
+		row["Functions"][i]["perm_id"]		= guild->functions[i].perm_id;
+		row["Functions"][i]["guild_id"]		= guild->functions[i].guild_id;
+		row["Functions"][i]["perm_value"]	= guild->functions[i].perm_value;
 	}
+
+	client_list.GetGuildClientList(response, guild_id);
 
 	response.append(row);
 }

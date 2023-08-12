@@ -1695,6 +1695,7 @@ void Client::UpdateWho(uint8 remove)
 	s->ClientVersion = static_cast<unsigned int>(ClientVersion());
 	s->tellsoff      = tellsoff;
 	s->guild_id      = guild_id;
+	s->guild_rank    = guildrank;
 	s->LFG           = LFG;
 	if (LFG) {
 		s->LFGFromLevel   = LFGFromLevel;

@@ -22,6 +22,7 @@
 #include "../common/servertalk.h"
 #include "clientlist.h"
 #include "zonelist.h"
+#include "zoneserver.h"
 
 
 extern ClientList client_list;
@@ -90,10 +91,11 @@ void WorldGuildManager::ProcessZonePacket(ServerPacket *pack) {
 	}
 
 	case ServerOP_GuildCharRefresh:
-	case ServerOP_GuildCharRefresh2: {
+	{
 		ServerGuildCharRefresh_Struct *s = (ServerGuildCharRefresh_Struct *) pack->pBuffer;
 		LogGuilds("Received and broadcasting guild member refresh for char [{}] to all zones with members of guild [{}]", s->char_id, s->guild_id);
 
+		RefreshGuild(s->guild_id);
 		//preform the local update
 		client_list.UpdateClientGuild(s->char_id, s->guild_id);
 
@@ -104,7 +106,8 @@ void WorldGuildManager::ProcessZonePacket(ServerPacket *pack) {
 		break;
 	}
 
-	case ServerOP_DeleteGuild: {
+	case ServerOP_DeleteGuild: 
+	{
 		if(pack->size != sizeof(ServerGuildID_Struct)) {
 			LogGuilds("Received ServerOP_DeleteGuild of incorrect size [{}], expected [{}]", pack->size, sizeof(ServerGuildID_Struct));
 			return;
@@ -115,11 +118,7 @@ void WorldGuildManager::ProcessZonePacket(ServerPacket *pack) {
 		//broadcast this packet to all zones.
 		zoneserver_list.SendPacket(pack);
 
-		//preform a local refresh.
-		if(!LocalDeleteGuild(s->guild_id)) {
-			LogGuilds("Unable to preform local delete on guild [{}]", s->guild_id);
-			//can we do anything?
-		}
+		LoadGuilds();
 
 		break;
 	}
@@ -130,60 +129,100 @@ void WorldGuildManager::ProcessZonePacket(ServerPacket *pack) {
 			LogGuilds("Received ServerOP_GuildMemberUpdate of incorrect size [{}], expected [{}]", pack->size, sizeof(ServerGuildMemberUpdate_Struct));
 			return;
 		}
+		ServerGuildID_Struct* s = (ServerGuildID_Struct*)pack->pBuffer;
+		RefreshGuild(s->guild_id);
 
 		zoneserver_list.SendPacket(pack);
 
 		break;
 	}
-
-	case ServerOP_GuildPermissionUpdate: {
-		if (pack->size != sizeof(ServerGuildPermissionUpdate_Struct)) {
+	case ServerOP_GuildPermissionUpdate: 
+	{
+		if (pack->size != sizeof(ServerGuildPermissionUpdate_Struct))
+		{
 			LogGuilds("Received ServerOP_GuildPermissionUpdate of incorrect size [{}], expected [{}]", pack->size, sizeof(ServerGuildPermissionUpdate_Struct));
 			return;
 		}
 
 		ServerGuildPermissionUpdate_Struct* sg = (ServerGuildPermissionUpdate_Struct*)pack->pBuffer;
 
-		LogGuilds("World Received ServerOP_GuildPermissionUpdate for guild [{}] function id {} with value of {}",
-			sg->GuildID,
-			sg->FunctionID,
-			sg->FunctionValue
-		);
+		auto guild = GetGuildByGuildID(sg->GuildID);
+		if (!guild) {
+			guild_mgr.LoadGuilds();
+			guild = GetGuildByGuildID(sg->GuildID);
+		}
+		if (guild) {
+			if (sg->FunctionValue) {
+				guild->functions[sg->FunctionID].perm_value |= (1UL << (8 - sg->Rank));
+			}
+			else {
+				guild->functions[sg->FunctionID].perm_value &= ~(1UL << (8 - sg->Rank));
+			}
 
-		auto res = m_guilds.find(sg->GuildID);
+			LogGuilds("World Received ServerOP_GuildPermissionUpdate for guild [{}] function id {} with value of {}",
+				sg->GuildID,
+				sg->FunctionID,
+				sg->FunctionValue
+			);
 
-		if (sg->FunctionValue) {
-			res->second->functions[sg->FunctionID].perm_value |= (1UL << (8 - sg->Rank));
-		} else {
-			res->second->functions[sg->FunctionID].perm_value &= ~(1UL << (8 - sg->Rank));
+			for (auto const& z : zoneserver_list.getZoneServerList()) {
+				auto r = z.get();
+				if (r->GetZoneID() > 0) {
+					r->SendPacket(pack);
+				}
+			}
+		}
+		else {
+			LogError("World Received ServerOP_GuildPermissionUpdate for guild [{}] function id {} with value of {} but guild could not be found.",
+				sg->GuildID,
+				sg->FunctionID,
+				sg->FunctionValue
+			);
 		}
 
-		zoneserver_list.SendPacket(pack);
-
 		break;
 	}
+	case ServerOP_GuildRankNameChange:
+	{
+		if (pack->size != sizeof(ServerGuildRankNameChange))
+		{
+			LogGuilds("Received ServerOP_ServerGuildRankNameChange of incorrect size [{}], expected [{}]", pack->size, sizeof(ServerGuildPermissionUpdate_Struct));
+			return;
+		}
 
-	case ServerOP_GuildRankNameChange: {
 		ServerGuildRankNameChange* rnc = (ServerGuildRankNameChange*)pack->pBuffer;
 
-		LogGuilds("World Received ServerOP_GuildRankNameChange from zone for guild [{}] rank id {} with new name of {}",
-			rnc->guild_id,
-			rnc->rank,
-			rnc->rank_name
-		);
-
-		zoneserver_list.SendPacket(pack);
+		auto guild = GetGuildByGuildID(rnc->guild_id);
+		if (!guild) {
+			guild_mgr.LoadGuilds();
+			guild = GetGuildByGuildID(rnc->guild_id);
+		}
+		if (guild) {
+			guild->rank_names[rnc->rank] = rnc->rank_name;
+			LogGuilds("World Received ServerOP_GuildRankNameChange from zone for guild [{}] rank id {} with new name of {}",
+				rnc->guild_id,
+				rnc->rank,
+				rnc->rank_name.c_str()
+			);
+			for (auto const& z : zoneserver_list.getZoneServerList()) {
+				auto r = z.get();
+				if (r->GetZoneID() > 0) {
+					r->SendPacket(pack);
+				}
+			}
+		}
+		else {
+			LogError("World Received ServerOP_GuildRankNameChange from zone for guild [{}] rank id {} with new name of {} but could not find guild.",
+				rnc->guild_id,
+				rnc->rank,
+				rnc->rank_name.c_str()
+			);
+		}
 
 		break;
 	}
-
 	default:
 		LogGuilds("Unknown packet {:#04x} received from zone??", pack->opcode);
 		break;
 	}
-}
-
-WorldGuildManager::GuildInfo WorldGuildManager::GetGuildJson(int guild_id) {
-	auto guild = m_guilds.find(guild_id);
-	return *guild->second;
 }

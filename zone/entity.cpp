@@ -2264,14 +2264,13 @@ void EntityList::Message(uint32 to_guilddbid, uint32 type, const char *message, 
 	}
 }
 
-void EntityList::QueueClientsGuild(Mob *sender, const EQApplicationPacket *app,
-		bool ignore_sender, uint32 guild_id)
+void EntityList::QueueClientsGuild(const EQApplicationPacket *app, uint32 guild_id)
 {
 	auto it = client_list.begin();
 	while (it != client_list.end()) {
 		Client *client = it->second;
 		if (client->IsInGuild(guild_id))
-			client->QueuePacket(app);
+			client->QueuePacket(app, true);
 		++it;
 	}
 }

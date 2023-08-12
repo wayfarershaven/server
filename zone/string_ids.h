@@ -269,6 +269,7 @@
 #define GROWS_DIM					1237	//Your %1 grows dim.
 #define BEGINS_TO_SHINE				1238	//Your %1 begins to shine.
 #define SURNAME_REJECTED			1374	//Your new surname was rejected. Please try a different name.
+#define GUILD_DISBANDED				1377    //Your guild has been disbanded!  You are no longer a member of any guild.
 #define DUEL_DECLINE				1383	//%1 has declined your challenge to duel to the death.
 #define DUEL_ACCEPTED				1384	//%1 has already accepted a duel with someone else.
 #define DUEL_CONSIDERING			1385	//%1 is considering a duel with someone else.
