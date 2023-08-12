@@ -1261,6 +1261,9 @@ bool BaseGuildManager::IsCharacterInGuild(uint32 character_id, uint32 guild_id)
 
 BaseGuildManager::GuildInfo* BaseGuildManager::GetGuildByGuildID(uint32 guild_id) 
 {
-	auto guild = m_guilds[guild_id];
-	return guild;
+	auto guild = m_guilds.find(guild_id);
+	if (guild != m_guilds.end()) {
+		return guild->second;
+	}
+	return nullptr;
 }

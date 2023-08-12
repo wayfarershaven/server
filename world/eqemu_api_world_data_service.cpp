@@ -287,23 +287,27 @@ void EQEmuApiWorldDataService::callGetGuildDetails(Json::Value& response, const 
 	if (command.empty()) {
 		return;
 	}
+	Json::Value row;
 
 	auto guild_id = Strings::ToUnsignedInt(command);
-	auto guild = guild_mgr.GetGuildJson(guild_id);
+	if (guild_id) {
+		row = "useage is: api get_guild_details ### where ### is a valid guild id.";
+		return;
+	}
+	auto guild = guild_mgr.GetGuildByGuildID(guild_id);
 	if (!guild) {
+		row = fmt::format("Could not find guild id {}", guild_id);
 		return;
 	}
 
-	Json::Value row;
-
-	row["guild_id"] = command;
-	row["guild_name"] = guild->name;
-	row["leader_id"] = guild->leader;
-	row["min_status"] = guild->minstatus;
-	row["motd"] = guild->motd;
+	row["guild_id"]    = command;
+	row["guild_name"]  = guild->name;
+	row["leader_id"]   = guild->leader;
+	row["min_status"]  = guild->minstatus;
+	row["motd"]        = guild->motd;
 	row["motd_setter"] = guild->motd_setter;
-	row["url"] = guild->url;
-	row["channel"] = guild->channel;
+	row["url"]         = guild->url;
+	row["channel"]     = guild->channel;
 
 	for (int i = 1; i <= 8; i++) {
 		row["Ranks"][i] = guild->rank_names[i].c_str();

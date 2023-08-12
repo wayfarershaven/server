@@ -752,7 +752,6 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 	case ServerOP_RefreshGuild:
 	case ServerOP_DeleteGuild:
 	case ServerOP_GuildCharRefresh:
-	case ServerOP_GuildCharRefresh2:
 	case ServerOP_GuildMemberUpdate:
 	case ServerOP_GuildPermissionUpdate:
 	case ServerOP_GuildRankUpdate:
