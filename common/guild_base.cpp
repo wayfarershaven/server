@@ -768,24 +768,21 @@ bool BaseGuildManager::DBSetBankerFlag(uint32 charid, bool is_banker) {
 	return(QueryWithLogging(query, "setting a guild member's banker flag"));
 }
 
-bool BaseGuildManager::GetBankerFlag(uint32 CharID)
+bool BaseGuildManager::GetBankerFlag(uint32 CharID, bool compat_mode)
 {
-	if(!m_db)
-		return false;
-
-    std::string query = StringFormat("select `banker` from `guild_members` where char_id=%i LIMIT 1", CharID);
-    auto results = m_db->QueryDatabase(query);
-	if(!results.Success())
-	{
+	if (!m_db) {
 		return false;
 	}
+	
+	auto db_banker = 0;
+	auto member = GuildMembersRepository::FindOne(*m_db, CharID);
 
-	if(results.RowCount() != 1)
-		return false;
+	if (compat_mode) {
+		auto db_banker = member.banker;
+		return db_banker;
+	}
 
-	auto row = results.begin();
-
-	return Strings::ToBool(row[0]);
+	return member.banker || GetGuildBankerStatus(member.guild_id, member.rank);
 }
 
 bool BaseGuildManager::DBSetAltFlag(uint32 charid, bool is_alt)
@@ -1147,7 +1144,7 @@ bool BaseGuildManager::CheckPermission(uint32 guild_id, uint8 rank, GuildAction 
 
 	bool granted = (res->second->functions[act].perm_value >> (8 - rank)) & 1;
 
-	return(granted);
+	return granted;
 }
 
 bool BaseGuildManager::LocalDeleteGuild(uint32 guild_id) {
@@ -1266,4 +1263,16 @@ BaseGuildManager::GuildInfo* BaseGuildManager::GetGuildByGuildID(uint32 guild_id
 		return guild->second;
 	}
 	return nullptr;
+}
+
+bool BaseGuildManager::GetGuildBankerStatus(uint32 guild_id, uint32 guild_rank)
+{
+	auto guild = m_guilds.find(guild_id);
+	if (guild != m_guilds.end()) {
+		return (CheckPermission(guild_id, guild_rank, GUILD_ACTION_BANK_DEPOSIT_ITEMS) &&
+			CheckPermission(guild_id, guild_rank, GUILD_ACTION_BANK_PROMOTE_ITEMS) &&
+			CheckPermission(guild_id, guild_rank, GUILD_ACTION_BANK_VIEW_ITEMS) &&
+			CheckPermission(guild_id, guild_rank, GUILD_ACTION_BANK_WITHDRAW_ITEMS)) ? true : false;
+	}
+	return false;
 }

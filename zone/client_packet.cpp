@@ -1410,10 +1410,10 @@ void Client::Handle_Connect_OP_ZoneEntry(const EQApplicationPacket *app)
 			m_pp.guildrank = cgi.rank;
 		}
 		if (zone->GetZoneID() == Zones::GUILDHALL) {
-			GuildBanker =  (guild_mgr.IsGuildLeader(GuildID(), CharacterID()) || 
-							guild_mgr.GetBankerFlag(CharacterID()) ||
-							guild_mgr.CheckPermission(m_pp.guild_id, m_pp.guildrank, GUILD_ACTION_BANK_PROMOTE_ITEMS)
-				);
+					GuildBanker = (guild_mgr.IsGuildLeader(GuildID(), CharacterID()) ||
+					guild_mgr.GetBankerFlag(CharacterID()) ||
+					ClientVersion() >= EQ::versions::ClientVersion::RoF ? true : false
+					);
 		}
 	}
 	m_pp.guildbanker = GuildBanker;
@@ -7624,11 +7624,6 @@ void Client::Handle_OP_GuildBank(const EQApplicationPacket *app)
 
 	case GuildBankViewItem:
 	{
-		//if (!guild_mgr.CheckPermission(GuildID(), GuildRank(), GUILD_ACTION_BANK_VIEW_ITEMS)) {
-		//	Message(Chat::Yellow, "You do not have permission to view bank items.");
-		//	return;
-		//}
-
 		GuildBankViewItem_Struct *gbvis = (GuildBankViewItem_Struct*)app->pBuffer;
 
 		EQ::ItemInstance* inst = GuildBanks->GetItem(GuildID(), gbvis->Area, gbvis->SlotID, 1);
@@ -7695,6 +7690,10 @@ void Client::Handle_OP_GuildBank(const EQApplicationPacket *app)
 			MessageString(Chat::Red, GUILD_BANK_CANNOT_DEPOSIT);
 			GuildBankDepositAck(true, sentAction);
 
+			if (ClientVersion() >= EQ::versions::ClientVersion::RoF) {
+				PushItemOnCursor(CursorItem, true);
+			}
+
 			return;
 		}
 
@@ -7740,6 +7739,14 @@ void Client::Handle_OP_GuildBank(const EQApplicationPacket *app)
 		{
 			GuildBankAck();
 
+			break;
+		}
+
+		if (!guild_mgr.CheckPermission(GuildID(), GuildRank(), GUILD_ACTION_BANK_WITHDRAW_ITEMS))
+		{
+			Message(Chat::Red, "You do not have permission to withdraw.");
+			GuildBankAck();
+			safe_delete(inst);
 			break;
 		}
 
@@ -7999,6 +8006,7 @@ void Client::Handle_OP_GuildDemote(const EQApplicationPacket *app)
 		strcpy(sr->MemberName, demote->target);
 		sr->Rank = rank;
 		sr->Banker = gci.banker + (gci.alt * 2);
+		sr->no_update = false;
 		worldserver.SendPacket(outapp);
 		safe_delete(outapp);
 	}
@@ -8303,7 +8311,7 @@ void Client::Handle_OP_GuildManageBanker(const EQApplicationPacket *app)
 		Message(Chat::Red, "Unable to find '%s'", gmb->member);
 		return;
 	}
-	bool IsCurrentlyABanker = guild_mgr.GetBankerFlag(gci.char_id);
+	bool IsCurrentlyABanker = guild_mgr.GetBankerFlag(gci.char_id, true);
 
 	bool IsCurrentlyAnAlt = guild_mgr.GetAltFlag(gci.char_id);
 
@@ -8388,6 +8396,7 @@ void Client::Handle_OP_GuildPromote(const EQApplicationPacket *app)
 		GuildPromoteStruct* promote = (GuildPromoteStruct*)app->pBuffer;
 
 		auto rank = promote->myrank;
+		//should move this to decode
 		if (ClientVersion() < EQ::versions::ClientVersion::RoF) {
 			switch (rank) {
 				case 0: { rank = 5; break; }
@@ -8437,6 +8446,7 @@ void Client::Handle_OP_GuildPromote(const EQApplicationPacket *app)
 		strcpy(sr->MemberName, promote->target);
 		sr->Rank = rank;
 		sr->Banker = gci.banker + (gci.alt * 2);
+		sr->no_update = false;
 		worldserver.SendPacket(outapp);
 		safe_delete(outapp);
 	}
@@ -8666,7 +8676,6 @@ void Client::Handle_OP_GuildUpdateURLAndChannel(const EQApplicationPacket* app)
 	}
 
 	case 5: {
-
 		if (!guild_mgr.CheckPermission(guild_id, guildrank, GUILD_ACTION_RANKS_CHANGE_PERMISSIONS)) {
 			MessageString(Chat::Yellow, GUILD_PERMISSION_FAILED);
 			return;

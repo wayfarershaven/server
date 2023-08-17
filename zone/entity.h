@@ -248,6 +248,7 @@ public:
 	void	SendGuildMembers(uint32 guild_id);
 	void	RefreshAllGuildInfo(uint32 guild_id);
 	void	SendGuildList();
+	void    GuildSetPreRoFBankerFlag(uint32 guild_id, uint32 guild_rank, bool banker_status);
 	void	CheckGroupList (const char *fname, const int fline);
 	void	GroupProcess();
 	void	RaidProcess();

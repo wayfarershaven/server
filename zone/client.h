@@ -713,6 +713,8 @@ public:
 	inline bool IsInGuild(uint32 in_gid) const { return(in_gid == guild_id && IsInAGuild()); }
 	inline uint32 GuildID() const { return guild_id; }
 	inline uint8 GuildRank() const { return guildrank; }
+	void SetGuildRank(uint32 rank);
+	void SetGuildID(uint32 guild_id);
 	void SendGuildMOTD(bool GetGuildMOTDReply = false);
 	void SendGuildURL();
 	void SendGuildChannel();
