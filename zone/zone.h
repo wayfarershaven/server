@@ -397,6 +397,8 @@ public:
 	double GetMaxMovementUpdateRange() const { return max_movement_update_range; }
 	void SetIsHotzone(bool is_hotzone);
 
+	void ReloadContentFlags();
+
 private:
 	bool      allow_mercs;
 	bool      can_bind;
