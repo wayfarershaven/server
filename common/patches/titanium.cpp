@@ -923,10 +923,60 @@ namespace Titanium
 
 	ENCODE(OP_LFGuild)
 	{
+		struct bit_mask_conversion {
+			uint32	ti_mask;
+			uint32	rof2_mask;
+		};
+
+		std::vector<bit_mask_conversion> bit_mask = {
+			{2, 256},
+			{4, 32768},
+			{8, 65536},
+			{16, 4},
+			{32, 64},
+			{64, 16384},
+			{128, 8192},
+			{256, 128},
+			{512, 2048},
+			{1024, 8},
+			{2048, 16},
+			{4096, 512},
+			{8192, 32},
+			{16384, 1024},
+			{32768, 2},
+			{65536, 4096},
+		}; 
+
 		EQApplicationPacket *in = *p;
-		*p = nullptr;
 
 		uint32 Command = in->ReadUInt32();
+
+		if (Command == 1) {
+			ENCODE_LENGTH_EXACT(LFGuild_GuildToggle_Struct);
+			SETUP_DIRECT_ENCODE(LFGuild_GuildToggle_Struct, structs::LFGuild_GuildToggle_Struct);
+
+			OUT(Command);
+			OUT_str(Comment);
+			OUT(FromLevel);
+			OUT(ToLevel);
+			OUT(AACount);
+			OUT(TimeZone);
+			OUT(Toggle);
+			OUT(TimePosted);
+			OUT_str(Name);
+
+			uint32 emu_bitmask = emu->Classes;
+			uint32 ti_bitmask = 0;
+			for (auto const& b : bit_mask) {
+				(emu_bitmask & b.rof2_mask) != 0 ? ti_bitmask |= b.ti_mask : ti_bitmask &= ~b.ti_mask;
+			}
+			eq->Classes = ti_bitmask;
+
+			FINISH_ENCODE();
+			return;
+		}
+
+		*p = nullptr;
 
 		if (Command != 0)
 		{
@@ -2225,10 +2275,80 @@ namespace Titanium
 
 	DECODE(OP_LFGuild)
 	{
+		struct bit_mask_conversion {
+			uint32	ti_mask;
+			uint32	rof2_mask;
+		};
+
+		std::vector<bit_mask_conversion> bit_mask = {
+			{2, 256},
+			{4, 32768},
+			{8, 65536},
+			{16, 4},
+			{32, 64},
+			{64, 16384},
+			{128, 8192},
+			{256, 128},
+			{512, 2048},
+			{1024, 8},
+			{2048, 16},
+			{4096, 512},
+			{8192, 32},
+			{16384, 1024},
+			{32768, 2},
+			{65536, 4096},
+		}; 
+
 		uint32 Command = __packet->ReadUInt32();
 
-		if (Command != 0)
+		if (Command == 3) {
+			DECODE_LENGTH_EXACT(structs::LFGuild_SearchPlayer_Struct);
+			SETUP_DIRECT_DECODE(LFGuild_SearchPlayer_Struct, structs::LFGuild_SearchPlayer_Struct);
+
+			IN(Command);
+			IN(Unknown04);
+			IN(FromLevel);
+			IN(ToLevel);
+			IN(MinAA);
+			IN(TimeZone);
+
+			uint32 new_bitmask = 0;
+			uint32 ti_bitmask = eq->Classes;
+			for (auto const& b : bit_mask) {
+				(ti_bitmask & b.ti_mask) != 0 ? new_bitmask |= b.rof2_mask : new_bitmask &= ~b.rof2_mask;
+			}
+			emu->Classes = new_bitmask;
+			FINISH_DIRECT_DECODE();
 			return;
+		}
+
+		if (Command == 1) {
+			DECODE_LENGTH_EXACT(structs::LFGuild_GuildToggle_Struct);
+			SETUP_DIRECT_DECODE(LFGuild_GuildToggle_Struct, structs::LFGuild_GuildToggle_Struct);
+
+			IN(Command);
+			IN_str(Comment);
+			IN(FromLevel);
+			IN(ToLevel);
+			IN(AACount);
+			IN(TimeZone);
+			IN(Toggle);
+			IN(TimePosted);
+			IN_str(Name);
+
+			uint32 new_bitmask = 0;
+			uint32 ti_bitmask = eq->Classes;
+			for (auto const& b : bit_mask) {
+				(ti_bitmask & b.ti_mask) != 0 ? new_bitmask |= b.rof2_mask : new_bitmask &= ~b.rof2_mask;
+			}
+			emu->Classes = new_bitmask;
+			FINISH_DIRECT_DECODE();
+			return;
+		}
+
+		if (Command != 0) {
+			return;
+		}
 
 		SETUP_DIRECT_DECODE(LFGuild_PlayerToggle_Struct, structs::LFGuild_PlayerToggle_Struct);
 		memcpy(emu, eq, sizeof(structs::LFGuild_PlayerToggle_Struct));

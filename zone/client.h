@@ -123,6 +123,9 @@ typedef enum {
 	EvacToSafeCoords
 } ZoneMode;
 
+// translate above enum to a string
+std::string GetZoneModeString(ZoneMode mode);
+
 enum {
 	HideCorpseNone = 0,
 	HideCorpseAll = 1,
@@ -390,6 +393,7 @@ public:
 	inline PetInfo* GetPetInfo(uint16 pet) { return (pet==1)?&m_suspendedminion:&m_petinfo; }
 	inline InspectMessage_Struct& GetInspectMessage() { return m_inspect_message; }
 	inline const InspectMessage_Struct& GetInspectMessage() const { return m_inspect_message; }
+	void ReloadExpansionProfileSetting();
 
 	void SetPetCommandState(int button, int state);
 
@@ -713,6 +717,8 @@ public:
 	inline bool IsInGuild(uint32 in_gid) const { return(in_gid == guild_id && IsInAGuild()); }
 	inline uint32 GuildID() const { return guild_id; }
 	inline uint8 GuildRank() const { return guildrank; }
+	void SetGuildRank(uint32 rank);
+	void SetGuildID(uint32 guild_id);
 	void SendGuildMOTD(bool GetGuildMOTDReply = false);
 	void SendGuildURL();
 	void SendGuildChannel();

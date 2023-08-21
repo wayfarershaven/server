@@ -1671,9 +1671,7 @@ bool Mob::CanPurchaseAlternateAdvancementRank(AA::Rank *rank, bool check_price, 
 }
 
 void Zone::LoadAlternateAdvancement() {
-	if(!content_db.LoadAlternateAdvancementAbilities(aa_abilities,
-		aa_ranks))
-	{
+	if (!content_db.LoadAlternateAdvancementAbilities(aa_abilities, aa_ranks)) {
 		aa_abilities.clear();
 		aa_ranks.clear();
 		LogInfo("Failed to load Alternate Advancement Data");

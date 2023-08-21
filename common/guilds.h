@@ -33,18 +33,6 @@
 #define GUILD_LEADER0	2
 #define GUILD_RANK_NONE (GUILD_MAX_RANK+1)
 
-typedef enum {
-	GUILD_HEAR		= 0,
-	GUILD_SPEAK		= 1,
-	GUILD_INVITE	= 2,
-	GUILD_REMOVE	= 3,
-	GUILD_PROMOTE	= 4,
-	GUILD_DEMOTE	= 5,
-	GUILD_MOTD		= 6,
-	GUILD_WARPEACE	= 7,
-	_MaxGuildAction
-} GuildAction2;
-
 //defines for standard ranks base on RoF2 definitions
 #define GUILD_RANK_NONE      0
 #define GUILD_LEADER		 1
@@ -55,11 +43,6 @@ typedef enum {
 #define GUILD_JUNIOR_MEMBER  6
 #define GUILD_INITIATE		 7
 #define GUILD_RECRUIT		 8		
-
-//defines for standard ranks base on Titanium definitions
-#define GUILD_TIT_MEMBER		  0
-#define GUILD_TIT_OFFICER		  1
-#define GUILD_TIT_LEADER		  2
 
 typedef enum {
 	GUILD_ACTION_BANNER_CHANGE	= 1,

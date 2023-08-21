@@ -1022,9 +1022,10 @@ struct ServerGuildCharRefresh2_Struct {
 struct ServerGuildRankUpdate_Struct
 {
 	uint32 GuildID;
-	char MemberName[64];
+	char   MemberName[64];
 	uint32 Rank;
 	uint32 Banker;
+	bool   no_update;
 };
 
 struct ServerGuildMemberUpdate_Struct {

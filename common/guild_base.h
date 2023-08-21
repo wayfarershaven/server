@@ -5,6 +5,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include "../common/repositories/guild_members_repository.h"
 
 #define GOUT(x) out.x = in->x;
 
@@ -74,7 +75,8 @@ class BaseGuildManager
 		bool	ForceRankUpdate(uint32 charid);
 		bool	GetAltFlag(uint32 CharID);
 		bool	SetAltFlag(uint32 charid, bool is_alt);
-		bool	GetBankerFlag(uint32 CharID);
+		bool	GetBankerFlag(uint32 CharID, bool compat_mode = false);
+		bool    GetGuildBankerStatus(uint32 guild_id, uint32 guild_rank);
 		bool	SetTributeFlag(uint32 charid, bool enabled);
 		bool	SetPublicNote(uint32 charid, const char *note);
 
@@ -98,6 +100,7 @@ class BaseGuildManager
 		uint8	GetDisplayedRank(uint32 guild_id, uint8 rank, uint32 char_id) const;
 		bool	CheckGMStatus(uint32 guild_id, uint8 status) const;
 		bool	CheckPermission(uint32 guild_id, uint8 rank, GuildAction act) const;
+		std::vector<BaseGuildMembersRepository::GuildMembers> GetGuildMembers(uint32 guild_id);
 //	uint32	Getguild_id(uint32 eqid);
 		uint32	FindGuildByLeader(uint32 leader) const;
 //	void	GetGuildMembers(uint32 guild_id,GuildMember_Struct* gms);
@@ -109,6 +112,7 @@ class BaseGuildManager
 
 //		static const char *const GuildActionNames[_MaxGuildAction];
 		uint32	DoesAccountContainAGuildLeader(uint32 AccountID);
+		bool	DBSetBankerFlag(uint32 charid, bool is_banker);
 
 	protected:
 		//the methods which must be defined by base classes.
@@ -126,7 +130,6 @@ class BaseGuildManager
 		bool	DBSetGuildChannel(uint32 GuildID, std::string Channel);
 		bool	DBSetGuild(uint32 charid, uint32 guild_id, uint8 rank);
 		bool	DBSetGuildRank(uint32 charid, uint8 rank);
-		bool	DBSetBankerFlag(uint32 charid, bool is_banker);
 		bool	DBSetAltFlag(uint32 charid, bool is_alt);
 		bool	DBSetTributeFlag(uint32 charid, bool enabled);
 		bool	DBSetPublicNote(uint32 charid, const char *note);
@@ -179,4 +182,3 @@ class BaseGuildManager
 
 
 #endif /*GUILD_BASE_H_*/
-
