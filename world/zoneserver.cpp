@@ -1403,7 +1403,6 @@ void ZoneServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p) {
 		case ServerOP_ReloadNPCEmotes:
 		case ServerOP_ReloadObjects:
 		case ServerOP_ReloadPerlExportSettings:
-		case ServerOP_ReloadRules:
 		case ServerOP_ReloadStaticZoneData:
 		case ServerOP_ReloadTitles:
 		case ServerOP_ReloadTraps:
@@ -1451,6 +1450,11 @@ void ZoneServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p) {
 			if (zs) {
 				zs->SendPacket(pack);
 			}
+			break;
+		}
+		case ServerOP_ReloadRules: {
+			zoneserver_list.SendPacket(pack);
+			RuleManager::Instance()->LoadRules(&database, "default", true);
 			break;
 		}
 		case ServerOP_ReloadContentFlags: {
