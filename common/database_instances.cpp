@@ -177,10 +177,12 @@ bool Database::GetUnusedInstanceID(uint16 &instance_id)
 
 	auto row = results.begin();
 
-	// check that id is within limits
-	if (Strings::ToInt(row[0]) <= max_instance_id) {
-		instance_id = Strings::ToInt(row[0]);
-		return true;
+	for (auto row : results) {
+		// check that id is within limits
+		if (row[0] && Strings::ToInt(row[0]) <= max_instance_id) {
+			instance_id = Strings::ToInt(row[0]);
+			return true;
+		}
 	}
 
 	// unhandled situation - should not reach here
