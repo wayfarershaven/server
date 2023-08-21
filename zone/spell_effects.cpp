@@ -838,6 +838,12 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 
 				SetPetType(petCharmed);
 
+				// This was done in AddBuff, but we were not a pet yet, so
+				// the target windows didn't get updated.
+				EQApplicationPacket *outapp = MakeBuffsPacket();
+				entity_list.QueueClientsByTarget(this, outapp, false, nullptr, true, false, EQ::versions::maskSoDAndLater);
+				safe_delete(outapp);
+
 				if(caster->IsClient()){
 					auto app = new EQApplicationPacket(OP_Charm, sizeof(Charm_Struct));
 					Charm_Struct *ps = (Charm_Struct*)app->pBuffer;
@@ -4343,6 +4349,15 @@ void Mob::BuffFadeBySlot(int slot, bool iRecalcBonuses)
 				{
 					owner->SetPet(0);
 				}
+
+				// Any client that has a previous charmed pet targetted shouldo
+				// no longer see the buffs on the old pet.
+				// QueueClientsByTarget preserves GM and leadership cases.
+
+				EQApplicationPacket *outapp = MakeBuffsPacket(true, true);
+
+				entity_list.QueueClientsByTarget(this, outapp, false, nullptr, true, false, EQ::versions::maskSoDAndLater, true, true);
+				
 				if (IsAIControlled())
 				{
 					//Remove damage over time effects on charmed pet and those applied by charmed pet.
