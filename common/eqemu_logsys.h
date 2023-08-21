@@ -141,6 +141,7 @@ namespace Logs {
 		AccountEvents,
 		Petitions,
 		DataBuckets,
+		Zoning,
 		MaxCategoryID /* Don't Remove this */
 	};
 
@@ -241,6 +242,7 @@ namespace Logs {
 		"AccountEvents",
 		"Petitions",
 		"DataBuckets",
+		"Zoning",
 	};
 }
 
