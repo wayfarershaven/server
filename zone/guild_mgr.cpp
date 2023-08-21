@@ -468,7 +468,7 @@ void ZoneGuildManager::ProcessWorldPacket(ServerPacket *pack)
 		RefreshGuild(s->guild_id);
 
 		Client* c = entity_list.GetClientByCharID(s->char_id);
-		
+
 		if (c != nullptr) {
 			//this reloads the char's guild info from the database and sends appearance updates
 			c->RefreshGuildInfo();
@@ -517,7 +517,7 @@ void ZoneGuildManager::ProcessWorldPacket(ServerPacket *pack)
 				}
 			}
 			return false;
-		};
+			};
 
 		ServerGuildRankUpdate_Struct* sgrus = (ServerGuildRankUpdate_Struct*)pack->pBuffer;
 
@@ -718,7 +718,7 @@ void ZoneGuildManager::ProcessWorldPacket(ServerPacket *pack)
 				}
 			}
 			return false;
-		};
+			};
 
 		if (is_zone_loaded)
 		{
@@ -769,21 +769,50 @@ void ZoneGuildManager::ProcessWorldPacket(ServerPacket *pack)
 			ServerGuildRankNameChange* s = (ServerGuildRankNameChange*)pack->pBuffer;
 			LogGuilds("Received guild rank name change from world for rank [{}] from guild [{}]", s->rank, s->guild_id);
 
-			auto guild = GetGuildByGuildID(s->guild_id);
+			auto guild = guild_mgr.GetGuildByGuildID(s->guild_id);
+			guild->rank_names[s->rank] = s->rank_name;
+
 			auto outapp = new EQApplicationPacket(OP_GuildUpdateURLAndChannel, sizeof(GuildUpdateUCP));
 			GuildUpdateUCP* gucp = (GuildUpdateUCP*)outapp->pBuffer;
 			gucp->payload.rank_name.rank = s->rank;
 			strcpy(gucp->payload.rank_name.rank_name, s->rank_name.c_str());
 			gucp->action = 4;
-
 			entity_list.QueueClientsGuild(outapp, s->guild_id);
-
 			safe_delete(outapp);
-			break;
+
+			for (auto const& gm : guild_mgr.GetGuildMembers(s->guild_id)) {
+				auto outapp = new EQApplicationPacket(OP_GuildMemberUpdate, sizeof(GuildMemberUpdate_Struct));
+				GuildMemberUpdate_Struct* gmus = (GuildMemberUpdate_Struct*)outapp->pBuffer;
+				gmus->GuildID = s->guild_id;
+				CharGuildInfo cgi;
+				guild_mgr.GetCharInfo(gm.char_id, cgi);
+				if (cgi.rank == s->rank) {
+					safe_delete(outapp);
+					continue;
+				}
+
+				strn0cpy(gmus->MemberName, cgi.char_name.c_str(), sizeof(cgi.char_name.c_str()));
+				auto client = entity_list.GetClientByCharID(gm.char_id);
+				if (client) {
+					gmus->ZoneID = client->GetZoneID();
+					gmus->InstanceID = client->GetInstanceID();
+					gmus->LastSeen = time(nullptr);
+				}
+				else {
+					gmus->ZoneID = 0;
+					gmus->InstanceID = 0;
+					gmus->LastSeen = 0;
+				}
+				entity_list.QueueClientsGuild(outapp, s->guild_id);
+				safe_delete(outapp);
+			}
 		}
-	}
+		}
+		break;
 	}
 }
+
+
 
 void ZoneGuildManager::SendGuildMemberUpdateToWorld(const char *MemberName, uint32 GuildID, uint16 ZoneID, uint32 LastSeen)
 {

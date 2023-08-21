@@ -3492,7 +3492,7 @@ struct LFGuild_GuildToggle_Struct
 /*540*/ uint32	TimeZone;
 /*544*/ uint8	Toggle;
 /*545*/ uint8	Unknown545[3];
-/*548*/ uint32	Expires;
+/*548*/ uint32	TimePosted;
 /*552*/ char	Name[64];
 /*616*/
 };

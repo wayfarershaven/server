@@ -86,8 +86,8 @@ BaseGuildManager::~BaseGuildManager() {
 	ClearGuilds();
 }
 
-bool BaseGuildManager::LoadGuilds() {
-
+bool BaseGuildManager::LoadGuilds() 
+{
 	ClearGuilds();
 
 	if(m_db == nullptr) {
@@ -96,14 +96,12 @@ bool BaseGuildManager::LoadGuilds() {
 	}
 
 	auto guilds = BaseGuildsRepository::All(*m_db);
-	
 	if (guilds.empty()) {
 		LogGuilds("No Guilds found in database.");
 		return false;
 	}
 	
 	LogGuilds("Found {} guilds.  Loading.....", guilds.size());
-
 	for (auto const& g : guilds) {
 		_CreateGuild(g.id, g.name.c_str(), g.leader, g.minstatus, g.motd.c_str(), g.motd_setter.c_str(), g.channel.c_str(), g.url.c_str());
 	}
@@ -121,6 +119,7 @@ bool BaseGuildManager::LoadGuilds() {
 		if (g_permissions.size() < GUILD_MAX_FUNCTIONS) {
 			store_to_db = true;
 		}
+
 		for (auto const& p : g_permissions) {
 			g.second->functions[p.perm_id].id = p.id;
 			g.second->functions[p.perm_id].guild_id = p.guild_id;
@@ -146,16 +145,13 @@ bool BaseGuildManager::RefreshGuild(uint32 guild_id)
 	}
 
 	auto db_guild = BaseGuildsRepository::FindOne(*m_db, guild_id);
-
 	if (!db_guild.id) {
 		LogGuilds("Guild ID [{}] not found in database.", db_guild.id);
 		return false;
 	}
 
 	LogGuilds("Found guild id [{}].  Loading details.....", db_guild.id);
-
 	_CreateGuild(db_guild.id, db_guild.name.c_str(), db_guild.leader, db_guild.minstatus, db_guild.motd.c_str(), db_guild.motd_setter.c_str(), db_guild.channel.c_str(), db_guild.url.c_str());
-
 	auto guild = GetGuildByGuildID(guild_id);
 	auto where_filter = fmt::format("guild_id = '{}'", guild_id);
 	auto g_ranks = BaseGuildRanksRepository::GetWhere(*m_db, where_filter);
@@ -1275,4 +1271,11 @@ bool BaseGuildManager::GetGuildBankerStatus(uint32 guild_id, uint32 guild_rank)
 			CheckPermission(guild_id, guild_rank, GUILD_ACTION_BANK_WITHDRAW_ITEMS)) ? true : false;
 	}
 	return false;
+}
+
+std::vector<BaseGuildMembersRepository::GuildMembers> BaseGuildManager::GetGuildMembers(uint32 guild_id) 
+{
+	std::string where_filter = fmt::format("`guild_id` = '{}'", guild_id);
+	auto guild_members = GuildMembersRepository::GetWhere(*m_db, where_filter);
+	return guild_members;
 }

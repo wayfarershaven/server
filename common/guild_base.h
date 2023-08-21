@@ -5,6 +5,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include "../common/repositories/guild_members_repository.h"
 
 #define GOUT(x) out.x = in->x;
 
@@ -99,6 +100,7 @@ class BaseGuildManager
 		uint8	GetDisplayedRank(uint32 guild_id, uint8 rank, uint32 char_id) const;
 		bool	CheckGMStatus(uint32 guild_id, uint8 status) const;
 		bool	CheckPermission(uint32 guild_id, uint8 rank, GuildAction act) const;
+		std::vector<BaseGuildMembersRepository::GuildMembers> GetGuildMembers(uint32 guild_id);
 //	uint32	Getguild_id(uint32 eqid);
 		uint32	FindGuildByLeader(uint32 leader) const;
 //	void	GetGuildMembers(uint32 guild_id,GuildMember_Struct* gms);
