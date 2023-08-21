@@ -2099,7 +2099,6 @@ namespace ActionableBots
 		ABT_Target,
 		ABT_ByName,
 		ABT_OwnerGroup,
-		ABT_BotGroup,
 		ABT_TargetGroup,
 		ABT_NamesGroup,
 		ABT_HealRotation,
@@ -2440,7 +2439,6 @@ void bot_command_actionable(Client *c, const Seperator *sep)
 	c->Message(Chat::White, "target - selects target as single bot .. use ^command [target] or imply by empty actionable argument");
 	c->Message(Chat::White, "byname [name] - selects single bot by name");
 	c->Message(Chat::White, "ownergroup - selects all bots in the owner's group");
-	c->Message(Chat::White, "botgroup [name] - selects members of a bot-group by its name");
 	c->Message(Chat::White, "targetgroup - selects all bots in target's group");
 	c->Message(Chat::White, "namesgroup [name] - selects all bots in name's group");
 	c->Message(Chat::White, "healrotation [name] - selects all member and target bots of a heal rotation where name is a member");
@@ -2458,7 +2456,7 @@ void bot_command_aggressive(Client *c, const Seperator *sep)
 	if (helper_spell_list_fail(c, local_list, BCEnum::SpT_Stance) || helper_command_alias_fail(c, "bot_command_aggressive", sep->arg[0], "aggressive"))
 		return;
 	if (helper_is_help_or_usage(sep->arg[1])) {
-		c->Message(Chat::White, "usage: %s ([actionable: target | byname | ownergroup | botgroup | targetgroup | namesgroup | healrotationtargets | spawned] ([actionable_name]))", sep->arg[0]);
+		c->Message(Chat::White, "usage: %s ([actionable: target | byname | ownergroup | targetgroup | namesgroup | healrotationtargets | spawned] ([actionable_name]))", sep->arg[0]);
 		helper_send_usage_required_bots(c, BCEnum::SpT_Stance);
 		return;
 	}
@@ -2688,7 +2686,7 @@ void bot_command_attack(Client *c, const Seperator *sep)
 	}
 	if (helper_is_help_or_usage(sep->arg[1])) {
 
-		c->Message(Chat::White, "usage: <enemy_target> %s [actionable: byname | ownergroup | botgroup | namesgroup | healrotation | default: spawned] ([actionable_name])", sep->arg[0]);
+		c->Message(Chat::White, "usage: <enemy_target> %s [actionable: byname | ownergroup | namesgroup | healrotation | default: spawned] ([actionable_name])", sep->arg[0]);
 		return;
 	}
 	const int ab_mask = ActionableBots::ABM_Type2;
@@ -2945,7 +2943,7 @@ void bot_command_defensive(Client *c, const Seperator *sep)
 	if (helper_spell_list_fail(c, local_list, BCEnum::SpT_Stance) || helper_command_alias_fail(c, "bot_command_defensive", sep->arg[0], "defensive"))
 		return;
 	if (helper_is_help_or_usage(sep->arg[1])) {
-		c->Message(Chat::White, "usage: %s ([actionable: target | byname | ownergroup | botgroup | targetgroup | namesgroup | healrotationtargets | spawned] ([actionable_name]))", sep->arg[0]);
+		c->Message(Chat::White, "usage: %s ([actionable: target | byname | ownergroup | targetgroup | namesgroup | healrotationtargets | spawned] ([actionable_name]))", sep->arg[0]);
 		helper_send_usage_required_bots(c, BCEnum::SpT_Stance);
 		return;
 	}
@@ -3147,7 +3145,7 @@ void bot_command_follow(Client *c, const Seperator *sep)
 	if (helper_command_alias_fail(c, "bot_command_follow", sep->arg[0], "follow"))
 		return;
 	if (helper_is_help_or_usage(sep->arg[1])) {
-		c->Message(Chat::White, "usage: (<friendly_target>) %s ([option: reset]) [actionable: byname | ownergroup | botgroup | namesgroup | healrotation | spawned] ([actionable_name])", sep->arg[0]);
+		c->Message(Chat::White, "usage: (<friendly_target>) %s ([option: reset]) [actionable: byname | ownergroup | namesgroup | healrotation | spawned] ([actionable_name])", sep->arg[0]);
 		c->Message(Chat::White, "usage: %s chain", sep->arg[0]);
 		return;
 	}
@@ -3254,7 +3252,7 @@ void bot_command_guard(Client *c, const Seperator *sep)
 	}
 	if (helper_is_help_or_usage(sep->arg[1])) {
 
-		c->Message(Chat::White, "usage: %s ([option: clear]) [actionable: target | byname | ownergroup | botgroup | namesgroup | healrotation | spawned] ([actionable_name])", sep->arg[0]);
+		c->Message(Chat::White, "usage: %s ([option: clear]) [actionable: target | byname | ownergroup | namesgroup | healrotation | spawned] ([actionable_name])", sep->arg[0]);
 		return;
 	}
 	const int ab_mask = (ActionableBots::ABM_Target | ActionableBots::ABM_Type2);
@@ -3388,7 +3386,7 @@ void bot_command_hold(Client *c, const Seperator *sep)
 	}
 	if (helper_is_help_or_usage(sep->arg[1])) {
 
-		c->Message(Chat::White, "usage: %s ([option: clear]) [actionable: target | byname | ownergroup | botgroup | namesgroup | healrotation | spawned] ([actionable_name])", sep->arg[0]);
+		c->Message(Chat::White, "usage: %s ([option: clear]) [actionable: target | byname | ownergroup | namesgroup | healrotation | spawned] ([actionable_name])", sep->arg[0]);
 		return;
 	}
 	const int ab_mask = (ActionableBots::ABM_Target | ActionableBots::ABM_Type2);
@@ -4728,7 +4726,7 @@ void bot_command_taunt(Client *c, const Seperator *sep)
 	if (helper_command_alias_fail(c, "bot_command_taunt", sep->arg[0], "taunt"))
 		return;
 	if (helper_is_help_or_usage(sep->arg[1])) {
-		c->Message(Chat::White, "usage: %s ([option: on | off]) ([actionable: target | byname | ownergroup | botgroup | targetgroup | namesgroup | healrotationtargets | spawned] ([actionable_name]))", sep->arg[0]);
+		c->Message(Chat::White, "usage: %s ([option: on | off]) ([actionable: target | byname | ownergroup | targetgroup | namesgroup | healrotationtargets | spawned] ([actionable_name]))", sep->arg[0]);
 		return;
 	}
 	const int ab_mask = ActionableBots::ABM_Type1;
@@ -5045,7 +5043,7 @@ void bot_subcommand_bot_camp(Client *c, const Seperator *sep)
 	if (helper_command_alias_fail(c, "bot_subcommand_bot_camp", sep->arg[0], "botcamp"))
 		return;
 	if (helper_is_help_or_usage(sep->arg[1])) {
-		c->Message(Chat::White, "usage: %s ([actionable: target | byname | ownergroup | botgroup | targetgroup | namesgroup | healrotation | spawned] ([actionable_name]))", sep->arg[0]);
+		c->Message(Chat::White, "usage: %s ([actionable: target | byname | ownergroup | targetgroup | namesgroup | healrotation | spawned] ([actionable_name]))", sep->arg[0]);
 		return;
 	}
 	const int ab_mask = ActionableBots::ABM_NoFilter;
@@ -5629,7 +5627,7 @@ void bot_subcommand_bot_dye_armor(Client *c, const Seperator *sep)
 		c->Message(
 			Chat::White,
 			fmt::format(
-				"Usage: {} [Material Slot] [Red: 0-255] [Green: 0-255] [Blue: 0-255] ([actionable: target | byname | ownergroup | botgroup | targetgroup | namesgroup | healrotation | spawned] ([actionable_name]))",
+				"Usage: {} [Material Slot] [Red: 0-255] [Green: 0-255] [Blue: 0-255] ([actionable: target | byname | ownergroup | targetgroup | namesgroup | healrotation | spawned] ([actionable_name]))",
 				sep->arg[0]
 			).c_str()
 		);
@@ -5836,8 +5834,8 @@ void bot_subcommand_bot_follow_distance(Client *c, const Seperator *sep)
 	if (helper_command_alias_fail(c, "bot_subcommand_bot_follow_distance", sep->arg[0], "botfollowdistance"))
 		return;
 	if (helper_is_help_or_usage(sep->arg[1])) {
-		c->Message(Chat::White, "usage: %s [set] [distance] ([actionable: target | byname | ownergroup | botgroup | targetgroup | namesgroup | healrotation | spawned] ([actionable_name]))", sep->arg[0]);
-		c->Message(Chat::White, "usage: %s [clear] ([actionable: target | byname | ownergroup | botgroup | targetgroup | namesgroup | healrotation | spawned] ([actionable_name]))", sep->arg[0]);
+		c->Message(Chat::White, "usage: %s [set] [distance] ([actionable: target | byname | ownergroup | targetgroup | namesgroup | healrotation | spawned] ([actionable_name]))", sep->arg[0]);
+		c->Message(Chat::White, "usage: %s [clear] ([actionable: target | byname | ownergroup | targetgroup | namesgroup | healrotation | spawned] ([actionable_name]))", sep->arg[0]);
 		return;
 	}
 	const int ab_mask = ActionableBots::ABM_NoFilter;
@@ -6011,7 +6009,7 @@ void bot_subcommand_bot_inspect_message(Client *c, const Seperator *sep)
 	if (helper_command_alias_fail(c, "bot_subcommand_bot_inspect_message", sep->arg[0], "botinspectmessage"))
 		return;
 	if (helper_is_help_or_usage(sep->arg[1])) {
-		c->Message(Chat::White, "usage: %s [set | clear] ([actionable: target | byname | ownergroup | botgroup | targetgroup | namesgroup | healrotation | spawned] ([actionable_name]))", sep->arg[0]);
+		c->Message(Chat::White, "usage: %s [set | clear] ([actionable: target | byname | ownergroup | targetgroup | namesgroup | healrotation | spawned] ([actionable_name]))", sep->arg[0]);
 		c->Message(Chat::White, "Notes:");
 		if (c->ClientVersion() >= EQ::versions::ClientVersion::SoF) {
 			c->Message(Chat::White, "- Self-inspect and type your bot's inspect message");
@@ -6393,7 +6391,7 @@ void bot_subcommand_bot_report(Client *c, const Seperator *sep)
 	if (helper_command_alias_fail(c, "bot_subcommand_bot_report", sep->arg[0], "botreport"))
 		return;
 	if (helper_is_help_or_usage(sep->arg[1])) {
-		c->Message(Chat::White, "usage: %s ([actionable: target | byname | ownergroup | botgroup | targetgroup | namesgroup | healrotation | spawned] ([actionable_name]))", sep->arg[0]);
+		c->Message(Chat::White, "usage: %s ([actionable: target | byname | ownergroup | targetgroup | namesgroup | healrotation | spawned] ([actionable_name]))", sep->arg[0]);
 		return;
 	}
 	const int ab_mask = ActionableBots::ABM_NoFilter;
@@ -6752,7 +6750,7 @@ void bot_subcommand_bot_summon(Client *c, const Seperator *sep)
 		c->Message(
 			Chat::White,
 			fmt::format(
-				"Usage: {} ([actionable: target | byname | ownergroup | botgroup | targetgroup | namesgroup | healrotation | spawned] ([actionable_name]))",
+				"Usage: {} ([actionable: target | byname | ownergroup | targetgroup | namesgroup | healrotation | spawned] ([actionable_name]))",
 				sep->arg[0]
 			).c_str()
 		);
@@ -6897,7 +6895,7 @@ void bot_subcommand_bot_toggle_helm(Client *c, const Seperator *sep)
 	if (helper_command_alias_fail(c, "bot_subcommand_bot_toggle_helm", sep->arg[0], "bottogglehelm"))
 		return;
 	if (helper_is_help_or_usage(sep->arg[1])) {
-		c->Message(Chat::White, "usage: %s ([option: on | off]) ([actionable: target | byname | ownergroup | botgroup | targetgroup | namesgroup | healrotation | spawned] ([actionable_name]))", sep->arg[0]);
+		c->Message(Chat::White, "usage: %s ([option: on | off]) ([actionable: target | byname | ownergroup | targetgroup | namesgroup | healrotation | spawned] ([actionable_name]))", sep->arg[0]);
 		return;
 	}
 	const int ab_mask = ActionableBots::ABM_NoFilter;
@@ -6963,7 +6961,8 @@ void bot_subcommand_bot_toggle_helm(Client *c, const Seperator *sep)
 		}
 
 		c->Message(Chat::White, "%s all of your bot show helm flags", toggle_helm ? "Toggled" : (helm_state ? "Set" : "Cleared"));
-	} else {
+	}
+	else {
 		c->Message(Chat::White, "%s %i of your spawned bot show helm flags", toggle_helm ? "Toggled" : (helm_state ? "Set" : "Cleared"), bot_count);
 	}
 
@@ -7318,9 +7317,8 @@ void bot_subcommand_heal_rotation_adjust_critical(Client *c, const Seperator *se
 	std::string critical_arg = sep->arg[2];
 
 	uint8 armor_type_value = 255;
-	if (sep->IsNumber(1)) {
+	if (sep->IsNumber(1))
 		armor_type_value = Strings::ToInt(armor_type_arg);
-	}
 
 	if (armor_type_value > ARMOR_TYPE_LAST) {
 		c->Message(Chat::White, "You must specify a valid [armor_type: %u-%u] to use this command", ARMOR_TYPE_FIRST, ARMOR_TYPE_LAST);
@@ -7348,21 +7346,17 @@ void bot_subcommand_heal_rotation_adjust_critical(Client *c, const Seperator *se
 	}
 
 	float critical_ratio = CRITICAL_HP_RATIO_BASE;
-	if (sep->IsNumber(2)) {
+	if (sep->IsNumber(2))
 		critical_ratio = Strings::ToFloat(critical_arg);
-	} else if (!critical_arg.compare("+")) {
+	else if (!critical_arg.compare("+"))
 		critical_ratio = (*current_member->MemberOfHealRotation())->ArmorTypeCriticalHPRatio(armor_type_value) + HP_RATIO_DELTA;
-	} else if (!critical_arg.compare("-")) {
+	else if (!critical_arg.compare("-"))
 		critical_ratio = (*current_member->MemberOfHealRotation())->ArmorTypeCriticalHPRatio(armor_type_value) - HP_RATIO_DELTA;
-	}
 
-	if (critical_ratio > SAFE_HP_RATIO_ABS) {
+	if (critical_ratio > SAFE_HP_RATIO_ABS)
 		critical_ratio = SAFE_HP_RATIO_ABS;
-	}
-
-	if (critical_ratio < CRITICAL_HP_RATIO_ABS) {
+	if (critical_ratio < CRITICAL_HP_RATIO_ABS)
 		critical_ratio = CRITICAL_HP_RATIO_ABS;
-	}
 
 	if (!(*current_member->MemberOfHealRotation())->SetArmorTypeCriticalHPRatio(armor_type_value, critical_ratio)) {
 		c->Message(Chat::White, "Critical value %3.1f%%(%u) exceeds safe value %3.1f%%(%u) for %s's Heal Rotation",
@@ -7389,9 +7383,8 @@ void bot_subcommand_heal_rotation_adjust_safe(Client *c, const Seperator *sep)
 	std::string safe_arg = sep->arg[2];
 
 	uint8 armor_type_value = 255;
-	if (sep->IsNumber(1)) {
+	if (sep->IsNumber(1))
 		armor_type_value = Strings::ToInt(armor_type_arg);
-	}
 
 	if (armor_type_value > ARMOR_TYPE_LAST) {
 		c->Message(Chat::White, "You must specify a valid [armor_type: %u-%u] to use this command", ARMOR_TYPE_FIRST, ARMOR_TYPE_LAST);
@@ -7400,10 +7393,8 @@ void bot_subcommand_heal_rotation_adjust_safe(Client *c, const Seperator *sep)
 
 	std::list<Bot*> sbl;
 	MyBots::PopulateSBL_ByNamedBot(c, sbl, sep->arg[3]);
-	if (sbl.empty()) {
+	if (sbl.empty())
 		MyBots::PopulateSBL_ByTargetedBot(c, sbl);
-	}
-
 	if (sbl.empty()) {
 		c->Message(Chat::White, "You must <target> or [name] a current member as a bot that you own to use this command");
 		return;
@@ -7421,21 +7412,17 @@ void bot_subcommand_heal_rotation_adjust_safe(Client *c, const Seperator *sep)
 	}
 
 	float safe_ratio = SAFE_HP_RATIO_BASE;
-	if (sep->IsNumber(2)) {
+	if (sep->IsNumber(2))
 		safe_ratio = Strings::ToFloat(safe_arg);
-	} else if (!safe_arg.compare("+")) {
+	else if (!safe_arg.compare("+"))
 		safe_ratio = (*current_member->MemberOfHealRotation())->ArmorTypeSafeHPRatio(armor_type_value) + HP_RATIO_DELTA;
-	} else if (!safe_arg.compare("-")) {
+	else if (!safe_arg.compare("-"))
 		safe_ratio = (*current_member->MemberOfHealRotation())->ArmorTypeSafeHPRatio(armor_type_value) - HP_RATIO_DELTA;
-	}
 
-	if (safe_ratio > SAFE_HP_RATIO_ABS) {
+	if (safe_ratio > SAFE_HP_RATIO_ABS)
 		safe_ratio = SAFE_HP_RATIO_ABS;
-	}
-
-	if (safe_ratio < CRITICAL_HP_RATIO_ABS) {
+	if (safe_ratio < CRITICAL_HP_RATIO_ABS)
 		safe_ratio = CRITICAL_HP_RATIO_ABS;
-	}
 
 	if (!(*current_member->MemberOfHealRotation())->SetArmorTypeSafeHPRatio(armor_type_value, safe_ratio)) {
 		c->Message(Chat::White, "Safe value %3.1f%%(%u) does not exceed critical value %3.1f%%(%u) for %s's Heal Rotation",
@@ -7541,15 +7528,15 @@ void bot_subcommand_heal_rotation_change_interval(Client *c, const Seperator *se
 
 	if (!change_interval_arg.empty()) {
 		hr_change_interval_s = Strings::ToInt(change_interval_arg);
-	} else {
+	}
+	else {
 		hr_change_interval_s = (*current_member->MemberOfHealRotation())->IntervalS();
 		c->Message(Chat::White, "Casting interval is currently '%i' second%s for %s's Heal Rotation", hr_change_interval_s, ((hr_change_interval_s == 1) ? ("") : ("s")), current_member->GetCleanName());
 		return;
 	}
 
-	if (hr_change_interval_s < CASTING_CYCLE_MINIMUM_INTERVAL_S || hr_change_interval_s > CASTING_CYCLE_MAXIMUM_INTERVAL_S) {
+	if (hr_change_interval_s < CASTING_CYCLE_MINIMUM_INTERVAL_S || hr_change_interval_s > CASTING_CYCLE_MAXIMUM_INTERVAL_S)
 		hr_change_interval_s = CASTING_CYCLE_DEFAULT_INTERVAL_S;
-	}
 
 	(*current_member->MemberOfHealRotation())->SetIntervalS(hr_change_interval_s);
 
@@ -7684,28 +7671,22 @@ void bot_subcommand_heal_rotation_create(Client *c, const Seperator *sep)
 
 	if (!casting_override_arg.compare("on")) {
 		hr_casting_override = true;
-		if (!adaptive_targeting_arg.compare("on")) {
+		if (!adaptive_targeting_arg.compare("on"))
 			hr_adaptive_targeting = true;
-		}
-
-		if (!fast_heals_arg.compare("on")) {
+		if (!fast_heals_arg.compare("on"))
 			hr_fast_heals = true;
-		}
 		hr_interval_s = Strings::ToInt(interval_arg);
-	} else if (!casting_override_arg.compare("off")) {
-		if (!adaptive_targeting_arg.compare("on")) {
+	}
+	else if (!casting_override_arg.compare("off")) {
+		if (!adaptive_targeting_arg.compare("on"))
 			hr_adaptive_targeting = true;
-		}
-
-		if (!fast_heals_arg.compare("on")) {
+		if (!fast_heals_arg.compare("on"))
 			hr_fast_heals = true;
-		}
 		hr_interval_s = Strings::ToInt(interval_arg);
 	}
 
-	if (hr_interval_s < CASTING_CYCLE_MINIMUM_INTERVAL_S || hr_interval_s > CASTING_CYCLE_MAXIMUM_INTERVAL_S) {
+	if (hr_interval_s < CASTING_CYCLE_MINIMUM_INTERVAL_S || hr_interval_s > CASTING_CYCLE_MAXIMUM_INTERVAL_S)
 		hr_interval_s = CASTING_CYCLE_DEFAULT_INTERVAL_S;
-	}
 
 	hr_interval_s *= 1000; // convert to milliseconds for Bot/HealRotation constructor
 
@@ -8594,7 +8575,7 @@ void bot_subcommand_pet_get_lost(Client *c, const Seperator *sep)
 	if (helper_command_alias_fail(c, "bot_subcommand_pet_get_lost", sep->arg[0], "petgetlost"))
 		return;
 	if (helper_is_help_or_usage(sep->arg[1])) {
-		c->Message(Chat::White, "usage: %s ([actionable: target | byname | ownergroup | botgroup | targetgroup | namesgroup | healrotation | spawned] ([actionable_name]))", sep->arg[0]);
+		c->Message(Chat::White, "usage: %s ([actionable: target | byname | ownergroup | targetgroup | namesgroup | healrotation | spawned] ([actionable_name]))", sep->arg[0]);
 		return;
 	}
 	int ab_mask = ActionableBots::ABM_NoFilter;
