@@ -3939,8 +3939,7 @@ void Mob::CommonDamage(Mob* attacker, int64 &damage, const uint16 spell_id, cons
 		}
 
 		//final damage has been determined.
-
-		int32 pre_hit_hp;
+		int64 pre_hit_hp;
 
 		if(attacker->IsClient()) {
 			player_damage += damage;
@@ -4368,7 +4367,7 @@ void Mob::CommonDamage(Mob* attacker, int64 &damage, const uint16 spell_id, cons
 						outapp, /* packet */
 						false, /* Skip Sender */
 						range, /* distance packet travels at the speed of sound */
-						(IsValidSpell(spell_id) && skill_used != EQ::skills::SkillTigerClaw) ? 0 : skip,
+						0, /* don't skip anyone on spell */
 						true, /* Packet ACK */
 						filter /* eqFilterType filter */
 				);
@@ -4388,7 +4387,7 @@ void Mob::CommonDamage(Mob* attacker, int64 &damage, const uint16 spell_id, cons
 						outapp, /* packet */
 						true, /* Skip Sender */
 						range, /* distance packet travels at the speed of sound */
-						0,
+						(IsValidSpell(spell_id) && skill_used != EQ::skills::SkillTigerClaw) ? 0 : skip,
 						true, /* Packet ACK */
 						filter /* eqFilterType filter */
 						);
