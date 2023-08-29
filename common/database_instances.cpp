@@ -194,45 +194,49 @@ bool Database::GetUnusedInstanceID(uint16 &instance_id)
 		auto row = results.begin();
 
 		// check that id is within limits
-		if (Strings::ToInt(row[0]) <= max_instance_id) {
+		if (row[0] && Strings::ToInt(row[0]) <= max_instance_id) {
 			instance_id = Strings::ToInt(row[0]);
 			return true;
 		}
-	} else {
-		// get max unused id above reserved
-		auto query = fmt::format(
-			"SELECT IFNULL(MAX(id), {}) + 1 FROM instance_list WHERE id > {}",
-			max_reserved_instance_id,
-			max_reserved_instance_id
-		);
 
-		auto results = QueryDatabase(query);
+		// no available instance ids
+		instance_id = 0;
+		return false;
+	}
 
-		// could not successfully query - bail out
-		if (!results.Success()) {
-			instance_id = 0;
-			return false;
-		}
+	// get max unused id above reserved
+	auto query = fmt::format(
+		"SELECT IFNULL(MAX(id), {}) + 1 FROM instance_list WHERE id > {}",
+		max_reserved_instance_id,
+		max_reserved_instance_id
+	);
 
-		// did not retrieve any rows - bail out
-		if (results.RowCount() == 0) {
-			instance_id = 0;
-			return false;
-		}
+	auto results = QueryDatabase(query);
 
-		auto row = results.begin();
+	// could not successfully query - bail out
+	if (!results.Success()) {
+		instance_id = 0;
+		return false;
+	}
 
-		// no instances currently used
-		if (row[0] == NULL) {
-			instance_id = max_reserved_instance_id + 1;
-			return true;
-		}
+	// did not retrieve any rows - bail out
+	if (results.RowCount() == 0) {
+		instance_id = 0;
+		return false;
+	}
 
-		// check that id is within limits
-		if (Strings::ToInt(row[0]) <= max_instance_id) {
-			instance_id = Strings::ToInt(row[0]);
-			return true;
-		}
+	auto row = results.begin();
+
+	// no instances currently used
+	if (!row[0]) {
+		instance_id = max_reserved_instance_id + 1;
+		return true;
+	}
+
+	// check that id is within limits
+	if (Strings::ToInt(row[0]) <= max_instance_id) {
+		instance_id = Strings::ToInt(row[0]);
+		return true;
 	}
 
 	// no available instance ids
