@@ -5847,14 +5847,13 @@ int64 Mob::CalcFocusEffect(focusType type, uint16 focus_id, uint16 spell_id, boo
 
 			// handle effects
 			case SE_ImprovedDamage:
-				if (type == focusImprovedDamage) {
-					value = GetFocusRandomEffectivenessValue(focus_spell.base_value[i], focus_spell.limit_value[i], best_focus);
-				}
-				break;
-
 			case SE_ImprovedDamage2:
-				if (type == focusImprovedDamage2) {
-					value = GetFocusRandomEffectivenessValue(focus_spell.base_value[i], focus_spell.limit_value[i], best_focus);
+				if (type == focusImprovedDamage || type == focusImprovedDamage2) {
+					if (best_focus) {
+						value = focus_spell.base_value[i];
+					} else {
+						value = zone->random.Int(1, focus_spell.base_value[i]);
+					}
 				}
 				break;
 
@@ -5865,14 +5864,13 @@ int64 Mob::CalcFocusEffect(focusType type, uint16 focus_id, uint16 spell_id, boo
 				break;
 
 			case SE_ImprovedHeal:
-				if (type == focusImprovedHeal) {
-					value = GetFocusRandomEffectivenessValue(focus_spell.base_value[i], focus_spell.limit_value[i], best_focus);
-				}
-				break;
-
 			case SE_ReduceManaCost:
-				if (type == focusManaCost) {
-					value = GetFocusRandomEffectivenessValue(focus_spell.base_value[i], focus_spell.limit_value[i], best_focus);
+				if (type == focusImprovedHeal || type == focusManaCost) {
+					if (best_focus) {
+						value = focus_spell.base_value[i];
+					} else {
+						value = zone->random.Int(1, focus_spell.base_value[i]);
+					}
 				}
 				break;
 
@@ -5922,8 +5920,8 @@ int64 Mob::CalcFocusEffect(focusType type, uint16 focus_id, uint16 spell_id, boo
 				break;
 
 			case SE_ReduceReagentCost:
-				if (type == focusReagentCost) {
-					value = GetFocusRandomEffectivenessValue(focus_spell.base_value[i], focus_spell.limit_value[i], best_focus);
+				if (type == focusReagentCost && focus_spell.base_value[i] > value) {
+					value = focus_spell.base_value[i];
 				}
 				break;
 
@@ -5947,7 +5945,11 @@ int64 Mob::CalcFocusEffect(focusType type, uint16 focus_id, uint16 spell_id, boo
 
 			case SE_SpellHateMod:
 				if (type == focusSpellHateMod) {
-					value = GetFocusRandomEffectivenessValue(focus_spell.base_value[i], focus_spell.limit_value[i], best_focus);
+					if (best_focus) {
+						value = focus_spell.base_value[i];
+					} else {
+						value = zone->random.Int(1, focus_spell.base_value[i]);
+					}
 				}
 				break;
 
