@@ -10695,8 +10695,6 @@ void Client::SetTrackingID(uint32 entity_id)
 	}
 
 	TrackingID = entity_id;
-
-	MessageString(Chat::Skills, TRACKING_BEGIN, m->GetCleanName());
 }
 
 int Client::GetRecipeMadeCount(uint32 recipe_id)
