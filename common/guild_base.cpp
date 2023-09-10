@@ -23,6 +23,7 @@
 #include "../common/repositories/guild_permissions_repository.h"
 #include "../common/repositories/guild_members_repository.h"
 #include "../common/repositories/guild_bank_repository.h"
+#include "../common/repositories/guild_tributes_repository.h"
 
 
 //#include "misc_functions.h"
@@ -103,7 +104,7 @@ bool BaseGuildManager::LoadGuilds()
 	
 	LogGuilds("Found {} guilds.  Loading.....", guilds.size());
 	for (auto const& g : guilds) {
-		_CreateGuild(g.id, g.name.c_str(), g.leader, g.minstatus, g.motd.c_str(), g.motd_setter.c_str(), g.channel.c_str(), g.url.c_str());
+		_CreateGuild(g.id, g.name.c_str(), g.leader, g.minstatus, g.motd.c_str(), g.motd_setter.c_str(), g.channel.c_str(), g.url.c_str(), g.favor);
 	}
 	
 	bool store_to_db = false;
@@ -132,8 +133,24 @@ bool BaseGuildManager::LoadGuilds()
 			_StoreGuildDB(g.first);
 			store_to_db = false;
 		}
+
+		auto g_tributes = BaseGuildTributesRepository::FindOne(*m_db, g.first);
+		if (g_tributes.guild_id) {
+			g.second->tribute.id_1			 = g_tributes.tribute_id_1;
+			g.second->tribute.id_2			 = g_tributes.tribute_id_2;
+			g.second->tribute.id_1_tier		 = g_tributes.tribute_id_1_tier;
+			g.second->tribute.id_2_tier		 = g_tributes.tribute_id_2_tier;
+			g.second->tribute.enabled		 = g_tributes.enabled;
+			if (g_tributes.time_remaining > GUILD_TRIBUTE_DEFAULT_TIMER ||
+				g_tributes.time_remaining <= 0) {
+				g_tributes.time_remaining = GUILD_TRIBUTE_DEFAULT_TIMER;
+			}
+			g.second->tribute.time_remaining = g_tributes.time_remaining;
+			LogGuilds("Timer has [{}] time remaining from the load function.", g.second->tribute.time_remaining);
+		}
 	}
 	LogGuilds("Completed loading {} guilds.", guilds.size());
+
 	return true;
 }
 
@@ -151,7 +168,7 @@ bool BaseGuildManager::RefreshGuild(uint32 guild_id)
 	}
 
 	LogGuilds("Found guild id [{}].  Loading details.....", db_guild.id);
-	_CreateGuild(db_guild.id, db_guild.name.c_str(), db_guild.leader, db_guild.minstatus, db_guild.motd.c_str(), db_guild.motd_setter.c_str(), db_guild.channel.c_str(), db_guild.url.c_str());
+	_CreateGuild(db_guild.id, db_guild.name.c_str(), db_guild.leader, db_guild.minstatus, db_guild.motd.c_str(), db_guild.motd_setter.c_str(), db_guild.channel.c_str(), db_guild.url.c_str(), db_guild.favor);
 	auto guild = GetGuildByGuildID(guild_id);
 	auto where_filter = fmt::format("guild_id = '{}'", guild_id);
 	auto g_ranks = BaseGuildRanksRepository::GetWhere(*m_db, where_filter);
@@ -168,12 +185,27 @@ bool BaseGuildManager::RefreshGuild(uint32 guild_id)
 		guild->functions[p.perm_id].perm_value = p.permission;
 	}
 
+	auto g_tributes = BaseGuildTributesRepository::FindOne(*m_db, guild_id);
+	if (g_tributes.guild_id) {
+		guild->tribute.id_1			  = g_tributes.tribute_id_1;
+		guild->tribute.id_2			  = g_tributes.tribute_id_2;
+		guild->tribute.id_1_tier	  = g_tributes.tribute_id_1_tier;
+		guild->tribute.id_2_tier	  = g_tributes.tribute_id_2_tier;
+		guild->tribute.enabled		  = g_tributes.enabled;
+		//if (g_tributes.time_remaining > GUILD_TRIBUTE_DEFAULT_TIMER ||
+		//	g_tributes.time_remaining <= 0) {
+		//	g_tributes.time_remaining = GUILD_TRIBUTE_DEFAULT_TIMER;
+		//}
+		//guild->tribute.time_remaining = g_tributes.time_remaining;
+	}
+
 	LogGuilds("Successfully refreshed guild id [{}] from the database", guild_id);
+	LogGuilds("Timer has [{}] time remaining from the refresh.", guild->tribute.time_remaining);
 
 	return true;
 }
 
-BaseGuildManager::GuildInfo* BaseGuildManager::_CreateGuild(uint32 guild_id, std::string guild_name, uint32 leader_char_id, uint8 minstatus, std::string guild_motd, std::string motd_setter, std::string Channel, std::string URL)
+BaseGuildManager::GuildInfo* BaseGuildManager::_CreateGuild(uint32 guild_id, std::string guild_name, uint32 leader_char_id, uint8 minstatus, std::string guild_motd, std::string motd_setter, std::string Channel, std::string URL, uint32 favor)
 {
 	std::map<uint32, GuildInfo*>::iterator res;
 
@@ -193,6 +225,7 @@ BaseGuildManager::GuildInfo* BaseGuildManager::_CreateGuild(uint32 guild_id, std
 	info->motd_setter = motd_setter;
 	info->url = URL;
 	info->channel = Channel;
+	info->tribute.favor = favor;
 
 	for (auto r : default_rank_names) {
 		info->rank_names[r.id] = r.name;
@@ -204,6 +237,13 @@ BaseGuildManager::GuildInfo* BaseGuildManager::_CreateGuild(uint32 guild_id, std
 		info->functions[p.id].perm_id = p.id;
 		info->functions[p.id].perm_value = p.value;
 	}
+
+	info->tribute.id_1			 = 0xffffffff;
+	info->tribute.id_2			 = 0xffffffff;
+	info->tribute.id_1_tier		 = 0;
+	info->tribute.id_2_tier		 = 0;
+	info->tribute.enabled		 = 0;
+	info->tribute.time_remaining = GUILD_TRIBUTE_DEFAULT_TIMER;
 
 	m_guilds[guild_id] = info;
 
@@ -226,6 +266,7 @@ bool BaseGuildManager::_StoreGuildDB(uint32 guild_id)
 	{
 		BaseGuildsRepository::Guilds out;
 		out.id = guild_id;
+		out.favor = in->tribute.favor;
 		GOUT(channel);
 		GOUT(name);
 		GOUT(url);
@@ -233,6 +274,7 @@ bool BaseGuildManager::_StoreGuildDB(uint32 guild_id)
 		GOUT(motd_setter);
 		GOUT(leader);
 		GOUT(minstatus);
+
 		if (!GuildsRepository::ReplaceOne(*m_db, out)) {
 			LogGuilds("Error storing guild [{}] details in the database", guild_id);
 			return false;
@@ -271,6 +313,15 @@ bool BaseGuildManager::_StoreGuildDB(uint32 guild_id)
 			return false;
 		}
 		LogGuilds("Stored guild [{}] permissions in the database", guild_id);
+
+		BaseGuildTributesRepository::GuildTributes gt{};
+		gt.tribute_id_1		 = in->tribute.id_1;
+		gt.tribute_id_2		 = in->tribute.id_2;
+		gt.tribute_id_1_tier = in->tribute.id_1_tier;
+		gt.tribute_id_2_tier = in->tribute.id_2_tier;
+		gt.enabled			 = in->tribute.enabled;
+		gt.time_remaining	 = in->tribute.time_remaining;
+		GuildTributesRepository::ReplaceOne(*m_db, gt);
 	}
 
 	LogGuilds("Stored guild [{}] in the database successfully.", guild_id);
@@ -473,7 +524,7 @@ uint32 BaseGuildManager::DBCreateGuild(std::string name, uint32 leader)
 		return GUILD_NONE;
 	}
 
-	_CreateGuild(new_id, name, leader, 0, "", "", "", "");
+	_CreateGuild(new_id, name, leader, 0, "", "", "", "", 0);
 
 	if(!_StoreGuildDB(new_id)) {
 		LogGuilds("Error storing new guild with id [{}]", new_id);
@@ -538,6 +589,7 @@ bool BaseGuildManager::DBDeleteGuild(uint32 guild_id, bool local_delete, bool db
 		else 
 		{
 			auto where_filter = fmt::format("guild_id = {}", guild_id);
+			BaseGuildTributesRepository::DeleteOne(*m_db, guild_id);
 			BaseGuildsRepository::DeleteOne(*m_db, guild_id);
 			BaseGuildRanksRepository::DeleteWhere(*m_db, where_filter);
 			BaseGuildPermissionsRepository::DeleteWhere(*m_db, where_filter);
@@ -565,6 +617,7 @@ bool BaseGuildManager::DBRenameGuild(uint32 guild_id, std::string new_name)
 	in->name = new_name;
 	BaseGuildsRepository::Guilds out;
 	out.id = guild_id;
+	out.favor = in->tribute.favor;
 	GOUT(channel);
 	GOUT(name);
 	GOUT(url);
@@ -639,6 +692,7 @@ bool BaseGuildManager::DBSetGuildMOTD(uint32 guild_id, std::string motd, std::st
 	in->motd_setter = setter;
 	BaseGuildsRepository::Guilds out;
 	out.id = guild_id;
+	out.favor = in->tribute.favor;
 	GOUT(channel);
 	GOUT(name);
 	GOUT(url);
@@ -669,6 +723,7 @@ bool BaseGuildManager::DBSetGuildURL(uint32 guild_id, std::string URL)
 	in->url = URL;
 	BaseGuildsRepository::Guilds out;
 	out.id = guild_id;
+	out.favor = in->tribute.favor;
 	GOUT(channel);
 	GOUT(name);
 	GOUT(url);
@@ -699,6 +754,7 @@ bool BaseGuildManager::DBSetGuildChannel(uint32 guild_id, std::string Channel)
 	in->channel = Channel;
 	BaseGuildsRepository::Guilds out;
 	out.id = guild_id;
+	out.favor = in->tribute.favor;
 	GOUT(channel);
 	GOUT(name);
 	GOUT(url);
@@ -1278,4 +1334,109 @@ std::vector<BaseGuildMembersRepository::GuildMembers> BaseGuildManager::GetGuild
 	std::string where_filter = fmt::format("`guild_id` = '{}'", guild_id);
 	auto guild_members = GuildMembersRepository::GetWhere(*m_db, where_filter);
 	return guild_members;
+}
+
+bool BaseGuildManager::StoreGuildDB(uint32 guild_id) {
+	return _StoreGuildDB(guild_id);
+}
+
+uint32 BaseGuildManager::DBSetGuildFavor(uint32 guild_id, uint32 favor)
+{
+	if (m_db == nullptr) {
+		LogGuilds("Requested to set favor [{}] to guild [{}] when we have no database object", favor, guild_id);
+		return false;
+	}
+
+	if (!GuildsRepository::UpdateFavor(*m_db, guild_id, favor)) {
+		LogError("Error updating guild favor [{}] for guild id [{}] in database.", favor, guild_id);
+		return false;
+	}
+
+	LogGuilds("Set guild favor of [{}] for guild id [{}] in the database", favor, guild_id);
+
+	return favor;
+}
+
+bool BaseGuildManager::DBSetGuildTributeEnabled(uint32 guild_id, uint32 enabled)
+{
+	if (m_db == nullptr) {
+		LogGuilds("Requested to set tribute enabled [{}] to guild [{}] when we have no database object", enabled, guild_id);
+		return false;
+	}
+
+	if (!GuildTributesRepository::UpdateEnabled(*m_db, guild_id, enabled)) {
+		LogError("Error updating tribute enabled [{}] for guild id [{}] in database.", enabled, guild_id);
+		return false;
+	}
+
+	LogGuilds("Set tribute enabled [{}] for guild id [{}] in the database", enabled, guild_id);
+
+	return true;
+}
+
+bool BaseGuildManager::DBSetTributeTimeRemaining(uint32 guild_id, uint32 time_remaining)
+{
+	if (m_db == nullptr) {
+		LogGuilds("Requested to set tribute time_remaining [{}] to guild [{}] when we have no database object", time_remaining, guild_id);
+		return false;
+	}
+
+	if (!GuildTributesRepository::UpdateTimeRemaining(*m_db, guild_id, time_remaining)) {
+		LogError("Error updating tribute time_remaining [{}] for guild id [{}] in database.", time_remaining, guild_id);
+		return false;
+	}
+
+	LogGuilds("Set tribute time_remaining [{}] for guild id [{}] in the database", time_remaining, guild_id);
+
+	return true;
+}
+
+bool BaseGuildManager::DBSetMemberTributeEnabled(uint32 guild_id, uint32 char_id, uint32 enabled)
+{
+	CharGuildInfo gci;
+	GetCharInfo(char_id, gci);
+	if (gci.char_name.empty()) {
+		LogGuilds("Requested to set member id {} tribute to enabled [{}] in guild [{}] but we could not find the character.", char_id, enabled, guild_id);
+		return false;
+	}
+
+	if (m_db == nullptr) {
+		LogGuilds("Requested to set member id {} tribute enabled [{}] in guild [{}] when we have no database object", gci.char_name.c_str(), enabled, guild_id);
+		return false;
+	}
+
+	if (!GuildMembersRepository::UpdateEnabled(*m_db, guild_id, char_id, enabled)) {
+		LogError("Error updating member id {} tribute enabled [{}] for guild id [{}] in database.", char_id, enabled, guild_id);
+		return false;
+	}
+
+	LogGuilds("Set member {} id {} tribute enabled [{}] for guild id [{}] in the database", gci.char_name.c_str(), char_id, enabled, guild_id);
+
+	return true;
+}
+
+uint32 BaseGuildManager::DBSetMemberFavor(uint32 guild_id, uint32 char_id, uint32 favor)
+{
+	CharGuildInfo gci;
+	GetCharInfo(char_id, gci);
+
+	if (gci.char_name.empty()) {
+		LogGuilds("Requested to set member id {} tribute to favor [{}] in guild [{}] but we could not find the character.", char_id, favor, guild_id);
+		return false;
+	}
+
+	if (m_db == nullptr) {
+		LogGuilds("Requested to set member id {} tribute favor [{}] in guild [{}] when we have no database object", gci.char_name.c_str(), favor, guild_id);
+		return false;
+	}
+
+	gci.total_tribute += favor;
+	if (!GuildMembersRepository::UpdateFavor(*m_db, guild_id, char_id, gci.total_tribute)) {
+		LogError("Error updating member id {} tribute favor [{}] for guild id [{}] in database.", char_id, favor, guild_id);
+		return false;
+	}
+
+	LogGuilds("Set member {} id {} tribute enabled [{}] for guild id [{}] in the database", gci.char_name.c_str(), char_id, favor, guild_id);
+
+	return gci.total_tribute;
 }

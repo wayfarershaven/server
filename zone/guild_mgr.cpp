@@ -591,18 +591,29 @@ void ZoneGuildManager::ProcessWorldPacket(ServerPacket *pack)
 
 			LogGuilds("Received guild delete from world for guild [{}]", s->guild_id);
 
+			auto guild = GetGuildByGuildID(s->guild_id);
+
 			auto clients = entity_list.GetClientList();
 			for (auto& c : clients) {
 				if (c.second->GuildID() == s->guild_id) {
+					c.second->SetGuildID(GUILD_NONE);
+					c.second->SetGuildRank(GUILD_RANK_NONE);
+					c.second->SetGuildTributeOptIn(false);
+					c.second->SendGuildActiveTributes(c.second->GuildID());
 					c.second->RefreshGuildInfo();
 					c.second->SendGuildMembers();
 					c.second->MessageString(Chat::Guild, GUILD_DISBANDED);
 				}
 			}
 
-			LoadGuilds();
-			break;
+			auto res = m_guilds.find(s->guild_id);
+			if (res != m_guilds.end()) {
+				delete res->second;
+				m_guilds.erase(res);
+			}
+			//			LoadGuilds();
 		}
+		break;
 	}
 
 	case ServerOP_GuildMemberUpdate:
@@ -628,6 +639,7 @@ void ZoneGuildManager::ProcessWorldPacket(ServerPacket *pack)
 		break;
 	}
 	case ServerOP_OnlineGuildMembersResponse:
+	{
 		if (is_zone_loaded)
 		{
 			char* Buffer = (char*)pack->pBuffer;
@@ -660,7 +672,7 @@ void ZoneGuildManager::ProcessWorldPacket(ServerPacket *pack)
 
 		}
 		break;
-
+	}
 	case ServerOP_LFGuildUpdate:
 	{
 		if (is_zone_loaded)
@@ -699,8 +711,8 @@ void ZoneGuildManager::ProcessWorldPacket(ServerPacket *pack)
 			gts->Name[0] = 0;
 			entity_list.QueueClientsGuild(outapp, GuildID);
 			safe_delete(outapp);
-			break;
 		}
+		break;
 	}
 	case ServerOP_GuildPermissionUpdate:
 	{
@@ -770,45 +782,47 @@ void ZoneGuildManager::ProcessWorldPacket(ServerPacket *pack)
 			LogGuilds("Received guild rank name change from world for rank [{}] from guild [{}]", s->rank, s->guild_id);
 
 			auto guild = guild_mgr.GetGuildByGuildID(s->guild_id);
-			guild->rank_names[s->rank] = s->rank_name;
+			if (guild) {
+				guild->rank_names[s->rank] = s->rank_name;
 
-			auto outapp = new EQApplicationPacket(OP_GuildUpdateURLAndChannel, sizeof(GuildUpdateUCP));
-			GuildUpdateUCP* gucp = (GuildUpdateUCP*)outapp->pBuffer;
-			gucp->payload.rank_name.rank = s->rank;
-			strcpy(gucp->payload.rank_name.rank_name, s->rank_name.c_str());
-			gucp->action = 4;
-			entity_list.QueueClientsGuild(outapp, s->guild_id);
-			safe_delete(outapp);
-
-			for (auto const& gm : guild_mgr.GetGuildMembers(s->guild_id)) {
-				auto outapp = new EQApplicationPacket(OP_GuildMemberUpdate, sizeof(GuildMemberUpdate_Struct));
-				GuildMemberUpdate_Struct* gmus = (GuildMemberUpdate_Struct*)outapp->pBuffer;
-				gmus->GuildID = s->guild_id;
-				CharGuildInfo cgi;
-				guild_mgr.GetCharInfo(gm.char_id, cgi);
-				if (cgi.rank == s->rank) {
-					safe_delete(outapp);
-					continue;
-				}
-
-				strn0cpy(gmus->MemberName, cgi.char_name.c_str(), sizeof(cgi.char_name.c_str()));
-				auto client = entity_list.GetClientByCharID(gm.char_id);
-				if (client) {
-					gmus->ZoneID = client->GetZoneID();
-					gmus->InstanceID = client->GetInstanceID();
-					gmus->LastSeen = time(nullptr);
-				}
-				else {
-					gmus->ZoneID = 0;
-					gmus->InstanceID = 0;
-					gmus->LastSeen = 0;
-				}
+				auto outapp = new EQApplicationPacket(OP_GuildUpdateURLAndChannel, sizeof(GuildUpdateUCP));
+				GuildUpdateUCP* gucp = (GuildUpdateUCP*)outapp->pBuffer;
+				gucp->payload.rank_name.rank = s->rank;
+				strcpy(gucp->payload.rank_name.rank_name, s->rank_name.c_str());
+				gucp->action = 4;
 				entity_list.QueueClientsGuild(outapp, s->guild_id);
 				safe_delete(outapp);
+
+				for (auto const& gm : guild_mgr.GetGuildMembers(s->guild_id)) {
+					auto outapp = new EQApplicationPacket(OP_GuildMemberUpdate, sizeof(GuildMemberUpdate_Struct));
+					GuildMemberUpdate_Struct* gmus = (GuildMemberUpdate_Struct*)outapp->pBuffer;
+					gmus->GuildID = s->guild_id;
+					CharGuildInfo cgi;
+					guild_mgr.GetCharInfo(gm.char_id, cgi);
+					if (cgi.rank == s->rank) {
+						safe_delete(outapp);
+						continue;
+					}
+
+					strn0cpy(gmus->MemberName, cgi.char_name.c_str(), sizeof(cgi.char_name.c_str()));
+					auto client = entity_list.GetClientByCharID(gm.char_id);
+					if (client) {
+						gmus->ZoneID = client->GetZoneID();
+						gmus->InstanceID = client->GetInstanceID();
+						gmus->LastSeen = time(nullptr);
+					}
+					else {
+						gmus->ZoneID = 0;
+						gmus->InstanceID = 0;
+						gmus->LastSeen = 0;
+					}
+					entity_list.QueueClientsGuild(outapp, s->guild_id);
+					safe_delete(outapp);
+				}
 			}
 		}
-		}
 		break;
+	}
 	}
 }
 

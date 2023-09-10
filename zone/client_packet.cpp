@@ -60,6 +60,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include "gm_commands/door_manipulation.h"
 #include "client.h"
 #include "../common/repositories/account_repository.h"
+#include "../common/repositories/guild_tributes_repository.h"
 
 #include "../common/events/player_event_logs.h"
 #include "../common/repositories/character_stats_record_repository.h"
@@ -96,9 +97,8 @@ void MapOpcodes()
 	ConnectingOpcodes[OP_SendAAStats] = &Client::Handle_Connect_OP_SendAAStats;
 	ConnectingOpcodes[OP_SendAATable] = &Client::Handle_Connect_OP_SendAATable;
 	ConnectingOpcodes[OP_SendExpZonein] = &Client::Handle_Connect_OP_SendExpZonein;
-	ConnectingOpcodes[OP_SendGuildTributes] = &Client::Handle_Connect_OP_SendGuildTributes;
-	ConnectingOpcodes[OP_SendGuildTributes] = &Client::Handle_Connect_OP_SendGuildTributes; // I guess it didn't believe us with the first assignment?
-	ConnectingOpcodes[OP_SendTributes] = &Client::Handle_Connect_OP_SendTributes;
+	ConnectingOpcodes[OP_RequestGuildTributes] = &Client::Handle_Connect_OP_SendGuildTributes;
+	ConnectingOpcodes[OP_SendTributes] = &Client::	Handle_Connect_OP_SendTributes;
 	ConnectingOpcodes[OP_SetServerFilter] = &Client::Handle_Connect_OP_SetServerFilter;
 	ConnectingOpcodes[OP_SpawnAppearance] = &Client::Handle_Connect_OP_SpawnAppearance;
 	ConnectingOpcodes[OP_TGB] = &Client::Handle_Connect_OP_TGB;
@@ -256,6 +256,13 @@ void MapOpcodes()
 	ConnectedOpcodes[OP_GuildStatus] = &Client::Handle_OP_GuildStatus;
 	ConnectedOpcodes[OP_GuildUpdateURLAndChannel] = &Client::Handle_OP_GuildUpdateURLAndChannel;
 	ConnectedOpcodes[OP_GuildWar] = &Client::Handle_OP_GuildWar;
+	ConnectedOpcodes[OP_GuildSelectTribute] = &Client::Handle_OP_GuildTributeSelect;
+	ConnectedOpcodes[OP_GuildModifyBenefits] = &Client::Handle_OP_GuildTributeModifyBenefits;
+	ConnectedOpcodes[OP_GuildOptInOut] = &Client::Handle_OP_GuildTributeOptInOut;
+	ConnectedOpcodes[OP_GuildSaveActiveTributes] = &Client::Handle_OP_GuildTributeSaveActiveTributes;
+	ConnectedOpcodes[OP_GuildTributeToggleReq] = &Client::Handle_OP_GuildTributeToggle;
+	ConnectedOpcodes[OP_GuildTributeDonateItem] = &Client::Handle_OP_GuildTributeDonateItem;
+	ConnectedOpcodes[OP_GuildTributeDonatePlat] = &Client::Handle_OP_GuildTributeDonatePlat;
 	ConnectedOpcodes[OP_Heartbeat] = &Client::Handle_OP_Heartbeat;
 	ConnectedOpcodes[OP_Hide] = &Client::Handle_OP_Hide;
 	ConnectedOpcodes[OP_HideCorpse] = &Client::Handle_OP_HideCorpse;
@@ -861,6 +868,26 @@ void Client::CompleteConnect()
 			SendGuildRanks();
 			SendGuildRankNames();
 		}
+		RequestGuildActiveTributes(GuildID());
+		RequestGuildFavorAndTimer(GuildID());
+
+		auto guild = guild_mgr.GetGuildByGuildID(GuildID());
+		if (guild) {
+			ServerPacket* out = new ServerPacket(ServerOP_GuildTributeOptInToggle, sizeof(GuildTributeMemberToggle));
+			GuildTributeMemberToggle* data = (GuildTributeMemberToggle*)out->pBuffer;
+			CharGuildInfo gci;
+			guild_mgr.GetCharInfo(CharacterID(), gci);
+
+			data->char_id = CharacterID();
+			data->command = 0x2fb;
+			data->tribute_toggle = GuildTributeOptIn();
+			data->guild_id = GuildID();
+			data->no_donations = gci.total_tribute;
+			strncpy(data->player_name, GetCleanName(), strlen(GetCleanName()));
+			data->time_remaining = guild->tribute.timer.GetRemainingTime();
+			worldserver.SendPacket(out);
+			safe_delete(out);
+		}
 	}
 
 	SendDynamicZoneUpdates();
@@ -1243,7 +1270,7 @@ void Client::Handle_Connect_OP_ZoneEntry(const EQApplicationPacket *app)
 
 	/* Load Character Data */
 	query = fmt::format(
-		"SELECT `lfp`, `lfg`, `xtargets`, `firstlogon`, `guild_id`, `rank`, `exp_enabled` FROM `character_data` LEFT JOIN `guild_members` ON `id` = `char_id` WHERE `id` = {}",
+		"SELECT `lfp`, `lfg`, `xtargets`, `firstlogon`, `guild_id`, `rank`, `exp_enabled`, `tribute_enable` FROM `character_data` LEFT JOIN `guild_members` ON `id` = `char_id` WHERE `id` = {}",
 		cid
 	);
 	auto results = database.QueryDatabase(query);
@@ -1251,6 +1278,7 @@ void Client::Handle_Connect_OP_ZoneEntry(const EQApplicationPacket *app)
 		if (row[4] && Strings::ToInt(row[4]) > 0) {
 			guild_id = Strings::ToInt(row[4]);
 			guildrank = row[5] ? Strings::ToInt(row[5]) : GUILD_RANK_NONE;
+			guild_tribute_opt_in = row[7] ? Strings::ToBool(row[7]) : 0;
 		}
 
 		SetEXPEnabled(atobool(row[6]));
@@ -10678,7 +10706,6 @@ void Client::Handle_OP_OpenGuildTributeMaster(const EQApplicationPacket *app)
 			st->response = 1;
 			QueuePacket(app);
 			tribute_master_id = st->tribute_master_id;
-			DoTributeUpdate();
 		}
 		else {
 			st->response = 0;
@@ -16379,5 +16406,287 @@ void Client::ReloadExpansionProfileSetting()
 	}
 	else {
 		m_pp.expansions = RuleI(World, ExpansionSettings);
+	}
+}
+
+void Client::Handle_OP_GuildTributeSelect(const EQApplicationPacket* app)
+{
+	LogTribute("Received OP_GuildSelectTribute of length [{}]", app->size);
+
+	if (app->size != sizeof(GuildTributeSelectReq_Struct))
+		LogError("Invalid size on OP_GuildSelectTribute packet");
+	else {
+		GuildTributeSelectReq_Struct* t = (GuildTributeSelectReq_Struct*)app->pBuffer;
+		SendGuildTributeDetails(t->tribute_id, t->tier);
+	}
+	return;
+}
+
+void Client::Handle_OP_GuildTributeModifyBenefits(const EQApplicationPacket* app)
+{
+	LogTribute("Received OP_Handle_OP_GuildModifyBenefits of length [{}]", app->size);
+
+	if (app->size != sizeof(GuildTributeModifyBenefits_Struct)) {
+		LogError("Invalid size on Handle_OP_GuildModifyBenefits packet");
+	}
+	else {
+		GuildTributeModifyBenefits_Struct* t = (GuildTributeModifyBenefits_Struct*)app->pBuffer;
+
+		EQApplicationPacket* outapp = new EQApplicationPacket(OP_GuildModifyBenefits, sizeof(GuildTributeModifyBenefits_Struct));
+		GuildTributeModifyBenefits_Struct* gmbs = (GuildTributeModifyBenefits_Struct*)outapp->pBuffer;
+
+		switch (t->command) {
+		case 0: {
+			gmbs->command = 0;
+			gmbs->data = 1;
+			gmbs->tribute_id_1 = t->tribute_id_1;
+			gmbs->tribute_id_2 = t->tribute_id_2;
+			gmbs->tribute_id_1_tier = t->tribute_id_1_tier;
+			gmbs->tribute_id_2_tier = t->tribute_id_2_tier;
+			gmbs->tribute_master_id = t->tribute_master_id;
+			QueuePacket(outapp);
+			break;
+		}
+		case 1: {
+			gmbs->command = 1;
+			gmbs->data = 1;
+			gmbs->tribute_id_1 = t->tribute_id_1;
+			gmbs->tribute_id_2 = t->tribute_id_2;
+			gmbs->tribute_id_1_tier = t->tribute_id_1_tier;
+			gmbs->tribute_id_2_tier = t->tribute_id_2_tier;
+			gmbs->tribute_master_id = t->tribute_master_id;
+			QueuePacket(outapp);
+			break;
+		}
+		default: {
+			LogError("Unknown GuildModifyBenefits command received. {}.", t->command);
+			break;
+		}
+		}
+		safe_delete(outapp);
+	}
+	return;
+}
+
+void Client::Handle_OP_GuildTributeOptInOut(const EQApplicationPacket* app)
+{
+	LogTribute("Received OP_Handle_OP_GuildTributeOptInOut of length [{}]", app->size);
+
+	if (app->size != sizeof(GuildTributeOptInOutReq_Struct)) {
+		LogError("Invalid size on Handle_OP_GuildTributeOptInOut packet");
+		return;
+	}
+
+	GuildTributeOptInOutReq_Struct* in = (GuildTributeOptInOutReq_Struct*)app->pBuffer;
+
+	// 1. Send to world to get in->player_name character id as player may not be in our zone.
+	// 2. Send optinout packet to all guild members regardless of zone
+
+	CharGuildInfo gci;
+	guild_mgr.GetCharInfo(in->player, gci);
+
+	guild_mgr.DBSetMemberTributeEnabled(GuildID(), gci.char_id, in->tribute_toggle);
+
+	ServerPacket* sout = new ServerPacket(ServerOP_GuildTributeOptInToggle, sizeof(GuildTributeMemberToggle));
+	GuildTributeMemberToggle* out = (GuildTributeMemberToggle*)sout->pBuffer;
+
+	out->guild_id = GuildID();
+	out->char_id = gci.char_id;
+	strncpy(out->player_name, in->player, strlen(in->player));
+	out->tribute_toggle = in->tribute_toggle;
+	out->command = in->command;
+
+	//SendGuildTributeOptInToggle(out);
+	worldserver.SendPacket(sout);
+
+	safe_delete(sout);
+
+	/*guild_mgr.DBSetMemberTributeEnabled(GuildID(), CharacterID(), in->tribute_toggle);
+	SetGuildTributeOptIn(in->tribute_toggle ? true : false);
+
+	ServerPacket* sout = new ServerPacket(ServerOP_GuildTributeOptInToggle, sizeof(GuildTributeMemberToggle));
+	GuildTributeMemberToggle* out = (GuildTributeMemberToggle*)sout->pBuffer;
+
+	out->guild_id = GuildID();
+	out->char_id = CharacterID();
+	strncpy(out->player_name, GetCleanName(), 64);
+	out->tribute_toggle = in->tribute_toggle;
+	out->command = in->command;
+
+	SendGuildTributeOptInToggle(out);
+	worldserver.SendPacket(sout);
+
+	safe_delete(sout);*/
+}
+
+void Client::Handle_OP_GuildTributeSaveActiveTributes(const EQApplicationPacket* app) 
+{
+	LogTribute("Received OP_Handle_OP_GuildTributeSaveActive of length [{}]", app->size);
+
+	if (app->size != sizeof(GuildTributeSaveActive_Struct)) {
+		LogError("Invalid size on Handle_OP_GuildTributeOptInOut packet");
+		return;
+	}
+
+	GuildTributeSaveActive_Struct* data = (GuildTributeSaveActive_Struct*)app->pBuffer;
+	auto guild = guild_mgr.GetGuildByGuildID(GuildID());
+	if (guild) {
+		GuildTributesRepository::GuildTributes gt{};
+
+		gt.guild_id = GuildID();
+		gt.tribute_id_1 = data->tribute_id_1;
+		gt.tribute_id_2 = data->tribute_id_2;
+		gt.tribute_id_1_tier = data->tribute_1_tier;
+		gt.tribute_id_2_tier = data->tribute_2_tier;
+		gt.enabled = 0;
+		gt.time_remaining = GUILD_TRIBUTE_DEFAULT_TIMER;
+		GuildTributesRepository::ReplaceOne(database, gt);
+
+		guild->tribute.enabled = 0;
+		guild->tribute.id_1 = data->tribute_id_1;
+		guild->tribute.id_2 = data->tribute_id_2;
+		guild->tribute.id_1_tier = data->tribute_1_tier;
+		guild->tribute.id_2_tier = data->tribute_2_tier;
+		guild->tribute.time_remaining = GUILD_TRIBUTE_DEFAULT_TIMER;
+
+		ServerPacket* sp = new ServerPacket(ServerOP_GuildTributeUpdate, sizeof(GuildTributeUpdate));
+		GuildTributeUpdate* gtu = (GuildTributeUpdate*)sp->pBuffer;
+
+		gtu->guild_id = GuildID();
+		gtu->tribute_id_1 = data->tribute_id_1;
+		gtu->tribute_id_2 = data->tribute_id_2;
+		gtu->tribute_id_1_tier = data->tribute_1_tier;
+		gtu->tribute_id_2_tier = data->tribute_2_tier;
+		gtu->enabled = 0;
+		gtu->favor = guild->tribute.favor;
+		gtu->time_remaining = GUILD_TRIBUTE_DEFAULT_TIMER;
+
+		worldserver.SendPacket(sp);
+		safe_delete(sp);
+	}
+}
+
+void Client::Handle_OP_GuildTributeToggle(const EQApplicationPacket* app)
+{
+	LogTribute("Received OP_Handle_OP_GuildTributeToggle of length [{}]", app->size);
+
+	if (app->size != sizeof(GuildTributeToggleReq_Struct)) {
+		LogError("Invalid size on Handle_OP_GuildModifyBenefits packet");
+	}
+	else {
+		GuildTributeToggleReq_Struct* gt = (GuildTributeToggleReq_Struct*)app->pBuffer;
+
+		ServerPacket* sp = new ServerPacket(ServerOP_GuildTributeActivate, sizeof(GuildTributeUpdate));
+		GuildTributeUpdate* gtu = (GuildTributeUpdate*)sp->pBuffer;
+		auto guild = guild_mgr.GetGuildByGuildID(GuildID());
+
+		if (guild) {
+			switch (gt->command) {
+			case 0: {
+				gtu->guild_id = GuildID();
+				gtu->enabled = 0;
+				gtu->favor = guild->tribute.favor;
+				gtu->tribute_id_1 = guild->tribute.id_1;
+				gtu->tribute_id_2 = guild->tribute.id_2;
+				gtu->tribute_id_1_tier = guild->tribute.id_1_tier;
+				gtu->tribute_id_2_tier = guild->tribute.id_2_tier;
+				gtu->time_remaining = guild->tribute.time_remaining;
+
+				worldserver.SendPacket(sp);
+				break;
+			}
+			case 1: {
+				gtu->guild_id = GuildID();
+				gtu->enabled = 1;
+				gtu->favor = guild->tribute.favor;
+				gtu->tribute_id_1 = guild->tribute.id_1;
+				gtu->tribute_id_2 = guild->tribute.id_2;
+				gtu->tribute_id_1_tier = guild->tribute.id_1_tier;
+				gtu->tribute_id_2_tier = guild->tribute.id_2_tier;
+				gtu->time_remaining = guild->tribute.time_remaining;
+
+				worldserver.SendPacket(sp);
+				break;
+			}
+			default: {
+				LogError("Unknown GuildTributeUpdate to WorldServer command received.");
+				break;
+			}
+			}
+		}
+		safe_delete(sp);
+	}
+	return;
+}
+
+void Client::Handle_OP_GuildTributeDonateItem(const EQApplicationPacket* app)
+{
+	LogTribute("Received OP_Handle_OP_GuildTributeDonateItem of length [{}]", app->size);
+
+	if (app->size != sizeof(GuildTributeDonateItemRequest_Struct)) {
+		LogError("Invalid size on Handle_OP_GuildTributeDonateItemRequest packet");
+		return;
+	}
+
+	auto in = (GuildTributeDonateItemRequest_Struct*)app->pBuffer;
+
+	const auto* inst = GetInv().GetItem(in->Slot);
+	auto favor = inst->GetItemGuildFavor() * in->quanity;
+
+	auto guild = guild_mgr.GetGuildByGuildID(guild_id);
+	if (guild) {
+		guild->tribute.favor += favor;
+		guild_mgr.DBSetGuildFavor(GuildID(), guild->tribute.favor);
+		auto member_favor = guild_mgr.DBSetMemberFavor(GuildID(), CharacterID(), favor);
+
+		DeleteItemInInventory(in->Slot, in->quanity, false, true);
+		SendGuildTributeDonateItemReply(in, favor);
+
+		auto outapp = new ServerPacket(ServerOP_GuildTributeUpdateDonations, sizeof(GuildTributeUpdate));
+		GuildTributeUpdate* out = (GuildTributeUpdate*)outapp->pBuffer;
+		out->guild_id = GuildID();
+		out->favor = guild->tribute.favor;
+		strncpy(out->player_name, GetCleanName(), strlen(GetCleanName()));
+		out->member_time = time(nullptr);
+		out->member_enabled = GuildTributeOptIn();
+		out->member_favor = member_favor;
+		worldserver.SendPacket(outapp);
+		safe_delete(outapp);
+	}
+}
+
+void Client::Handle_OP_GuildTributeDonatePlat(const EQApplicationPacket* app)
+{
+	LogTribute("Received OP_Handle_OP_GuildTributeToggle of length [{}]", app->size);
+
+	if (app->size != sizeof(GuildTributeDonatePlatRequest_Struct)) {
+		LogError("Invalid size on Handle_OP_GuildTributeDonatePlatRequest_Struct packet");
+		return;
+	}
+
+	auto in = (GuildTributeDonatePlatRequest_Struct*)app->pBuffer;
+
+	auto quanity = in->quanity;
+
+	auto favor = quanity * (uint32)GUILD_TRIBUTE_PLAT_CONVERSION;
+	auto guild = guild_mgr.GetGuildByGuildID(guild_id);
+	if (guild) {
+		guild->tribute.favor += favor;
+		guild_mgr.DBSetGuildFavor(GuildID(), guild->tribute.favor);
+		auto member_favor = guild_mgr.DBSetMemberFavor(GuildID(), CharacterID(), favor);
+
+		TakePlatinum(quanity, false);
+		SendGuildTributeDonatePlatReply(in, favor);
+
+		auto outapp = new ServerPacket(ServerOP_GuildTributeUpdateDonations, sizeof(GuildTributeUpdate));
+		GuildTributeUpdate* out = (GuildTributeUpdate*)outapp->pBuffer;
+		out->guild_id = GuildID();
+		out->favor = guild->tribute.favor;
+		strncpy(out->player_name, GetCleanName(), strlen(GetCleanName()));
+		out->member_time = time(nullptr);
+		out->member_enabled = GuildTributeOptIn();
+		out->member_favor = member_favor;
+		worldserver.SendPacket(outapp);
+		safe_delete(outapp);
 	}
 }

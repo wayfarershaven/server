@@ -5,6 +5,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include "timer.h"
 #include "../common/repositories/guild_members_repository.h"
 
 #define GOUT(x) out.x = in->x;
@@ -17,6 +18,29 @@ struct default_permission_struct {
 struct default_rank_names_struct {
 	uint32		id;
 	std::string	name;
+};
+
+struct Guild_Tribute {
+	Timer		timer;
+	uint32		id_1;
+	uint32		id_2;
+	uint32		id_1_tier;
+	uint32		id_2_tier;
+	uint32		favor;
+	uint32		time_remaining;
+	uint32		enabled;
+	bool		send_timer;
+};
+
+class TributeData {
+public:
+	//this level data stored in regular byte order and must be flipped before sending
+	TributeLevel_Struct tiers[MAX_TRIBUTE_TIERS];
+	uint8 tier_count;
+	uint32 unknown;
+	std::string name;
+	std::string description;
+	bool is_guild;	//is a guild tribute item
 };
 
 class Database;
@@ -57,10 +81,11 @@ class BaseGuildManager
 		}
 
 		bool LoadGuilds();
-		bool RefreshGuild(uint32 guild_id);
+		virtual bool RefreshGuild(uint32 guild_id);
 
 		//guild edit actions.
 		uint32	CreateGuild(std::string name, uint32 leader_char_id);
+		bool    StoreGuildDB(uint32 guild_id);
 		bool	DeleteGuild(uint32 guild_id);
 		bool	RenameGuild(uint32 guild_id, std::string name);
 		bool	SetGuildMOTD(uint32 guild_id, std::string motd, std::string setter);
@@ -79,6 +104,11 @@ class BaseGuildManager
 		bool    GetGuildBankerStatus(uint32 guild_id, uint32 guild_rank);
 		bool	SetTributeFlag(uint32 charid, bool enabled);
 		bool	SetPublicNote(uint32 charid, const char *note);
+		uint32  DBSetGuildFavor(uint32 guild_id, uint32 enabled);
+		bool    DBSetGuildTributeEnabled(uint32 guild_id, uint32 enabled);
+		bool    DBSetMemberTributeEnabled(uint32 guild_id, uint32 char_id, uint32 enabled);
+		bool    DBSetTributeTimeRemaining(uint32 guild_id, uint32 enabled);
+		uint32	DBSetMemberFavor(uint32 guild_id, uint32 char_id, uint32 favor);
 
 		//queries
 		bool	GetCharInfo(const char *char_name, CharGuildInfo &into);
@@ -160,11 +190,11 @@ class BaseGuildManager
 				std::string motd_setter;
 				std::string url;
 				std::string channel;
-				uint32 leader;
-				uint8 minstatus;
-				//tribute is not in here on purpose, since it is only valid in world!
+				uint32		leader;
+				uint8		minstatus;
 				std::string		rank_names[GUILD_MAX_RANK + 1];
 				Functions		functions[GUILD_MAX_FUNCTIONS + 1];
+				Guild_Tribute	tribute;
 		};
 	virtual BaseGuildManager::GuildInfo* GetGuildByGuildID(uint32 guild_id);
 
@@ -175,7 +205,7 @@ class BaseGuildManager
 		Database *m_db;	//we do not own this
 
 		bool _StoreGuildDB(uint32 guild_id);
-		GuildInfo* _CreateGuild(uint32 guild_id, std::string guild_name, uint32 leader_char_id, uint8 minstatus, std::string guild_motd, std::string motd_setter, std::string Channel, std::string URL);
+		GuildInfo* _CreateGuild(uint32 guild_id, std::string guild_name, uint32 leader_char_id, uint8 minstatus, std::string guild_motd, std::string motd_setter, std::string Channel, std::string URL, uint32 favour);
 		uint32 _GetFreeGuildID();
 
 };

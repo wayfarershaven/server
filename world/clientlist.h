@@ -34,6 +34,9 @@ public:
 	void	ZoneBootup(ZoneServer* zs);
 	void	RemoveCLEReferances(ClientListEntry* cle);
 
+	std::map<uint32, ClientListEntry*> GetGuildClientsWithTributeOptIn(uint32 guild_id);
+	std::map<uint32, ClientListEntry*> GetGuildClientList(uint32 guild_id);
+	//Client* GetClient(uint32 char_id);
 
 	//from ZSList
 

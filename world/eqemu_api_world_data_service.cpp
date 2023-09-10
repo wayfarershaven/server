@@ -290,7 +290,7 @@ void EQEmuApiWorldDataService::callGetGuildDetails(Json::Value& response, const 
 	Json::Value row;
 
 	auto guild_id = Strings::ToUnsignedInt(command);
-	if (guild_id) {
+	if (!guild_id) {
 		row = "useage is: api get_guild_details ### where ### is a valid guild id.";
 		return;
 	}
@@ -319,6 +319,14 @@ void EQEmuApiWorldDataService::callGetGuildDetails(Json::Value& response, const 
 		row["Functions"][i]["guild_id"]		= guild->functions[i].guild_id;
 		row["Functions"][i]["perm_value"]	= guild->functions[i].perm_value;
 	}
+
+	row["Tribute"]["Favor"]			 = guild->tribute.favor;
+	row["Tribute"]["ID1"]			 = guild->tribute.id_1;
+	row["Tribute"]["ID1 Tier"]		 = guild->tribute.id_1_tier;
+	row["Tribute"]["ID2"]			 = guild->tribute.id_2;
+	row["Tribute"]["ID2 Tier"]		 = guild->tribute.id_2_tier;
+	row["Tribute"]["Time Remaining"] = guild->tribute.time_remaining;
+	row["Tribute"]["Enabled"]		 = guild->tribute.enabled;
 
 	client_list.GetGuildClientList(response, guild_id);
 

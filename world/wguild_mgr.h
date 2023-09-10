@@ -11,6 +11,12 @@ class WorldGuildManager : public BaseGuildManager {
 public:
 	//called by zoneserver when it receives a guild message from zone.
 	void ProcessZonePacket(ServerPacket *pack);
+	void Process();
+	bool LoadTributes();
+	void SendGuildTributeFavorAndTimer(uint32 guild_id);
+	void SendGuildTributeFavorAndTimer(uint32 guild_id, uint32 favor, uint32 time);
+	uint32 GetGuildTributeCost(uint32 guild_id);
+	virtual bool RefreshGuild(uint32 guild_id);
 protected:
 	virtual void SendGuildRefresh(uint32 guild_id, bool name, bool motd, bool rank, bool relation);
 	virtual void SendCharRefresh(uint32 old_guild_id, uint32 guild_id, uint32 charid);
