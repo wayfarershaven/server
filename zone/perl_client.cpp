@@ -2932,11 +2932,20 @@ void Perl_Client_UseAugmentContainer(Client* self, int container_slot)
 	self->UseAugmentContainer(container_slot);
 }
 
+bool Perl_Client_IsAutoAttackEnabled(Client* self)
+{
+	return self->AutoAttackEnabled();
+}
+
 bool Perl_Client_IsAutoFireEnabled(Client* self)
 {
 	return self->AutoFireEnabled();
 }
 
+bool Perl_Client_ReloadDataBuckets(Client* self)
+{
+	return DataBucket::GetDataBuckets(self);
+}
 std::string Perl_Client_GetClassAbbreviation(Client* self)
 {
 	return GetPlayerClassAbbreviation(self->GetBaseClass());
@@ -3219,6 +3228,7 @@ void perl_register_client()
 	package.add("IncreaseSkill", (void(*)(Client*, int))&Perl_Client_IncreaseSkill);
 	package.add("IncreaseSkill", (void(*)(Client*, int, int))&Perl_Client_IncreaseSkill);
 	package.add("IncrementAA", &Perl_Client_IncrementAA);
+	package.add("IsAutoAttackEnabled", &Perl_Client_IsAutoAttackEnabled);
 	package.add("IsAutoFireEnabled", &Perl_Client_IsAutoFireEnabled);
 	package.add("IsBecomeNPC", &Perl_Client_IsBecomeNPC);
 	package.add("IsCrouching", &Perl_Client_IsCrouching);
@@ -3302,6 +3312,7 @@ void perl_register_client()
 	package.add("ReadBook", &Perl_Client_ReadBook);
 	package.add("ReadBookByName", &Perl_Client_ReadBookByName);
 	package.add("RefundAA", &Perl_Client_RefundAA);
+	package.add("ReloadDataBuckets", &Perl_Client_ReloadDataBuckets);
 	package.add("RemoveAllExpeditionLockouts", (void(*)(Client*))&Perl_Client_RemoveAllExpeditionLockouts);
 	package.add("RemoveAllExpeditionLockouts", (void(*)(Client*, std::string))&Perl_Client_RemoveAllExpeditionLockouts);
 	package.add("RemoveExpeditionLockout", &Perl_Client_RemoveExpeditionLockout);

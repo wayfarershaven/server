@@ -467,6 +467,7 @@ public:
 	void SetItemCooldown(uint32 item_id, uint32 in_time);
 	uint32 GetItemCooldown(uint32 item_id);
 	void UseAugmentContainer(int container_slot);
+	bool IsAutoAttackEnabled();
 	bool IsAutoFireEnabled();
 	std::string GetClassAbbreviation();
 	std::string GetRaceAbbreviation();
@@ -548,6 +549,8 @@ public:
 	void CampAllBots(uint8 class_id);
 
 	void DialogueWindow(std::string markdown);
+
+	bool ReloadDataBuckets();
 
 	Lua_Expedition  CreateExpedition(luabind::object expedition_info);
 	Lua_Expedition  CreateExpedition(std::string zone_name, uint32 version, uint32 duration, std::string expedition_name, uint32 min_players, uint32 max_players);

@@ -3077,10 +3077,22 @@ void Lua_Client::UseAugmentContainer(int container_slot)
 	self->UseAugmentContainer(container_slot);
 }
 
+
+bool Lua_Client::IsAutoAttackEnabled()
+{
+	Lua_Safe_Call_Bool();
+	return self->AutoAttackEnabled();
+}
+
 bool Lua_Client::IsAutoFireEnabled()
 {
 	Lua_Safe_Call_Bool();
 	return self->AutoFireEnabled();
+}
+
+bool Lua_Client::ReloadDataBuckets() {
+	Lua_Safe_Call_Bool();
+	return DataBucket::GetDataBuckets(self);
 }
 
 std::string Lua_Client::GetClassAbbreviation()
@@ -3405,6 +3417,7 @@ luabind::scope lua_register_client() {
 	.def("IncreaseSkill", (void(Lua_Client::*)(int))&Lua_Client::IncreaseSkill)
 	.def("IncreaseSkill", (void(Lua_Client::*)(int,int))&Lua_Client::IncreaseSkill)
 	.def("IncrementAA", (void(Lua_Client::*)(int))&Lua_Client::IncrementAA)
+	.def("IsAutoAttackEnabled", (bool(Lua_Client::*)(void))&Lua_Client::IsAutoAttackEnabled)
 	.def("IsAutoFireEnabled", (bool(Lua_Client::*)(void))&Lua_Client::IsAutoFireEnabled)
 	.def("IsCrouching", (bool(Lua_Client::*)(void))&Lua_Client::IsCrouching)
 	.def("IsDead", &Lua_Client::IsDead)
@@ -3494,6 +3507,7 @@ luabind::scope lua_register_client() {
 	.def("QueuePacket", (void(Lua_Client::*)(Lua_Packet,bool,int,int))&Lua_Client::QueuePacket)
 	.def("ReadBookByName", (void(Lua_Client::*)(std::string,uint8))&Lua_Client::ReadBookByName)
 	.def("RefundAA", (void(Lua_Client::*)(void))&Lua_Client::RefundAA)
+	.def("ReloadDataBuckets", (bool(Lua_Client::*)(void))&Lua_Client::ReloadDataBuckets)
 	.def("RemoveAllExpeditionLockouts", (void(Lua_Client::*)(std::string))&Lua_Client::RemoveAllExpeditionLockouts)
 	.def("RemoveAllExpeditionLockouts", (void(Lua_Client::*)(void))&Lua_Client::RemoveAllExpeditionLockouts)
 	.def("RemoveExpeditionLockout", (void(Lua_Client::*)(std::string, std::string))&Lua_Client::RemoveExpeditionLockout)
@@ -3585,6 +3599,7 @@ luabind::scope lua_register_client() {
 	.def("SetIPExemption", (void(Lua_Client::*)(int))&Lua_Client::SetIPExemption)
 	.def("SetItemCooldown", (void(Lua_Client::*)(uint32,uint32))&Lua_Client::SetItemCooldown)
 	.def("SetLanguageSkill", (void(Lua_Client::*)(int,int))&Lua_Client::SetLanguageSkill)
+	.def("SetLDoNPoints", (void(Lua_Client::*)(uint32,uint32))&Lua_Client::SetLDoNPoints)
 	.def("SetMaterial", (void(Lua_Client::*)(int,uint32))&Lua_Client::SetMaterial)
 	.def("SetPEQZoneFlag", (void(Lua_Client::*)(uint32))&Lua_Client::SetPEQZoneFlag)
 	.def("SetPVP", (void(Lua_Client::*)(bool))&Lua_Client::SetPVP)
