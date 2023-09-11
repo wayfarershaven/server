@@ -2804,6 +2804,11 @@ void Perl_Mob_SetBuffDuration(Mob* self, int spell_id, int duration) // @categor
 	self->SetBuffDuration(spell_id, duration);
 }
 
+void Perl_Mob_SetBuffDuration(Mob* self, int spell_id, int duration, int level) // @categories Script Utility, Spells and Disciplines
+{
+	self->SetBuffDuration(spell_id, duration, level);
+}
+
 void Perl_Mob_ApplySpellBuff(Mob* self, int spell_id) // @categories Script Utility, Spells and Disciplines
 {
 	self->ApplySpellBuff(spell_id);
@@ -2812,6 +2817,11 @@ void Perl_Mob_ApplySpellBuff(Mob* self, int spell_id) // @categories Script Util
 void Perl_Mob_ApplySpellBuff(Mob* self, int spell_id, int duration) // @categories Script Utility, Spells and Disciplines
 {
 	self->ApplySpellBuff(spell_id, duration);
+}
+
+void Perl_Mob_ApplySpellBuff(Mob* self, int spell_id, int duration, int level) // @categories Script Utility, Spells and Disciplines
+{
+	self->ApplySpellBuff(spell_id, duration, level);
 }
 
 int Perl_Mob_GetSkillDmgAmt(Mob* self, int skill_id)
@@ -3345,6 +3355,7 @@ void perl_register_mob()
 	package.add("AddToHateList", (void(*)(Mob*, Mob*, int64_t, int64_t, bool, bool, bool))&Perl_Mob_AddToHateList);
 	package.add("ApplySpellBuff", (void(*)(Mob*, int))&Perl_Mob_ApplySpellBuff);
 	package.add("ApplySpellBuff", (void(*)(Mob*, int, int))&Perl_Mob_ApplySpellBuff);
+	package.add("ApplySpellBuff", (void(*)(Mob*, int, int, int))&Perl_Mob_ApplySpellBuff);
 	package.add("Attack", (bool(*)(Mob*, Mob*))&Perl_Mob_Attack);
 	package.add("Attack", (bool(*)(Mob*, Mob*, int))&Perl_Mob_Attack);
 	package.add("Attack", (bool(*)(Mob*, Mob*, int, bool))&Perl_Mob_Attack);
@@ -3820,6 +3831,7 @@ void perl_register_mob()
 	package.add("SetBucket", (void(*)(Mob*, std::string, std::string, std::string))&Perl_Mob_SetBucket);
 	package.add("SetBuffDuration", (void(*)(Mob*, int))&Perl_Mob_SetBuffDuration);
 	package.add("SetBuffDuration", (void(*)(Mob*, int, int))&Perl_Mob_SetBuffDuration);
+	package.add("SetBuffDuration", (void(*)(Mob*, int, int, int))&Perl_Mob_SetBuffDuration);
 	package.add("SetCurrentWP", &Perl_Mob_SetCurrentWP);
 	package.add("SetDeltas", &Perl_Mob_SetDeltas);
 	package.add("SetDisableMelee", &Perl_Mob_SetDisableMelee);
