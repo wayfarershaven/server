@@ -2921,6 +2921,21 @@ void QuestManager::we(int type, const char *str) {
 	);
 }
 
+void QuestManager::SendChannelMessage(uint8 channel_number, uint32 guild_id, uint8 language_id, uint8 language_skill, const char* message)
+{
+	worldserver.SendChannelMessage(0, 0, channel_number, guild_id, language_id, language_skill, message);
+}
+
+void QuestManager::SendChannelMessage(Client* from, uint8 channel_number, uint32 guild_id, uint8 language_id, uint8 language_skill, const char* message)
+{
+	worldserver.SendChannelMessage(from, 0, channel_number, guild_id, language_id, language_skill, message);
+}
+
+void QuestManager::SendChannelMessage(Client* from, const char* to, uint8 channel_number, uint32 guild_id, uint8 language_id, uint8 language_skill, const char* message)
+{
+	worldserver.SendChannelMessage(from, to, channel_number, guild_id, language_id, language_skill, message);
+}
+
 void QuestManager::message(uint32 type, const char *message) {
 	QuestManagerCurrentQuestVars();
 	if (!initiator) {
@@ -3968,15 +3983,25 @@ void QuestManager::CrossZoneMessage(uint8 update_type, int update_identifier, ui
 	safe_delete(pack);
 }
 
-void QuestManager::CrossZoneMove(uint8 update_type, uint8 update_subtype, int update_identifier, const char* zone_short_name, uint16 instance_id, const char* client_name) {
+void QuestManager::CrossZoneMove(const CZMove_Struct& m)
+{
 	auto pack = new ServerPacket(ServerOP_CZMove, sizeof(CZMove_Struct));
-	CZMove_Struct* CZM = (CZMove_Struct*)pack->pBuffer;
-	CZM->update_type = update_type;
-	CZM->update_subtype = update_subtype;
-	CZM->update_identifier = update_identifier;
-	strn0cpy(CZM->zone_short_name, zone_short_name, 32);
-	CZM->instance_id = instance_id;
-	strn0cpy(CZM->client_name, client_name, 64);
+	auto s = (CZMove_Struct*) pack->pBuffer;
+
+	if (!m.client_name.empty()) {
+		s->client_name = m.client_name;
+	}
+
+	s->coordinates       = m.coordinates;
+	s->instance_id       = m.instance_id;
+	s->update_type       = m.update_type;
+	s->update_subtype    = m.update_subtype;
+	s->update_identifier = m.update_identifier;
+
+	if (!m.zone_short_name.empty()) {
+		s->zone_short_name = m.zone_short_name;
+	}
+	
 	worldserver.SendPacket(pack);
 	safe_delete(pack);
 }
@@ -4252,11 +4277,8 @@ int8 QuestManager::DoesAugmentFit(EQ::ItemInstance* inst, uint32 augment_id, uin
 		return INVALID_INDEX;
 	}
 
-	if (
-		augment_slot != 255 &&
-		!inst->IsAugmentSlotAvailable(aug_inst->AugType, augment_slot)
-	) {
-		return INVALID_INDEX;
+	if (augment_slot != 255) {
+		return !inst->IsAugmentSlotAvailable(aug_inst->AugType, augment_slot) ? INVALID_INDEX : augment_slot;
 	}
 	
 	return inst->AvailableAugmentSlot(aug_inst->AugType);
