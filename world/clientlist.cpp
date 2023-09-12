@@ -388,6 +388,8 @@ void ClientList::ClientUpdate(ZoneServer *zoneserver, ServerClientList_Struct *s
 		" anon [{}]"
 		" tellsoff [{}]"
 		" guild_id [{}]"
+		" guild_rank [{}]"
+		" guild_tribute_opt_in [{}]"
 		" LFG [{}]"
 		" gm [{}]"
 		" ClientVersion [{}]"
@@ -413,6 +415,8 @@ void ClientList::ClientUpdate(ZoneServer *zoneserver, ServerClientList_Struct *s
 		scl->anon,
 		scl->tellsoff,
 		scl->guild_id,
+		scl->guild_rank,
+		scl->guild_tribute_opt_in,
 		scl->LFG,
 		scl->gm,
 		scl->ClientVersion,
@@ -1616,6 +1620,8 @@ void ClientList::GetClientList(Json::Value &response)
 		row["client_version"]   = cle->GetClientVersion();
 		row["gm"]               = cle->GetGM();
 		row["guild_id"]         = cle->GuildID();
+		row["guild_rank"]		= cle->GuildRank();
+		row["guild_tribute_opt_in"] = cle->GuildTributeOptIn();
 		row["instance"]         = cle->instance();
 		row["is_local_client"]  = cle->IsLocalClient();
 		row["level"]            = cle->level();
@@ -1764,6 +1770,7 @@ void ClientList::GetGuildClientList(Json::Value& response, uint32 guild_id)
 		row["gm"] = cle->GetGM();
 		row["guild_id"] = cle->GuildID();
 		row["guild_rank"] = cle->GuildRank();
+		row["guild_tribute_opt_in"] = cle->GuildTributeOptIn();
 		row["instance"] = cle->instance();
 		row["is_local_client"] = cle->IsLocalClient();
 		row["level"] = cle->level();
@@ -1782,3 +1789,53 @@ void ClientList::GetGuildClientList(Json::Value& response, uint32 guild_id)
 		Iterator.Advance();
 	}
 }
+
+std::map<uint32, ClientListEntry*> ClientList::GetGuildClientsWithTributeOptIn(uint32 guild_id)
+{
+	std::map<uint32, ClientListEntry*> guild_members;
+
+	LinkedListIterator<ClientListEntry*> Iterator(clientlist);
+	Iterator.Reset();
+
+	while (Iterator.MoreElements()) {
+		auto c = Iterator.GetData();
+		if (c->GuildID() == guild_id && c->GuildTributeOptIn()) {
+			//guild_members.push_back(FindByAccountID(c->AccountID()));
+			guild_members.emplace(c->CharID(), c);
+		}
+		Iterator.Advance();
+	}
+	return guild_members;
+}
+
+std::map<uint32, ClientListEntry*> ClientList::GetGuildClientList(uint32 guild_id) {
+	std::map<uint32, ClientListEntry*> guild_members;
+
+	LinkedListIterator<ClientListEntry*> Iterator(clientlist);
+	Iterator.Reset();
+
+	while (Iterator.MoreElements()) {
+		auto c = Iterator.GetData();
+		if (c->GuildID() == guild_id) {
+			//guild_members.push_back(FindByAccountID(c->AccountID()));
+			guild_members.emplace(c->CharID(), c);
+		}
+		Iterator.Advance();
+	}
+	return guild_members;
+}
+
+//Client* ClientList::GetClient(uint32 char_id) 
+//{
+//	LinkedListIterator<ClientListEntry*> Iterator(clientlist);
+//	Iterator.Reset();
+//
+//	while (Iterator.MoreElements()) {
+//		auto c = Iterator.GetData();
+//		if (c->CharID() == char_id) {
+//			return FindByAccountID(c->AccountID());
+//		}
+//		Iterator.Advance();
+//	}
+//	return nullptr;
+//}

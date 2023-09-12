@@ -2011,6 +2011,20 @@ struct GuildBankClear_Struct
 /*16*/	uint32	MainAreaCount;
 };
 
+struct GuildTributeDonateItemRequest_Struct {
+	/*000*/	uint32	Type;
+	/*004*/ uint16 	Slot;
+	/*006*/ uint16 	SubIndex;
+	/*008*/ uint16 	AugIndex;
+	/*010*/ uint16 	Unknown10;
+	/*012*/ uint32 	quanity;
+	/*016*/ uint32	tribute_master_id;
+	/*020*/ uint32 	unknown20;
+	/*024*/ uint32	guild_id;
+	/*028*/ uint32	unknown28;
+	/*032*/ uint32 	unknown32;
+};
+
 /*
 ** Money Loot
 ** Length: 22 Bytes
@@ -2868,15 +2882,23 @@ struct BookText_Struct {
 // This is just a "text file" on the server
 // or in our case, the 'name' column in our books table.
 struct BookRequest_Struct {
-/*0000*/	uint32 window;		// where to display the text (0xFFFFFFFF means new window).
-/*0004*/	uint16 invslot;		// Is the slot, but the RoF2 conversion causes it to fail.  Turned to 0 since it isnt required anyway.
-/*0006*/	int16 subslot;		// Inventory sub-slot (0-x)
-/*0008*/	uint16 unknown006;	// Seen FFFF
-/*0010*/	uint16 unknown008;	// seen 0000
-/*0012*/	uint32 type;		// 0 = Scroll, 1 = Book, 2 = Item Info. Possibly others
-/*0016*/	uint32 unknown0012;
-/*0020*/	uint16 unknown0016;
-/*0022*/	char txtfile[8194];
+/*0000*/ uint32 window;         // where to display the text (0xFFFFFFFF means new window).
+/*0004*/ TypelessInventorySlot_Struct invslot; // book ItemIndex (with int16_t alignment padding)
+/*0012*/ uint32 type;           // 0 = Scroll, 1 = Book, 2 = Item Info. Possibly others
+/*0016*/ uint32 target_id;      // client's target when using the book
+/*0020*/ uint8 can_cast;        // show Cast Spell button in book window
+/*0021*/ uint8 can_scribe;      // show Scribe button in book window
+/*0022*/ char txtfile[8194];
+/*8216*/
+};
+
+// used by Scribe and CastSpell book buttons
+struct BookButton_Struct
+{
+/*0000*/ TypelessInventorySlot_Struct slot; // book ItemIndex (with int16_t alignment padding)
+/*0008*/ int32 target_id; // client's target when using the book button
+/*0012*/ int32 unused;    // always 0 from button packets
+/*0016*/
 };
 
 /*

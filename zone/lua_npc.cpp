@@ -573,24 +573,6 @@ void Lua_NPC::RecalculateSkills()
 	self->RecalculateSkills();
 }
 
-void Lua_NPC::ScaleNPC(uint8 npc_level)
-{
-	Lua_Safe_Call_Void();
-	self->ScaleNPC(npc_level);
-}
-
-void Lua_NPC::ScaleNPC(uint8 npc_level, bool always_scale_stats)
-{
-	Lua_Safe_Call_Void();
-	self->ScaleNPC(npc_level, always_scale_stats);
-}
-
-void Lua_NPC::ScaleNPC(uint8 npc_level, bool always_scale_stats, bool always_scale_special_abilities)
-{
-	Lua_Safe_Call_Void();
-	self->ScaleNPC(npc_level, always_scale_stats, always_scale_special_abilities);
-}
-
 bool Lua_NPC::IsRaidTarget()
 {
 	Lua_Safe_Call_Bool();
@@ -797,6 +779,24 @@ bool Lua_NPC::IsLDoNTrapDetected() {
 void Lua_NPC::SetLDoNTrapDetected(bool is_detected) {
 	Lua_Safe_Call_Void();
 	self->SetLDoNTrapDetected(is_detected);
+}
+
+void Lua_NPC::ScaleNPC(uint8 npc_level)
+{
+	Lua_Safe_Call_Void();
+	self->ScaleNPC(npc_level);
+}
+
+void Lua_NPC::ScaleNPC(uint8 npc_level, bool always_scale_stats)
+{
+	Lua_Safe_Call_Void();
+	self->ScaleNPC(npc_level, always_scale_stats);
+}
+
+void Lua_NPC::ScaleNPC(uint8 npc_level, bool always_scale_stats, bool always_scale_special_abilities)
+{
+	Lua_Safe_Call_Void();
+	self->ScaleNPC(npc_level, always_scale_stats, always_scale_special_abilities);
 }
 
 bool Lua_NPC::IsUnderwaterOnly() {

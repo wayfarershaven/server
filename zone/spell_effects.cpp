@@ -6522,7 +6522,49 @@ int64 Mob::GetFocusEffect(focusType type, uint16 spell_id, Mob *caster, bool fro
 							focus_max_real = focus_max;
 							UsedItem = TempItem;
 							UsedFocusID = TempItem->Focus.Effect;
-						} else if (focus_max < 0 && focus_max < focus_max_real) {
+						}
+						else if (focus_max < 0 && focus_max < focus_max_real) {
+							focus_max_real = focus_max;
+							UsedItem = TempItem;
+							UsedFocusID = TempItem->Focus.Effect;
+						}
+					}
+					else {
+						Total = CalcFocusEffect(type, TempItem->Focus.Effect, spell_id);
+						if (Total > 0 && realTotal >= 0 && Total > realTotal) {
+							realTotal = Total;
+							UsedItem = TempItem;
+							UsedFocusID = TempItem->Focus.Effect;
+						}
+						else if (Total < 0 && Total < realTotal) {
+							realTotal = Total;
+							UsedItem = TempItem;
+							UsedFocusID = TempItem->Focus.Effect;
+						}
+					}
+				}
+			}
+		}
+
+		if (IsClient()) {
+			//Client Guild Tribute Focus
+			for (int x = EQ::invslot::GUILD_TRIBUTE_BEGIN; x <= EQ::invslot::GUILD_TRIBUTE_END; ++x) {
+				TempItem = nullptr;
+				EQ::ItemInstance* ins = GetInv().GetItem(x);
+				if (!ins) {
+					continue;
+				}
+
+				TempItem = ins->GetItem();
+				if (TempItem && IsValidSpell(TempItem->Focus.Effect)) {
+					if (rand_effectiveness) {
+						focus_max = CalcFocusEffect(type, TempItem->Focus.Effect, spell_id, true);
+						if (focus_max > 0 && focus_max_real >= 0 && focus_max > focus_max_real) {
+							focus_max_real = focus_max;
+							UsedItem = TempItem;
+							UsedFocusID = TempItem->Focus.Effect;
+						}
+						else if (focus_max < 0 && focus_max < focus_max_real) {
 							focus_max_real = focus_max;
 							UsedItem = TempItem;
 							UsedFocusID = TempItem->Focus.Effect;
@@ -10382,7 +10424,7 @@ bool Mob::HasPersistDeathIllusion(int32 spell_id) {
 	return false;
 }
 
-void Mob::SetBuffDuration(int spell_id, int duration) {
+void Mob::SetBuffDuration(int spell_id, int duration, int level) {
 
 	/*
 		Will refresh the buff with specified spell_id to the specified duration
@@ -10406,21 +10448,20 @@ void Mob::SetBuffDuration(int spell_id, int duration) {
 
 	int buff_count = GetMaxTotalSlots();
 	for (int slot = 0; slot < buff_count; slot++) {
-
 		if (!adjust_all_buffs) {
 			if (IsValidSpell(buffs[slot].spellid) && buffs[slot].spellid == spell_id) {
-				SpellOnTarget(buffs[slot].spellid, this, 0, false, 0, false, -1, duration, true);
+				SpellOnTarget(buffs[slot].spellid, this, 0, false, 0, false, level, duration, true);
 				return;
 			}
 		} else {
 			if (IsValidSpell(buffs[slot].spellid)) {
-				SpellOnTarget(buffs[slot].spellid, this, 0, false, 0, false, -1, duration, true);
+				SpellOnTarget(buffs[slot].spellid, this, 0, false, 0, false, level, duration, true);
 			}
 		}
 	}
 }
 
-void Mob::ApplySpellBuff(int spell_id, int duration)
+void Mob::ApplySpellBuff(int spell_id, int duration, int level)
 {
 	/*
 		Used for quest command to apply a new buff with custom duration.
@@ -10438,7 +10479,7 @@ void Mob::ApplySpellBuff(int spell_id, int duration)
 		duration = PERMANENT_BUFF_DURATION;
 	}
 
-	SpellOnTarget(spell_id, this, 0, false, 0, false, -1, duration);
+	SpellOnTarget(spell_id, this, 0, false, 0, false, level, duration);
 }
 
 int Mob::GetBuffStatValueBySpell(int32 spell_id, const char* stat_identifier) {

@@ -1711,7 +1711,7 @@ void Lua_Mob::SendIllusionPacket(luabind::adl::object illusion) {
 	cur = illusion["aa_title"];
 	if (luabind::type(cur) != LUA_TNIL) {
 		try {
-			aa_title = luabind::object_cast<uint32>(cur);
+			aa_title = luabind::object_cast<uint8>(cur);
 		} catch (luabind::cast_failed &) {
 		}
 	}
@@ -1719,7 +1719,7 @@ void Lua_Mob::SendIllusionPacket(luabind::adl::object illusion) {
 	cur = illusion["drakkin_heritage"];
 	if (luabind::type(cur) != LUA_TNIL) {
 		try {
-			drakkin_tattoo = luabind::object_cast<uint32>(cur);
+			drakkin_heritage = luabind::object_cast<uint32>(cur);
 		} catch (luabind::cast_failed &) {
 		}
 	}
@@ -2412,6 +2412,41 @@ Lua_Mob Lua_Mob::GetHateClosest() {
 	return Lua_Mob(self->GetHateClosest());
 }
 
+Lua_Mob Lua_Mob::GetHateClosest(bool skip_mezzed) {
+	Lua_Safe_Call_Class(Lua_Mob);
+	return Lua_Mob(self->GetHateClosest(skip_mezzed));
+}
+
+Lua_Bot Lua_Mob::GetHateClosestBot() {
+	Lua_Safe_Call_Class(Lua_Bot);
+	return Lua_Bot(self->GetHateClosestBot());
+}
+
+Lua_Bot Lua_Mob::GetHateClosestBot(bool skip_mezzed) {
+	Lua_Safe_Call_Class(Lua_Bot);
+	return Lua_Bot(self->GetHateClosestBot());
+}
+
+Lua_Client Lua_Mob::GetHateClosestClient() {
+	Lua_Safe_Call_Class(Lua_Client);
+	return Lua_Client(self->GetHateClosestClient());
+}
+
+Lua_Client Lua_Mob::GetHateClosestClient(bool skip_mezzed) {
+	Lua_Safe_Call_Class(Lua_Client);
+	return Lua_Client(self->GetHateClosestClient(skip_mezzed));
+}
+
+Lua_NPC Lua_Mob::GetHateClosestNPC() {
+	Lua_Safe_Call_Class(Lua_NPC);
+	return Lua_NPC(self->GetHateClosestNPC());
+}
+
+Lua_NPC Lua_Mob::GetHateClosestNPC(bool skip_mezzed) {
+	Lua_Safe_Call_Class(Lua_NPC);
+	return Lua_NPC(self->GetHateClosestNPC(skip_mezzed));
+}
+
 Lua_HateList Lua_Mob::GetHateListByDistance() {
 	Lua_Safe_Call_Class(Lua_HateList);
 	Lua_HateList ret;
@@ -2483,6 +2518,11 @@ void Lua_Mob::ApplySpellBuff(int spell_id, int duration) {
 	self->ApplySpellBuff(spell_id, duration);
 }
 
+void Lua_Mob::ApplySpellBuff(int spell_id, int duration, int level) {
+	Lua_Safe_Call_Void();
+	self->ApplySpellBuff(spell_id, level);
+}
+
 int Lua_Mob::GetBuffStatValueBySlot(uint8 slot, const char* identifier) {
 	Lua_Safe_Call_Int();
 	return self->GetBuffStatValueBySlot(slot, identifier);
@@ -2501,6 +2541,11 @@ void Lua_Mob::SetBuffDuration(int spell_id) {
 void Lua_Mob::SetBuffDuration(int spell_id, int duration) {
 	Lua_Safe_Call_Void();
 	self->SetBuffDuration(spell_id, duration);
+}
+
+void Lua_Mob::SetBuffDuration(int spell_id, int duration, int level) {
+	Lua_Safe_Call_Void();
+	self->SetBuffDuration(spell_id, duration, level);
 }
 
 Lua_Mob Lua_Mob::GetUltimateOwner() {
@@ -3078,6 +3123,12 @@ std::string Lua_Mob::GetRacePlural()
 	return self->GetRacePlural();
 }
 
+bool Lua_Mob::IsTemporaryPet()
+{
+	Lua_Safe_Call_Bool();
+	return self->IsTempPet();
+}
+
 uint32 Lua_Mob::GetMobTypeIdentifier()
 {
 	Lua_Safe_Call_Int();
@@ -3095,7 +3146,8 @@ luabind::scope lua_register_mob() {
 	.def("AddToHateList", (void(Lua_Mob::*)(Lua_Mob,int64,int64,bool,bool))&Lua_Mob::AddToHateList)
 	.def("AddToHateList", (void(Lua_Mob::*)(Lua_Mob,int64,int64,bool,bool,bool))&Lua_Mob::AddToHateList)
 	.def("ApplySpellBuff", (void(Lua_Mob::*)(int))&Lua_Mob::ApplySpellBuff)
-	.def("ApplySpellBuff", (void(Lua_Mob::*)(int, int))&Lua_Mob::ApplySpellBuff)
+	.def("ApplySpellBuff", (void(Lua_Mob::*)(int,int))&Lua_Mob::ApplySpellBuff)
+	.def("ApplySpellBuff", (void(Lua_Mob::*)(int,int,int))&Lua_Mob::ApplySpellBuff)
 	.def("Attack", (bool(Lua_Mob::*)(Lua_Mob))&Lua_Mob::Attack)
 	.def("Attack", (bool(Lua_Mob::*)(Lua_Mob,int))&Lua_Mob::Attack)
 	.def("Attack", (bool(Lua_Mob::*)(Lua_Mob,int,bool))&Lua_Mob::Attack)
@@ -3326,7 +3378,14 @@ luabind::scope lua_register_mob() {
 	.def("GetHaste", (int(Lua_Mob::*)(void))&Lua_Mob::GetHaste)
 	.def("GetHateAmount", (int64(Lua_Mob::*)(Lua_Mob))&Lua_Mob::GetHateAmount)
 	.def("GetHateAmount", (int64(Lua_Mob::*)(Lua_Mob,bool))&Lua_Mob::GetHateAmount)
-	.def("GetHateClosest", &Lua_Mob::GetHateClosest)
+	.def("GetHateClosest", (Lua_Mob(Lua_Mob::*)(void))&Lua_Mob::GetHateClosest)
+	.def("GetHateClosest", (Lua_Mob(Lua_Mob::*)(bool))&Lua_Mob::GetHateClosest)
+	.def("GetHateClosestBot", (Lua_Bot(Lua_Mob::*)(void))&Lua_Mob::GetHateClosestBot)
+	.def("GetHateClosestBot", (Lua_Bot(Lua_Mob::*)(bool))&Lua_Mob::GetHateClosestBot)
+	.def("GetHateClosestClient", (Lua_Client(Lua_Mob::*)(void))&Lua_Mob::GetHateClosestClient)
+	.def("GetHateClosestClient", (Lua_Client(Lua_Mob::*)(bool))&Lua_Mob::GetHateClosestClient)
+	.def("GetHateClosestNPC", (Lua_NPC(Lua_Mob::*)(void))&Lua_Mob::GetHateClosestNPC)
+	.def("GetHateClosestNPC", (Lua_NPC(Lua_Mob::*)(bool))&Lua_Mob::GetHateClosestNPC)
 	.def("GetHateDamageTop", (Lua_Mob(Lua_Mob::*)(Lua_Mob))&Lua_Mob::GetHateDamageTop)
 	.def("GetHateList", &Lua_Mob::GetHateList)
 	.def("GetHateListBots", (Lua_HateList(Lua_Mob::*)(void))&Lua_Mob::GetHateListBots)
@@ -3466,6 +3525,7 @@ luabind::scope lua_register_mob() {
 	.def("IsStunned", (bool(Lua_Mob::*)(void))&Lua_Mob::IsStunned)
 	.def("IsTargetable", (bool(Lua_Mob::*)(void))&Lua_Mob::IsTargetable)
 	.def("IsTargeted", &Lua_Mob::IsTargeted)
+	.def("IsTemporaryPet", &Lua_Mob::IsTemporaryPet)
 	.def("IsTrackable", (bool(Lua_Mob::*)(void))&Lua_Mob::IsTrackable)
 	.def("IsWarriorClass", &Lua_Mob::IsWarriorClass)
 	.def("Kill", (void(Lua_Mob::*)(void))&Lua_Mob::Kill)
@@ -3529,7 +3589,8 @@ luabind::scope lua_register_mob() {
 	.def("SetBucket", (void(Lua_Mob::*)(std::string,std::string))&Lua_Mob::SetBucket)
 	.def("SetBucket", (void(Lua_Mob::*)(std::string,std::string,std::string))&Lua_Mob::SetBucket)
 	.def("SetBuffDuration", (void(Lua_Mob::*)(int))&Lua_Mob::SetBuffDuration)
-	.def("SetBuffDuration", (void(Lua_Mob::*)(int, int))&Lua_Mob::SetBuffDuration)
+	.def("SetBuffDuration", (void(Lua_Mob::*)(int,int))&Lua_Mob::SetBuffDuration)
+	.def("SetBuffDuration", (void(Lua_Mob::*)(int,int,int))&Lua_Mob::SetBuffDuration)
 	.def("SetCurrentWP", &Lua_Mob::SetCurrentWP)
 	.def("SetDestructibleObject", (void(Lua_Mob::*)(bool))&Lua_Mob::SetDestructibleObject)
 	.def("SetDisableMelee", (void(Lua_Mob::*)(bool))&Lua_Mob::SetDisableMelee)

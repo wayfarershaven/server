@@ -2039,6 +2039,9 @@ namespace UF
 			eq->window = emu->window;
 		OUT(type);
 		eq->invslot = ServerToUFSlot(emu->invslot);
+		OUT(target_id);
+		OUT(can_cast);
+		OUT(can_scribe);
 		strn0cpy(eq->txtfile, emu->booktext, sizeof(eq->txtfile));
 
 		FINISH_ENCODE();
@@ -3150,6 +3153,17 @@ namespace UF
 		FINISH_DIRECT_DECODE();
 	}
 
+	DECODE(OP_BookButton)
+	{
+		DECODE_LENGTH_EXACT(structs::BookButton_Struct);
+		SETUP_DIRECT_DECODE(BookButton_Struct, structs::BookButton_Struct);
+
+		emu->invslot = static_cast<int16_t>(UFToServerSlot(eq->invslot));
+		IN(target_id);
+
+		FINISH_DIRECT_DECODE();
+	}
+
 	DECODE(OP_Buff)
 	{
 		DECODE_LENGTH_EXACT(structs::SpellBuffPacket_Struct);
@@ -3721,7 +3735,8 @@ namespace UF
 		SETUP_DIRECT_DECODE(BookRequest_Struct, structs::BookRequest_Struct);
 
 		IN(type);
-		emu->invslot = UFToServerSlot(eq->invslot);
+		emu->invslot = static_cast<int16_t>(UFToServerSlot(eq->invslot));
+		IN(target_id);
 		emu->window = (uint8)eq->window;
 		strn0cpy(emu->txtfile, eq->txtfile, sizeof(emu->txtfile));
 

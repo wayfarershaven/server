@@ -99,77 +99,96 @@ void HateList::SetHateAmountOnEnt(Mob* other, int64 in_hate, uint64 in_damage)
 
 Mob* HateList::GetDamageTopOnHateList(Mob* hater)
 {
-	Mob* current = nullptr;
-	Group* grp = nullptr;
-	Raid* r = nullptr;
-	uint64 dmg_amt = 0;
+	Mob* highestDamageMob = nullptr;
+	uint64 maxDamage = 0;
 
-	auto iterator = list.begin();
-	while (iterator != list.end())
+	for (const auto& hateEntity : list)
 	{
-		grp = nullptr;
-		r = nullptr;
+		Mob* currentMob = hateEntity->entity_on_hatelist;
 
-		if ((*iterator)->entity_on_hatelist && (*iterator)->entity_on_hatelist->IsClient()){
-			r = entity_list.GetRaidByClient((*iterator)->entity_on_hatelist->CastToClient());
-		}
+		// If there's no entity, continue to the next iteration
+		if (!currentMob) continue;
 
-		grp = entity_list.GetGroupByMob((*iterator)->entity_on_hatelist);
-
-		if ((*iterator)->entity_on_hatelist && r){
-			if (r->GetTotalRaidDamage(hater) >= dmg_amt)
-			{
-				current = (*iterator)->entity_on_hatelist;
-				dmg_amt = r->GetTotalRaidDamage(hater);
+		if (currentMob->IsClient()) {
+			Raid* raid = entity_list.GetRaidByClient(currentMob->CastToClient());
+			if (raid) {
+				uint64 raidDamage = raid->GetTotalRaidDamage(hater);
+				if (raidDamage >= maxDamage) {
+					highestDamageMob = currentMob;
+					maxDamage = raidDamage;
+				}
+				continue; // Move to the next iteration since a raid was found
 			}
 		}
-		else if ((*iterator)->entity_on_hatelist != nullptr && grp != nullptr)
-		{
-			if (grp->GetTotalGroupDamage(hater) >= dmg_amt)
-			{
-				current = (*iterator)->entity_on_hatelist;
-				dmg_amt = grp->GetTotalGroupDamage(hater);
+
+		Group* group = entity_list.GetGroupByMob(currentMob);
+		if (group) {
+			uint64 groupDamage = group->GetTotalGroupDamage(hater);
+			if (groupDamage >= maxDamage) {
+				highestDamageMob = currentMob;
+				maxDamage = groupDamage;
 			}
+			continue; // Move to the next iteration since a group was found
 		}
-		else if ((*iterator)->entity_on_hatelist != nullptr && (uint64)(*iterator)->hatelist_damage >= dmg_amt)
-		{
-			current = (*iterator)->entity_on_hatelist;
-			dmg_amt = (*iterator)->hatelist_damage;
+
+		uint64 individualDamage = static_cast<uint64>(hateEntity->hatelist_damage);
+		if (individualDamage >= maxDamage) {
+			highestDamageMob = currentMob;
+			maxDamage = individualDamage;
 		}
-		++iterator;
 	}
-	return current;
+
+	return highestDamageMob;
 }
 
-Mob* HateList::GetClosestEntOnHateList(Mob *hater, bool skip_mezzed, bool clients_first) {
+Mob* HateList::GetClosestEntOnHateList(Mob *hater, bool skip_mezzed, EntityFilterType entity_type) {
 	Mob* close_entity = nullptr;
 	float close_distance = 99999.9f;
-	float hatelist_distance;
+	float this_distance;
 
-	auto iterator = list.begin();
-	while (iterator != list.end()) {
-		if (skip_mezzed && (*iterator)->entity_on_hatelist->IsMezzed()) {
-			++iterator;
+	for (const auto& e : list) {
+		if (!e->entity_on_hatelist) {
 			continue;
 		}
 
-		hatelist_distance = DistanceSquaredNoZ((*iterator)->entity_on_hatelist->GetPosition(), hater->GetPosition());
-		Mob* hatelist_entity = (*iterator)->entity_on_hatelist;
-		if (hatelist_entity != nullptr) {
-			if (close_entity == nullptr
-				|| (hatelist_entity->IsClient() && close_entity->IsNPC() && hatelist_entity->CombatRange(hater))
-				|| (hatelist_entity->IsNPC() && close_entity->IsClient() && !close_entity->CombatRange(hater))
-				|| (hatelist_distance <= close_distance && ( (close_entity->IsClient() && hatelist_entity->IsClient())
-															 || (close_entity->IsNPC() && hatelist_entity->IsNPC())))) {
-				close_distance = hatelist_distance;
-				close_entity = hatelist_entity;
-			}
+		if (skip_mezzed && e->entity_on_hatelist->IsMezzed()) {
+			continue;
 		}
-		++iterator;
+
+		switch (entity_type) {
+			case EntityFilterType::Bots:
+				if (!e->entity_on_hatelist->IsBot()) {
+					continue;
+				}
+				break;
+			case EntityFilterType::Clients:
+				if (!e->entity_on_hatelist->IsClient()) {
+					continue;
+				}
+				break;
+			case EntityFilterType::NPCs:
+				if (!e->entity_on_hatelist->IsNPC()) {
+					continue;
+				}
+				break;
+			case EntityFilterType::All:
+			default:
+				break;
+		}
+
+		this_distance = DistanceSquaredNoZ(e->entity_on_hatelist->GetPosition(), hater->GetPosition());
+		if (this_distance <= close_distance) {
+			close_distance = this_distance;
+			close_entity   = e->entity_on_hatelist;
+		}
 	}
 
-	if ((!close_entity && hater->IsNPC()) || (close_entity && close_entity->DivineAura()))
+	if (
+		(!close_entity && hater->IsNPC()) ||
+		(close_entity && close_entity->DivineAura())
+	) {
 		close_entity = hater->CastToNPC()->GetHateTop();
+	}
 
 	return close_entity;
 }

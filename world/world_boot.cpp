@@ -351,6 +351,7 @@ bool WorldBoot::DatabaseLoadRoutines(int argc, char **argv)
 	}
 
 	guild_mgr.LoadGuilds();
+	guild_mgr.LoadTributes();
 
 	//rules:
 	{

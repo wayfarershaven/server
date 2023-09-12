@@ -23,16 +23,20 @@
 #include "clientlist.h"
 #include "zonelist.h"
 #include "zoneserver.h"
-
+#include "cliententry.h"
+#include "client.h"
+#include "../common/repositories/guilds_repository.h"
+#include "../common/repositories/guild_ranks_repository.h"
+#include "../common/repositories/guild_permissions_repository.h"
+#include "../common/repositories/guild_members_repository.h"
+#include "../common/repositories/guild_bank_repository.h"
+#include "../common/repositories/guild_tributes_repository.h"
 
 extern ClientList client_list;
 extern ZSList zoneserver_list;
-
-
+std::map<uint32, TributeData> tribute_list;
 
 WorldGuildManager guild_mgr;
-
-
 
 void WorldGuildManager::SendGuildRefresh(uint32 guild_id, bool name, bool motd, bool rank, bool relation) {
 	LogGuilds("Broadcasting guild refresh for [{}], changes: name=[{}], motd=[{}], rank=d, relation=[{}]", guild_id, name, motd, rank, relation);
@@ -112,13 +116,21 @@ void WorldGuildManager::ProcessZonePacket(ServerPacket *pack) {
 			LogGuilds("Received ServerOP_DeleteGuild of incorrect size [{}], expected [{}]", pack->size, sizeof(ServerGuildID_Struct));
 			return;
 		}
+
 		ServerGuildID_Struct *s = (ServerGuildID_Struct *) pack->pBuffer;
+
+		auto res = m_guilds.find(s->guild_id);
+		if (res != m_guilds.end()) {
+			delete res->second;
+			m_guilds.erase(res);
+		}
+
 		LogGuilds("Received and broadcasting guild delete for guild [{}]", s->guild_id);
 
 		//broadcast this packet to all zones.
 		zoneserver_list.SendPacket(pack);
 
-		LoadGuilds();
+		//LoadGuilds();
 
 		break;
 	}
@@ -225,4 +237,232 @@ void WorldGuildManager::ProcessZonePacket(ServerPacket *pack) {
 		LogGuilds("Unknown packet {:#04x} received from zone??", pack->opcode);
 		break;
 	}
+}
+
+void WorldGuildManager::Process() {
+	for (auto& g : m_guilds) {
+		if (!g.second->tribute.enabled) {
+			continue;
+		} 
+		else if (g.second->tribute.enabled && !g.second->tribute.timer.Enabled()) {
+			g.second->tribute.timer.Start(g.second->tribute.time_remaining);
+			LogGuilds("Found a Guild Tribute Timer for guild [{}]\. that was not started.  Started it with {} time remaining before restart.",
+				g.first,
+				g.second->tribute.time_remaining
+			);
+		}
+		else if (g.second->tribute.enabled &&
+			g.second->tribute.timer.Enabled() &&
+			g.second->tribute.timer.Check()
+			) {
+			g.second->tribute.favor -= GetGuildTributeCost(g.first);
+			g.second->tribute.time_remaining = GUILD_TRIBUTE_DEFAULT_TIMER;
+			g.second->tribute.timer.Start(GUILD_TRIBUTE_DEFAULT_TIMER);
+
+			guild_mgr.DBSetGuildFavor(g.first, g.second->tribute.favor);
+			guild_mgr.DBSetTributeTimeRemaining(g.first, GUILD_TRIBUTE_DEFAULT_TIMER);
+
+			LogGuilds("Timer reset.  Do tribute work - Points, send timer restart to zones, etc.");
+
+			SendGuildTributeFavorAndTimer(g.first, g.second->tribute.favor, g.second->tribute.timer.GetRemainingTime());
+			//ServerPacket* sp = new ServerPacket(ServerOP_GuildTributeFavAndTimer, sizeof(GuildTributeFavorTimer_Struct));
+			//GuildTributeFavorTimer_Struct* data = (GuildTributeFavorTimer_Struct*)sp->pBuffer;
+			//data->guild_id = g.first;
+			//data->guild_favor = g.second->tribute.favor;
+			//data->tribute_timer = g.second->tribute.time_remaining;
+			//data->trophy_timer = 0;
+			//
+			//for (auto const& z : zoneserver_list.getZoneServerList()) {
+			//	auto r = z.get();
+			//	if (r->GetZoneID() > 0) {
+			//		r->SendPacket(sp);
+			//	}
+			//}
+			//safe_delete(sp);
+
+		}
+		else if (g.second->tribute.send_timer && 
+			(g.second->tribute.timer.GetRemainingTime()/1000) % (GUILD_TRIBUTE_SEND_TIME_INTERVAL/1000) == 0 && 
+			!g.second->tribute.timer.Check()
+			){
+			g.second->tribute.send_timer = false;
+			g.second->tribute.time_remaining = g.second->tribute.timer.GetRemainingTime();
+			SendGuildTributeFavorAndTimer(g.first, g.second->tribute.favor, g.second->tribute.time_remaining);
+			guild_mgr.DBSetTributeTimeRemaining(g.first, g.second->tribute.time_remaining);
+			LogGuilds("Timer Frequency [{}]hit.  Sending time [{}] to guild clients.",
+				GUILD_TRIBUTE_SEND_TIME_INTERVAL,
+				g.second->tribute.time_remaining
+			);
+		}
+		else if (!g.second->tribute.send_timer &&
+			(g.second->tribute.timer.GetRemainingTime() / 1000) % (GUILD_TRIBUTE_SEND_TIME_INTERVAL / 1000) > 0 &&
+			!g.second->tribute.timer.Check()
+			) {
+			g.second->tribute.send_timer = true;
+		}
+	}
+}
+
+uint32 WorldGuildManager::GetGuildTributeCost(uint32 guild_id)
+{
+	auto guild_members = client_list.GetGuildClientsWithTributeOptIn(guild_id);
+	auto total = guild_members.size();
+	auto total_cost = 0;
+
+	auto guild = guild_mgr.GetGuildByGuildID(guild_id);
+	
+	if (guild) {
+		TributeData& d1 = tribute_list[guild->tribute.id_1];
+		TributeData& d2 = tribute_list[guild->tribute.id_2];
+
+		uint32 cost_id1 = d1.tiers[guild->tribute.id_1_tier].cost;
+		uint32 cost_id2 = d2.tiers[guild->tribute.id_2_tier].cost;
+		uint32 level_id1 = d2.tiers[guild->tribute.id_1_tier].level;
+		uint32 level_id2 = d2.tiers[guild->tribute.id_2_tier].level;
+
+		for (auto const& m : guild_members) {
+			if (m.second->level() >= level_id1) {
+				total_cost += cost_id1;
+			}
+			if (m.second->level() >= level_id2) {
+				total_cost += cost_id2;
+			}
+		}
+	}
+	return total_cost;
+}
+
+bool WorldGuildManager::LoadTributes() {
+
+	TributeData tributeData;
+	memset(&tributeData.tiers, 0, sizeof(tributeData.tiers));
+	tributeData.tier_count = 0;
+
+	tribute_list.clear();
+
+	const std::string query = "SELECT id, name, descr, unknown, isguild FROM tributes";
+	auto results = m_db->QueryDatabase(query);
+	if (!results.Success()) {
+		return false;
+	}
+
+	for (auto row = results.begin(); row != results.end(); ++row) {
+		uint32 id = Strings::ToUnsignedInt(row[0]);
+		tributeData.name = row[1];
+		tributeData.description = row[2];
+		tributeData.unknown = strtoul(row[3], nullptr, 10);
+		tributeData.is_guild = atol(row[4]) == 0 ? false : true;
+
+		tribute_list[id] = tributeData;
+	}
+
+	LogInfo("Loaded [{}] tributes", Strings::Commify(results.RowCount()));
+
+	const std::string query2 = "SELECT tribute_id, level, cost, item_id FROM tribute_levels ORDER BY tribute_id, level";
+	results = m_db->QueryDatabase(query2);
+	if (!results.Success()) {
+		return false;
+	}
+
+	for (auto row = results.begin(); row != results.end(); ++row) {
+		uint32 id = Strings::ToUnsignedInt(row[0]);
+
+		if (tribute_list.count(id) != 1) {
+			LogError("Error in LoadTributes: unknown tribute [{}] in tribute_levels", (unsigned long)id);
+			continue;
+		}
+
+		TributeData& cur = tribute_list[id];
+
+		if (cur.tier_count >= MAX_TRIBUTE_TIERS) {
+			LogError("Error in LoadTributes: on tribute [{}]: more tiers defined than permitted", (unsigned long)id);
+			continue;
+		}
+
+		TributeLevel_Struct& s = cur.tiers[cur.tier_count];
+
+		s.level = Strings::ToUnsignedInt(row[1]);
+		s.cost = Strings::ToUnsignedInt(row[2]);
+		s.tribute_item_id = Strings::ToUnsignedInt(row[3]);
+		cur.tier_count++;
+	}
+
+	LogInfo("Loaded [{}] tribute levels", Strings::Commify(results.RowCount()));
+
+	return true;
+}
+
+bool WorldGuildManager::RefreshGuild(uint32 guild_id)
+{
+	auto temp_guild = GetGuildByGuildID(guild_id);
+	BaseGuildManager::GuildInfo temp_guild_detail;
+
+	if (temp_guild) {
+		temp_guild_detail.tribute = temp_guild->tribute;
+	}
+
+	if (guild_id <= 0) {
+		LogError("Requested to refresh guild id [{}] but id must be greater than 0.", guild_id);
+		return false;
+	}
+
+	auto db_guild = BaseGuildsRepository::FindOne(*m_db, guild_id);
+	if (!db_guild.id) {
+		LogGuilds("Guild ID [{}] not found in database.", db_guild.id);
+		return false;
+	}
+
+	LogGuilds("Found guild id [{}].  Loading details.....", db_guild.id);
+	_CreateGuild(db_guild.id, db_guild.name.c_str(), db_guild.leader, db_guild.minstatus, db_guild.motd.c_str(), db_guild.motd_setter.c_str(), db_guild.channel.c_str(), db_guild.url.c_str(), db_guild.favor);
+	auto guild = GetGuildByGuildID(guild_id);
+	auto where_filter = fmt::format("guild_id = '{}'", guild_id);
+	auto g_ranks = BaseGuildRanksRepository::GetWhere(*m_db, where_filter);
+	for (auto const& r : g_ranks) {
+		guild->rank_names[r.rank] = r.title;
+	}
+
+	where_filter = fmt::format("guild_id = '{}'", guild_id);
+	auto g_permissions = BaseGuildPermissionsRepository::GetWhere(*m_db, where_filter);
+	for (auto const& p : g_permissions) {
+		guild->functions[p.perm_id].id = p.id;
+		guild->functions[p.perm_id].guild_id = p.guild_id;
+		guild->functions[p.perm_id].perm_id = p.perm_id;
+		guild->functions[p.perm_id].perm_value = p.permission;
+	}
+
+	auto g_tributes = BaseGuildTributesRepository::FindOne(*m_db, guild_id);
+	if (g_tributes.guild_id) {
+		guild->tribute.id_1 = g_tributes.tribute_id_1;
+		guild->tribute.id_2 = g_tributes.tribute_id_2;
+		guild->tribute.id_1_tier = g_tributes.tribute_id_1_tier;
+		guild->tribute.id_2_tier = g_tributes.tribute_id_2_tier;
+		guild->tribute.enabled = g_tributes.enabled;
+		guild->tribute.time_remaining = g_tributes.time_remaining;
+	}
+	if (temp_guild_detail.tribute.enabled == 1) {
+		guild->tribute = temp_guild_detail.tribute;
+	}
+
+	LogGuilds("Successfully refreshed guild id [{}] from the [WORLD] database", guild_id);
+	LogGuilds("Timer has [{}] time remaining from the [WORLD] refresh.", guild->tribute.time_remaining);
+
+	return true;
+}
+
+void WorldGuildManager::SendGuildTributeFavorAndTimer(uint32 guild_id, uint32 favor, uint32 time) 
+{
+	ServerPacket* sp = new ServerPacket(ServerOP_GuildTributeFavAndTimer, sizeof(GuildTributeFavorTimer_Struct));
+	GuildTributeFavorTimer_Struct* data = (GuildTributeFavorTimer_Struct*)sp->pBuffer;
+	data->guild_id = guild_id;
+	data->guild_favor = favor;
+	data->tribute_timer = time;
+	data->trophy_timer = 0;
+
+	for (auto const& z : zoneserver_list.getZoneServerList()) {
+		auto r = z.get();
+		if (r->GetZoneID() > 0) {
+			r->SendPacket(sp);
+		}
+	}
+	safe_delete(sp);
 }

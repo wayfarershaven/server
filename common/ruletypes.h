@@ -504,6 +504,8 @@ RULE_BOOL(Spells, TargetsTargetRequiresCombatRange, true, "Disable to remove com
 RULE_BOOL(Spells, NPCBuffLevelRestrictions, true, "Impose BuffLevelRestrictions on NPCs if true")
 RULE_INT(Spells, ResurrectionEffectBlock, 2, "0 = allow overwrites/rule disabled. If set to 1 = Block all buffs that would overwrite Resurrection Effects. If set to 2 = Will not overwrite Resurrection Effects, instead moves new buff to an empty slot if available. Default is 2.")
 RULE_BOOL(Spells, WaterMatchRequiredForLoS, true, "Enable/Disable the requirement of both the attacker/victim being both in or out of water for spells LoS to pass.")
+RULE_INT(Spells, DefensiveProcPenaltyLevelGap, 6, "Defensive Proc Penalty Level Gap where procs start losing their proc rate at RuleR(Spells, DefensiveProcPenaltyModifier)% per level difference")
+RULE_REAL(Spells, DefensiveProcPenaltyLevelGapModifier, 10.0f, "Defensive Proc Penalty Level Gap Modifier where procs start losing their proc rate at defined % after RuleI(Spells, DefensiveProcLevelGap) level difference")
 RULE_CATEGORY_END()
 
 RULE_CATEGORY(Combat)

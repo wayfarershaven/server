@@ -23,9 +23,12 @@
 
 #define GUILD_NONE		0xFFFFFFFF // user has no guild
 
-#define GUILD_MAX_RANK 8 // 0-2 - some places in the code assume a single digit, dont go above 9
-#define GUILD_MAX_FUNCTIONS 30
+#define GUILD_MAX_RANK                     8 // 0-2 - some places in the code assume a single digit, dont go above 9
+#define GUILD_MAX_FUNCTIONS                30
 #define GUILD_STARTING_FUNCTION_PERMISSION 128
+#define GUILD_TRIBUTE_DEFAULT_TIMER        60000	// 60 secs for testing. 10 mins 600000
+#define GUILD_TRIBUTE_SEND_TIME_INTERVAL   20000	// 20 secs for testing.  3 mins 180000
+#define GUILD_TRIBUTE_PLAT_CONVERSION      10
 
 //defines for standard ranks
 #define GUILD_MEMBER0	0

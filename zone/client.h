@@ -717,6 +717,10 @@ public:
 	inline bool IsInGuild(uint32 in_gid) const { return(in_gid == guild_id && IsInAGuild()); }
 	inline uint32 GuildID() const { return guild_id; }
 	inline uint8 GuildRank() const { return guildrank; }
+	inline bool GuildTributeOptIn() const { return guild_tribute_opt_in; }
+	inline void SetGuildTributeOptIn(bool opt) { guild_tribute_opt_in = opt; };
+	void SendGuildTributeDonateItemReply(GuildTributeDonateItemRequest_Struct* in, uint32 favor);
+	void SendGuildTributeDonatePlatReply(GuildTributeDonatePlatRequest_Struct* in, uint32 favor);
 	void SetGuildRank(uint32 rank);
 	void SetGuildID(uint32 guild_id);
 	void SendGuildMOTD(bool GetGuildMOTDReply = false);
@@ -729,6 +733,13 @@ public:
 	void SendGuildJoin(GuildJoin_Struct* gj);
 	void RefreshGuildInfo();
 	void SendGuildRankNames();
+	void SendGuildTributeDetails(uint32 tribute_id, uint32 tier);
+	void DoGuildTributeUpdate();
+	void SendGuildActiveTributes(uint32 guild_id);
+	void SendGuildFavorAndTimer(uint32 guild_id);
+	void SendGuildTributeOptInToggle(const GuildTributeMemberToggle* in);
+	void RequestGuildActiveTributes(uint32 guild_id);
+	void RequestGuildFavorAndTimer(uint32 guild_id);
 
 	uint8 GetClientMaxLevel() const { return client_max_level; }
 	void SetClientMaxLevel(uint8 max_level) { client_max_level = max_level; }
@@ -928,6 +939,7 @@ public:
 	void ApplySpell(
 		int spell_id,
 		int duration = 0,
+		int level = -1,
 		ApplySpellType apply_type = ApplySpellType::Solo,
 		bool allow_pets = false,
 		bool is_raid_group_only = true,
@@ -937,6 +949,7 @@ public:
 	void SetSpellDuration(
 		int spell_id,
 		int duration = 0,
+		int level = -1,
 		ApplySpellType apply_type = ApplySpellType::Solo,
 		bool allow_pets = false,
 		bool is_raid_group_only = true,
@@ -1771,7 +1784,8 @@ private:
 	char lskey[30];
 	int16 admin;
 	uint32 guild_id;
-	uint8 guildrank; // player's rank in the guild, 0-GUILD_MAX_RANK
+	uint8 guildrank; // player's rank in the guild, 1- Leader 8 Recruit
+	bool guild_tribute_opt_in;
 	bool GuildBanker;
 	uint16 duel_target;
 	bool duelaccepted;

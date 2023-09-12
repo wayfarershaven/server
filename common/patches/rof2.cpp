@@ -1452,6 +1452,29 @@ namespace RoF2
 		dest->FastQueuePacket(&in, ack_req);
 	}
 
+	ENCODE(OP_GuildTributeDonateItem)
+	{
+		SETUP_DIRECT_ENCODE(GuildTributeDonateItemRequest_Struct, structs::GuildTributeDonateItemRequest_Struct);
+
+		Log(Logs::Detail, Logs::Netcode, "RoF2::ENCODE(OP_GuildTributeDonateItem)");
+
+		OUT(Type);
+		OUT(Slot);
+		OUT(SubIndex);
+		OUT(AugIndex);
+		OUT(Unknown10);
+		OUT(quanity);
+		OUT(unknown20);
+
+		structs::InventorySlot_Struct iss;
+		iss = ServerToRoF2Slot(emu->Slot);
+
+		eq->Slot = iss.Slot;
+		eq->SubIndex = iss.SubIndex;
+
+		FINISH_ENCODE();
+	}
+
 	ENCODE(OP_HPUpdate)
 	{
 		SETUP_DIRECT_ENCODE(SpawnHPUpdate_Struct, structs::SpawnHPUpdate_Struct);
@@ -2768,7 +2791,10 @@ namespace RoF2
 		else
 			eq->window = emu->window;
 		OUT(type);
-		OUT(invslot);
+		eq->invslot = ServerToRoF2TypelessSlot(emu->invslot, invtype::typePossessions);
+		OUT(target_id);
+		OUT(can_cast);
+		OUT(can_scribe);
 		strn0cpy(eq->txtfile, emu->booktext, sizeof(eq->txtfile));
 
 		FINISH_ENCODE();
@@ -4381,6 +4407,17 @@ namespace RoF2
 		FINISH_DIRECT_DECODE();
 	}
 
+	DECODE(OP_BookButton)
+	{
+		DECODE_LENGTH_EXACT(structs::BookButton_Struct);
+		SETUP_DIRECT_DECODE(BookButton_Struct, structs::BookButton_Struct);
+
+		emu->invslot = static_cast<int16_t>(RoF2ToServerTypelessSlot(eq->slot, invtype::typePossessions));
+		IN(target_id);
+
+		FINISH_DIRECT_DECODE();
+	}
+
 	DECODE(OP_Buff)
 	{
 		DECODE_LENGTH_EXACT(structs::SpellBuffPacket_Struct);
@@ -4915,6 +4952,44 @@ namespace RoF2
 		FINISH_DIRECT_DECODE();
 	}
 
+	DECODE(OP_GuildTributeDonateItem)
+	{
+		DECODE_LENGTH_EXACT(structs::GuildTributeDonateItemRequest_Struct);
+		SETUP_DIRECT_DECODE(GuildTributeDonateItemRequest_Struct, structs::GuildTributeDonateItemRequest_Struct);
+
+		Log(Logs::Detail, Logs::Netcode, "RoF2::DECODE(OP_GuildTributeDonateItem)");
+
+		IN(Type);
+		IN(Slot);
+		IN(SubIndex);
+		IN(AugIndex);
+		IN(Unknown10);
+		IN(quanity);
+		IN(tribute_master_id);
+		IN(unknown20);
+		IN(guild_id);
+		IN(unknown28);
+		IN(unknown32);
+
+		structs::InventorySlot_Struct iss;
+		iss.Slot = eq->Slot;
+		iss.SubIndex = eq->SubIndex;
+		iss.AugIndex = eq->AugIndex;
+		iss.Type = eq->Type;
+		iss.Unknown01 = 0;
+		iss.Unknown02 = 0;
+
+		emu->Slot = RoF2ToServerSlot(iss);
+
+		//emu->from_slot = RoF2ToServerSlot(eq->from_slot);
+		//emu->to_slot = RoF2ToServerSlot(eq->to_slot);
+		//IN(number_in_stack);
+
+		//LogNetcode("[RoF2] MoveItem Slot from [{}] to [{}], Number [{}]", emu->from_slot, emu->to_slot, emu->number_in_stack);
+
+		FINISH_DIRECT_DECODE();
+	}
+	
 	/*DECODE(OP_InspectAnswer)
 	{
 	DECODE_LENGTH_EXACT(structs::InspectResponse_Struct);
@@ -5087,8 +5162,8 @@ namespace RoF2
 		SETUP_DIRECT_DECODE(BookRequest_Struct, structs::BookRequest_Struct);
 
 		IN(type);
-		IN(invslot);
-		IN(subslot);
+		emu->invslot = static_cast<int16_t>(RoF2ToServerTypelessSlot(eq->invslot, invtype::typePossessions));
+		IN(target_id);
 		emu->window = (uint8)eq->window;
 		strn0cpy(emu->txtfile, eq->txtfile, sizeof(emu->txtfile));
 

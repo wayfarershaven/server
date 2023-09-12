@@ -562,8 +562,8 @@ public:
 	void ListAppearanceEffects(Client* c);
 	void ClearAppearenceEffects();
 	void SendSavedAppearenceEffects(Client *receiver);
-	void SetBuffDuration(int spell_id, int duration = 0);
-	void ApplySpellBuff(int spell_id, int duration = 0);
+	void SetBuffDuration(int spell_id, int duration = 0, int level_override = -1);
+	void ApplySpellBuff(int spell_id, int duration = 0, int level_override = -1);
 	int GetBuffStatValueBySpell(int32 spell_id, const char* stat_identifier);
 	int GetBuffStatValueBySlot(uint8 slot, const char* stat_identifier);
 
@@ -819,7 +819,10 @@ public:
 	NPC* GetHateRandomNPC() { return hate_list.GetRandomNPCOnHateList(); }
 	Bot* GetHateRandomBot() { return hate_list.GetRandomBotOnHateList(); }
 	Mob* GetHateMost() { return hate_list.GetEntWithMostHateOnList();}
-	Mob* GetHateClosest() { return hate_list.GetClosestEntOnHateList(this); }
+	Mob* GetHateClosest(bool skip_mezzed = false) { return hate_list.GetClosestEntOnHateList(this, skip_mezzed); }
+	Bot* GetHateClosestBot(bool skip_mezzed = false) { return hate_list.GetClosestEntOnHateList(this, skip_mezzed, EntityFilterType::Bots)->CastToBot(); }
+	Client* GetHateClosestClient(bool skip_mezzed = false) { return hate_list.GetClosestEntOnHateList(this, skip_mezzed, EntityFilterType::Clients)->CastToClient(); }
+	NPC* GetHateClosestNPC(bool skip_mezzed = false) { return hate_list.GetClosestEntOnHateList(this, skip_mezzed, EntityFilterType::NPCs)->CastToNPC(); }
 	bool IsEngaged() { return(!hate_list.IsHateListEmpty()); }
 	bool HasPrimaryAggro() { return PrimaryAggro; }
 	bool HasAssistAggro() { return AssistAggro; }

@@ -569,13 +569,25 @@ void command_guild(Client *c, const Seperator *sep)
 			guild->functions[i].perm_value
 			).c_str());
 		}
+		c->Message(Chat::Yellow, fmt::format("Guild Tribute:  Favor     {}", guild->tribute.favor).c_str());
+		c->Message(Chat::Yellow, fmt::format("Guild Tribute:  Tribute 1 {}/{}   - Tribute 2 {}/{}",
+			guild->tribute.id_1,
+			guild->tribute.id_1_tier,
+			guild->tribute.id_2,
+			guild->tribute.id_2_tier
+			).c_str());
+		c->Message(Chat::Yellow, fmt::format("Guild Tribute:  Time Remaining {} - Enabled {}",
+			guild->tribute.time_remaining,
+			guild->tribute.enabled
+		).c_str());
 	}	
 	for (auto& c1 : entity_list.GetClientList()) {
 		if (c1.second->GuildID() == guild_id) {
-			c->Message(Chat::Yellow, fmt::format("PlayerName: {} ID: {} Rank: {}.", 
+			c->Message(Chat::Yellow, fmt::format("PlayerName: {} ID: {} Rank: {} OptIn: {}.", 
 				c1.second->GetCleanName(),
 				c1.second->GuildID(),
-				c1.second->GuildRank()
+				c1.second->GuildRank(),
+				c1.second->GuildTributeOptIn()
 				).c_str());
 		}
 	}
@@ -600,7 +612,59 @@ void command_guild(Client *c, const Seperator *sep)
 			target->SendAppearancePacket(command4, command5, true, false, target->CastToClient(), false );
 			c->Message(Chat::Yellow, "SendAppearancePacket sent.");
 		}
-							}
+		if (command3 == 3) {
+			c->SendGuildTributes();
+			c->Message(Chat::Yellow, "Guild Tributes sent.");
+		}
+		if (command3 == 4) {
+			//#guild test 2 4 60 1
+			c->Message(Chat::Yellow, "Guild Tribute Item sent to client.");
+			c->DoGuildTributeUpdate();
+		}
+		if (command3 == 5) {
+			//#guild test 2 4 60 1
+			c->Message(Chat::Yellow, "Put item {} in slot {} ");
+			const EQ::ItemInstance* inst = database.CreateItem(command4, 1);
+			c->PutItemInInventory(EQ::invslot::GUILD_TRIBUTE_BEGIN + command5, *inst);
+			c->SendItemPacket(EQ::invslot::GUILD_TRIBUTE_BEGIN + command5, inst, (ItemPacketType)guild_id);
+		}
+		if (command3 == 6) {
+			//#guild test 2 6 4 450/451
+			c->Message(Chat::Yellow, "Delete item in slot {} ", command4);
+			c->DeleteItemInInventory(command5);
+		}
+		if (command3 == 7) {
+			//#guild test 2 7 450/451 0
+			c->Message(Chat::Yellow, "Send Delete packet for item in slot {} ", command4);
+			//c->DeleteItemInInventory(command4, 0, true, false);
+			EQApplicationPacket* outapp;
+			outapp = new EQApplicationPacket(OP_DeleteItem, sizeof(DeleteItem_Struct));
+			DeleteItem_Struct* delitem = (DeleteItem_Struct*)outapp->pBuffer;
+			delitem->from_slot = command4;
+			delitem->to_slot = 0xFFFFFFFF;
+			delitem->number_in_stack = 0xFFFFFFFF;
+			c->QueuePacket(outapp);
+			safe_delete(outapp);
+		}
+		if (command3 == 8) {
+			//#guild test 150022 8 450 108
+			const EQ::ItemInstance* inst = database.CreateItem(guild_id, 1);
+			c->Message(Chat::Yellow, "Put item {} in slot {} ", guild_id, command4);
+//			c->PutItemInInventory(command4, *inst, command5);
+
+			std::string packet = inst->Serialize(command4);
+			EmuOpcode opcode = OP_Unknown;
+			EQApplicationPacket* outapp = nullptr;
+			ItemPacket_Struct* itempacket = nullptr;
+
+			// Construct packet
+			opcode = OP_ItemPacket;
+			outapp = new EQApplicationPacket(opcode, packet.length() + sizeof(ItemPacket_Struct));
+			itempacket = (ItemPacket_Struct*)outapp->pBuffer;
+			memcpy(itempacket->SerializedItem, packet.c_str(), packet.length());
+			itempacket->PacketType = (ItemPacketType)command5;
+		}
+	}
 }
 
 void SendGuildSubCommands(Client *c)

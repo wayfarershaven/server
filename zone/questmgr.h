@@ -312,7 +312,7 @@ public:
 	void CrossZoneLDoNUpdate(uint8 update_type, uint8 update_subtype, int update_identifier, uint32 theme_id, int points = 1, const char* client_name = "");
 	void CrossZoneMarquee(uint8 update_type, int update_identifier, uint32 type, uint32 priority, uint32 fade_in, uint32 fade_out, uint32 duration, const char* message, const char* client_name = "");
 	void CrossZoneMessage(uint8 update_type, int update_identifier, uint32 type, const char* message, const char* client_name = "");
-	void CrossZoneMove(uint8 update_type, uint8 update_subtype, int update_identifier, const char* zone_short_name, uint16 instance_id, const char* client_name = "");
+	void CrossZoneMove(const CZMove_Struct& m);
 	void CrossZoneSetEntityVariable(uint8 update_type, int update_identifier, const char* variable_name, const char* variable_value, const char* client_name = "");
 	void CrossZoneSignal(uint8 update_type, int update_identifier, int signal_id, const char* client_name = "");
 	void CrossZoneSpell(uint8 update_type, uint8 update_subtype, int update_identifier, uint32 spell_id, const char* client_name = "");
@@ -349,8 +349,11 @@ public:
 	bool HasRecipeLearned(uint32 recipe_id);
 	bool DoAugmentSlotsMatch(uint32 item_one, uint32 item_two);
 	int8 DoesAugmentFit(EQ::ItemInstance* inst, uint32 augment_id, uint8 augment_slot = 255);
-
 	void SendPlayerHandinEvent();
+	void SendChannelMessage(uint8 channel_number, uint32 guild_id, uint8 language_id, uint8 language_skill, const char* message);
+	void SendChannelMessage(Client* from, uint8 channel_number, uint32 guild_id, uint8 language_id, uint8 language_skill, const char* message);
+	void SendChannelMessage(Client* from, const char* to, uint8 channel_number, uint32 guild_id, uint8 language_id, uint8 language_skill, const char* message);
+
 	Bot *GetBot() const;
 	Client *GetInitiator() const;
 	NPC *GetNPC() const;

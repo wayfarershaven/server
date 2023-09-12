@@ -57,6 +57,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include "dialogue_window.h"
 #include "bot_command.h"
 #include "../common/events/player_event_logs.h"
+#include "../common/repositories/guild_tributes_repository.h"
 
 extern EntityList entity_list;
 extern Zone* zone;
@@ -2535,98 +2536,105 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 	}
 	case ServerOP_CZMove:
 	{
-		CZMove_Struct* CZM = (CZMove_Struct*) pack->pBuffer;
-		uint8 update_type = CZM->update_type;
-		uint8 update_subtype = CZM->update_subtype;
-		int update_identifier = CZM->update_identifier;
-		const char* zone_short_name = CZM->zone_short_name;
-		uint16 instance_id = CZM->instance_id;
-		const char* client_name = CZM->client_name;
+		auto s = (CZMove_Struct*) pack->pBuffer;
+
+		const std::string& client_name       = s->client_name;
+		const glm::vec4&   coordinates       = s->coordinates;
+		const uint16       instance_id       = s->instance_id;
+		const uint32       update_identifier = s->update_identifier;
+		const uint8        update_type       = s->update_type;
+		const uint8        update_subtype    = s->update_subtype;
+		const std::string& zone_short_name   = s->zone_short_name;
+
+		if (Strings::IsNumber(client_name) || Strings::IsNumber(zone_short_name)) {
+			break;
+		}
+
 		if (update_type == CZUpdateType_Character) {
-			auto client = entity_list.GetClientByCharID(update_identifier);
-			if (client) {
+			Client* c = entity_list.GetClientByCharID(update_identifier);
+			if (c) {
 				switch (update_subtype) {
 					case CZMoveUpdateSubtype_MoveZone:
-						client->MoveZone(zone_short_name);
+						c->MoveZone(zone_short_name.c_str(), coordinates);
 						break;
 					case CZMoveUpdateSubtype_MoveZoneInstance:
-						client->MoveZoneInstance(instance_id);
+						c->MoveZoneInstance(instance_id, coordinates);
 						break;
 				}
 			}
 		} else if (update_type == CZUpdateType_Group) {
-			auto client_group = entity_list.GetGroupByID(update_identifier);
-			if (client_group) {
-				for (int member_index = 0; member_index < MAX_GROUP_MEMBERS; member_index++) {
-					if (client_group->members[member_index] && client_group->members[member_index]->IsClient()) {
-						auto group_member = client_group->members[member_index]->CastToClient();
+			Group* g = entity_list.GetGroupByID(update_identifier);
+			if (g) {
+				for (const auto& gm : g->members) {
+					if (gm->IsClient()) {
+						Client* c = gm->CastToClient();
 						switch (update_subtype) {
 							case CZMoveUpdateSubtype_MoveZone:
-								group_member->MoveZone(zone_short_name);
+								c->MoveZone(zone_short_name.c_str(), coordinates);
 								break;
 							case CZMoveUpdateSubtype_MoveZoneInstance:
-								group_member->MoveZoneInstance(instance_id);
+								c->MoveZoneInstance(instance_id, coordinates);
 								break;
 						}
 					}
 				}
 			}
 		} else if (update_type == CZUpdateType_Raid) {
-			auto client_raid = entity_list.GetRaidByID(update_identifier);
-			if (client_raid) {
-				for (const auto& m : client_raid->members) {
-					if (m.is_bot) {
+			Raid* r = entity_list.GetRaidByID(update_identifier);
+			if (r) {
+				for (const auto& rm : r->members) {
+					if (rm.is_bot) {
 						continue;
 					}
 
-					if (m.member && m.member->IsClient()) {
-						auto raid_member = m.member->CastToClient();
+					if (rm.member && rm.member->IsClient()) {
+						Client* m = rm.member->CastToClient();
 						switch (update_subtype) {
 							case CZMoveUpdateSubtype_MoveZone:
-								raid_member->MoveZone(zone_short_name);
+								m->MoveZone(zone_short_name.c_str(), coordinates);
 								break;
 							case CZMoveUpdateSubtype_MoveZoneInstance:
-								raid_member->MoveZoneInstance(instance_id);
+								m->MoveZoneInstance(instance_id, coordinates);
 								break;
 						}
 					}
 				}
 			}
 		} else if (update_type == CZUpdateType_Guild) {
-			for (auto &client: entity_list.GetClientList()) {
-				if (client.second->GuildID() > 0 && client.second->GuildID() == update_identifier) {
+			for (auto& c : entity_list.GetClientList()) {
+				if (c.second && c.second->IsInAGuild() && c.second->IsInGuild(update_identifier)) {
 					switch (update_subtype) {
 						case CZMoveUpdateSubtype_MoveZone:
-							client.second->MoveZone(zone_short_name);
+							c.second->MoveZone(zone_short_name.c_str(), coordinates);
 							break;
 						case CZMoveUpdateSubtype_MoveZoneInstance:
-							client.second->MoveZoneInstance(instance_id);
+							c.second->MoveZoneInstance(instance_id, coordinates);
 							break;
 					}
 				}
 			}
 		} else if (update_type == CZUpdateType_Expedition) {
-			for (auto &client: entity_list.GetClientList()) {
-				if (client.second->GetExpedition() && client.second->GetExpedition()->GetID() == update_identifier) {
+			for (auto& c : entity_list.GetClientList()) {
+				if (c.second && c.second->GetExpeditionID() == update_identifier) {
 					switch (update_subtype) {
 						case CZMoveUpdateSubtype_MoveZone:
-							client.second->MoveZone(zone_short_name);
+							c.second->MoveZone(zone_short_name.c_str(), coordinates);
 							break;
 						case CZMoveUpdateSubtype_MoveZoneInstance:
-							client.second->MoveZoneInstance(instance_id);
+							c.second->MoveZoneInstance(instance_id, coordinates);
 							break;
 					}
 				}
 			}
 		} else if (update_type == CZUpdateType_ClientName) {
-			auto client = entity_list.GetClientByName(client_name);
-			if (client) {
+			Client* c = entity_list.GetClientByName(client_name.c_str());
+			if (c) {
 				switch (update_subtype) {
 					case CZMoveUpdateSubtype_MoveZone:
-						client->MoveZone(zone_short_name);
+						c->MoveZone(zone_short_name.c_str(), coordinates);
 						break;
 					case CZMoveUpdateSubtype_MoveZoneInstance:
-						client->MoveZoneInstance(instance_id);
+						c->MoveZoneInstance(instance_id, coordinates);
 						break;
 				}
 			}
@@ -3132,21 +3140,29 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 	}
 	case ServerOP_WWMove:
 	{
-		WWMove_Struct* WWM = (WWMove_Struct*) pack->pBuffer;
-		uint8 update_type = WWM->update_type;
-		uint16 instance_id = WWM->instance_id;
-		const char* zone_short_name = WWM->zone_short_name;
-		uint8 min_status = WWM->min_status;
-		uint8 max_status = WWM->max_status;
+		auto m = (WWMove_Struct*) pack->pBuffer;
+
+		uint16      instance_id     = m->instance_id;
+		uint8       max_status      = m->max_status;
+		uint8       min_status      = m->min_status;
+		uint8       update_type     = m->update_type;
+		std::string zone_short_name = m->zone_short_name;
+
 		for (auto &client : entity_list.GetClientList()) {
 			switch (update_type) {
 				case WWMoveUpdateType_MoveZone:
-					if (client.second->Admin() >= min_status && (client.second->Admin() <= max_status || max_status == AccountStatus::Player)) {
-						client.second->MoveZone(zone_short_name);
+					if (
+						client.second->Admin() >= min_status &&
+						(client.second->Admin() <= max_status || max_status == AccountStatus::Player)
+					) {
+						client.second->MoveZone(zone_short_name.c_str());
 					}
 					break;
 				case WWMoveUpdateType_MoveZoneInstance:
-					if (client.second->Admin() >= min_status && (client.second->Admin() <= max_status || max_status == AccountStatus::Player)) {
+					if (
+						client.second->Admin() >= min_status &&
+						(client.second->Admin() <= max_status || max_status == AccountStatus::Player)
+					) {
 						client.second->MoveZoneInstance(instance_id);
 					}
 					break;
@@ -3395,6 +3411,211 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 	case ServerOP_DataBucketCacheUpdate:
 	{
 		DataBucket::HandleWorldMessage(pack);
+		break;
+	}
+	case ServerOP_GuildTributeUpdate: {
+		GuildTributeUpdate* in = (GuildTributeUpdate*)pack->pBuffer;
+
+		auto guild = guild_mgr.GetGuildByGuildID(in->guild_id);
+		if (guild) {
+			guild->tribute.favor = in->favor;
+			guild->tribute.id_1 = in->tribute_id_1;
+			guild->tribute.id_2 = in->tribute_id_2;
+			guild->tribute.id_1_tier = in->tribute_id_1_tier;
+			guild->tribute.id_2_tier = in->tribute_id_2_tier;
+			guild->tribute.time_remaining = in->time_remaining;
+			guild->tribute.enabled = in->enabled;
+		}
+		EQApplicationPacket* outapp = new EQApplicationPacket(OP_GuildSendActiveTributes, sizeof(GuildTributeSendActive_Struct));
+		GuildTributeSendActive_Struct* out = (GuildTributeSendActive_Struct*)outapp->pBuffer;
+
+		out->not_used			= in->guild_id;
+		out->guild_favor		= in->favor;
+		out->tribute_enabled	= in->enabled;
+		out->tribute_timer		= in->time_remaining;
+		out->tribute_id_1		= in->tribute_id_1;
+		out->tribute_id_2		= in->tribute_id_2;
+		out->tribute_id_1_tier  = in->tribute_id_1_tier;
+		out->tribute_id_2_tier  = in->tribute_id_2_tier;
+
+		entity_list.QueueClientsGuild(outapp, in->guild_id);
+		safe_delete(outapp);
+		break;
+	}
+	case ServerOP_GuildTributeActivate: {
+		GuildTributeUpdate* in = (GuildTributeUpdate*)pack->pBuffer;
+
+		auto guild = guild_mgr.GetGuildByGuildID(in->guild_id);
+		if (guild) {
+			guild->tribute.favor = in->favor;
+			guild->tribute.id_1 = in->tribute_id_1;
+			guild->tribute.id_2 = in->tribute_id_2;
+			guild->tribute.id_1_tier = in->tribute_id_1_tier;
+			guild->tribute.id_2_tier = in->tribute_id_2_tier;
+			guild->tribute.time_remaining = in->time_remaining;
+			guild->tribute.enabled = in->enabled;
+		}
+
+		EQApplicationPacket* outapp = new EQApplicationPacket(OP_GuildTributeToggleReply, sizeof(GuildTributeSendActive_Struct));
+		GuildTributeSendActive_Struct* out = (GuildTributeSendActive_Struct*)outapp->pBuffer;
+
+		out->not_used = in->guild_id;
+		out->guild_favor = in->favor;
+		out->tribute_enabled = in->enabled;
+		out->tribute_timer = in->time_remaining;
+		out->tribute_id_1 = in->tribute_id_1;
+		out->tribute_id_2 = in->tribute_id_2;
+		out->tribute_id_1_tier = in->tribute_id_1_tier;
+		out->tribute_id_2_tier = in->tribute_id_2_tier;
+
+		entity_list.QueueClientsGuild(outapp, in->guild_id);
+		safe_delete(outapp);
+
+		for (auto& c : entity_list.GetClientList()) {
+			if (c.second->IsInGuild(in->guild_id)) {
+				c.second->DoGuildTributeUpdate();
+			}
+		}
+		break;
+	}
+	case ServerOP_GuildTributeUpdateDonations:
+	{
+		GuildTributeUpdate* in = (GuildTributeUpdate*)pack->pBuffer;
+
+		EQApplicationPacket* outapp = new EQApplicationPacket(OP_GuildOptInOut, sizeof(GuildTributeOptInOutReply_Struct));
+		GuildTributeOptInOutReply_Struct* data = (GuildTributeOptInOutReply_Struct*)outapp->pBuffer;
+
+		data->guild_id = in->guild_id;
+		strncpy(data->player_name, in->player_name, strlen(in->player_name));
+		data->no_donations = in->member_favor;
+		data->tribute_toggle = in->member_enabled ? true : false;
+		data->tribute_trophy_toggle = 0; //not yet implemented
+		data->time = in->member_time;
+
+		entity_list.QueueClientsGuild(outapp, in->guild_id);
+		safe_delete(outapp);
+
+		break;
+	}
+	case ServerOP_GuildTributeOptInToggle:
+	{
+		GuildTributeMemberToggle* in = (GuildTributeMemberToggle*)pack->pBuffer;
+
+		EQApplicationPacket* outapp = new EQApplicationPacket(OP_GuildOptInOut, sizeof(GuildTributeOptInOutReply_Struct));
+		GuildTributeOptInOutReply_Struct* data = (GuildTributeOptInOutReply_Struct*)outapp->pBuffer;
+
+		data->guild_id = in->guild_id;
+		strncpy(data->player_name, in->player_name, strlen(in->player_name));
+		data->no_donations = in->no_donations;
+		data->tribute_toggle = in->tribute_toggle ? true : false;
+		data->tribute_trophy_toggle = 0; //not yet implemented
+		data->time = time(nullptr);
+		data->command = in->command;
+
+		entity_list.QueueClientsGuild(outapp, in->guild_id);
+		safe_delete(outapp);
+
+		auto guild = guild_mgr.GetGuildByGuildID(in->guild_id);
+		if (guild) {
+			guild->tribute.time_remaining = in->time_remaining;
+		}
+
+		auto client = entity_list.GetClientByCharID(in->char_id);
+		if (guild && client) {
+			client->SetGuildTributeOptIn(in->tribute_toggle ? true : false);
+
+			EQApplicationPacket* outapp = new EQApplicationPacket(OP_GuildTributeToggleReply, sizeof(GuildTributeSendActive_Struct));
+			GuildTributeSendActive_Struct* out = (GuildTributeSendActive_Struct*)outapp->pBuffer;
+
+			out->not_used = in->guild_id;
+			out->guild_favor = guild->tribute.favor;
+			out->tribute_enabled = guild->tribute.enabled;
+			out->tribute_timer = guild->tribute.time_remaining;
+			out->tribute_id_1 = guild->tribute.id_1;
+			out->tribute_id_2 = guild->tribute.id_2;
+			out->tribute_id_1_tier = guild->tribute.id_1_tier;
+			out->tribute_id_2_tier = guild->tribute.id_2_tier;
+			client->QueuePacket(outapp);
+			safe_delete(outapp);
+			//send deactivate and then activate
+
+			client->DoGuildTributeUpdate();
+		}
+
+		break;
+	}
+	case ServerOP_GuildTributeFavAndTimer:
+	{
+		GuildTributeFavorTimer_Struct* in = (GuildTributeFavorTimer_Struct*)pack->pBuffer;
+
+		auto guild = guild_mgr.GetGuildByGuildID(in->guild_id);
+		if (guild) {
+			guild->tribute.favor = in->guild_favor;
+			guild->tribute.time_remaining = in->tribute_timer;
+
+			auto outapp = new EQApplicationPacket(OP_GuildTributeFavorAndTimer, sizeof(GuildTributeFavorTimer_Struct));
+			GuildTributeFavorTimer_Struct* gtsa = (GuildTributeFavorTimer_Struct*)outapp->pBuffer;
+
+			gtsa->guild_id = in->guild_id;
+			gtsa->guild_favor = guild->tribute.favor;
+			gtsa->tribute_timer = guild->tribute.time_remaining;
+			gtsa->trophy_timer = 0; //not yet implemented
+
+			entity_list.QueueClientsGuild(outapp, in->guild_id);
+			safe_delete(outapp);
+		}
+		break;
+	}
+	case ServerOP_RequestGuildActiveTributes:
+	{
+		GuildTributeUpdate* in = (GuildTributeUpdate*)pack->pBuffer;
+		auto guild = guild_mgr.GetGuildByGuildID(in->guild_id);
+
+		if (guild) {
+			auto outapp = new EQApplicationPacket(OP_GuildSendActiveTributes, sizeof(GuildTributeSendActive_Struct));
+			GuildTributeSendActive_Struct* gtsa = (GuildTributeSendActive_Struct*)outapp->pBuffer;
+
+			guild->tribute.enabled = in->enabled;
+			guild->tribute.favor = in->favor;
+			guild->tribute.id_1 = in->tribute_id_1;
+			guild->tribute.id_2 = in->tribute_id_2;
+			guild->tribute.id_1_tier = in->tribute_id_1_tier;
+			guild->tribute.id_2_tier = in->tribute_id_2_tier;
+			guild->tribute.time_remaining = in->time_remaining;
+
+			gtsa->guild_favor = guild->tribute.favor;
+			gtsa->tribute_timer = guild->tribute.time_remaining;
+			gtsa->tribute_enabled = guild->tribute.enabled;
+			gtsa->tribute_id_1 = guild->tribute.id_1;
+			gtsa->tribute_id_1_tier = guild->tribute.id_1_tier;
+			gtsa->tribute_id_2 = guild->tribute.id_2;
+			gtsa->tribute_id_2_tier = guild->tribute.id_2_tier;
+
+			entity_list.QueueClientsGuild(outapp, in->guild_id);
+			safe_delete(outapp);
+		}
+		break;
+	}
+	case ServerOP_RequestGuildFavorAndTimer:
+	{
+		GuildTributeFavorTimer_Struct* in = (GuildTributeFavorTimer_Struct*)pack->pBuffer;
+
+		auto guild = guild_mgr.GetGuildByGuildID(in->guild_id);
+		if (guild) {
+			guild->tribute.favor = in->guild_favor;
+			guild->tribute.time_remaining = in->tribute_timer;
+
+			auto outapp = new EQApplicationPacket(OP_GuildTributeFavorAndTimer, sizeof(GuildTributeFavorTimer_Struct));
+			GuildTributeFavorTimer_Struct* gtsa = (GuildTributeFavorTimer_Struct*)outapp->pBuffer;
+
+			gtsa->guild_id = in->guild_id;
+			gtsa->guild_favor = guild->tribute.favor;
+			gtsa->tribute_timer = guild->tribute.time_remaining;
+			gtsa->trophy_timer = 0; //not yet implemented
+
+			entity_list.QueueClientsGuild(outapp, in->guild_id);
+			safe_delete(outapp);
+		}
 		break;
 	}
 	default: {

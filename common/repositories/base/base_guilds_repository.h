@@ -16,6 +16,7 @@
 #include "../../strings.h"
 #include <ctime>
 
+
 class BaseGuildsRepository {
 public:
 	struct Guilds {
@@ -28,6 +29,7 @@ public:
 		std::string motd_setter;
 		std::string channel;
 		std::string url;
+		uint32_t    favor;
 	};
 
 	static std::string PrimaryKey()
@@ -47,6 +49,7 @@ public:
 			"motd_setter",
 			"channel",
 			"url",
+			"favor",
 		};
 	}
 
@@ -62,6 +65,7 @@ public:
 			"motd_setter",
 			"channel",
 			"url",
+			"favor",
 		};
 	}
 
@@ -111,6 +115,7 @@ public:
 		e.motd_setter = "";
 		e.channel     = "";
 		e.url         = "";
+		e.favor       = 0;
 
 		return e;
 	}
@@ -136,8 +141,9 @@ public:
 	{
 		auto results = db.QueryDatabase(
 			fmt::format(
-				"{} WHERE id = {} LIMIT 1",
+				"{} WHERE {} = {} LIMIT 1",
 				BaseSelect(),
+				PrimaryKey(),
 				guilds_id
 			)
 		);
@@ -155,6 +161,7 @@ public:
 			e.motd_setter = row[6] ? row[6] : "";
 			e.channel     = row[7] ? row[7] : "";
 			e.url         = row[8] ? row[8] : "";
+			e.favor       = static_cast<uint32_t>(strtoul(row[9], nullptr, 10));
 
 			return e;
 		}
@@ -196,6 +203,7 @@ public:
 		v.push_back(columns[6] + " = '" + Strings::Escape(e.motd_setter) + "'");
 		v.push_back(columns[7] + " = '" + Strings::Escape(e.channel) + "'");
 		v.push_back(columns[8] + " = '" + Strings::Escape(e.url) + "'");
+		v.push_back(columns[9] + " = " + std::to_string(e.favor));
 
 		auto results = db.QueryDatabase(
 			fmt::format(
@@ -226,6 +234,7 @@ public:
 		v.push_back("'" + Strings::Escape(e.motd_setter) + "'");
 		v.push_back("'" + Strings::Escape(e.channel) + "'");
 		v.push_back("'" + Strings::Escape(e.url) + "'");
+		v.push_back(std::to_string(e.favor));
 
 		auto results = db.QueryDatabase(
 			fmt::format(
@@ -264,6 +273,7 @@ public:
 			v.push_back("'" + Strings::Escape(e.motd_setter) + "'");
 			v.push_back("'" + Strings::Escape(e.channel) + "'");
 			v.push_back("'" + Strings::Escape(e.url) + "'");
+			v.push_back(std::to_string(e.favor));
 
 			insert_chunks.push_back("(" + Strings::Implode(",", v) + ")");
 		}
@@ -306,6 +316,7 @@ public:
 			e.motd_setter = row[6] ? row[6] : "";
 			e.channel     = row[7] ? row[7] : "";
 			e.url         = row[8] ? row[8] : "";
+			e.favor       = static_cast<uint32_t>(strtoul(row[9], nullptr, 10));
 
 			all_entries.push_back(e);
 		}
@@ -339,6 +350,7 @@ public:
 			e.motd_setter = row[6] ? row[6] : "";
 			e.channel     = row[7] ? row[7] : "";
 			e.url         = row[8] ? row[8] : "";
+			e.favor       = static_cast<uint32_t>(strtoul(row[9], nullptr, 10));
 
 			all_entries.push_back(e);
 		}
