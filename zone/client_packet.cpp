@@ -16562,7 +16562,7 @@ void Client::Handle_OP_GuildTributeSaveActiveTributes(const EQApplicationPacket*
 		gt.tribute_id_1_tier = data->tribute_1_tier;
 		gt.tribute_id_2_tier = data->tribute_2_tier;
 		gt.enabled = 0;
-		gt.time_remaining = GUILD_TRIBUTE_DEFAULT_TIMER;
+		gt.time_remaining = RuleI(Guild, TributeTime);
 		GuildTributesRepository::ReplaceOne(database, gt);
 
 		guild->tribute.enabled = 0;
@@ -16570,7 +16570,7 @@ void Client::Handle_OP_GuildTributeSaveActiveTributes(const EQApplicationPacket*
 		guild->tribute.id_2 = data->tribute_id_2;
 		guild->tribute.id_1_tier = data->tribute_1_tier;
 		guild->tribute.id_2_tier = data->tribute_2_tier;
-		guild->tribute.time_remaining = GUILD_TRIBUTE_DEFAULT_TIMER;
+		guild->tribute.time_remaining = RuleI(Guild, TributeTime);
 
 		ServerPacket* sp = new ServerPacket(ServerOP_GuildTributeUpdate, sizeof(GuildTributeUpdate));
 		GuildTributeUpdate* gtu = (GuildTributeUpdate*)sp->pBuffer;
@@ -16582,7 +16582,7 @@ void Client::Handle_OP_GuildTributeSaveActiveTributes(const EQApplicationPacket*
 		gtu->tribute_id_2_tier = data->tribute_2_tier;
 		gtu->enabled = 0;
 		gtu->favor = guild->tribute.favor;
-		gtu->time_remaining = GUILD_TRIBUTE_DEFAULT_TIMER;
+		gtu->time_remaining = RuleI(Guild, TributeTime);
 
 		worldserver.SendPacket(sp);
 		safe_delete(sp);
@@ -16691,7 +16691,7 @@ void Client::Handle_OP_GuildTributeDonatePlat(const EQApplicationPacket* app)
 
 	auto quanity = in->quanity;
 
-	auto favor = quanity * (uint32)GUILD_TRIBUTE_PLAT_CONVERSION;
+	auto favor = quanity * RuleI(Guild, TributePlatConversionRate);
 	auto guild = guild_mgr.GetGuildByGuildID(guild_id);
 	if (guild) {
 		guild->tribute.favor += favor;

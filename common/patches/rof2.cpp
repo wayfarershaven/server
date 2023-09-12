@@ -1454,22 +1454,22 @@ namespace RoF2
 
 	ENCODE(OP_GuildTributeDonateItem)
 	{
-		SETUP_DIRECT_ENCODE(GuildTributeDonateItemRequest_Struct, structs::GuildTributeDonateItemRequest_Struct);
+		SETUP_DIRECT_ENCODE(GuildTributeDonateItemReply_Struct, structs::GuildTributeDonateItemReply_Struct);
 
 		Log(Logs::Detail, Logs::Netcode, "RoF2::ENCODE(OP_GuildTributeDonateItem)");
 
 		OUT(Type);
-		OUT(Slot);
 		OUT(SubIndex);
 		OUT(AugIndex);
-		OUT(Unknown10);
 		OUT(quanity);
+		OUT(unknown10);
 		OUT(unknown20);
+		OUT(favor);
 
 		structs::InventorySlot_Struct iss;
-		iss = ServerToRoF2Slot(emu->Slot);
+		iss = ServerToRoF2Slot(emu->slot);
 
-		eq->Slot = iss.Slot;
+		eq->slot = iss.Slot;
 		eq->SubIndex = iss.SubIndex;
 
 		FINISH_ENCODE();
@@ -2429,16 +2429,16 @@ namespace RoF2
 		outapp->WriteFloat(emu->z);
 		outapp->WriteFloat(emu->heading);
 
-		outapp->WriteUInt8(0);				// Unknown
+		outapp->WriteUInt8(1);				// Unknown
 		outapp->WriteUInt8(emu->pvp);
-		outapp->WriteUInt8(0);				// Unknown
+		outapp->WriteUInt8(2);				// Unknown
 		outapp->WriteUInt8(emu->gm);
 		outapp->WriteUInt32(emu->guild_id);
 
 		outapp->WriteUInt8(emu->guildrank);	// guildrank
-		outapp->WriteUInt32(0);				// Unknown
-		outapp->WriteUInt8(0);			// Unknown
-		outapp->WriteUInt32(0);				// Unknown
+		outapp->WriteUInt32(60);				// Unknown
+		outapp->WriteUInt8(1);			// Unknown
+		outapp->WriteUInt32(61);				// Unknown
 
 		outapp->WriteUInt64(emu->exp);		// int32 in client
 
@@ -2479,8 +2479,10 @@ namespace RoF2
 
 		for (uint32 r = 0; r < 10; r++)
 		{
-			outapp->WriteUInt32(0xffffffff);
-			outapp->WriteUInt32(0);
+//			outapp->WriteUInt32(0xffffffff);
+//			outapp->WriteUInt32(0);
+			outapp->WriteUInt32(60);
+			outapp->WriteUInt32(1);
 		}
 
 		outapp->WriteUInt32(0);				// Unknown
@@ -4980,12 +4982,6 @@ namespace RoF2
 		iss.Unknown02 = 0;
 
 		emu->Slot = RoF2ToServerSlot(iss);
-
-		//emu->from_slot = RoF2ToServerSlot(eq->from_slot);
-		//emu->to_slot = RoF2ToServerSlot(eq->to_slot);
-		//IN(number_in_stack);
-
-		//LogNetcode("[RoF2] MoveItem Slot from [{}] to [{}], Number [{}]", emu->from_slot, emu->to_slot, emu->number_in_stack);
 
 		FINISH_DIRECT_DECODE();
 	}

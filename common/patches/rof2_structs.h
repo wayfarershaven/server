@@ -2025,6 +2025,17 @@ struct GuildTributeDonateItemRequest_Struct {
 	/*032*/ uint32 	unknown32;
 };
 
+struct GuildTributeDonateItemReply_Struct {
+	/*000*/ uint32	Type;
+	/*004*/ uint16	slot;
+	/*006*/ uint16 	SubIndex;
+	/*008*/	uint16	AugIndex;
+	/*010*/	uint16	unknown10;
+	/*012*/ uint32	quanity;
+	/*016*/ uint32	unknown20;
+	/*020*/	uint32	favor;
+};
+
 /*
 ** Money Loot
 ** Length: 22 Bytes

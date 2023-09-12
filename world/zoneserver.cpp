@@ -1567,7 +1567,7 @@ void ZoneServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p) {
 				guild->tribute.id_2			  = data->tribute_id_2;
 				guild->tribute.id_1_tier	  = data->tribute_id_1_tier;
 				guild->tribute.id_2_tier	  = data->tribute_id_2_tier;
-				guild->tribute.time_remaining = GUILD_TRIBUTE_DEFAULT_TIMER;
+				guild->tribute.time_remaining = RuleI(Guild, TributeTime);
 
 				guild->tribute.timer.Disable();
 
@@ -1589,7 +1589,7 @@ void ZoneServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p) {
 
 				if (guild->tribute.enabled) {
 					data->enabled			= 1;
-					if (guild->tribute.time_remaining == GUILD_TRIBUTE_DEFAULT_TIMER) {
+					if (guild->tribute.time_remaining == RuleI(Guild, TributeTime)) {
 						data->favor = (guild->tribute.favor -= guild_mgr.GetGuildTributeCost(data->guild_id));
 					}
 					data->time_remaining	= guild->tribute.time_remaining;
