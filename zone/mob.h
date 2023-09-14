@@ -528,7 +528,7 @@ public:
 	void DamageShield(Mob* other, bool spell_ds = false);
 	int32 RuneAbsorb(int64 damage, uint16 type);
 	std::vector<uint16> GetBuffSpellIDs();
-	bool FindBuff(uint16 spell_id);
+	bool FindBuff(uint16 spell_id, uint16 caster_id = 0);
 	uint16 FindBuffBySlot(int slot);
 	uint32 GetDetBuffCount();
 	uint32 GetBeneBuffCount();
@@ -651,7 +651,7 @@ public:
 	virtual void SetName(const char *new_name = nullptr) { new_name ? strn0cpy(name, new_name, 64) :
 		strn0cpy(name, GetName(), 64); return; };
 	inline Mob* GetTarget() const { return target; }
-	std::string GetTargetDescription(Mob* target, uint8 description_type = TargetDescriptionType::LCSelf);
+	std::string GetTargetDescription(Mob* target, uint8 description_type = TargetDescriptionType::LCSelf, uint16 entity_id_override = 0);
 	virtual void SetTarget(Mob* mob);
 	virtual bool UseOwnersResistances(uint16 spell_id);
 	inline bool HasTargetReflection() const { return (target && target != this && target->target == this); }

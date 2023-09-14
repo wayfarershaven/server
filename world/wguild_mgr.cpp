@@ -256,11 +256,11 @@ void WorldGuildManager::Process() {
 			g.second->tribute.timer.Check()
 			) {
 			g.second->tribute.favor -= GetGuildTributeCost(g.first);
-			g.second->tribute.time_remaining = GUILD_TRIBUTE_DEFAULT_TIMER;
-			g.second->tribute.timer.Start(GUILD_TRIBUTE_DEFAULT_TIMER);
+			g.second->tribute.time_remaining = RuleI(Guild, TributeTime);
+			g.second->tribute.timer.Start(RuleI(Guild, TributeTime));
 
 			guild_mgr.DBSetGuildFavor(g.first, g.second->tribute.favor);
-			guild_mgr.DBSetTributeTimeRemaining(g.first, GUILD_TRIBUTE_DEFAULT_TIMER);
+			guild_mgr.DBSetTributeTimeRemaining(g.first, RuleI(Guild, TributeTime));
 
 			LogGuilds("Timer reset.  Do tribute work - Points, send timer restart to zones, etc.");
 
@@ -282,20 +282,20 @@ void WorldGuildManager::Process() {
 
 		}
 		else if (g.second->tribute.send_timer && 
-			(g.second->tribute.timer.GetRemainingTime()/1000) % (GUILD_TRIBUTE_SEND_TIME_INTERVAL/1000) == 0 && 
+			((g.second->tribute.timer.GetRemainingTime()/1000) % (RuleI(Guild, TributeTimeRefreshInterval) /1000)) == 0 &&
 			!g.second->tribute.timer.Check()
 			){
 			g.second->tribute.send_timer = false;
 			g.second->tribute.time_remaining = g.second->tribute.timer.GetRemainingTime();
 			SendGuildTributeFavorAndTimer(g.first, g.second->tribute.favor, g.second->tribute.time_remaining);
 			guild_mgr.DBSetTributeTimeRemaining(g.first, g.second->tribute.time_remaining);
-			LogGuilds("Timer Frequency [{}]hit.  Sending time [{}] to guild clients.",
-				GUILD_TRIBUTE_SEND_TIME_INTERVAL,
+			LogGuilds("Timer Frequency [{}] ms hit\.  Sending time [{}] to guild clients\.",
+				RuleI(Guild, TributeTimeRefreshInterval),
 				g.second->tribute.time_remaining
 			);
 		}
 		else if (!g.second->tribute.send_timer &&
-			(g.second->tribute.timer.GetRemainingTime() / 1000) % (GUILD_TRIBUTE_SEND_TIME_INTERVAL / 1000) > 0 &&
+			((g.second->tribute.timer.GetRemainingTime() / 1000) % (RuleI(Guild, TributeTimeRefreshInterval) / 1000)) > 0 &&
 			!g.second->tribute.timer.Check()
 			) {
 			g.second->tribute.send_timer = true;

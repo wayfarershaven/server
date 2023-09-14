@@ -18,6 +18,7 @@
 
 #include "guild_base.h"
 #include "database.h"
+#include "../common/rulesys.h"
 #include "../common/repositories/guilds_repository.h"
 #include "../common/repositories/guild_ranks_repository.h"
 #include "../common/repositories/guild_permissions_repository.h"
@@ -141,9 +142,9 @@ bool BaseGuildManager::LoadGuilds()
 			g.second->tribute.id_1_tier		 = g_tributes.tribute_id_1_tier;
 			g.second->tribute.id_2_tier		 = g_tributes.tribute_id_2_tier;
 			g.second->tribute.enabled		 = g_tributes.enabled;
-			if (g_tributes.time_remaining > GUILD_TRIBUTE_DEFAULT_TIMER ||
+			if (g_tributes.time_remaining > RuleI(Guild, TributeTime) ||
 				g_tributes.time_remaining <= 0) {
-				g_tributes.time_remaining = GUILD_TRIBUTE_DEFAULT_TIMER;
+				g_tributes.time_remaining = RuleI(Guild, TributeTime);
 			}
 			g.second->tribute.time_remaining = g_tributes.time_remaining;
 			LogGuilds("Timer has [{}] time remaining from the load function.", g.second->tribute.time_remaining);
@@ -192,11 +193,6 @@ bool BaseGuildManager::RefreshGuild(uint32 guild_id)
 		guild->tribute.id_1_tier	  = g_tributes.tribute_id_1_tier;
 		guild->tribute.id_2_tier	  = g_tributes.tribute_id_2_tier;
 		guild->tribute.enabled		  = g_tributes.enabled;
-		//if (g_tributes.time_remaining > GUILD_TRIBUTE_DEFAULT_TIMER ||
-		//	g_tributes.time_remaining <= 0) {
-		//	g_tributes.time_remaining = GUILD_TRIBUTE_DEFAULT_TIMER;
-		//}
-		//guild->tribute.time_remaining = g_tributes.time_remaining;
 	}
 
 	LogGuilds("Successfully refreshed guild id [{}] from the database", guild_id);
@@ -243,7 +239,7 @@ BaseGuildManager::GuildInfo* BaseGuildManager::_CreateGuild(uint32 guild_id, std
 	info->tribute.id_1_tier		 = 0;
 	info->tribute.id_2_tier		 = 0;
 	info->tribute.enabled		 = 0;
-	info->tribute.time_remaining = GUILD_TRIBUTE_DEFAULT_TIMER;
+	info->tribute.time_remaining = RuleI(Guild, TributeTime);
 
 	m_guilds[guild_id] = info;
 

@@ -16468,6 +16468,13 @@ void Client::Handle_OP_GuildTributeModifyBenefits(const EQApplicationPacket* app
 			gmbs->tribute_id_2_tier = t->tribute_id_2_tier;
 			gmbs->tribute_master_id = t->tribute_master_id;
 			QueuePacket(outapp);
+
+			auto sp = new ServerPacket(ServerOP_GuildTributeActivate, sizeof(GuildTributeUpdate));
+			auto out = (GuildTributeUpdate*)sp->pBuffer;
+			out->guild_id = GuildID();
+			out->enabled = false;
+			worldserver.SendPacket(sp);
+			safe_delete(sp);
 			break;
 		}
 		case 1: {
@@ -16502,9 +16509,6 @@ void Client::Handle_OP_GuildTributeOptInOut(const EQApplicationPacket* app)
 
 	GuildTributeOptInOutReq_Struct* in = (GuildTributeOptInOutReq_Struct*)app->pBuffer;
 
-	// 1. Send to world to get in->player_name character id as player may not be in our zone.
-	// 2. Send optinout packet to all guild members regardless of zone
-
 	CharGuildInfo gci;
 	guild_mgr.GetCharInfo(in->player, gci);
 
@@ -16519,27 +16523,9 @@ void Client::Handle_OP_GuildTributeOptInOut(const EQApplicationPacket* app)
 	out->tribute_toggle = in->tribute_toggle;
 	out->command = in->command;
 
-	//SendGuildTributeOptInToggle(out);
 	worldserver.SendPacket(sout);
 
 	safe_delete(sout);
-
-	/*guild_mgr.DBSetMemberTributeEnabled(GuildID(), CharacterID(), in->tribute_toggle);
-	SetGuildTributeOptIn(in->tribute_toggle ? true : false);
-
-	ServerPacket* sout = new ServerPacket(ServerOP_GuildTributeOptInToggle, sizeof(GuildTributeMemberToggle));
-	GuildTributeMemberToggle* out = (GuildTributeMemberToggle*)sout->pBuffer;
-
-	out->guild_id = GuildID();
-	out->char_id = CharacterID();
-	strncpy(out->player_name, GetCleanName(), 64);
-	out->tribute_toggle = in->tribute_toggle;
-	out->command = in->command;
-
-	SendGuildTributeOptInToggle(out);
-	worldserver.SendPacket(sout);
-
-	safe_delete(sout);*/
 }
 
 void Client::Handle_OP_GuildTributeSaveActiveTributes(const EQApplicationPacket* app) 
@@ -16562,7 +16548,7 @@ void Client::Handle_OP_GuildTributeSaveActiveTributes(const EQApplicationPacket*
 		gt.tribute_id_1_tier = data->tribute_1_tier;
 		gt.tribute_id_2_tier = data->tribute_2_tier;
 		gt.enabled = 0;
-		gt.time_remaining = GUILD_TRIBUTE_DEFAULT_TIMER;
+		gt.time_remaining = RuleI(Guild, TributeTime);
 		GuildTributesRepository::ReplaceOne(database, gt);
 
 		guild->tribute.enabled = 0;
@@ -16570,7 +16556,7 @@ void Client::Handle_OP_GuildTributeSaveActiveTributes(const EQApplicationPacket*
 		guild->tribute.id_2 = data->tribute_id_2;
 		guild->tribute.id_1_tier = data->tribute_1_tier;
 		guild->tribute.id_2_tier = data->tribute_2_tier;
-		guild->tribute.time_remaining = GUILD_TRIBUTE_DEFAULT_TIMER;
+		guild->tribute.time_remaining = RuleI(Guild, TributeTime);
 
 		ServerPacket* sp = new ServerPacket(ServerOP_GuildTributeUpdate, sizeof(GuildTributeUpdate));
 		GuildTributeUpdate* gtu = (GuildTributeUpdate*)sp->pBuffer;
@@ -16582,7 +16568,7 @@ void Client::Handle_OP_GuildTributeSaveActiveTributes(const EQApplicationPacket*
 		gtu->tribute_id_2_tier = data->tribute_2_tier;
 		gtu->enabled = 0;
 		gtu->favor = guild->tribute.favor;
-		gtu->time_remaining = GUILD_TRIBUTE_DEFAULT_TIMER;
+		gtu->time_remaining = RuleI(Guild, TributeTime);
 
 		worldserver.SendPacket(sp);
 		safe_delete(sp);
@@ -16691,7 +16677,7 @@ void Client::Handle_OP_GuildTributeDonatePlat(const EQApplicationPacket* app)
 
 	auto quanity = in->quanity;
 
-	auto favor = quanity * (uint32)GUILD_TRIBUTE_PLAT_CONVERSION;
+	auto favor = quanity * RuleI(Guild, TributePlatConversionRate);
 	auto guild = guild_mgr.GetGuildByGuildID(guild_id);
 	if (guild) {
 		guild->tribute.favor += favor;

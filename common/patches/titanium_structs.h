@@ -1423,6 +1423,23 @@ struct GuildUpdate_Struct {
 	GuildsListEntry_Struct entry;
 };
 
+struct GuildTributeDonateItemRequest_Struct {
+	/*000*/ uint32 	Slot;
+	/*004*/ uint32 	quanity;
+	/*008*/ uint32	tribute_master_id;
+	/*012*/ uint32 	unknown8;
+	/*016*/ uint32	guild_id;
+	/*020*/ uint32 	unknown20;
+	/*024*/ uint32	unknown24;
+};
+
+struct GuildTributeDonateItemReply_Struct {
+	/*000*/ uint32	slot;
+	/*004*/ uint32	quanity;
+	/*008*/ uint32	unknown8;
+	/*012*/	uint32	favor;
+};
+
 /*
 ** Money Loot
 ** Length: 22 Bytes
