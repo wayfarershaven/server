@@ -809,6 +809,38 @@ namespace Titanium
 		dest->FastQueuePacket(&in, ack_req);
 	}
 
+	ENCODE(OP_SendGuildTributes)
+	{
+		ENCODE_LENGTH_ATLEAST(structs::GuildTributeAbility_Struct);
+		SETUP_VAR_ENCODE(GuildTributeAbility_Struct);
+		ALLOC_VAR_ENCODE(structs::GuildTributeAbility_Struct, sizeof(GuildTributeAbility_Struct) + strlen(emu->ability.name));
+
+		eq->guild_id = emu->guild_id;;
+		strncpy(eq->ability.name, emu->ability.name, strlen(emu->ability.name));
+		eq->ability.tribute_id = emu->ability.tribute_id;
+		eq->ability.tier_count = emu->ability.tier_count;
+		for (int i = 0; i < ntohl(emu->ability.tier_count); i++) {
+			eq->ability.tiers[i].cost = emu->ability.tiers[i].cost;
+			eq->ability.tiers[i].level = emu->ability.tiers[i].level;
+			eq->ability.tiers[i].tribute_item_id = emu->ability.tiers[i].tribute_item_id;
+		}
+		FINISH_ENCODE();
+	}
+
+	ENCODE(OP_GuildTributeDonateItem)
+	{
+		SETUP_DIRECT_ENCODE(GuildTributeDonateItemReply_Struct, structs::GuildTributeDonateItemReply_Struct);
+
+		Log(Logs::Detail, Logs::Netcode, "UF::ENCODE(OP_GuildTributeDonateItem)");
+
+		OUT(quanity);
+		OUT(favor);
+		eq->unknown8 = 0;
+		eq->slot = ServerToTitaniumSlot(emu->slot);
+
+		FINISH_ENCODE();
+	}
+
 	ENCODE(OP_Illusion)
 	{
 		ENCODE_LENGTH_EXACT(Illusion_Struct);
@@ -2216,6 +2248,22 @@ namespace Titanium
 		memcpy(emu->name, eq->name, sizeof(emu->name));
 		memcpy(emu->target, eq->target, sizeof(emu->target));
 		emu->rank = 5;
+
+		FINISH_DIRECT_DECODE();
+	}
+	
+	DECODE(OP_GuildTributeDonateItem)
+	{
+		DECODE_LENGTH_EXACT(structs::GuildTributeDonateItemRequest_Struct);
+		SETUP_DIRECT_DECODE(GuildTributeDonateItemRequest_Struct, structs::GuildTributeDonateItemRequest_Struct);
+
+		Log(Logs::Detail, Logs::Netcode, "UF::DECODE(OP_GuildTributeDonateItem)");
+
+		IN(quanity);
+		IN(tribute_master_id);
+		IN(guild_id);
+
+		emu->Slot = TitaniumToServerSlot(eq->Slot);
 
 		FINISH_DIRECT_DECODE();
 	}
