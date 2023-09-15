@@ -16643,12 +16643,17 @@ void Client::Handle_OP_GuildTributeDonateItem(const EQApplicationPacket* app)
 	auto favor = inst->GetItemGuildFavor() * in->quanity;
 
 	auto guild = guild_mgr.GetGuildByGuildID(guild_id);
+
+	if (!RuleB(Guild, GuildTributeDonationsEnabled)) {
+		favor = 0;
+	}
+
 	if (guild) {
 		guild->tribute.favor += favor;
 		guild_mgr.DBSetGuildFavor(GuildID(), guild->tribute.favor);
 		auto member_favor = guild_mgr.DBSetMemberFavor(GuildID(), CharacterID(), favor);
 
-		DeleteItemInInventory(in->Slot, in->quanity, false, true);
+		DeleteItemInInventory(in->Slot, in->quanity, true, true);
 		SendGuildTributeDonateItemReply(in, favor);
 
 		auto outapp = new ServerPacket(ServerOP_GuildTributeUpdateDonations, sizeof(GuildTributeUpdate));
@@ -16676,15 +16681,19 @@ void Client::Handle_OP_GuildTributeDonatePlat(const EQApplicationPacket* app)
 	auto in = (GuildTributeDonatePlatRequest_Struct*)app->pBuffer;
 
 	auto quanity = in->quanity;
-
 	auto favor = quanity * RuleI(Guild, TributePlatConversionRate);
+
+	if (!RuleB(Guild, GuildTributeDonationsEnabled)) {
+		favor = 0;
+	}
+
 	auto guild = guild_mgr.GetGuildByGuildID(guild_id);
 	if (guild) {
 		guild->tribute.favor += favor;
 		guild_mgr.DBSetGuildFavor(GuildID(), guild->tribute.favor);
 		auto member_favor = guild_mgr.DBSetMemberFavor(GuildID(), CharacterID(), favor);
 
-		TakePlatinum(quanity, false);
+		TakePlatinum(quanity, true);
 		SendGuildTributeDonatePlatReply(in, favor);
 
 		auto outapp = new ServerPacket(ServerOP_GuildTributeUpdateDonations, sizeof(GuildTributeUpdate));
