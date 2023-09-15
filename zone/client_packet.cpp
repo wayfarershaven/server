@@ -16649,7 +16649,7 @@ void Client::Handle_OP_GuildTributeDonateItem(const EQApplicationPacket* app)
 
 	auto guild = guild_mgr.GetGuildByGuildID(guild_id);
 
-	LogTribute("Player is attempting to guild tribute donate item from slot [{}] - QTY [{}]"in->Slot, in->quanity);
+	LogTribute("Player is attempting to guild tribute donate item from slot [{}] - QTY [{}]", in->Slot, in->quanity);
 
 	if (guild) {
 		guild->tribute.favor += favor;
