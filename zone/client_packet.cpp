@@ -16649,6 +16649,8 @@ void Client::Handle_OP_GuildTributeDonateItem(const EQApplicationPacket* app)
 
 	auto guild = guild_mgr.GetGuildByGuildID(guild_id);
 
+	LogTribute("Player is attempting to guild tribute donate item from slot [{}] - QTY [{}]"in->Slot, in->quanity);
+
 	if (guild) {
 		guild->tribute.favor += favor;
 		guild_mgr.DBSetGuildFavor(GuildID(), guild->tribute.favor);
@@ -16690,7 +16692,7 @@ void Client::Handle_OP_GuildTributeDonatePlat(const EQApplicationPacket* app)
 	auto favor = quanity * RuleI(Guild, TributePlatConversionRate);
 
 	auto guild = guild_mgr.GetGuildByGuildID(guild_id);
-
+	
 	if (guild) {
 		guild->tribute.favor += favor;
 		guild_mgr.DBSetGuildFavor(GuildID(), guild->tribute.favor);
