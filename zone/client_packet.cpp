@@ -16637,16 +16637,17 @@ void Client::Handle_OP_GuildTributeDonateItem(const EQApplicationPacket* app)
 		return;
 	}
 
+	if (!RuleB(Guild, GuildTributeDonationsEnabled)) {
+		Message(Chat::Red, "Guild Donations are currently Disabled.");
+		return;
+	}
+
 	auto in = (GuildTributeDonateItemRequest_Struct*)app->pBuffer;
 
 	const auto* inst = GetInv().GetItem(in->Slot);
 	auto favor = inst->GetItemGuildFavor() * in->quanity;
 
 	auto guild = guild_mgr.GetGuildByGuildID(guild_id);
-
-	if (!RuleB(Guild, GuildTributeDonationsEnabled)) {
-		favor = 0;
-	}
 
 	if (guild) {
 		guild->tribute.favor += favor;
@@ -16678,16 +16679,18 @@ void Client::Handle_OP_GuildTributeDonatePlat(const EQApplicationPacket* app)
 		return;
 	}
 
+	if (!RuleB(Guild, GuildTributeDonationsEnabled)) {
+		Message(Chat::Red, "Guild Donations are currently Disabled.");
+		return;
+	}
+
 	auto in = (GuildTributeDonatePlatRequest_Struct*)app->pBuffer;
 
 	auto quanity = in->quanity;
 	auto favor = quanity * RuleI(Guild, TributePlatConversionRate);
 
-	if (!RuleB(Guild, GuildTributeDonationsEnabled)) {
-		favor = 0;
-	}
-
 	auto guild = guild_mgr.GetGuildByGuildID(guild_id);
+
 	if (guild) {
 		guild->tribute.favor += favor;
 		guild_mgr.DBSetGuildFavor(GuildID(), guild->tribute.favor);
