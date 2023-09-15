@@ -16686,14 +16686,14 @@ void Client::Handle_OP_GuildTributeDonatePlat(const EQApplicationPacket* app)
 	if (!RuleB(Guild, GuildTributeDonationsEnabled)) {
 		favor = 0;
 	}
-	
+
 	auto guild = guild_mgr.GetGuildByGuildID(guild_id);
 	if (guild) {
 		guild->tribute.favor += favor;
 		guild_mgr.DBSetGuildFavor(GuildID(), guild->tribute.favor);
 		auto member_favor = guild_mgr.DBSetMemberFavor(GuildID(), CharacterID(), favor);
 
-		TakePlatinum(quanity, false);
+		TakePlatinum(quanity, true);
 		SendGuildTributeDonatePlatReply(in, favor);
 
 		auto outapp = new ServerPacket(ServerOP_GuildTributeUpdateDonations, sizeof(GuildTributeUpdate));
