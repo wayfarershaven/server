@@ -1644,13 +1644,17 @@ void ZoneServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p) {
 			}
 
 			if (guild) {
+				CharGuildInfo gci;
+				guild_mgr.GetCharInfo(in->char_id, gci);
+
 				ServerPacket* out = new ServerPacket(ServerOP_GuildTributeOptInToggle, sizeof(GuildTributeMemberToggle));
 				GuildTributeMemberToggle* data = (GuildTributeMemberToggle*)out->pBuffer;
 
 				data->char_id = in->char_id;
 				data->command = in->command;
 				data->tribute_toggle = in->tribute_toggle;
-				data->no_donations = in->no_donations;
+				data->no_donations = gci.total_tribute;
+				data->member_last_donated = gci.last_tribute;
 				data->guild_id = in->guild_id;
 				strncpy(data->player_name, in->player_name, strlen(in->player_name));
 				data->time_remaining = guild->tribute.timer.GetRemainingTime();

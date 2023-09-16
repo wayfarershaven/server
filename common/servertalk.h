@@ -1976,6 +1976,7 @@ struct GuildTributeMemberToggle {
 	uint32	command;
 	uint32	time_remaining;
 	uint32	no_donations;
+	uint32  member_last_donated;
 };
 
 #pragma pack()
