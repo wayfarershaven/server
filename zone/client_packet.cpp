@@ -16706,7 +16706,7 @@ void Client::Handle_OP_GuildTributeDonatePlat(const EQApplicationPacket* app)
 		guild_mgr.DBSetGuildFavor(GuildID(), guild->tribute.favor);
 		auto member_favor = guild_mgr.DBSetMemberFavor(GuildID(), CharacterID(), favor);
 
-		TakePlatinum(quanity, true);
+		TakePlatinum(quanity, false);
 		SendGuildTributeDonatePlatReply(in, favor);
 
 		auto outapp = new ServerPacket(ServerOP_GuildTributeUpdateDonations, sizeof(GuildTributeUpdate));
