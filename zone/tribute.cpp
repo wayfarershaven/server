@@ -638,7 +638,6 @@ void Client::SendGuildTributeDonatePlatReply(GuildTributeDonatePlatRequest_Struc
 //}
 
 /*
-
 64.37.149.6:1353 == server
 66.90.221.245:3173 == client
 

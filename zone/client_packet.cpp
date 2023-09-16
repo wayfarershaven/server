@@ -16656,7 +16656,15 @@ void Client::Handle_OP_GuildTributeDonateItem(const EQApplicationPacket* app)
 		guild_mgr.DBSetGuildFavor(GuildID(), guild->tribute.favor);
 		auto member_favor = guild_mgr.DBSetMemberFavor(GuildID(), CharacterID(), favor);
 
-		DeleteItemInInventory(in->Slot, in->quanity, true, true);
+		if (inst->IsStackable()) {
+			if (inst->GetCharges() < (int32)in->quanity) {
+				favor = 0;
+			}
+			DeleteItemInInventory(in->Slot, in->quanity, false, true);
+		} else {
+			DeleteItemInInventory(in->Slot, 0, false, true);
+		}
+
 		SendGuildTributeDonateItemReply(in, favor);
 
 		auto outapp = new ServerPacket(ServerOP_GuildTributeUpdateDonations, sizeof(GuildTributeUpdate));

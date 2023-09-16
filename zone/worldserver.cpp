@@ -3509,7 +3509,7 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 		data->no_donations = in->no_donations;
 		data->tribute_toggle = in->tribute_toggle ? true : false;
 		data->tribute_trophy_toggle = 0; //not yet implemented
-		data->time = time(nullptr);
+		data->time = in->member_last_donated;
 		data->command = in->command;
 
 		entity_list.QueueClientsGuild(outapp, in->guild_id);
