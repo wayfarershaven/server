@@ -188,8 +188,16 @@ uint8 *ZoneGuildManager::MakeGuildMembers(uint32 guild_id, const char *prefix_na
 		PutField(total_tribute);
 		PutField(last_tribute);
 		SlideStructString( note_buf, ci->public_note );
-		e->zoneinstance = 0;
-		e->zone_id = 0;	// Flag them as offline (zoneid 0) as world will update us with their online status afterwards.
+		if (ci->online) {
+			e->zoneinstance = 1;
+			e->zone_id = ci->zone_id;	// Flag them as offline (zoneid 0) as world will update us with their online status afterwards.
+		}
+		else {
+			e->zoneinstance = 0;
+			e->zone_id = 0;	// Flag them as offline (zoneid 0) as world will update us with their online status afterwards.
+		}
+		e->online = ci->online;
+
 #undef SlideStructString
 #undef PutFieldN
 
@@ -629,8 +637,21 @@ void ZoneGuildManager::ProcessWorldPacket(ServerPacket *pack)
 			gmus->GuildID = sgmus->GuildID;
 			strn0cpy(gmus->MemberName, sgmus->MemberName, sizeof(gmus->MemberName));
 			gmus->ZoneID = sgmus->ZoneID;
-			gmus->InstanceID = 0;	// I don't think we care what Instance they are in, for the Guild Management Window.
+			gmus->InstanceID = 1;	// If online, set to be online.  I don't think we care what Instance they are in, for the Guild Management Window.
 			gmus->LastSeen = sgmus->LastSeen;
+
+			//if (sgmus->ZoneID = 0) {
+			//	auto c = entity_list.GetClientByName(sgmus->MemberName);
+			//	if (c) {
+			//		guild_mgr.DBSetMemberOnline(c->CharacterID(), false);
+			//	}
+			//}
+			//else {
+			//	auto c = entity_list.GetClientByName(sgmus->MemberName);
+			//	if (c) {
+			//		guild_mgr.DBSetMemberOnline(c->CharacterID(), true);
+			//	}
+			//}
 
 			entity_list.QueueClientsGuild(outapp, sgmus->GuildID);
 
@@ -658,7 +679,7 @@ void ZoneGuildManager::ProcessWorldPacket(ServerPacket *pack)
 			GuildMemberUpdate_Struct* gmus = (GuildMemberUpdate_Struct*)outapp->pBuffer;
 			char Name[64];
 			gmus->LastSeen = time(nullptr);
-			gmus->InstanceID = 0;
+			gmus->InstanceID = 1;
 			gmus->GuildID = c->GuildID();
 			for (int i = 0; i < Count; i++) {
 				// Just make the packet once and swap out name/zone and send
