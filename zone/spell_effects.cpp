@@ -2257,14 +2257,13 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 				if (!caster)
 					break;
 				// this makes necro epic 1.5/2.0 proc work properly
-				if((spell_id != 6882) && (spell_id != 6884)) // Chaotic Jester/Steadfast Servant
-				{
+				if((spell_id != 6882) && (spell_id != 6884)) { // Chaotic Jester/Steadfast Servant
 					char pet_name[64];
-					snprintf(pet_name, sizeof(pet_name), "%s`s pet", caster->GetCleanName());
+					snprintf(pet_name, sizeof(pet_name), "%s`s_pet", caster->GetCleanName());
 					caster->TemporaryPets(spell_id, this, pet_name);
-				}
-				else
+				} else {
 					caster->TemporaryPets(spell_id, this, nullptr);
+				}
 				break;
 			}
 
@@ -2402,7 +2401,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 			{
 				if(caster && caster->IsClient()) {
 					char pet_name[64];
-					snprintf(pet_name, sizeof(pet_name), "%s`s doppelganger", caster->GetCleanName());
+					snprintf(pet_name, sizeof(pet_name), "%s`s_doppelganger", caster->GetCleanName());
 					int pet_count = spells[spell_id].base_value[i];
 					int pet_duration = spells[spell_id].max_value[i];
 					caster->CastToClient()->Doppelganger(spell_id, this, pet_name, pet_count, pet_duration);
