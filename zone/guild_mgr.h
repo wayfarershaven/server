@@ -62,7 +62,7 @@ public:
 //	bool	DonateTribute(uint32 charid, uint32 guild_id, uint32 tribute_amount);
 
 	uint8 *MakeGuildMembers(uint32 guild_id, const char *prefix_name, uint32 &length);	//make a guild member list packet, returns ownership of the buffer.
-
+	uint8* MakeGuildMembersUsingDB(uint32 guild_id, const char* prefix_name, uint32& length);
 	void RecordInvite(uint32 char_id, uint32 guild_id, uint8 rank);
 	bool VerifyAndClearInvite(uint32 char_id, uint32 guild_id, uint8 rank);
 	void SendGuildMemberUpdateToWorld(const char *MemberName, uint32 GuildID, uint16 ZoneID, uint32 LastSeen);

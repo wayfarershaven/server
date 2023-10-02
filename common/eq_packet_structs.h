@@ -3329,6 +3329,7 @@ struct Internal_GuildMembers_Struct {	//just for display purposes, this is not a
 	uint32	count;				//network byte order
 	uint32	name_length;	//total length of all of the char names, excluding terminators
 	uint32	note_length;	//total length of all the public notes, excluding terminators
+	uint32  guild_id;
 	Internal_GuildMemberEntry_Struct member[0];
 	/*
 	* followed by a set of `count` null terminated name strings
