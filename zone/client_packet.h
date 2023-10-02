@@ -174,6 +174,7 @@
 	void Handle_OP_GuildUpdateURLAndChannel(const EQApplicationPacket *app);
 	void Handle_OP_GuildTributeDonateItem(const EQApplicationPacket* app);
 	void Handle_OP_GuildTributeDonatePlat(const EQApplicationPacket* app);
+	void Handle_OP_GuildOpenGuildWindow(const EQApplicationPacket* app);
 	void Handle_OP_GuildWar(const EQApplicationPacket *app);
 	void Handle_OP_Heartbeat(const EQApplicationPacket *app);
 	void Handle_OP_Hide(const EQApplicationPacket *app);

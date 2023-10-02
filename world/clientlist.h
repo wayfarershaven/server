@@ -43,6 +43,7 @@ public:
 	void	SendWhoAll(uint32 fromid,const char* to, int16 admin, Who_All_Struct* whom, WorldTCPConnection* connection);
 	void	SendFriendsWho(ServerFriendsWho_Struct *FriendsWho, WorldTCPConnection* connection);
 	void	SendOnlineGuildMembers(uint32 FromID, uint32 GuildID);
+	void	SendGuildMemberList(uint32 FromID, uint32 GuildID);
 	void	SendClientVersionSummary(const char *Name);
 	void	SendLFGMatches(ServerLFGMatchesRequest_Struct *LFGMatchesRequest);
 	void	ConsoleSendWhoAll(const char* to, int16 admin, Who_All_Struct* whom, WorldTCPConnection* connection);
