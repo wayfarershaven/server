@@ -637,13 +637,21 @@ void ZoneGuildManager::ProcessWorldPacket(ServerPacket *pack)
 			gmus->GuildID = sgmus->GuildID;
 			strn0cpy(gmus->MemberName, sgmus->MemberName, sizeof(gmus->MemberName));
 			gmus->ZoneID = sgmus->ZoneID;
-			if (sgmus->ZoneID == 0) {
-				gmus->InstanceID = 0;	// If offline, set to be offline.  
-			}
-			else {
-				gmus->InstanceID = 1;	// If online, set to be online.  
-			}
+			gmus->InstanceID = 1;	// If online, set to be online.  I don't think we care what Instance they are in, for the Guild Management Window.
 			gmus->LastSeen = sgmus->LastSeen;
+
+			//if (sgmus->ZoneID = 0) {
+			//	auto c = entity_list.GetClientByName(sgmus->MemberName);
+			//	if (c) {
+			//		guild_mgr.DBSetMemberOnline(c->CharacterID(), false);
+			//	}
+			//}
+			//else {
+			//	auto c = entity_list.GetClientByName(sgmus->MemberName);
+			//	if (c) {
+			//		guild_mgr.DBSetMemberOnline(c->CharacterID(), true);
+			//	}
+			//}
 
 			entity_list.QueueClientsGuild(outapp, sgmus->GuildID);
 
@@ -683,28 +691,6 @@ void ZoneGuildManager::ProcessWorldPacket(ServerPacket *pack)
 			}
 			safe_delete(outapp);
 
-		}
-		break;
-	}
-	case ServerOP_GuildSendMemberList:
-	{
-		if (is_zone_loaded)
-		{
-			for (auto const& c : entity_list.GetClientList()) {
-				uint32 len;
-				uint8* data = guild_mgr.MakeGuildMembersUsingDB(c.second->GuildID(), c.second->GetName(), len);
-				if (data == nullptr) {
-					return;	//invalid guild, shouldent happen.
-				}
-
-				auto outapp = new EQApplicationPacket(OP_GuildMemberList);
-				outapp->size = len;
-				outapp->pBuffer = data;
-
-				LogGuilds("Sending OP_GuildMemberList2 of length [{}]", outapp->size);
-
-				c.second->FastQueuePacket(&outapp);
-			}
 		}
 		break;
 	}
@@ -1770,134 +1756,4 @@ BaseGuildManager::GuildInfo* ZoneGuildManager::GetGuildByGuildID(uint32 guild_id
 		return guild->second;
 	}
 	return nullptr;
-}
-
-uint8* ZoneGuildManager::MakeGuildMembersUsingDB(uint32 guild_id, const char* prefix_name, uint32& length)
-{
-	std::vector<online> g_members{};
-	auto IsCharOnline = [&](uint32 char_id) {
-		for (auto const& c : g_members) {
-			if (char_id == c.char_id) {
-				return true;
-			}
-		}
-		return false;
-		};
-
-	auto query = fmt::format("SELECT char_id FROM guild_members WHERE guild_id = '{}' AND online = 1;", guild_id);
-	auto results = database.QueryDatabase(query);
-	if (!results.Success()) {
-		return 0;
-	}
-
-	online o{};
-	for (auto r : results) {
-		o.char_id = Strings::ToUnsignedInt(r[0]);
-		g_members.push_back(o);
-	}
-
-	uint8* retbuffer;
-
-	//hack because we dont have the "remove from guild" packet right now.
-	if (guild_id == GUILD_NONE) {
-		length = sizeof(Internal_GuildMembers_Struct);
-		retbuffer = new uint8[length];
-		Internal_GuildMembers_Struct* gms = (Internal_GuildMembers_Struct*)retbuffer;
-		strcpy(gms->player_name, prefix_name);
-		gms->count = 0;
-		gms->name_length = 0;
-		gms->note_length = 0;
-		return(retbuffer);
-	}
-
-	std::vector<CharGuildInfo*> members;
-	if (!GetEntireGuild(guild_id, members))
-		return(nullptr);
-
-	//figure out the actual packet length.
-	uint32 fixed_length = sizeof(Internal_GuildMembers_Struct) + members.size() * sizeof(Internal_GuildMemberEntry_Struct);
-	std::vector<CharGuildInfo*>::iterator cur, end;
-	CharGuildInfo* ci;
-	cur = members.begin();
-	end = members.end();
-	uint32 name_len = 0;
-	uint32 note_len = 0;
-	for (; cur != end; ++cur) {
-		ci = *cur;
-		name_len += ci->char_name.length();
-		note_len += ci->public_note.length();
-	}
-
-	//calc total length.
-	length = fixed_length + name_len + note_len + members.size() * 2;	//string data + null terminators
-
-	//make our nice buffer
-	retbuffer = new uint8[length];
-
-	Internal_GuildMembers_Struct* gms = (Internal_GuildMembers_Struct*)retbuffer;
-
-	//fill in the global header
-	strcpy(gms->player_name, prefix_name);
-	gms->count = members.size();
-	gms->name_length = name_len;
-	gms->note_length = note_len;
-	gms->guild_id = guild_id;
-
-	char* name_buf = (char*)(retbuffer + fixed_length);
-	char* note_buf = (char*)(name_buf + name_len + members.size());
-
-	//fill in each member's entry.
-	Internal_GuildMemberEntry_Struct* e = gms->member;
-
-	cur = members.begin();
-	end = members.end();
-	for (; cur != end; ++cur) {
-		ci = *cur;
-
-		//the order we set things here must match the struct
-
-//nice helper macro
-#define SlideStructString(field, str) \
-		strcpy(field, str.c_str()); \
-		field += str.length() + 1
-#define PutField(field) \
-		e->field = ci->field
-
-		SlideStructString(name_buf, ci->char_name);
-		PutField(level);
-		e->banker = ci->banker + (ci->alt * 2);	// low bit is banker flag, next bit is 'alt' flag.
-		PutField(class_);
-		auto c = entity_list.GetClientByID(ci->char_id);
-		if (c && c->ClientVersion() < EQ::versions::ClientVersion::RoF) {
-			switch (ci->rank) {
-			case 8:case 7:case 6:case 5:case 4: { ci->rank = 0; break; }	//GUILD MEMBER 0
-			case 3:case 2: { ci->rank = 1; break; }							//GUILD OFFICER 1
-			case 1: { ci->rank = 2; break; }								//GUILD LEADER 2
-			default: { break; }
-			}
-		}
-		PutField(rank);
-		PutField(time_last_on);
-		PutField(tribute_enable);
-		PutField(total_tribute);
-		PutField(last_tribute);
-		SlideStructString(note_buf, ci->public_note);
-		if (IsCharOnline(ci->char_id)) {
-			e->zoneinstance = 1;
-			e->zone_id = ci->zone_id;
-		}
-		else {
-			e->zoneinstance = 0;
-			e->zone_id = 0;
-		}
-
-#undef SlideStructString
-#undef PutFieldN
-
-		delete* cur;
-
-		e++;
-	}
-
-	return(retbuffer);
 }

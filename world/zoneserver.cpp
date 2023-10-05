@@ -942,7 +942,7 @@ void ZoneServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p) {
 		}
 		case ServerOP_RequestOnlineGuildMembers: {
 			auto srogms = (ServerRequestOnlineGuildMembers_Struct*) pack->pBuffer;
-			client_list.SendGuildMemberList(srogms->FromID, srogms->GuildID);
+			client_list.SendOnlineGuildMembers(srogms->FromID, srogms->GuildID);
 			break;
 		}
 		case ServerOP_ClientVersionSummary: {
