@@ -3321,6 +3321,7 @@ struct Internal_GuildMemberEntry_Struct {
 //	char	public_note[1];				//variable length.
 	uint16	zoneinstance;				//network byte order
 	uint16	zone_id;					//network byte order
+	uint32  online;
 };
 
 struct Internal_GuildMembers_Struct {	//just for display purposes, this is not actually used in the message encoding.

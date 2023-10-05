@@ -545,6 +545,7 @@ void Client::CompleteConnect()
 		uint8 rank = GuildRank();
 		SendAppearancePacket(AT_GuildID, GuildID(), false);
 		SendAppearancePacket(AT_GuildRank, rank, false);
+//		guild_mgr.DBSetMemberOnline(CharacterID(), true);
 	}
 
 	// moved to dbload and translators since we iterate there also .. keep m_pp values whatever they are when they get here
@@ -16491,6 +16492,14 @@ void Client::Handle_OP_GuildTributeModifyBenefits(const EQApplicationPacket* app
 		}
 		default: {
 			LogError("Unknown GuildModifyBenefits command received. {}.", t->command);
+			gmbs->command = 0;
+			gmbs->data = 1;
+			gmbs->tribute_id_1 = 0;
+			gmbs->tribute_id_2 = 0;
+			gmbs->tribute_id_1_tier = 0;
+			gmbs->tribute_id_2_tier = 0;
+			gmbs->tribute_master_id = 0;
+			QueuePacket(outapp);
 			break;
 		}
 		}
