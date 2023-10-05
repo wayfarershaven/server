@@ -465,8 +465,7 @@ void Client::DoGuildTributeUpdate()
 				DeleteItemInInventory(EQ::invslot::GUILD_TRIBUTE_BEGIN);
 			}
 
-			if ((RuleB(Guild,UseCharacterMaxLevelForGuildTributes) && RuleI(Character, MaxLevel) >= inst_level && GetLevel() >= inst_level) ||
-				!RuleB(Guild, UseCharacterMaxLevelForGuildTributes)) {
+			if (GetLevel() >= inst_level) {
 				PutItemInInventory(EQ::invslot::GUILD_TRIBUTE_BEGIN, *inst);
 				SendItemPacket(EQ::invslot::GUILD_TRIBUTE_BEGIN, inst, ItemPacketGuildTribute);
 			}
@@ -487,8 +486,7 @@ void Client::DoGuildTributeUpdate()
 				LogInfo("Guild Tribute DELETE Item in Slot 451");
 			}
 
-			if ((RuleB(Guild, UseCharacterMaxLevelForGuildTributes) && RuleI(Character, MaxLevel) >= inst_level && GetLevel() >= inst_level) ||
-				!RuleB(Guild, UseCharacterMaxLevelForGuildTributes)) {
+			if (GetLevel() >= inst_level) {
 				PutItemInInventory(EQ::invslot::GUILD_TRIBUTE_BEGIN + 1, *inst);
 				SendItemPacket(EQ::invslot::GUILD_TRIBUTE_BEGIN + 1, inst, ItemPacketGuildTribute);
 			}

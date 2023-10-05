@@ -30,7 +30,6 @@ public:
 	int GetOpcode();
 	void SetOpcode(int op);
 	int GetRawOpcode();
-	int GetProtocolOpcode();
 	void SetRawOpcode(int op);
 	int GetWritePosition();
 	void SetWritePosition(int offset);

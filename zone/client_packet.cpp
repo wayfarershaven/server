@@ -264,7 +264,6 @@ void MapOpcodes()
 	ConnectedOpcodes[OP_GuildTributeToggleReq] = &Client::Handle_OP_GuildTributeToggle;
 	ConnectedOpcodes[OP_GuildTributeDonateItem] = &Client::Handle_OP_GuildTributeDonateItem;
 	ConnectedOpcodes[OP_GuildTributeDonatePlat] = &Client::Handle_OP_GuildTributeDonatePlat;
-	ConnectedOpcodes[OP_GuildOpenGuildWindow] = &Client::Handle_OP_GuildOpenGuildWindow;
 	ConnectedOpcodes[OP_Heartbeat] = &Client::Handle_OP_Heartbeat;
 	ConnectedOpcodes[OP_Hide] = &Client::Handle_OP_Hide;
 	ConnectedOpcodes[OP_HideCorpse] = &Client::Handle_OP_HideCorpse;
@@ -545,6 +544,7 @@ void Client::CompleteConnect()
 		uint8 rank = GuildRank();
 		SendAppearancePacket(AT_GuildID, GuildID(), false);
 		SendAppearancePacket(AT_GuildRank, rank, false);
+//		guild_mgr.DBSetMemberOnline(CharacterID(), true);
 	}
 
 	// moved to dbload and translators since we iterate there also .. keep m_pp values whatever they are when they get here
@@ -16491,6 +16491,14 @@ void Client::Handle_OP_GuildTributeModifyBenefits(const EQApplicationPacket* app
 		}
 		default: {
 			LogError("Unknown GuildModifyBenefits command received. {}.", t->command);
+			gmbs->command = 0;
+			gmbs->data = 1;
+			gmbs->tribute_id_1 = 0;
+			gmbs->tribute_id_2 = 0;
+			gmbs->tribute_id_1_tier = 0;
+			gmbs->tribute_id_2_tier = 0;
+			gmbs->tribute_master_id = 0;
+			QueuePacket(outapp);
 			break;
 		}
 		}
@@ -16668,16 +16676,6 @@ void Client::Handle_OP_GuildTributeDonateItem(const EQApplicationPacket* app)
 
 		SendGuildTributeDonateItemReply(in, favor);
 
-		if (RuleB(QueryServ, PlayerLogGuildTributeItemDonations)) {
-		auto event_desc = fmt::format("Guild Item Donation :: {} donated item id {} for {} favor in zone {}\.",
-			GetName(),
-			inst->GetID(),
-			favor,
-			GetZoneID()
-			);
-			QServ->PlayerLogEvent(Player_Log_Guild_Tribute_Item_Donation, CharacterID(), event_desc);
-		}
-
 		auto outapp = new ServerPacket(ServerOP_GuildTributeUpdateDonations, sizeof(GuildTributeUpdate));
 		GuildTributeUpdate* out = (GuildTributeUpdate*)outapp->pBuffer;
 		out->guild_id = GuildID();
@@ -16720,16 +16718,6 @@ void Client::Handle_OP_GuildTributeDonatePlat(const EQApplicationPacket* app)
 		TakePlatinum(quanity, false);
 		SendGuildTributeDonatePlatReply(in, favor);
 
-		if (RuleB(QueryServ, PlayerLogGuildTributePlatDonations)) {
-			auto event_desc = fmt::format("Guild Platinum Donation :: {} donated {} platinum for {} favor in zone {}\.",
-				GetName(),
-				quanity,
-				favor,
-				GetZoneID()
-			);
-			QServ->PlayerLogEvent(Player_Log_Guild_Tribute_Plat_Donation, CharacterID(), event_desc);
-		}
-
 		auto outapp = new ServerPacket(ServerOP_GuildTributeUpdateDonations, sizeof(GuildTributeUpdate));
 		GuildTributeUpdate* out = (GuildTributeUpdate*)outapp->pBuffer;
 		out->guild_id = GuildID();
@@ -16741,19 +16729,4 @@ void Client::Handle_OP_GuildTributeDonatePlat(const EQApplicationPacket* app)
 		worldserver.SendPacket(outapp);
 		safe_delete(outapp);
 	}
-}
-
-void Client::Handle_OP_GuildOpenGuildWindow(const EQApplicationPacket* app)
-{
-	//currently disabled, though could be used to send the guild member list when the Guild Window is opened.
-	auto pack =	new ServerPacket(ServerOP_RequestOnlineGuildMembers, sizeof(ServerRequestOnlineGuildMembers_Struct));
-
-	ServerRequestOnlineGuildMembers_Struct* srogms = (ServerRequestOnlineGuildMembers_Struct*)pack->pBuffer;
-
-	srogms->FromID = CharacterID();
-	srogms->GuildID = GuildID();
-
-	//worldserver.SendPacket(pack);
-
-	safe_delete(pack);
 }

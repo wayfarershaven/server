@@ -199,7 +199,7 @@ void Client::SendGuildList() {
 
 void Client::SendGuildMembers() {
 	uint32 len;
-	uint8 *data = guild_mgr.MakeGuildMembersUsingDB(GuildID(), GetName(), len);
+	uint8 *data = guild_mgr.MakeGuildMembers(GuildID(), GetName(), len);
 	if(data == nullptr)
 		return;	//invalid guild, shouldent happen.
 
@@ -420,37 +420,6 @@ void Client::SetGuildID(uint32 guild_id)
 {
 	guild_id = guild_id;
 }
-
-//void Client::SendGuildMembers2() {
-//	
-//	auto pack = new ServerPacket(ServerOP_RequestOnlineGuildMembers2, sizeof(ServerRequestOnlineGuildMembers_Struct));
-//
-//	ServerRequestOnlineGuildMembers_Struct* srogms = (ServerRequestOnlineGuildMembers_Struct*)pack->pBuffer;
-//
-//	srogms->FromID = CharacterID();
-//	srogms->GuildID = GuildID();
-//
-//	worldserver.SendPacket(pack);
-//
-//	safe_delete(pack);
-//
-//	//auto pack =
-//	//	new ServerPacket(ServerOP_RequestOnlineGuildMembers, sizeof(ServerRequestOnlineGuildMembers_Struct));
-//
-//	//ServerRequestOnlineGuildMembers_Struct* srogms = (ServerRequestOnlineGuildMembers_Struct*)pack->pBuffer;
-//
-//	//srogms->FromID = CharacterID();
-//	//srogms->GuildID = GuildID();
-//
-//	//worldserver.SendPacket(pack);
-//
-//	//safe_delete(pack);
-//
-//	// We need to send the Guild URL and Channel name again, as sending OP_GuildMemberList appears to clear this information out.
-//	//SendGuildURL();
-//	//SendGuildChannel();
-//}
-
 /*
 void EntityList::SendGuildJoin(GuildJoin_Struct* gj){
 	LinkedListIterator<Client*> iterator(client_list);

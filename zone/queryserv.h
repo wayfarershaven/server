@@ -21,8 +21,6 @@ enum PlayerGenericLogEventTypes {
 	Player_Log_Issued_Commands,
 	Player_Log_Money_Transactions,
 	Player_Log_Alternate_Currency_Transactions,
-	Player_Log_Guild_Tribute_Item_Donation,
-	Player_Log_Guild_Tribute_Plat_Donation
 };
 
 
