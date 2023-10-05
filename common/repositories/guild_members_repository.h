@@ -160,20 +160,5 @@ public:
 
 		return (results.Success() ? results.RowsAffected() : 0);
 	}
-
-	static int UpdateOnline(Database& db, uint32 char_id, uint32 status)
-	{
-		auto results = db.QueryDatabase(
-			fmt::format(
-				"UPDATE {} SET `online` = '{}' WHERE `char_id` = '{}'",
-				TableName(),
-				status,
-				char_id
-			)
-		);
-
-		return (results.Success() ? results.RowsAffected() : 0);
-	}
-	
 };
 #endif //EQEMU_GUILD_MEMBERS_REPOSITORY_H

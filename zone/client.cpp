@@ -377,8 +377,7 @@ Client::~Client() {
 		Bot::ProcessBotOwnerRefDelete(this);
 	}
 
-	if (IsInAGuild()) {
-		guild_mgr.DBSetMemberOnline(CharacterID(), false);
+	if(IsInAGuild()) {
 		guild_mgr.SendGuildMemberUpdateToWorld(GetName(), GuildID(), 0, time(nullptr));
 	}
 
@@ -529,7 +528,6 @@ void Client::SendZoneInPackets()
 	safe_delete(outapp);
 
 	if (IsInAGuild()) {
-		guild_mgr.DBSetMemberOnline(CharacterID(), true);
 		SendGuildMembers();
 		SendGuildURL();
 		SendGuildChannel();
