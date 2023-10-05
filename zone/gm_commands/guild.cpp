@@ -664,12 +664,6 @@ void command_guild(Client *c, const Seperator *sep)
 			memcpy(itempacket->SerializedItem, packet.c_str(), packet.length());
 			itempacket->PacketType = (ItemPacketType)command5;
 		}
-		
-		if (command3 == 9) {
-			//#guild test 2 6 4 450/451
-			c->Message(Chat::Yellow, "Send Guild List");
-			c->SendGuildMembers();
-		}
 	}
 }
 

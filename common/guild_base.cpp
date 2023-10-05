@@ -908,7 +908,7 @@ bool BaseGuildManager::QueryWithLogging(std::string query, const char *errmsg) {
 #define GuildMemberBaseQuery \
 "SELECT c.`id`, c.`name`, c.`class`, c.`level`, c.`last_login`, c.`zone_id`," \
 " g.`guild_id`, g.`rank`, g.`tribute_enable`, g.`total_tribute`, g.`last_tribute`," \
-" g.`banker`, g.`public_note`, g.`alt`, g.`online` " \
+" g.`banker`, g.`public_note`, g.`alt` " \
 " FROM `character_data` AS c LEFT JOIN `guild_members` AS g ON c.`id` = g.`char_id` "
 static void ProcessGuildMember(MySQLRequestRow row, CharGuildInfo &into) {
 	//fields from `characer_`
@@ -927,8 +927,7 @@ static void ProcessGuildMember(MySQLRequestRow row, CharGuildInfo &into) {
 	into.last_tribute	= row[10]? Strings::ToUnsignedInt(row[10]) : 0;		//timestamp
 	into.banker			= row[11]? (row[11][0] == '0'?false:true) : false;
 	into.public_note	= row[12]? row[12] : "";
-	into.alt		    = row[13] ? (row[13][0] == '0' ? false : true) : false;
-	into.online         = row[14] ? (row[14][0] == '0' ? false : true) : false;
+	into.alt		= row[13]? (row[13][0] == '0'?false:true) : false;
 
 	//a little sanity checking/cleanup
 	if(into.guild_id == 0)
@@ -1436,29 +1435,4 @@ uint32 BaseGuildManager::DBSetMemberFavor(uint32 guild_id, uint32 char_id, uint3
 	LogGuilds("Set member {} id {} tribute enabled [{}] for guild id [{}] in the database", gci.char_name.c_str(), char_id, favor, guild_id);
 
 	return gci.total_tribute;
-}
-
-uint32 BaseGuildManager::DBSetMemberOnline(uint32 char_id, uint32 status)
-{
-	CharGuildInfo gci;
-	GetCharInfo(char_id, gci);
-
-	if (gci.char_name.empty()) {
-		LogGuilds("Requested to set member id {} online status [{}] but could not find the character.", char_id, status);
-		return false;
-	}
-
-	if (m_db == nullptr) {
-		LogGuilds("Requested to set member {} online status [{}] but there is no database object", gci.char_name.c_str(), status);
-		return false;
-	}
-
-	if (!GuildMembersRepository::UpdateOnline(*m_db, char_id, status)) {
-		LogError("Error updating member id {} online status [{}] in database.", char_id, status);
-		return false;
-	}
-
-	LogGuilds("Set member {} id {} online status [{}] in the database", gci.char_name.c_str(), char_id, status);
-
-	return true;
 }
