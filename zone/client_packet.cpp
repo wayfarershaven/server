@@ -5273,11 +5273,12 @@ void Client::Handle_OP_Consider(const EQApplicationPacket *app)
 
 	// this could be done better, but this is only called when you con so w/e
 	// Shroud of Stealth has a special message
-	if (improved_hidden && (!t->see_improved_hide && (t->see_invis || t->see_hide)))
+	if (improved_hidden && (!t->see_improved_hide && (t->see_invis || t->see_hide))) {
 		MessageString(Chat::NPCQuestSay, SOS_KEEPS_HIDDEN);
 	// we are trying to hide but they can see us
-	else if ((invisible || invisible_undead || hidden || invisible_animals) && !IsInvisible(t))
+	} else if (((invisible || invisible_undead || hidden || invisible_animals) && !IsInvisible(t)) || (improved_hidden && t->see_improved_hide)) {
 		MessageString(Chat::NPCQuestSay, SUSPECT_SEES_YOU);
+	}
 
 	safe_delete(outapp);
 
