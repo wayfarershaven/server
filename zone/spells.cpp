@@ -4536,6 +4536,10 @@ std::vector<uint16> Mob::GetBuffSpellIDs()
 
 bool Mob::FindBuff(uint16 spell_id, uint16 caster_id)
 {
+	if (this == nullptr) {
+		return false;
+	}
+	
 	const int buff_count = GetMaxTotalSlots();
 	for (int buff_slot = 0; buff_slot < buff_count; buff_slot++) {
 		const uint16 current_spell_id = buffs[buff_slot].spellid;
