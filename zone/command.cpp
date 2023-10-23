@@ -696,7 +696,7 @@ void command_hotfix(Client *c, const Seperator *sep)
 				hotfix_command = fmt::format("\"{}\" -hotfix={}", shared_memory_path, hotfix_name);
 			}
 			else {
-				hotfix_command = fmt::format("\"{}\"", shared_memory_path, hotfix_name);
+				hotfix_command = fmt::format("\"{}\"", shared_memory_path);
 			}
 
 			LogInfo("Running hotfix command [{}]", hotfix_command);
