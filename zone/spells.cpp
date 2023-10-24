@@ -4536,6 +4536,10 @@ std::vector<uint16> Mob::GetBuffSpellIDs()
 
 bool Mob::FindBuff(uint16 spell_id, uint16 caster_id)
 {
+	if (this == nullptr) {
+		return false;
+	}
+	
 	const int buff_count = GetMaxTotalSlots();
 	for (int buff_slot = 0; buff_slot < buff_count; buff_slot++) {
 		const uint16 current_spell_id = buffs[buff_slot].spellid;
@@ -6200,7 +6204,7 @@ bool Mob::IsCombatProc(uint16 spell_id) {
 	/*
 		Procs that originate from casted spells are still limited by SPA 311 (~Kayen confirmed on live 2/4/22)
 	*/
-	for (int i = 0; i < MAX_PROCS; i++) {
+	for (int i = 0; i < m_max_procs; i++) {
 		if (PermaProcs[i].spellID == spell_id ||
 			SpellProcs[i].spellID == spell_id ||
 			RangedProcs[i].spellID == spell_id ||
@@ -6233,7 +6237,7 @@ bool Mob::AddProcToWeapon(uint16 spell_id, bool bPerma, uint16 iChance, uint16 b
 
 	int i;
 	if (bPerma) {
-		for (i = 0; i < MAX_PROCS; i++) {
+		for (i = 0; i < m_max_procs; i++) {
 			if (!IsValidSpell(PermaProcs[i].spellID)) {
 				PermaProcs[i].spellID = spell_id;
 				PermaProcs[i].chance = iChance;
@@ -6248,7 +6252,7 @@ bool Mob::AddProcToWeapon(uint16 spell_id, bool bPerma, uint16 iChance, uint16 b
 	} else {
 		// If its a poison proc, replace any existing one if present.
 		if (base_spell_id == POISON_PROC) {
-			for (i = 0; i < MAX_PROCS; i++) {
+			for (i = 0; i < m_max_procs; i++) {
 				// If we already have a poison proc active replace it and return
 				if (SpellProcs[i].base_spellID == POISON_PROC) {
 					SpellProcs[i].spellID = spell_id;
@@ -6265,7 +6269,7 @@ bool Mob::AddProcToWeapon(uint16 spell_id, bool bPerma, uint16 iChance, uint16 b
 		// or it is poison and no poison procs are currently present.
 		// Find a slot and use it as normal.
 
-		for (i = 0; i < MAX_PROCS; i++) {
+		for (i = 0; i < m_max_procs; i++) {
 			if (!IsValidSpell(SpellProcs[i].spellID)) {
 				SpellProcs[i].spellID = spell_id;
 				SpellProcs[i].chance = iChance;
@@ -6287,7 +6291,7 @@ bool Mob::RemoveProcFromWeapon(uint16 spell_id, bool bAll) {
 		spell_id = PI_VampEmbraceShadow;
 	}
 
-	for (int i = 0; i < MAX_PROCS; i++) {
+	for (int i = 0; i < m_max_procs; i++) {
 		if (bAll || SpellProcs[i].spellID == spell_id) {
 			SpellProcs[i].spellID = SPELL_UNKNOWN;
 			SpellProcs[i].chance = 0;
@@ -6306,7 +6310,7 @@ bool Mob::AddDefensiveProc(uint16 spell_id, uint16 iChance, uint16 base_spell_id
 	}
 
 	int i;
-	for (i = 0; i < MAX_PROCS; i++) {
+	for (i = 0; i < m_max_procs; i++) {
 		if (!IsValidSpell(DefensiveProcs[i].spellID)) {
 			DefensiveProcs[i].spellID = spell_id;
 			DefensiveProcs[i].chance = iChance;
@@ -6320,7 +6324,7 @@ bool Mob::AddDefensiveProc(uint16 spell_id, uint16 iChance, uint16 base_spell_id
 }
 
 bool Mob::RemoveDefensiveProc(uint16 spell_id, bool bAll) {
-	for (int i = 0; i < MAX_PROCS; i++) {
+	for (int i = 0; i < m_max_procs; i++) {
 		if (bAll || DefensiveProcs[i].spellID == spell_id) {
 			DefensiveProcs[i].spellID = SPELL_UNKNOWN;
 			DefensiveProcs[i].chance = 0;
@@ -6338,7 +6342,7 @@ bool Mob::AddRangedProc(uint16 spell_id, uint16 iChance, uint16 base_spell_id, u
 	}
 
 	int i;
-	for (i = 0; i < MAX_PROCS; i++) {
+	for (i = 0; i < m_max_procs; i++) {
 		if (!IsValidSpell(RangedProcs[i].spellID)) {
 			RangedProcs[i].spellID = spell_id;
 			RangedProcs[i].chance = iChance;
@@ -6352,7 +6356,7 @@ bool Mob::AddRangedProc(uint16 spell_id, uint16 iChance, uint16 base_spell_id, u
 }
 
 bool Mob::RemoveRangedProc(uint16 spell_id, bool bAll) {
-	for (int i = 0; i < MAX_PROCS; i++) {
+	for (int i = 0; i < m_max_procs; i++) {
 		if (bAll || RangedProcs[i].spellID == spell_id) {
 			RangedProcs[i].spellID = SPELL_UNKNOWN;
 			RangedProcs[i].chance = 0;
