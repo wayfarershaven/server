@@ -544,7 +544,6 @@ void Client::CompleteConnect()
 		uint8 rank = GuildRank();
 		SendAppearancePacket(AT_GuildID, GuildID(), false);
 		SendAppearancePacket(AT_GuildRank, rank, false);
-//		guild_mgr.DBSetMemberOnline(CharacterID(), true);
 	}
 
 	// moved to dbload and translators since we iterate there also .. keep m_pp values whatever they are when they get here
@@ -8250,21 +8249,29 @@ void Client::Handle_OP_GuildInviteAccept(const EQApplicationPacket *app)
 	Client* c_invitor = entity_list.GetClientByName(invitor);
 	Client* c_invitee = entity_list.GetClientByName(invitee);
 
+	if (!c_invitee) {
+		return;
+	}
+
 	if (!c_invitee || !c_invitor) {
 		guild_mgr.VerifyAndClearInvite(CharacterID(), guild_id, gj->response);
 		Message(Chat::Yellow, "Both players must be in the same zone.");
-		c_invitor->Message(Chat::Yellow, "Both players must be in the same zone.");
+		if (c_invitor) {
+			c_invitor->Message(Chat::Yellow, "Both players must be in the same zone.");
+		}
 		return;
 	}
 
 	if (response == 9) {
 		guild_mgr.VerifyAndClearInvite(CharacterID(), guild_id, gj->response);
 		Message(Chat::Yellow, "You declined the guild invite.");
-		c_invitor->Message(Chat::Yellow, "The player declined the guild invite.");
+		if (c_invitor) {
+			c_invitor->Message(Chat::Yellow, "The player declined the guild invite.");
+		}
 		return;
 	}
 
-	if (IsInAGuild() && GuildID() != c_invitor->GuildID()) {
+	if (c_invitor && IsInAGuild() && GuildID() != c_invitor->GuildID()) {
 		guild_mgr.VerifyAndClearInvite(CharacterID(), guild_id, gj->response);
 		Message(Chat::Yellow, "You are already in a guild.  Please leave that guild first.");
 		c_invitor->Message(Chat::Yellow, "Player is already in a guild.");
@@ -8272,13 +8279,16 @@ void Client::Handle_OP_GuildInviteAccept(const EQApplicationPacket *app)
 	}
 
 		guild_mgr.VerifyAndClearInvite(CharacterID(), guild_id, gj->response);
+
 		if (!guild_mgr.SetGuild(CharacterID(), guild_id, response)) {
 			Message(Chat::Red, "There was an error during the invite, DB may now be inconsistent.");
 			return;
 		}
+
 		if (zone->GetZoneID() == Zones::GUILDHALL && GuildBanks) {
 			GuildBanks->SendGuildBank(this);
 		}
+		
 		c_invitee->guild_id = guild_id;
 		c_invitee->guildrank = response;
 		SendAppearancePacket(AT_GuildID, guild_id,true, false, c_invitee, false);
