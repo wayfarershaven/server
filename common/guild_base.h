@@ -65,7 +65,6 @@ class CharGuildInfo
 		bool	banker;
 		bool	alt;
 		std::string	public_note;
-		uint32	online;
 };
 
 //this object holds guild functionality shared between world and zone.
@@ -110,7 +109,6 @@ class BaseGuildManager
 		bool    DBSetMemberTributeEnabled(uint32 guild_id, uint32 char_id, uint32 enabled);
 		bool    DBSetTributeTimeRemaining(uint32 guild_id, uint32 enabled);
 		uint32	DBSetMemberFavor(uint32 guild_id, uint32 char_id, uint32 favor);
-		uint32  DBSetMemberOnline(uint32 char_id, uint32 status);
 
 		//queries
 		bool	GetCharInfo(const char *char_name, CharGuildInfo &into);
