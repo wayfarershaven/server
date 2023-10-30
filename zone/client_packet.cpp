@@ -8727,6 +8727,11 @@ void Client::Handle_OP_GuildUpdateURLAndChannel(const EQApplicationPacket* app)
 		auto rank = gup->payload.rank_name.rank;
 		std::string rank_name(gup->payload.rank_name.rank_name);
 
+		if (rank > GUILD_MAX_RANK || rank < 0 || rank_name.empty()) {
+			LogGuilds("Received packet to update rank though rank {} or rank name {} was incorrect.", rank, rank_name.c_str());
+			return;
+		}
+		
 		guild_mgr.UpdateRankName(guild_id, rank, rank_name);
 		guild_mgr.SendRankName(guild_id, rank, rank_name);
 
