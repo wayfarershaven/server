@@ -6283,7 +6283,7 @@ void Client::Handle_OP_EndLootRequest(const EQApplicationPacket *app)
 
 	Entity* entity = entity_list.GetID(*((uint16*)app->pBuffer));
 	if (entity == 0) {
-		Message(Chat::Red, "Error: OP_EndLootRequest: Corpse not found (ent = 0)");
+		LogError("OP_EndLootRequest: Corpse with id of {} not found for {}.", entity_id_being_looted, GetCleanName());
 		if (ClientVersion() >= EQ::versions::ClientVersion::SoD)
 			Corpse::SendEndLootErrorPacket(this);
 		else
@@ -6291,7 +6291,7 @@ void Client::Handle_OP_EndLootRequest(const EQApplicationPacket *app)
 		return;
 	}
 	else if (!entity->IsCorpse()) {
-		Message(Chat::Red, "Error: OP_EndLootRequest: Corpse not found (!entity->IsCorpse())");
+		LogError("OP_EndLootRequest: Entity with id of {} was not corpse for {}.", entity_id_being_looted, GetCleanName());
 		Corpse::SendLootReqErrorPacket(this);
 		return;
 	}
