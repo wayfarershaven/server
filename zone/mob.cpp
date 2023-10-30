@@ -557,6 +557,7 @@ Mob::~Mob()
 
 	entity_list.RemoveMobFromCloseLists(this);
 	entity_list.RemoveAuraFromMobs(this);
+	entity_list.RemoveFromBeacons(this);
 
 	close_mobs.clear();
 
