@@ -101,6 +101,7 @@ public:
 	int GetRace();
 	const char *GetClassName();
 	const char *GetRaceName();
+	const char* GetBaseRaceName();
 	int GetGender();
 	int GetTexture();
 	int GetHelmTexture();
