@@ -6316,7 +6316,7 @@ void perl_register_quest()
 	package.add("worldwideremovespell", (void(*)(uint32, uint8, uint8))&Perl__worldwideremovespell);
 	package.add("worldwideremovetask", (void(*)(uint32))&Perl__worldwideremovetask);
 	package.add("worldwideremovetask", (void(*)(uint32, uint8, uint8))&Perl__worldwideremovetask);
-	package.add("worldwideremovetask", (void(*)(uint32, uint8, uint8))&Perl__worldwideremovetask);
+	package.add("worldwideremovetask", (void(*)(uint32, uint8))&Perl__worldwideremovetask);
 	package.add("worldwideresetactivity", (void(*)(uint32, int))&Perl__worldwideresetactivity);
 	package.add("worldwideresetactivity", (void(*)(uint32, int, uint8))&Perl__worldwideresetactivity);
 	package.add("worldwideresetactivity", (void(*)(uint32, int, uint8, uint8))&Perl__worldwideresetactivity);
