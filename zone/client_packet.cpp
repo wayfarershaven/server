@@ -6283,7 +6283,7 @@ void Client::Handle_OP_EndLootRequest(const EQApplicationPacket *app)
 
 	Entity* entity = entity_list.GetID(*((uint16*)app->pBuffer));
 	if (entity == 0) {
-		Message(Chat::Red, "Error: OP_EndLootRequest: Corpse not found (ent = 0)");
+		LogError("OP_EndLootRequest: Corpse with id of {} not found for {}.", entity_id_being_looted, GetCleanName());
 		if (ClientVersion() >= EQ::versions::ClientVersion::SoD)
 			Corpse::SendEndLootErrorPacket(this);
 		else
@@ -6291,7 +6291,7 @@ void Client::Handle_OP_EndLootRequest(const EQApplicationPacket *app)
 		return;
 	}
 	else if (!entity->IsCorpse()) {
-		Message(Chat::Red, "Error: OP_EndLootRequest: Corpse not found (!entity->IsCorpse())");
+		LogError("OP_EndLootRequest: Entity with id of {} was not corpse for {}.", entity_id_being_looted, GetCleanName());
 		Corpse::SendLootReqErrorPacket(this);
 		return;
 	}
@@ -8727,6 +8727,11 @@ void Client::Handle_OP_GuildUpdateURLAndChannel(const EQApplicationPacket* app)
 		auto rank = gup->payload.rank_name.rank;
 		std::string rank_name(gup->payload.rank_name.rank_name);
 
+		if (rank > GUILD_MAX_RANK || rank < 0 || rank_name.empty()) {
+			LogGuilds("Received packet to update rank though rank {} or rank name {} was incorrect.", rank, rank_name.c_str());
+			return;
+		}
+		
 		guild_mgr.UpdateRankName(guild_id, rank, rank_name);
 		guild_mgr.SendRankName(guild_id, rank, rank_name);
 
@@ -11490,50 +11495,16 @@ void Client::Handle_OP_Petition(const EQApplicationPacket *app)
 
 	if (!worldserver.Connected()) {
 		Message(Chat::Red, "Error: World server disconnected");
-	}
-	/*else if(petition_list.FindPetitionByAccountName(AccountName()))
-	{
-	Message(Chat::White,"You already have a petition in queue, you cannot petition again until this one has been responded to or you have deleted the petition.");
-	return;
-	}*/
-	else {
-		if (petition_list.FindPetitionByAccountName(AccountName())) {
-			Message(Chat::White, "You already have a petition in the queue, you must wait for it to be answered or use /deletepetition to delete it.");
-			return;
-		}
-		auto pet = new Petition(CharacterID());
-		pet->SetAName(AccountName());
-		pet->SetClass(GetClass());
-		pet->SetLevel(GetLevel());
-		pet->SetCName(GetName());
-		pet->SetRace(GetRace());
-		pet->SetLastGM("");
-		pet->SetCName(GetName());
-		pet->SetPetitionText((char*)app->pBuffer);
-		pet->SetZone(zone->GetZoneID());
-		pet->SetUrgency(0);
-		petition_list.AddPetition(pet);
-		database.InsertPetitionToDB(pet);
-		petition_list.UpdateGMQueue();
-		petition_list.UpdateZoneListQueue();
-		worldserver.SendEmoteMessage(
-			0,
-			0,
-			AccountStatus::QuestTroupe,
-			Chat::Yellow,
-			fmt::format(
-				"{} has made a petition. ID: {}",
-				GetCleanName(),
-				pet->GetID()
-			).c_str()
-		);
+	} else {
+		Message(Chat::Red, "Please go to the discord #player-petition channel to submit a petition.");
+		return;
 	}
 	return;
 }
 
 void Client::Handle_OP_PetitionBug(const EQApplicationPacket *app)
 {
-	Message(Chat::White, "Petition Bugs are not supported, please use /bug.");
+	Message(Chat::Red, "Please go to the discord #report-bug channel to submit a bug report.");
 	return;
 }
 

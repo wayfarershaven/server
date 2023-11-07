@@ -1433,6 +1433,16 @@ void Perl__removeitem(uint32_t item_id, int quantity)
 	quest_manager.removeitem(item_id, quantity);
 }
 
+std::string Perl__getitemcomment(uint32 item_id)
+{
+	return quest_manager.getitemcomment(item_id);
+}
+
+std::string Perl__getitemlore(uint32 item_id)
+{
+	return quest_manager.getitemlore(item_id);
+}
+
 std::string Perl__getitemname(uint32 item_id)
 {
 	return quest_manager.getitemname(item_id);
@@ -3506,14 +3516,7 @@ void Perl__crosszonemoveplayerbycharid(uint32 character_id, std::string zone_sho
 	);
 }
 
-void Perl__crosszonemoveplayerbycharid(
-	uint32 character_id,
-	std::string zone_short_name,
-	float x,
-	float y,
-	float z,
-	float heading
-)
+void Perl__crosszonemoveplayerbycharid(uint32 character_id, std::string zone_short_name, float x, float y, float z, float heading)
 {
 	quest_manager.CrossZoneMove(
 		CZMove_Struct{
@@ -3551,14 +3554,7 @@ void Perl__crosszonemoveplayerbygroupid(uint32 group_id, std::string zone_short_
 	);
 }
 
-void Perl__crosszonemoveplayerbygroupid(
-	uint32 group_id,
-	std::string zone_short_name,
-	float x,
-	float y,
-	float z,
-	float heading
-)
+void Perl__crosszonemoveplayerbygroupid(uint32 group_id, std::string zone_short_name, float x, float y, float z, float heading)
 {
 	quest_manager.CrossZoneMove(
 		CZMove_Struct{
@@ -3634,14 +3630,7 @@ void Perl__crosszonemoveplayerbyguildid(uint32 guild_id, std::string zone_short_
 	);
 }
 
-void Perl__crosszonemoveplayerbyguildid(
-	uint32 guild_id,
-	std::string zone_short_name,
-	float x,
-	float y,
-	float z,
-	float heading
-)
+void Perl__crosszonemoveplayerbyguildid(uint32 guild_id, std::string zone_short_name, float x, float y, float z, float heading)
 {
 	quest_manager.CrossZoneMove(
 		CZMove_Struct{
@@ -3679,14 +3668,7 @@ void Perl__crosszonemoveplayerbyexpeditionid(uint32 expedition_id, std::string z
 	);
 }
 
-void Perl__crosszonemoveplayerbyexpeditionid(
-	uint32 expedition_id,
-	std::string zone_short_name,
-	float x,
-	float y,
-	float z,
-	float heading
-)
+void Perl__crosszonemoveplayerbyexpeditionid(uint32 expedition_id, std::string zone_short_name, float x, float y, float z, float heading)
 {
 	quest_manager.CrossZoneMove(
 		CZMove_Struct{
@@ -5860,8 +5842,8 @@ void perl_register_quest()
 	package.add("GetZoneFogRed", (uint8(*)(uint32))&Perl__GetZoneFogRed);
 	package.add("GetZoneFogRed", (uint8(*)(uint32, uint8))&Perl__GetZoneFogRed);
 	package.add("GetZoneFogRed", (uint8(*)(uint32, uint8, int))&Perl__GetZoneFogRed);
-	package.add("GetZoneGravity", (float(*)(uint32))&Perl__GetZoneMaximumClip);
-	package.add("GetZoneGravity", (float(*)(uint32, int))&Perl__GetZoneMaximumClip);
+	package.add("GetZoneGravity", (float(*)(uint32))&Perl__GetZoneGravity);
+	package.add("GetZoneGravity", (float(*)(uint32, int))&Perl__GetZoneGravity);
 	package.add("GetZoneMaximumClip", (float(*)(uint32))&Perl__GetZoneMaximumClip);
 	package.add("GetZoneMaximumClip", (float(*)(uint32, int))&Perl__GetZoneMaximumClip);
 	package.add("GetZoneMaximumExpansion", (int8(*)(uint32))&Perl__GetZoneMaximumExpansion);
@@ -6033,6 +6015,7 @@ void perl_register_quest()
 	package.add("IsTargetRequiredForSpell", &Perl__IsTargetRequiredForSpell);
 	package.add("IsTeleportSpell", &Perl__IsTeleportSpell);
 	package.add("IsTranslocateSpell", &Perl__IsTranslocateSpell);
+	package.add("IsTGBCompatibleSpell", &Perl__IsTGBCompatibleSpell);
 	package.add("IsVeryFastHealSpell", &Perl__IsVeryFastHealSpell);
 	package.add("IsVirusSpell", &Perl__IsVirusSpell);
 	package.add("IsValidSpell", &Perl__IsValidSpell);
@@ -6316,7 +6299,7 @@ void perl_register_quest()
 	package.add("worldwideremovespell", (void(*)(uint32, uint8, uint8))&Perl__worldwideremovespell);
 	package.add("worldwideremovetask", (void(*)(uint32))&Perl__worldwideremovetask);
 	package.add("worldwideremovetask", (void(*)(uint32, uint8, uint8))&Perl__worldwideremovetask);
-	package.add("worldwideremovetask", (void(*)(uint32, uint8, uint8))&Perl__worldwideremovetask);
+	package.add("worldwideremovetask", (void(*)(uint32, uint8))&Perl__worldwideremovetask);
 	package.add("worldwideresetactivity", (void(*)(uint32, int))&Perl__worldwideresetactivity);
 	package.add("worldwideresetactivity", (void(*)(uint32, int, uint8))&Perl__worldwideresetactivity);
 	package.add("worldwideresetactivity", (void(*)(uint32, int, uint8, uint8))&Perl__worldwideresetactivity);
@@ -6404,6 +6387,8 @@ void perl_register_quest()
 	package.add("get_expedition_lockouts_by_char_id", (perl::reference(*)(uint32, std::string))&Perl__get_expedition_lockouts_by_char_id);
 	package.add("getfactionname", &Perl__getfactionname);
 	package.add("getinventoryslotid", &Perl__getinventoryslotid);
+	package.add("getitemcomment", &Perl__getitemcomment);
+	package.add("getitemlore", &Perl__getitemlore);
 	package.add("getitemname", &Perl__getitemname);
 	package.add("getitemstat", &Perl__getitemstat);
 	package.add("getlanguagename", &Perl__getlanguagename);
