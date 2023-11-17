@@ -804,6 +804,12 @@ void Client::SetLevel(uint8 set_level, bool command)
 	} else {
 		SetMana(CalcMaxMana()); // Why not, lets give them a free heal
 	}
+
+	if (IsInAGuild()) {
+		guild_mgr.SendToWorldMemberLevelUpdate(GuildID(), GetLevel(), std::string(GetCleanName()));
+		DoGuildTributeUpdate();
+	}
+	
 	DoTributeUpdate();
 	SendHPUpdate();
 	UpdateWho();
