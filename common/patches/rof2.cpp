@@ -395,54 +395,58 @@ namespace RoF2
 
 	ENCODE(OP_BazaarSearch)
 	{
-		EQApplicationPacket *in = *p;
-		*p = nullptr;
+		dest->QueuePacket(*p);
 
-		char *Buffer = (char *)in->pBuffer;
+	//	EQApplicationPacket *in = *p;
+	//	*p = nullptr;
 
-		uint8 SubAction = VARSTRUCT_DECODE_TYPE(uint8, Buffer);
+	//	char *Buffer = (char *)in->pBuffer;
 
-		if (SubAction != BazaarSearchResults)
-		{
-			dest->FastQueuePacket(&in, ack_req);
-			return;
-		}
+	//	uint8 SubAction = VARSTRUCT_DECODE_TYPE(uint8, Buffer);
 
-		unsigned char *__emu_buffer = in->pBuffer;
+	//	if (SubAction != BazaarSearchResults)
+	//	{
+	//		dest->FastQueuePacket(&in, ack_req);
+	//		return;
+	//	}
 
-		BazaarSearchResults_Struct *emu = (BazaarSearchResults_Struct *)__emu_buffer;
+	//	int EntryCount = in->size / sizeof(BazaarSearchResults_Struct);
 
-		int EntryCount = in->size / sizeof(BazaarSearchResults_Struct);
+	//	if (EntryCount == 0 || (in->size % sizeof(BazaarSearchResults_Struct)) != 0)
+	//	{
+	//		LogNetcode("[STRUCTS] Wrong size on outbound [{}]: Got [{}], expected multiple of [{}]", opcodes->EmuToName(in->GetOpcode()), in->size, sizeof(BazaarSearchResults_Struct));
+	//		delete in;
+	//		return;
+	//	}
 
-		if (EntryCount == 0 || (in->size % sizeof(BazaarSearchResults_Struct)) != 0)
-		{
-			LogNetcode("[STRUCTS] Wrong size on outbound [{}]: Got [{}], expected multiple of [{}]", opcodes->EmuToName(in->GetOpcode()), in->size, sizeof(BazaarSearchResults_Struct));
-			delete in;
-			return;
-		}
+	//	unsigned char* __emu_buffer = in->pBuffer;
+	//	BazaarSearchResults_Struct* emu = (BazaarSearchResults_Struct*)__emu_buffer;
 
-		in->size = EntryCount * sizeof(structs::BazaarSearchResults_Struct);
-		in->pBuffer = new unsigned char[in->size];
+	//	
 
-		memset(in->pBuffer, 0, in->size);
+	//	in->size = EntryCount * sizeof(structs::BazaarSearchResults_Struct);
+	//	in->pBuffer = new unsigned char[in->size];
 
-		structs::BazaarSearchResults_Struct *eq = (structs::BazaarSearchResults_Struct *)in->pBuffer;
+	//	memset(in->pBuffer, 0, in->size);
 
-		for (int i = 0; i < EntryCount; ++i, ++emu, ++eq)
-		{
-			OUT(Beginning.Action);
-			OUT(SellerID);
-			memcpy(eq->SellerName, emu->SellerName, sizeof(eq->SellerName));
-			OUT(NumItems);
-			OUT(ItemID);
-			OUT(SerialNumber);
-			memcpy(eq->ItemName, emu->ItemName, sizeof(eq->ItemName));
-			OUT(Cost);
-			OUT(ItemStat);
-		}
+	//	structs::BazaarSearchResults_Struct *eq = (structs::BazaarSearchResults_Struct *)in->pBuffer;
 
-		delete[] __emu_buffer;
-		dest->FastQueuePacket(&in, ack_req);
+	//	for (int i = 0; i < EntryCount; ++i, ++emu, ++eq)
+	//	{
+	//		
+	//		OUT(Beginning.Action);
+	//		OUT(SellerID);
+	//		memcpy(eq->SellerName, emu->SellerName, sizeof(eq->SellerName));
+	//		OUT(NumItems);
+	//		OUT(ItemID);
+	//		OUT(SerialNumber);
+	//		memcpy(eq->ItemName, emu->ItemName, sizeof(eq->ItemName));
+	//		OUT(Cost);
+	//		OUT(ItemStat);
+	//	}
+
+	//	delete[] __emu_buffer;
+	//	dest->FastQueuePacket(&in, ack_req);
 	}
 
 	ENCODE(OP_BeginCast)
@@ -454,6 +458,74 @@ namespace RoF2
 		OUT(cast_time);
 
 		FINISH_ENCODE();
+	}
+
+	ENCODE(OP_BecomeTrader)
+	{
+		EQApplicationPacket* inapp = *p;
+		*p = nullptr;
+		unsigned char* __emu_buffer = inapp->pBuffer;
+		BecomeTrader_Struct* in = (BecomeTrader_Struct*)__emu_buffer;
+
+		switch (in->Code) 
+		{
+		case 0x0:
+		{
+			BecomeTrader_Struct* emu = (BecomeTrader_Struct*)__emu_buffer;
+
+			auto outapp = new EQApplicationPacket(OP_BecomeTrader, sizeof(structs::BecomeTrader_Struct));
+			structs::BecomeTrader_Struct* eq = (structs::BecomeTrader_Struct*)outapp->pBuffer;
+
+			eq->code = 0;
+			eq->id = emu->ID;
+
+			dest->FastQueuePacket(&outapp);
+			break;
+		}
+		case 0x1:
+		{
+			BecomeTrader_Struct* emu = (BecomeTrader_Struct*)__emu_buffer;
+
+			auto outapp = new EQApplicationPacket(OP_BecomeTrader, sizeof(structs::BecomeTrader_Struct));
+			structs::BecomeTrader_Struct* eq = (structs::BecomeTrader_Struct*)outapp->pBuffer;
+
+			eq->code = 1;
+			eq->id = emu->ID;
+
+			dest->FastQueuePacket(&outapp);
+			break;
+		}
+		case 0x18:
+		{
+			BecomeTrader_Struct* emu = (BecomeTrader_Struct*)__emu_buffer;
+
+			auto outapp = new EQApplicationPacket(OP_TraderShop, sizeof(structs::BazaarTrader_Struct));
+			structs::BazaarTrader_Struct* eq = (structs::BazaarTrader_Struct*)outapp->pBuffer;
+
+			eq->action		= structs::BazaarSendAddTrader;
+			eq->entity_id	= emu->ID;
+			eq->trader_id	= emu->ID;
+			eq->zone_id		= emu->Unknown072;
+			strn0cpy(eq->trader_name, emu->Name, sizeof(eq->trader_name));
+
+			dest->FastQueuePacket(&outapp);
+			break;
+		}
+		case 0x19:
+		{
+			BecomeTrader_Struct* emu = (BecomeTrader_Struct*)__emu_buffer;
+
+			auto outapp = new EQApplicationPacket(OP_TraderShop, sizeof(structs::BecomeTrader_Struct));
+			structs::BecomeTrader_Struct* eq = (structs::BecomeTrader_Struct*)outapp->pBuffer;
+
+			eq->id = structs::BazaarSendRemoveTrader;
+			eq->code = emu->ID;
+
+			dest->FastQueuePacket(&outapp);
+			break;
+		}
+		}
+		safe_delete(inapp);
 	}
 
 	ENCODE(OP_BlockedBuffs)
@@ -3617,9 +3689,11 @@ namespace RoF2
 		ENCODE_LENGTH_EXACT(TraderDelItem_Struct);
 		SETUP_DIRECT_ENCODE(TraderDelItem_Struct, structs::TraderDelItem_Struct);
 
+		OUT(Unknown000);
 		OUT(TraderID);
-		snprintf(eq->SerialNumber, sizeof(eq->SerialNumber), "%016d", emu->ItemID);
-		LogTrading("ENCODE(OP_TraderDelItem): TraderID [{}], SerialNumber: [{}]", emu->TraderID, emu->ItemID);
+		auto serial = fmt::format("{:016}\n", emu->ItemID);
+		strn0cpy(eq->SerialNumber, serial.c_str(), sizeof(eq->SerialNumber));
+		LogTrading("ENCODE(OP_TraderDelItem): TraderID [{}], SerialNumber: [{}]", eq->TraderID, eq->SerialNumber);
 
 		FINISH_ENCODE();
 	}
@@ -3643,7 +3717,7 @@ namespace RoF2
 			ENCODE_LENGTH_EXACT(BazaarWelcome_Struct);
 			SETUP_DIRECT_ENCODE(BazaarWelcome_Struct, structs::BazaarWelcome_Struct);
 
-			eq->Code = emu->Beginning.Action;
+			eq->Code = BazaarWelcome;
 			eq->EntityID = emu->Unknown012;
 			OUT(Traders);
 			OUT(Items);
@@ -3675,6 +3749,19 @@ namespace RoF2
 
 			LogTrading("ENCODE(OP_TraderShop): Buy Action [{}], Price [{}], Trader [{}], ItemID [{}], Quantity [{}], ItemName, [{}]",
 				eq->Action, eq->Price, eq->TraderID, eq->ItemID, eq->Quantity, emu->ItemName);
+
+			FINISH_ENCODE();
+		}
+		else if (psize == sizeof(BecomeTrader_Struct))
+		{
+			ENCODE_LENGTH_EXACT(BecomeTrader_Struct);
+			SETUP_DIRECT_ENCODE(BecomeTrader_Struct, structs::BazaarTrader_Struct);
+
+			eq->action = structs::BazaarSendAddTrader;
+			eq->entity_id = emu->ID;
+			eq->trader_id = emu->ID;
+			eq->zone_id = emu->Unknown072;
+			strn0cpy(eq->trader_name, emu->Name, sizeof(eq->trader_name));
 
 			FINISH_ENCODE();
 		}
@@ -4385,14 +4472,12 @@ namespace RoF2
 
 		uint8 SubAction = VARSTRUCT_DECODE_TYPE(uint8, Buffer);
 
-		if ((SubAction != BazaarInspectItem) || (__packet->size != sizeof(structs::NewBazaarInspect_Struct)))
+		if ((SubAction != BazaarInspectItem) || (__packet->size != sizeof(structs::BazaarClickInspect_Struct)))
 			return;
 
-		SETUP_DIRECT_DECODE(NewBazaarInspect_Struct, structs::NewBazaarInspect_Struct);
+		SETUP_DIRECT_DECODE(BazaarInspect_Struct, structs::BazaarClickInspect_Struct);
 
-		IN(Beginning.Action);
-		memcpy(emu->Name, eq->Name, sizeof(emu->Name));
-		IN(SerialNumber);
+		emu->ItemID = Strings::ToUnsignedBigInt(eq->serial_number);
 
 		FINISH_DIRECT_DECODE();
 	}
@@ -5373,12 +5458,46 @@ namespace RoF2
 
 			FINISH_DIRECT_DECODE();
 		}
+		else if (psize == sizeof(structs::BazaarSearch_Struct))
+		{
+			DECODE_LENGTH_EXACT(structs::BazaarSearch_Struct);
+			SETUP_DIRECT_DECODE(BazaarSearch_Struct, structs::BazaarSearch_Struct);
+
+			__packet->SetOpcode(OP_BazaarSearch);
+
+			IN(action);
+			IN(item_stat);
+			IN(max_cost);
+			IN(min_cost);
+			IN(max_level);
+			IN(min_level);
+			IN(race);
+			IN(slot);
+			IN(type);
+			IN(trader_id);
+			IN(_class);
+			IN(prestige);
+			IN(search_scope);
+			IN(max_results);
+			IN(augment);
+			IN_str(name);
+
+			FINISH_DIRECT_DECODE();
+		}
 		else if (psize == 4)
 		{
 			LogTrading("DECODE(OP_TraderShop): Forwarding packet as-is with size 4");
 		}
 		else
 		{
+			char* buffer = (char*)__packet->pBuffer;
+			auto action = VARSTRUCT_DECODE_TYPE(uint8, buffer);
+			if (action == BazaarInspectItem) {
+				__packet->SetOpcode(OP_BazaarInspect);
+				DECODE_FORWARD(OP_BazaarSearch);
+				return;
+			}
+			
 			LogTrading("DECODE(OP_TraderShop): Decode Size Unknown ([{}])", psize);
 		}
 	}

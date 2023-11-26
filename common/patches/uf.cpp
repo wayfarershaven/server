@@ -351,6 +351,38 @@ namespace UF
 		dest->FastQueuePacket(&in, ack_req);
 	}
 
+	//ENCODE(OP_BecomeTrader)
+	//{
+	//	SETUP_DIRECT_ENCODE(New_BecomeTrader_Struct, struct::BecomeTrader_Struct);
+
+	//	switch (emu->action) {
+	//	case 0:
+	//	{
+	//		eq->Code = structs::BazaarTrader_EndTraderMode;
+	//		eq->ID = emu->entity_id;
+	//		strn0cpy(eq->Name, emu->trader_name, sizeof(eq->Name));
+	//		break;
+	//	}
+	//	case 1:
+	//	{
+	//		eq->Code = structs::BazaarTrader_StartTraderMode;
+	//		eq->ID = emu->entity_id;
+	//		strn0cpy(eq->Name, emu->trader_name, sizeof(eq->Name));
+	//		break;
+	//	}
+	//	default:
+	//	{
+	//		break;
+	//	}
+	//	}
+
+	//	//bts->Code = 0;
+	//	//bts->ID = GetID();
+	//	//strn0cpy(bts->Name, GetName(), sizeof(bts->Name));
+
+	//	FINISH_ENCODE();
+	//}
+
 	ENCODE(OP_Buff)
 	{
 		ENCODE_LENGTH_EXACT(SpellBuffPacket_Struct);
@@ -3172,6 +3204,32 @@ namespace UF
 		char *Buffer = (char *)__packet->pBuffer;
 
 		uint8 SubAction = VARSTRUCT_DECODE_TYPE(uint8, Buffer);
+
+		if (SubAction == 7) {
+			SETUP_DIRECT_DECODE(BazaarSearch_Struct, structs::BazaarSearch_Struct);
+
+			emu->action		= eq->Beginning.Action;
+			emu->item_stat	= eq->ItemStat;
+			emu->max_cost	= eq->MaxPrice;
+			emu->min_cost	= eq->MinPrice;
+			emu->max_level	= eq->MaxLlevel;
+			emu->min_level	= eq->Minlevel;
+			emu->race		= eq->Race;
+			emu->slot		= eq->Slot;
+			emu->type		= eq->Type;
+			emu->trader_id	= eq->TraderID;
+			emu->_class		= eq->Class_;
+			strn0cpy(emu->name, eq->Name, sizeof(emu->name));
+
+			//set defaults to fields that don't exist in UF
+			emu->augment = 0;
+			emu->prestige = 0;
+			emu->search_scope = 1;
+			emu->max_results = RuleI(Bazaar, MaxSearchResults);
+
+			FINISH_DIRECT_DECODE();
+			return;
+		}
 
 		if ((SubAction != BazaarInspectItem) || (__packet->size != sizeof(structs::NewBazaarInspect_Struct)))
 			return;

@@ -759,7 +759,14 @@ void Client::CompleteConnect()
 
 	entity_list.SendIllusionWearChange(this);
 
-	entity_list.SendTraders(this);
+	if (ClientVersion() == EQ::versions::ClientVersion::RoF2) 
+	{
+		SendBulkBazaarTraders();
+		SendBulkTraderStatus();
+	}
+	else {
+		entity_list.SendTraders(this);
+	}
 
 	Mob *pet = GetPet();
 	if (pet) {
@@ -3909,8 +3916,9 @@ void Client::Handle_OP_BazaarSearch(const EQApplicationPacket *app)
 
 		BazaarSearch_Struct* bss = (BazaarSearch_Struct*)app->pBuffer;
 
-		SendBazaarResults(bss->TraderID, bss->Class_, bss->Race, bss->ItemStat, bss->Slot, bss->Type,
-			bss->Name, bss->Minlevel, bss->MaxLlevel, bss->MinPrice * 1000, bss->MaxPrice * 1000);
+		SendBazaarResults(bss->trader_id, bss->_class, bss->race, bss->item_stat, bss->slot, bss->type,
+			bss->name, bss->min_cost * 1000, bss->max_cost * 1000, bss->min_level, bss->max_level, bss->prestige,
+			bss->augment, bss->max_results,bss->search_scope);
 	}
 	else if (app->size == sizeof(BazaarWelcome_Struct)) {
 
@@ -15292,7 +15300,7 @@ void Client::Handle_OP_Trader(const EQApplicationPacket *app)
 			for (uint32 i = 0; i < max_items; i++) {
 				if (database.GetItem(gis->Items[i])) {
 					database.SaveTraderItem(CharacterID(), gis->Items[i], gis->SerialNumber[i],
-						gis->Charges[i], ints->ItemCost[i], i);
+						gis->Charges[i], ints->ItemCost[i], i, GetID());
 
 					auto inst = FindTraderItemBySerialNumber(gis->SerialNumber[i]);
 					if (inst)

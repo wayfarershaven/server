@@ -33,6 +33,7 @@
 #include "../item_instance.h"
 #include "titanium_structs.h"
 #include "../path_manager.h"
+#include "../rulesys.h"
 
 #include <sstream>
 
@@ -1988,6 +1989,35 @@ namespace Titanium
 		emu->augment_slot = eq->augment_slot;
 
 		FINISH_DIRECT_DECODE();
+	}
+
+	DECODE(OP_BazaarSearch)
+	{
+		char* Buffer = (char*)__packet->pBuffer;
+		uint8 SubAction = VARSTRUCT_DECODE_TYPE(uint8, Buffer);
+
+		if (SubAction == BazaarSearchResults) {
+			SETUP_DIRECT_DECODE(BazaarSearch_Struct, structs::BazaarSearch_Struct);
+			emu->action = eq->beginning.Action; 
+			emu->max_cost = eq->maxprice; 
+			emu->min_cost = eq->minprice; 
+			emu->max_level = eq->maxlevel ;
+			emu->min_level = eq->minlevel;
+			emu->race = eq->race;
+			emu->slot = eq->slot;
+			emu->type = eq->type;
+			emu->item_stat = eq->stat;
+			emu->trader_id = eq->traderid;
+			emu->_class = eq->class_;
+			strn0cpy(emu->name, eq->name, sizeof(emu->name));
+
+			//set defaults to fields that don't exist in UF
+			emu->augment	= 0;
+			emu->prestige	= 0;
+			emu->search_scope = 1;
+			emu->max_results = RuleI(Bazaar, MaxSearchResults);
+			FINISH_DIRECT_DECODE();
+		}
 	}
 
 	DECODE(OP_Buff)

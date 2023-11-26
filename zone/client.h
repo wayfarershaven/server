@@ -315,7 +315,7 @@ public:
 					const char *message9 = nullptr);
 	void Tell_StringID(uint32 string_id, const char *who, const char *message);
 	void SendColoredText(uint32 color, std::string message);
-	void SendBazaarResults(uint32 trader_id,uint32 class_,uint32 race,uint32 stat,uint32 slot,uint32 type,char name[64],uint32 minlevel, uint32 maxlevel, uint32 minprice,uint32 maxprice);
+	void SendBazaarResults(uint32 trader_id, uint32 in_class, uint32 in_race, uint32 item_stat, uint32 item_slot, uint32 item_type, char item_name[64], uint32 min_price, uint32 max_price, uint32 min_level = 1 , uint32 max_level = RuleI(Character, MaxLevel), uint32 prestige = 0, uint32 aug_slot = 0, uint32 max_results = RuleI(Bazaar, MaxSearchResults), bool search_scope = true);
 	void SendTraderItem(uint32 item_id,uint16 quantity);
 	uint16 FindTraderItem(int32 SerialNumber,uint16 Quantity);
 	uint32 FindTraderItemSerialNumber(int32 ItemID);
@@ -326,6 +326,10 @@ public:
 	void TradeRequestFailed(const EQApplicationPacket* app);
 	void BuyTraderItem(TraderBuy_Struct* tbs,Client* trader,const EQApplicationPacket* app);
 	void FinishTrade(Mob* with, bool finalizer = false, void* event_entry = nullptr, std::list<void*>* event_details = nullptr);
+	void SendBecomeTraderPacket(BazaarTraderType action, uint32 trader_id, const char* trader_name);
+	void SendBecomeTrader(Client* trader, BazaarTraderType action);
+	void SendBulkTraderStatus();
+	void SendBulkBazaarTraders();
 	void SendZonePoints();
 
 	void SendBuyerResults(char *SearchQuery, uint32 SearchID);

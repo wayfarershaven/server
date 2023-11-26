@@ -2803,7 +2803,8 @@ struct EnvDamage2_Struct {
 //Bazaar Stuff =D
 //
 
-enum {
+enum BazaarTraderType {
+	BazaarTrader_Off = 0,
 	BazaarTrader_StartTraderMode = 1,
 	BazaarTrader_EndTraderMode = 2,
 	BazaarTrader_UpdatePrice = 3,
@@ -2816,7 +2817,9 @@ enum {
 	BazaarTrader_CustomerBrowsing = 13,
 	BazaarInspectItem = 18,
 	BazaarSearchDone2 = 19,
-	BazaarTrader_StartTraderMode2 = 22
+	BazaarTrader_StartTraderMode2 = 22,
+	BazaarTrader_AddTraderToBazaarWindow = 24,
+	BazaarTrader_RemoveTraderFromBazaarWindow = 25
 };
 
 enum {
@@ -2842,19 +2845,26 @@ struct BazaarWelcome_Struct {
 };
 
 struct BazaarSearch_Struct {
-	BazaarWindowStart_Struct Beginning;
-	uint32	TraderID;
-	uint32	Class_;
-	uint32	Race;
-	uint32	ItemStat;
-	uint32	Slot;
-	uint32	Type;
-	char	Name[64];
-	uint32	MinPrice;
-	uint32	MaxPrice;
-	uint32	Minlevel;
-	uint32	MaxLlevel;
-};
+/*000*/	uint32	action;
+/*004*/	uint32	search_scope{ true }; //1 all traders 0 local traders
+/*008*/	uint32	unknown008;
+/*012*/	uint32	unknown012;
+/*016*/	uint32	trader_id;
+/*020*/	uint32	_class;
+/*024*/	uint32	race;
+/*028*/	uint32	item_stat;
+/*032*/	uint32	slot;
+/*036*/	uint32	type;
+/*040*/	char	name[64];
+/*104*/	uint32	min_cost;
+/*108*/	uint32	max_cost;
+/*112*/	uint32	min_level{ 1 };
+/*116*/	uint32	max_level{ 0 };
+/*120*/	uint32	max_results{ 0 };
+/*124*/	uint32	prestige{ 0 };
+/*128*/	uint32	augment{ 0 };
+}; 
+
 struct BazaarInspect_Struct{
 	uint32 ItemID;
 	uint32 Unknown004;
@@ -3216,13 +3226,32 @@ struct BecomeTrader_Struct
 /*004*/	uint32 Code;
 /*008*/	char Name[64];
 /*072*/	uint32 Unknown072;	// Observed 0x33,0x91 etc on zone-in, 0x00 when sent for a new trader after zone-in
-/*076*/
+};
+
+struct RoF2_BecomeTrader_Struct {
+/*000*/	uint32	action;
+/*004*/	uint32	zone_id;
+/*008*/	uint32	trader_id;
+/*012*/	uint32	entity_id;
+/*016*/	char	trader_name[64];
 };
 
 struct TraderStatus_Struct{
 	uint32 Code;
 	uint32 Uknown04;
 	uint32 Uknown08;
+};
+
+struct Trader_TraderDetails_Struct { //size=12+trader_name_length
+	/*000*/	uint32	zone_id;
+	/*004*/	uint32	trader_id;
+	/*008*/	uint32	entity_id;
+	/*012*/	char	trader_name[1];
+};
+
+struct Trader_TraderBulkSend_Struct { //size=4+(x*count)
+	/*000*/	uint32	count;
+	Trader_TraderDetails_Struct traders[1];
 };
 
 struct Trader_ShowItems_Struct{

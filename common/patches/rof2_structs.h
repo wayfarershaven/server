@@ -3118,7 +3118,9 @@ enum {
 	BazaarTrader_CustomerBrowsing = 13,
 	BazaarInspectItem = 18,
 	BazaarSearchDone2 = 19,
-	BazaarTrader_StartTraderMode2 = 22
+	BazaarTrader_StartTraderMode2 = 22,
+	BazaarSendAddTrader = 0x18,
+	BazaarSendRemoveTrader = 0x19
 };
 
 enum {
@@ -3145,23 +3147,39 @@ struct BazaarWelcome_Struct {
 };
 
 struct BazaarSearch_Struct {
-	BazaarWindowStart_Struct Beginning;
-	uint32	TraderID;
-	uint32	Class_;
-	uint32	Race;
-	uint32	ItemStat;
-	uint32	Slot;
-	uint32	Type;
-	char	Name[64];
-	uint32	MinPrice;
-	uint32	MaxPrice;
-	uint32	Minlevel;
-	uint32	MaxLlevel;
+/*000*/	uint32	action;
+/*004*/	uint32	search_scope; //1 all traders 0 local traders
+/*008*/	uint32	unknown008;
+/*012*/	uint32	unknown012;
+/*016*/	uint32	trader_id;
+/*020*/	uint32	_class;
+/*024*/	uint32	race;
+/*028*/	uint32	item_stat;
+/*032*/	uint32	slot;
+/*036*/	uint32	type;
+/*040*/	char	name[31];
+/*071*/	char	unknown067[33];
+/*104*/	uint32	min_cost;
+/*108*/	uint32	max_cost;
+/*112*/	uint32	min_level;
+/*116*/	uint32	max_level;
+/*120*/	uint32	max_results;
+/*124*/	uint32	prestige;
+/*128*/	uint32	augment;
 };
+
 struct BazaarInspect_Struct{
 	uint32 ItemID;
 	uint32 Unknown004;
 	char Name[64];
+};
+
+struct BazaarClickInspect_Struct {
+/*000*/ uint32	action;
+/*004*/ uint32	unknown004;
+/*008*/ uint32	trader_id;
+/*012*/ char	serial_number[17];
+/*029*/ char	unknown029[11];
 };
 
 struct NewBazaarInspect_Struct {
@@ -3182,18 +3200,23 @@ struct BazaarReturnDone_Struct{
 	uint32 Unknown016;
 };
 
-struct BazaarSearchResults_Struct {
-/*000*/	BazaarWindowStart_Struct Beginning;
-/*004*/	uint32	SellerID;
-/*008*/	char	SellerName[64];
-/*072*/	uint32	NumItems;
-/*076*/	uint32	ItemID;
-/*080*/	uint32	SerialNumber;
-/*084*/	uint32	Unknown084;
-/*088*/	char	ItemName[64];
-/*152*/	uint32	Cost;
-/*156*/	uint32	ItemStat;
-/*160*/
+struct BazaarSearchDetails_Struct { //24+name+17
+	/*014*/	uint32	trader_id;
+	/*018*/	char	serial_num[17]{ 0 };
+	/*022*/	uint32	cost;
+	/*026*/	uint32	quanity;
+	/*030*/	uint32	id;
+	/*034*/	uint32	icon;
+	/*038*/	char	name[1];
+	/*039*/	uint32	stat;
+};
+
+struct BazaarSearchResults_Struct { //14
+	/*000*/	uint32	unknown000;
+	/*004*/	uint16	zone_id;
+	/*006*/	uint32	entity_id;
+	/*010*/	uint32	num_items;
+	/*014*/	BazaarSearchDetails_Struct items[];
 };
 
 struct ServerSideFilters_Struct {
@@ -3423,6 +3446,19 @@ struct BecomeTrader_Struct {
 	uint32 code;
 };
 
+struct BazaarTrader_Struct {
+	/*000*/	uint32	action;
+	/*004*/	uint32	zone_id;
+	/*008*/	uint32	trader_id;
+	/*012*/	uint32	entity_id;
+	/*016*/	char	trader_name[64];
+};
+
+struct BazaarRemoveTrader_Struct {
+	/*000*/	uint32	action;
+	/*004*/	uint32	trader_id;
+};
+
 struct Trader_ShowItems_Struct {
 	/*000*/	uint32 Code;
 	/*004*/	uint16 TraderID;
@@ -3500,7 +3536,7 @@ struct MoneyUpdate_Struct{
 struct TraderDelItem_Struct{
 	/*000*/ uint32 Unknown000;
 	/*004*/ uint32 TraderID;
-	/*008*/ char   SerialNumber[16];
+	/*008*/ char   SerialNumber[17];
 	/*024*/ uint32 Unknown012;
 	/*028*/
 };

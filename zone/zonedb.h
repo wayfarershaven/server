@@ -387,7 +387,7 @@ public:
 	Ground_Spawns*	LoadGroundSpawns(uint32 zone_id, int16 version, Ground_Spawns* gs);
 
 	/* Traders  */
-	void	SaveTraderItem(uint32 char_id,uint32 itemid,uint32 uniqueid, int32 charges,uint32 itemcost,uint8 slot);
+	void	SaveTraderItem(uint32 char_id,uint32 itemid,uint32 uniqueid, int32 charges,uint32 itemcost,uint8 slot, uint32 Entity_ID);
 	void	UpdateTraderItemCharges(int char_id, uint32 ItemInstID, int32 charges);
 	void	UpdateTraderItemPrice(int CharID, uint32 ItemID, uint32 Charges, uint32 NewPrice);
 	void	DeleteTraderItem(uint32 char_id);
