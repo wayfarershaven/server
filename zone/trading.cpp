@@ -22,6 +22,7 @@
 #include "../common/strings.h"
 #include "../common/misc_functions.h"
 #include "../common/events/player_event_logs.h"
+#include "../common/repositories/trader_repository.h"
 
 #include "client.h"
 #include "entity.h"
@@ -1662,246 +1663,41 @@ void Client::SendBazaarResults(
 	bool search_scope
 )
 {
-	std::string search_values   = " COUNT(item_id), trader.char_id, trader.item_id, trader.serialnumber, trader.charges, trader.item_cost, trader.slot_id, items.name ";
-	std::string search_criteria = " WHERE trader.item_id = items.id ";
+	BazaarSearch_Struct search_details{};
+	search_details.action = BazaarSearchResults;
+	search_details.augment = aug_slot;
+	search_details._class = in_class;
+	search_details.item_stat = item_slot;
+	search_details.min_cost = min_price;
+	search_details.max_cost = max_price;
+	search_details.min_level = min_level;
+	search_details.max_level = max_level;
+	search_details.max_results = max_results;
+	search_details.prestige = prestige;
+	search_details.race = in_race;
+	search_details.search_scope = search_scope ? 1 : 0;
+	search_details.slot = item_slot;
+	search_details.trader_id = trader_id;
+	search_details.type = item_type;
+	strn0cpy(search_details.name, item_name, sizeof(search_details.name));
 
-	if (!search_scope) {
-		search_criteria.append(fmt::format(" AND character_data.zone_id = {}", GetZoneID()));
-	} else if (trader_id > 0) {
-		search_criteria.append(fmt::format(" AND trader.entity_id = {}", trader_id));
-	}
-
-	if (min_level != 1) {
-		search_criteria.append(fmt::format(" AND items.reclevel >= {}", min_level));
-	}
-
-	if (max_level != RuleI(Character, MaxLevel)) {
-		search_criteria.append(fmt::format(" AND items.reclevel <= {}", max_level));
-	}
-
-	if (min_price != 0) {
-		search_criteria.append(StringFormat(" AND trader.item_cost >= %i", min_price));
-	}
-
-	if (max_price != 0) {
-		search_criteria.append(StringFormat(" AND trader.item_cost <= %i", max_price));
-	}
-	
-	if (!std::string(item_name).empty()) {
-		search_criteria.append(fmt::format(" AND items.name LIKE \"\%{}\%\" ", item_name));
-	}
-
-	//if (strlen(item_name) > 0) {
-	//	char *safeName = RemoveApostrophes(item_name);
-	//	search_criteria.append(StringFormat(" AND items.name LIKE '%%%s%%'", safeName));
-	//	safe_delete_array(safeName);
-	//}
-
-	if (in_class != 0xFFFFFFFF) {
-		search_criteria.append(StringFormat(" AND MID(REVERSE(BIN(items.classes)), %i, 1) = 1", in_class));
-	}
-
-	if (in_race != 0xFFFFFFFF) {
-		search_criteria.append(StringFormat(" AND MID(REVERSE(BIN(items.races)), %i, 1) = 1", in_race));
-	}
-
-	if (item_slot != 0xFFFFFFFF) {
-		search_criteria.append(StringFormat(" AND MID(REVERSE(BIN(items.slots)), %i, 1) = 1", item_slot + 1));
-	}
-
-// not yet implemented
-//	if (prestige != 0) {
-// 	   0xffffffff prestige only, 0xfffffffe non-prestige, 0 all
-//		search_criteria.append(fmt::format(" AND items.type = {} ", prestige));
-//	}
-
-	if (aug_slot != 0) {
-		search_criteria.append(fmt::format(" AND MID(REVERSE(BIN(items.augtype)), {}, 1) = 1", aug_slot));
-	}
-
-	switch (item_type) {
-		case 0xFFFFFFFF:
-			break;
-		case 0:
-			// 1H Slashing
-			search_criteria.append(" AND items.itemtype = 0 AND damage > 0");
-			break;
-		case 31:
-			search_criteria.append(" AND items.itemclass = 2");
-			break;
-		case 46:
-			search_criteria.append(" AND items.scrolleffect > 0 AND items.scrolleffect < 65000");
-			break;
-		case 47:
-			search_criteria.append(" AND items.worneffect = 998");
-			break;
-		case 48:
-			search_criteria.append(" AND items.worneffect >= 1298 AND items.worneffect <= 1307");
-			break;
-		case 49:
-			search_criteria.append(" AND items.focuseffect > 0");
-			break;
-
-		default:
-			search_criteria.append(StringFormat(" AND items.itemtype = %i", item_type));
-	}
-
-	switch (item_stat) {
-
-		case STAT_AC:
-			search_criteria.append(" AND items.ac > 0");
-			search_values.append(", items.ac");
-			break;
-
-		case STAT_AGI:
-			search_criteria.append(" AND items.aagi > 0");
-			search_values.append(", items.aagi");
-			break;
-
-		case STAT_CHA:
-			search_criteria.append(" AND items.acha > 0");
-			search_values.append(", items.acha");
-			break;
-
-		case STAT_DEX:
-			search_criteria.append(" AND items.adex > 0");
-			search_values.append(", items.adex");
-			break;
-
-		case STAT_INT:
-			search_criteria.append(" AND items.aint > 0");
-			search_values.append(", items.aint");
-			break;
-
-		case STAT_STA:
-			search_criteria.append(" AND items.asta > 0");
-			search_values.append(", items.asta");
-			break;
-
-		case STAT_STR:
-			search_criteria.append(" AND items.astr > 0");
-			search_values.append(", items.astr");
-			break;
-
-		case STAT_WIS:
-			search_criteria.append(" AND items.awis > 0");
-			search_values.append(", items.awis");
-			break;
-
-		case STAT_COLD:
-			search_criteria.append(" AND items.cr > 0");
-			search_values.append(", items.cr");
-			break;
-
-		case STAT_DISEASE:
-			search_criteria.append(" AND items.dr > 0");
-			search_values.append(", items.dr");
-			break;
-
-		case STAT_FIRE:
-			search_criteria.append(" AND items.fr > 0");
-			search_values.append(", items.fr");
-			break;
-
-		case STAT_MAGIC:
-			search_criteria.append(" AND items.mr > 0");
-			search_values.append(", items.mr");
-			break;
-
-		case STAT_POISON:
-			search_criteria.append(" AND items.pr > 0");
-			search_values.append(", items.pr");
-			break;
-
-		case STAT_HP:
-			search_criteria.append(" AND items.hp > 0");
-			search_values.append(", items.hp");
-			break;
-
-		case STAT_MANA:
-			search_criteria.append(" AND items.mana > 0");
-			search_values.append(", items.mana");
-			break;
-
-		case STAT_ENDURANCE:
-			search_criteria.append(" AND items.endur > 0");
-			search_values.append(", items.endur");
-			break;
-
-		case STAT_ATTACK:
-			search_criteria.append(" AND items.attack > 0");
-			search_values.append(", items.attack");
-			break;
-
-		case STAT_HP_REGEN:
-			search_criteria.append(" AND items.regen > 0");
-			search_values.append(", items.regen");
-			break;
-
-		case STAT_MANA_REGEN:
-			search_criteria.append(" AND items.manaregen > 0");
-			search_values.append(", items.manaregen");
-			break;
-
-		case STAT_HASTE:
-			search_criteria.append(" AND items.haste > 0");
-			search_values.append(", items.haste");
-			break;
-
-		case STAT_DAMAGE_SHIELD:
-			search_criteria.append(" AND items.damageshield > 0");
-			search_values.append(", items.damageshield");
-			break;
-
-		default:
-			search_values.append(", 0");
-			break;
-	}
-
-	std::string query;
-//	if (ClientVersion() >= EQ::versions::ClientVersion::RoF2)
-//	{
-		query = StringFormat(
-			"SELECT %s, SUM(charges), items.stackable, items.icon, character_data.zone_id, trader.entity_id "
-			"FROM trader, items, character_data %s AND trader.char_id = character_data.id GROUP BY items.id, charges, char_id LIMIT %i",
-			search_values.c_str(),
-			search_criteria.c_str(),
-			max_results
-		);
-	//}
-	//else {
-	//	query = StringFormat(
-	//		"SELECT %s, SUM(charges), items.stackable "
-	//		"FROM trader, items %s GROUP BY items.id, charges, char_id LIMIT %i",
-	//		search_values.c_str(),
-	//		search_criteria.c_str(),
-	//		RuleI(Bazaar, MaxSearchResults)
-	//	);
-	//}
-
-	auto results = database.QueryDatabase(query);
-
-	if (!results.Success()) {
-		return;
-	}
-
-	//LogTrading("SRCH: [{}]", query.c_str());
+	auto results = TraderRepository::GetBazaarSearchResults(database, search_details, GetZoneID());
 
 	int    Size = 0;
 	uint32 ID   = 0;
 
-	if (results.RowCount() == max_results) { // static_cast<unsigned long>(RuleI(Bazaar, MaxSearchResults))) {
+	if (results.size() == max_results) {
 		Message(
 			Chat::Yellow,
 			"Your search reached the limit of %i results. Please narrow your search down by selecting more options.",
 			max_results);
 	}
 
-	if (results.RowCount() == 0) {
+	if (results.size() == 0) {
 		auto outapp2 = new EQApplicationPacket(OP_BazaarSearch, sizeof(BazaarReturnDone_Struct));
-		BazaarReturnDone_Struct *brds   = (BazaarReturnDone_Struct *) outapp2->pBuffer;
-		brds->TraderID   = ID;
-		brds->Type       = BazaarSearchDone;
+		BazaarReturnDone_Struct* brds = (BazaarReturnDone_Struct*)outapp2->pBuffer;
+		brds->TraderID = ID;
+		brds->Type = BazaarSearchDone;
 		brds->Unknown008 = 0xFFFFFFFF;
 		brds->Unknown012 = 0xFFFFFFFF;
 		brds->Unknown016 = 0xFFFFFFFF;
@@ -1910,74 +1706,32 @@ void Client::SendBazaarResults(
 		return;
 	}
 
-	if (ClientVersion() >= EQ::versions::ClientVersion::RoF2) 
+	if (ClientVersion() >= EQ::versions::ClientVersion::RoF)
 	{
-		struct item_details {
-			uint32	quanity{ 0 };
-			uint32	char_id{ 0 };
-			uint32	item_id{ 0 };
-			uint32	charges{ 0 };
-			uint32	cost{ 0 };
-			uint32	slot{ 0 };
-			uint32	icon{ 0 };
-			uint32	item_stat{ 0 };
-			uint32	zone_id{ 0 };
-			uint32  entity_id{ 0 };
-			std::string	serial_number{};
-			std::string	name{};
-			bool	stackable{ false };
-		};
-		struct db_results {
-			uint32	count{ 0 };
-			std::vector<item_details> items{};
-		};
-
-		db_results results3{};
-		item_details item{}; 
-
-		auto results2 = database.QueryDatabase(query);
-		results3.count = results2.RowCount();
-		auto i = 0;
-		for (auto row : results2) {
-			item.quanity	= Strings::ToInt(row[0]);
-			item.char_id	= Strings::ToInt(row[1]);
-			item.item_id    = Strings::ToInt(row[2]);
-			item.charges    = Strings::ToInt(row[4]);
-			item.cost		= Strings::ToInt(row[5]);
-			item.stackable  = Strings::ToBool(row[10]);
-			item.icon		= Strings::ToInt(row[11]);
-			item.zone_id	= Strings::ToInt(row[12]);
-			item.entity_id	= Strings::ToInt(row[13]);
-			item.serial_number  = fmt::format("{:016}\0", Strings::ToInt(row[2]));
-			item.name			= fmt::format("{:.63}\0", std::string(row[7]).c_str());
-			item.item_stat		= 1;
-			results3.items.push_back(item);
-		}
-
 		auto name_size = 0;
-		for (auto const& i : results3.items) {
-			name_size += i.name.length() + 1;
+		for (auto const& i : results) {
+			name_size += i.item_name.length() + 1;
 		}
 
-		auto p_size = 41 * results3.count + name_size + 14;
+		auto p_size = 41 * results.size() + name_size + 14;
 		auto buffer = new char[p_size];
 		char* bufptr = buffer;
 		memset(buffer, 0, p_size);
 
 		VARSTRUCT_ENCODE_TYPE(uint32, bufptr, 0);
-		VARSTRUCT_ENCODE_TYPE(uint16, bufptr, results3.items[0].zone_id);
-		VARSTRUCT_ENCODE_TYPE(uint32, bufptr, results3.items[0].entity_id);
-		VARSTRUCT_ENCODE_TYPE(uint32, bufptr, results3.count);
+		VARSTRUCT_ENCODE_TYPE(uint16, bufptr, results[0].trader_zone_id);
+		VARSTRUCT_ENCODE_TYPE(uint32, bufptr, results[0].trader_entity_id);
+		VARSTRUCT_ENCODE_TYPE(uint32, bufptr, results.size());
 
-		for (auto i : results3.items)
+		for (auto i : results)
 		{
-			VARSTRUCT_ENCODE_TYPE(uint32, bufptr, i.entity_id);							//trader ID
-			VARSTRUCT_ENCODE_STRING(bufptr,	i.serial_number.c_str());					//serial
+			VARSTRUCT_ENCODE_TYPE(uint32, bufptr, i.trader_entity_id);					//trader ID
+			VARSTRUCT_ENCODE_STRING(bufptr, i.serial_number_RoF.c_str());				//serial
 			VARSTRUCT_ENCODE_TYPE(uint32, bufptr, i.cost);	 							//cost
-			VARSTRUCT_ENCODE_TYPE(uint32, bufptr, i.stackable ? i.charges : i.quanity);	//quanity
+			VARSTRUCT_ENCODE_TYPE(uint32, bufptr, i.stackable ? i.charges : i.count);	//quanity
 			VARSTRUCT_ENCODE_TYPE(uint32, bufptr, i.item_id);	 						//ID
-			VARSTRUCT_ENCODE_TYPE(uint32, bufptr, i.icon);	 							//icon
-			VARSTRUCT_ENCODE_STRING(bufptr,	i.name.c_str()); 							//name
+			VARSTRUCT_ENCODE_TYPE(uint32, bufptr, i.icon_id); 							//icon
+			VARSTRUCT_ENCODE_STRING(bufptr, i.item_name.c_str()); 						//name
 			VARSTRUCT_ENCODE_TYPE(uint32, bufptr, 1);									//itemstat
 		}
 
@@ -1991,89 +1745,91 @@ void Client::SendBazaarResults(
 
 		return;
 	}
+	else {
 
-	Size = results.RowCount() * sizeof(BazaarSearchResults_Struct);
-	auto  buffer  = new uchar[Size];
-	uchar *bufptr = buffer;
-	memset(buffer, 0, Size);
+		Size = results.size() * sizeof(BazaarSearchResults_Struct);
+		auto  buffer = new uchar[Size];
+		uchar* bufptr = buffer;
+		memset(buffer, 0, Size);
 
-	int    Action          = BazaarSearchResults;
-	uint32 Cost            = 0;
-	int32  SerialNumber    = 0;
-	char   temp_buffer[64] = {0};
-	int    Count           = 0;
-	uint32 StatValue       = 0;
+		int    Action = BazaarSearchResults;
+		uint32 Cost = 0;
+		int32  SerialNumber = 0;
+		char   temp_buffer[64] = { 0 };
+		int    Count = 0;
+		uint32 StatValue = 0;
 
-	for (auto row = results.begin(); row != results.end(); ++row) {
-		VARSTRUCT_ENCODE_TYPE(uint32, bufptr, Action);
-		Count = Strings::ToInt(row[0]);
-		VARSTRUCT_ENCODE_TYPE(uint32, bufptr, Count);
-		SerialNumber = Strings::ToInt(row[3]);
-		VARSTRUCT_ENCODE_TYPE(int32, bufptr, SerialNumber);
-		Client *Trader2 = entity_list.GetClientByCharID(Strings::ToInt(row[1]));
-		if (Trader2) {
-			ID = Trader2->GetID();
-			VARSTRUCT_ENCODE_TYPE(uint32, bufptr, ID);
+		for (auto i : results) {
+			VARSTRUCT_ENCODE_TYPE(uint32, bufptr, Action);
+			//		Count = Strings::ToInt(i.count);
+			VARSTRUCT_ENCODE_TYPE(uint32, bufptr, i.count);
+			//		SerialNumber = Strings::ToInt(row[3]);
+			VARSTRUCT_ENCODE_TYPE(int32, bufptr, i.serial_number);
+			Client* Trader2 = entity_list.GetClientByCharID(i.trader_id);
+			if (Trader2) {
+				ID = Trader2->GetID();
+				VARSTRUCT_ENCODE_TYPE(uint32, bufptr, ID);
+			}
+			else {
+				LogTrading("Unable to find trader: [{}]\n", i.trader_id);
+				VARSTRUCT_ENCODE_TYPE(uint32, bufptr, 0);
+			}
+			//		Cost = Strings::ToInt(row[5]);
+			VARSTRUCT_ENCODE_TYPE(uint32, bufptr, i.cost);
+			//		StatValue = Strings::ToInt(row[8]);
+			VARSTRUCT_ENCODE_TYPE(uint32, bufptr, StatValue);
+			bool Stackable = i.stackable;
+			if (Stackable) {
+				//			int Charges = Strings::ToInt(row[9]);
+				sprintf(temp_buffer, "%s(%i)", i.item_name.c_str(), i.charges);
+			}
+			else {
+				sprintf(temp_buffer, "%s(%i)", i.item_name.c_str(), i.count);
+			}
+
+			memcpy(bufptr, &temp_buffer, strlen(temp_buffer));
+
+			bufptr += 64;
+
+			// Extra fields for SoD+
+			//
+			if (Trader2) {
+				sprintf(temp_buffer, "%s", Trader2->GetName());
+			}
+			else {
+				sprintf(temp_buffer, "Unknown");
+			}
+
+			memcpy(bufptr, &temp_buffer, strlen(temp_buffer));
+
+			bufptr += 64;
+
+			VARSTRUCT_ENCODE_TYPE(uint32, bufptr, i.item_id); // ItemID
 		}
-		else {
-			LogTrading("Unable to find trader: [{}]\n", Strings::ToInt(row[1]));
-			VARSTRUCT_ENCODE_TYPE(uint32, bufptr, 0);
-		}
-		Cost = Strings::ToInt(row[5]);
-		VARSTRUCT_ENCODE_TYPE(uint32, bufptr, Cost);
-		StatValue = Strings::ToInt(row[8]);
-		VARSTRUCT_ENCODE_TYPE(uint32, bufptr, StatValue);
-		bool Stackable = Strings::ToInt(row[10]);
-		if (Stackable) {
-			int Charges = Strings::ToInt(row[9]);
-			sprintf(temp_buffer, "%s(%i)", row[7], Charges);
-		}
-		else {
-			sprintf(temp_buffer, "%s(%i)", row[7], Count);
-		}
 
-		memcpy(bufptr, &temp_buffer, strlen(temp_buffer));
+		auto outapp = new EQApplicationPacket(OP_BazaarSearch, Size);
 
-		bufptr += 64;
+		memcpy(outapp->pBuffer, buffer, Size);
 
-		// Extra fields for SoD+
-		//
-		if (Trader2) {
-			sprintf(temp_buffer, "%s", Trader2->GetName());
-		}
-		else {
-			sprintf(temp_buffer, "Unknown");
-		}
+		QueuePacket(outapp);
 
-		memcpy(bufptr, &temp_buffer, strlen(temp_buffer));
+		safe_delete(outapp);
+		safe_delete_array(buffer);
 
-		bufptr += 64;
+		auto                    outapp2 = new EQApplicationPacket(OP_BazaarSearch, sizeof(BazaarReturnDone_Struct));
+		BazaarReturnDone_Struct* brds = (BazaarReturnDone_Struct*)outapp2->pBuffer;
 
-		VARSTRUCT_ENCODE_TYPE(uint32, bufptr, Strings::ToInt(row[1])); // ItemID
+		brds->TraderID = ID;
+		brds->Type = BazaarSearchDone;
+
+		brds->Unknown008 = 0xFFFFFFFF;
+		brds->Unknown012 = 0xFFFFFFFF;
+		brds->Unknown016 = 0xFFFFFFFF;
+
+		QueuePacket(outapp2);
+
+		safe_delete(outapp2);
 	}
-
-	auto outapp = new EQApplicationPacket(OP_BazaarSearch, Size);
-
-	memcpy(outapp->pBuffer, buffer, Size);
-
-	QueuePacket(outapp);
-
-	safe_delete(outapp);
-	safe_delete_array(buffer);
-
-	auto                    outapp2 = new EQApplicationPacket(OP_BazaarSearch, sizeof(BazaarReturnDone_Struct));
-	BazaarReturnDone_Struct *brds   = (BazaarReturnDone_Struct *) outapp2->pBuffer;
-
-	brds->TraderID = ID;
-	brds->Type     = BazaarSearchDone;
-
-	brds->Unknown008 = 0xFFFFFFFF;
-	brds->Unknown012 = 0xFFFFFFFF;
-	brds->Unknown016 = 0xFFFFFFFF;
-
-	QueuePacket(outapp2);
-
-	safe_delete(outapp2);
 }
 
 static void UpdateTraderCustomerItemsAdded(uint32 CustomerID, TraderCharges_Struct* gis, uint32 ItemID) {
@@ -3154,11 +2910,11 @@ void Client::SendBulkBazaarTraders()
 		{
 			traders results{};
 			trader Trader{};
-			auto query = "SELECT DISTINCT(t.char_id), c.zone_id, c.name, t.entity_id FROM trader AS t, character_data AS c WHERE t.char_id = c.id;";
-			auto db_results = database.QueryDatabase(query);
-			if (db_results.Success() && db_results.RowCount() > 0) {
-				for (auto r : db_results) {
-					auto trader = entity_list.GetClientByCharID(Strings::ToInt(r[0]));
+			auto result = TraderRepository::GetDistinctTraders(database);
+
+			if (result.size() > 0) {
+				for (auto i : result) {
+					auto trader = entity_list.GetClientByCharID(i.trader_char_id);
 					if (trader) {
 						Trader.entity_id	= trader->GetID();
 						Trader.trader_id	= trader->GetID();
@@ -3167,10 +2923,10 @@ void Client::SendBulkBazaarTraders()
 						results.name_length += Trader.trader_name.length() + 1;
 					}
 					else {
-						Trader.entity_id	= Strings::ToInt(r[3]);
-						Trader.trader_id	= Strings::ToInt(r[3]);
-						Trader.zone_id		= Strings::ToInt(r[1]);
-						Trader.trader_name  = std::string(r[2]);
+						Trader.entity_id	= i.trader_entity_id;
+						Trader.trader_id	= i.trader_entity_id;
+						Trader.zone_id		= i.trader_zone_id;
+						Trader.trader_name  = i.trader_name;
 						results.name_length += Trader.trader_name.length() + 1;
 					}
 					results.traders.push_back(Trader);

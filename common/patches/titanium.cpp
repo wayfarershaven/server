@@ -2001,7 +2001,7 @@ namespace Titanium
 			emu->action = eq->beginning.Action; 
 			emu->max_cost = eq->maxprice; 
 			emu->min_cost = eq->minprice; 
-			emu->max_level = eq->maxlevel ;
+			emu->max_level = eq->maxlevel;
 			emu->min_level = eq->minlevel;
 			emu->race = eq->race;
 			emu->slot = eq->slot;
