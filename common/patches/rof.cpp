@@ -3051,21 +3051,6 @@ namespace RoF
 		FINISH_ENCODE();
 	}
 
-	ENCODE(OP_ShopRequest)
-	{
-		ENCODE_LENGTH_EXACT(Merchant_Click_Struct);
-		SETUP_DIRECT_ENCODE(Merchant_Click_Struct, structs::Merchant_Click_Struct);
-
-		OUT(npcid);
-		OUT(playerid);
-		OUT(command);
-		OUT(rate);
-		eq->unknown01 = 3;	// Not sure what these values do yet, but list won't display without them
-		eq->unknown02 = 2592000;
-
-		FINISH_ENCODE();
-	}
-
 	ENCODE(OP_SkillUpdate)
 	{
 		ENCODE_LENGTH_EXACT(SkillUpdate_Struct);
@@ -4983,19 +4968,6 @@ namespace RoF
 		//IN(itemslot);
 		IN(quantity);
 		IN(price);
-
-		FINISH_DIRECT_DECODE();
-	}
-
-	DECODE(OP_ShopRequest)
-	{
-		DECODE_LENGTH_EXACT(structs::Merchant_Click_Struct);
-		SETUP_DIRECT_DECODE(Merchant_Click_Struct, structs::Merchant_Click_Struct);
-
-		IN(npcid);
-		IN(playerid);
-		IN(command);
-		IN(rate);
 
 		FINISH_DIRECT_DECODE();
 	}

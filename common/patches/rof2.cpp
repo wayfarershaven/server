@@ -1646,6 +1646,18 @@ namespace RoF2
 
 	ENCODE(OP_ItemPacket)
 	{
+		struct Parcel_Struct
+		{
+			/*000*/	ItemPacketType	PacketType;
+			/*004*/	char			SerializedItem[1];
+			/*944*/	uint32			sent_time;
+			/*948*/ uint32			player_name_length;
+			/**/	char			player_name[1];
+			/**/	uint32			note_length;
+			/**/	char			note[1];
+			/*xx*/
+		};
+
 		//consume the packet
 		EQApplicationPacket* in = *p;
 		*p = nullptr;
@@ -1656,24 +1668,81 @@ namespace RoF2
 		ItemPacket_Struct* old_item_pkt = (ItemPacket_Struct*)__emu_buffer;
 		EQ::InternalSerializedItem_Struct* int_struct = (EQ::InternalSerializedItem_Struct*)(&__emu_buffer[4]);
 
-		EQ::OutBuffer ob;
-		EQ::OutBuffer::pos_type last_pos = ob.tellp();
+		switch (old_item_pkt->PacketType)
+		{
+		case ItemPacketParcel:
+		{
+			// deconstruct the packet
+			auto bufptr = __emu_buffer;
+			auto p_size = in->size;
+			bufptr = bufptr + p_size - 4;
+			auto serial_length = VARSTRUCT_DECODE_TYPE(uint32, bufptr);
+			bufptr = bufptr - p_size;
+			auto packet_type = VARSTRUCT_DECODE_TYPE(uint32, bufptr);
+			char* serial = new char[serial_length];
+			memcpy(serial, bufptr, serial_length); bufptr += serial_length;
+			auto date_sent = VARSTRUCT_DECODE_TYPE(uint32, bufptr);
+			auto player_name_length = VARSTRUCT_DECODE_TYPE(uint32, bufptr);
+			char* player_name = new char[player_name_length];
+			memcpy(player_name, bufptr, player_name_length); bufptr += player_name_length;
+			auto note_length = VARSTRUCT_DECODE_TYPE(uint32, bufptr);
+			char* note = new char[note_length];
+			memcpy(note, bufptr, note_length); bufptr += note_length;
 
-		ob.write((const char*)__emu_buffer, 4);
+			EQ::InternalSerializedItem_Struct* int_struct = (EQ::InternalSerializedItem_Struct*)(&__emu_buffer[4]);
 
-		SerializeItem(ob, (const EQ::ItemInstance*)int_struct->inst, int_struct->slot_id, 0, old_item_pkt->PacketType);
-		if (ob.tellp() == last_pos) {
-			LogNetcode("RoF2::ENCODE(OP_ItemPacket) Serialization failed on item slot [{}]", int_struct->slot_id);
-			delete in;
-			return;
+			EQ::OutBuffer ob;
+			EQ::OutBuffer::pos_type last_pos = ob.tellp();
+
+			ob.write((const char*)__emu_buffer, 4);
+
+			SerializeItem(ob, (const EQ::ItemInstance*)int_struct->inst, int_struct->slot_id, 0, ItemPacketParcel);
+			if (ob.tellp() == last_pos) {
+				LogNetcode("RoF2::ENCODE(OP_ItemPacket) Serialization failed on item slot [{}]", int_struct->slot_id);
+				delete in;
+				return;
+			}
+			ob.write((const char*)&date_sent, 4);
+			ob.write((const char*)&player_name_length, 4);
+			ob.write(player_name, player_name_length);
+			ob.write((const char*)&note_length, 4);
+			ob.write(note, note_length);
+
+			in->size = ob.size();
+			in->pBuffer = ob.detach();
+			safe_delete_array(note);
+			safe_delete_array(player_name);
+			safe_delete_array(serial);
+			safe_delete_array(__emu_buffer);
+
+			dest->FastQueuePacket(&in, ack_req);
+
+			break;
 		}
+		default:
+		{
+			EQ::InternalSerializedItem_Struct* int_struct = (EQ::InternalSerializedItem_Struct*)(&__emu_buffer[4]);
 
-		in->size = ob.size();
-		in->pBuffer = ob.detach();
+			EQ::OutBuffer ob;
+			EQ::OutBuffer::pos_type last_pos = ob.tellp();
 
-		delete[] __emu_buffer;
+			ob.write((const char*)__emu_buffer, 4);
 
-		dest->FastQueuePacket(&in, ack_req);
+			SerializeItem(ob, (const EQ::ItemInstance*)int_struct->inst, int_struct->slot_id, 0, old_item_pkt->PacketType);
+			if (ob.tellp() == last_pos) {
+				LogNetcode("RoF2::ENCODE(OP_ItemPacket) Serialization failed on item slot [{}]", int_struct->slot_id);
+				delete in;
+				return;
+			}
+
+			in->size = ob.size();
+			in->pBuffer = ob.detach();
+
+			delete[] __emu_buffer;
+
+			dest->FastQueuePacket(&in, ack_req);
+		}
+		}
 	}
 
 	ENCODE(OP_ItemVerifyReply)
@@ -3197,21 +3266,6 @@ namespace RoF2
 		//OUT(itemslot);
 		OUT(quantity);
 		OUT(price);
-
-		FINISH_ENCODE();
-	}
-
-	ENCODE(OP_ShopRequest)
-	{
-		ENCODE_LENGTH_EXACT(Merchant_Click_Struct);
-		SETUP_DIRECT_ENCODE(Merchant_Click_Struct, structs::Merchant_Click_Struct);
-
-		OUT(npcid);
-		OUT(playerid);
-		OUT(command);
-		OUT(rate);
-		eq->unknown01 = 3;	// Not sure what these values do yet, but list won't display without them
-		eq->unknown02 = 2592000;
 
 		FINISH_ENCODE();
 	}
@@ -5338,19 +5392,6 @@ namespace RoF2
 		//IN(itemslot);
 		IN(quantity);
 		IN(price);
-
-		FINISH_DIRECT_DECODE();
-	}
-
-	DECODE(OP_ShopRequest)
-	{
-		DECODE_LENGTH_EXACT(structs::Merchant_Click_Struct);
-		SETUP_DIRECT_DECODE(Merchant_Click_Struct, structs::Merchant_Click_Struct);
-
-		IN(npcid);
-		IN(playerid);
-		IN(command);
-		IN(rate);
 
 		FINISH_DIRECT_DECODE();
 	}

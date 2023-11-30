@@ -330,6 +330,8 @@ public:
 	void SendBecomeTrader(Client* trader, BazaarTraderType action);
 	void SendBulkTraderStatus();
 	void SendBulkBazaarTraders();
+	void SendBulkParcels(uint32 merchant_id);
+	void SendParcelPacket(const EQ::ItemInstance* inst);
 	void SendZonePoints();
 
 	void SendBuyerResults(char *SearchQuery, uint32 SearchID);

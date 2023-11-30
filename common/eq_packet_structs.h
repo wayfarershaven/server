@@ -1528,7 +1528,20 @@ enum ItemPacketType
 	ItemPacketTributeItem		= 0x6C,
 	ItemPacketGuildTribute		= 0x6D,
 	ItemPacketCharmUpdate		= 0x6E, // noted as incorrect
+	ItemPacketRecovery			= 0x71,
+	ItemPacketParcel			= 0x73,
 	ItemPacketInvalid			= 0xFF
+};
+
+enum MerchantWindowTabDisplay {
+	None						= 0x00,
+	SellBuy						= 0x01,
+	Recover						= 0x02,
+	SellBuyRecover				= 0x03,
+	Parcel						= 0x04,
+	SellBuyParcel				= 0x05,
+	RecoverParcel				= 0x06,
+	SellBuyRecoverParcel		= 0x07
 };
 
 //enum ItemPacketType
@@ -1974,6 +1987,9 @@ struct Merchant_Click_Struct {
 /*004*/ uint32	playerid;
 /*008*/ uint32	command;		//1=open, 0=cancel/close
 /*012*/ float	rate;			//cost multiplier, dosent work anymore
+/*016*/ int32	tab_display;	// bitmask b000 none, b001 Purchase/Sell, b010 Recover, b100 Parcels
+/*020*/ int32	unknown02;		// Seen 2592000 from Server or -1 from Client
+/*024*/
 };
 /*
 Unknowns:

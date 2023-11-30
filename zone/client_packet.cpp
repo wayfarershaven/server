@@ -14273,8 +14273,12 @@ void Client::Handle_OP_ShopRequest(const EQApplicationPacket *app)
 	}
 
 	merchantid = tmp->CastToNPC()->MerchantType;
-	int action = 1;
+	int tabs_to_display = SellBuyRecover;
+	if (RuleB(World, EnableParcelMerchants)) {
+		tabs_to_display = SellBuyRecoverParcel; 
+	}
 
+	int action = 1;
 	if (merchantid == 0) {
 		auto outapp = new EQApplicationPacket(OP_ShopRequest, sizeof(Merchant_Click_Struct));
 		Merchant_Click_Struct* mco = (Merchant_Click_Struct*)outapp->pBuffer;
@@ -14282,6 +14286,8 @@ void Client::Handle_OP_ShopRequest(const EQApplicationPacket *app)
 		mco->playerid = 0;
 		mco->command = 1;		//open...
 		mco->rate = 1.0;
+		mco->tab_display = tabs_to_display;
+		mco->unknown02 = 2592000;
 		QueuePacket(outapp);
 		safe_delete(outapp);
 		return;
@@ -14326,12 +14332,19 @@ void Client::Handle_OP_ShopRequest(const EQApplicationPacket *app)
 		mco->rate = 1 / (RuleR(Merchant, BuyCostMod));
 	}
 
+	mco->tab_display = tabs_to_display;
+	mco->unknown02 = 2592000;
+
 	outapp->priority = 6;
 	QueuePacket(outapp);
 	safe_delete(outapp);
 
 	if (action == 1) {
 		BulkSendMerchantInventory(merchantid, tmp->GetNPCTypeID());
+	}
+
+	if (tabs_to_display == SellBuyRecoverParcel) {
+		SendBulkParcels(merchantid);
 	}
 
 	return;
