@@ -344,6 +344,7 @@ namespace DatabaseSchema {
 			"respawn_times",
 			"saylink",
 			"server_scheduled_events",
+			"spawn2_disabled",
 			"player_event_log_settings",
 			"player_event_logs",
 			"shared_task_activity_state",
