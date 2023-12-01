@@ -934,6 +934,8 @@ public:
 	void AddAAPoints(uint32 points);
 	int GetAAPoints() { return m_pp.aapoints; }
 	int GetSpentAA() { return m_pp.aapoints_spent; }
+	bool HasAlreadyPurchasedRank(AA::Rank* rank);
+	void ListPurchasedAAs(Client *to, std::string search_criteria = std::string());
 	uint64 GetRequiredAAExperience();
 
 	bool SendGMCommand(std::string message, bool ignore_status = false);
