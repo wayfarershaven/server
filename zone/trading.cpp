@@ -1060,10 +1060,14 @@ void Client::SendTraderItem(uint32 ItemID, uint16 Quantity) {
 	if (inst)
 	{
 		bool is_arrow = (inst->GetItem()->ItemType == EQ::item::ItemTypeArrow) ? true : false;
-		FreeSlotID = m_inv.FindFreeSlot(false, true, inst->GetItem()->Size, is_arrow);
+		bool stacked = TryStacking(inst);
+		if (!stacked) {
+			FreeSlotID = m_inv.FindFreeSlot(false, true, inst->GetItem()->Size, is_arrow);
+			PutItemInInventory(FreeSlotID, *inst);
+			Save();
+		}
 
-		PutItemInInventory(FreeSlotID, *inst);
-		Save();
+//		FreeSlotID = m_inv.FindFreeSlot(false, true, inst->GetItem()->Size, is_arrow);
 
 		SendItemPacket(FreeSlotID, inst, ItemPacketTrade);
 
@@ -1667,7 +1671,7 @@ void Client::SendBazaarResults(
 	search_details.action = BazaarSearchResults;
 	search_details.augment = aug_slot;
 	search_details._class = in_class;
-	search_details.item_stat = item_slot;
+	search_details.item_stat = item_stat;
 	search_details.min_cost = min_price;
 	search_details.max_cost = max_price;
 	search_details.min_level = min_level;
@@ -1732,7 +1736,7 @@ void Client::SendBazaarResults(
 			VARSTRUCT_ENCODE_TYPE(uint32, bufptr, i.item_id);	 						//ID
 			VARSTRUCT_ENCODE_TYPE(uint32, bufptr, i.icon_id); 							//icon
 			VARSTRUCT_ENCODE_STRING(bufptr, i.item_name.c_str()); 						//name
-			VARSTRUCT_ENCODE_TYPE(uint32, bufptr, 1);									//itemstat
+			VARSTRUCT_ENCODE_TYPE(uint32, bufptr, i.item_stat);							//itemstat
 		}
 
 		auto outapp = new EQApplicationPacket(OP_BazaarSearch, p_size);

@@ -21,6 +21,7 @@ public:
 		uint32	sum_charges;
 		uint32	trader_zone_id;
 		uint32	trader_entity_id;
+		uint32	item_stat;
 		bool	stackable;
 		std::string	item_name;
 		std::string serial_number_RoF;
@@ -70,7 +71,7 @@ public:
 
 	static std::vector<BazaarDBSearchResults_Struct> GetBazaarSearchResults(Database& db, BazaarSearch_Struct search, uint32 char_zone_id)
 	{
-		std::string search_values = " COUNT(item_id), trader.char_id, trader.item_id, trader.serialnumber, trader.charges, trader.item_cost, trader.slot_id, items.name ";
+		std::string search_values = "";
 		std::string search_criteria = " WHERE trader.item_id = items.id ";
 
 		if (!search.search_scope) {
@@ -84,7 +85,7 @@ public:
 			search_criteria.append(fmt::format(" AND items.reclevel >= {}", search.min_level));
 		}
 
-		if (search.max_level != RuleI(Character, MaxLevel)) {
+		if (search.max_level > RuleI(Character, MaxLevel)) {
 			search_criteria.append(fmt::format(" AND items.reclevel <= {}", search.max_level));
 		}
 
@@ -122,15 +123,14 @@ public:
 			search_criteria.append(fmt::format(" AND MID(REVERSE(BIN(items.augtype)), {}, 1) = 1", search.augment));
 		}
 
-		switch (search.type) {
-		case 0xFFFFFFFF:
-			break;
-		case 0:
-			// 1H Slashing
-			search_criteria.append(" AND items.itemtype = 0 AND damage > 0");
+		switch (search.type) { 
+		case 0xffffffff:
 			break;
 		case 31:
 			search_criteria.append(" AND items.itemclass = 2");
+			break;
+		case 67:
+			search_criteria.append(" AND items.itemclass = 1");
 			break;
 		case 46:
 			search_criteria.append(" AND items.scrolleffect > 0 AND items.scrolleffect < 65000");
@@ -146,7 +146,7 @@ public:
 			break;
 
 		default:
-			search_criteria.append(StringFormat(" AND items.itemtype = %i", search.type));
+			search_criteria.append(fmt::format(" AND items.itemtype = {}", search.type));
 		}
 
 		switch (search.item_stat) {
@@ -261,7 +261,7 @@ public:
 			break;
 		}
 
-		std::string query = fmt::format("SELECT {}, SUM(charges), items.stackable, items.icon, character_data.zone_id, trader.entity_id "
+		std::string query = fmt::format("SELECT COUNT(item_id), trader.char_id, trader.item_id, trader.serialnumber, trader.charges, trader.item_cost, trader.slot_id, items.name, SUM(charges), items.stackable, items.icon, character_data.zone_id, trader.entity_id {} "
 			"FROM trader, items, character_data {} AND trader.char_id = character_data.id GROUP BY items.id, charges, char_id LIMIT {}",
 			search_values.c_str(),
 			search_criteria.c_str(),
@@ -280,18 +280,19 @@ public:
 		for (auto row : results) {
 			BazaarDBSearchResults_Struct data{};
 
-			data.charges			= Strings::ToInt(row[4]);
-			data.cost				= Strings::ToInt(row[5]);
 			data.count				= Strings::ToInt(row[0]);
-			data.icon_id			= Strings::ToInt(row[11]);
+			data.trader_id			= Strings::ToInt(row[1]);
 			data.item_id			= Strings::ToInt(row[2]);
 			data.serial_number		= Strings::ToInt(row[3]);
+			data.charges			= Strings::ToInt(row[4]);
+			data.cost				= Strings::ToInt(row[5]);
 			data.slot_id			= Strings::ToInt(row[6]);
-			data.stackable			= Strings::ToBool(row[10]);
-			data.sum_charges		= Strings::ToInt(row[9]);
-			data.trader_entity_id	= Strings::ToInt(row[13]);
-			data.trader_id			= Strings::ToInt(row[1]);
-			data.trader_zone_id		= Strings::ToInt(row[12]);
+			data.sum_charges		= Strings::ToInt(row[8]);
+			data.stackable			= Strings::ToBool(row[9]);
+			data.icon_id			= Strings::ToInt(row[10]);
+			data.trader_zone_id		= Strings::ToInt(row[11]);
+			data.trader_entity_id	= Strings::ToInt(row[12]);
+			data.item_stat			= Strings::ToInt(row[13]);
 			data.serial_number_RoF	= fmt::format("{:016}\0", Strings::ToInt(row[2]));
 			data.item_name          = fmt::format("{:.63}\0", std::string(row[7]).c_str());
 			all_entries.push_back(data);

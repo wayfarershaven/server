@@ -69,7 +69,7 @@ void Client::SendParcelPacket(const EQ::ItemInstance* inst)
 	}
 
 	// Serialize item into |-delimited string (Titanium- uses '|' delimiter .. newer clients use pure data serialization)
-	std::string packet = inst->Serialize(EQ::invslot::GUILD_TRIBUTE_BEGIN);
+	std::string packet = inst->Serialize(125);
 
 	std::string player_name = "SentfromRola";
 	std::string note = "This is a very long note for testing purposes only.";
