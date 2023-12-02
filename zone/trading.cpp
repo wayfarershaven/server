@@ -1065,11 +1065,8 @@ void Client::SendTraderItem(uint32 ItemID, uint16 Quantity) {
 			FreeSlotID = m_inv.FindFreeSlot(false, true, inst->GetItem()->Size, is_arrow);
 			PutItemInInventory(FreeSlotID, *inst);
 			Save();
+			SendItemPacket(FreeSlotID, inst, ItemPacketTrade);
 		}
-
-//		FreeSlotID = m_inv.FindFreeSlot(false, true, inst->GetItem()->Size, is_arrow);
-
-		SendItemPacket(FreeSlotID, inst, ItemPacketTrade);
 
 		safe_delete(inst);
 	}
@@ -1389,6 +1386,10 @@ void Client::ReturnTraderReq(const EQApplicationPacket* app, int16 TraderItemCha
 	{
 		// Convert Serial Number back to Item ID for RoF+
 		outtbs->ItemID = itemid;
+		auto trader = entity_list.GetClientByID(tbs->TraderID);
+		if (trader) {
+			strn0cpy(outtbs->SellerName, trader->GetName(), sizeof(outtbs->SellerName));
+		}
 	}
 	else
 	{
@@ -1456,11 +1457,17 @@ void Client::BuyTraderItem(TraderBuy_Struct* tbs, Client* Trader, const EQApplic
 	if (ClientVersion() >= EQ::versions::ClientVersion::RoF)
 	{
 		// Convert Item ID to Serial Number for RoF+
+		// Fill in items for RoF+ struct
 		ItemID = tbs->ItemID;
 		tbs->ItemID = Trader->FindTraderItemSerialNumber(tbs->ItemID);
+		auto trader = entity_list.GetClientByID(tbs->TraderID); 
+		if (trader) { 
+			strn0cpy(outtbs->SellerName, trader->GetName(), sizeof(outtbs->SellerName)); 
+		}
 	}
 
 	BuyItem = Trader->FindTraderItemBySerialNumber(tbs->ItemID);
+	strn0cpy(outtbs->BuyerName, GetName(), sizeof(outtbs->BuyerName));
 
 	if(!BuyItem) {
 		LogTrading("Unable to find item on trader");

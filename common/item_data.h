@@ -57,7 +57,7 @@ namespace EQ
 			ItemClassCount
 		};
 
-		enum ItemType : uint8 {
+		enum ItemType {
 /*9138*/	ItemType1HSlash = 0,
 /*9141*/	ItemType2HSlash,
 /*9140*/	ItemType1HPiercing,
@@ -126,7 +126,7 @@ namespace EQ
 /*----*/	ItemTypeCount,
 			ItemTypeCollectible,
 			ItemTypeContainer,
-			ItemTypeNone = 0xFF
+			ItemTypeAll = 0xFFFFFFFF
 
 /*
 			Unknowns:

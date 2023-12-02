@@ -3278,13 +3278,23 @@ struct Trader_ShowItems_Struct{
 };
 
 struct TraderBuy_Struct{
-/*000*/	uint32 Action;
-/*004*/	uint32 TraderID;
-/*008*/	uint32 ItemID;
-/*012*/	uint32 AlreadySold;
-/*016*/	uint32 Price;
-/*020*/	uint32 Quantity;
-/*024*/	char ItemName[64];
+	/*000*/ uint32	Action;
+	/*004*/	uint32	Unknown004;
+	/*008*/ uint32	Unknown008;
+	/*012*/	uint32	Unknown012;
+	/*016*/ uint32	TraderID;
+	/*020*/ char	BuyerName[64];
+	/*084*/ char	SellerName[64];
+	/*148*/ char	Unknown148[32];
+	/*180*/ char	ItemName[64];
+	/*244*/ char	SerialNumber[16];
+	/*260*/ uint32	Unknown076;
+	/*264*/ uint32	ItemID;
+	/*268*/ uint32	Price;
+	/*272*/ uint32	AlreadySold;
+	/*276*/ uint32	Unknown276;
+	/*280*/ uint32	Quantity;
+	/*284*/
 };
 
 struct TraderItemUpdate_Struct{

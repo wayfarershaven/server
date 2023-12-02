@@ -3734,6 +3734,8 @@ namespace RoF2
 		OUT(ItemID);
 		OUT(Quantity);
 		OUT(AlreadySold);
+		OUT_str(SellerName);
+		OUT_str(BuyerName);
 
 		FINISH_ENCODE();
 	}
@@ -3799,6 +3801,7 @@ namespace RoF2
 			OUT(AlreadySold);
 			OUT(Price);
 			OUT(Quantity);
+			OUT_str(SellerName)
 			snprintf(eq->SerialNumber, sizeof(eq->SerialNumber), "%016d", emu->ItemID);
 
 			LogTrading("ENCODE(OP_TraderShop): Buy Action [{}], Price [{}], Trader [{}], ItemID [{}], Quantity [{}], ItemName, [{}]",

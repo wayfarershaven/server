@@ -3,6 +3,9 @@
 
 #include "../database.h"
 #include "../strings.h"
+#include "../eq_constants.h"
+#include "../item_data.h"
+
 #include "base/base_trader_repository.h"
 
 #include "../eq_packet_structs.h"
@@ -124,24 +127,24 @@ public:
 		}
 
 		switch (search.type) { 
-		case 0xffffffff:
+		case EQ::item::ItemType::ItemTypeAll:
 			break;
-		case 31:
+		case EQ::item::ItemType::ItemTypeBook:
 			search_criteria.append(" AND items.itemclass = 2");
 			break;
-		case 67:
+		case EQ::item::ItemType::ItemTypeContainer:
 			search_criteria.append(" AND items.itemclass = 1");
 			break;
-		case 46:
+		case EQ::item::ItemType::ItemTypeAllEffects:
 			search_criteria.append(" AND items.scrolleffect > 0 AND items.scrolleffect < 65000");
 			break;
-		case 47:
+		case EQ::item::ItemType::ItemTypeUnknown9:
 			search_criteria.append(" AND items.worneffect = 998");
 			break;
-		case 48:
+		case EQ::item::ItemType::ItemTypeUnknown10:
 			search_criteria.append(" AND items.worneffect >= 1298 AND items.worneffect <= 1307");
 			break;
-		case 49:
+		case EQ::item::ItemType::ItemTypeFocusEffect:
 			search_criteria.append(" AND items.focuseffect > 0");
 			break;
 
