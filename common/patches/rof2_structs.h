@@ -3437,6 +3437,13 @@ struct ClickTrader_Struct {
 /*4404*/
 };
 
+struct TraderPriceUpdate_Struct {
+	/*000*/	uint32	action;
+	/*004*/	char	serial_number[17];
+	/*021*/	char	unknown[7];
+	/*028*/	uint32	NewPrice;
+};
+
 struct GetItems_Struct {
 	uint32	items[200];
 };
@@ -3478,7 +3485,7 @@ struct Trader_ShowItems_Struct_WIP {
 
 struct TraderStatus_Struct {
 /*000*/	uint32 Code;
-/*004*/	uint32 Uknown04;
+/*004*/	uint32 SubCode;
 /*008*/	uint32 Uknown08;
 /*012*/
 };

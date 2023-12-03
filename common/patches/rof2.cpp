@@ -3720,6 +3720,45 @@ namespace RoF2
 		{
 			ENCODE_FORWARD(OP_TraderBuy);
 		}
+		else if ((*p)->size == sizeof(TraderPriceUpdate_Struct))
+		{
+			ENCODE_LENGTH_EXACT(TraderPriceUpdate_Struct);
+			SETUP_DIRECT_ENCODE(TraderPriceUpdate_Struct, structs::TraderPriceUpdate_Struct);
+
+			switch (emu->SubAction) {
+			case BazaarPriceChange_AddItem:
+			{
+				auto outapp = new EQApplicationPacket(OP_Trader, sizeof(structs::TraderStatus_Struct));
+				auto data = (structs::TraderStatus_Struct*)outapp->pBuffer;
+				data->Code = emu->Action;
+				data->SubCode = BazaarPriceChange_AddItem;
+
+				dest->FastQueuePacket(&outapp);
+				break;
+			}
+			case BazaarPriceChange_RemoveItem:
+			{
+				auto outapp = new EQApplicationPacket(OP_Trader, sizeof(structs::TraderStatus_Struct));
+				auto data = (structs::TraderStatus_Struct*)outapp->pBuffer;
+				data->Code = emu->Action;
+				data->SubCode = BazaarPriceChange_RemoveItem;
+
+				dest->FastQueuePacket(&outapp);
+				break;
+			}
+			case BazaarPriceChange_UpdatePrice:
+			{
+				auto outapp = new EQApplicationPacket(OP_Trader, sizeof(structs::TraderStatus_Struct));
+				auto data = (structs::TraderStatus_Struct*)outapp->pBuffer;
+				data->Code = emu->Action;
+				data->SubCode = BazaarPriceChange_UpdatePrice;
+
+				dest->FastQueuePacket(&outapp);
+				break;
+			}
+			}
+			FINISH_ENCODE();
+		}
 	}
 
 	ENCODE(OP_TraderBuy)
@@ -5433,6 +5472,18 @@ namespace RoF2
 			SETUP_DIRECT_DECODE(TraderStatus_Struct, structs::TraderStatus_Struct);
 
 			emu->Code = eq->Code;	// 11 = Start Trader, 2 = End Trader, 22 = ? - Guessing
+
+			FINISH_DIRECT_DECODE();
+		}
+		else if (psize == sizeof(structs::TraderPriceUpdate_Struct))
+		{
+			DECODE_LENGTH_EXACT(structs::TraderPriceUpdate_Struct);
+			SETUP_DIRECT_DECODE(TraderPriceUpdate_Struct, structs::TraderPriceUpdate_Struct);
+
+			emu->Action		  = eq->action;
+			emu->NewPrice	  = eq->NewPrice;
+			emu->SerialNumber = Strings::ToInt(eq->serial_number);
+			emu->SubAction	  = BazaarPriceChange_UpdatePrice;
 
 			FINISH_DIRECT_DECODE();
 		}

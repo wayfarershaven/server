@@ -15342,8 +15342,7 @@ void Client::Handle_OP_Trader(const EQApplicationPacket *app)
 			}
 		}
 		else {
-			LogTrading("Unknown TraderStruct code of: [{}]\n",
-				ints->Code);
+			LogTrading("Unknown TraderStruct code of: [{}]\n", ints->Code);
 
 			LogError("Unknown TraderStruct code of: [{}]\n", ints->Code);
 		}

@@ -1931,10 +1931,8 @@ static void UpdateTraderCustomerPriceChanged(uint32 CustomerID, TraderCharges_St
 				{
 					tdis->ItemID = gis->SerialNumber[i];
 				}
-				tdis->ItemID = gis->SerialNumber[i];
 				LogTrading("Telling customer to remove item [{}] with [{}] charges and S/N [{}]",
-								ItemID, Charges, gis->SerialNumber[i]);
-
+								tdis->ItemID, Charges, gis->SerialNumber[i]);
 
 				Customer->QueuePacket(outapp);
 			}
@@ -1989,6 +1987,12 @@ void Client::HandleTraderPriceUpdate(const EQApplicationPacket *app) {
 	LogTrading("Received Price Update for [{}], Item Serial No. [{}], New Price [{}]",
 					GetName(), tpus->SerialNumber, tpus->NewPrice);
 
+	auto RoF_Item_ID = 0;
+	if (ClientVersion() >= EQ::versions::ClientVersion::RoF) {
+		RoF_Item_ID = tpus->SerialNumber; 
+		tpus->SerialNumber = FindTraderItemSerialNumber(tpus->SerialNumber); 
+	}
+
 	// Pull the items this Trader currently has for sale from the trader table.
 	//
 	TraderCharges_Struct* gis = database.LoadTraderItemWithCharges(CharacterID());
@@ -2035,6 +2039,9 @@ void Client::HandleTraderPriceUpdate(const EQApplicationPacket *app) {
 		// and do nothing.
 		if(tpus->NewPrice == 0) {
 			tpus->SubAction = BazaarPriceChange_RemoveItem;
+			if (ClientVersion() >= EQ::versions::ClientVersion::RoF) {
+				tpus->SerialNumber = RoF_Item_ID;
+			}
 			QueuePacket(app);
 			safe_delete(gis);
 			return ;
@@ -2072,6 +2079,9 @@ void Client::HandleTraderPriceUpdate(const EQApplicationPacket *app) {
 		if(!IDOfItemToAdd || !item) {
 
 			LogTrading("Item not found in Trader Satchels either");
+			if (ClientVersion() >= EQ::versions::ClientVersion::RoF) {
+				tpus->SerialNumber = RoF_Item_ID;
+			}
 			tpus->SubAction = BazaarPriceChange_Fail;
 			QueuePacket(app);
 			Trader_EndTrader();
@@ -2124,14 +2134,24 @@ void Client::HandleTraderPriceUpdate(const EQApplicationPacket *app) {
 
 		// If we have a customer currently browsing, update them with the new items.
 		//
-		if(CustomerID)
-			UpdateTraderCustomerItemsAdded(CustomerID, gis, IDOfItemToAdd);
+		if (CustomerID) {
+			if (ClientVersion() >= EQ::versions::ClientVersion::RoF) {
+				tpus->SerialNumber = RoF_Item_ID;
+				UpdateTraderCustomerItemsAdded(CustomerID, gis, RoF_Item_ID);
+			}
+			else {
+				UpdateTraderCustomerItemsAdded(CustomerID, gis, IDOfItemToAdd);
+			}
+		}
 
 		safe_delete(gis);
 		safe_delete(newgis);
 
 		// Acknowledge to the client.
 		tpus->SubAction = BazaarPriceChange_AddItem;
+		if (ClientVersion() >= EQ::versions::ClientVersion::RoF) {
+			tpus->SerialNumber = RoF_Item_ID;
+		}
 		QueuePacket(app);
 
 		return;
@@ -2143,6 +2163,9 @@ void Client::HandleTraderPriceUpdate(const EQApplicationPacket *app) {
 	if((OldPrice != 0) && (tpus->NewPrice > OldPrice) && CustomerID) {
 
 		tpus->SubAction = BazaarPriceChange_Fail;
+		if (ClientVersion() >= EQ::versions::ClientVersion::RoF) {
+			tpus->SerialNumber = RoF_Item_ID;
+		}
 		QueuePacket(app);
 		Trader_EndTrader();
 		Message(Chat::Red, "You must remove the item from sale before you can increase the price while a customer is browsing.");
@@ -2159,6 +2182,10 @@ void Client::HandleTraderPriceUpdate(const EQApplicationPacket *app) {
 	else
 		tpus->SubAction = BazaarPriceChange_RemoveItem;
 
+	if (ClientVersion() >= EQ::versions::ClientVersion::RoF) {
+		tpus->SerialNumber = RoF_Item_ID;
+	}
+
 	QueuePacket(app);
 
 	if(OldPrice == tpus->NewPrice) {
@@ -2172,8 +2199,15 @@ void Client::HandleTraderPriceUpdate(const EQApplicationPacket *app) {
 	database.UpdateTraderItemPrice(CharacterID(), IDOfItemToUpdate, ChargesOnItemToUpdate, tpus->NewPrice);
 
 	// If a customer is browsing our goods, send them the updated prices / remove the items from the Merchant window
-	if(CustomerID)
-		UpdateTraderCustomerPriceChanged(CustomerID, gis, IDOfItemToUpdate, ChargesOnItemToUpdate, tpus->NewPrice);
+	if (CustomerID) {
+		if (ClientVersion() >= EQ::versions::ClientVersion::RoF) {
+			tpus->SerialNumber = RoF_Item_ID;
+			UpdateTraderCustomerPriceChanged(CustomerID, gis, RoF_Item_ID, ChargesOnItemToUpdate, tpus->NewPrice);
+		}
+		else {
+			UpdateTraderCustomerPriceChanged(CustomerID, gis, IDOfItemToUpdate, ChargesOnItemToUpdate, tpus->NewPrice);
+		}
+	}
 
 	safe_delete(gis);
 
