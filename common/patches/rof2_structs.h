@@ -3148,7 +3148,10 @@ struct BazaarWelcome_Struct {
 
 struct BazaarSearch_Struct {
 /*000*/	uint32	action;
-/*004*/	uint32	search_scope; //1 all traders 0 local traders
+/*004*/	uint8	search_scope; //1 all traders 0 local traders
+/*005*/	uint8	unknown005;
+/*006*/	uint8	unknown006;
+/*007*/	uint8	unknown007;
 /*008*/	uint32	unknown008;
 /*012*/	uint32	unknown012;
 /*016*/	uint32	trader_id;

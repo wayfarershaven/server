@@ -271,6 +271,8 @@ public:
 			search.max_results
 		);
 
+		LogTrading("Bazaar Search query \"{}\".", query);
+		
 		std::vector<BazaarDBSearchResults_Struct> all_entries;
 		auto results = db.QueryDatabase(query);
 
