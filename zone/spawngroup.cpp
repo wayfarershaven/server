@@ -172,7 +172,7 @@ bool ZoneDatabase::LoadSpawnGroups(const char *zone_name, uint16 version, SpawnG
 			spawngroup.name,
 			spawngroup.spawn_limit,
 			spawnentry.min_time,
-			spawnentry.max_time
+			spawnentry.max_time,
 			spawngroup.dist,
 			spawngroup.max_x,
 			spawngroup.min_x,
