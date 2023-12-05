@@ -168,7 +168,9 @@ const char *LuaEvents[_LargestEventID] = {
 	"event_memorize_spell",
 	"event_unmemorize_spell",
 	"event_scribe_spell",
-	"event_unscribe_spell"
+	"event_unscribe_spell",
+	"event_crystal_gain",
+	"event_crystal_loss"
 };
 
 extern Zone *zone;
@@ -300,6 +302,8 @@ LuaParser::LuaParser() {
 	PlayerArgumentDispatch[EVENT_UNMEMORIZE_SPELL]           = handle_player_memorize_scribe_spell;
 	PlayerArgumentDispatch[EVENT_SCRIBE_SPELL]               = handle_player_memorize_scribe_spell;
 	PlayerArgumentDispatch[EVENT_UNSCRIBE_SPELL]             = handle_player_memorize_scribe_spell;
+	PlayerArgumentDispatch[EVENT_CRYSTAL_GAIN]               = handle_player_crystal_gain_loss;
+	PlayerArgumentDispatch[EVENT_CRYSTAL_LOSS]               = handle_player_crystal_gain_loss;
 
 	ItemArgumentDispatch[EVENT_ITEM_CLICK]      = handle_item_click;
 	ItemArgumentDispatch[EVENT_ITEM_CLICK_CAST] = handle_item_click;

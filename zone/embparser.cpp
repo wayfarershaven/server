@@ -186,6 +186,8 @@ const char *QuestEventSubroutines[_LargestEventID] = {
 	"EVENT_UNMEMORIZE_SPELL",
 	"EVENT_SCRIBE_SPELL",
 	"EVENT_UNSCRIBE_SPELL",
+	"EVENT_CRYSTAL_GAIN",
+	"EVENT_CRYSTAL_LOSS",
 	// Add new events before these or Lua crashes
 	"EVENT_SPELL_EFFECT_BOT",
 	"EVENT_SPELL_EFFECT_BUFF_TIC_BOT"
@@ -2177,6 +2179,15 @@ void PerlembParser::ExportEventVariables(
 			if (IsValidSpell(Strings::ToUnsignedInt(sep.arg[1]))) {
 				ExportVar(package_name.c_str(), "spell", "Spell", (void*)&spells[Strings::ToUnsignedInt(sep.arg[1])]);
 			}
+			break;
+		}
+		
+		case EVENT_CRYSTAL_GAIN:
+		case EVENT_CRYSTAL_LOSS: {
+			Seperator sep(data);
+			ExportVar(package_name.c_str(), "ebon_amount", sep.arg[0]);
+			ExportVar(package_name.c_str(), "radiant_amount", sep.arg[1]);
+			ExportVar(package_name.c_str(), "is_reclaim", sep.arg[2]);
 			break;
 		}
 		
