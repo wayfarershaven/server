@@ -392,28 +392,28 @@ Client::~Client() {
 		merc->Depop();
 	}
 
-	if(Trader) {
+	if (Trader) {
 		database.DeleteTraderItem(CharacterID());
-
+		SendBecomeTrader(this, BazaarTraderType::BazaarTrader_RemoveTraderFromBazaarWindow);
 	}
 
-	if(Buyer) {
+	if (Buyer) {
 		ToggleBuyerMode(false);
 	}
 
-	if(conn_state != ClientConnectFinished) {
+	if (conn_state != ClientConnectFinished) {
 		LogDebug("Client [{}] was destroyed before reaching the connected state:", GetName());
 		ReportConnectingState();
 	}
 
-	if(m_tradeskill_object != nullptr) {
+	if (m_tradeskill_object != nullptr) {
 		m_tradeskill_object->Close();
 		m_tradeskill_object = nullptr;
 	}
 
 	close_mobs.clear();
 
-	if(IsDueling() && GetDuelTarget() != 0) {
+	if (IsDueling() && GetDuelTarget() != 0) {
 		Entity* entity = entity_list.GetID(GetDuelTarget());
 		if(entity != nullptr && entity->IsClient()) {
 			entity->CastToClient()->SetDueling(false);
@@ -422,19 +422,18 @@ Client::~Client() {
 		}
 	}
 
-	if(GetTarget()) {
+	if (GetTarget()) {
 		GetTarget()->IsTargeted(-1);
 	}
 
 	//if we are in a group and we are not zoning, force leave the group
-	if(isgrouped && !bZoning && is_zone_loaded) {
+	if (isgrouped && !bZoning && is_zone_loaded) {
 		LeaveGroup();
 	}
 
 	UpdateWho(2);
 
-	if(IsHoveringForRespawn())
-	{
+	if (IsHoveringForRespawn()) {
 		m_pp.zone_id = m_pp.binds[0].zone_id;
 		m_pp.zoneInstance = m_pp.binds[0].instance_id;
 		m_Position.x = m_pp.binds[0].x;
@@ -463,7 +462,7 @@ Client::~Client() {
 
 	numclients--;
 	UpdateWindowTitle(nullptr);
-	if(zone) {
+	if (zone) {
 		zone->RemoveAuth(GetName(), lskey);
 	}
 

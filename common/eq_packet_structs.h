@@ -1534,7 +1534,20 @@ enum ItemPacketType
 	ItemPacketTributeItem		= 0x6C,
 	ItemPacketGuildTribute		= 0x6D,
 	ItemPacketCharmUpdate		= 0x6E, // noted as incorrect
+	ItemPacketRecovery			= 0x71,
+	ItemPacketParcel			= 0x73,
 	ItemPacketInvalid			= 0xFF
+};
+
+enum MerchantWindowTabDisplay {
+	None						= 0x00,
+	SellBuy						= 0x01,
+	Recover						= 0x02,
+	SellBuyRecover				= 0x03,
+	Parcel						= 0x04,
+	SellBuyParcel				= 0x05,
+	RecoverParcel				= 0x06,
+	SellBuyRecoverParcel		= 0x07
 };
 
 //enum ItemPacketType
@@ -1980,6 +1993,9 @@ struct Merchant_Click_Struct {
 /*004*/ uint32	playerid;
 /*008*/ uint32	command;		//1=open, 0=cancel/close
 /*012*/ float	rate;			//cost multiplier, dosent work anymore
+/*016*/ int32	tab_display;	// bitmask b000 none, b001 Purchase/Sell, b010 Recover, b100 Parcels
+/*020*/ int32	unknown02;		// Seen 2592000 from Server or -1 from Client
+/*024*/
 };
 /*
 Unknowns:
@@ -2809,7 +2825,8 @@ struct EnvDamage2_Struct {
 //Bazaar Stuff =D
 //
 
-enum {
+enum BazaarTraderType {
+	BazaarTrader_Off = 0,
 	BazaarTrader_StartTraderMode = 1,
 	BazaarTrader_EndTraderMode = 2,
 	BazaarTrader_UpdatePrice = 3,
@@ -2822,7 +2839,9 @@ enum {
 	BazaarTrader_CustomerBrowsing = 13,
 	BazaarInspectItem = 18,
 	BazaarSearchDone2 = 19,
-	BazaarTrader_StartTraderMode2 = 22
+	BazaarTrader_StartTraderMode2 = 22,
+	BazaarTrader_AddTraderToBazaarWindow = 24,
+	BazaarTrader_RemoveTraderFromBazaarWindow = 25
 };
 
 enum {
@@ -2848,19 +2867,26 @@ struct BazaarWelcome_Struct {
 };
 
 struct BazaarSearch_Struct {
-	BazaarWindowStart_Struct Beginning;
-	uint32	TraderID;
-	uint32	Class_;
-	uint32	Race;
-	uint32	ItemStat;
-	uint32	Slot;
-	uint32	Type;
-	char	Name[64];
-	uint32	MinPrice;
-	uint32	MaxPrice;
-	uint32	Minlevel;
-	uint32	MaxLlevel;
-};
+/*000*/	uint32	action;
+/*004*/	uint32	search_scope{ true }; //1 all traders 0 local traders
+/*008*/	uint32	unknown008;
+/*012*/	uint32	unknown012;
+/*016*/	uint32	trader_id;
+/*020*/	uint32	_class;
+/*024*/	uint32	race;
+/*028*/	uint32	item_stat;
+/*032*/	uint32	slot;
+/*036*/	uint32	type;
+/*040*/	char	name[64];
+/*104*/	uint32	min_cost;
+/*108*/	uint32	max_cost;
+/*112*/	uint32	min_level{ 1 };
+/*116*/	uint32	max_level{ 0 };
+/*120*/	uint32	max_results{ 0 };
+/*124*/	uint32	prestige{ 0 };
+/*128*/	uint32	augment{ 0 };
+}; 
+
 struct BazaarInspect_Struct{
 	uint32 ItemID;
 	uint32 Unknown004;
@@ -3222,13 +3248,32 @@ struct BecomeTrader_Struct
 /*004*/	uint32 Code;
 /*008*/	char Name[64];
 /*072*/	uint32 Unknown072;	// Observed 0x33,0x91 etc on zone-in, 0x00 when sent for a new trader after zone-in
-/*076*/
+};
+
+struct RoF2_BecomeTrader_Struct {
+/*000*/	uint32	action;
+/*004*/	uint32	zone_id;
+/*008*/	uint32	trader_id;
+/*012*/	uint32	entity_id;
+/*016*/	char	trader_name[64];
 };
 
 struct TraderStatus_Struct{
 	uint32 Code;
 	uint32 Uknown04;
 	uint32 Uknown08;
+};
+
+struct Trader_TraderDetails_Struct { //size=12+trader_name_length
+	/*000*/	uint32	zone_id;
+	/*004*/	uint32	trader_id;
+	/*008*/	uint32	entity_id;
+	/*012*/	char	trader_name[1];
+};
+
+struct Trader_TraderBulkSend_Struct { //size=4+(x*count)
+	/*000*/	uint32	count;
+	Trader_TraderDetails_Struct traders[1];
 };
 
 struct Trader_ShowItems_Struct{
@@ -3238,14 +3283,30 @@ struct Trader_ShowItems_Struct{
 /*020*/
 };
 
+enum TraderBuyMethod {
+	ByVendor,
+	ByParcel,
+	ByDirectToInventory
+};
+
 struct TraderBuy_Struct{
-/*000*/	uint32 Action;
-/*004*/	uint32 TraderID;
-/*008*/	uint32 ItemID;
-/*012*/	uint32 AlreadySold;
-/*016*/	uint32 Price;
-/*020*/	uint32 Quantity;
-/*024*/	char ItemName[64];
+	/*000*/ uint32	Action;
+	/*004*/	uint32	Method;
+	/*008*/ uint32	Unknown008;
+	/*012*/	uint32	Unknown012;
+	/*016*/ uint32	TraderID;
+	/*020*/ char	BuyerName[64];
+	/*084*/ char	SellerName[64];
+	/*148*/ char	Unknown148[32];
+	/*180*/ char	ItemName[64];
+	/*244*/ char	SerialNumber[16];
+	/*260*/ uint32	Unknown076;
+	/*264*/ uint32	ItemID;
+	/*268*/ uint32	Price;
+	/*272*/ uint32	AlreadySold;
+	/*276*/ uint32	Unknown276;
+	/*280*/ uint32	Quantity;
+	/*284*/
 };
 
 struct TraderItemUpdate_Struct{

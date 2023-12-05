@@ -1646,6 +1646,19 @@ namespace SoF
 		FINISH_ENCODE();
 	}
 
+	ENCODE(OP_ShopRequest)
+	{
+		ENCODE_LENGTH_EXACT(Merchant_Click_Struct);
+		SETUP_DIRECT_ENCODE(Merchant_Click_Struct, structs::Merchant_Click_Struct);
+
+		OUT(npcid);
+		OUT(playerid);
+		OUT(command);
+		OUT(rate);
+
+		FINISH_ENCODE();
+	}
+
 	ENCODE(OP_SomeItemPacketMaybe)
 	{
 		// This Opcode is not named very well. It is used for the animation of arrows leaving the player's bow
@@ -2814,6 +2827,21 @@ namespace SoF
 		FINISH_DIRECT_DECODE();
 	}
 
+	DECODE(OP_ShopRequest)
+	{
+		DECODE_LENGTH_EXACT(structs::Merchant_Click_Struct);
+		SETUP_DIRECT_DECODE(Merchant_Click_Struct, structs::Merchant_Click_Struct);
+
+		IN(npcid);
+		IN(playerid);
+		IN(command);
+		IN(rate);
+		emu->tab_display = 0;
+		emu->unknown02 = 0;
+
+		FINISH_DIRECT_DECODE();
+	}
+	
 	DECODE(OP_ShopPlayerSell)
 	{
 		DECODE_LENGTH_EXACT(structs::Merchant_Purchase_Struct);
