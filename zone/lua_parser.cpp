@@ -172,7 +172,8 @@ const char *LuaEvents[_LargestEventID] = {
 	"event_crystal_gain",
 	"event_crystal_loss",
 	"event_alt_currency_gain",
-	"event_alt_currency_loss"
+	"event_alt_currency_loss",
+	"event_loot_added"
 };
 
 extern Zone *zone;
@@ -230,6 +231,7 @@ LuaParser::LuaParser() {
 	NPCArgumentDispatch[EVENT_DESPAWN_ZONE]    = handle_npc_despawn_zone;
 	NPCArgumentDispatch[EVENT_DAMAGE_GIVEN]    = handle_npc_damage;
 	NPCArgumentDispatch[EVENT_DAMAGE_TAKEN]    = handle_npc_damage;
+	NPCArgumentDispatch[EVENT_LOOT_ADDED]      = handle_npc_loot_added;
 
 	PlayerArgumentDispatch[EVENT_SAY]                        = handle_player_say;
 	PlayerArgumentDispatch[EVENT_ENVIRONMENTAL_DAMAGE]       = handle_player_environmental_damage;

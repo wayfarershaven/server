@@ -6613,7 +6613,8 @@ luabind::scope lua_register_events() {
 			luabind::value("crystal_gain", static_cast<int>(EVENT_CRYSTAL_GAIN)),
 			luabind::value("crystal_loss", static_cast<int>(EVENT_CRYSTAL_LOSS)),
 			luabind::value("alt_currency_gain", static_cast<int>(EVENT_ALT_CURRENCY_GAIN)),
-			luabind::value("alt_currency_loss", static_cast<int>(EVENT_ALT_CURRENCY_LOSS))
+			luabind::value("alt_currency_loss", static_cast<int>(EVENT_ALT_CURRENCY_LOSS)),
+			luabind::value("loot_added", static_cast<int>(EVENT_LOOT_ADDED))
 		)];
 }
 

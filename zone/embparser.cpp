@@ -190,6 +190,7 @@ const char *QuestEventSubroutines[_LargestEventID] = {
 	"EVENT_CRYSTAL_LOSS",
 	"EVENT_ALT_CURRENCY_GAIN",
 	"EVENT_ALT_CURRENCY_LOSS",
+	"EVENT_LOOT_ADDED",
 	// Add new events before these or Lua crashes
 	"EVENT_SPELL_EFFECT_BOT",
 	"EVENT_SPELL_EFFECT_BUFF_TIC_BOT"
@@ -2199,6 +2200,26 @@ void PerlembParser::ExportEventVariables(
 			ExportVar(package_name.c_str(), "currency_id", sep.arg[0]);
 			ExportVar(package_name.c_str(), "amount", sep.arg[1]);
 			ExportVar(package_name.c_str(), "total", sep.arg[2]);
+			break;
+		}
+		
+		case EVENT_LOOT_ADDED: {
+			if (extra_pointers && extra_pointers->size() == 1) {
+				auto *inst = std::any_cast<EQ::ItemInstance *>(extra_pointers->at(0));
+				if (inst) {
+					ExportVar(package_name.c_str(), "item", "QuestItem", inst);
+					ExportVar(package_name.c_str(), "item_id", inst->GetID());
+					ExportVar(package_name.c_str(), "item_name", inst->GetItem()->Name);
+					ExportVar(package_name.c_str(), "item_charges", inst->GetCharges());
+					ExportVar(package_name.c_str(), "augment_one", inst->GetAugmentItemID(EQ::invaug::SOCKET_BEGIN));
+					ExportVar(package_name.c_str(), "augment_two", inst->GetAugmentItemID(EQ::invaug::SOCKET_BEGIN + 1));
+					ExportVar(package_name.c_str(), "augment_three", inst->GetAugmentItemID(EQ::invaug::SOCKET_BEGIN + 2));
+					ExportVar(package_name.c_str(), "augment_four", inst->GetAugmentItemID(EQ::invaug::SOCKET_BEGIN + 3));
+					ExportVar(package_name.c_str(), "augment_five", inst->GetAugmentItemID(EQ::invaug::SOCKET_BEGIN + 4));
+					ExportVar(package_name.c_str(), "augment_six", inst->GetAugmentItemID(EQ::invaug::SOCKET_END));
+				}
+			}
+
 			break;
 		}
 		
