@@ -2263,10 +2263,10 @@ void Client::QuestReadBook(const char* text, uint8 type) {
 
 uint32 Client::GetCarriedPlatinum() {
 	return (
-		GetMoney(3, 0) +
-		(GetMoney(2, 0) / 10) +
-		(GetMoney(1, 0) / 100) +
-		(GetMoney(0, 0) / 1000)
+		GetMoney(MoneyTypes::Platinum, MoneySubtypes::Personal) +
+		(GetMoney(MoneyTypes::Gold, MoneySubtypes::Personal) / 10) +
+		(GetMoney(MoneyTypes::Silver, MoneySubtypes::Personal) / 100) +
+		(GetMoney(MoneyTypes::Copper, MoneySubtypes::Personal) / 1000)
 	);
 }
 
@@ -5679,26 +5679,89 @@ void Client::AddPVPPoints(uint32 Points)
 	SendPVPStats();
 }
 
-void Client::AddCrystals(uint32 radiant, uint32 ebon)
-{
-	m_pp.currentRadCrystals += radiant;
-	m_pp.careerRadCrystals += radiant;
-	m_pp.currentEbonCrystals += ebon;
-	m_pp.careerEbonCrystals += ebon;
+void Client::AddEbonCrystals(uint32 amount, bool is_reclaim) {
+	m_pp.currentEbonCrystals += amount;
+	m_pp.careerEbonCrystals += amount;
 
 	SaveCurrency();
-
 	SendCrystalCounts();
 
-	// newer clients handle message client side (older clients likely used eqstr 5967 and 5968, this matches live)
-	if (radiant > 0)
-	{
-		MessageString(Chat::Yellow, YOU_RECEIVE, fmt::format("{} Radiant Crystals", radiant).c_str());
-	}
+	MessageString(
+		Chat::Yellow,
+		YOU_RECEIVE,
+		fmt::format(
+			"{} {}",
+			amount,
+			database.CreateItemLink(RuleI(Zone, EbonCrystalItemID))
+		).c_str()
+	);
 
-	if (ebon > 0)
-	{
-		MessageString(Chat::Yellow, YOU_RECEIVE, fmt::format("{} Ebon Crystals", ebon).c_str());
+	if (parse->PlayerHasQuestSub(EVENT_CRYSTAL_GAIN)) {
+		const std::string &export_string = fmt::format(
+			"{} 0 {}",
+			amount,
+			is_reclaim ? 1 : 0
+		);
+		parse->EventPlayer(EVENT_CRYSTAL_GAIN, this, export_string, 0);
+	}
+}
+
+void Client::AddRadiantCrystals(uint32 amount, bool is_reclaim) {
+	m_pp.currentRadCrystals += amount;
+	m_pp.careerRadCrystals += amount;
+
+	SaveCurrency();
+	SendCrystalCounts();
+
+	MessageString(
+		Chat::Yellow,
+		YOU_RECEIVE,
+		fmt::format(
+			"{} {}",
+			amount,
+			database.CreateItemLink(RuleI(Zone, RadiantCrystalItemID))
+		).c_str()
+	);
+
+	if (parse->PlayerHasQuestSub(EVENT_CRYSTAL_GAIN)) {
+		const std::string &export_string = fmt::format(
+			"0 {} {}",
+			amount,
+			is_reclaim ? 1 : 0
+		);
+		parse->EventPlayer(EVENT_CRYSTAL_GAIN, this, export_string, 0);
+	}
+}
+
+void Client::RemoveEbonCrystals(uint32 amount, bool is_reclaim) {
+	m_pp.currentEbonCrystals -= amount;
+
+	SaveCurrency();
+	SendCrystalCounts();
+
+	if (parse->PlayerHasQuestSub(EVENT_CRYSTAL_LOSS)) {
+		const std::string &export_string = fmt::format(
+			"{} 0 {}",
+			amount,
+			is_reclaim ? 1 : 0
+		);
+		parse->EventPlayer(EVENT_CRYSTAL_LOSS, this, export_string, 0);
+	}
+}
+
+void Client::RemoveRadiantCrystals(uint32 amount, bool is_reclaim) {
+	m_pp.currentRadCrystals -= amount;
+
+	SaveCurrency();
+	SendCrystalCounts();
+
+	if (parse->PlayerHasQuestSub(EVENT_CRYSTAL_LOSS)) {
+		const std::string &export_string = fmt::format(
+			"0 {} {}",
+			amount,
+			is_reclaim ? 1 : 0
+		);
+		parse->EventPlayer(EVENT_CRYSTAL_LOSS, this, export_string, 0);
 	}
 }
 
@@ -6444,11 +6507,10 @@ void Client::SetAlternateCurrencyValue(uint32 currency_id, uint32 new_amount)
 	SendAlternateCurrencyValue(currency_id);
 }
 
-int Client::AddAlternateCurrencyValue(uint32 currency_id, int32 amount, int8 method)
+int Client::AddAlternateCurrencyValue(uint32 currency_id, int32 amount, bool is_scripted)
 {
-
 	/* Added via Quest, rest of the logging methods may be done inline due to information available in that area of the code */
-	if (method == 1){
+	if (is_scripted) {
 		/* QS: PlayerLogAlternateCurrencyTransactions :: Cursor to Item Storage */
 		if (RuleB(QueryServ, PlayerLogAlternateCurrencyTransactions)){
 			std::string event_desc = StringFormat("Added via Quest :: Cursor to Item :: alt_currency_id:%i amount:%i in zoneid:%i instid:%i", currency_id, GetZoneID(), GetInstanceID());
@@ -6456,24 +6518,25 @@ int Client::AddAlternateCurrencyValue(uint32 currency_id, int32 amount, int8 met
 		}
 	}
 
-	if(amount == 0) {
+	if (!amount) {
 		return 0;
 	}
 
-	if(!alternate_currency_loaded) {
+	if (!alternate_currency_loaded) {
 		alternate_currency_queued_operations.push(std::make_pair(currency_id, amount));
 		return 0;
 	}
 
 	int new_value = 0;
 	auto iter = alternate_currency.find(currency_id);
-	if(iter == alternate_currency.end()) {
+	if (iter == alternate_currency.end()) {
 		new_value = amount;
 	} else {
 		new_value = (*iter).second + amount;
 	}
 
-	if(new_value < 0) {
+	if (new_value < 0) {
+		new_value = 0;
 		alternate_currency[currency_id] = 0;
 		database.UpdateAltCurrencyValue(CharacterID(), currency_id, 0);
 	} else {
@@ -6482,6 +6545,21 @@ int Client::AddAlternateCurrencyValue(uint32 currency_id, int32 amount, int8 met
 	}
 	SendAlternateCurrencyValue(currency_id);
 
+	if (parse->PlayerHasQuestSub(EVENT_ALT_CURRENCY_GAIN) || parse->PlayerHasQuestSub(EVENT_ALT_CURRENCY_LOSS)) {
+		const std::string &export_string = fmt::format(
+			"{} {} {}",
+			currency_id,
+			std::abs(amount),
+			new_value
+		);
+
+		if (amount > 0) {
+			parse->EventPlayer(EVENT_ALT_CURRENCY_GAIN, this, export_string, 0);
+		} else {
+			parse->EventPlayer(EVENT_ALT_CURRENCY_LOSS, this, export_string, 0);
+		}
+	}
+	
 	return new_value;
 }
 
@@ -7764,16 +7842,17 @@ void Client::SendHPUpdateMarquee(){
 
 uint32 Client::GetMoney(uint8 type, uint8 subtype) {
 	uint32 value = 0;
+
 	switch (type) {
-		case 0: {
+		case MoneyTypes::Copper: {
 			switch (subtype) {
-				case 0:
+				case MoneySubtypes::Personal:
 					value = static_cast<uint32>(m_pp.copper);
 					break;
-				case 1:
+				case MoneySubtypes::Bank:
 					value = static_cast<uint32>(m_pp.copper_bank);
 					break;
-				case 2:
+				case MoneySubtypes::Cursor:
 					value = static_cast<uint32>(m_pp.copper_cursor);
 					break;
 				default:
@@ -7781,15 +7860,15 @@ uint32 Client::GetMoney(uint8 type, uint8 subtype) {
 			}
 			break;
 		}
-		case 1: {
+		case MoneyTypes::Silver: {
 			switch (subtype) {
-				case 0:
+				case MoneySubtypes::Personal:
 					value = static_cast<uint32>(m_pp.silver);
 					break;
-				case 1:
+				case MoneySubtypes::Bank:
 					value = static_cast<uint32>(m_pp.silver_bank);
 					break;
-				case 2:
+				case MoneySubtypes::Cursor:
 					value = static_cast<uint32>(m_pp.silver_cursor);
 					break;
 				default:
@@ -7797,15 +7876,15 @@ uint32 Client::GetMoney(uint8 type, uint8 subtype) {
 			}
 			break;
 		}
-		case 2: {
+		case MoneyTypes::Gold: {
 			switch (subtype) {
-				case 0:
+				case MoneySubtypes::Personal:
 					value = static_cast<uint32>(m_pp.gold);
 					break;
-				case 1:
+				case MoneySubtypes::Bank:
 					value = static_cast<uint32>(m_pp.gold_bank);
 					break;
-				case 2:
+				case MoneySubtypes::Cursor:
 					value = static_cast<uint32>(m_pp.gold_cursor);
 					break;
 				default:
@@ -7813,18 +7892,18 @@ uint32 Client::GetMoney(uint8 type, uint8 subtype) {
 			}
 			break;
 		}
-		case 3: {
+		case MoneyTypes::Platinum: {
 			switch (subtype) {
-				case 0:
+				case MoneySubtypes::Personal:
 					value = static_cast<uint32>(m_pp.platinum);
 					break;
-				case 1:
+				case MoneySubtypes::Bank:
 					value = static_cast<uint32>(m_pp.platinum_bank);
 					break;
-				case 2:
+				case MoneySubtypes::Cursor:
 					value = static_cast<uint32>(m_pp.platinum_cursor);
 					break;
-				case 3:
+				case MoneySubtypes::SharedBank:
 					value = static_cast<uint32>(m_pp.platinum_shared);
 					break;
 				default:
@@ -7835,6 +7914,7 @@ uint32 Client::GetMoney(uint8 type, uint8 subtype) {
 		default:
 			break;
 	}
+	
 	return value;
 }
 
@@ -9963,6 +10043,16 @@ void Client::SetDoorToolEntityId(uint16 door_tool_entity_id)
 	Client::m_door_tool_entity_id = door_tool_entity_id;
 }
 
+uint16 Client::GetObjectToolEntityId() const
+{
+	return m_object_tool_entity_id;
+}
+
+void Client::SetObjectToolEntityId(uint16 object_tool_entity_id)
+{
+	Client::m_object_tool_entity_id = object_tool_entity_id;
+}
+
 int Client::GetIPExemption()
 {
 	return database.GetIPExemption(GetIPString());
@@ -10735,16 +10825,15 @@ void Client::AddAAPoints(uint32 points)
 {
 	m_pp.aapoints += points;
 
-	if (points == 1 && m_pp.aapoints == 1)
-	{
+	if (parse->PlayerHasQuestSub(EVENT_AA_GAIN)) {
+		parse->EventPlayer(EVENT_AA_GAIN, this, std::to_string(points), 0);
+	}
+	
+	if (points == 1 && m_pp.aapoints == 1) {
 		MessageString(Chat::Yellow, GAIN_SINGLE_AA_SINGLE_AA, fmt::format_int(m_pp.aapoints).c_str());
-	}
-	else if (points == 1 && m_pp.aapoints > 1)
-	{
+	} else if (points == 1 && m_pp.aapoints > 1) {
 		MessageString(Chat::Yellow, GAIN_SINGLE_AA_MULTI_AA, fmt::format_int(m_pp.aapoints).c_str());
-	}
-	else
-	{
+	} else {
 		MessageString(Chat::Yellow, GAIN_MULTI_AA_MULTI_AA, fmt::format_int(points).c_str(), fmt::format_int(m_pp.aapoints).c_str());
 	}
 

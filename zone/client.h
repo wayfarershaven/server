@@ -627,11 +627,14 @@ public:
 	void SetPVPPoints(uint32 Points) { m_pp.PVPCurrentPoints = Points; }
 	uint32 GetPVPPoints() { return m_pp.PVPCurrentPoints; }
 	void AddPVPPoints(uint32 Points);
+	void AddEbonCrystals(uint32 amount, bool is_reclaim = false);
+	void AddRadiantCrystals(uint32 amount, bool is_reclaim = false);
+	void RemoveEbonCrystals(uint32 amount, bool is_reclaim = false);
+	void RemoveRadiantCrystals(uint32 amount, bool is_reclaim = false);
 	uint32 GetRadiantCrystals() { return m_pp.currentRadCrystals; }
 	void SetRadiantCrystals(uint32 value);
 	uint32 GetEbonCrystals() { return m_pp.currentEbonCrystals; }
 	void SetEbonCrystals(uint32 value);
-	void AddCrystals(uint32 Radiant, uint32 Ebon);
 	void SendCrystalCounts();
 
 	uint64 GetExperienceForKill(Mob *against);
@@ -942,6 +945,8 @@ public:
 	void AddAAPoints(uint32 points);
 	int GetAAPoints() { return m_pp.aapoints; }
 	int GetSpentAA() { return m_pp.aapoints_spent; }
+	bool HasAlreadyPurchasedRank(AA::Rank* rank);
+	void ListPurchasedAAs(Client *to, std::string search_criteria = std::string());
 	uint64 GetRequiredAAExperience();
 
 	bool SendGMCommand(std::string message, bool ignore_status = false);
@@ -1310,6 +1315,10 @@ public:
 		}
 		else { return 0; }
 	}
+	inline bool CompleteTask(uint32 task_id)
+	{
+		return task_state ? task_state->CompleteTask(this, task_id) : false;
+	}
 	inline void FailTask(int task_id) { if (task_state) { task_state->FailTask(this, task_id); }}
 	inline int TaskTimeLeft(int task_id) { return (task_state ? task_state->TaskTimeLeft(task_id) : 0); }
 	inline int EnabledTaskCount(int task_set_id)
@@ -1524,7 +1533,7 @@ public:
 	void ConsentCorpses(std::string consent_name, bool deny = false);
 	void SendAltCurrencies();
 	void SetAlternateCurrencyValue(uint32 currency_id, uint32 new_amount);
-	int AddAlternateCurrencyValue(uint32 currency_id, int32 amount, int8 method = 0);
+	int AddAlternateCurrencyValue(uint32 currency_id, int32 amount, bool is_scripted = false);
 	void SendAlternateCurrencyValues();
 	void SendAlternateCurrencyValue(uint32 currency_id, bool send_if_null = true);
 	uint32 GetAlternateCurrencyValue(uint32 currency_id) const;
@@ -1854,9 +1863,12 @@ private:
 	bool dev_tools_enabled;
 
 	uint16 m_door_tool_entity_id;
+	uint16 m_object_tool_entity_id;
 public:
 	uint16 GetDoorToolEntityId() const;
 	void SetDoorToolEntityId(uint16 door_tool_entity_id);
+	uint16 GetObjectToolEntityId() const;
+	void SetObjectToolEntityId(uint16 object_tool_entity_id);
 private:
 
 	int32 max_end;

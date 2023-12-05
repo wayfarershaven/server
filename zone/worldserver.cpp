@@ -551,15 +551,14 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 		break;
 	}
 	case ServerOP_ZoneShutdown: {
-		if (pack->size != sizeof(ServerZoneStateChange_struct)) {
-			std::cout << "Wrong size on ServerOP_ZoneShutdown. Got: " << pack->size << ", Expected: " << sizeof(ServerZoneStateChange_struct) << std::endl;
+		if (pack->size != sizeof(ServerZoneStateChange_Struct)) {
+			LogError("Wrong size on ServerOP_ZoneShutdown. Got: [{}] Expected: [{}]", pack->size, sizeof(ServerZoneStateChange_Struct));
 			break;
 		}
-		// Annouce the change to the world
+
 		if (!is_zone_loaded) {
 			SetZoneData(0);
-		}
-		else {
+		} else {
 			SendEmoteMessage(
 				0,
 				0,
@@ -570,27 +569,24 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 				).c_str()
 			);
 
-			ServerZoneStateChange_struct* zst = (ServerZoneStateChange_struct *)pack->pBuffer;
-			std::cout << "Zone shutdown by " << zst->adminname << std::endl;
+			auto *s = (ServerZoneStateChange_Struct *) pack->pBuffer;
+			LogInfo("Zone shutdown by {}.", s->admin_name);
 			Zone::Shutdown();
 		}
 		break;
 	}
 	case ServerOP_ZoneBootup: {
-		if (pack->size != sizeof(ServerZoneStateChange_struct)) {
-			std::cout << "Wrong size on ServerOP_ZoneBootup. Got: " << pack->size << ", Expected: " << sizeof(ServerZoneStateChange_struct) << std::endl;
+		if (pack->size != sizeof(ServerZoneStateChange_Struct)) {
+			LogError("Wrong size on ServerOP_ZoneShutdown. Got: [{}] Expected: [{}]", pack->size, sizeof(ServerZoneStateChange_Struct));
 			break;
 		}
-		ServerZoneStateChange_struct* zst = (ServerZoneStateChange_struct *)pack->pBuffer;
+
+		auto *s = (ServerZoneStateChange_Struct *) pack->pBuffer;
 		if (is_zone_loaded) {
 			SetZoneData(zone->GetZoneID(), zone->GetInstanceID());
-			if (zst->zoneid == zone->GetZoneID()) {
-				// This packet also doubles as "incoming client" notification, lets not shut down before they get here
-//				zone->StartShutdownTimer(AUTHENTICATION_TIMEOUT * 1000);
-			}
-			else {
+			if (s->zone_id != zone->GetZoneID()) {
 				SendEmoteMessage(
-					zst->adminname,
+					s->admin_name,
 					0,
 					Chat::White,
 					fmt::format(
@@ -602,10 +598,11 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 			break;
 		}
 
-		if (zst->adminname[0] != 0)
-			std::cout << "Zone bootup by " << zst->adminname << std::endl;
+		if (s->admin_name[0] != 0) {
+			LogInfo("Zone bootup by {}.", s->admin_name);
+		}
 
-		Zone::Bootup(zst->zoneid, zst->instanceid, zst->makestatic);
+		Zone::Bootup(s->zone_id, s->instance_id, s->is_static);
 		break;
 	}
 	case ServerOP_ZoneIncClient: {
@@ -972,7 +969,7 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 
 			char time_message[255];
 			time_t current_time = time(nullptr);
-			TimeOfDay_Struct eq_time;
+			TimeOfDay_Struct eq_time{};
 			zone->zone_time.GetCurrentEQTimeOfDay(current_time, &eq_time);
 
 			sprintf(time_message, "EQTime [%02d:%s%d %s]",
@@ -1736,28 +1733,27 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 		if (zone)
 		{
 			ServerSpawnStatusChange_Struct *ssc = (ServerSpawnStatusChange_Struct*)pack->pBuffer;
-			LinkedListIterator<Spawn2*> iterator(zone->spawn2_list);
+			if (ssc->instance_id != zone->GetInstanceID()) {
+				break;
+			}
+
+			LinkedListIterator<Spawn2 *> iterator(zone->spawn2_list);
 			iterator.Reset();
 			Spawn2 *found_spawn = nullptr;
-			while (iterator.MoreElements())
-			{
-				Spawn2* cur = iterator.GetData();
-				if (cur->GetID() == ssc->id)
-				{
+			while (iterator.MoreElements()) {
+				Spawn2 *cur = iterator.GetData();
+				if (cur->GetID() == ssc->id) {
 					found_spawn = cur;
 					break;
 				}
 				iterator.Advance();
 			}
 
-			if (found_spawn)
-			{
-				if (ssc->new_status == 0)
-				{
+			if (found_spawn) {
+				if (ssc->new_status == 0) {
 					found_spawn->Disable();
 				}
-				else
-				{
+				else {
 					found_spawn->Enable();
 				}
 			}
@@ -3666,17 +3662,20 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 }
 
 bool WorldServer::SendChannelMessage(Client* from, const char* to, uint8 chan_num, uint32 guilddbid, uint8 language, uint8 lang_skill, const char* message, ...) {
-	if (!worldserver.Connected())
+	if (!worldserver.Connected()) {
 		return false;
+	}
+
 	va_list argptr;
-	char buffer[512];
+	auto length = strlen(message) + 1;
+	char* buffer = new char[length];
 
 	va_start(argptr, message);
-	vsnprintf(buffer, 512, message, argptr);
+	vsnprintf(buffer, length, message, argptr);
 	va_end(argptr);
-	buffer[511] = '\0';
+	buffer[length - 1] = '\0';
 
-	auto pack = new ServerPacket(ServerOP_ChannelMessage, sizeof(ServerChannelMessage_Struct) + strlen(buffer) + 1);
+	auto pack = new ServerPacket(ServerOP_ChannelMessage, sizeof(ServerChannelMessage_Struct) + length);
 	ServerChannelMessage_Struct* scm = (ServerChannelMessage_Struct*)pack->pBuffer;
 
 	if (from == 0) {
@@ -3705,6 +3704,7 @@ bool WorldServer::SendChannelMessage(Client* from, const char* to, uint8 chan_nu
 
 	bool ret = SendPacket(pack);
 	safe_delete(pack);
+	safe_delete_array(buffer);
 	return ret;
 }
 

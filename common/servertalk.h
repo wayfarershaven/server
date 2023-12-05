@@ -484,12 +484,12 @@ struct SPackSendQueue {
 	uchar buffer[0];
 };
 
-struct ServerZoneStateChange_struct {
-	uint32 ZoneServerID;
-	char adminname[64];
-	uint32 zoneid;
-	uint16 instanceid;
-	bool makestatic;
+struct ServerZoneStateChange_Struct {
+	uint32 zone_server_id;
+	uint32 zone_id;
+	uint16 instance_id;
+	bool   is_static;
+	char   admin_name[64];
 };
 
 struct ServerZoneIncomingClient_Struct {
@@ -1191,10 +1191,10 @@ struct ServerInstanceUpdateTime_Struct
 	uint32 new_duration;
 };
 
-struct ServerSpawnStatusChange_Struct
-{
+struct ServerSpawnStatusChange_Struct {
 	uint32 id;
-	bool new_status;
+	bool   new_status;
+	uint32 instance_id;
 };
 
 struct ServerQGlobalUpdate_Struct

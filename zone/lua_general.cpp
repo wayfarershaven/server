@@ -1273,7 +1273,7 @@ int lua_get_zone_weather() {
 }
 
 luabind::adl::object lua_get_zone_time(lua_State *L) {
-	TimeOfDay_Struct eqTime;
+	TimeOfDay_Struct eqTime{};
 	zone->zone_time.GetCurrentEQTimeOfDay(time(0), &eqTime);
 
 	luabind::adl::object ret = luabind::newtable(L);
@@ -6609,7 +6609,12 @@ luabind::scope lua_register_events() {
 			luabind::value("memorize_spell", static_cast<int>(EVENT_MEMORIZE_SPELL)),
 			luabind::value("unmemorize_spell", static_cast<int>(EVENT_UNMEMORIZE_SPELL)),
 			luabind::value("scribe_spell", static_cast<int>(EVENT_SCRIBE_SPELL)),
-			luabind::value("unscribe_spell", static_cast<int>(EVENT_UNSCRIBE_SPELL))
+			luabind::value("unscribe_spell", static_cast<int>(EVENT_UNSCRIBE_SPELL)),
+			luabind::value("crystal_gain", static_cast<int>(EVENT_CRYSTAL_GAIN)),
+			luabind::value("crystal_loss", static_cast<int>(EVENT_CRYSTAL_LOSS)),
+			luabind::value("alt_currency_gain", static_cast<int>(EVENT_ALT_CURRENCY_GAIN)),
+			luabind::value("alt_currency_loss", static_cast<int>(EVENT_ALT_CURRENCY_LOSS)),
+			luabind::value("loot_added", static_cast<int>(EVENT_LOOT_ADDED))
 		)];
 }
 
