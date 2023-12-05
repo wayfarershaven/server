@@ -171,8 +171,6 @@ bool ZoneDatabase::LoadSpawnGroups(const char *zone_name, uint16 version, SpawnG
 			DISTINCT(spawngroupID),
 			spawngroup.name,
 			spawngroup.spawn_limit,
-			spawnentry.min_time,
-			spawnentry.max_time,
 			spawngroup.dist,
 			spawngroup.max_x,
 			spawngroup.min_x,
@@ -353,7 +351,9 @@ bool ZoneDatabase::LoadSpawnGroupsByID(int spawn_group_id, SpawnGroupList *spawn
 			spawnentry.npcid,
 			spawnentry.chance,
 			spawnentry.condition_value_filter,
-			spawngroup.spawn_limit
+			spawngroup.spawn_limit,
+			spawnentry.min_time,
+			spawnentry.max_time
 				FROM
 				spawnentry,
 			spawngroup
