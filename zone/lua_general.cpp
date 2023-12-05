@@ -6611,7 +6611,9 @@ luabind::scope lua_register_events() {
 			luabind::value("scribe_spell", static_cast<int>(EVENT_SCRIBE_SPELL)),
 			luabind::value("unscribe_spell", static_cast<int>(EVENT_UNSCRIBE_SPELL)),
 			luabind::value("crystal_gain", static_cast<int>(EVENT_CRYSTAL_GAIN)),
-			luabind::value("crystal_loss", static_cast<int>(EVENT_CRYSTAL_LOSS))
+			luabind::value("crystal_loss", static_cast<int>(EVENT_CRYSTAL_LOSS)),
+			luabind::value("alt_currency_gain", static_cast<int>(EVENT_ALT_CURRENCY_GAIN)),
+			luabind::value("alt_currency_loss", static_cast<int>(EVENT_ALT_CURRENCY_LOSS))
 		)];
 }
 
