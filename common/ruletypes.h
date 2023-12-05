@@ -330,6 +330,8 @@ RULE_BOOL(World, EnableDevTools, true, "Enable or Disable the Developer Tools gl
 RULE_BOOL(World, EnableChecksumVerification, true, "Enable or Disable the Checksum Verification for eqgame.exe and spells_us.txt")
 RULE_BOOL(World, PurpleBugHackFix, true, "Enable or Disable the purple bug 32k hack")
 RULE_INT(World, MaximumQuestErrors, 30, "Changes the maximum number of quest errors that can be displayed in #questerrors, default is 30")
+RULE_BOOL(World, EnableParcelMerchants, false, "Enable or Disable Parcel Merchants.  Requires RoF+ Clients.")
+RULE_BOOL(World, EnableDirectToInventoryDelivery, false, "Enable or Disable RoF2 bazaar purchases to be delivered directly to the buyer's inventory. Requires RoF+ Clients.")
 RULE_INT(World, BootHour, 0, "Sets the in-game hour world will set when it first boots. 0-24 are valid options, where 0 disables this rule")
 RULE_CATEGORY_END()
 

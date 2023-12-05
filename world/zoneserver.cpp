@@ -1768,6 +1768,10 @@ void ZoneServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p) {
 			}
 			break;
 		}
+		case ServerOP_RoF2Trader:
+		{
+			zoneserver_list.SendPacket(pack);
+		}
 		default: {
 			LogInfo("Unknown ServerOPcode from zone {:#04x}, size [{}]", pack->opcode, pack->size);
 			DumpPacket(pack->pBuffer, pack->size);

@@ -57,7 +57,7 @@ namespace EQ
 			ItemClassCount
 		};
 
-		enum ItemType : uint8 {
+		enum ItemType {
 /*9138*/	ItemType1HSlash = 0,
 /*9141*/	ItemType2HSlash,
 /*9140*/	ItemType1HPiercing,
@@ -104,10 +104,10 @@ namespace EQ
 /*----*/	ItemTypeUnknown6,
 /*----*/	ItemTypeUnknown7,
 /*5522*/	ItemTypeMartial, // 45
-/*----*/	ItemTypeUnknown8,
+/*----*/	ItemTypeAllEffects,
 /*----*/	ItemTypeUnknown9,
 /*----*/	ItemTypeUnknown10,
-/*----*/	ItemTypeUnknown11,
+/*----*/	ItemTypeFocusEffect,
 /*----*/	ItemTypeSinging, // 50
 /*5750*/	ItemTypeAllInstrumentTypes,
 /*5776*/	ItemTypeCharm,
@@ -115,7 +115,7 @@ namespace EQ
 /*----*/	ItemTypeAugmentation,
 /*----*/	ItemTypeAugmentationSolvent, // 55
 /*----*/	ItemTypeAugmentationDistiller,
-/*----*/	ItemTypeUnknown12,
+/*----*/	ItemTypeAlternateAbility,
 /*----*/	ItemTypeFellowshipKit,
 /*----*/	ItemTypeUnknown13,
 /*----*/	ItemTypeRecipe, // 60
@@ -123,7 +123,10 @@ namespace EQ
 /*----*/	ItemTypeJournal,		// only one(1) database entry
 /*----*/	ItemTypeAltCurrency,	// alt-currency (as opposed to coinage)
 /*5881*/	ItemTypePerfectedAugmentationDistiller,
-/*----*/	ItemTypeCount
+/*----*/	ItemTypeCount,
+			ItemTypeCollectible,
+			ItemTypeContainer,
+			ItemTypeAll = 0xFFFFFFFF
 
 /*
 			Unknowns:

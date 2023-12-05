@@ -9,56 +9,42 @@
  * @docs https://eqemu.gitbook.io/server/in-development/developer-area/repositories
  */
 
-#ifndef EQEMU_BASE_TRADER_REPOSITORY_H
-#define EQEMU_BASE_TRADER_REPOSITORY_H
+#ifndef EQEMU_BASE_PARCEL_MERCHANTS_REPOSITORY_H
+#define EQEMU_BASE_PARCEL_MERCHANTS_REPOSITORY_H
 
 #include "../../database.h"
 #include "../../strings.h"
-#include "../../rulesys.h"
-//#include "../misc_functions.h"
 #include <ctime>
 
 
-class BaseTraderRepository {
+class BaseParcelMerchantsRepository {
 public:
-	struct Trader {
-		uint32_t char_id;
-		uint32_t item_id;
-		uint32_t serialnumber;
-		int32_t  charges;
-		uint32_t item_cost;
-		uint8_t  slot_id;
-		uint32_t entity_id;
+	struct ParcelMerchants {
+		uint32_t id;
+		uint32_t merchant_id;
+		uint8_t  enabled;
 	};
 
 	static std::string PrimaryKey()
 	{
-		return std::string("char_id");
+		return std::string("id");
 	}
 
 	static std::vector<std::string> Columns()
 	{
 		return {
-			"char_id",
-			"item_id",
-			"serialnumber",
-			"charges",
-			"item_cost",
-			"slot_id",
-			"entity_id",
+			"id",
+			"merchant_id",
+			"enabled",
 		};
 	}
 
 	static std::vector<std::string> SelectColumns()
 	{
 		return {
-			"char_id",
-			"item_id",
-			"serialnumber",
-			"charges",
-			"item_cost",
-			"slot_id",
-			"entity_id",
+			"id",
+			"merchant_id",
+			"enabled",
 		};
 	}
 
@@ -74,7 +60,7 @@ public:
 
 	static std::string TableName()
 	{
-		return std::string("trader");
+		return std::string("parcel_merchants");
 	}
 
 	static std::string BaseSelect()
@@ -95,38 +81,34 @@ public:
 		);
 	}
 
-	static Trader NewEntity()
+	static ParcelMerchants NewEntity()
 	{
-		Trader e{};
+		ParcelMerchants e{};
 
-		e.char_id      = 0;
-		e.item_id      = 0;
-		e.serialnumber = 0;
-		e.charges      = 0;
-		e.item_cost    = 0;
-		e.slot_id      = 0;
-		e.entity_id    = 0;
+		e.id          = 0;
+		e.merchant_id = 0;
+		e.enabled     = 1;
 
 		return e;
 	}
 
-	static Trader GetTrader(
-		const std::vector<Trader> &traders,
-		int trader_id
+	static ParcelMerchants GetParcelMerchants(
+		const std::vector<ParcelMerchants> &parcel_merchantss,
+		int parcel_merchants_id
 	)
 	{
-		for (auto &trader : traders) {
-			if (trader.char_id == trader_id) {
-				return trader;
+		for (auto &parcel_merchants : parcel_merchantss) {
+			if (parcel_merchants.id == parcel_merchants_id) {
+				return parcel_merchants;
 			}
 		}
 
 		return NewEntity();
 	}
 
-	static Trader FindOne(
+	static ParcelMerchants FindOne(
 		Database& db,
-		int trader_id
+		int parcel_merchants_id
 	)
 	{
 		auto results = db.QueryDatabase(
@@ -134,21 +116,17 @@ public:
 				"{} WHERE {} = {} LIMIT 1",
 				BaseSelect(),
 				PrimaryKey(),
-				trader_id
+				parcel_merchants_id
 			)
 		);
 
 		auto row = results.begin();
 		if (results.RowCount() == 1) {
-			Trader e{};
+			ParcelMerchants e{};
 
-			e.char_id      = static_cast<uint32_t>(strtoul(row[0], nullptr, 10));
-			e.item_id      = static_cast<uint32_t>(strtoul(row[1], nullptr, 10));
-			e.serialnumber = static_cast<uint32_t>(strtoul(row[2], nullptr, 10));
-			e.charges      = static_cast<int32_t>(atoi(row[3]));
-			e.item_cost    = static_cast<uint32_t>(strtoul(row[4], nullptr, 10));
-			e.slot_id      = static_cast<uint8_t>(strtoul(row[5], nullptr, 10));
-			e.entity_id    = static_cast<uint32_t>(strtoul(row[6], nullptr, 10));
+			e.id          = static_cast<uint32_t>(strtoul(row[0], nullptr, 10));
+			e.merchant_id = static_cast<uint32_t>(strtoul(row[1], nullptr, 10));
+			e.enabled     = static_cast<uint8_t>(strtoul(row[2], nullptr, 10));
 
 			return e;
 		}
@@ -158,7 +136,7 @@ public:
 
 	static int DeleteOne(
 		Database& db,
-		int trader_id
+		int parcel_merchants_id
 	)
 	{
 		auto results = db.QueryDatabase(
@@ -166,7 +144,7 @@ public:
 				"DELETE FROM {} WHERE {} = {}",
 				TableName(),
 				PrimaryKey(),
-				trader_id
+				parcel_merchants_id
 			)
 		);
 
@@ -175,20 +153,15 @@ public:
 
 	static int UpdateOne(
 		Database& db,
-		const Trader &e
+		const ParcelMerchants &e
 	)
 	{
 		std::vector<std::string> v;
 
 		auto columns = Columns();
 
-		v.push_back(columns[0] + " = " + std::to_string(e.char_id));
-		v.push_back(columns[1] + " = " + std::to_string(e.item_id));
-		v.push_back(columns[2] + " = " + std::to_string(e.serialnumber));
-		v.push_back(columns[3] + " = " + std::to_string(e.charges));
-		v.push_back(columns[4] + " = " + std::to_string(e.item_cost));
-		v.push_back(columns[5] + " = " + std::to_string(e.slot_id));
-		v.push_back(columns[6] + " = " + std::to_string(e.entity_id));
+		v.push_back(columns[1] + " = " + std::to_string(e.merchant_id));
+		v.push_back(columns[2] + " = " + std::to_string(e.enabled));
 
 		auto results = db.QueryDatabase(
 			fmt::format(
@@ -196,27 +169,23 @@ public:
 				TableName(),
 				Strings::Implode(", ", v),
 				PrimaryKey(),
-				e.char_id
+				e.id
 			)
 		);
 
 		return (results.Success() ? results.RowsAffected() : 0);
 	}
 
-	static Trader InsertOne(
+	static ParcelMerchants InsertOne(
 		Database& db,
-		Trader e
+		ParcelMerchants e
 	)
 	{
 		std::vector<std::string> v;
 
-		v.push_back(std::to_string(e.char_id));
-		v.push_back(std::to_string(e.item_id));
-		v.push_back(std::to_string(e.serialnumber));
-		v.push_back(std::to_string(e.charges));
-		v.push_back(std::to_string(e.item_cost));
-		v.push_back(std::to_string(e.slot_id));
-		v.push_back(std::to_string(e.entity_id));
+		v.push_back(std::to_string(e.id));
+		v.push_back(std::to_string(e.merchant_id));
+		v.push_back(std::to_string(e.enabled));
 
 		auto results = db.QueryDatabase(
 			fmt::format(
@@ -227,7 +196,7 @@ public:
 		);
 
 		if (results.Success()) {
-			e.char_id = results.LastInsertedID();
+			e.id = results.LastInsertedID();
 			return e;
 		}
 
@@ -238,7 +207,7 @@ public:
 
 	static int InsertMany(
 		Database& db,
-		const std::vector<Trader> &entries
+		const std::vector<ParcelMerchants> &entries
 	)
 	{
 		std::vector<std::string> insert_chunks;
@@ -246,13 +215,9 @@ public:
 		for (auto &e: entries) {
 			std::vector<std::string> v;
 
-			v.push_back(std::to_string(e.char_id));
-			v.push_back(std::to_string(e.item_id));
-			v.push_back(std::to_string(e.serialnumber));
-			v.push_back(std::to_string(e.charges));
-			v.push_back(std::to_string(e.item_cost));
-			v.push_back(std::to_string(e.slot_id));
-			v.push_back(std::to_string(e.entity_id));
+			v.push_back(std::to_string(e.id));
+			v.push_back(std::to_string(e.merchant_id));
+			v.push_back(std::to_string(e.enabled));
 
 			insert_chunks.push_back("(" + Strings::Implode(",", v) + ")");
 		}
@@ -270,9 +235,9 @@ public:
 		return (results.Success() ? results.RowsAffected() : 0);
 	}
 
-	static std::vector<Trader> All(Database& db)
+	static std::vector<ParcelMerchants> All(Database& db)
 	{
-		std::vector<Trader> all_entries;
+		std::vector<ParcelMerchants> all_entries;
 
 		auto results = db.QueryDatabase(
 			fmt::format(
@@ -284,15 +249,11 @@ public:
 		all_entries.reserve(results.RowCount());
 
 		for (auto row = results.begin(); row != results.end(); ++row) {
-			Trader e{};
+			ParcelMerchants e{};
 
-			e.char_id      = static_cast<uint32_t>(strtoul(row[0], nullptr, 10));
-			e.item_id      = static_cast<uint32_t>(strtoul(row[1], nullptr, 10));
-			e.serialnumber = static_cast<uint32_t>(strtoul(row[2], nullptr, 10));
-			e.charges      = static_cast<int32_t>(atoi(row[3]));
-			e.item_cost    = static_cast<uint32_t>(strtoul(row[4], nullptr, 10));
-			e.slot_id      = static_cast<uint8_t>(strtoul(row[5], nullptr, 10));
-			e.entity_id    = static_cast<uint32_t>(strtoul(row[6], nullptr, 10));
+			e.id          = static_cast<uint32_t>(strtoul(row[0], nullptr, 10));
+			e.merchant_id = static_cast<uint32_t>(strtoul(row[1], nullptr, 10));
+			e.enabled     = static_cast<uint8_t>(strtoul(row[2], nullptr, 10));
 
 			all_entries.push_back(e);
 		}
@@ -300,9 +261,9 @@ public:
 		return all_entries;
 	}
 
-	static std::vector<Trader> GetWhere(Database& db, const std::string &where_filter)
+	static std::vector<ParcelMerchants> GetWhere(Database& db, const std::string &where_filter)
 	{
-		std::vector<Trader> all_entries;
+		std::vector<ParcelMerchants> all_entries;
 
 		auto results = db.QueryDatabase(
 			fmt::format(
@@ -315,15 +276,11 @@ public:
 		all_entries.reserve(results.RowCount());
 
 		for (auto row = results.begin(); row != results.end(); ++row) {
-			Trader e{};
+			ParcelMerchants e{};
 
-			e.char_id      = static_cast<uint32_t>(strtoul(row[0], nullptr, 10));
-			e.item_id      = static_cast<uint32_t>(strtoul(row[1], nullptr, 10));
-			e.serialnumber = static_cast<uint32_t>(strtoul(row[2], nullptr, 10));
-			e.charges      = static_cast<int32_t>(atoi(row[3]));
-			e.item_cost    = static_cast<uint32_t>(strtoul(row[4], nullptr, 10));
-			e.slot_id      = static_cast<uint8_t>(strtoul(row[5], nullptr, 10));
-			e.entity_id    = static_cast<uint32_t>(strtoul(row[6], nullptr, 10));
+			e.id          = static_cast<uint32_t>(strtoul(row[0], nullptr, 10));
+			e.merchant_id = static_cast<uint32_t>(strtoul(row[1], nullptr, 10));
+			e.enabled     = static_cast<uint8_t>(strtoul(row[2], nullptr, 10));
 
 			all_entries.push_back(e);
 		}
@@ -384,4 +341,4 @@ public:
 
 };
 
-#endif //EQEMU_BASE_TRADER_REPOSITORY_H
+#endif //EQEMU_BASE_PARCEL_MERCHANTS_REPOSITORY_H

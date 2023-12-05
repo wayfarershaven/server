@@ -18,6 +18,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include "../common/global_define.h"
 #include "../common/eqemu_logsys.h"
 #include "../common/opcodemgr.h"
+#include "../common/rulesys.h"
 #include <iomanip>
 #include <iostream>
 #include <math.h>
@@ -760,7 +761,14 @@ void Client::CompleteConnect()
 
 	entity_list.SendIllusionWearChange(this);
 
-	entity_list.SendTraders(this);
+	if (ClientVersion() == EQ::versions::ClientVersion::RoF2) 
+	{
+		SendBulkBazaarTraders();
+		SendBulkTraderStatus();
+	}
+	else {
+		entity_list.SendTraders(this);
+	}
 
 	Mob *pet = GetPet();
 	if (pet) {
@@ -3906,8 +3914,9 @@ void Client::Handle_OP_BazaarSearch(const EQApplicationPacket *app)
 
 		BazaarSearch_Struct* bss = (BazaarSearch_Struct*)app->pBuffer;
 
-		SendBazaarResults(bss->TraderID, bss->Class_, bss->Race, bss->ItemStat, bss->Slot, bss->Type,
-			bss->Name, bss->Minlevel, bss->MaxLlevel, bss->MinPrice * 1000, bss->MaxPrice * 1000);
+		SendBazaarResults(bss->trader_id, bss->_class, bss->race, bss->item_stat, bss->slot, bss->type,
+			bss->name, bss->min_cost * 1000, bss->max_cost * 1000, bss->min_level, bss->max_level, bss->prestige,
+			bss->augment, bss->max_results,bss->search_scope);
 	}
 	else if (app->size == sizeof(BazaarWelcome_Struct)) {
 
@@ -14286,8 +14295,12 @@ void Client::Handle_OP_ShopRequest(const EQApplicationPacket *app)
 	}
 
 	merchantid = tmp->CastToNPC()->MerchantType;
-	int action = 1;
+	int tabs_to_display = SellBuyRecover;
+	if (RuleB(World, EnableParcelMerchants)) {
+		tabs_to_display = SellBuyRecoverParcel; 
+	}
 
+	int action = 1;
 	if (merchantid == 0) {
 		auto outapp = new EQApplicationPacket(OP_ShopRequest, sizeof(Merchant_Click_Struct));
 		Merchant_Click_Struct* mco = (Merchant_Click_Struct*)outapp->pBuffer;
@@ -14295,6 +14308,8 @@ void Client::Handle_OP_ShopRequest(const EQApplicationPacket *app)
 		mco->playerid = 0;
 		mco->command = 1;		//open...
 		mco->rate = 1.0;
+		mco->tab_display = tabs_to_display;
+		mco->unknown02 = 2592000;
 		QueuePacket(outapp);
 		safe_delete(outapp);
 		return;
@@ -14339,12 +14354,19 @@ void Client::Handle_OP_ShopRequest(const EQApplicationPacket *app)
 		mco->rate = 1 / (RuleR(Merchant, BuyCostMod));
 	}
 
+	mco->tab_display = tabs_to_display;
+	mco->unknown02 = 2592000;
+
 	outapp->priority = 6;
 	QueuePacket(outapp);
 	safe_delete(outapp);
 
 	if (action == 1) {
 		BulkSendMerchantInventory(merchantid, tmp->GetNPCTypeID());
+	}
+
+	if (tabs_to_display == SellBuyRecoverParcel) {
+		SendBulkParcels(merchantid);
 	}
 
 	return;
@@ -15297,10 +15319,12 @@ void Client::Handle_OP_Trader(const EQApplicationPacket *app)
 					break;
 				}
 
-				if(Item->IsClassBag()) {
-					Message(Chat::Red, "Not allowed to sell bags, please convert to a token. Unable to start trader mode.");
-					TradeItemsValid = false;
-					break;
+				if (ClientVersion() < EQ::versions::ClientVersion::RoF) {
+					if(Item->IsClassBag()) {
+						Message(Chat::Red, "Not allowed to sell bags, please convert to a token. Unable to start trader mode.");
+						TradeItemsValid = false;
+						break;
+					}
 				}
 			}
 
@@ -15313,7 +15337,7 @@ void Client::Handle_OP_Trader(const EQApplicationPacket *app)
 			for (uint32 i = 0; i < max_items; i++) {
 				if (database.GetItem(gis->Items[i])) {
 					database.SaveTraderItem(CharacterID(), gis->Items[i], gis->SerialNumber[i],
-						gis->Charges[i], ints->ItemCost[i], i);
+						gis->Charges[i], ints->ItemCost[i], i, GetID());
 
 					auto inst = FindTraderItemBySerialNumber(gis->SerialNumber[i]);
 					if (inst)
@@ -15340,8 +15364,7 @@ void Client::Handle_OP_Trader(const EQApplicationPacket *app)
 			}
 		}
 		else {
-			LogTrading("Unknown TraderStruct code of: [{}]\n",
-				ints->Code);
+			LogTrading("Unknown TraderStruct code of: [{}]\n", ints->Code);
 
 			LogError("Unknown TraderStruct code of: [{}]\n", ints->Code);
 		}
@@ -15558,16 +15581,42 @@ void Client::Handle_OP_TraderShop(const EQApplicationPacket *app)
 		// Customer has purchased an item from the Trader
 
 		TraderBuy_Struct* tbs = (TraderBuy_Struct*)app->pBuffer;
+		auto Trader = entity_list.GetClientByID(tbs->TraderID);
 
-		if (Client* Trader = entity_list.GetClientByID(tbs->TraderID))
+		switch (tbs->Method) {
+		case ByVendor:
 		{
-			BuyTraderItem(tbs, Trader, app);
-			LogTrading("Handle_OP_TraderShop: Buy Action [{}], Price [{}], Trader [{}], ItemID [{}], Quantity [{}], ItemName, [{}]",
-				tbs->Action, tbs->Price, tbs->TraderID, tbs->ItemID, tbs->Quantity, tbs->ItemName);
+			if (Trader) {
+				BuyTraderItem(tbs, Trader, app);
+				LogTrading("Handle_OP_TraderShop: Buy Action [{}], Price [{}], Trader [{}], ItemID [{}], Quantity [{}], ItemName, [{}]",
+					tbs->Action, tbs->Price, tbs->TraderID, tbs->ItemID, tbs->Quantity, tbs->ItemName);
+			}
+			break;
 		}
-		else
+		case ByParcel:
 		{
-			LogTrading("OP_TraderShop: Null Client Pointer");
+			if (!RuleB(World, EnableParcelMerchants)) {
+				LogTrading("Bazaar purchase attempt by parcel delivery though 'World:EnableParcelMerchants' not enabled.");
+				Message(Chat::Yellow, "The parcel delivey system is not enabled on this server.  Please visit the vendor directly.");
+				return;
+			}
+			BuyTraderItemByParcel(tbs, app);
+			break;
+		}
+		case ByDirectToInventory:
+		{
+			if (!RuleB(World, EnableDirectToInventoryDelivery)) {
+				LogTrading("Bazaar purchase attempt by direct inventory delivery though 'World:EnableDirectToInventoryDelivery' not enabled.");
+				Message(Chat::Yellow, "Direct inventory delivey is not enabled on this server.  Please visit the vendor directly.");
+				return;
+			}
+			BuyTraderItemByDirectToInventory(tbs);
+			break;
+		}
+		default:
+		{
+			LogTrading("OP_TraderShop: Unknown Buy Method [{}]\.", tbs->Method);
+		}
 		}
 	}
 	else if (app->size == 4)
