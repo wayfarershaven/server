@@ -332,6 +332,8 @@ public:
 	void SendBulkBazaarTraders();
 	void SendBulkParcels(uint32 merchant_id);
 	void SendParcelPacket(const EQ::ItemInstance* inst);
+	void BuyTraderItemByParcel(TraderBuy_Struct* tbs, const EQApplicationPacket* app);
+	void BuyTraderItemByDirectToInventory(TraderBuy_Struct* tbs);
 	void SendZonePoints();
 
 	void SendBuyerResults(char *SearchQuery, uint32 SearchID);

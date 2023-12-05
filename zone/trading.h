@@ -12,11 +12,16 @@
 	along with this program; if not, write to the Free Software
 	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 */
-#ifndef PARCELS_H
-#define PARCELS_H
+#ifndef TRADING_H
+#define TRADING_H
 
-#include "trading.h"
-#include "../common/repositories/parcels_repository.h"
-#include "../common/repositories/parcel_merchants_repository.h"
+#include "../common/eq_packet_structs.h"
+#include "../common/data_verification.h"
+#include "client.h"
+
+
+// The maximum amount of a single bazaar/barter transaction expressed in copper.
+// Equivalent to 2 Million plat
+#define MAX_TRANSACTION_VALUE 2000000000
 
 #endif

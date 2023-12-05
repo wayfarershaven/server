@@ -27,6 +27,7 @@
 #include "client.h"
 #include "entity.h"
 #include "mob.h"
+#include "trading.h"
 
 #include "quest_parser_collection.h"
 #include "string_ids.h"
@@ -37,9 +38,6 @@ class QueryServ;
 extern WorldServer worldserver;
 extern QueryServ* QServ;
 
-// The maximum amount of a single bazaar/barter transaction expressed in copper.
-// Equivalent to 2 Million plat
-#define MAX_TRANSACTION_VALUE 2000000000
 // ##########################################
 // Trade implementation
 // ##########################################
@@ -3021,4 +3019,8 @@ void Client::SendBulkTraderStatus() {
 			SendBecomeTraderPacket(BazaarTrader_StartTraderMode, c.second->GetID(), c.second->GetName());
 		}
 	}
+}
+
+void Client::BuyTraderItemByDirectToInventory(TraderBuy_Struct* tbs) {
+
 }

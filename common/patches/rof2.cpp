@@ -5541,15 +5541,20 @@ namespace RoF2
 			SETUP_DIRECT_DECODE(TraderBuy_Struct, structs::TraderBuy_Struct);
 
 			IN(Action);
+			IN(Method);
 			IN(Price);
 			IN(TraderID);
+			IN(ItemID); 
+			IN(Quantity); 
+			IN(AlreadySold);
+			IN_str(SellerName);
+
+			memcpy(emu->SerialNumber, eq->SerialNumber, sizeof(emu->SerialNumber));
 			memcpy(emu->ItemName, eq->ItemName, sizeof(emu->ItemName));
-			IN(ItemID);
-			IN(Quantity);
-			LogTrading("DECODE(OP_TraderShop): TraderBuy_Struct (Unknowns) Unknown004 [{}], Unknown008 [{}], Unknown012 [{}], Unknown076 [{}], Unknown276 [{}]",
-				eq->Unknown004, eq->Unknown008, eq->Unknown012, eq->Unknown076, eq->Unknown276);
-			LogTrading("DECODE(OP_TraderShop): TraderBuy_Struct Buy Action [{}], Price [{}], Trader [{}], ItemID [{}], Quantity [{}], ItemName, [{}]",
-				eq->Action, eq->Price, eq->TraderID, eq->ItemID, eq->Quantity, eq->ItemName);
+			LogTrading("DECODE(OP_TraderShop): TraderBuy_Struct (Unknowns) Unknown008 [{}], Unknown012 [{}], Unknown076 [{}], Unknown276 [{}]",
+				eq->Unknown008, eq->Unknown012, eq->Unknown076, eq->Unknown276);
+			LogTrading("DECODE(OP_TraderShop): TraderBuy_Struct Buy Action [{}], Method [{}], Price [{}], Trader [{}], ItemID [{}], Quantity [{}], ItemName, [{}]",
+				eq->Action, eq->Method, eq->Price, eq->TraderID, eq->ItemID, eq->Quantity, eq->ItemName);
 
 			FINISH_DIRECT_DECODE();
 		}

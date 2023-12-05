@@ -3934,6 +3934,7 @@ namespace UF
 		MEMSET_IN(TraderBuy_Struct);
 
 		IN(Action);
+		emu->Method = TraderBuyMethod::ByVendor;
 		IN(Price);
 		IN(TraderID);
 		memcpy(emu->ItemName, eq->ItemName, sizeof(emu->ItemName));

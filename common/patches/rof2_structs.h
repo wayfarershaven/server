@@ -3495,7 +3495,7 @@ struct TraderStatus_Struct {
 
 struct TraderBuy_Struct {
 	/*000*/ uint32	Action;
-	/*004*/	uint32	Unknown004;
+	/*004*/	uint32	Method;			// 0 is by vendor, 1 is by parcel, 2 is by direct to inventory
 	/*008*/ uint32	Unknown008;
 	/*012*/	uint32	Unknown012;
 	/*016*/ uint32	TraderID;

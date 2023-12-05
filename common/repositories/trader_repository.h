@@ -329,6 +329,35 @@ public:
 
 		return all_entries;
 	}
+
+	static Trader GetTraderItem(Database& db, uint32 trader_id, uint32 item_id, uint32 item_cost)
+	{
+		Trader item{};
+
+		auto query = fmt::format("SELECT t.char_id, t.item_id, t.serialnumber, t.charges, t.item_cost, t.slot_id, t.entity_id FROM trader AS t "
+			"WHERE t.entity_id = {} AND t.item_id = {} AND t.item_cost = {} "
+			"LIMIT 1;",
+			trader_id,
+			item_id,
+			item_cost
+			);
+		auto results = db.QueryDatabase(query);
+
+		if (results.RowCount() == 0) {
+			return item;
+		}
+
+		auto row			= results.begin();
+		item.char_id		= Strings::ToInt(row[0]);
+		item.item_id		= Strings::ToInt(row[1]);
+		item.serialnumber	= Strings::ToInt(row[2]);
+		item.charges		= Strings::ToInt(row[3]);
+		item.item_cost		= Strings::ToInt(row[4]);
+		item.slot_id		= Strings::ToInt(row[5]);
+		item.entity_id		= Strings::ToInt(row[6]);
+
+		return item;
+	}
 };
 
 #endif //EQEMU_TRADER_REPOSITORY_H

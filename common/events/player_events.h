@@ -784,6 +784,7 @@ namespace PlayerEvent {
 		uint32      charges;
 		uint32      total_cost;
 		uint64      player_money_balance;
+		uint32		method{ 0 };
 
 
 		// cereal
@@ -812,6 +813,7 @@ namespace PlayerEvent {
 		uint32      charges;
 		uint32      total_cost;
 		uint64      player_money_balance;
+		uint32		method;
 
 
 		// cereal

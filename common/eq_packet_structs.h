@@ -3277,9 +3277,15 @@ struct Trader_ShowItems_Struct{
 /*020*/
 };
 
+enum TraderBuyMethod {
+	ByVendor,
+	ByParcel,
+	ByDirectToInventory
+};
+
 struct TraderBuy_Struct{
 	/*000*/ uint32	Action;
-	/*004*/	uint32	Unknown004;
+	/*004*/	uint32	Method;
 	/*008*/ uint32	Unknown008;
 	/*012*/	uint32	Unknown012;
 	/*016*/ uint32	TraderID;

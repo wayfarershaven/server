@@ -18,6 +18,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include "../common/global_define.h"
 #include "../common/eqemu_logsys.h"
 #include "../common/opcodemgr.h"
+#include "../common/rulesys.h"
 #include <iomanip>
 #include <iostream>
 #include <math.h>
@@ -15559,16 +15560,42 @@ void Client::Handle_OP_TraderShop(const EQApplicationPacket *app)
 		// Customer has purchased an item from the Trader
 
 		TraderBuy_Struct* tbs = (TraderBuy_Struct*)app->pBuffer;
+		auto Trader = entity_list.GetClientByID(tbs->TraderID);
 
-		if (Client* Trader = entity_list.GetClientByID(tbs->TraderID))
+		switch (tbs->Method) {
+		case ByVendor:
 		{
-			BuyTraderItem(tbs, Trader, app);
-			LogTrading("Handle_OP_TraderShop: Buy Action [{}], Price [{}], Trader [{}], ItemID [{}], Quantity [{}], ItemName, [{}]",
-				tbs->Action, tbs->Price, tbs->TraderID, tbs->ItemID, tbs->Quantity, tbs->ItemName);
+			if (Trader) {
+				BuyTraderItem(tbs, Trader, app);
+				LogTrading("Handle_OP_TraderShop: Buy Action [{}], Price [{}], Trader [{}], ItemID [{}], Quantity [{}], ItemName, [{}]",
+					tbs->Action, tbs->Price, tbs->TraderID, tbs->ItemID, tbs->Quantity, tbs->ItemName);
+			}
+			break;
 		}
-		else
+		case ByParcel:
 		{
-			LogTrading("OP_TraderShop: Null Client Pointer");
+			if (!RuleB(World, EnableParcelMerchants)) {
+				LogTrading("Bazaar purchase attempt by parcel delivery though 'World:EnableParcelMerchants' not enabled.");
+				Message(Chat::Yellow, "The parcel delivey system is not enabled on this server.  Please visit the vendor directly.");
+				return;
+			}
+			BuyTraderItemByParcel(tbs, app);
+			break;
+		}
+		case ByDirectToInventory:
+		{
+			if (!RuleB(World, EnableDirectToInventoryDelivery)) {
+				LogTrading("Bazaar purchase attempt by direct inventory delivery though 'World:EnableDirectToInventoryDelivery' not enabled.");
+				Message(Chat::Yellow, "Direct inventory delivey is not enabled on this server.  Please visit the vendor directly.");
+				return;
+			}
+			BuyTraderItemByDirectToInventory(tbs);
+			break;
+		}
+		default:
+		{
+			LogTrading("OP_TraderShop: Unknown Buy Method [{}]\.", tbs->Method);
+		}
 		}
 	}
 	else if (app->size == 4)

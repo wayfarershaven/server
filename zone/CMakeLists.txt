@@ -264,6 +264,7 @@ SET(zone_headers
     task_manager.h
     tasks.h
     titles.h
+    trading.h
     trap.h
     water_map.h
     water_map_v1.h
