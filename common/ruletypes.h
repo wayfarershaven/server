@@ -333,6 +333,7 @@ RULE_INT(World, MaximumQuestErrors, 30, "Changes the maximum number of quest err
 RULE_BOOL(World, EnableParcelMerchants, false, "Enable or Disable Parcel Merchants.  Requires RoF+ Clients.")
 RULE_BOOL(World, EnableDirectToInventoryDelivery, false, "Enable or Disable RoF2 bazaar purchases to be delivered directly to the buyer's inventory. Requires RoF+ Clients.")
 RULE_INT(World, BootHour, 0, "Sets the in-game hour world will set when it first boots. 0-24 are valid options, where 0 disables this rule")
+RULE_BOOL(World, UseItemLinksForKeyRing, false, "Uses item links for Key Ring Listing instead of item name")
 RULE_CATEGORY_END()
 
 RULE_CATEGORY(Zone)
