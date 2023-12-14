@@ -334,6 +334,7 @@ RULE_BOOL(World, EnableParcelMerchants, false, "Enable or Disable Parcel Merchan
 RULE_BOOL(World, EnableDirectToInventoryDelivery, false, "Enable or Disable RoF2 bazaar purchases to be delivered directly to the buyer's inventory. Requires RoF+ Clients.")
 RULE_INT(World, BootHour, 0, "Sets the in-game hour world will set when it first boots. 0-24 are valid options, where 0 disables this rule")
 RULE_BOOL(World, UseItemLinksForKeyRing, false, "Uses item links for Key Ring Listing instead of item name")
+RULE_BOOL(World, UseOldShadowKnightClassExport, true, "Disable to have Shadowknight show as Shadow Knight (live-like)")
 RULE_CATEGORY_END()
 
 RULE_CATEGORY(Zone)
@@ -607,6 +608,7 @@ RULE_BOOL(Combat, UseEnhancedMobFixedWeaponSkill, true, "Toggle to enabled the u
 RULE_INT(Combat, PCAttackPowerScaling, 75, "Applies scaling to PC Attack Power (75 = 75%).  DEFAULT: 75")
 RULE_INT(Combat, PCAccAvoidMod2ScaleFactor, 75, "Scale Factor for PC Accuracy and Avoidance (Mod2, found on items).  Found a value of 100 to make both too strong (75 = x0.75).  DEFAULT: 75")
 RULE_REAL(Combat, SlayDamageAdjustment, 1.0, "Slay Damage Adjustment")
+RULE_INT(Combat, ExtraAllowedKickClassesBitmask, 0, "Bitmask for allowing extra classes beyond Warrior, Ranger, Beastlord, and Berserker to kick, No Extra Classes (0) by default")
 RULE_INT(Combat, MaxProcs, 4, "Adjustable maximum number of procs per round, the hard cap is MAX_PROCS (11). Requires mob repop or client zone when changed")
 RULE_CATEGORY_END()
 

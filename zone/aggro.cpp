@@ -485,7 +485,7 @@ bool Mob::IsAttackAllowed(Mob *target, bool isSpellAttack)
 
 	if(!isSpellAttack)
 	{
-		if(GetClass() == LDON_TREASURE)
+		if(GetClass() == Class::LDoNTreasure)
 		{
 			return false;
 		}
