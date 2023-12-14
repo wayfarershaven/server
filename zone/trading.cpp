@@ -2799,6 +2799,40 @@ void Client::UpdateBuyLine(const EQApplicationPacket *app) {
 	/*uint32 UnknownZ		=*/ VARSTRUCT_SKIP_TYPE(uint32, Buf);	//unused
 	uint32 ItemCount	= VARSTRUCT_DECODE_TYPE(uint32, Buf);
 
+	if (ClientVersion() >= EQ::versions::ClientVersion::RoF) {
+		auto data = (BuyerLine_Struct*)app->pBuffer;
+		std::vector<BuyerLine_Struct> bl{};
+		bl.resize(data->number_of_items);
+		memcpy(&bl[0], data, app->size);
+
+		for (auto const &i : bl) {
+			BuySlot = i.slot;
+			ItemID = i.item_id;
+			Icon = i.item_icon;
+			Quantity = i.item_quantity;
+			ToggleOnOff = i.item_enabled;
+			Price = i.item_cost;
+			ItemCount = 0;
+			strn0cpy(ItemName, i.item_name, sizeof(ItemName));
+
+			const EQ::ItemData* item = database.GetItem(ItemID);
+
+			if (!item) return;
+
+			bool LoreConflict = CheckLoreConflict(item);
+
+			LogTrading("UpdateBuyLine: Char: [{}] BuySlot: [{}] ItemID [{}] [{}] Quantity [{}] Toggle: [{}] Price [{}] ItemCount [{}] LoreConflict [{}]",
+				GetName(), BuySlot, ItemID, item->Name, Quantity, ToggleOnOff, Price, ItemCount, LoreConflict);
+
+			if ((item->NoDrop != 0) && (!item->IsClassBag()) && !LoreConflict && (Quantity > 0) && HasMoney(Quantity * Price) && ToggleOnOff && (ItemCount == 0)) {
+				LogTrading("Adding to database");
+				database.AddBuyLine(CharacterID(), BuySlot, ItemID, ItemName, Quantity, Price);
+				QueuePacket(app);
+			}
+		}
+		return;
+	}
+	
 	const EQ::ItemData *item = database.GetItem(ItemID);
 
 	if(!item) return;

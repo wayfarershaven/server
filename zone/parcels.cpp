@@ -45,25 +45,22 @@ void Client::SendBulkParcels(uint32 merchant_id)
 	for (auto const& p : parcels) {
 		auto item = database.GetItem(p.serial_id);
 		if (item) {
-			auto charges = item->MaxCharges;
+			auto charges = 15;
 			auto inst = database.CreateItem(item, charges);
 			if (inst) {
 				auto item_price = static_cast<uint32>(item->Price * RuleR(Merchant, SellCostMod) * item->SellRate);
-				auto item_charges = charges ? charges : 1;
+				inst->SetCharges(14);
+				inst->SetMerchantCount(1);
+				inst->SetMerchantSlot(p.id);
 
-				inst->SetCharges(item_charges);
-				inst->SetMerchantCount(charges);
-				inst->SetMerchantSlot(0);
-				inst->SetPrice(item_price);
-
-				SendParcelPacket(inst);
+				SendParcelPacket(inst, p);
 				safe_delete(inst);
 			}
 		}
 	}
 }
 
-void Client::SendParcelPacket(const EQ::ItemInstance* inst)
+void Client::SendParcelPacket(const EQ::ItemInstance* inst, BaseParcelsRepository::Parcels p)
 {
 	struct Parcel_Struct
 	{
@@ -82,10 +79,10 @@ void Client::SendParcelPacket(const EQ::ItemInstance* inst)
 	}
 
 	// Serialize item into |-delimited string (Titanium- uses '|' delimiter .. newer clients use pure data serialization)
-	std::string packet = inst->Serialize(125);
+	std::string packet = inst->Serialize(p.id);
 
-	std::string player_name = "SentfromRola";
-	std::string note = "This is a very long note for testing purposes only.";
+	std::string player_name = p.from_name;
+	std::string note = p.from_note;
 
 	auto p_size = 16 + 4 + packet.length() + player_name.length() + note.length();
 	auto out = new EQApplicationPacket(OP_ItemPacket, p_size);

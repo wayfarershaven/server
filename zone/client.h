@@ -68,6 +68,7 @@ namespace EQ
 #include "cheat_manager.h"
 #include "../common/events/player_events.h"
 #include "../common/data_verification.h"
+#include "../common/repositories/parcels_repository.h"
 
 #ifdef _WINDOWS
 	// since windows defines these within windef.h (which windows.h include)
@@ -331,7 +332,7 @@ public:
 	void SendBulkTraderStatus();
 	void SendBulkBazaarTraders();
 	void SendBulkParcels(uint32 merchant_id);
-	void SendParcelPacket(const EQ::ItemInstance* inst);
+	void SendParcelPacket(const EQ::ItemInstance* inst, BaseParcelsRepository::Parcels p);
 	void BuyTraderItemByParcel(TraderBuy_Struct* tbs, const EQApplicationPacket* app);
 	void BuyTraderItemByDirectToInventory(TraderBuy_Struct* tbs);
 	void SendZonePoints();

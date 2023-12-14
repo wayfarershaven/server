@@ -5302,6 +5302,39 @@ struct Checksum_Struct {
     uint8_t  data[2048];
 };
 
+enum BarterType {
+	Barter_SetAppearance = 13
+};
+
+struct Buyer_SetAppearance_Struct {
+	uint32	action;
+	uint32	entity_id;
+	char	unknown[64];
+	uint32	enabled;
+};
+
+struct BuyerWelcomeMessageUpdate_Struct {
+	/*000*/	uint32	Action;
+	/*004*/ char	unknown004[68];
+	/*072*/	char	WelcomeMessage[256];
+};
+
+struct BuyerItemDetails_Struct {
+	/*000*/	uint32	buyer_slot;
+	/*004*/	uint8	unknown008;
+	/*005*/	uint32	item_id;
+	/*009*/	char	item_name[64];
+	/*000*/	uint32	item_icon;
+	/*000*/	uint32	quanity;
+	/*000*/	uint8	enabled;
+	/*000*/	uint32	item_cost;
+};
+
+struct BuyerStart_Struct {
+	/*000*/	uint32	action;
+	/*004*/	BuyerItemDetails_Struct item_details;
+};
+
 	}; /*structs*/
 
 }; /*RoF2*/

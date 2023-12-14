@@ -2950,6 +2950,26 @@ enum {
 	Barter_Unknown23 = 23
 };
 
+struct BuyerLineTradeItems_Struct {
+	uint32	item_id;
+	uint32	item_quantity;
+	uint32	item_icon;
+	char	item_name[64];
+};
+
+struct BuyerLine_Struct {
+	uint32	number_of_items;
+	uint32	slot;
+	uint8	unknown;
+	uint32	item_id;
+	char	item_name[64];
+	uint32	item_icon;
+	uint32	item_quantity;
+	uint8	item_enabled;
+	uint32	item_cost;
+	BuyerLineTradeItems_Struct trade_items[10];
+};
+
 struct BuyerWelcomeMessageUpdate_Struct {
 /*000*/	uint32	Action;
 /*004*/	char	WelcomeMessage[256];

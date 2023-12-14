@@ -359,9 +359,35 @@ namespace RoF2
 		EQApplicationPacket *in = *p;
 		*p = nullptr;
 
-		char *Buffer = (char *)in->pBuffer;
-
+		char* Buffer = (char*)in->pBuffer;
 		uint32 SubAction = VARSTRUCT_DECODE_TYPE(uint32, Buffer);
+
+		switch (SubAction) {
+		case Barter_BuyerAppearance:
+		{
+			auto emu = (BuyerInspectRequest_Struct*)in->pBuffer;
+
+			auto outapp   = new EQApplicationPacket(OP_Barter, sizeof(structs::Buyer_SetAppearance_Struct));
+			auto eq       = (structs::Buyer_SetAppearance_Struct*)outapp->pBuffer;
+
+			eq->action    = structs::BarterType::Barter_SetAppearance;
+			eq->entity_id = emu->BuyerID;
+			eq->enabled   = emu->Approval;
+
+			dest->FastQueuePacket(&outapp);
+			safe_delete(in);
+
+			return;
+			break;
+		}
+		case Barter_BuyerInspectBegin:
+		{
+			*(uint32*)in->pBuffer = 0xb;
+			dest->FastQueuePacket(&in);
+			return;
+			break;
+		}
+		}
 
 		if (SubAction != Barter_BuyerAppearance)
 		{
@@ -4562,6 +4588,25 @@ namespace RoF2
 		FINISH_DIRECT_DECODE();
 	}
 
+	DECODE(OP_Barter)
+	{
+		auto action = *(uint32*)__packet->pBuffer;
+
+		switch (action) 
+		{
+		case 0xb:
+		{
+			*(uint32*)__packet->pBuffer = 0xa;
+			break;
+		}
+		case 0x13:
+		{
+			auto welcome_ptr = (char*)&__packet->pBuffer[72];
+			strn0cpy((char*)__packet->pBuffer[4], welcome_ptr, strlen(welcome_ptr));
+		}
+		}
+	}
+
 	DECODE(OP_BazaarSearch)
 	{
 		char *Buffer = (char *)__packet->pBuffer;
@@ -4636,6 +4681,47 @@ namespace RoF2
 		FINISH_DIRECT_DECODE();
 	}
 
+	DECODE(OP_BuyerItems)
+	{
+		std::vector<BuyerLine_Struct> Buyer_Line{};
+
+		char* Buffer = (char*)__packet->pBuffer;
+
+		auto action   = VARSTRUCT_DECODE_TYPE(uint32, Buffer);
+		auto no_items = VARSTRUCT_DECODE_TYPE(uint16, Buffer);
+
+		for (int i = 0; i < no_items; i++) 
+		{
+			BuyerLine_Struct b{};
+			b.number_of_items = no_items;
+			b.slot            = VARSTRUCT_DECODE_TYPE(uint32, Buffer);
+			b.unknown         = VARSTRUCT_DECODE_TYPE(uint8, Buffer);
+			b.item_id         = VARSTRUCT_DECODE_TYPE(uint32, Buffer);
+			                    VARSTRUCT_DECODE_STRING(b.item_name, Buffer);
+			b.item_icon       = VARSTRUCT_DECODE_TYPE(uint32, Buffer);
+			b.item_quantity   = VARSTRUCT_DECODE_TYPE(uint32, Buffer);
+			b.item_enabled    = VARSTRUCT_DECODE_TYPE(uint8, Buffer);
+			b.item_cost       = VARSTRUCT_DECODE_TYPE(uint32, Buffer);
+			auto trade_items  = VARSTRUCT_DECODE_TYPE(uint32, Buffer);
+
+			if (trade_items > 0) {
+				for (int x = 0; x < trade_items; x++) {
+					b.trade_items[x].item_id       = VARSTRUCT_DECODE_TYPE(uint32, Buffer);
+					b.trade_items[x].item_quantity = VARSTRUCT_DECODE_TYPE(uint32, Buffer);
+					b.trade_items[x].item_icon     = VARSTRUCT_DECODE_TYPE(uint32, Buffer);
+					                                 VARSTRUCT_DECODE_STRING(b.trade_items[x].item_name, Buffer);
+				}
+			}
+			Buffer += 13;
+			Buyer_Line.push_back(b);
+		}
+
+		__packet->size = Buyer_Line.size() * sizeof(BuyerLine_Struct);
+		__packet->pBuffer = new unsigned char[__packet->size];
+		memcpy(__packet->pBuffer, Buyer_Line.data(), __packet->size);
+
+	}
+	
 	DECODE(OP_CastSpell)
 	{
 		DECODE_LENGTH_EXACT(structs::CastSpell_Struct);
