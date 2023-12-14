@@ -2957,8 +2957,7 @@ struct BuyerLineTradeItems_Struct {
 	char	item_name[64];
 };
 
-struct BuyerLine_Struct {
-	uint32	number_of_items;
+struct BuyerLineItems_Struct {
 	uint32	slot;
 	uint8	unknown;
 	uint32	item_id;
@@ -2968,6 +2967,12 @@ struct BuyerLine_Struct {
 	uint8	item_enabled;
 	uint32	item_cost;
 	BuyerLineTradeItems_Struct trade_items[10];
+};
+
+struct BuyerLine_Struct {
+	uint32	action;
+	uint32	no_items;
+	std::vector<BuyerLineItems_Struct> buy_line;
 };
 
 struct BuyerWelcomeMessageUpdate_Struct {

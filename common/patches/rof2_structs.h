@@ -3130,6 +3130,11 @@ enum {
 	BazaarPriceChange_AddItem = 3
 };
 
+enum BuyerActions{
+	BuyerBuyLine = 0x06,
+	BuyerSendBuyLine = 0x0e
+};
+
 struct BazaarWindowStart_Struct {
 	uint8   Action;
 	uint8   Unknown001;

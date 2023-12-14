@@ -23,6 +23,7 @@
 #include "../common/misc_functions.h"
 #include "../common/events/player_event_logs.h"
 #include "../common/repositories/trader_repository.h"
+#include "../common/repositories/buyer_repository.h"
 
 #include "client.h"
 #include "entity.h"
@@ -2341,6 +2342,24 @@ void Client::ShowBuyLines(const EQApplicationPacket *app) {
 
 	safe_delete(outapp);
 
+	if (ClientVersion() >= EQ::versions::ClientVersion::RoF) {
+
+		auto buyline = BuyerRepository::GetBuyLine(database, Buyer->CharacterID());
+
+		for (auto& b : buyline.buy_line) {
+			const EQ::ItemData* item = database.GetItem(b.item_id);
+			b.item_icon    = item->Icon;
+			b.item_enabled = 1;
+			auto outapp    = new EQApplicationPacket(OP_BuyerItems, sizeof(b));
+			memcpy(outapp->pBuffer, &b, sizeof(b));
+
+			QueuePacket(outapp);
+			safe_delete(outapp);
+		}
+
+		return;
+	}
+
     std::string query = StringFormat("SELECT * FROM buyer WHERE charid = %i", Buyer->CharacterID());
     auto results = database.QueryDatabase(query);
     if (!results.Success() || results.RowCount() == 0)
@@ -2763,7 +2782,7 @@ void Client::ToggleBuyerMode(bool TurnOn) {
 	}
 	else {
 		VARSTRUCT_ENCODE_TYPE(uint32, Buf, 0x00);
-		database.DeleteBuyLines(CharacterID());
+		BuyerRepository::DeleteBuyLine(database, CharacterID());
 		CustomerID = 0;
 	}
 
@@ -2799,40 +2818,21 @@ void Client::UpdateBuyLine(const EQApplicationPacket *app) {
 	/*uint32 UnknownZ		=*/ VARSTRUCT_SKIP_TYPE(uint32, Buf);	//unused
 	uint32 ItemCount	= VARSTRUCT_DECODE_TYPE(uint32, Buf);
 
-	if (ClientVersion() >= EQ::versions::ClientVersion::RoF) {
-		auto data = (BuyerLine_Struct*)app->pBuffer;
-		std::vector<BuyerLine_Struct> bl{};
-		bl.resize(data->number_of_items);
-		memcpy(&bl[0], data, app->size);
+	if (ClientVersion() >= EQ::versions::ClientVersion::RoF) 
+	{
+		char* buffer = (char*)app->pBuffer; 
 
-		for (auto const &i : bl) {
-			BuySlot = i.slot;
-			ItemID = i.item_id;
-			Icon = i.item_icon;
-			Quantity = i.item_quantity;
-			ToggleOnOff = i.item_enabled;
-			Price = i.item_cost;
-			ItemCount = 0;
-			strn0cpy(ItemName, i.item_name, sizeof(ItemName));
+		BuyerLine_Struct bl{};  
+		bl.action   = VARSTRUCT_DECODE_TYPE(uint32, buffer);
+		bl.no_items = VARSTRUCT_DECODE_TYPE(uint32, buffer); 
 
-			const EQ::ItemData* item = database.GetItem(ItemID);
+		bl.buy_line.resize(bl.no_items);
+		memcpy(&bl.buy_line[0], buffer, bl.no_items * sizeof(BuyerLineItems_Struct));
 
-			if (!item) return;
-
-			bool LoreConflict = CheckLoreConflict(item);
-
-			LogTrading("UpdateBuyLine: Char: [{}] BuySlot: [{}] ItemID [{}] [{}] Quantity [{}] Toggle: [{}] Price [{}] ItemCount [{}] LoreConflict [{}]",
-				GetName(), BuySlot, ItemID, item->Name, Quantity, ToggleOnOff, Price, ItemCount, LoreConflict);
-
-			if ((item->NoDrop != 0) && (!item->IsClassBag()) && !LoreConflict && (Quantity > 0) && HasMoney(Quantity * Price) && ToggleOnOff && (ItemCount == 0)) {
-				LogTrading("Adding to database");
-				database.AddBuyLine(CharacterID(), BuySlot, ItemID, ItemName, Quantity, Price);
-				QueuePacket(app);
-			}
-		}
+		BuyerRepository::UpdateBuyLine(database, bl, CharacterID());
 		return;
 	}
-	
+
 	const EQ::ItemData *item = database.GetItem(ItemID);
 
 	if(!item) return;
