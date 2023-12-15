@@ -2205,7 +2205,7 @@ struct Merchant_Click_Struct {
 /*004*/ uint32	playerid;
 /*008*/ uint32	command;		// 1=open, 0=cancel/close
 /*012*/ float	rate;			// cost multiplier, dosent work anymore
-/*016*/ int32	unknown01;		// Seen 3 from Server or -1 from Client
+/*016*/ int32	tab_display;	// bitmask b000 none, b001 Purchase/Sell, b010 Recover, b100 Parcels
 /*020*/ int32	unknown02;		// Seen 2592000 from Server or -1 from Client
 /*024*/
 };

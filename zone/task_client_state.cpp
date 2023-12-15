@@ -1101,9 +1101,9 @@ void ClientTaskState::RewardTask(Client *c, const TaskInformation *ti, ClientTas
 
 	if (ti->reward_points > 0) {
 		if (ti->reward_point_type == static_cast<int32_t>(zone->GetCurrencyID(RADIANT_CRYSTAL))) {
-			c->AddCrystals(ti->reward_points, 0);
+			c->AddRadiantCrystals(ti->reward_points);
 		} else if (ti->reward_point_type == static_cast<int32_t>(zone->GetCurrencyID(EBON_CRYSTAL))) {
-			c->AddCrystals(0, ti->reward_points);
+			c->AddEbonCrystals(ti->reward_points);
 		} else {
 			for (const auto& ac : zone->AlternateCurrencies) {
 				if (ti->reward_point_type == ac.id) {
@@ -1396,6 +1396,28 @@ void ClientTaskState::ResetTaskActivity(Client *client, int task_id, int activit
 	);
 }
 
+bool ClientTaskState::CompleteTask(Client *c, uint32 task_id)
+{
+	const auto task_data = task_manager->GetTaskData(task_id);
+	if (!task_data) {
+		return false;
+	}
+
+	for (
+		int activity_id = 0;
+		activity_id < task_manager->GetActivityCount(task_id);
+		activity_id++
+	) {
+		c->UpdateTaskActivity(
+			task_id,
+			activity_id,
+			task_data->activity_information[activity_id].goal_count
+		);
+	}
+
+	return true;
+}
+
 void ClientTaskState::ShowClientTaskInfoMessage(ClientTaskInformation *task, Client *c)
 {
 	const auto task_data = task_manager->GetTaskData(task->task_id);
@@ -1565,7 +1587,7 @@ int ClientTaskState::IsTaskCompleted(int task_id)
 	}
 
 	for (auto &completed_task : m_completed_tasks) {
-		LogTasks("Comparing compelted task [{}] with [{}]", completed_task.task_id, task_id);
+		LogTasks("Comparing completed task [{}] with [{}]", completed_task.task_id, task_id);
 		if (completed_task.task_id == task_id) {
 			return 1;
 		}

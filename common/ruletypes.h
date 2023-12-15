@@ -330,6 +330,11 @@ RULE_BOOL(World, EnableDevTools, true, "Enable or Disable the Developer Tools gl
 RULE_BOOL(World, EnableChecksumVerification, true, "Enable or Disable the Checksum Verification for eqgame.exe and spells_us.txt")
 RULE_BOOL(World, PurpleBugHackFix, true, "Enable or Disable the purple bug 32k hack")
 RULE_INT(World, MaximumQuestErrors, 30, "Changes the maximum number of quest errors that can be displayed in #questerrors, default is 30")
+RULE_BOOL(World, EnableParcelMerchants, false, "Enable or Disable Parcel Merchants.  Requires RoF+ Clients.")
+RULE_BOOL(World, EnableDirectToInventoryDelivery, false, "Enable or Disable RoF2 bazaar purchases to be delivered directly to the buyer's inventory. Requires RoF+ Clients.")
+RULE_INT(World, BootHour, 0, "Sets the in-game hour world will set when it first boots. 0-24 are valid options, where 0 disables this rule")
+RULE_BOOL(World, UseItemLinksForKeyRing, false, "Uses item links for Key Ring Listing instead of item name")
+RULE_BOOL(World, UseOldShadowKnightClassExport, true, "Disable to have Shadowknight show as Shadow Knight (live-like)")
 RULE_CATEGORY_END()
 
 RULE_CATEGORY(Zone)
@@ -603,6 +608,7 @@ RULE_BOOL(Combat, UseEnhancedMobFixedWeaponSkill, true, "Toggle to enabled the u
 RULE_INT(Combat, PCAttackPowerScaling, 75, "Applies scaling to PC Attack Power (75 = 75%).  DEFAULT: 75")
 RULE_INT(Combat, PCAccAvoidMod2ScaleFactor, 75, "Scale Factor for PC Accuracy and Avoidance (Mod2, found on items).  Found a value of 100 to make both too strong (75 = x0.75).  DEFAULT: 75")
 RULE_REAL(Combat, SlayDamageAdjustment, 1.0, "Slay Damage Adjustment")
+RULE_INT(Combat, ExtraAllowedKickClassesBitmask, 0, "Bitmask for allowing extra classes beyond Warrior, Ranger, Beastlord, and Berserker to kick, No Extra Classes (0) by default")
 RULE_INT(Combat, MaxProcs, 4, "Adjustable maximum number of procs per round, the hard cap is MAX_PROCS (11). Requires mob repop or client zone when changed")
 RULE_CATEGORY_END()
 
@@ -729,6 +735,8 @@ RULE_BOOL(Bots, ResurrectionSickness, true, "Use Resurrection Sickness based on 
 RULE_INT(Bots, OldResurrectionSicknessSpell, 757, "757 is Default Old Resurrection Sickness Spell")
 RULE_INT(Bots, ResurrectionSicknessSpell, 756, "756 is Default Resurrection Sickness Spell")
 RULE_BOOL(Bots, AllowPickpocketCommand, true, "Allows the use of the bot command 'pickpocket'")
+RULE_BOOL(Bots, BotHealOnLevel, false, "Setting whether a bot should heal completely when leveling. Default FALSE.")
+RULE_BOOL(Bots, CazicTouchBotsOwner, true, "Default True. Cazic Touch/DT will hit bot owner rather than bot.")
 RULE_CATEGORY_END()
 
 RULE_CATEGORY(Chat)

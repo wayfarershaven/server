@@ -441,7 +441,7 @@ bool Client::Process() {
 			}
 		}
 
-		if (GetClass() == WARRIOR || GetClass() == BERSERKER) {
+		if (GetClass() == Class::Warrior || GetClass() == Class::Berserker) {
 			if (!dead && !IsBerserk() && GetHPRatio() < RuleI(Combat, BerserkerFrenzyStart)) {
 				entity_list.MessageCloseString(this, false, 200, 0, BERSERK_START, GetName());
 				berserk = true;
@@ -1116,7 +1116,7 @@ void Client::OPMemorizeSpell(const EQApplicationPacket* app)
 	if (
 		m->scribing != memSpellForget &&
 		(
-			!EQ::ValueWithin(GetClass(), PLAYER_CLASS_WARRIOR, PLAYER_CLASS_BERSERKER) ||
+			!IsPlayerClass(GetClass()) ||
 			GetLevel() < spells[m->spell_id].classes[GetClass() - 1]
 		)
 	) {
@@ -1546,13 +1546,13 @@ void Client::OPGMTraining(const EQApplicationPacket *app)
 
 	Mob* pTrainer = entity_list.GetMob(gmtrain->npcid);
 
-	if(!pTrainer || !pTrainer->IsNPC() || pTrainer->GetClass() < WARRIORGM || pTrainer->GetClass() > BERSERKERGM) {
+	if(!pTrainer || !pTrainer->IsNPC() || pTrainer->GetClass() < Class::WarriorGM || pTrainer->GetClass() > Class::BerserkerGM) {
 		return;
 	}
 
 	//you can only use your own trainer, client enforces this, but why trust it
 	if (!RuleB(Character, AllowCrossClassTrainers)) {
-		int trains_class = pTrainer->GetClass() - (WARRIORGM - WARRIOR);
+		int trains_class = pTrainer->GetClass() - (Class::WarriorGM - Class::Warrior);
 		if (GetClass() != trains_class) {
 			safe_delete(outapp);
 			return;
@@ -1578,7 +1578,7 @@ void Client::OPGMTraining(const EQApplicationPacket *app)
 		}
 	}
 
-	if (ClientVersion() < EQ::versions::ClientVersion::RoF2 && GetClass() == BERSERKER) {
+	if (ClientVersion() < EQ::versions::ClientVersion::RoF2 && GetClass() == Class::Berserker) {
 		gmtrain->skills[EQ::skills::Skill1HPiercing] = gmtrain->skills[EQ::skills::Skill2HPiercing];
 		gmtrain->skills[EQ::skills::Skill2HPiercing] = 0;
 	}
@@ -1606,12 +1606,12 @@ void Client::OPGMEndTraining(const EQApplicationPacket *app)
 	FastQueuePacket(&outapp);
 
 	Mob* pTrainer = entity_list.GetMob(p->npcid);
-	if(!pTrainer || !pTrainer->IsNPC() || pTrainer->GetClass() < WARRIORGM || pTrainer->GetClass() > BERSERKERGM)
+	if(!pTrainer || !pTrainer->IsNPC() || pTrainer->GetClass() < Class::WarriorGM || pTrainer->GetClass() > Class::BerserkerGM)
 		return;
 
 	//you can only use your own trainer, client enforces this, but why trust it
 	if (!RuleB(Character, AllowCrossClassTrainers)) {
-		int trains_class = pTrainer->GetClass() - (WARRIORGM - WARRIOR);
+		int trains_class = pTrainer->GetClass() - (Class::WarriorGM - Class::Warrior);
 		if (GetClass() != trains_class)
 			return;
 	}
@@ -1637,12 +1637,12 @@ void Client::OPGMTrainSkill(const EQApplicationPacket *app)
 	GMSkillChange_Struct* gmskill = (GMSkillChange_Struct*) app->pBuffer;
 
 	Mob* pTrainer = entity_list.GetMob(gmskill->npcid);
-	if(!pTrainer || !pTrainer->IsNPC() || pTrainer->GetClass() < WARRIORGM || pTrainer->GetClass() > BERSERKERGM)
+	if(!pTrainer || !pTrainer->IsNPC() || pTrainer->GetClass() < Class::WarriorGM || pTrainer->GetClass() > Class::BerserkerGM)
 		return;
 
 	//you can only use your own trainer, client enforces this, but why trust it
 	if (!RuleB(Character, AllowCrossClassTrainers)) {
-		int trains_class = pTrainer->GetClass() - (WARRIORGM - WARRIOR);
+		int trains_class = pTrainer->GetClass() - (Class::WarriorGM - Class::Warrior);
 		if (GetClass() != trains_class)
 			return;
 	}

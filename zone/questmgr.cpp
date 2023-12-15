@@ -353,22 +353,24 @@ Mob *QuestManager::spawn_from_spawn2(uint32 spawn2_id)
 
 void QuestManager::enable_spawn2(uint32 spawn2_id)
 {
-	database.UpdateSpawn2Status(spawn2_id, 1);
+	database.UpdateSpawn2Status(spawn2_id, 1, zone->GetInstanceID());
 	auto pack = new ServerPacket(ServerOP_SpawnStatusChange, sizeof(ServerSpawnStatusChange_Struct));
-	ServerSpawnStatusChange_Struct* ssc = (ServerSpawnStatusChange_Struct*) pack->pBuffer;
-	ssc->id = spawn2_id;
-	ssc->new_status = 1;
+	auto *ssc = (ServerSpawnStatusChange_Struct *) pack->pBuffer;
+	ssc->id          = spawn2_id;
+	ssc->new_status  = true;
+	ssc->instance_id = zone->GetInstanceID();
 	worldserver.SendPacket(pack);
 	safe_delete(pack);
 }
 
 void QuestManager::disable_spawn2(uint32 spawn2_id)
 {
-	database.UpdateSpawn2Status(spawn2_id, 0);
+	database.UpdateSpawn2Status(spawn2_id, 0, zone->GetInstanceID());
 	auto pack = new ServerPacket(ServerOP_SpawnStatusChange, sizeof(ServerSpawnStatusChange_Struct));
-	ServerSpawnStatusChange_Struct* ssc = (ServerSpawnStatusChange_Struct*) pack->pBuffer;
-	ssc->id = spawn2_id;
-	ssc->new_status = 0;
+	auto *ssc = (ServerSpawnStatusChange_Struct *) pack->pBuffer;
+	ssc->id          = spawn2_id;
+	ssc->new_status  = false;
+	ssc->instance_id = zone->GetInstanceID();
 	worldserver.SendPacket(pack);
 	safe_delete(pack);
 }
@@ -1022,10 +1024,10 @@ bool QuestManager::isdisctome(uint32 item_id) {
 
 	//we know for sure none of the int casters get disciplines
 	uint32 class_bit = 0;
-	class_bit |= 1 << (WIZARD - 1);
-	class_bit |= 1 << (ENCHANTER - 1);
-	class_bit |= 1 << (MAGICIAN - 1);
-	class_bit |= 1 << (NECROMANCER - 1);
+	class_bit |= 1 << (Class::Wizard - 1);
+	class_bit |= 1 << (Class::Enchanter - 1);
+	class_bit |= 1 << (Class::Magician - 1);
+	class_bit |= 1 << (Class::Necromancer - 1);
 	if (item->Classes & class_bit) {
 		return false;
 	}
@@ -1038,10 +1040,10 @@ bool QuestManager::isdisctome(uint32 item_id) {
 	//we know for sure none of the int casters get disciplines
 	const auto& spell = spells[spell_id];
 	if(
-		spell.classes[WIZARD - 1] != 255 &&
-		spell.classes[ENCHANTER - 1] != 255 &&
-		spell.classes[MAGICIAN - 1] != 255 &&
-		spell.classes[NECROMANCER - 1] != 255
+		spell.classes[Class::Wizard - 1] != 255 &&
+		spell.classes[Class::Enchanter - 1] != 255 &&
+		spell.classes[Class::Magician - 1] != 255 &&
+		spell.classes[Class::Necromancer - 1] != 255
 	) {
 		return false;
 	}
@@ -1518,7 +1520,7 @@ void QuestManager::CreateGuild(const char *guild_name, const char *leader) {
 void QuestManager::settime(uint8 new_hour, uint8 new_min, bool update_world /*= true*/)
 {
 	if (zone)
-		zone->SetTime(new_hour + 1, new_min, update_world);
+		zone->SetTime(new_hour - 1, new_min, update_world);
 }
 
 void QuestManager::itemlink(int item_id) {
@@ -3126,7 +3128,7 @@ void QuestManager::UpdateSpawnTimer(uint32 id, uint32 newTime)
 void QuestManager::MerchantSetItem(uint32 NPCid, uint32 itemid, uint32 quantity, int charges) {
 	Mob* merchant = entity_list.GetMobByNpcTypeID(NPCid);
 
-	if (merchant == 0 || !merchant->IsNPC() || (merchant->GetClass() != MERCHANT))
+	if (merchant == 0 || !merchant->IsNPC() || (merchant->GetClass() != Class::Merchant))
 		return;	// don't do anything if NPCid isn't a merchant
 
 	const EQ::ItemData* item = nullptr;
@@ -3139,7 +3141,7 @@ void QuestManager::MerchantSetItem(uint32 NPCid, uint32 itemid, uint32 quantity,
 uint32 QuestManager::MerchantCountItem(uint32 NPCid, uint32 itemid) {
 	Mob* merchant = entity_list.GetMobByNpcTypeID(NPCid);
 
-	if (merchant == 0 || !merchant->IsNPC() || (merchant->GetClass() != MERCHANT))
+	if (merchant == 0 || !merchant->IsNPC() || (merchant->GetClass() != Class::Merchant))
 		return 0;	// if it isn't a merchant, it doesn't have any items
 
 	const EQ::ItemData* item = nullptr;

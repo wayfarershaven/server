@@ -85,11 +85,6 @@ void command_guild(Client *c, const Seperator *sep)
 					).c_str()
 				);
 			} else {
-				if (c->Admin() < minStatusToEditOtherGuilds) {
-					c->Message(Chat::White, "You cannot edit other peoples' guilds.");
-					return;
-				}
-
 				auto guild_name = sep->argplus[3];
 				auto guild_id = guild_mgr.CreateGuild(sep->argplus[3], leader_id);
 
@@ -148,16 +143,6 @@ void command_guild(Client *c, const Seperator *sep)
 				return;
 			}
 
-			if (c->Admin() < minStatusToEditOtherGuilds) {
-				if (c->GuildID() != guild_id) {
-					c->Message(Chat::White, "You cannot edit other peoples' guilds.");
-					return;
-				} else if (!guild_mgr.CheckGMStatus(guild_id, c->Admin())) {
-					c->Message(Chat::White, "You cannot edit your current guild, your status is not high enough.");
-					return;
-				}
-			}
-
 			LogGuilds(
 				"[{}]: Deleting guild [{}] ([{}]) with GM command",
 				c->GetName(),
@@ -179,16 +164,10 @@ void command_guild(Client *c, const Seperator *sep)
 		SendGuildSubCommands(c);
 	} else if (is_info) {
 		if (arguments != 2 && c->IsInAGuild()) {
-			if (c->Admin() >= minStatusToEditOtherGuilds) {
-				c->Message(Chat::White, "#guild info [Guild ID]");
-			} else {
-				c->Message(Chat::White, "You cannot edit other peoples' guilds.");
-			}
+			c->Message(Chat::White, "#guild info [Guild ID]");
 		} else {
 			auto guild_id = GUILD_NONE;
-			if (arguments != 2 || !sep->IsNumber(2)) {
-				guild_id = c->GuildID();
-			} else if (c->Admin() >= minStatusToEditOtherGuilds) {
+			if (sep->IsNumber(2)) {
 				guild_id = Strings::ToUnsignedInt(sep->arg[2]);
 			}
 
@@ -197,11 +176,6 @@ void command_guild(Client *c, const Seperator *sep)
 			}
 		}
 	} else if (is_list) {
-		if (c->Admin() < minStatusToEditOtherGuilds) {
-			c->Message(Chat::White, "You cannot edit other peoples' guilds.");
-			return;
-		}
-
 		guild_mgr.ListGuilds(c, std::string());
 	} else if (is_rename) {
 		if (!sep->IsNumber(2)) {
@@ -217,16 +191,6 @@ void command_guild(Client *c, const Seperator *sep)
 					).c_str()
 				);
 				return;
-			}
-
-			if (c->Admin() < minStatusToEditOtherGuilds) {
-				if (c->GuildID() != guild_id) {
-					c->Message(Chat::White, "You cannot edit other peoples' guilds.");
-					return;
-				} else if (!guild_mgr.CheckGMStatus(guild_id, c->Admin())) {
-					c->Message(Chat::White, "You cannot edit your current guild, your status is not high enough.");
-					return;
-				}
 			}
 
 			auto new_guild_name = sep->argplus[3];
@@ -297,11 +261,6 @@ void command_guild(Client *c, const Seperator *sep)
 				return;
 			}
 
-			if (c->Admin() < minStatusToEditOtherGuilds && guild_id != c->GuildID()) {
-				c->Message(Chat::White, "You cannot edit other peoples' guilds.");
-				return;
-			}
-
 			if (!guild_id || guild_id == GUILD_NONE) {
 				LogGuilds(
 					"[{}]: Removing [{}] ([{}]) from guild with GM command",
@@ -333,6 +292,7 @@ void command_guild(Client *c, const Seperator *sep)
 					).c_str()
 				);
 			} else {
+				guild_mgr.SetGuild(character_id, GUILD_NONE, 0);
 				c->Message(
 					Chat::White,
 					fmt::format(
@@ -391,16 +351,6 @@ void command_guild(Client *c, const Seperator *sep)
 						).c_str()
 					);
 					return;
-				}
-
-				if (c->Admin() < minStatusToEditOtherGuilds) {
-					if (c->GuildID() != guild_id) {
-						c->Message(Chat::White, "You cannot edit other peoples' guilds.");
-						return;
-					} else if (!guild_mgr.CheckGMStatus(guild_id, c->Admin())) {
-						c->Message(Chat::White, "You cannot edit your current guild, your status is not high enough.");
-						return;
-					}
 				}
 
 				LogGuilds(
@@ -464,11 +414,6 @@ void command_guild(Client *c, const Seperator *sep)
 				return;
 			}
 
-			if (c->Admin() < minStatusToEditOtherGuilds && character_id != c->CharacterID()) {
-				c->Message(Chat::White, "You cannot edit other peoples' guilds.");
-				return;
-			}
-
 			LogGuilds(
 				"[{}]: Setting [{}] ([{}])'s guild rank to [{}] with GM command",
 				c->GetName(),
@@ -501,8 +446,6 @@ void command_guild(Client *c, const Seperator *sep)
 		);
 		if (!client) {
 			c->Message(Chat::White, "You must target someone or specify a character name.");
-		} else if (c->Admin() < minStatusToEditOtherGuilds && client->GuildID() != c->GuildID()) {
-			c->Message(Chat::White, "You cannot edit other peoples' guilds.");
 		} else {
 			if (!client->IsInAGuild()) {
 				c->Message(

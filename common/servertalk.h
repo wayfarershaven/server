@@ -131,6 +131,8 @@
 #define ServerOP_RaidMOTD			0x0113
 #define ServerOP_RaidNote           0x0114
 
+#define ServerOP_RoF2Trader			0x0120
+
 #define ServerOP_InstanceUpdateTime			0x014F
 #define ServerOP_AdventureRequest			0x0150
 #define ServerOP_AdventureRequestAccept		0x0151
@@ -482,12 +484,12 @@ struct SPackSendQueue {
 	uchar buffer[0];
 };
 
-struct ServerZoneStateChange_struct {
-	uint32 ZoneServerID;
-	char adminname[64];
-	uint32 zoneid;
-	uint16 instanceid;
-	bool makestatic;
+struct ServerZoneStateChange_Struct {
+	uint32 zone_server_id;
+	uint32 zone_id;
+	uint16 instance_id;
+	bool   is_static;
+	char   admin_name[64];
 };
 
 struct ServerZoneIncomingClient_Struct {
@@ -1189,10 +1191,10 @@ struct ServerInstanceUpdateTime_Struct
 	uint32 new_duration;
 };
 
-struct ServerSpawnStatusChange_Struct
-{
+struct ServerSpawnStatusChange_Struct {
 	uint32 id;
-	bool new_status;
+	bool   new_status;
+	uint32 instance_id;
 };
 
 struct ServerQGlobalUpdate_Struct
@@ -1995,6 +1997,14 @@ struct ServerOP_GuildMessage_Struct {
 	char	player_new_name[64]	{ 0 };
 	char	new_guild_name[64]	{ 0 };
 	char	note[256]			{ 0 };
+};
+
+struct ServerRoF2Trader_Struct {
+	uint32	action;
+	uint32	zone_id;
+	uint32	trader_id;
+	uint32	entity_id;
+	char	trader_name[64];
 };
 
 #pragma pack()

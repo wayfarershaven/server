@@ -387,7 +387,7 @@ public:
 	Ground_Spawns*	LoadGroundSpawns(uint32 zone_id, int16 version, Ground_Spawns* gs);
 
 	/* Traders  */
-	void	SaveTraderItem(uint32 char_id,uint32 itemid,uint32 uniqueid, int32 charges,uint32 itemcost,uint8 slot);
+	void	SaveTraderItem(uint32 char_id,uint32 itemid,uint32 uniqueid, int32 charges,uint32 itemcost,uint8 slot, uint32 Entity_ID);
 	void	UpdateTraderItemCharges(int char_id, uint32 ItemInstID, int32 charges);
 	void	UpdateTraderItemPrice(int CharID, uint32 ItemID, uint32 Charges, uint32 NewPrice);
 	void	DeleteTraderItem(uint32 char_id);
@@ -540,7 +540,7 @@ public:
 	bool		CreateSpawn2(Client *c, uint32 spawngroup, const char* zone, const glm::vec4& position, uint32 respawn, uint32 variance, uint16 condition, int16 cond_value);
 	void		UpdateRespawnTime(uint32 id, uint16 instance_id,uint32 timeleft);
 	uint32		GetSpawnTimeLeft(uint32 id, uint16 instance_id);
-	void		UpdateSpawn2Status(uint32 id, uint8 new_status);
+	void        UpdateSpawn2Status(uint32 id, uint8 new_status, uint32 instance_id);
 
 	/* Grids/Paths  */
 	uint32		GetFreeGrid(uint16 zoneid);

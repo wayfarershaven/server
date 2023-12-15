@@ -14,7 +14,10 @@
 
 #include "../../database.h"
 #include "../../strings.h"
+#include "../../rulesys.h"
+//#include "../misc_functions.h"
 #include <ctime>
+
 
 class BaseTraderRepository {
 public:
@@ -25,6 +28,7 @@ public:
 		int32_t  charges;
 		uint32_t item_cost;
 		uint8_t  slot_id;
+		uint32_t entity_id;
 	};
 
 	static std::string PrimaryKey()
@@ -41,6 +45,7 @@ public:
 			"charges",
 			"item_cost",
 			"slot_id",
+			"entity_id",
 		};
 	}
 
@@ -53,6 +58,7 @@ public:
 			"charges",
 			"item_cost",
 			"slot_id",
+			"entity_id",
 		};
 	}
 
@@ -99,6 +105,7 @@ public:
 		e.charges      = 0;
 		e.item_cost    = 0;
 		e.slot_id      = 0;
+		e.entity_id    = 0;
 
 		return e;
 	}
@@ -124,8 +131,9 @@ public:
 	{
 		auto results = db.QueryDatabase(
 			fmt::format(
-				"{} WHERE id = {} LIMIT 1",
+				"{} WHERE {} = {} LIMIT 1",
 				BaseSelect(),
+				PrimaryKey(),
 				trader_id
 			)
 		);
@@ -140,6 +148,7 @@ public:
 			e.charges      = static_cast<int32_t>(atoi(row[3]));
 			e.item_cost    = static_cast<uint32_t>(strtoul(row[4], nullptr, 10));
 			e.slot_id      = static_cast<uint8_t>(strtoul(row[5], nullptr, 10));
+			e.entity_id    = static_cast<uint32_t>(strtoul(row[6], nullptr, 10));
 
 			return e;
 		}
@@ -179,6 +188,7 @@ public:
 		v.push_back(columns[3] + " = " + std::to_string(e.charges));
 		v.push_back(columns[4] + " = " + std::to_string(e.item_cost));
 		v.push_back(columns[5] + " = " + std::to_string(e.slot_id));
+		v.push_back(columns[6] + " = " + std::to_string(e.entity_id));
 
 		auto results = db.QueryDatabase(
 			fmt::format(
@@ -206,6 +216,7 @@ public:
 		v.push_back(std::to_string(e.charges));
 		v.push_back(std::to_string(e.item_cost));
 		v.push_back(std::to_string(e.slot_id));
+		v.push_back(std::to_string(e.entity_id));
 
 		auto results = db.QueryDatabase(
 			fmt::format(
@@ -241,6 +252,7 @@ public:
 			v.push_back(std::to_string(e.charges));
 			v.push_back(std::to_string(e.item_cost));
 			v.push_back(std::to_string(e.slot_id));
+			v.push_back(std::to_string(e.entity_id));
 
 			insert_chunks.push_back("(" + Strings::Implode(",", v) + ")");
 		}
@@ -280,6 +292,7 @@ public:
 			e.charges      = static_cast<int32_t>(atoi(row[3]));
 			e.item_cost    = static_cast<uint32_t>(strtoul(row[4], nullptr, 10));
 			e.slot_id      = static_cast<uint8_t>(strtoul(row[5], nullptr, 10));
+			e.entity_id    = static_cast<uint32_t>(strtoul(row[6], nullptr, 10));
 
 			all_entries.push_back(e);
 		}
@@ -310,6 +323,7 @@ public:
 			e.charges      = static_cast<int32_t>(atoi(row[3]));
 			e.item_cost    = static_cast<uint32_t>(strtoul(row[4], nullptr, 10));
 			e.slot_id      = static_cast<uint8_t>(strtoul(row[5], nullptr, 10));
+			e.entity_id    = static_cast<uint32_t>(strtoul(row[6], nullptr, 10));
 
 			all_entries.push_back(e);
 		}

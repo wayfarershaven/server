@@ -1131,7 +1131,12 @@ void Mob::AI_Process() {
 			SetTarget(hate_list.GetClosestEntOnHateList(this));
 		} else {
 			if (AI_target_check_timer->Check()) {
-				if (IsNPC() && (!IsPet() || (HasOwner() && GetOwner()->IsNPC())) && !CastToNPC()->WillAggroNPCs()) {
+				if (
+					IsNPC() &&
+					!CastToNPC()->GetSwarmInfo() &&
+					(!IsPet() || (HasOwner() && GetOwner()->IsNPC())) &&
+					!CastToNPC()->WillAggroNPCs()
+				) {
 					WipeHateList(true); // wipe NPCs from hate list to prevent faction war
 				}
 				
@@ -1399,7 +1404,7 @@ void Mob::AI_Process() {
 				// Now pursue
 				// TODO: Check here for another person on hate list with close hate value
 				if (AI_PursueCastCheck()) {
-					if (IsCasting() && GetClass() != BARD) {
+					if (IsCasting() && GetClass() != Class::Bard) {
 						StopNavigation();
 						FaceTarget();
 					}
@@ -1451,7 +1456,7 @@ void Mob::AI_Process() {
 			}
 		}
 		if (AI_IdleCastCheck()) {
-			if (IsCasting() && GetClass() != BARD) {
+			if (IsCasting() && GetClass() != Class::Bard) {
 				StopNavigation();
 			}
 		}

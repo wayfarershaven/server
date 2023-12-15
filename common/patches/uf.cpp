@@ -351,6 +351,38 @@ namespace UF
 		dest->FastQueuePacket(&in, ack_req);
 	}
 
+	//ENCODE(OP_BecomeTrader)
+	//{
+	//	SETUP_DIRECT_ENCODE(New_BecomeTrader_Struct, struct::BecomeTrader_Struct);
+
+	//	switch (emu->action) {
+	//	case 0:
+	//	{
+	//		eq->Code = structs::BazaarTrader_EndTraderMode;
+	//		eq->ID = emu->entity_id;
+	//		strn0cpy(eq->Name, emu->trader_name, sizeof(eq->Name));
+	//		break;
+	//	}
+	//	case 1:
+	//	{
+	//		eq->Code = structs::BazaarTrader_StartTraderMode;
+	//		eq->ID = emu->entity_id;
+	//		strn0cpy(eq->Name, emu->trader_name, sizeof(eq->Name));
+	//		break;
+	//	}
+	//	default:
+	//	{
+	//		break;
+	//	}
+	//	}
+
+	//	//bts->Code = 0;
+	//	//bts->ID = GetID();
+	//	//strn0cpy(bts->Name, GetName(), sizeof(bts->Name));
+
+	//	FINISH_ENCODE();
+	//}
+
 	ENCODE(OP_Buff)
 	{
 		ENCODE_LENGTH_EXACT(SpellBuffPacket_Struct);
@@ -2307,6 +2339,19 @@ namespace UF
 		FINISH_ENCODE();
 	}
 
+	ENCODE(OP_ShopRequest)
+	{
+		ENCODE_LENGTH_EXACT(Merchant_Click_Struct);
+		SETUP_DIRECT_ENCODE(Merchant_Click_Struct, structs::Merchant_Click_Struct);
+
+		OUT(npcid);
+		OUT(playerid);
+		OUT(command);
+		OUT(rate);
+
+		FINISH_ENCODE();
+	}
+
 	ENCODE(OP_SomeItemPacketMaybe)
 	{
 		// This Opcode is not named very well. It is used for the animation of arrows leaving the player's bow
@@ -2790,7 +2835,7 @@ namespace UF
 			if (strlen(emu->suffix))
 				PacketSize += strlen(emu->suffix) + 1;
 
-			if (emu->DestructibleObject || emu->class_ == LDON_TREASURE)
+			if (emu->DestructibleObject || emu->class_ == Class::LDoNTreasure)
 			{
 				if (emu->DestructibleObject)
 					PacketSize = PacketSize - 4;	// No bodytype
@@ -2879,7 +2924,7 @@ namespace UF
 
 			uint8 OtherData = 0;
 
-			if (emu->class_ == LDON_TREASURE) { //Ldon chest
+			if (emu->class_ == Class::LDoNTreasure) { //Ldon chest
 				OtherData = OtherData | 0x01;
 			}
 
@@ -2907,7 +2952,7 @@ namespace UF
 			}
 			VARSTRUCT_ENCODE_TYPE(float, Buffer, 0);	// unknown4
 
-			if (emu->DestructibleObject || emu->class_ == LDON_TREASURE)
+			if (emu->DestructibleObject || emu->class_ == Class::LDoNTreasure)
 			{
 				VARSTRUCT_ENCODE_STRING(Buffer, emu->DestructibleModel);
 				VARSTRUCT_ENCODE_STRING(Buffer, emu->DestructibleName2);
@@ -3172,6 +3217,32 @@ namespace UF
 		char *Buffer = (char *)__packet->pBuffer;
 
 		uint8 SubAction = VARSTRUCT_DECODE_TYPE(uint8, Buffer);
+
+		if (SubAction == 7) {
+			SETUP_DIRECT_DECODE(BazaarSearch_Struct, structs::BazaarSearch_Struct);
+
+			emu->action		= eq->Beginning.Action;
+			emu->item_stat	= eq->ItemStat;
+			emu->max_cost	= eq->MaxPrice;
+			emu->min_cost	= eq->MinPrice;
+			emu->max_level	= eq->MaxLlevel;
+			emu->min_level	= eq->Minlevel;
+			emu->race		= eq->Race;
+			emu->slot		= eq->Slot;
+			emu->type		= eq->Type;
+			emu->trader_id	= eq->TraderID;
+			emu->_class		= eq->Class_;
+			strn0cpy(emu->name, eq->Name, sizeof(emu->name));
+
+			//set defaults to fields that don't exist in UF
+			emu->augment = 0;
+			emu->prestige = 0;
+			emu->search_scope = 1;
+			emu->max_results = RuleI(Bazaar, MaxSearchResults);
+
+			FINISH_DIRECT_DECODE();
+			return;
+		}
 
 		if ((SubAction != BazaarInspectItem) || (__packet->size != sizeof(structs::NewBazaarInspect_Struct)))
 			return;
@@ -3814,6 +3885,21 @@ namespace UF
 		FINISH_DIRECT_DECODE();
 	}
 
+	DECODE(OP_ShopRequest)
+	{
+		DECODE_LENGTH_EXACT(structs::Merchant_Click_Struct);
+		SETUP_DIRECT_DECODE(Merchant_Click_Struct, structs::Merchant_Click_Struct);
+
+		IN(npcid);
+		IN(playerid);
+		IN(command);
+		IN(rate);
+		emu->tab_display = 0;
+		emu->unknown02   = 0;
+
+		FINISH_DIRECT_DECODE();
+	}
+	
 	DECODE(OP_ShopPlayerBuy)
 	{
 		DECODE_LENGTH_EXACT(structs::Merchant_Sell_Struct);
@@ -3848,6 +3934,7 @@ namespace UF
 		MEMSET_IN(TraderBuy_Struct);
 
 		IN(Action);
+		emu->Method = TraderBuyMethod::ByVendor;
 		IN(Price);
 		IN(TraderID);
 		memcpy(emu->ItemName, eq->ItemName, sizeof(emu->ItemName));

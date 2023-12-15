@@ -68,6 +68,7 @@ namespace EQ
 #include "cheat_manager.h"
 #include "../common/events/player_events.h"
 #include "../common/data_verification.h"
+#include "../common/repositories/parcels_repository.h"
 
 #ifdef _WINDOWS
 	// since windows defines these within windef.h (which windows.h include)
@@ -315,7 +316,7 @@ public:
 					const char *message9 = nullptr);
 	void Tell_StringID(uint32 string_id, const char *who, const char *message);
 	void SendColoredText(uint32 color, std::string message);
-	void SendBazaarResults(uint32 trader_id,uint32 class_,uint32 race,uint32 stat,uint32 slot,uint32 type,char name[64],uint32 minlevel, uint32 maxlevel, uint32 minprice,uint32 maxprice);
+	void SendBazaarResults(uint32 trader_id, uint32 in_class, uint32 in_race, uint32 item_stat, uint32 item_slot, uint32 item_type, char item_name[64], uint32 min_price, uint32 max_price, uint32 min_level = 1 , uint32 max_level = RuleI(Character, MaxLevel), uint32 prestige = 0, uint32 aug_slot = 0, uint32 max_results = RuleI(Bazaar, MaxSearchResults), bool search_scope = true);
 	void SendTraderItem(uint32 item_id,uint16 quantity);
 	uint16 FindTraderItem(int32 SerialNumber,uint16 Quantity);
 	uint32 FindTraderItemSerialNumber(int32 ItemID);
@@ -326,6 +327,14 @@ public:
 	void TradeRequestFailed(const EQApplicationPacket* app);
 	void BuyTraderItem(TraderBuy_Struct* tbs,Client* trader,const EQApplicationPacket* app);
 	void FinishTrade(Mob* with, bool finalizer = false, void* event_entry = nullptr, std::list<void*>* event_details = nullptr);
+	void SendBecomeTraderPacket(BazaarTraderType action, uint32 trader_id, const char* trader_name);
+	void SendBecomeTrader(Client* trader, BazaarTraderType action);
+	void SendBulkTraderStatus();
+	void SendBulkBazaarTraders();
+	void SendBulkParcels(uint32 merchant_id);
+	void SendParcelPacket(const EQ::ItemInstance* inst, BaseParcelsRepository::Parcels p);
+	void BuyTraderItemByParcel(TraderBuy_Struct* tbs, const EQApplicationPacket* app);
+	void BuyTraderItemByDirectToInventory(TraderBuy_Struct* tbs);
 	void SendZonePoints();
 
 	void SendBuyerResults(char *SearchQuery, uint32 SearchID);
@@ -619,11 +628,14 @@ public:
 	void SetPVPPoints(uint32 Points) { m_pp.PVPCurrentPoints = Points; }
 	uint32 GetPVPPoints() { return m_pp.PVPCurrentPoints; }
 	void AddPVPPoints(uint32 Points);
+	void AddEbonCrystals(uint32 amount, bool is_reclaim = false);
+	void AddRadiantCrystals(uint32 amount, bool is_reclaim = false);
+	void RemoveEbonCrystals(uint32 amount, bool is_reclaim = false);
+	void RemoveRadiantCrystals(uint32 amount, bool is_reclaim = false);
 	uint32 GetRadiantCrystals() { return m_pp.currentRadCrystals; }
 	void SetRadiantCrystals(uint32 value);
 	uint32 GetEbonCrystals() { return m_pp.currentEbonCrystals; }
 	void SetEbonCrystals(uint32 value);
-	void AddCrystals(uint32 Radiant, uint32 Ebon);
 	void SendCrystalCounts();
 
 	uint64 GetExperienceForKill(Mob *against);
@@ -934,6 +946,8 @@ public:
 	void AddAAPoints(uint32 points);
 	int GetAAPoints() { return m_pp.aapoints; }
 	int GetSpentAA() { return m_pp.aapoints_spent; }
+	bool HasAlreadyPurchasedRank(AA::Rank* rank);
+	void ListPurchasedAAs(Client *to, std::string search_criteria = std::string());
 	uint64 GetRequiredAAExperience();
 
 	bool SendGMCommand(std::string message, bool ignore_status = false);
@@ -1302,6 +1316,10 @@ public:
 		}
 		else { return 0; }
 	}
+	inline bool CompleteTask(uint32 task_id)
+	{
+		return task_state ? task_state->CompleteTask(this, task_id) : false;
+	}
 	inline void FailTask(int task_id) { if (task_state) { task_state->FailTask(this, task_id); }}
 	inline int TaskTimeLeft(int task_id) { return (task_state ? task_state->TaskTimeLeft(task_id) : 0); }
 	inline int EnabledTaskCount(int task_set_id)
@@ -1516,7 +1534,7 @@ public:
 	void ConsentCorpses(std::string consent_name, bool deny = false);
 	void SendAltCurrencies();
 	void SetAlternateCurrencyValue(uint32 currency_id, uint32 new_amount);
-	int AddAlternateCurrencyValue(uint32 currency_id, int32 amount, int8 method = 0);
+	int AddAlternateCurrencyValue(uint32 currency_id, int32 amount, bool is_scripted = false);
 	void SendAlternateCurrencyValues();
 	void SendAlternateCurrencyValue(uint32 currency_id, bool send_if_null = true);
 	uint32 GetAlternateCurrencyValue(uint32 currency_id) const;
@@ -1846,9 +1864,12 @@ private:
 	bool dev_tools_enabled;
 
 	uint16 m_door_tool_entity_id;
+	uint16 m_object_tool_entity_id;
 public:
 	uint16 GetDoorToolEntityId() const;
 	void SetDoorToolEntityId(uint16 door_tool_entity_id);
+	uint16 GetObjectToolEntityId() const;
+	void SetObjectToolEntityId(uint16 object_tool_entity_id);
 private:
 
 	int32 max_end;
@@ -2074,14 +2095,14 @@ public:
 	bool GetBotPrecombat() { return m_bot_precombat; }
 	void SetBotPrecombat(bool flag = true) { m_bot_precombat = flag; }
 
-	int GetBotRequiredLevel(uint8 class_id = NO_CLASS);
-	uint32 GetBotCreationLimit(uint8 class_id = NO_CLASS);
-	int GetBotSpawnLimit(uint8 class_id = NO_CLASS);
-	void SetBotCreationLimit(uint32 new_creation_limit, uint8 class_id = NO_CLASS);
-	void SetBotRequiredLevel(int new_required_level, uint8 class_id = NO_CLASS);
-	void SetBotSpawnLimit(int new_spawn_limit, uint8 class_id = NO_CLASS);
+	int GetBotRequiredLevel(uint8 class_id = Class::None);
+	uint32 GetBotCreationLimit(uint8 class_id = Class::None);
+	int GetBotSpawnLimit(uint8 class_id = Class::None);
+	void SetBotCreationLimit(uint32 new_creation_limit, uint8 class_id = Class::None);
+	void SetBotRequiredLevel(int new_required_level, uint8 class_id = Class::None);
+	void SetBotSpawnLimit(int new_spawn_limit, uint8 class_id = Class::None);
 
-	void CampAllBots(uint8 class_id = NO_CLASS);
+	void CampAllBots(uint8 class_id = Class::None);
 	void SpawnRaidBotsOnConnect(Raid* raid);
 
 private:
