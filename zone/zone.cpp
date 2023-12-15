@@ -1170,7 +1170,7 @@ bool Zone::Init(bool is_static) {
 
 	if (!LoadZoneObjects())
 	{
-		LogWarning("Loading World Objects failed. continuing");
+		LogInfoDetail("Loading World Objects failed. continuing");
 	}
 
 	database.QueryDatabase("DELETE FROM `respawn_times` WHERE (`start` + `duration`) < UNIX_TIMESTAMP(NOW())");
@@ -1263,7 +1263,7 @@ void Zone::ReloadStaticData() {
 	LogInfo("Reloading World Objects from DB");
 	if (!LoadZoneObjects())
 	{
-		LogWarning("Reloading World Objects failed. continuing");
+		LogInfoDetail("Reloading World Objects failed. continuing");
 	}
 
 	LoadZoneDoors();
