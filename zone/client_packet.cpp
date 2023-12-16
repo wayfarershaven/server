@@ -151,7 +151,6 @@ void MapOpcodes()
 	ConnectedOpcodes[OP_Buff] = &Client::Handle_OP_Buff;
 	ConnectedOpcodes[OP_BuffRemoveRequest] = &Client::Handle_OP_BuffRemoveRequest;
 	ConnectedOpcodes[OP_Bug] = &Client::Handle_OP_Bug;
-	ConnectedOpcodes[OP_BuyerItems] = &Client::UpdateBuyLine;
 	ConnectedOpcodes[OP_Camp] = &Client::Handle_OP_Camp;
 	ConnectedOpcodes[OP_CancelTask] = &Client::Handle_OP_CancelTask;
 	ConnectedOpcodes[OP_CancelTrade] = &Client::Handle_OP_CancelTrade;

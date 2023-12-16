@@ -57,6 +57,7 @@
 #include "../common/repositories/criteria/content_filter_criteria.h"
 #include "../common/repositories/object_repository.h"
 #include "../common/repositories/rule_sets_repository.h"
+#include "../common/repositories/buyer_repository.h"
 #include "../common/serverinfo.h"
 
 #include <time.h>
@@ -1181,7 +1182,7 @@ bool Zone::Init(bool is_static) {
 	//clear trader items if we are loading the bazaar
 	if (strncasecmp(short_name, "bazaar", 6) == 0) {
 		database.DeleteTraderItem(0);
-		database.DeleteBuyLines(0);
+		BuyerRepository::ClearBuyerTables(database);
 	}
 
 	LoadLDoNTraps();

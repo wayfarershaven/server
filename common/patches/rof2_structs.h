@@ -3130,9 +3130,14 @@ enum {
 	BazaarPriceChange_AddItem = 3
 };
 
-enum BuyerActions{
-	BuyerBuyLine = 0x06,
-	BuyerSendBuyLine = 0x0e
+enum BuyerActions {
+	BuyerBuyLine        = 0x06,
+	BuyerModifyBuyLine  = 0x07,
+	BuyerRemoveItem     = 0x08,
+	BuyerSellItem       = 0x09,
+	BuyerInspectBegin   = 0x0b,
+	BuyerSendBuyLine    = 0x0e,
+	BuyerWelcomeMessage = 0x13
 };
 
 struct BazaarWindowStart_Struct {
@@ -5338,6 +5343,13 @@ struct BuyerItemDetails_Struct {
 struct BuyerStart_Struct {
 	/*000*/	uint32	action;
 	/*004*/	BuyerItemDetails_Struct item_details;
+};
+
+struct BuyerRemoveItem_Struct {
+	uint32	action;
+	uint32	unknown004;
+	uint32	slot_id;
+	uint32	toggle;
 };
 
 	}; /*structs*/
