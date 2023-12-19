@@ -151,7 +151,6 @@ void MapOpcodes()
 	ConnectedOpcodes[OP_Buff] = &Client::Handle_OP_Buff;
 	ConnectedOpcodes[OP_BuffRemoveRequest] = &Client::Handle_OP_BuffRemoveRequest;
 	ConnectedOpcodes[OP_Bug] = &Client::Handle_OP_Bug;
-	ConnectedOpcodes[OP_BuyerItems] = &Client::UpdateBuyLine;
 	ConnectedOpcodes[OP_Camp] = &Client::Handle_OP_Camp;
 	ConnectedOpcodes[OP_CancelTask] = &Client::Handle_OP_CancelTask;
 	ConnectedOpcodes[OP_CancelTrade] = &Client::Handle_OP_CancelTrade;
@@ -766,6 +765,7 @@ void Client::CompleteConnect()
 	{
 		SendBulkBazaarTraders();
 		SendBulkTraderStatus();
+		entity_list.SendTraders(this);
 	}
 	else {
 		entity_list.SendTraders(this);
@@ -6384,6 +6384,10 @@ void Client::Handle_OP_EnvDamage(const EQApplicationPacket *app)
 			);
 			parse->EventPlayer(EVENT_ENVIRONMENTAL_DAMAGE, this, export_string, 0);
 		}
+
+		if (ed->dmgtype == EQ::constants::EnvironmentalDamage::Trap) {
+			CommonBreakInvisible();
+		}
 	}
 
 	if (GetHP() <= 0) {
@@ -6970,12 +6974,6 @@ void Client::Handle_OP_GMSummon(const EQApplicationPacket *app)
 {
 	if (app->size != sizeof(GMSummon_Struct)) {
 		std::cout << "Wrong size on OP_GMSummon. Got: " << app->size << ", Expected: " << sizeof(GMSummon_Struct) << std::endl;
-		return;
-	}
-
-	if (!GetGM()) {
-		Message(Chat::Red, "Your account has been reported for hacking.");
-		RecordPlayerEventLog(PlayerEvent::POSSIBLE_HACK, PlayerEvent::PossibleHackEvent{.message = "Used /summon"});
 		return;
 	}
 

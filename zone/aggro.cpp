@@ -33,186 +33,338 @@
 extern Zone* zone;
 //#define LOSDEBUG 6
 
-void EntityList::DescribeAggro(Client *towho, NPC *from_who, float d, bool verbose) {
-	float d2 = d*d;
+void EntityList::DescribeAggro(Client *to_who, NPC *from_who, float d, bool verbose) {
+	float distance_squared = (d * d);
 
-	towho->Message(Chat::White, "Describing aggro for %s", from_who->GetName());
+	to_who->Message(
+		Chat::White,
+		fmt::format(
+			"Describing aggro for {}.",
+			to_who->GetTargetDescription(from_who)
+		).c_str()
+	);
 
-	bool engaged = from_who->IsEngaged();
-	if(engaged) {
+	bool is_engaged = from_who->IsEngaged();
+	bool will_aggro_npcs = from_who->GetNPCAggro();
+	if (is_engaged) {
 		Mob *top = from_who->GetHateTop();
-		towho->Message(Chat::White, ".. I am currently fighting with %s", top == nullptr?"(nullptr)":top->GetName());
+		to_who->Message(
+			Chat::White,
+			fmt::format(
+				"I am currently engaged with {}.",
+				(
+					!top ?
+					"nothing" :
+					from_who->GetTargetDescription(top)
+				)
+			).c_str()
+		);
 	}
-	bool check_npcs = from_who->WillAggroNPCs();
 
-	if(verbose) {
-		char namebuf[256];
-
-		int my_primary = from_who->GetPrimaryFaction();
-		Mob *own = from_who->GetOwner();
-		if(own != nullptr)
-			my_primary = own->GetPrimaryFaction();
-
-		if(my_primary == 0) {
-			strcpy(namebuf, "(No faction)");
-		} else if(my_primary < 0) {
-			strcpy(namebuf, "(Special faction)");
-		} else {
-			if(!content_db.GetFactionName(my_primary, namebuf, sizeof(namebuf)))
-				strcpy(namebuf, "(Unknown)");
+	if (verbose) {
+		int faction_id = from_who->GetPrimaryFaction();
+		Mob *owner = from_who->GetOwner();
+		if(owner) {
+			faction_id = owner->GetPrimaryFaction();
 		}
-		towho->Message(Chat::White, ".. I am on faction %s (%d)\n", namebuf, my_primary);
+
+		std::string faction_name = (
+			faction_id > 0 ?
+			content_db.GetFactionName(faction_id) :
+			(
+				faction_id == 0 ?
+				"None" :
+				fmt::format(
+					"Special Faction {}",
+					faction_id
+				)
+			)
+		);
+
+		to_who->Message(
+			Chat::White,
+			fmt::format(
+				"{} is on Faction {} ({}).",
+				to_who->GetTargetDescription(from_who),
+				faction_name,
+				faction_id
+			).c_str()
+		);
 	}
 
-	for (auto it = mob_list.begin(); it != mob_list.end(); ++it) {
-		Mob *mob = it->second;
-		if (mob->IsClient())	//also ensures that mob != around
+	for (const auto& npc_entity : entity_list.GetNPCList()) {
+		auto entity_id = npc_entity.first;
+		auto npc = npc_entity.second;
+		if (npc == from_who) {
 			continue;
+		}
 
-		if (DistanceSquared(mob->GetPosition(), from_who->GetPosition()) > d2)
+		if (DistanceSquared(npc->GetPosition(), from_who->GetPosition()) > distance_squared) {
 			continue;
+		}
 
-		if (engaged) {
-			int64 amm = from_who->GetHateAmount(mob);
-			if (amm == 0)
-				towho->Message(Chat::White, "... %s is not on my hate list.", mob->GetName());
-			else
-				towho->Message(Chat::White, "... %s is on my hate list with value %lu", mob->GetName(), (unsigned long)amm);
-		} else if (!check_npcs && mob->IsNPC()) {
-				towho->Message(Chat::White, "... %s is an NPC and my npc_aggro is disabled.", mob->GetName());
+		if (is_engaged) {
+			int64 hate_amount = from_who->GetHateAmount(npc);
+			to_who->Message(
+				Chat::White,
+				fmt::format(
+					"{} is {}on my hate list{}.",
+					to_who->GetTargetDescription(npc),
+					!hate_amount ? "not " : "",
+					(
+						!hate_amount ?
+						"" :
+						fmt::format(
+							" with a hate amount of {}.",
+							hate_amount
+						)
+					)
+				).c_str()
+			);
+		} else if (!will_aggro_npcs) {
+			to_who->Message(
+				Chat::White,
+				fmt::format(
+					"{} is an NPC and I cannot aggro NPCs.",
+					to_who->GetTargetDescription(npc)
+				).c_str()
+			);
 		} else {
-			from_who->DescribeAggro(towho, mob, verbose);
+			from_who->DescribeAggro(to_who, npc, verbose);
 		}
 	}
 }
 
-void NPC::DescribeAggro(Client *towho, Mob *mob, bool verbose) {
-    //this logic is duplicated from below, try to keep it up to date.
-    float iAggroRange = GetAggroRange();
+void NPC::DescribeAggro(Client *to_who, Mob *mob, bool verbose) {
+	//this logic is duplicated from below, try to keep it up to date.
+	float aggro_range = GetAggroRange();
+	float x_range = std::abs(mob->GetX() - GetX());
+	float y_range = std::abs(mob->GetY() - GetY());
+	float z_range = std::abs(mob->GetZ() - GetZ());
+	if (
+		x_range > aggro_range ||
+		y_range > aggro_range ||
+		z_range > aggro_range
+	) {
+		to_who->Message(
+			Chat::White,
+			fmt::format(
+				"{} is out of range. X Range: {} Y Range: {} Z Range: {} Aggro Range: {}",
+				to_who->GetTargetDescription(mob),
+				x_range,
+				y_range,
+				z_range,
+				aggro_range
+			).c_str()
+		);
+		return;
+	}
 
-    float t1, t2, t3;
-    t1 = std::abs(mob->GetX() - GetX());
-    t2 = std::abs(mob->GetY() - GetY());
-    t3 = std::abs(mob->GetZ() - GetZ());
+	if (mob->IsInvisible(this)) {
+		to_who->Message(
+			Chat::White,
+			fmt::format(
+				"{} is invisible to me.",
+				to_who->GetTargetDescription(mob)
+			).c_str()
+		);
+		return;
+	}
 
-    if ((t1 > iAggroRange)
-        || (t2 > iAggroRange)
-        || (t3 > iAggroRange)) {
-        towho->Message(Chat::White, "...%s is out of range (fast). distances (%.3f,%.3f,%.3f), range %.3f",
-                       mob->GetName(),
-                       t1, t2, t3, iAggroRange);
-        return;
-    }
-
-    if (mob->IsInvisible(this)) {
-        towho->Message(Chat::White, "...%s is invisible to me. ", mob->GetName());
-        return;
-    }
-    if ((mob->IsClient() &&
-         (!mob->CastToClient()->Connected()
-          || mob->CastToClient()->IsLD()
-          || mob->CastToClient()->IsBecomeNPC()
-          || mob->CastToClient()->GetGM()
-         )
-    )) {
-        towho->Message(Chat::White, "...%s is my owner. ", mob->GetName());
-        return;
-    }
+	if (
+		mob->IsClient() &&
+		(
+			!mob->CastToClient()->Connected() ||
+			mob->CastToClient()->IsLD() ||
+			mob->CastToClient()->IsBecomeNPC() ||
+			mob->CastToClient()->GetGM()
+		)
+	) {
+		to_who->Message(
+			Chat::White,
+			fmt::format(
+				"{} is a GM or is not connected.",
+				to_who->GetTargetDescription(mob)
+			).c_str()
+		);
+		return;
+	}
 
 
-    if (mob == GetOwner()) {
-        towho->Message(Chat::White, "...%s a GM or is not connected. ", mob->GetName());
-        return;
-    }
+	if (mob == GetOwner()) {
+		to_who->Message(
+			Chat::White,
+			fmt::format(
+				"{} is my owner.",
+				to_who->GetTargetDescription(mob)
+			).c_str()
+		);
+		return;
+	}
 
-    float dist2 = DistanceSquared(mob->GetPosition(), m_Position);
+	float distance_squared = DistanceSquared(mob->GetPosition(), m_Position);
+	float aggro_range_squared = (aggro_range * aggro_range);
+	if (distance_squared > aggro_range_squared) {
+		to_who->Message(
+			Chat::White,
+			fmt::format(
+				"{} is out of range. Distance: {:.2f} Aggro Range: {:.2f}",
+				to_who->GetTargetDescription(mob),
+				distance_squared,
+				aggro_range_squared
+			).c_str()
+		);
+		return;
+	}
 
-    float iAggroRange2 = iAggroRange * iAggroRange;
-    if (dist2 > iAggroRange2) {
-        towho->Message(Chat::White, "...%s is out of range. %.3f > %.3f ", mob->GetName(),
-                       dist2, iAggroRange2);
-        return;
-    }
+	if (RuleB(Aggro, UseLevelAggro)) {
+		if (
+			GetLevel() < RuleI(Aggro, MinAggroLevel) &&
+			mob->GetLevelCon(GetLevel()) == CON_GRAY &&
+			GetBodyType() != BT_Undead &&
+			!AlwaysAggro()
+		) {
+			to_who->Message(
+				Chat::White,
+				fmt::format(
+					"{} considers Red to me.",
+					to_who->GetTargetDescription(mob)
+				).c_str()
+			);
+			return;
+		}
+	} else {
+		if (
+			GetINT() > RuleI(Aggro, IntAggroThreshold) &&
+			mob->GetLevelCon(GetLevel()) == CON_GRAY &&
+			!AlwaysAggro()
+		) {
+			to_who->Message(
+				Chat::White,
+				fmt::format(
+					"{} considers Red to me.",
+					to_who->GetTargetDescription(mob)
+				).c_str()
+			);
+			return;
+		}
+	}
 
-    if (GetINT() > RuleI(Aggro, IntAggroThreshold) && mob->GetLevelCon(GetLevel()) == CON_GRAY) {
-        towho->Message(0, "...%s is red to me (basically)", mob->GetName(),
-                       dist2, iAggroRange2);
-        return;
-    }
+	if (verbose) {
+		int faction_id = GetPrimaryFaction();
+		int mob_faction_id = mob->GetPrimaryFaction();
+		Mob *owner = GetOwner();
+		if (owner) {
+			faction_id = owner->GetPrimaryFaction();
+		}
 
-    if (verbose) {
-        int my_primary = GetPrimaryFaction();
-        int mob_primary = mob->GetPrimaryFaction();
-        Mob *own = GetOwner();
-        if (own != nullptr)
-            my_primary = own->GetPrimaryFaction();
-        own = mob->GetOwner();
-        if (mob_primary > 0 && own != nullptr)
-            mob_primary = own->GetPrimaryFaction();
+		owner = mob->GetOwner();
+		if (mob_faction_id && owner) {
+			mob_faction_id = owner->GetPrimaryFaction();
+		}
 
-        if (mob_primary == 0) {
-            towho->Message(Chat::White, "...%s has no primary faction", mob->GetName());
-        } else if (mob_primary < 0) {
-            towho->Message(Chat::White, "...%s is on special faction %d", mob->GetName(), mob_primary);
-        } else {
-            char namebuf[256];
-            if (!content_db.GetFactionName(mob_primary, namebuf, sizeof(namebuf)))
-                strcpy(namebuf, "(Unknown)");
-            std::list<struct NPCFaction *>::iterator cur, end;
-            cur = faction_list.begin();
-            end = faction_list.end();
-            bool res = false;
-            for (; cur != end; ++cur) {
-                struct NPCFaction *fac = *cur;
-                if ((int32) fac->factionID == mob_primary) {
-                    if (fac->npc_value > 0) {
-                        towho->Message(Chat::White, "...%s is on ALLY faction %s (%d) with %d", mob->GetName(), namebuf,
-                                       mob_primary, fac->npc_value);
-                        res = true;
-                        break;
-                    } else if (fac->npc_value < 0) {
-                        towho->Message(Chat::White, "...%s is on ENEMY faction %s (%d) with %d", mob->GetName(),
-                                       namebuf, mob_primary, fac->npc_value);
-                        res = true;
-                        break;
-                    } else {
-                        towho->Message(Chat::White, "...%s is on NEUTRAL faction %s (%d) with 0", mob->GetName(),
-                                       namebuf, mob_primary);
-                        res = true;
-                        break;
-                    }
-                }
-            }
-            if (!res) {
-                towho->Message(Chat::White, "...%s is on faction %s (%d), which I have no entry for.", mob->GetName(),
-                               namebuf, mob_primary);
-            }
-        }
-    }
+		if (!mob_faction_id) {
+			to_who->Message(
+				Chat::White,
+				fmt::format(
+					"{} has no primary Faction.",
+					to_who->GetTargetDescription(mob)
+				).c_str()
+			);
+		} else if (mob_faction_id < 0) {
+			to_who->Message(
+				Chat::White,
+				fmt::format(
+					"{} is on special Faction {}.",
+					to_who->GetTargetDescription(mob),
+					mob_faction_id
+				).c_str()
+			);
+		} else {
+			auto faction_name = content_db.GetFactionName(mob_faction_id);
+			bool has_entry = false;
+			for (auto faction : faction_list) {
+				if (static_cast<int>(faction->factionID) == mob_faction_id) {
+					to_who->Message(
+						Chat::White,
+						fmt::format(
+							"{} has {} standing with Faction {} ({}) with their Faction Level of {}",
+							to_who->GetTargetDescription(mob),
+							(
+								faction->npc_value != 0 ?
+								(
+									faction->npc_value > 0 ?
+									"positive" :
+									"negative"
+								 ) :
+								"neutral"
+							),
+							faction_name,
+							faction->factionID,
+							faction->npc_value
+						).c_str()
+					);
+					has_entry = true;
+					break;
+				}
+			}
 
-    FACTION_VALUE fv = mob->GetReverseFactionCon(this);
+			if (!has_entry) {
+				to_who->Message(
+					Chat::White,
+					fmt::format(
+						"{} is on Faction {} ({}), for which I do not have an entry.",
+						to_who->GetTargetDescription(mob),
+						faction_name,
+						mob_faction_id
+					).c_str()
+				);
+			}
+		}
+	}
 
-    if (!(
-            fv == FACTION_SCOWLS
-            ||
-            (mob->GetPrimaryFaction() != GetPrimaryFaction() && mob->GetPrimaryFaction() == -4 && GetOwner() == nullptr)
-            ||
-            fv == FACTION_THREATENINGLY
-    )) {
-        towho->Message(Chat::White, "...%s faction not low enough. value='%s'", mob->GetName(),
-                       FactionValueToString(fv));
-        return;
-    }
-    if (fv == FACTION_THREATENINGLY) {
-        towho->Message(Chat::White, "...%s threatening to me, so they only have a %d chance per check of attacking.",
-                       mob->GetName());
-    }
+	auto faction_value = mob->GetReverseFactionCon(this);
 
-    if (!CheckLosFN(mob)) {
-        towho->Message(Chat::White, "...%s is out of sight.", mob->GetName());
-    }
+	if (
+		!(
+			faction_value == FACTION_THREATENINGLY ||
+			faction_value == FACTION_SCOWLS ||
+			(
+				mob->GetPrimaryFaction() != GetPrimaryFaction() &&
+				mob->GetPrimaryFaction() == -4 &&
+				!GetOwner()
+			)
+		)
+	) {
+		to_who->Message(
+			Chat::White,
+			fmt::format(
+				"{} does not have low enough faction, their Faction Level is {} ({}).",
+				to_who->GetTargetDescription(mob),
+				FactionValueToString(faction_value),
+				faction_value
+			).c_str()
+		);
+		return;
+	}
 
-    towho->Message(Chat::White, "...%s meets all conditions, I should be attacking them.", mob->GetName());
+	if (!CheckLosFN(mob)) {
+		to_who->Message(
+			Chat::White,
+			fmt::format(
+				"{} is out of sight.",
+				to_who->GetTargetDescription(mob)
+			).c_str()
+		);
+	}
+
+	to_who->Message(
+		Chat::White,
+		fmt::format(
+			"{} meets all conditions, I should be attacking them.",
+			to_who->GetTargetDescription(mob)
+		).c_str()
+	);
 }
 
 /*

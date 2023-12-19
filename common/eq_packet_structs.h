@@ -2959,12 +2959,12 @@ struct BuyerLineTradeItems_Struct {
 
 struct BuyerLineItems_Struct {
 	uint32	slot;
-	uint8	unknown;
+	uint8	enabled;
 	uint32	item_id;
 	char	item_name[64];
 	uint32	item_icon;
 	uint32	item_quantity;
-	uint8	item_enabled;
+	uint8	item_toggle;
 	uint32	item_cost;
 	BuyerLineTradeItems_Struct trade_items[10];
 };
@@ -2973,6 +2973,40 @@ struct BuyerLine_Struct {
 	uint32	action;
 	uint32	no_items;
 	std::vector<BuyerLineItems_Struct> buy_line;
+};
+
+struct BuyerLineSellItem_Struct {
+	uint32	action;
+	uint32	unknown004;
+	uint32	unknown008;
+	uint32	buyer_entity_id;
+	char	unknown[19];
+	uint32	slot;
+	uint8	enabled;
+	uint32	item_id;
+	char	item_name[64];
+	uint32	item_icon;
+	uint32	item_quantity;
+	uint8	item_toggle;
+	uint32	item_cost;
+	uint32	no_trade_items;
+	BuyerLineTradeItems_Struct trade_items[10];
+};
+
+struct BuyerLineUpdateBuyLine_Struct {
+	uint32	action;
+	uint32	unknown004;
+	uint32	slot;
+	uint8	enabled;
+	uint32	item_id;
+	char	item_name[64];
+	uint32	item_icon;
+	uint32	item_quantity;
+	uint8	item_toggle;
+	uint32	item_cost;
+	uint32	no_trade_items;
+	BuyerLineTradeItems_Struct trade_items[10];
+
 };
 
 struct BuyerWelcomeMessageUpdate_Struct {

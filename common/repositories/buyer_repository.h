@@ -47,27 +47,26 @@ public:
 
 	// Custom extended repository methods here
 
-	static bool UpdateBuyLine(Database& db, const BuyerLine_Struct bl, uint32 char_id)
+	static bool UpdateBuyLine(Database& db, const BuyerLineItems_Struct b, uint32 char_id)
 	{
-		for (auto const& e : bl.buy_line) {
 			std::string query = fmt::format("REPLACE INTO buyer VALUES({}, {}, {}, \"{}\", {}, {})",
 				char_id, 
-				e.slot, 
-				e.item_id, 
-				e.item_name, 
-				e.item_quantity, 
-				e.item_cost
+				b.slot, 
+				b.item_id, 
+				b.item_name, 
+				b.item_quantity, 
+				b.item_cost
 			);
 			auto results = db.QueryDatabase(query);
 			if (!results.Success()) {
 				return false;
 			}
-			for (auto const& i : e.trade_items) {
+			for (auto const& i : b.trade_items) {
 				if (i.item_id) {
 					std::string query = fmt::format("REPLACE INTO `buyer_trade_items` (`char_id`, `slot_id`, `item_id`, `item_qty`, `Item_icon`, `item_name`) "
 						"VALUES({}, {}, {}, {}, {}, \"{}\")",
 						char_id,
-						e.slot,
+						b.slot,
 						i.item_id,
 						i.item_quantity,
 						i.item_icon,
@@ -79,29 +78,67 @@ public:
 					}
 				}
 			}
-		}
 		return true;
 	}
 
-	static bool DeleteBuyLine(Database& db, uint32 char_id)
+	static bool ClearBuyerTables(Database& db)
 	{
-		std::string query = fmt::format("DELETE FROM buyer WHERE charid = {}",
-			char_id
-		);
+		std::string query = fmt::format("DELETE FROM buyer");
 		auto results = db.QueryDatabase(query);
 		if (!results.Success()) {
 			return false;
 		}
 
-		query = fmt::format("DELETE FROM buyer_trade_items WHERE char_id = {}",
-			char_id
-		);
+		query = fmt::format("DELETE FROM buyer_trade_items");
 		results = db.QueryDatabase(query);
 		if (!results.Success()) {
 			return false;
 		}
 		return true;
 	}
+
+	static bool DeleteBuyLine(Database& db, uint32 char_id, int32 slot_id = 0xffffffff)
+	{
+		if (slot_id == 0xffffffff) {
+			std::string query = fmt::format("DELETE FROM buyer WHERE charid = {}",
+				char_id
+			);
+			auto results = db.QueryDatabase(query);
+			if (!results.Success()) {
+				return false;
+			}
+
+			query = fmt::format("DELETE FROM buyer_trade_items WHERE char_id = {}",
+				char_id
+			);
+			results = db.QueryDatabase(query);
+			if (!results.Success()) {
+				return false;
+			}
+			return true;
+		}
+		else {
+			std::string query = fmt::format("DELETE FROM buyer WHERE charid = {} AND buyslot = {}",
+				char_id,
+				slot_id
+			);
+			auto results = db.QueryDatabase(query);
+			if (!results.Success()) {
+				return false;
+			}
+
+			query = fmt::format("DELETE FROM buyer_trade_items WHERE char_id = {} AND slot_id = {}",
+				char_id,
+				slot_id
+			);
+			results = db.QueryDatabase(query);
+			if (!results.Success()) {
+				return false;
+			}
+			return true;
+		}
+	}
+
 	static BuyerLine_Struct GetBuyLine(Database& db, uint32 char_id)
 	{
 		BuyerLine_Struct bl{};
@@ -118,7 +155,7 @@ public:
 
 		for (auto r : results) {
 			BuyerLineItems_Struct b{};
-			b.item_enabled  = 1;
+			b.item_toggle   = 1;
 			b.slot          = Strings::ToInt(r[0]);
 			b.item_id       = Strings::ToInt(r[1]);
 			b.item_quantity = Strings::ToInt(r[3]);
