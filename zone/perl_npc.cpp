@@ -770,6 +770,16 @@ bool Perl_NPC_HasSpecialAbilities(NPC* self) // @categories Script Utility
 	return self->HasSpecialAbilities();
 }
 
+bool Perl_NPC_GetNPCAggro(NPC* self) // @categories Script Utility
+{
+	return self->GetNPCAggro();
+}
+
+void Perl_NPC_SetNPCAggro(NPC* self, bool in_npc_aggro) // @categories Script Utility
+{
+	self->SetNPCAggro(in_npc_aggro);
+}
+
 void perl_register_npc()
 {
 	perl::interpreter perl(PERL_GET_THX);
@@ -830,6 +840,7 @@ void perl_register_npc()
 	package.add("GetMaxDamage", &Perl_NPC_GetMaxDamage);
 	package.add("GetMaxWp", &Perl_NPC_GetMaxWp);
 	package.add("GetMinDMG", &Perl_NPC_GetMinDMG);
+	package.add("GetNPCAggro", &Perl_NPC_GetNPCAggro);
 	package.add("GetNPCFactionID", &Perl_NPC_GetNPCFactionID);
 	package.add("GetNPCHate", &Perl_NPC_GetNPCHate);
 	package.add("GetNPCSpellsID", &Perl_NPC_GetNPCSpellsID);
@@ -905,6 +916,7 @@ void perl_register_npc()
 	package.add("SetLDoNTrapDetected", &Perl_NPC_SetLDoNTrapDetected);
 	package.add("SetLDoNTrapSpellID", &Perl_NPC_SetLDoNTrapSpellID);
 	package.add("SetLDoNTrapType", &Perl_NPC_SetLDoNTrapType);
+	package.add("SetNPCAggro", &Perl_NPC_SetNPCAggro);
 	package.add("SetGold", &Perl_NPC_SetGold);
 	package.add("SetGrid", &Perl_NPC_SetGrid);
 	package.add("SetNPCFactionID", &Perl_NPC_SetNPCFactionID);

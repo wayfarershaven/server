@@ -526,7 +526,7 @@ void Mob::AI_Start(uint32 iMoveDelay) {
 		hate_list_cleanup_timer.Disable();
 	}
 
-	if (CastToNPC()->WillAggroNPCs()) {
+	if (CastToNPC()->GetNPCAggro()) {
 		AI_scan_area_timer = std::make_unique<Timer>(RandomTimer(RuleI(NPC, NPCToNPCAggroTimerMin), RuleI(NPC, NPCToNPCAggroTimerMax)));
 	}
 
@@ -1135,7 +1135,7 @@ void Mob::AI_Process() {
 					IsNPC() &&
 					!CastToNPC()->GetSwarmInfo() &&
 					(!IsPet() || (HasOwner() && GetOwner()->IsNPC())) &&
-					!CastToNPC()->WillAggroNPCs()
+					!CastToNPC()->GetNPCAggro()
 				) {
 					WipeHateList(true); // wipe NPCs from hate list to prevent faction war
 				}
@@ -1460,7 +1460,7 @@ void Mob::AI_Process() {
 				StopNavigation();
 			}
 		}
-		else if (zone->CanDoCombat() && CastToNPC()->WillAggroNPCs() && AI_scan_area_timer->Check()) {
+		else if (zone->CanDoCombat() && CastToNPC()->GetNPCAggro() && AI_scan_area_timer->Check()) {
 
 			/**
 			 * NPC to NPC aggro (npc_aggro flag set)
