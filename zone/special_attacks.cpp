@@ -2363,8 +2363,8 @@ int Mob::TryAssassinate(Mob *defender, EQ::skills::SkillType skillInUse)
 	return 0;
 }
 
-void Mob::DoMeleeSkillAttackDmg(Mob *other, uint16 weapon_damage, EQ::skills::SkillType skillinuse, int16 chance_mod,
-				int16 focus, bool CanRiposte, int ReuseTime)
+void Mob::DoMeleeSkillAttackDmg(Mob *other, int32 weapon_damage, EQ::skills::SkillType skillinuse, int16 chance_mod,
+				int16 focus, bool can_riposte, int ReuseTime)
 {
 	if (!CanDoSpecialAttack(other)) {
 		return;
@@ -2404,15 +2404,15 @@ void Mob::DoMeleeSkillAttackDmg(Mob *other, uint16 weapon_damage, EQ::skills::Sk
 		}
 
 		DamageHitInfo my_hit {};
+
 		my_hit.base_damage = weapon_damage;
-		my_hit.min_damage = 0;
+		my_hit.min_damage  = 0;
 		my_hit.damage_done = 1;
 
-		my_hit.skill = skillinuse;
-		my_hit.offense = offense(my_hit.skill);
-		my_hit.tohit = GetTotalToHit(my_hit.skill, chance_mod);
-		// slot range exclude ripe etc ...
-		my_hit.hand = CanRiposte ? EQ::invslot::slotRange : EQ::invslot::slotPrimary;
+		my_hit.skill       = skillinuse;
+		my_hit.offense     = offense(my_hit.skill);
+		my_hit.tohit       = GetTotalToHit(my_hit.skill, chance_mod);
+		my_hit.hand        = can_riposte ? EQ::invslot::slotPrimary : EQ::invslot::slotRange;
 
 		if (IsNPC()) {
 			my_hit.min_damage = CastToNPC()->GetMinDamage();
