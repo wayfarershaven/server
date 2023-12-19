@@ -2500,17 +2500,106 @@ void Client::SellToBuyer(const EQApplicationPacket *app) {
 		//check that seller has the item
 		seller_has_item = GetInv().HasItem(emu->item_id, emu->item_quantity, invWherePersonal | invWhereCursor | invWhereWorn);
 
+		//Seller
+		for (int i = 0; i < emu->no_trade_items; i++) {
+			auto inst = database.CreateItem(emu->trade_items[i].item_id, emu->trade_items[i].item_quantity);
+			buyer->RemoveItem(emu->trade_items[i].item_id, emu->trade_items[i].item_quantity);
+			PushItemOnCursor(*inst, true);
+		}
+		TakeMoneyFromPP(emu->item_cost * emu->item_quantity, true);
+
 		//Buyer
 		auto inst = database.CreateItem(emu->item_id, emu->item_quantity);
 		buyer->PushItemOnCursor(*inst, true);
 		buyer->AddMoneyToPP(emu->item_cost * emu->item_quantity, true);
 
-		//Seller
-		for (int i = 0; i < emu->no_trade_items; i++) {
-			auto inst = database.CreateItem(emu->trade_items[i].item_id, emu->trade_items[i].item_quantity);
-			PushItemOnCursor(*inst, true);
+		//Update the Seller's Merchant Window
+
+		auto outapp = new EQApplicationPacket(OP_BuyerItems, sizeof(BuyerLine_Struct));
+		auto data = (char*)outapp->pBuffer;
+		auto eq = data;
+
+		VARSTRUCT_ENCODE_TYPE(uint32, eq, 0x0e);	//remove action
+		VARSTRUCT_SKIP_TYPE(uint32, eq);
+		VARSTRUCT_ENCODE_TYPE(uint32, eq, emu->slot);
+		VARSTRUCT_ENCODE_TYPE(uint32, eq, 0);
+
+		FastQueuePacket(&outapp);
+
+		//Update the Buyer's BuyLine Window
+
+		BuyerLineItems_Struct bl{};
+		bl.enabled = 0;
+		bl.item_cost = emu->item_cost;
+		bl.item_icon = emu->item_icon;
+		bl.item_id = emu->item_id;
+		bl.item_quantity = emu->item_quantity - 1;
+		strn0cpy(bl.item_name, emu->item_name, sizeof(bl.item_name));
+		bl.item_toggle = 0;
+		bl.slot = emu->slot;
+		auto i = 0;
+		for (auto const& b : emu->trade_items) {
+			bl.trade_items[i].item_icon = b.item_icon;
+			bl.trade_items[i].item_id = b.item_id;
+			bl.trade_items[i].item_quantity = b.item_quantity;
+			strn0cpy(bl.trade_items[i].item_name, b.item_name, sizeof(bl.trade_items[i].item_name));
 		}
-		TakeMoneyFromPP(emu->item_cost * emu->item_quantity, true);
+
+		outapp = new EQApplicationPacket(OP_BuyerItems, sizeof(bl) + 4);
+		data = (char*)outapp->pBuffer;
+
+		VARSTRUCT_ENCODE_TYPE(uint32, data, Barter_BuyerItemUpdate);
+		memcpy(data, &bl, sizeof(bl));
+
+		buyer->FastQueuePacket(&outapp);
+
+		BuyerRepository::DeleteBuyLine(database, buyer->CharacterID(), emu->slot);
+
+		//Send purchase message to Seller
+		auto GetNoSubItems = [](BuyerLineSellItem_Struct* emu) -> int {
+			for (int i = 0; i < 10; i++) {
+				if (emu->trade_items[i].item_id != 0) {
+					continue;
+				}
+				return i;
+			}
+			return 0;
+			};
+
+		outapp = new EQApplicationPacket(OP_BuyerItems, sizeof(BuyerLineItems_Struct) + 4);
+		eq = (char*)outapp->pBuffer;
+
+		VARSTRUCT_ENCODE_TYPE(uint32, eq, 0x09);	//Purchase action
+		VARSTRUCT_ENCODE_TYPE(uint32, eq, 0x00);	//Send Message Case
+		eq += 20;
+		VARSTRUCT_ENCODE_STRING(eq, buyer->GetName());
+		VARSTRUCT_ENCODE_STRING(eq, emu->item_name);
+		VARSTRUCT_ENCODE_STRING(eq, GetName());
+		VARSTRUCT_ENCODE_TYPE(uint32, eq, 0xFFFFFFFF);
+		VARSTRUCT_ENCODE_TYPE(uint32, eq, 0xFFFFFFFF);
+		eq += 1;
+		VARSTRUCT_ENCODE_STRING(eq, emu->item_name);
+		eq += 9;
+		VARSTRUCT_ENCODE_TYPE(uint32, eq, emu->item_cost);
+		auto no_sub_items = 0;
+		no_sub_items = GetNoSubItems(emu);
+		VARSTRUCT_ENCODE_TYPE(uint32, eq, no_sub_items);
+
+		for (int i = 0; i < no_sub_items; i++) {
+			VARSTRUCT_ENCODE_TYPE(uint32, eq, 0);
+			VARSTRUCT_ENCODE_TYPE(uint32, eq, emu->trade_items[i].item_quantity);
+			VARSTRUCT_ENCODE_TYPE(uint32, eq, 0);
+			VARSTRUCT_ENCODE_STRING(eq, emu->trade_items[i].item_name);
+		}
+
+		VARSTRUCT_ENCODE_TYPE(uint32, eq, 0); 
+		VARSTRUCT_ENCODE_TYPE(uint32, eq, 0); 
+		VARSTRUCT_ENCODE_TYPE(uint32, eq, 0);  
+		VARSTRUCT_ENCODE_TYPE(uint32, eq, 0xFFFFFF);
+		VARSTRUCT_ENCODE_TYPE(uint32, eq, 0); 
+		VARSTRUCT_ENCODE_TYPE(uint32, eq, emu->item_quantity);
+
+		FastQueuePacket(&outapp);
 
 		return;
 	}
@@ -2935,7 +3024,12 @@ void Client::UpdateBuyLine(const EQApplicationPacket *app) {
 			VARSTRUCT_ENCODE_TYPE(uint32, emu, Barter_BuyerItemUpdate);
 			memcpy(emu, &b, sizeof(b));
 
-			FastQueuePacket(&outapp); 
+			FastQueuePacket(&outapp);
+
+			if (CustomerID) {
+				//Update the Seller's Merchant Window if there is one.
+				//Message(Chat::Yellow, "There is a player browsing.  Should resend the window data.");
+			}
 		}
 		
 		return;

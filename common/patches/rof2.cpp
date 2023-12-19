@@ -749,6 +749,10 @@ namespace RoF2
 			safe_delete(inapp);
 			break;
 		}
+		default:
+		{
+			dest->FastQueuePacket(&inapp);
+		}
 		}
 	}
 

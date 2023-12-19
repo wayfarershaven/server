@@ -765,6 +765,7 @@ void Client::CompleteConnect()
 	{
 		SendBulkBazaarTraders();
 		SendBulkTraderStatus();
+		entity_list.SendTraders(this);
 	}
 	else {
 		entity_list.SendTraders(this);
