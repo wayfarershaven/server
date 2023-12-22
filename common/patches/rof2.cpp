@@ -36,6 +36,7 @@
 #include "../classes.h"
 #include "../races.h"
 #include "../../zone/raids.h"
+#include "../../zone/trading.h"
 
 #include <iostream>
 #include <sstream>
@@ -669,7 +670,7 @@ namespace RoF2
 	ENCODE(OP_BuyerItems)
 	{
 		auto GetNoSubItems = [](BuyerLineItems_Struct* emu) -> int {
-			for (int i = 0; i < 10; i++) {
+			for (int i = 0; i < MAX_COMPENSATION_ITEMS; i++) {
 				if (emu->trade_items[i].item_id != 0) {
 					continue;
 				}
