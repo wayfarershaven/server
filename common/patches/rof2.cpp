@@ -4718,6 +4718,11 @@ namespace RoF2
 			strn0cpy((char*)__packet->pBuffer[4], welcome_ptr, strlen(welcome_ptr));
 			break;
 		}
+		case structs::BuyerActions::BuyerItemInspect:
+		{
+			*(uint32*)__packet->pBuffer = Barter_BarterItemInspect;
+			break;
+		}
 		}
 	}
 
@@ -4896,7 +4901,7 @@ namespace RoF2
 			char* Buffer = (char*)__packet->pBuffer;
 
 			Sell_Item.action = VARSTRUCT_DECODE_TYPE(uint32, Buffer);
-			Sell_Item.unknown004 = VARSTRUCT_DECODE_TYPE(uint32, Buffer);
+			Sell_Item.purchase_method = VARSTRUCT_DECODE_TYPE(uint32, Buffer);
 			Sell_Item.unknown008 = VARSTRUCT_DECODE_TYPE(uint32, Buffer);
 			Sell_Item.buyer_entity_id = VARSTRUCT_DECODE_TYPE(uint32, Buffer);
 			Buffer += 15;

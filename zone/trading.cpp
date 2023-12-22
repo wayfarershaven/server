@@ -2241,6 +2241,99 @@ void Client::SendBuyerResults(char* searchString, uint32 searchID) {
     if(numberOfRows == 0)
         return;
 
+	if (ClientVersion() >= EQ::versions::ClientVersion::RoF) {
+		auto search_string = std::string(searchString);
+		auto results = BuyerRepository::SearchBuyLines(database, search_string);
+
+		std::string buyer_name = "ID {} not in zone.";
+
+		//Calculate size of packet
+		auto p_size = 0;
+		p_size += 5 * sizeof(uint32) + 1 * sizeof(uint8);
+		p_size += search_string.length() + 1;
+		for (auto const& b : results.buy_line) {
+			p_size += 6 * sizeof(uint32) + 2 * sizeof(uint8);
+			p_size += strlen(b.item_name) + 1;
+			std::string buyer_name = "";
+			auto buyer = entity_list.GetClientByCharID(b.buyer_id);
+			if (buyer) {
+				buyer_name = buyer->GetName();
+				p_size += strlen(buyer->GetName()) + 1;
+			}
+			else {
+				buyer_name = fmt::format("ID {} not in zone.", b.buyer_id);
+				p_size += buyer_name.length() + 1;
+			}
+			for (auto const& d : b.trade_items) {
+				if (d.item_id != 0) {
+					p_size += strlen(d.item_name) + 1;
+					p_size += 3 * sizeof(uint32);
+				}
+			}
+			p_size += 3 * sizeof(uint32);
+		}
+
+		BuyerLine_Struct bl{};
+
+		//Create packet
+
+		auto GetNoSubItems = [](BuyerLineItemsSearch_Struct emu) -> int {
+			for (int i = 0; i < MAX_COMPENSATION_ITEMS; i++) {
+				if (emu.trade_items[i].item_id != 0) {
+					continue;
+				}
+				return i;
+			}
+			return 0;
+			};
+
+		auto outapp = new EQApplicationPacket(OP_BuyerItems, p_size);
+		auto emu = (char*)outapp->pBuffer;
+
+		VARSTRUCT_ENCODE_TYPE(uint32, emu, 1);					//action of 1
+		VARSTRUCT_ENCODE_STRING(emu, search_string.c_str());
+		VARSTRUCT_ENCODE_TYPE(uint32, emu, searchID);
+		VARSTRUCT_ENCODE_TYPE(uint32, emu, 0);
+		VARSTRUCT_ENCODE_TYPE(uint32, emu, 0);
+		VARSTRUCT_ENCODE_TYPE(uint8,  emu, 1);
+		VARSTRUCT_ENCODE_TYPE(uint32, emu, results.no_items);
+		for (auto const& b : results.buy_line) {
+			const EQ::ItemData* item = database.GetItem(b.item_id);
+			VARSTRUCT_ENCODE_TYPE(uint32, emu, b.slot);
+			VARSTRUCT_ENCODE_TYPE(uint8,  emu, 1);
+			VARSTRUCT_ENCODE_TYPE(uint32, emu, b.item_id);
+			VARSTRUCT_ENCODE_STRING(emu, b.item_name);
+			VARSTRUCT_ENCODE_TYPE(uint32, emu, item->Icon);
+			VARSTRUCT_ENCODE_TYPE(uint32, emu, b.item_quantity); 
+			VARSTRUCT_ENCODE_TYPE(uint8, emu, 1);
+			VARSTRUCT_ENCODE_TYPE(uint32, emu, b.item_cost);
+			auto no_sub_items = GetNoSubItems(b);
+			VARSTRUCT_ENCODE_TYPE(uint32, emu, no_sub_items);
+			for (int i = 0; i < no_sub_items; i++) {
+				item = database.GetItem(b.trade_items[i].item_id);
+				VARSTRUCT_ENCODE_TYPE(uint32, emu, b.trade_items[i].item_id);
+				VARSTRUCT_ENCODE_TYPE(uint32, emu, b.trade_items[i].item_quantity);
+				VARSTRUCT_ENCODE_TYPE(uint32, emu, item->Icon);
+				VARSTRUCT_ENCODE_STRING(emu, b.trade_items[i].item_name);
+			}
+			auto buyer = entity_list.GetClientByCharID(b.buyer_id);
+			if (buyer) {
+				VARSTRUCT_ENCODE_TYPE(uint32, emu, buyer->GetID());
+				VARSTRUCT_ENCODE_TYPE(uint32, emu, GetID());
+				VARSTRUCT_ENCODE_TYPE(uint32, emu, buyer->GetZoneID());
+				VARSTRUCT_ENCODE_STRING(emu, buyer->GetName())
+			}
+			else {
+				VARSTRUCT_ENCODE_TYPE(uint32, emu, 0);
+				VARSTRUCT_ENCODE_TYPE(uint32, emu, GetID());
+				VARSTRUCT_ENCODE_TYPE(uint32, emu, 0);
+				VARSTRUCT_ENCODE_STRING(emu, fmt::format("ID {} not in zone.", b.buyer_id).c_str());
+			}
+		}
+		FastQueuePacket(&outapp);
+		return;
+	}
+
     uint32 lastCharID = 0;
 	Client *buyer = nullptr;
 
@@ -3000,12 +3093,11 @@ void Client::UpdateBuyLine(const EQApplicationPacket* app) {
 		memcpy(&bl.buy_line[0], buffer, bl.no_items * sizeof(BuyerLineItems_Struct));
 
 		for (auto const& b : bl.buy_line) {
+			BuyerRepository::DeleteBuyLine(database, CharacterID(), b.slot);
 			if (b.item_toggle) {
 				BuyerRepository::UpdateBuyLine(database, b, CharacterID());
 			}
-			else {
-				BuyerRepository::DeleteBuyLine(database, CharacterID(), b.slot);
-			}
+
 			auto outapp = new EQApplicationPacket(OP_BuyerItems, sizeof(b) + 4);
 			char* emu = (char*)outapp->pBuffer;
 
