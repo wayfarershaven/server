@@ -335,6 +335,8 @@ public:
 	void SendParcelPacket(const EQ::ItemInstance* inst, BaseParcelsRepository::Parcels p);
 	void BuyTraderItemByParcel(TraderBuy_Struct* tbs, const EQApplicationPacket* app);
 	void BuyTraderItemByDirectToInventory(TraderBuy_Struct* tbs);
+	void SendWindowUpdatesToSellerAndBuyer(BuyerLineSellItem_Struct blsi);
+	
 	void SendZonePoints();
 
 	void SendBuyerResults(char *SearchQuery, uint32 SearchID);

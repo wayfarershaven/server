@@ -3011,6 +3011,8 @@ struct BuyerLineSellItem_Struct {
 	uint32	item_cost;
 	uint32	no_trade_items;
 	BuyerLineTradeItems_Struct trade_items[10];
+	char	unknown2[13];
+	uint32	seller_quantity;
 };
 
 struct BuyerLineUpdateBuyLine_Struct {

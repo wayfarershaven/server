@@ -4904,12 +4904,13 @@ namespace RoF2
 			Sell_Item.purchase_method = VARSTRUCT_DECODE_TYPE(uint32, Buffer);
 			Sell_Item.unknown008 = VARSTRUCT_DECODE_TYPE(uint32, Buffer);
 			Sell_Item.buyer_entity_id = VARSTRUCT_DECODE_TYPE(uint32, Buffer);
-			Buffer += 15;
-			Sell_Item.slot = VARSTRUCT_DECODE_TYPE(uint32, Buffer);
-			Sell_Item.enabled = VARSTRUCT_DECODE_TYPE(uint8, Buffer);
-			Sell_Item.item_id = VARSTRUCT_DECODE_TYPE(uint32, Buffer);
-			VARSTRUCT_DECODE_STRING(Sell_Item.item_name, Buffer);
-			Sell_Item.item_icon = VARSTRUCT_DECODE_TYPE(uint32, Buffer);
+			Sell_Item.seller_entity_id = VARSTRUCT_DECODE_TYPE(uint32, Buffer);
+			Buffer += 11; 
+			Sell_Item.slot = VARSTRUCT_DECODE_TYPE(uint32, Buffer); 
+			Sell_Item.enabled = VARSTRUCT_DECODE_TYPE(uint8, Buffer); 
+			Sell_Item.item_id = VARSTRUCT_DECODE_TYPE(uint32, Buffer); 
+			VARSTRUCT_DECODE_STRING(Sell_Item.item_name, Buffer); 
+			Sell_Item.item_icon = VARSTRUCT_DECODE_TYPE(uint32, Buffer); 
 			Sell_Item.item_quantity = VARSTRUCT_DECODE_TYPE(uint32, Buffer);
 			Sell_Item.item_toggle = VARSTRUCT_DECODE_TYPE(uint8, Buffer);
 			Sell_Item.item_cost = VARSTRUCT_DECODE_TYPE(uint32, Buffer);
@@ -4924,7 +4925,9 @@ namespace RoF2
 				}
 			}
 
-
+			Buffer += 13;
+			Sell_Item.seller_quantity = VARSTRUCT_DECODE_TYPE(uint32, Buffer);
+			
 			__packet->SetOpcode(OP_Barter);
 			auto new_size = sizeof(BuyerLineSellItem_Struct);
 			__packet->size = new_size;
