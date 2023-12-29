@@ -36,6 +36,7 @@
 #include "../classes.h"
 #include "../races.h"
 #include "../../zone/raids.h"
+#include "../../zone/trading.h"
 
 #include <iostream>
 #include <sstream>
@@ -669,7 +670,7 @@ namespace RoF2
 	ENCODE(OP_BuyerItems)
 	{
 		auto GetNoSubItems = [](BuyerLineItems_Struct* emu) -> int {
-			for (int i = 0; i < 10; i++) {
+			for (int i = 0; i < MAX_COMPENSATION_ITEMS; i++) {
 				if (emu->trade_items[i].item_id != 0) {
 					continue;
 				}
@@ -4303,8 +4304,8 @@ namespace RoF2
 			}
 
 			float SpawnSize = emu->size;
-			if (!((emu->NPC == 0) || (emu->race <= RACE_GNOME_12) || (emu->race == RACE_IKSAR_128) ||
-					(emu->race == RACE_VAH_SHIR_130) || (emu->race == RACE_FROGLOK_330) || (emu->race == RACE_DRAKKIN_522))
+			if (!((emu->NPC == 0) || (emu->race <= Race::Gnome) || (emu->race == Race::Iksar) ||
+					(emu->race == Race::VahShir) || (emu->race == Race::Froglok2) || (emu->race == Race::Drakkin))
 				)
 			{
 				PacketSize += 60;
@@ -4503,8 +4504,8 @@ namespace RoF2
 			VARSTRUCT_ENCODE_TYPE(uint32, Buffer, 0xffffffff); // These do something with OP_WeaponEquip1
 			VARSTRUCT_ENCODE_TYPE(uint32, Buffer, 0xffffffff); // ^
 
-			if ((emu->NPC == 0) || (emu->race <= RACE_GNOME_12) || (emu->race == RACE_IKSAR_128) ||
-					(emu->race == RACE_VAH_SHIR_130) || (emu->race == RACE_FROGLOK_330) || (emu->race == RACE_DRAKKIN_522)
+			if ((emu->NPC == 0) || (emu->race <= Race::Gnome) || (emu->race == Race::Iksar) ||
+					(emu->race == Race::VahShir) || (emu->race == Race::Froglok2) || (emu->race == Race::Drakkin)
 				)
 			{
 				for (k = EQ::textures::textureBegin; k < EQ::textures::materialCount; ++k)
@@ -4717,6 +4718,11 @@ namespace RoF2
 			strn0cpy((char*)__packet->pBuffer[4], welcome_ptr, strlen(welcome_ptr));
 			break;
 		}
+		case structs::BuyerActions::BuyerItemInspect:
+		{
+			*(uint32*)__packet->pBuffer = Barter_BarterItemInspect;
+			break;
+		}
 		}
 	}
 
@@ -4895,15 +4901,16 @@ namespace RoF2
 			char* Buffer = (char*)__packet->pBuffer;
 
 			Sell_Item.action = VARSTRUCT_DECODE_TYPE(uint32, Buffer);
-			Sell_Item.unknown004 = VARSTRUCT_DECODE_TYPE(uint32, Buffer);
+			Sell_Item.purchase_method = VARSTRUCT_DECODE_TYPE(uint32, Buffer);
 			Sell_Item.unknown008 = VARSTRUCT_DECODE_TYPE(uint32, Buffer);
 			Sell_Item.buyer_entity_id = VARSTRUCT_DECODE_TYPE(uint32, Buffer);
-			Buffer += 15;
-			Sell_Item.slot = VARSTRUCT_DECODE_TYPE(uint32, Buffer);
-			Sell_Item.enabled = VARSTRUCT_DECODE_TYPE(uint8, Buffer);
-			Sell_Item.item_id = VARSTRUCT_DECODE_TYPE(uint32, Buffer);
-			VARSTRUCT_DECODE_STRING(Sell_Item.item_name, Buffer);
-			Sell_Item.item_icon = VARSTRUCT_DECODE_TYPE(uint32, Buffer);
+			Sell_Item.seller_entity_id = VARSTRUCT_DECODE_TYPE(uint32, Buffer);
+			Buffer += 11; 
+			Sell_Item.slot = VARSTRUCT_DECODE_TYPE(uint32, Buffer); 
+			Sell_Item.enabled = VARSTRUCT_DECODE_TYPE(uint8, Buffer); 
+			Sell_Item.item_id = VARSTRUCT_DECODE_TYPE(uint32, Buffer); 
+			VARSTRUCT_DECODE_STRING(Sell_Item.item_name, Buffer); 
+			Sell_Item.item_icon = VARSTRUCT_DECODE_TYPE(uint32, Buffer); 
 			Sell_Item.item_quantity = VARSTRUCT_DECODE_TYPE(uint32, Buffer);
 			Sell_Item.item_toggle = VARSTRUCT_DECODE_TYPE(uint8, Buffer);
 			Sell_Item.item_cost = VARSTRUCT_DECODE_TYPE(uint32, Buffer);
@@ -4918,7 +4925,9 @@ namespace RoF2
 				}
 			}
 
-
+			Buffer += 13;
+			Sell_Item.seller_quantity = VARSTRUCT_DECODE_TYPE(uint32, Buffer);
+			
 			__packet->SetOpcode(OP_Barter);
 			auto new_size = sizeof(BuyerLineSellItem_Struct);
 			__packet->size = new_size;

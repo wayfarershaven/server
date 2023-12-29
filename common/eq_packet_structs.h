@@ -2975,12 +2975,32 @@ struct BuyerLine_Struct {
 	std::vector<BuyerLineItems_Struct> buy_line;
 };
 
+struct BuyerLineItemsSearch_Struct {
+	uint32	slot;
+	uint8	enabled;
+	uint32	item_id;
+	char	item_name[64];
+	uint32	item_icon;
+	uint32	item_quantity;
+	uint8	item_toggle;
+	uint32	item_cost;
+	uint32	buyer_id;
+	BuyerLineTradeItems_Struct trade_items[10];
+};
+
+struct BuyerLineSearch_Struct {
+	uint32	action;
+	uint32	no_items;
+	std::vector<BuyerLineItemsSearch_Struct> buy_line;
+};
+
 struct BuyerLineSellItem_Struct {
 	uint32	action;
-	uint32	unknown004;
+	uint32	purchase_method;	// 0 direct merchant, 1 via /barter window
 	uint32	unknown008;
 	uint32	buyer_entity_id;
-	char	unknown[19];
+	uint32  seller_entity_id;
+	char	unknown[15];
 	uint32	slot;
 	uint8	enabled;
 	uint32	item_id;
@@ -2991,6 +3011,8 @@ struct BuyerLineSellItem_Struct {
 	uint32	item_cost;
 	uint32	no_trade_items;
 	BuyerLineTradeItems_Struct trade_items[10];
+	char	unknown2[13];
+	uint32	seller_quantity;
 };
 
 struct BuyerLineUpdateBuyLine_Struct {

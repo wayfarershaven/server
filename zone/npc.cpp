@@ -152,11 +152,11 @@ NPC::NPC(const NPCType *npc_type_data, Spawn2 *in_respawn, const glm::vec4 &posi
 
 	// lava dragon is a fixed size model and should always use its default
 	// otherwise pathing issues
-	if (race == RACE_LAVA_DRAGON_49) {
+	if (race == Race::LavaDragon) {
 		size = 5;
 	}
 
-	if (race == RACE_WURM_158) {
+	if (race == Race::Wurm) {
 		size = 15;
 	}
 
@@ -1947,7 +1947,7 @@ void NPC::Disarm(Client* client, int chance) {
 		if (zone->random.Int(0, 1000) <= chance) {
 			weapon = database.GetItem(equipment[eslot]);
 			if (weapon) {
-				if (!weapon->Magic && weapon->NoDrop == 255) {
+				if (!weapon->Magic && weapon->NoDrop != 0) {
 					int16 charges = -1;
 					ItemList::iterator cur, end;
 					cur = itemlist.begin();
@@ -3075,42 +3075,72 @@ void NPC::SendPayload(int payload_id, std::string payload_value)
 }
 
 NPC_Emote_Struct* NPC::GetNPCEmote(uint32 emoteid, uint8 event_) {
-	LinkedListIterator<NPC_Emote_Struct*> iterator(zone->NPCEmoteList);
-	iterator.Reset();
-	while(iterator.MoreElements())
-	{
-		NPC_Emote_Struct* nes = iterator.GetData();
+	std::vector<NPC_Emote_Struct *> emotes;
+	for (auto &e: zone->npc_emote_list) {
+		NPC_Emote_Struct *nes = e;
 		if (emoteid == nes->emoteid && event_ == nes->event_) {
-			return (nes);
+			emotes.push_back(e);
 		}
-		iterator.Advance();
 	}
-	return (nullptr);
+	
+	if (emotes.empty()) {
+		return nullptr;
+	}
+	else if (emotes.size() == 1) {
+		return emotes[0];
+	}
+
+	int index = zone->random.Roll0(emotes.size());
+
+	return emotes[index];
 }
 
-void NPC::DoNPCEmote(uint8 event_, uint32 emoteid)
+void NPC::DoNPCEmote(uint8 event_, uint32 emoteid, Mob* target)
 {
-	if(this == nullptr || emoteid == 0)
-	{
+	if (emoteid == 0) {
 		return;
 	}
 
-	NPC_Emote_Struct* nes = GetNPCEmote(emoteid,event_);
-	if(nes == nullptr)
-	{
+	NPC_Emote_Struct *nes = GetNPCEmote(emoteid, event_);
+	if (nes == nullptr) {
 		return;
 	}
 
-	if(emoteid == nes->emoteid)
-	{
-		if(nes->type == 1)
-			Emote("%s",nes->text);
-		else if(nes->type == 2)
-			Shout("%s",nes->text);
-		else if(nes->type == 3)
-			entity_list.MessageCloseString(this, true, 200, 10, GENERIC_STRING, nes->text);
-		else
-			Say("%s",nes->text);
+	std::string processed = nes->text;
+	Strings::FindReplace(processed, "$mname", GetCleanName());
+	Strings::FindReplace(processed, "$mracep", GetRacePlural() = GetClass());
+	Strings::FindReplace(processed, "$mrace", GetPlayerRaceName(GetRace()));
+	Strings::FindReplace(processed, "$mclass", GetClassIDName(GetClass()));
+	if (target) {
+		Strings::FindReplace(processed, "$name", target->GetCleanName());
+		Strings::FindReplace(processed, "$racep", GetRacePlural() = target->GetClass());
+		Strings::FindReplace(processed, "$race", GetPlayerRaceName(target->GetRace()));
+		Strings::FindReplace(processed, "$class", GetClassIDName(target->GetClass()));
+	}
+	else {
+		Strings::FindReplace(processed, "$name", "foe");
+		Strings::FindReplace(processed, "$race", "race");
+		Strings::FindReplace(processed, "$racep", "races");
+		Strings::FindReplace(processed, "$class", "class");
+	}
+
+	if (emoteid == nes->emoteid) {
+		if (event_ == EQ::constants::EmoteEventTypes::Hailed && target) {
+			DoQuestPause(target);
+		}
+
+		if (nes->type == 1) {
+			Emote("%s", processed.c_str());
+		}
+		else if (nes->type == 2) {
+			Shout("%s", processed.c_str());
+		}
+		else if (nes->type == 3) {
+			entity_list.MessageCloseString(this, true, 200, 10, GENERIC_STRING, processed.c_str());
+		}
+		else {
+			Say("%s", processed.c_str());
+		}
 	}
 }
 
@@ -3627,25 +3657,25 @@ void NPC::ScaleNPC(uint8 npc_level, bool always_scale_stats, bool always_scale_s
 bool NPC::IsGuard()
 {
 	switch (GetRace()) {
-	case RT_GUARD:
+	case Race::FreeportGuard:
 		if (GetTexture() == 1 || GetTexture() == 2)
 			return true;
 		break;
-	case RT_IKSAR_2:
+	case Race::IksarCitizen:
 		if (GetTexture() == 1)
 			return true;
 		break;
-	case RT_GUARD_2:
-	case RT_GUARD_3:
-	case RT_GUARD_4:
-	case RT_HUMAN_3:
-	case RT_HALFLING_2:
-	case RT_ERUDITE_2:
-	case RT_BARBARIAN_2:
-	case RT_DARK_ELF_2:
-	case RT_TROLL_2:
-	case OGGOK_CITIZEN:
-	case RT_DWARF_2:
+	case Race::Felguard:
+	case Race::Fayguard:
+	case Race::VahShirGuard:
+	case Race::QeynosCitizen:
+	case Race::RivervaleCitizen:
+	case Race::EruditeCitizen:
+	case Race::HalasCitizen:
+	case Race::NeriakCitizen:
+	case Race::GrobbCitizen:
+	case Race::OggokCitizen:
+	case Race::KaladimCitizen:
 		return true;
 	default:
 		break;

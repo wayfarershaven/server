@@ -3131,13 +3131,16 @@ enum {
 };
 
 enum BuyerActions {
-	BuyerBuyLine        = 0x06,
-	BuyerModifyBuyLine  = 0x07,
-	BuyerRemoveItem     = 0x08,
-	BuyerSellItem       = 0x09,
-	BuyerInspectBegin   = 0x0b,
-	BuyerSendBuyLine    = 0x0e,
-	BuyerWelcomeMessage = 0x13
+	BuyerBuyLine         = 0x06,
+	BuyerModifyBuyLine   = 0x07,
+	BuyerRemoveItem      = 0x08,
+	BuyerSellItem        = 0x09,
+	BuyerInspectBegin    = 0x0b,
+	BuyerInspectEnd      = 0x0c,
+	BuyerSendBuyLine     = 0x0e,
+	BuyerItemInspect     = 0x0f,
+	BuyerBrowsingBuyLine = 0x10,
+	BuyerWelcomeMessage  = 0x13
 };
 
 struct BazaarWindowStart_Struct {

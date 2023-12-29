@@ -23,5 +23,6 @@
 // The maximum amount of a single bazaar/barter transaction expressed in copper.
 // Equivalent to 2 Million plat
 #define MAX_TRANSACTION_VALUE 2000000000
+#define MAX_COMPENSATION_ITEMS 10
 
 #endif
