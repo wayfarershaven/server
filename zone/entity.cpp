@@ -4446,7 +4446,7 @@ void EntityList::TryWakeTheDead(Mob *sender, Mob *target, int32 spell_id, uint32
 		}
 
 		if (ClosestCorpse) {
-			sender->WakeTheDead(spell_id, target, duration);
+			sender->WakeTheDead(spell_id, ClosestCorpse, target, duration);
 			used_corpse_list.push_back(ClosestCorpse->GetID());
 		}
 	}
