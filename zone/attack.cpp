@@ -3743,6 +3743,9 @@ bool Client::CheckTripleAttack() {
 		chance = RuleI(Combat, TripleAttackChanceBerserker);
 	}
 
+	if (IsClient() && (GetLevel() >= 60) && (GetClass() == Class::Ranger)) {
+		chance = RuleI(Combat, TripleAttackChanceRanger);
+	}
 
 	if (chance < 1) {
 		return false;
