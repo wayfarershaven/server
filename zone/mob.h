@@ -1210,6 +1210,7 @@ public:
 	bool Rampage(ExtraAttackOptions *opts);
 	bool AddRampage(Mob*);
 	void ClearRampage();
+	void RemoveFromRampageList(Mob* mob, bool force = false);
 	void SetBottomRampageList();
 	void SetTopRampageList();
 	void AreaRampage(ExtraAttackOptions *opts);

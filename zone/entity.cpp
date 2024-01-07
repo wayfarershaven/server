@@ -1501,6 +1501,7 @@ void EntityList::RemoveFromTargets(Mob *mob, bool RemoveFromXTargets)
 		}
 
 		m->RemoveFromHateList(mob);
+		m->RemoveFromRampageList(mob);
 	}
 }
 
@@ -1522,6 +1523,7 @@ void EntityList::RemoveFromTargetsFadingMemories(Mob *spell_target, bool RemoveF
 		}
 
 		mob->RemoveFromHateList(spell_target);
+		mob->RemoveFromRampageList(spell_target);
 	}
 }
 
@@ -3143,6 +3145,7 @@ void EntityList::RemoveFromHateLists(Mob *mob, bool settoone)
 		if (it->second->CheckAggro(mob)) {
 			if (!settoone) {
 				it->second->RemoveFromHateList(mob);
+				it->second->RemoveFromRampageList(mob);
 			} else {
 				it->second->SetHateAmountOnEnt(mob, 1);
 			}
@@ -3505,6 +3508,7 @@ void EntityList::ClearAggro(Mob* targ, bool clear_caster_id)
 		}
 		if (it->second->CheckAggro(targ)) {
 			it->second->RemoveFromHateList(targ);
+			it->second->RemoveFromRampageList(targ, true);
 		}
 		if (c && it->second->IsOnFeignMemory(c)) {
 			it->second->RemoveFromFeignMemory(c); //just in case we feigned
@@ -3525,6 +3529,7 @@ void EntityList::ClearWaterAggro(Mob* targ)
 		if (it->second->IsUnderwaterOnly()) {
 			if (it->second->CheckAggro(targ)) {
 				it->second->RemoveFromHateList(targ);
+				it->second->RemoveFromRampageList(targ, true);
 			}
 			if (c && it->second->IsOnFeignMemory(c)) {
 				it->second->RemoveFromFeignMemory(c); //just in case we feigned
@@ -3565,6 +3570,11 @@ void EntityList::ClearFeignAggro(Mob *targ)
 			}
 
 			it->second->RemoveFromHateList(targ);
+
+			if (it->second->GetSpecialAbility(SPECATK_RAMPAGE)) {
+						it->second->RemoveFromRampageList(targ, true);
+			}
+			
 			if (targ->IsClient()) {
 				if (it->second->GetLevel() >= 35 && zone->random.Roll(60)) {
 					it->second->AddFeignMemory(targ);
