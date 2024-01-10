@@ -236,6 +236,7 @@ RULE_BOOL(Character, OnInviteReceiveAlreadyinGroupMessage, true, "If you want cl
 RULE_BOOL(Character, IgnoreLevelBasedHasteCaps, false, "Ignores hard coded level based haste caps.")
 RULE_BOOL(Character, LeaveCursorMoneyOnCorpse, false, "Enable or disable leaving cursor money on player corpses")
 RULE_BOOL(Character, UseForageCommonFood, true, "If enabled, use the common foods specified in the code.")
+RULE_BOOL(Character, PlayerTradingLoreFeedback, true, "If enabled, during a player to player trade, if lore items exist, it will output which items.")
 RULE_CATEGORY_END()
 
 RULE_CATEGORY(Mercs)
