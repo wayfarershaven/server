@@ -6,7 +6,7 @@
  * Any modifications to base repositories are to be made by the generator only
  *
  * @generator ./utils/scripts/generators/repository-generator.pl
- * @docs https://docs.eqemu.io/developer/repositories
+ * @docs https://eqemu.gitbook.io/server/in-development/developer-area/repositories
  */
 
 #ifndef EQEMU_BASE_CHARACTER_CORPSES_REPOSITORY_H
@@ -15,7 +15,6 @@
 #include "../../database.h"
 #include "../../strings.h"
 #include <ctime>
-
 
 class BaseCharacterCorpsesRepository {
 public:
@@ -67,10 +66,6 @@ public:
 		uint32_t    wc_7;
 		uint32_t    wc_8;
 		uint32_t    wc_9;
-		uint32_t    rez_time;
-		uint32_t    gmexp;
-		uint8_t     killedby;
-		uint8_t     rezzable;
 	};
 
 	static std::string PrimaryKey()
@@ -128,10 +123,6 @@ public:
 			"wc_7",
 			"wc_8",
 			"wc_9",
-			"rez_time",
-			"gmexp",
-			"killedby",
-			"rezzable",
 		};
 	}
 
@@ -185,10 +176,6 @@ public:
 			"wc_7",
 			"wc_8",
 			"wc_9",
-			"rez_time",
-			"gmexp",
-			"killedby",
-			"rezzable",
 		};
 	}
 
@@ -276,10 +263,6 @@ public:
 		e.wc_7             = 0;
 		e.wc_8             = 0;
 		e.wc_9             = 0;
-		e.rez_time         = 0;
-		e.gmexp            = 0;
-		e.killedby         = 0;
-		e.rezzable         = 1;
 
 		return e;
 	}
@@ -305,9 +288,8 @@ public:
 	{
 		auto results = db.QueryDatabase(
 			fmt::format(
-				"{} WHERE {} = {} LIMIT 1",
+				"{} WHERE id = {} LIMIT 1",
 				BaseSelect(),
-				PrimaryKey(),
 				character_corpses_id
 			)
 		);
@@ -363,10 +345,6 @@ public:
 			e.wc_7             = static_cast<uint32_t>(strtoul(row[44], nullptr, 10));
 			e.wc_8             = static_cast<uint32_t>(strtoul(row[45], nullptr, 10));
 			e.wc_9             = static_cast<uint32_t>(strtoul(row[46], nullptr, 10));
-			e.rez_time         = static_cast<uint32_t>(strtoul(row[47], nullptr, 10));
-			e.gmexp            = static_cast<uint32_t>(strtoul(row[48], nullptr, 10));
-			e.killedby         = static_cast<uint8_t>(strtoul(row[49], nullptr, 10));
-			e.rezzable         = static_cast<uint8_t>(strtoul(row[50], nullptr, 10));
 
 			return e;
 		}
@@ -446,10 +424,6 @@ public:
 		v.push_back(columns[44] + " = " + std::to_string(e.wc_7));
 		v.push_back(columns[45] + " = " + std::to_string(e.wc_8));
 		v.push_back(columns[46] + " = " + std::to_string(e.wc_9));
-		v.push_back(columns[47] + " = " + std::to_string(e.rez_time));
-		v.push_back(columns[48] + " = " + std::to_string(e.gmexp));
-		v.push_back(columns[49] + " = " + std::to_string(e.killedby));
-		v.push_back(columns[50] + " = " + std::to_string(e.rezzable));
 
 		auto results = db.QueryDatabase(
 			fmt::format(
@@ -518,10 +492,6 @@ public:
 		v.push_back(std::to_string(e.wc_7));
 		v.push_back(std::to_string(e.wc_8));
 		v.push_back(std::to_string(e.wc_9));
-		v.push_back(std::to_string(e.rez_time));
-		v.push_back(std::to_string(e.gmexp));
-		v.push_back(std::to_string(e.killedby));
-		v.push_back(std::to_string(e.rezzable));
 
 		auto results = db.QueryDatabase(
 			fmt::format(
@@ -598,10 +568,6 @@ public:
 			v.push_back(std::to_string(e.wc_7));
 			v.push_back(std::to_string(e.wc_8));
 			v.push_back(std::to_string(e.wc_9));
-			v.push_back(std::to_string(e.rez_time));
-			v.push_back(std::to_string(e.gmexp));
-			v.push_back(std::to_string(e.killedby));
-			v.push_back(std::to_string(e.rezzable));
 
 			insert_chunks.push_back("(" + Strings::Implode(",", v) + ")");
 		}
@@ -682,10 +648,6 @@ public:
 			e.wc_7             = static_cast<uint32_t>(strtoul(row[44], nullptr, 10));
 			e.wc_8             = static_cast<uint32_t>(strtoul(row[45], nullptr, 10));
 			e.wc_9             = static_cast<uint32_t>(strtoul(row[46], nullptr, 10));
-			e.rez_time         = static_cast<uint32_t>(strtoul(row[47], nullptr, 10));
-			e.gmexp            = static_cast<uint32_t>(strtoul(row[48], nullptr, 10));
-			e.killedby         = static_cast<uint8_t>(strtoul(row[49], nullptr, 10));
-			e.rezzable         = static_cast<uint8_t>(strtoul(row[50], nullptr, 10));
 
 			all_entries.push_back(e);
 		}
@@ -757,10 +719,6 @@ public:
 			e.wc_7             = static_cast<uint32_t>(strtoul(row[44], nullptr, 10));
 			e.wc_8             = static_cast<uint32_t>(strtoul(row[45], nullptr, 10));
 			e.wc_9             = static_cast<uint32_t>(strtoul(row[46], nullptr, 10));
-			e.rez_time         = static_cast<uint32_t>(strtoul(row[47], nullptr, 10));
-			e.gmexp            = static_cast<uint32_t>(strtoul(row[48], nullptr, 10));
-			e.killedby         = static_cast<uint8_t>(strtoul(row[49], nullptr, 10));
-			e.rezzable         = static_cast<uint8_t>(strtoul(row[50], nullptr, 10));
 
 			all_entries.push_back(e);
 		}
@@ -817,163 +775,6 @@ public:
 		);
 
 		return (results.Success() && results.begin()[0] ? strtoll(results.begin()[0], nullptr, 10) : 0);
-	}
-
-	static std::string BaseReplace()
-	{
-		return fmt::format(
-			"REPLACE INTO {} ({}) ",
-			TableName(),
-			ColumnsRaw()
-		);
-	}
-
-	static int ReplaceOne(
-		Database& db,
-		const CharacterCorpses &e
-	)
-	{
-		std::vector<std::string> v;
-
-		v.push_back(std::to_string(e.id));
-		v.push_back(std::to_string(e.charid));
-		v.push_back("'" + Strings::Escape(e.charname) + "'");
-		v.push_back(std::to_string(e.zone_id));
-		v.push_back(std::to_string(e.instance_id));
-		v.push_back(std::to_string(e.x));
-		v.push_back(std::to_string(e.y));
-		v.push_back(std::to_string(e.z));
-		v.push_back(std::to_string(e.heading));
-		v.push_back("FROM_UNIXTIME(" + (e.time_of_death > 0 ? std::to_string(e.time_of_death) : "null") + ")");
-		v.push_back(std::to_string(e.guild_consent_id));
-		v.push_back(std::to_string(e.is_rezzed));
-		v.push_back(std::to_string(e.is_buried));
-		v.push_back(std::to_string(e.was_at_graveyard));
-		v.push_back(std::to_string(e.is_locked));
-		v.push_back(std::to_string(e.exp));
-		v.push_back(std::to_string(e.size));
-		v.push_back(std::to_string(e.level));
-		v.push_back(std::to_string(e.race));
-		v.push_back(std::to_string(e.gender));
-		v.push_back(std::to_string(e.class_));
-		v.push_back(std::to_string(e.deity));
-		v.push_back(std::to_string(e.texture));
-		v.push_back(std::to_string(e.helm_texture));
-		v.push_back(std::to_string(e.copper));
-		v.push_back(std::to_string(e.silver));
-		v.push_back(std::to_string(e.gold));
-		v.push_back(std::to_string(e.platinum));
-		v.push_back(std::to_string(e.hair_color));
-		v.push_back(std::to_string(e.beard_color));
-		v.push_back(std::to_string(e.eye_color_1));
-		v.push_back(std::to_string(e.eye_color_2));
-		v.push_back(std::to_string(e.hair_style));
-		v.push_back(std::to_string(e.face));
-		v.push_back(std::to_string(e.beard));
-		v.push_back(std::to_string(e.drakkin_heritage));
-		v.push_back(std::to_string(e.drakkin_tattoo));
-		v.push_back(std::to_string(e.drakkin_details));
-		v.push_back(std::to_string(e.wc_1));
-		v.push_back(std::to_string(e.wc_2));
-		v.push_back(std::to_string(e.wc_3));
-		v.push_back(std::to_string(e.wc_4));
-		v.push_back(std::to_string(e.wc_5));
-		v.push_back(std::to_string(e.wc_6));
-		v.push_back(std::to_string(e.wc_7));
-		v.push_back(std::to_string(e.wc_8));
-		v.push_back(std::to_string(e.wc_9));
-		v.push_back(std::to_string(e.rez_time));
-		v.push_back(std::to_string(e.gmexp));
-		v.push_back(std::to_string(e.killedby));
-		v.push_back(std::to_string(e.rezzable));
-
-		auto results = db.QueryDatabase(
-			fmt::format(
-				"{} VALUES ({})",
-				BaseReplace(),
-				Strings::Implode(",", v)
-			)
-		);
-
-		return (results.Success() ? results.RowsAffected() : 0);
-	}
-
-	static int ReplaceMany(
-		Database& db,
-		const std::vector<CharacterCorpses> &entries
-	)
-	{
-		std::vector<std::string> insert_chunks;
-
-		for (auto &e: entries) {
-			std::vector<std::string> v;
-
-			v.push_back(std::to_string(e.id));
-			v.push_back(std::to_string(e.charid));
-			v.push_back("'" + Strings::Escape(e.charname) + "'");
-			v.push_back(std::to_string(e.zone_id));
-			v.push_back(std::to_string(e.instance_id));
-			v.push_back(std::to_string(e.x));
-			v.push_back(std::to_string(e.y));
-			v.push_back(std::to_string(e.z));
-			v.push_back(std::to_string(e.heading));
-			v.push_back("FROM_UNIXTIME(" + (e.time_of_death > 0 ? std::to_string(e.time_of_death) : "null") + ")");
-			v.push_back(std::to_string(e.guild_consent_id));
-			v.push_back(std::to_string(e.is_rezzed));
-			v.push_back(std::to_string(e.is_buried));
-			v.push_back(std::to_string(e.was_at_graveyard));
-			v.push_back(std::to_string(e.is_locked));
-			v.push_back(std::to_string(e.exp));
-			v.push_back(std::to_string(e.size));
-			v.push_back(std::to_string(e.level));
-			v.push_back(std::to_string(e.race));
-			v.push_back(std::to_string(e.gender));
-			v.push_back(std::to_string(e.class_));
-			v.push_back(std::to_string(e.deity));
-			v.push_back(std::to_string(e.texture));
-			v.push_back(std::to_string(e.helm_texture));
-			v.push_back(std::to_string(e.copper));
-			v.push_back(std::to_string(e.silver));
-			v.push_back(std::to_string(e.gold));
-			v.push_back(std::to_string(e.platinum));
-			v.push_back(std::to_string(e.hair_color));
-			v.push_back(std::to_string(e.beard_color));
-			v.push_back(std::to_string(e.eye_color_1));
-			v.push_back(std::to_string(e.eye_color_2));
-			v.push_back(std::to_string(e.hair_style));
-			v.push_back(std::to_string(e.face));
-			v.push_back(std::to_string(e.beard));
-			v.push_back(std::to_string(e.drakkin_heritage));
-			v.push_back(std::to_string(e.drakkin_tattoo));
-			v.push_back(std::to_string(e.drakkin_details));
-			v.push_back(std::to_string(e.wc_1));
-			v.push_back(std::to_string(e.wc_2));
-			v.push_back(std::to_string(e.wc_3));
-			v.push_back(std::to_string(e.wc_4));
-			v.push_back(std::to_string(e.wc_5));
-			v.push_back(std::to_string(e.wc_6));
-			v.push_back(std::to_string(e.wc_7));
-			v.push_back(std::to_string(e.wc_8));
-			v.push_back(std::to_string(e.wc_9));
-			v.push_back(std::to_string(e.rez_time));
-			v.push_back(std::to_string(e.gmexp));
-			v.push_back(std::to_string(e.killedby));
-			v.push_back(std::to_string(e.rezzable));
-
-			insert_chunks.push_back("(" + Strings::Implode(",", v) + ")");
-		}
-
-		std::vector<std::string> v;
-
-		auto results = db.QueryDatabase(
-			fmt::format(
-				"{} VALUES {}",
-				BaseReplace(),
-				Strings::Implode(",", insert_chunks)
-			)
-		);
-
-		return (results.Success() ? results.RowsAffected() : 0);
 	}
 
 };
