@@ -4442,39 +4442,41 @@ void Mob::HealDamage(uint64 amount, Mob *caster, uint16 spell_id)
 
 	if (amount > (maxhp - curhp))
 		acthealed = (maxhp - curhp);
-	else
+	else {
 		acthealed = amount;
+	}
 
-	if (acthealed > 100) {
+	if (acthealed > RuleI(Spells, HealAmountMessageFilterThreshold)) {
 		if (caster) {
-			if (IsBuffSpell(spell_id)) { // hots
-				// message to caster
+			if (IsBuffSpell(spell_id)) {
 				if (caster->IsClient() && caster == this) {
-					if (caster->CastToClient()->ClientVersionBit() & EQ::versions::maskSoFAndLater)
+					if (caster->CastToClient()->ClientVersionBit() & EQ::versions::maskSoFAndLater) {
 						FilteredMessageString(caster, Chat::NonMelee, FilterHealOverTime,
 											  HOT_HEAL_SELF, itoa(acthealed), spells[spell_id].name);
-					else
+					} else {
 						FilteredMessageString(caster, Chat::NonMelee, FilterHealOverTime,
 											  YOU_HEALED, GetCleanName(), itoa(acthealed));
-				}
-				else if (caster->IsClient() && caster != this) {
-					if (caster->CastToClient()->ClientVersionBit() & EQ::versions::maskSoFAndLater)
+					}
+				} else if (caster->IsClient() && caster != this) {
+					if (caster->CastToClient()->ClientVersionBit() & EQ::versions::maskSoFAndLater) {
 						caster->FilteredMessageString(caster, Chat::NonMelee, FilterHealOverTime,
 													  HOT_HEAL_OTHER, GetCleanName(), itoa(acthealed),
 													  spells[spell_id].name);
-					else
+					} else {
 						caster->FilteredMessageString(caster, Chat::NonMelee, FilterHealOverTime,
 													  YOU_HEAL, GetCleanName(), itoa(acthealed));
+					}
 				}
-				// message to target
+
 				if (IsClient() && caster != this) {
-					if (CastToClient()->ClientVersionBit() & EQ::versions::maskSoFAndLater)
+					if (CastToClient()->ClientVersionBit() & EQ::versions::maskSoFAndLater) {
 						FilteredMessageString(caster, Chat::NonMelee, FilterHealOverTime,
 											  HOT_HEALED_OTHER, caster->GetCleanName(),
 											  itoa(acthealed), spells[spell_id].name);
-					else
+					} else {
 						FilteredMessageString(this, Chat::NonMelee, FilterHealOverTime,
 											  YOU_HEALED, caster->GetCleanName(), itoa(acthealed));
+					}
 				}
 			} else { // normal heals
 				// Message to caster
@@ -4482,7 +4484,8 @@ void Mob::HealDamage(uint64 amount, Mob *caster, uint16 spell_id)
 					caster->FilteredMessageString(caster, Chat::NonMelee,
 						FilterSpellDamage, YOU_HEAL, GetCleanName(),
 						itoa(acthealed));
-					}
+				}
+
 				// Message to target
 				if (IsClient() && caster != this) {
 					FilteredMessageString(caster, Chat::NonMelee,
@@ -4499,12 +4502,13 @@ void Mob::HealDamage(uint64 amount, Mob *caster, uint16 spell_id)
 	}
 
 	if (curhp < maxhp) {
-		if ((curhp + amount) > maxhp)
+		if ((curhp + amount) > maxhp) {
 			curhp = maxhp;
-		else
+		} else {
 			curhp += amount;
-		SetHP(curhp);
+		}
 
+		SetHP(curhp);
 		SendHPUpdate();
 	}
 }

@@ -519,6 +519,7 @@ RULE_INT(Spells, ResurrectionEffectBlock, 2, "0 = allow overwrites/rule disabled
 RULE_BOOL(Spells, WaterMatchRequiredForLoS, true, "Enable/Disable the requirement of both the attacker/victim being both in or out of water for spells LoS to pass.")
 RULE_INT(Spells, DefensiveProcPenaltyLevelGap, 6, "Defensive Proc Penalty Level Gap where procs start losing their proc rate at RuleR(Spells, DefensiveProcPenaltyModifier)% per level difference")
 RULE_REAL(Spells, DefensiveProcPenaltyLevelGapModifier, 10.0f, "Defensive Proc Penalty Level Gap Modifier where procs start losing their proc rate at defined % after RuleI(Spells, DefensiveProcLevelGap) level difference")
+RULE_INT(Spells, HealAmountMessageFilterThreshold, 0, "Lifetaps below this threshold will not have a message sent to the client (Heal will still process) 0 to Disable.")
 RULE_CATEGORY_END()
 
 RULE_CATEGORY(Combat)
