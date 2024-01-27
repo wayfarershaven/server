@@ -844,6 +844,7 @@ void Client::AI_Process()
 
 		if (GetTarget()->IsCorpse()) {
 			RemoveFromHateList(this);
+			RemoveFromRampageList(this);
 			return;
 		}
 
@@ -1162,6 +1163,7 @@ void Mob::AI_Process() {
 
 		if (target->IsCorpse()) {
 			RemoveFromHateList(this);
+			RemoveFromRampageList(this);
 			return;
 		}
 
@@ -2133,6 +2135,33 @@ void Mob::ClearRampage()
 	RampageArray.clear();
 }
 
+// if force is false, it will not remove feigned clients
+void Mob::RemoveFromRampageList(Mob* mob, bool force)
+{
+	if (!mob) {
+		return;
+	}
+
+	if (
+		IsNPC() &&
+		GetSpecialAbility(SPECATK_RAMPAGE) &&
+		(
+			force ||
+			mob->IsNPC() ||
+			(
+				mob->IsClient() &&
+				!mob->CastToClient()->GetFeigned()
+			)
+		)
+	) {
+		for (int i = 0; i < RampageArray.size(); i++) {
+			if (mob->GetID() == RampageArray[i]) {
+				RampageArray[i] = 0;
+			}
+		}
+	}
+}
+
 bool Mob::Rampage(ExtraAttackOptions *opts)
 {
 	int index_hit = 0;
@@ -2163,6 +2192,12 @@ bool Mob::Rampage(ExtraAttackOptions *opts)
 				continue;
 			}
 			
+			if (m_target->IsCorpse()) {
+				LogAggroDetail("[{}] is on [{}]'s rampage list", m_target->GetCleanName(), GetCleanName());
+				RemoveFromRampageList(m_target, true);
+				continue;
+			}
+
 			if ((DistanceSquared(m_Position, m_target->GetPosition()) < (RuleI(Combat, RampageDistance)*RuleI(Combat, RampageDistance))) && !m_target->CastToClient()->GetFeigned()) {
 				ProcessAttackRounds(m_target, opts, true);
 				index_hit++;

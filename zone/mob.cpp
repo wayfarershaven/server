@@ -4520,8 +4520,8 @@ bool Mob::CanThisClassTripleAttack() const {
 	if (!IsClient()) {
 		return false; // When they added the real triple attack skill, mobs lost the ability to triple
 	} else {
-		// Innate Triple Attack only for Level 60 Monks, Warriors and Berserker in our era
-		return (GetLevel() >= 60 && (GetClass() == Class::Warrior || GetClass() == Class::Monk || GetClass() == Class::Berserker));
+		// Innate Triple Attack only for Level 60 Monks, Warriors, Berserker and Rangers in our era
+		return (GetLevel() >= 60 && (GetClass() == Class::Warrior || GetClass() == Class::Monk || GetClass() == Class::Berserker || GetClass() == Class::Ranger));
 	}
 }
 

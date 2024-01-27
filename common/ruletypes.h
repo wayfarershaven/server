@@ -236,6 +236,7 @@ RULE_BOOL(Character, OnInviteReceiveAlreadyinGroupMessage, true, "If you want cl
 RULE_BOOL(Character, IgnoreLevelBasedHasteCaps, false, "Ignores hard coded level based haste caps.")
 RULE_BOOL(Character, LeaveCursorMoneyOnCorpse, false, "Enable or disable leaving cursor money on player corpses")
 RULE_BOOL(Character, UseForageCommonFood, true, "If enabled, use the common foods specified in the code.")
+RULE_BOOL(Character, PlayerTradingLoreFeedback, true, "If enabled, during a player to player trade, if lore items exist, it will output which items.")
 RULE_CATEGORY_END()
 
 RULE_CATEGORY(Mercs)
@@ -277,6 +278,7 @@ RULE_BOOL(Skills, TrainSenseHeading, false, "Switch whether SenseHeading is trai
 RULE_INT(Skills, SenseHeadingStartValue, 200, "Start value of sense heading skill")
 RULE_BOOL(Skills, SelfLanguageLearning, true, "Enabling self-learning of languages")
 RULE_BOOL(Skills, RequireTomeHandin, false, "Disable click-to-learn and force hand in to Guild Master")
+RULE_INT(Skills, TradeSkillClamp, 0, "Legacy tradeskills would clamp at 252 regardless of item modifiers and skill combination. DEFAULT: 0 will bypass clamp. Legacy value 252")
 RULE_CATEGORY_END()
 
 RULE_CATEGORY(Pets)
@@ -517,6 +519,7 @@ RULE_INT(Spells, ResurrectionEffectBlock, 2, "0 = allow overwrites/rule disabled
 RULE_BOOL(Spells, WaterMatchRequiredForLoS, true, "Enable/Disable the requirement of both the attacker/victim being both in or out of water for spells LoS to pass.")
 RULE_INT(Spells, DefensiveProcPenaltyLevelGap, 6, "Defensive Proc Penalty Level Gap where procs start losing their proc rate at RuleR(Spells, DefensiveProcPenaltyModifier)% per level difference")
 RULE_REAL(Spells, DefensiveProcPenaltyLevelGapModifier, 10.0f, "Defensive Proc Penalty Level Gap Modifier where procs start losing their proc rate at defined % after RuleI(Spells, DefensiveProcLevelGap) level difference")
+RULE_INT(Spells, HealAmountMessageFilterThreshold, 0, "Lifetaps below this threshold will not have a message sent to the client (Heal will still process) 0 to Disable.")
 RULE_CATEGORY_END()
 
 RULE_CATEGORY(Combat)
@@ -603,6 +606,7 @@ RULE_REAL(Combat, ArcheryBaseDamageBonus, 0.85, "Percentage modifier to base arc
 RULE_INT(Combat, TripleAttackChanceWarrior, 100, "Innate Chance for Warrior to Triple Attack after a Double Attack (125 = 12.5%). DEFAULT: 100")
 RULE_INT(Combat, TripleAttackChanceMonk, 100, "Innate Chance for Monk to Triple Attack after a Double Attack (200 = 20%). DEFAULT: 100")
 RULE_INT(Combat, TripleAttackChanceBerserker, 100, "Innate Chance for Berserker to Triple Attack after a Double Attack (200 = 20%). DEFAULT: 100")
+RULE_INT(Combat, TripleAttackChanceRanger, 100, "Innate Chance for Ranger to Triple Attack after a Double Attack (200 = 20%). DEFAULT: 100")
 RULE_BOOL(Combat, RogueBackstabHasteCorrection, false, "Toggle to enable correction for Haste impacting Backstab DPS too much.  DEFAULT: false")
 RULE_BOOL(Combat, UseMobFixedOffenseSkill, true, "Toggle to enabled the use of a fixed offense skill for Mobs.  DEFAULT: true")
 RULE_BOOL(Combat, UseEnhancedMobFixedWeaponSkill, true, "Toggle to enabled the use of an enhanced (slightly higher hit rate) fixed weapon skill for Mobs.  DEFAULT: true")
