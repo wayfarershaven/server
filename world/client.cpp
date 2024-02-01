@@ -840,7 +840,6 @@ bool Client::HandleEnterWorldPacket(const EQApplicationPacket *app) {
 		}
 
 		/* Check Tutorial*/
-		/*
 		if (RuleB(World, EnableTutorialButton) && (ew->tutorial || StartInTutorial)) {
 			bool tutorial_enabled = false;
 			for (auto row : results) {
@@ -865,7 +864,6 @@ bool Client::HandleEnterWorldPacket(const EQApplicationPacket *app) {
 				return true;
 			}
 		}
-		*/
 	}
 
 	if (!zone_id || !ZoneName(zone_id)) {
