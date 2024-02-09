@@ -59,7 +59,7 @@ int main()
 		tests.add(new SkillsUtilsTest());
 		tests.add(new TaskStateTest());
 		tests.run(*output, true);
-	catch (std::exception &ex) {
+	} catch (std::exception &ex) {
 		LogError("Test Failure [{}]", ex.what());
 		return -1;
 	}
