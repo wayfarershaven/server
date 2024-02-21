@@ -7762,11 +7762,6 @@ void Client::Handle_OP_GuildBank(const EQApplicationPacket *app)
 		{
 			MessageString(Chat::Red, GUILD_BANK_CANNOT_DEPOSIT);
 			GuildBankDepositAck(true, sentAction);
-
-			if (ClientVersion() >= EQ::versions::ClientVersion::RoF) {
-				PushItemOnCursor(CursorItem, true);
-			}
-
 			return;
 		}
 
