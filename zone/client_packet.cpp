@@ -5294,7 +5294,7 @@ void Client::Handle_OP_Consider(const EQApplicationPacket *app)
 	if (improved_hidden && (!t->see_improved_hide && (t->see_invis || t->see_hide))) {
 		MessageString(Chat::NPCQuestSay, SOS_KEEPS_HIDDEN);
 	// we are trying to hide but they can see us
-	} else if (((invisible || invisible_undead || hidden || invisible_animals) && !IsInvisible(t)) || (improved_hidden && t->see_improved_hide)) {
+	} else if (((invisible || hidden || invisible_animals) && !IsInvisible(t)) || (improved_hidden && t->see_improved_hide) || invisible_undead && t->GetBodyType() == BT_Undead && !IsInvisible(t)) {
 		MessageString(Chat::NPCQuestSay, SUSPECT_SEES_YOU);
 	}
 
