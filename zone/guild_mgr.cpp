@@ -1027,7 +1027,7 @@ void GuildBankManager::SendGuildBank(Client *c)
 				outapp->WriteUInt8(0); // empty
 			}
 		}
-		outapp->SetWritePosition(outapp->GetWritePosition() + 20); // newer clients have 40 deposit slots, keep them 0 for now
+		//outapp->SetWritePosition(outapp->GetWritePosition() + 40); // newer clients have 40 deposit slots, keep them 0 for now
 
 		for (int i = 0; i < GUILD_BANK_MAIN_AREA_SIZE; ++i) {
 			const EQ::ItemData *Item = database.GetItem(guild_bank->Items.MainArea[i].ItemID);

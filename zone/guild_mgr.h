@@ -15,7 +15,7 @@ extern PetitionList petition_list;
 #define MBUFFER 50
 
 #define GUILD_BANK_MAIN_AREA_SIZE	200
-#define GUILD_BANK_DEPOSIT_AREA_SIZE	20
+#define GUILD_BANK_DEPOSIT_AREA_SIZE	40
 class Client;
 class ServerPacket;
 
