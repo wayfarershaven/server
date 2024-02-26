@@ -1933,14 +1933,10 @@ void SharedDatabase::LoadUnblockableSpells(SPDat_Spell_Struct* sp, int32 max_spe
 	const auto& l = SpellsUnblockableRepository::GetWhere(
 		*this,
 		fmt::format(
-			"`spell_id` BETWEEN 0 AND {}",
+			"`spell_id` BETWEEN 1 AND {}",
 			max_spell_id
 		)
 	);
-
-	if (l.empty()) {
-		return;
-	}
 
 	for (const auto& e: l) {
 		sp[e.spell_id].is_unblockable = e.is_unblockable;
@@ -2159,9 +2155,11 @@ void SharedDatabase::LoadSpells(void *data, int max_spells) {
 		sp[tempid].min_range = Strings::ToFloat(row[231]);
 		sp[tempid].no_remove = Strings::ToBool(row[232]);
 		sp[tempid].damage_shield_type = 0;
-    }
+		sp[tempid].is_unblockable = false;
+	}
 
-    LoadDamageShieldTypes(sp, max_spells);
+	LoadDamageShieldTypes(sp, max_spells);
+	LoadUnblockableSpells(sp, max_spells);
 }
 
 int SharedDatabase::GetMaxBaseDataLevel() {
