@@ -44,6 +44,7 @@
 #include "repositories/starting_items_repository.h"
 #include "path_manager.h"
 #include "repositories/loottable_repository.h"
+#include "repositories/spells_unblockable_repository.h"
 
 namespace ItemField
 {
@@ -1927,6 +1928,21 @@ void SharedDatabase::LoadDamageShieldTypes(SPDat_Spell_Struct* sp, int32 iMaxSpe
 
 }
 
+void SharedDatabase::LoadUnblockableSpells(SPDat_Spell_Struct* sp, int32 max_spell_id)
+{
+	const auto& l = SpellsUnblockableRepository::GetWhere(
+		*this,
+		fmt::format(
+			"`spell_id` BETWEEN 1 AND {}",
+			max_spell_id
+		)
+	);
+
+	for (const auto& e: l) {
+		sp[e.spell_id].is_unblockable = e.is_unblockable;
+	}
+}
+
 const EvolveInfo* SharedDatabase::GetEvolveInfo(uint32 loregroup) {
 	return nullptr;	// nothing here for now... database and/or sharemem pulls later
 }
@@ -2139,9 +2155,11 @@ void SharedDatabase::LoadSpells(void *data, int max_spells) {
 		sp[tempid].min_range = Strings::ToFloat(row[231]);
 		sp[tempid].no_remove = Strings::ToBool(row[232]);
 		sp[tempid].damage_shield_type = 0;
-    }
+		sp[tempid].is_unblockable = false;
+	}
 
-    LoadDamageShieldTypes(sp, max_spells);
+	LoadDamageShieldTypes(sp, max_spells);
+	LoadUnblockableSpells(sp, max_spells);
 }
 
 int SharedDatabase::GetMaxBaseDataLevel() {

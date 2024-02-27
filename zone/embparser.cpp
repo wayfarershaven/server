@@ -193,6 +193,7 @@ const char *QuestEventSubroutines[_LargestEventID] = {
 	"EVENT_LOOT_ADDED",
 	"EVENT_LDON_POINTS_GAIN",
 	"EVENT_LDON_POINTS_LOSS",
+	"EVENT_SPELL_BLOCKED",
 	// Add new events before these or Lua crashes
 	"EVENT_SPELL_EFFECT_BOT",
 	"EVENT_SPELL_EFFECT_BUFF_TIC_BOT"
@@ -1785,6 +1786,25 @@ void PerlembParser::ExportEventVariables(
 			break;
 		}
 
+		case EVENT_SPELL_BLOCKED: {
+			Seperator sep(data);
+			const uint32 blocking_spell_id = Strings::ToUnsignedInt(sep.arg[0]);
+			const uint32 cast_spell_id = Strings::ToUnsignedInt(sep.arg[1]);
+
+			ExportVar(package_name.c_str(), "blocking_spell_id", blocking_spell_id);
+			ExportVar(package_name.c_str(), "cast_spell_id", cast_spell_id);
+
+			if (IsValidSpell(blocking_spell_id)) {
+				ExportVar(package_name.c_str(), "blocking_spell", "Spell", (void*) &spells[blocking_spell_id]);
+			}
+
+			if (IsValidSpell(cast_spell_id)) {
+				ExportVar(package_name.c_str(), "cast_spell", "Spell", (void*) &spells[cast_spell_id]);
+			}
+
+			break;
+		}
+		
 			//tradeskill events
 		case EVENT_COMBINE_SUCCESS:
 		case EVENT_COMBINE_FAILURE: {

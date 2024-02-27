@@ -175,7 +175,8 @@ const char *LuaEvents[_LargestEventID] = {
 	"event_alt_currency_loss",
 	"event_loot_added",
 	"event_ldon_points_gain",
-	"event_ldon_points_loss"
+	"event_ldon_points_loss",
+	"event_spell_blocked"
 };
 
 extern Zone *zone;
@@ -234,6 +235,7 @@ LuaParser::LuaParser() {
 	NPCArgumentDispatch[EVENT_DAMAGE_GIVEN]    = handle_npc_damage;
 	NPCArgumentDispatch[EVENT_DAMAGE_TAKEN]    = handle_npc_damage;
 	NPCArgumentDispatch[EVENT_LOOT_ADDED]      = handle_npc_loot_added;
+	NPCArgumentDispatch[EVENT_SPELL_BLOCKED]   = handle_npc_spell_blocked;
 
 	PlayerArgumentDispatch[EVENT_SAY]                        = handle_player_say;
 	PlayerArgumentDispatch[EVENT_ENVIRONMENTAL_DAMAGE]       = handle_player_environmental_damage;
@@ -314,6 +316,7 @@ LuaParser::LuaParser() {
 	PlayerArgumentDispatch[EVENT_ALT_CURRENCY_LOSS]          = handle_player_alt_currency_gain_loss;
 	PlayerArgumentDispatch[EVENT_LDON_POINTS_GAIN]           = handle_player_ldon_points_gain_loss;
 	PlayerArgumentDispatch[EVENT_LDON_POINTS_LOSS]           = handle_player_ldon_points_gain_loss;
+	PlayerArgumentDispatch[EVENT_SPELL_BLOCKED]              = handle_player_spell_blocked;
 
 	ItemArgumentDispatch[EVENT_ITEM_CLICK]      = handle_item_click;
 	ItemArgumentDispatch[EVENT_ITEM_CLICK_CAST] = handle_item_click;
@@ -355,6 +358,7 @@ LuaParser::LuaParser() {
 	BotArgumentDispatch[EVENT_UNEQUIP_ITEM_BOT] = handle_bot_equip_item;
 	BotArgumentDispatch[EVENT_DAMAGE_GIVEN]     = handle_bot_damage;
 	BotArgumentDispatch[EVENT_DAMAGE_TAKEN]     = handle_bot_damage;
+	BotArgumentDispatch[EVENT_SPELL_BLOCKED]          = handle_bot_spell_blocked;
 #endif
 
 	L = nullptr;
