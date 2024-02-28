@@ -372,15 +372,7 @@ public:
 	inline bool SeeHide() const { return see_hide; }
 	inline bool SeeImprovedHide() const { return see_improved_hide; }
 	inline bool SeeInvisibleUndead() const { return see_invis_undead; }
-	inline uint8 SeeInvisible() const 
-	{
-		uint8 value = see_invis;
-		if (IsClient()) {
-			value += aabonuses.SeeInvis; 
-			value += itembonuses.SeeInvis; 
-		} 
-		return value; 
-	}
+	uint8 SeeInvisible();
 
 	uint32 GetTextureProfileMaterial(uint8 material_slot) const;
 	uint32 GetTextureProfileColor(uint8 material_slot) const;
