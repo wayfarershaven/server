@@ -4357,6 +4357,15 @@ void Mob::ChangeSize(float in_size = 0, bool bNoRestriction) {
 	SendAppearancePacket(AT_Size, (uint32) in_size);
 }
 
+uint8 Mob::SeeInvisible()
+{
+	// it's not clear how multiple sources of see invis should be handled - for now, simply taking a maximum of all sources
+	std::vector<uint8> v{ see_invis, aabonuses.SeeInvis, spellbonuses.SeeInvis, itembonuses.SeeInvis };
+	auto biggest = std::max_element(std::begin(v), std::end(v));
+
+	return *biggest;
+}
+
 Mob* Mob::GetOwnerOrSelf() {
 	if (!GetOwnerID())
 		return this;
@@ -7418,13 +7427,14 @@ float Mob::HeadingAngleToMob(float other_x, float other_y)
 
 bool Mob::GetSeeInvisible(uint8 see_invis)
 {
-	if(see_invis > 0) {
-		if(see_invis == 1) {
+	if(see_invis > 0)
+	{
+		if(see_invis == 1)
 			return true;
-		} else {
-			if (zone->random.Int(0, 99) < see_invis) {
+		else
+		{
+			if (zone->random.Int(0, 99) < see_invis)
 				return true;
-			}
 		}
 	}
 	return false;
