@@ -3514,11 +3514,15 @@ int Mob::AddBuff(Mob *caster, uint16 spell_id, int duration, int32 level_overrid
 				}
 
 				return -1;
-			}
-
-			if (ret == 1) {	// set a flag to indicate that there will be overwriting
-				LogSpells("Adding buff [{}] will overwrite spell [{}] in slot [{}] with caster level [{}]",
-						spell_id, curbuf.spellid, buffslot, curbuf.casterlevel);
+			} else if (ret == 1 && !will_overwrite) {
+				// set a flag to indicate that there will be overwriting
+				LogSpells(
+					"Adding buff [{}] will overwrite spell [{}] in slot [{}] with caster level [{}]",
+					spell_id,
+					curbuf.spellid,
+					buffslot,
+					curbuf.casterlevel
+				);
 				// If this is the first buff it would override, use its slot
 				if (!will_overwrite && !IsDisciplineBuff(spell_id)) {
 					emptyslot = buffslot;
@@ -3526,11 +3530,16 @@ int Mob::AddBuff(Mob *caster, uint16 spell_id, int duration, int32 level_overrid
 
 				will_overwrite = true;
 				overwrite_slots.push_back(buffslot);
-			}
-
-			if (ret == 2) { //ResurrectionEffectBlock handling to move potential overwrites to a new buff slock while keeping Res Sickness
-				LogSpells("Adding buff [{}] will overwrite spell [{}] in slot [{}] with caster level [{}], but ResurrectionEffectBlock is set to 2. Attempting to move [{}] to an empty buff slot.",
-					spell_id, curbuf.spellid, buffslot, curbuf.casterlevel, spell_id);
+			} else if (ret == 2) {
+				//ResurrectionEffectBlock handling to move potential overwrites to a new buff slock while keeping Res Sickness
+				LogSpells(
+					"Adding buff [{}] will overwrite spell [{}] in slot [{}] with caster level [{}], but ResurrectionEffectBlock is set to 2. Attempting to move [{}] to an empty buff slot.",
+					spell_id,
+					curbuf.spellid,
+					buffslot,
+					curbuf.casterlevel,
+					spell_id
+				);
 			}
 		} else {
 			if (emptyslot == -1) {
