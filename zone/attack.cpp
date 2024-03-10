@@ -2575,11 +2575,6 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 
 				if (m.member && m.member->IsClient()) { // If Group Member is Client
 					Client *c = m.member;
-					c->RecordKilledNPCEvent(this);
-
-					if (parse->HasQuestSub(GetNPCTypeID(), EVENT_KILLED_MERIT)) {
-						parse->EventNPC(EVENT_KILLED_MERIT, this, c, "killed", 0);
-					}
 
 					if (RuleB(NPC, EnableMeritBasedFaction)) {
 						c->SetFactionLevel(c->CharacterID(), GetNPCFactionID(), c->GetBaseClass(), c->GetBaseRace(), c->GetDeity());
@@ -2624,16 +2619,10 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 					killer_mob->TrySpellOnKill(killed_level, spell);
 			}
 
-			/* Send the EVENT_KILLED_MERIT event and update kill tasks
-			* for all group members */
+			/* Update kill tasks for all group members */
 			for (int i = 0; i < MAX_GROUP_MEMBERS; i++) {
 				if (kg->members[i] != nullptr && kg->members[i]->IsClient()) { // If Group Member is Client
 					Client *c = kg->members[i]->CastToClient();
-					c->RecordKilledNPCEvent(this);
-
-					if (parse->HasQuestSub(GetNPCTypeID(), EVENT_KILLED_MERIT)) {
-						parse->EventNPC(EVENT_KILLED_MERIT, this, c, "killed", 0);
-					}
 
 					if (RuleB(NPC, EnableMeritBasedFaction)) {
 						c->SetFactionLevel(c->CharacterID(), GetNPCFactionID(), c->GetBaseClass(), c->GetBaseRace(), c->GetDeity());
@@ -2676,13 +2665,6 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 						killer_mob->TrySpellOnKill(killed_level, spell);
 					}
 				}
-			}
-
-			/* Send the EVENT_KILLED_MERIT event */
-			give_exp_client->RecordKilledNPCEvent(this);
-
-			if (parse->HasQuestSub(GetNPCTypeID(), EVENT_KILLED_MERIT)) {
-				parse->EventNPC(EVENT_KILLED_MERIT, this, give_exp_client, "killed", 0);
 			}
 
 			if (RuleB(NPC, EnableMeritBasedFaction)) {
@@ -2859,6 +2841,51 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 	entity_list.UpdateFindableNPCState(this, true);
 
 	m_combat_record.Stop();
+
+	if (give_exp_client && !IsCorpse()) {
+		if (give_exp_client->IsRaidGrouped()) {
+			Raid* r = entity_list.GetRaidByClient(give_exp_client);
+
+			if (r) {
+				for (const auto& m: r->members) {
+					if (m.is_bot) {
+						continue;
+					}
+
+					if (m.member) {
+						m.member->RecordKilledNPCEvent(this);
+
+						if (parse->HasQuestSub(GetNPCTypeID(), EVENT_KILLED_MERIT)) {
+							parse->EventNPC(EVENT_KILLED_MERIT, this, m.member, "killed", 0);
+						}
+					}
+				}
+			}
+		} else if (give_exp_client->IsGrouped()) {
+			Group* g = entity_list.GetGroupByClient(give_exp_client);
+
+			if (g) {
+				for (const auto& m : g->members) {
+					if (m && m->IsClient()) {
+						Client* c = m->CastToClient();
+
+						c->RecordKilledNPCEvent(this);
+
+						if (parse->HasQuestSub(GetNPCTypeID(), EVENT_KILLED_MERIT)) {
+							parse->EventNPC(EVENT_KILLED_MERIT, this, c, "killed", 0);
+						}
+					}
+				}
+			}
+		} else {
+			give_exp_client->RecordKilledNPCEvent(this);
+
+			if (parse->HasQuestSub(GetNPCTypeID(), EVENT_KILLED_MERIT)) {
+				parse->EventNPC(EVENT_KILLED_MERIT, this, give_exp_client, "killed", 0);
+			}
+		}
+	}
+	
 	const auto& export_string = fmt::format(
 		"{} {} {} {}",
 		killer_mob ? killer_mob->GetID() : 0,
