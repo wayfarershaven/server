@@ -68,6 +68,7 @@ namespace EQ
 #include "cheat_manager.h"
 #include "../common/events/player_events.h"
 #include "../common/data_verification.h"
+#include "../common/repositories/parcels_repository.h"
 
 #ifdef _WINDOWS
 	// since windows defines these within windef.h (which windows.h include)
@@ -323,8 +324,34 @@ public:
 	void ReturnTraderReq(const EQApplicationPacket* app,int16 traderitemcharges, uint32 itemid = 0);
 	void TradeRequestFailed(const EQApplicationPacket* app);
 	void BuyTraderItem(TraderBuy_Struct* tbs,Client* trader,const EQApplicationPacket* app);
-	void FinishTrade(Mob* with, bool finalizer = false, void* event_entry = nullptr, std::list<void*>* event_details = nullptr);
+	void FinishTrade(
+		Mob *with,
+		bool finalizer = false,
+		void *event_entry = nullptr,
+		std::list<void *> *event_details = nullptr
+	);
 	void SendZonePoints();
+	void SendBulkParcels();
+	void DoParcelCancel();
+	void DoParcelSend(Parcel_Struct *parcel_in);
+	void DoParcelRetrieve(ParcelRetrieve_Struct parcel_in);
+	void SendParcel(Parcel_Struct parcel);
+	void SendParcelStatus();
+	void SendParcelAck();
+	void SendParcelRetrieveAck();
+	void SendParcelDelete(const ParcelRetrieve_Struct parcel_in);
+	void SendParcelDeliveryToWorld(Parcel_Struct parcel);
+	void SetParcelEnabled(bool status) { parcel_enabled = status; }
+	bool GetParcelEnabled() { return parcel_enabled; }
+	void SetParcelCount(uint32 count) { parcel_count = count; }
+	uint32 GetParcelCount() { return parcel_count; }
+	bool GetEngagedWithParcelMerchant() { return parcel_merchant_engaged; }
+	void SetEngagedWithParcelMerchant(bool status) { parcel_merchant_engaged = status; }
+	Timer *GetParcelTimer() { return &parcel_timer; }
+	bool DeleteParcel(uint32 parcel_id);
+	void LoadParcels();
+	std::map<uint32, BaseParcelsRepository::Parcels> GetParcelsMap() { return parcels; }
+	uint32 FindNextFreeParcelSlot(std::string &character_name);
 
 	void SendBuyerResults(char *SearchQuery, uint32 SearchID);
 	void ShowBuyLines(const EQApplicationPacket *app);
@@ -1853,6 +1880,14 @@ private:
 	bool Trader;
 	bool Buyer;
 	std::string BuyerWelcomeMessage;
+	uint32                                           parcel_platinum;
+	uint32                                           parcel_gold;
+	uint32                                           parcel_silver;
+	uint32                                           parcel_copper;
+	uint32                                           parcel_count;
+	bool                                             parcel_enabled;
+	bool                                             parcel_merchant_engaged;
+	std::map<uint32, BaseParcelsRepository::Parcels> parcels;
 	int Haste; //precalced value
 	uint32 tmSitting; // time stamp started sitting, used for HP regen bonus added on MAY 5, 2004
 
@@ -1951,7 +1986,7 @@ private:
 	Timer dynamiczone_removal_timer;
 	Timer task_request_timer;
 	Timer pick_lock_timer;
-
+	Timer parcel_timer;	//Used to limit the number of parcels to one every 30 seconds (default).  Changable via rule.
 	Timer heroforge_wearchange_timer;
 
 	glm::vec3 m_Proximity;
