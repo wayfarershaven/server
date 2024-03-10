@@ -56,6 +56,11 @@ namespace PlayerEvent {
 		KILLED_NAMED_NPC,
 		KILLED_RAID_NPC,
 		ITEM_CREATION,
+		GUILD_TRIBUTE_DONATE_ITEM,
+		GUILD_TRIBUTE_DONATE_PLAT,
+		PARCEL_SEND,
+		PARCEL_RETRIEVE,
+		PARCEL_DELETE, 
 		MAX // dont remove
 	};
 
@@ -64,7 +69,7 @@ namespace PlayerEvent {
 	// If event is unimplemented just tag (Unimplemented) in the name
 	// Events don't get saved to the database if unimplemented or deprecated
 	// Events tagged as deprecated will get automatically removed
-	static const char *EventName[PlayerEvent::MAX] = {
+	static const char *EventName[EventType::MAX] = {
 		"None",
 		"GM Command",
 		"Zoning",
@@ -112,7 +117,12 @@ namespace PlayerEvent {
 		"Killed NPC",
 		"Killed Named NPC",
 		"Killed Raid NPC",
-		"Item Creation"
+		"Item Creation",
+		"Guild Tribute Donate Item",
+		"Guild Tribute Donate Platinum",
+		"Parcel Item Sent",
+		"Parcel Item Retrieved",
+		"Parcel Prune Routine"
 	};
 
 	// Generic struct used by all events
@@ -219,7 +229,7 @@ namespace PlayerEvent {
 			);
 		}
 	};
-	
+
 	// used in Trade event
 	struct TradeItem {
 		int64       item_id;
@@ -784,7 +794,6 @@ namespace PlayerEvent {
 		uint32      charges;
 		uint32      total_cost;
 		uint64      player_money_balance;
-		uint32		method{ 0 };
 
 
 		// cereal
@@ -813,7 +822,6 @@ namespace PlayerEvent {
 		uint32      charges;
 		uint32      total_cost;
 		uint64      player_money_balance;
-		uint32		method;
 
 
 		// cereal
@@ -944,6 +952,72 @@ namespace PlayerEvent {
 			);
 		}
 	};
+
+	struct ParcelRetrieve
+	{
+        uint32      item_id;
+        uint32      quantity;
+        std::string from_player_name;
+        uint32      sent_date;
+
+		// cereal
+		template<class Archive>
+		void serialize(Archive &ar)
+		{
+			ar(
+				CEREAL_NVP(item_id),
+				CEREAL_NVP(quantity),
+				CEREAL_NVP(from_player_name),
+				CEREAL_NVP(sent_date)
+			);
+		}
+	};
+
+	struct ParcelSend
+	{
+        uint32      item_id;
+        uint32      quantity;
+        std::string from_player_name;
+        std::string to_player_name;
+        uint32      sent_date;
+
+		// cereal
+		template<class Archive>
+		void serialize(Archive &ar)
+		{
+			ar(
+				CEREAL_NVP(item_id),
+				CEREAL_NVP(quantity),
+				CEREAL_NVP(from_player_name),
+				CEREAL_NVP(to_player_name),
+				CEREAL_NVP(sent_date)
+			);
+		}
+	};
+
+	struct ParcelDelete
+	{
+        uint32      item_id;
+        uint32      quantity;
+        std::string to_name;
+        std::string from_name;
+        std::string note;
+        uint32      sent_date;
+
+		// cereal
+		template<class Archive>
+		void serialize(Archive &ar)
+		{
+			ar(
+				CEREAL_NVP(item_id),
+				CEREAL_NVP(quantity),
+				CEREAL_NVP(to_name),
+				CEREAL_NVP(from_name),
+				CEREAL_NVP(note),
+				CEREAL_NVP(sent_date)
+			);
+		}
+	}; 
 }
 
 #endif //EQEMU_PLAYER_EVENTS_H

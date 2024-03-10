@@ -185,6 +185,10 @@
 #define PET_SPELLHOLD_SET_ON		702		//The pet spellhold mode has been set to on.
 #define PET_SPELLHOLD_SET_OFF		703		//The pet spellhold mode has been set to off.
 #define GUILD_NAME_IN_USE			711		//You cannot create a guild with that name, that guild already exists on this server.
+#define PARCEL_DELAY                734     //%1 tells you, 'You must give me a chance to send the last parcel before I can send another!'
+#define PARCEL_DUPLICATE_DELETE     737     //Duplicate lore items are not allowed! Your duplicate %1 has been deleted!
+#define PARCEL_DELIVER_3            741     //%1 told you, 'I will deliver the stack of %2 %3 to %4 as soon as possible!'
+#define PARCEL_INV_FULL             790     //%1 tells you, 'Your inventory appears full!  Unable to retrieve parceled item.'
 #define AA_CAP						1000	//You have reached the AA point cap, and cannot gain any further experience until some of your stored AA point pool is used.
 #define GM_GAINXP					1002	//[GM] You have gained %1 AXP and %2 EXP (%3).
 #define MALE_SLAYUNDEAD				1007	//%1's holy blade cleanses his target!(%2)
@@ -376,6 +380,8 @@
 #define GAIN_RAIDEXP				5085	//You gained raid experience!
 #define DUNGEON_SEALED				5141	//The gateway to the dungeon is sealed off to you.  Perhaps you would be able to enter if you needed to adventure there.
 #define ADVENTURE_COMPLETE			5147	//You received %1 points for successfully completing the adventure.
+#define PARCEL_STATUS_2				5433	//You currently have % 1 parcels in your mail and are % 2 parcels over the limit of % 3!If you do not retrieve at least % 2 parcels before you logout, they will be lost!
+#define PARCEL_STATUS_1				5434	//You currently have % 1 parcels in your mail and are 1 parcel over the limit of % 2!If you do not retrieve at least 1 parcel before you logout, it will be lost!
 #define SUCCOR_FAIL					5169	//The portal collapes before you can escape!
 #define NO_PROPER_ACCESS			5410    //You don't have the proper access rights.
 #define AUGMENT_RESTRICTED			5480	//The item does not satisfy the augment's restrictions.
@@ -403,6 +409,11 @@
 #define TRANSFORM_COMPLETE			6327	//You have successfully transformed your %1.
 #define DETRANSFORM_FAILED			6341 	//%1 has no transformation that can be removed.
 #define GUILD_PERMISSION_FAILED		6418	//You do not have permission to change access options.
+#define PARCEL_DELIVERY_ARRIVED		6465	//You have received a new parcel delivery!
+#define PARCEL_DELIVERY				6466	//%1 tells you, 'I will deliver the %2 to %3 as soon as possible!'
+#define PARCEL_UNKNOWN_NAME			6467	//%1 tells you, 'Unfortunately, I don't know anyone by the name of %2. Here is your %3 back.''
+#define PARCEL_DELIVERED			6471	//%1 hands you the %2 that was sent from %3.
+#define PARCEL_DELIVERED_2			6472	//%1 hands you the stack of %2 %3 that was sent from %4.
 #define GENERIC_STRING				6688	//%1 (used to any basic message)
 #define SENTINEL_TRIG_YOU			6724	//You have triggered your sentinel.
 #define SENTINEL_TRIG_OTHER			6725	//%1 has triggered your sentinel.

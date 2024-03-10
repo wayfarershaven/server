@@ -1616,11 +1616,11 @@ namespace Titanium
 
 	ENCODE(OP_ShopRequest)
 	{
-		ENCODE_LENGTH_EXACT(Merchant_Click_Struct);
-		SETUP_DIRECT_ENCODE(Merchant_Click_Struct, structs::Merchant_Click_Struct);
+		ENCODE_LENGTH_EXACT(MerchantClick_Struct);
+		SETUP_DIRECT_ENCODE(MerchantClick_Struct, structs::MerchantClick_Struct);
 
-		OUT(npcid);
-		OUT(playerid);
+		OUT(npc_id);
+		OUT(player_id);
 		OUT(command);
 		OUT(rate);
 
@@ -2587,31 +2587,18 @@ namespace Titanium
 
 		FINISH_DIRECT_DECODE();
 	}
-
+	
 	DECODE(OP_ShopRequest)
 	{
-		DECODE_LENGTH_EXACT(structs::Merchant_Click_Struct);
-		SETUP_DIRECT_DECODE(Merchant_Click_Struct, structs::Merchant_Click_Struct);
+		DECODE_LENGTH_EXACT(structs::MerchantClick_Struct);
+		SETUP_DIRECT_DECODE(MerchantClick_Struct, structs::MerchantClick_Struct);
 
-		IN(npcid);
-		IN(playerid);
+		IN(npc_id);
+		IN(player_id);
 		IN(command);
 		IN(rate);
 		emu->tab_display = 0;
-		emu->unknown02 = 0;
-
-		FINISH_DIRECT_DECODE();
-	}
-	
-	DECODE(OP_ShopPlayerSell)
-	{
-		DECODE_LENGTH_EXACT(structs::Merchant_Purchase_Struct);
-		SETUP_DIRECT_DECODE(Merchant_Purchase_Struct, structs::Merchant_Purchase_Struct);
-
-		IN(npcid);
-		emu->itemslot = TitaniumToServerSlot(eq->itemslot);
-		IN(quantity);
-		IN(price);
+		emu->unknown020 = 0;
 
 		FINISH_DIRECT_DECODE();
 	}

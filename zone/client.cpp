@@ -178,7 +178,8 @@ Client::Client(EQStreamInterface* ieqs) : Mob(
   mob_close_scan_timer(6000),
   position_update_timer(10000),
   consent_throttle_timer(2000),
-  tmSitting(0)
+  tmSitting(0),
+  parcel_timer(RuleI(Parcel, ParcelDeliveryDelay))
 {
 	for (auto client_filter = FilterNone; client_filter < _FilterCount; client_filter = eqFilterType(client_filter + 1)) {
 		SetFilter(client_filter, FilterShow);
@@ -363,6 +364,14 @@ Client::Client(EQStreamInterface* ieqs) : Mob(
 	bot_owner_options[booAutoDefend] = RuleB(Bots, AllowOwnerOptionAutoDefend);
 	bot_owner_options[booBuffCounter] = false;
 	bot_owner_options[booMonkWuMessage] = false;
+
+	parcel_platinum         = 0;
+	parcel_gold             = 0;
+	parcel_silver           = 0;
+	parcel_copper           = 0;
+	parcel_count            = 0;
+	parcel_enabled          = true;
+	parcel_merchant_engaged = false;
 
 	SetBotPulling(false);
 	SetBotPrecombat(false);
