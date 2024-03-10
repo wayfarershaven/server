@@ -1781,18 +1781,6 @@ namespace RoF2
 
 	ENCODE(OP_ItemPacket)
 	{
-		struct Parcel_Struct
-		{
-			/*000*/	ItemPacketType	PacketType;
-			/*004*/	char			SerializedItem[1];
-			/*944*/	uint32			sent_time;
-			/*948*/ uint32			player_name_length;
-			/**/	char			player_name[1];
-			/**/	uint32			note_length;
-			/**/	char			note[1];
-			/*xx*/
-		};
-
 		//consume the packet
 		EQApplicationPacket* in = *p;
 		*p = nullptr;
@@ -6030,7 +6018,8 @@ namespace RoF2
 			strn0cpy(
 				hdr.unknown000, fmt::format("{:03}PAR{:010}\0", inst->GetMerchantSlot(), item->ID).c_str(),
 				sizeof(hdr.unknown000));
-		} else {
+		}
+		else {
 			snprintf(hdr.unknown000, sizeof(hdr.unknown000), "%016d", item->ID);
 		}
 
