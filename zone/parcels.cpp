@@ -161,6 +161,7 @@ void Client::DoParcelCancel()
 		parcel_gold     = 0;
 		parcel_silver   = 0;
 		parcel_copper   = 0;
+		SaveCurrency();
 		SendMoneyUpdate();
 	}
 }

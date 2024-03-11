@@ -4278,8 +4278,9 @@ void Client::Handle_OP_Camp(const EQApplicationPacket *app)
 {
 	if (ClientVersion() == EQ::versions::ClientVersion::RoF2 && RuleB (Parcel, EnableParcelMerchants) &&
 		GetEngagedWithParcelMerchant()) {
-		DoParcelCancel();
-		SetEngagedWithParcelMerchant(false);
+		Stand();
+		MessageString(Chat::Yellow, TRADER_BUSY);
+		return;
 	}
 
 	if (IsLFP())
