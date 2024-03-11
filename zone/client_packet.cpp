@@ -4295,6 +4295,12 @@ void Client::Handle_OP_Bug(const EQApplicationPacket *app)
 
 void Client::Handle_OP_Camp(const EQApplicationPacket *app)
 {
+	if (ClientVersion() == EQ::versions::ClientVersion::RoF2 && RuleB (Parcel, EnableParcelMerchants) &&
+		GetEngagedWithParcelMerchant()) {
+		DoParcelCancel();
+		SetEngagedWithParcelMerchant(false);
+	}
+
 	if (IsLFP()) {
 		worldserver.StopLFP(CharacterID());
 	}
@@ -4338,11 +4344,6 @@ void Client::Handle_OP_CancelTrade(const EQApplicationPacket *app)
 
 		with->CastToClient()->QueuePacket(app);
 
-		if (ClientVersion() == EQ::versions::ClientVersion::RoF2 && RuleB(Parcel, EnableParcelMerchants)) {
-			DoParcelCancel();
-			SetEngagedWithParcelMerchant(false);
-		}
-
 		// Put trade items/cash back into inventory
 		FinishTrade(this);
 		trade->Reset();
@@ -4354,6 +4355,12 @@ void Client::Handle_OP_CancelTrade(const EQApplicationPacket *app)
 		FinishTrade(this);
 		trade->Reset();
 	}
+
+	if (ClientVersion() == EQ::versions::ClientVersion::RoF2 && RuleB (Parcel, EnableParcelMerchants)) {
+		DoParcelCancel();
+		SetEngagedWithParcelMerchant(false);
+	}
+
 	EQApplicationPacket end_trade1(OP_FinishWindow, 0);
 	QueuePacket(&end_trade1);
 
