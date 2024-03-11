@@ -15724,7 +15724,7 @@ void Client::Handle_OP_TraderShop(const EQApplicationPacket *app)
 			}
 			else
 			{
-				MessageString(Chat::Yellow, TRADER_BUSY);
+				MessageString(Chat::Yellow, TRADER_CUSTOMER);
 				LogTrading("Client::Handle_OP_TraderShop: Trader Busy");
 			}
 

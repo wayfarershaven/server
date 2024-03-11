@@ -302,7 +302,7 @@
 #define STRING_FEIGNFAILED			1456	//%1 has fallen to the ground.
 #define DOORS_SUCCESSFUL_PICK		1457	//You successfully picked the lock.
 #define PLAYER_CHARMED				1461	//You lose control of yourself!
-#define TRADER_BUSY					1468	//That Trader is currently with a customer. Please wait until their transaction is finished.
+#define TRADER_CUSTOMER				1468	//That Trader is currently with a customer. Please wait until their transaction is finished.
 #define SENSE_CORPSE_DIRECTION		1563	//You sense a corpse in this direction.
 #define QUEUED_TELL					2458	//[queued]
 #define QUEUE_TELL_FULL				2459	//[zoing and queue is full]

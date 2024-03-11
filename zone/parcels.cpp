@@ -27,6 +27,7 @@
 #include "../common/eq_packet_structs.h"
 #include "string_ids.h"
 #include "parcels.h"
+#include "worldserver.h"
 
 #include "client.h"
 #include "string_ids.h"

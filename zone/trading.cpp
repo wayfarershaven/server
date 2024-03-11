@@ -2491,7 +2491,7 @@ void Client::ShowBuyLines(const EQApplicationPacket *app) {
 	QueuePacket(app);
 
 	if(bir->Approval == 0) {
-		MessageString(Chat::Yellow, TRADER_BUSY);
+		MessageString(Chat::Yellow, TRADER_CUSTOMER);
 		return;
 	}
 
