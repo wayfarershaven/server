@@ -182,6 +182,13 @@ bool Client::Process() {
 				guild_mgr.SendToWorldSendGuildMembersList(GuildID());
 			}
 
+			if (ClientVersion () == EQ::versions::ClientVersion::RoF2 && RuleB (Parcel, EnableParcelMerchants) &&
+				GetEngagedWithParcelMerchant ())
+			{
+				DoParcelCancel ();
+				SetEngagedWithParcelMerchant (false);
+			}
+
 			SetDynamicZoneMemberStatus(DynamicZoneMemberStatus::Offline);
 
 			RecordPlayerEventLog(PlayerEvent::WENT_OFFLINE, PlayerEvent::EmptyEvent{});
@@ -203,6 +210,13 @@ bool Client::Process() {
 			if (IsInAGuild()) {
 				guild_mgr.UpdateDbMemberOnline(CharacterID(), false);
 				guild_mgr.SendToWorldSendGuildMembersList(GuildID());
+			}
+
+			if (ClientVersion () == EQ::versions::ClientVersion::RoF2 && RuleB (Parcel, EnableParcelMerchants) &&
+				GetEngagedWithParcelMerchant ())
+			{
+				DoParcelCancel ();
+				SetEngagedWithParcelMerchant (false);
 			}
 
 			if (GetMerc())
@@ -574,6 +588,14 @@ bool Client::Process() {
 				guild_mgr.UpdateDbMemberOnline(CharacterID(), false);
 				guild_mgr.SendToWorldSendGuildMembersList(GuildID());
 			}
+
+			if (ClientVersion () == EQ::versions::ClientVersion::RoF2 && RuleB (Parcel, EnableParcelMerchants) &&
+				GetEngagedWithParcelMerchant ())
+			{
+				DoParcelCancel ();
+				SetEngagedWithParcelMerchant (false);
+			}
+
 			return false;
 		}
 		else if (!linkdead_timer.Enabled()) {
