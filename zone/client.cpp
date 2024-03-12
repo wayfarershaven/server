@@ -3608,6 +3608,12 @@ void Client::SetLanguageSkill(int langid, int value)
 
 void Client::LinkDead()
 {
+	if (ClientVersion() == EQ::versions::ClientVersion::RoF2 && RuleB (Parcel, EnableParcelMerchants) &&
+		GetEngagedWithParcelMerchant()) {
+		DoParcelCancel();
+		SetEngagedWithParcelMerchant(false);
+	}
+	
 	if (GetGroup())
 	{
 		entity_list.MessageGroup(this,true,15,"%s has gone linkdead.",GetName());

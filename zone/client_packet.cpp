@@ -4297,8 +4297,9 @@ void Client::Handle_OP_Camp(const EQApplicationPacket *app)
 {
 	if (ClientVersion() == EQ::versions::ClientVersion::RoF2 && RuleB (Parcel, EnableParcelMerchants) &&
 		GetEngagedWithParcelMerchant()) {
-		DoParcelCancel();
-		SetEngagedWithParcelMerchant(false);
+		Stand();
+		MessageString(Chat::Yellow, TRADER_CUSTOMER);
+		return;
 	}
 
 	if (IsLFP()) {
@@ -15591,7 +15592,7 @@ void Client::Handle_OP_TraderShop(const EQApplicationPacket *app)
 			}
 			else
 			{
-				MessageString(Chat::Yellow, TRADER_BUSY);
+				MessageString(Chat::Yellow, TRADER_CUSTOMER);
 				LogTrading("Client::Handle_OP_TraderShop: Trader Busy");
 			}
 

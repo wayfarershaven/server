@@ -185,6 +185,13 @@ bool Client::Process() {
 				myraid->MemberZoned(this);
 			}
 
+			if (ClientVersion () == EQ::versions::ClientVersion::RoF2 && RuleB (Parcel, EnableParcelMerchants) &&
+				GetEngagedWithParcelMerchant ())
+			{
+				DoParcelCancel ();
+				SetEngagedWithParcelMerchant (false);
+			}
+
 			SetDynamicZoneMemberStatus(DynamicZoneMemberStatus::Offline);
 
 			RecordPlayerEventLog(PlayerEvent::WENT_OFFLINE, PlayerEvent::EmptyEvent{});
@@ -200,6 +207,13 @@ bool Client::Process() {
 			Raid *myraid = entity_list.GetRaidByClient(this);
 			if (myraid) {
 				myraid->MemberZoned(this);
+			}
+
+			if (ClientVersion () == EQ::versions::ClientVersion::RoF2 && RuleB (Parcel, EnableParcelMerchants) &&
+				GetEngagedWithParcelMerchant ())
+			{
+				DoParcelCancel ();
+				SetEngagedWithParcelMerchant (false);
 			}
 			
 			LeaveGroup();
@@ -573,6 +587,14 @@ bool Client::Process() {
 				GetMerc()->Save();
 				GetMerc()->Depop();
 			}
+
+			if (ClientVersion () == EQ::versions::ClientVersion::RoF2 && RuleB (Parcel, EnableParcelMerchants) &&
+				GetEngagedWithParcelMerchant ())
+			{
+				DoParcelCancel ();
+				SetEngagedWithParcelMerchant (false);
+			}
+			
 			return false;
 		}
 		else if (!linkdead_timer.Enabled()) {
