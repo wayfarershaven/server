@@ -23,6 +23,7 @@
 #include "string_ids.h"
 #include "parcels.h"
 #include "client.h"
+#include "../common/ruletypes.h"
 
 extern WorldServer worldserver;
 
@@ -169,10 +170,13 @@ void Client::DoParcelCancel()
 
 void Client::SendParcelStatus()
 {
-	auto p_count = ParcelsRepository::Count(database, fmt::format("to_name = '{}'", GetCleanName()));
-	if (p_count > 0) {
-		uint32 num_of_parcels = p_count;
-		uint32 num_over_limit = (p_count - PARCEL_MAX_ITEMS) < 0 ? 0 : (p_count - PARCEL_MAX_ITEMS);
+	if (GetParcels().empty()) {
+		LoadParcels();
+	}
+
+	int32 num_of_parcels = GetParcelCount();
+	if (num_of_parcels > 0) {
+		int32 num_over_limit = (num_of_parcels - PARCEL_MAX_ITEMS) < 0 ? 0 : (num_of_parcels - PARCEL_MAX_ITEMS);
 		if (num_of_parcels == PARCEL_MAX_ITEMS) {
 			Message(
 				Chat::Red,
@@ -194,9 +198,9 @@ void Client::SendParcelStatus()
 			MessageString(
 				Chat::Red,
 				PARCEL_STATUS_2,
+				std::to_string(num_of_parcels).c_str(),
 				std::to_string(num_over_limit).c_str(),
-				std::to_string(PARCEL_MAX_ITEMS).c_str(),
-				std::to_string(num_over_limit).c_str()
+				std::to_string(PARCEL_MAX_ITEMS).c_str()
 			);
 		}
 		else {
@@ -209,7 +213,9 @@ void Client::SendParcelStatus()
 			);
 		}
 	}
+	SendParcelIconStatus();
 }
+
 
 void Client::DoParcelSend(Parcel_Struct *parcel_in)
 {
@@ -220,7 +226,9 @@ void Client::DoParcelSend(Parcel_Struct *parcel_in)
 		return;
 	}
 
-	if (GetParcelsMap().size() >= PARCEL_MAX_ITEMS) {
+	auto num_of_parcels = GetParcelCount();
+	if (num_of_parcels >= PARCEL_MAX_ITEMS) {
+		SendParcelIconStatus();
 		Message(
 			Chat::Yellow,
 			fmt::format(
@@ -239,7 +247,7 @@ void Client::DoParcelSend(Parcel_Struct *parcel_in)
 			fmt::format(
 				"{} tells you, 'Unfortunately, {} cannot accept any more parcels at this time. Please try again later.",
 				merchant->GetCleanName(),
-				send_to_client.at(0).character_name
+				send_to_client.at(0).character_name == GetCleanName() ? "you" : send_to_client.at(0).character_name
 			).c_str()
 		);
 		SendParcelAck();
@@ -309,15 +317,7 @@ void Client::DoParcelSend(Parcel_Struct *parcel_in)
 			parcel_out.slot_id   = next_slot;
 			parcel_out.id        = 0;
 
-			auto result = ParcelsRepository::InsertOne(database, parcel_out);
-			if (!result.id) {
-				LogError("Failed to add parcel to database.  From {} to {} item {} quantity {}", parcel_out.from_name,
-						 parcel_out.to_name, parcel_out.item_id, parcel_out.quantity);
-				Message(Chat::Yellow, "Unable to send parcel at this time.  Please try again later.");
-				SendParcelAck();
-				return;
-			}
-
+			AddParcel(parcel_out);
 			DeleteItemInInventory(parcel_in->item_slot, quantity, true, true);
 			auto outapp = new EQApplicationPacket(OP_ShopSendParcel);
 			FastQueuePacket(&outapp);
@@ -390,6 +390,7 @@ void Client::DoParcelSend(Parcel_Struct *parcel_in)
 				return;
 			}
 
+			parcels.emplace(result.slot_id, result);
 			MessageString(
 				Chat::Yellow, PARCEL_DELIVERY, merchant->GetCleanName(), money.c_str(),
 				send_to_client.at(0).character_name.c_str());
@@ -423,6 +424,7 @@ void Client::DoParcelSend(Parcel_Struct *parcel_in)
 	}
 
 	SendParcelAck();
+	SendParcelIconStatus();
 	SetParcelEnabled(false);
 	GetParcelTimer()->Enable();
 }
@@ -504,8 +506,6 @@ void Client::DoParcelRetrieve(ParcelRetrieve_Struct parcel_in)
 							PARCEL_DUPLICATE_DELETE,
 							inst->GetItem()->Name
 						);
-						DeleteParcel(p->second.id);
-						SendParcelDelete(parcel_in);
 					}
 					else {
 						MessageString(
@@ -516,39 +516,6 @@ void Client::DoParcelRetrieve(ParcelRetrieve_Struct parcel_in)
 						return;
 					}
 				}
-//				else if (inst->IsClassBag()) {
-//					free_id = GetInv().FindFreeSlot(true, false);
-//					if (free_id != INVALID_INDEX) {
-//						if (PutItemInInventory(free_id, *inst, true)) {
-//							MessageString(
-//								Chat::Yellow,
-//								PARCEL_DELIVERED,
-//								merchant->GetCleanName(),
-//								inst->GetItem()->Name,
-//								p->second.from_name.c_str()
-//							);
-//							DeleteParcel(p->second.id);
-//							SendParcelDelete(parcel_in);
-//						} else {
-//						MessageString(
-//							Chat::Yellow,
-//							PARCEL_INV_FULL,
-//							merchant->GetCleanName()
-//						);
-//							SendParcelRetrieveAck();
-//							return;
-//						}
-//					}
-//					else {
-//						MessageString(
-//							Chat::Yellow,
-//							PARCEL_INV_FULL,
-//							merchant->GetCleanName()
-//						);
-//						SendParcelRetrieveAck();
-//						return;
-//					}
-//				}
 				else if (inst->IsStackable()) {
 					inst->SetCharges(item_quantity);
 					if (TryStacking(inst, ItemPacketTrade, true, false)) {
@@ -560,8 +527,6 @@ void Client::DoParcelRetrieve(ParcelRetrieve_Struct parcel_in)
 							inst->GetItem()->Name,
 							p->second.from_name.c_str()
 						);
-						DeleteParcel(p->second.id);
-						SendParcelDelete(parcel_in);
 					}
 					else if (free_id != INVALID_INDEX) {
 						inst->SetCharges(item_quantity);
@@ -574,8 +539,6 @@ void Client::DoParcelRetrieve(ParcelRetrieve_Struct parcel_in)
 								inst->GetItem()->Name,
 								p->second.from_name.c_str()
 							);
-							DeleteParcel(p->second.id);
-							SendParcelDelete(parcel_in);
 						}
 					}
 					else {
@@ -598,8 +561,6 @@ void Client::DoParcelRetrieve(ParcelRetrieve_Struct parcel_in)
 							inst->GetItem()->Name,
 							p->second.from_name.c_str()
 						);
-						DeleteParcel(p->second.id);
-						SendParcelDelete(parcel_in);
 					}
 					else {
 						MessageString(
@@ -633,9 +594,12 @@ void Client::DoParcelRetrieve(ParcelRetrieve_Struct parcel_in)
 			RecordPlayerEventLog(PlayerEvent::PARCEL_RETRIEVE, e);
 		}
 
+		DeleteParcel(p->second.id);
+		SendParcelDelete(parcel_in);
 		parcels.erase(p);
 	}
 	SendParcelRetrieveAck();
+	SendParcelIconStatus();
 }
 
 bool Client::DeleteParcel(uint32 parcel_id)
@@ -645,6 +609,9 @@ bool Client::DeleteParcel(uint32 parcel_id)
 		LogError("Error deleting parcel id {} from the database.", parcel_id);
 		return false;
 	}
+
+	auto it = std::find_if(parcels.cbegin(), parcels.cend(), [&](const auto &x) { return x.second.id == parcel_id; });
+	SetParcelCount(GetParcelCount() - 1);
 
 	return true;
 }
@@ -696,4 +663,39 @@ uint32 Client::FindNextFreeParcelSlot(std::string &character_name)
 
 		return INVALID_INDEX;
 	}
+}
+
+void Client::SendParcelIconStatus()
+{
+	auto outapp = new EQApplicationPacket(OP_ShopParcelIcon, sizeof(ParcelIcon_Struct));
+	auto data   = (ParcelIcon_Struct *) outapp->pBuffer;
+
+	auto const num_of_parcels = GetParcelCount();
+
+	if (num_of_parcels == 0) {
+		data->status = IconOff;
+	}
+	else if (num_of_parcels > PARCEL_MAX_ITEMS) {
+		data->status = Overlimit;
+	}
+	else {
+		data->status = IconOn;
+	}
+
+	QueuePacket(outapp);
+	safe_delete(outapp);
+}
+
+void Client::AddParcel(ParcelsRepository::Parcels parcel) {
+	auto result = ParcelsRepository::InsertOne(database, parcel);
+	if (!result.id) {
+		LogError("Failed to add parcel to database.  From {} to {} item {} quantity {}", parcel.from_name,
+				 parcel.to_name, parcel.item_id, parcel.quantity);
+		Message(Chat::Yellow, "Unable to send parcel at this time.  Please try again later.");
+		SendParcelAck();
+		return;
+	}
+
+	parcels.emplace(result.slot_id, result);
+	SetParcelCount(GetParcelCount() + 1);
 }
