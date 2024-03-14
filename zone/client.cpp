@@ -393,6 +393,10 @@ Client::Client(EQStreamInterface *ieqs) : Mob(
 }
 
 Client::~Client() {
+	if (ClientVersion() == EQ::versions::ClientVersion::RoF2 && RuleB (Parcel, EnableParcelMerchants)) {
+		DoParcelCancel();
+	}
+
 	mMovementManager->RemoveClient(this);
 
 	DataBucket::DeleteCachedBuckets(DataBucketLoadType::Client, CharacterID());
@@ -3657,12 +3661,6 @@ void Client::SetLanguageSkill(uint8 language_id, uint8 language_skill)
 
 void Client::LinkDead()
 {
-	if (ClientVersion() == EQ::versions::ClientVersion::RoF2 && RuleB (Parcel, EnableParcelMerchants) &&
-		GetEngagedWithParcelMerchant()) {
-		DoParcelCancel();
-		SetEngagedWithParcelMerchant(false);
-	}
-
 	if (GetGroup())
 	{
 		entity_list.MessageGroup(this,true,15,"%s has gone linkdead.",GetName());
