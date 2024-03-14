@@ -2684,16 +2684,19 @@ bool Bot::IsValidTarget(
 		return false;
 	}
 
-	const bool valid_target_state = (
-		HOLDING ||
+	bool invalid_target_state = false;
+	if (HOLDING ||
 		!tar->IsNPC() ||
 		tar->IsMezzed() ||
 		lo_distance > leash_distance ||
-		tar_distance > leash_distance
-	);
-	const bool valid_target = !GetAttackingFlag() && !CheckLosFN(tar) && !leash_owner->CheckLosFN(tar);
+		tar_distance > leash_distance ||
+		(!GetAttackingFlag() && !CheckLosFN(tar) && !leash_owner->CheckLosFN(tar)) ||
+		!IsAttackAllowed(tar)
+	) {
+		invalid_target_state = true;
+	}
 
-	if (valid_target_state || valid_target || !IsAttackAllowed(tar)) {
+	if (invalid_target_state) {
 		// Normally, we wouldn't want to do this without class checks..but, too many issues can arise if we let enchanter animation pets run rampant
 		if (HasPet()) {
 			GetPet()->RemoveFromHateList(tar);
@@ -3630,7 +3633,7 @@ bool Bot::RemoveBotFromGroup(Bot* bot, Group* group) {
 			if (group->DelMember(bot)) {
 				group->DelMemberOOZ(bot->GetName());
 				database.SetGroupID(bot->GetCleanName(), 0, bot->GetBotID());
-				if (group->GroupCount() < 1) {
+				if (group->GroupCount() < 2) {
 					group->DisbandGroup();
 				}
 			}
