@@ -2047,6 +2047,16 @@ struct ParcelMessaging_Struct
 	}
 };
 
+struct ParcelIcon_Struct {
+	uint32 status; //0 off 1 on 2 overlimit
+};
+
+enum ParcelIconActions {
+	IconOff   = 0,
+	IconOn    = 1,
+	Overlimit = 2
+};
+
 /*
 Unknowns:
 0 is e7 from 01 to // MAYBE SLOT IN PURCHASE

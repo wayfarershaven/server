@@ -372,6 +372,7 @@ Client::Client(EQStreamInterface* ieqs) : Mob(
 	parcel_count            = 0;
 	parcel_enabled          = true;
 	parcel_merchant_engaged = false;
+	parcels.clear();
 
 	SetBotPulling(false);
 	SetBotPrecombat(false);

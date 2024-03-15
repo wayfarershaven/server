@@ -357,14 +357,16 @@ public:
 	void SetParcelEnabled(bool status) { parcel_enabled = status; }
 	bool GetParcelEnabled() { return parcel_enabled; }
 	void SetParcelCount(uint32 count) { parcel_count = count; }
-	uint32 GetParcelCount() { return parcel_count; }
+	int32 GetParcelCount() { return parcel_count; }
 	bool GetEngagedWithParcelMerchant() { return parcel_merchant_engaged; }
 	void SetEngagedWithParcelMerchant(bool status) { parcel_merchant_engaged = status; }
 	Timer *GetParcelTimer() { return &parcel_timer; }
 	bool DeleteParcel(uint32 parcel_id);
+	void AddParcel(ParcelsRepository::Parcels parcel);
 	void LoadParcels();
-	std::map<uint32, BaseParcelsRepository::Parcels> GetParcelsMap() { return parcels; }
+	std::map<uint32, BaseParcelsRepository::Parcels> GetParcels() { return parcels; }
 	uint32 FindNextFreeParcelSlot(std::string &character_name);
+	void SendParcelIconStatus();
 
 	void SendBuyerResults(char *SearchQuery, uint32 SearchID);
 	void ShowBuyLines(const EQApplicationPacket *app);
@@ -1888,11 +1890,11 @@ private:
 	uint32                                           parcel_gold;
 	uint32                                           parcel_silver;
 	uint32                                           parcel_copper;
-	uint32                                           parcel_count;
+	int32                                            parcel_count;
 	bool                                             parcel_enabled;
 	bool                                             parcel_merchant_engaged;
-	std::map<uint32, BaseParcelsRepository::Parcels> parcels;
-	int Haste; //precalced value
+	std::map<uint32, BaseParcelsRepository::Parcels> parcels{};
+	int                                              Haste; //precalced value
 	uint32 tmSitting; // time stamp started sitting, used for HP regen bonus added on MAY 5, 2004
 
 	int32 environment_damage_modifier;

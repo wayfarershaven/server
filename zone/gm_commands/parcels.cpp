@@ -74,7 +74,7 @@ void command_parcels(Client *c, const Seperator *sep)
                 return;
             }
             else {
-                auto parcels = player->GetParcelsMap();
+                auto parcels = player->GetParcels();
                 if(parcels.empty()) {
                     c->Message(Chat::White, fmt::format("No parcels could be found for {}", player_name).c_str());
                 }
