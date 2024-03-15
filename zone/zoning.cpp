@@ -38,13 +38,6 @@ extern Zone* zone;
 
 
 void Client::Handle_OP_ZoneChange(const EQApplicationPacket *app) {
-	if (ClientVersion () == EQ::versions::ClientVersion::RoF2 && RuleB (Parcel, EnableParcelMerchants) &&
-		GetEngagedWithParcelMerchant ())
-	{
-		DoParcelCancel ();
-		SetEngagedWithParcelMerchant (false);
-	}
-	
 	if (RuleB(Bots, Enabled)) {
 		Bot::ProcessClientZoneChange(this);
 	}
