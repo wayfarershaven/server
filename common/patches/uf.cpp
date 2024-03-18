@@ -2341,11 +2341,11 @@ namespace UF
 
 	ENCODE(OP_ShopRequest)
 	{
-		ENCODE_LENGTH_EXACT(Merchant_Click_Struct);
-		SETUP_DIRECT_ENCODE(Merchant_Click_Struct, structs::Merchant_Click_Struct);
+		ENCODE_LENGTH_EXACT(MerchantClick_Struct);
+		SETUP_DIRECT_ENCODE(MerchantClick_Struct, structs::MerchantClick_Struct);
 
-		OUT(npcid);
-		OUT(playerid);
+		OUT(npc_id);
+		OUT(player_id);
 		OUT(command);
 		OUT(rate);
 
@@ -3885,21 +3885,6 @@ namespace UF
 		FINISH_DIRECT_DECODE();
 	}
 
-	DECODE(OP_ShopRequest)
-	{
-		DECODE_LENGTH_EXACT(structs::Merchant_Click_Struct);
-		SETUP_DIRECT_DECODE(Merchant_Click_Struct, structs::Merchant_Click_Struct);
-
-		IN(npcid);
-		IN(playerid);
-		IN(command);
-		IN(rate);
-		emu->tab_display = 0;
-		emu->unknown02   = 0;
-
-		FINISH_DIRECT_DECODE();
-	}
-	
 	DECODE(OP_ShopPlayerBuy)
 	{
 		DECODE_LENGTH_EXACT(structs::Merchant_Sell_Struct);
@@ -3923,6 +3908,21 @@ namespace UF
 		emu->itemslot = UFToServerSlot(eq->itemslot);
 		IN(quantity);
 		IN(price);
+
+		FINISH_DIRECT_DECODE();
+	}
+
+	DECODE(OP_ShopRequest)
+	{
+		DECODE_LENGTH_EXACT(structs::MerchantClick_Struct);
+		SETUP_DIRECT_DECODE(MerchantClick_Struct, structs::MerchantClick_Struct);
+
+		IN(npc_id);
+		IN(player_id);
+		IN(command);
+		IN(rate);
+		emu->tab_display = 0;
+		emu->unknown020 = 0;
 
 		FINISH_DIRECT_DECODE();
 	}

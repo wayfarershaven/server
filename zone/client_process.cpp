@@ -201,7 +201,7 @@ bool Client::Process() {
 			if (myraid) {
 				myraid->MemberZoned(this);
 			}
-			
+
 			LeaveGroup();
 			Save();
 			if (GetMerc()) {
@@ -573,6 +573,7 @@ bool Client::Process() {
 				GetMerc()->Save();
 				GetMerc()->Depop();
 			}
+			
 			return false;
 		}
 		else if (!linkdead_timer.Enabled()) {
@@ -1425,6 +1426,19 @@ void Client::OPMoveCoin(const EQApplicationPacket* app)
 						to_bucket = (int32 *) &trade->sp; break;
 					case COINTYPE_CP:
 						to_bucket = (int32 *) &trade->cp; break;
+				}
+			}
+			else {
+				switch(mc->cointype2) 
+				{
+					case COINTYPE_PP:
+						parcel_platinum += mc->amount; break;
+					case COINTYPE_GP:
+						parcel_gold += mc->amount; break;
+					case COINTYPE_SP:
+						parcel_silver += mc->amount; break;
+					case COINTYPE_CP:
+						parcel_copper += mc->amount; break;
 				}
 			}
 			break;
