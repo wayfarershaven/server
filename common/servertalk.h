@@ -109,6 +109,9 @@
 #define ServerOP_GuildMemberRemove                0x007A
 #define ServerOP_GuildMemberAdd                   0x007B
 
+#define ServerOP_ParcelDelivery                   0x0090
+#define ServerOP_ParcelPrune                      0x0091
+
 #define ServerOP_RaidAdd			0x0100 //in use
 #define ServerOP_RaidRemove			0x0101 //in use
 #define	ServerOP_RaidDisband		0x0102 //in use

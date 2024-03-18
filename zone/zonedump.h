@@ -158,6 +158,7 @@ struct NPCType
 	uint8   aggro_pc;
 	float   ignore_distance;
 	uint8   disable_instance;
+	bool            parcel_merchant;
 };
 
 #pragma pack()

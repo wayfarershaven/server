@@ -44,7 +44,38 @@ public:
      */
 
 	// Custom extended repository methods here
+	struct ParcelCountAndCharacterName
+	{
+		std::string character_name;
+		uint32      parcel_count;
+	};
 
+	static std::vector<ParcelCountAndCharacterName> GetParcelCountAndCharacterName(Database &db, const std::string &character_name)
+	{
+		std::vector<ParcelCountAndCharacterName> all_entries;
+
+		auto results = db.QueryDatabase(
+			fmt::format(
+			"SELECT c.name, COUNT(p.id) FROM character_data c "
+			"JOIN parcels p ON p.to_name = c.name "
+			"WHERE c.name = '{}' "
+			"LIMIT 1",
+			character_name)
+		);
+
+		all_entries.reserve(results.RowCount());
+
+		for(auto row = results.begin(); row != results.end(); ++row) {
+			ParcelCountAndCharacterName e {};
+
+			e.character_name = row[0] ? row[0] : "";
+			e.parcel_count = row[1] ? Strings::ToUnsignedInt(row[1]) : 0;
+
+			all_entries.push_back(e);
+		}
+
+		return all_entries;
+	}
 };
 
 #endif //EQEMU_PARCELS_REPOSITORY_H

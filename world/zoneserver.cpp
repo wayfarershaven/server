@@ -1772,6 +1772,18 @@ void ZoneServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p) {
 		{
 			zoneserver_list.SendPacket(pack);
 		}
+		case ServerOP_ParcelDelivery: 
+		{
+            auto in = (Parcel_Struct *)pack->pBuffer;
+            if (strlen(in->send_to) == 0) {
+                LogError("ServerOP_ParcelDelivery pack received with incorrect character_id of {}.", in->send_to);
+                return;
+            }
+
+            zoneserver_list.SendPacketToBootedZones(pack);
+
+            break;
+        }
 		default: {
 			LogInfo("Unknown ServerOPcode from zone {:#04x}, size [{}]", pack->opcode, pack->size);
 			DumpPacket(pack->pBuffer, pack->size);

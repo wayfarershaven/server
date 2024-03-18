@@ -21,6 +21,7 @@
 #include "../common/repositories/character_pet_info_repository.h"
 #include "../common/repositories/criteria/content_filter_criteria.h"
 #include "../common/repositories/spawn2_disabled_repository.h"
+#include "../common/repositories/parcel_merchants_repository.h"
 
 #include <ctime>
 #include <iostream>
@@ -1950,6 +1951,11 @@ const NPCType *ZoneDatabase::LoadNPCTypesData(uint32 npc_type_id, bool bulk_load
 	}
 
 	std::vector<uint32> npc_ids;
+	std::vector<BaseParcelMerchantsRepository::ParcelMerchants> parcel_merchants;
+
+	if (RuleB(Parcel, EnableParcelMerchants)) {
+		parcel_merchants = BaseParcelMerchantsRepository::All(database);
+	}
 
 	for (NpcTypesRepository::NpcTypes &n : NpcTypesRepository::GetWhere((Database &) content_db, filter)) {
 		NPCType *t;
@@ -2097,8 +2103,19 @@ const NPCType *ZoneDatabase::LoadNPCTypesData(uint32 npc_type_id, bool bulk_load
 		t->see_invis        = n.see_invis;
 		t->see_invis_undead = n.see_invis_undead != 0;    // Set see_invis_undead flag
 
-		if (!RuleB(NPC, DisableLastNames) && !n.lastname.empty()) {
+		if (!RuleB(NPC, DisableLastNames) && !n.lastname.empty() && !RuleB(Parcel, EnableParcelMerchants)) {
 			strn0cpy(t->lastname, n.lastname.c_str(), sizeof(t->lastname));
+		}
+		else if (!RuleB(NPC, DisableLastNames) && RuleB(Parcel, EnableParcelMerchants)) {
+			for (auto const &p: parcel_merchants) {
+				if (n.id == p.merchant_id) {
+					t->parcel_merchant = true;
+					strn0cpy(t->lastname, p.last_name.c_str(), sizeof(t->lastname));
+				}
+			}
+		}
+		else if (RuleB(Parcel, EnableParcelMerchants)) {
+			t->parcel_merchant = true;
 		}
 
 		t->qglobal                = n.qglobal != 0;    // qglobal
