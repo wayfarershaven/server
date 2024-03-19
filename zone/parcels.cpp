@@ -167,10 +167,10 @@ void Client::SendParcel(Parcel_Struct parcel_in)
 void Client::DoParcelCancel()
 {
 	if (parcel_platinum || parcel_gold || parcel_silver || parcel_copper) {
-		m_pp.platinum += parcel_platinum;
-		m_pp.gold += parcel_gold;
-		m_pp.silver += parcel_silver;
-		m_pp.copper += parcel_copper;
+		m_pp.platinum 	+= parcel_platinum;
+		m_pp.gold 		+= parcel_gold;
+		m_pp.silver 	+= parcel_silver;
+		m_pp.copper 	+= parcel_copper;
 		parcel_platinum = 0;
 		parcel_gold     = 0;
 		parcel_silver   = 0;
@@ -182,9 +182,7 @@ void Client::DoParcelCancel()
 
 void Client::SendParcelStatus()
 {
-	if (GetParcels().empty()) {
-		LoadParcels();
-	}
+	LoadParcels();
 
 	int32 num_of_parcels = GetParcelCount();
 	if (num_of_parcels > 0) {
@@ -249,6 +247,7 @@ void Client::DoParcelSend(Parcel_Struct *parcel_in)
 				PARCEL_MAX_ITEMS
 			).c_str()
 		);
+		DoParcelCancel();
 		SendParcelAck();
 		return;
 	}
@@ -263,6 +262,7 @@ void Client::DoParcelSend(Parcel_Struct *parcel_in)
 			).c_str()
 		);
 		SendParcelAck();
+		DoParcelCancel();
 		return;
 	}
 
@@ -289,6 +289,7 @@ void Client::DoParcelSend(Parcel_Struct *parcel_in)
 				).c_str()
 			);
 			SendParcelAck();
+			DoParcelCancel();
 			return;
 		}
 	}
@@ -300,6 +301,7 @@ void Client::DoParcelSend(Parcel_Struct *parcel_in)
 				LogError("Handle_OP_ShopSendParcel Could not find item in inventory slot {} for character {}.",
 						 parcel_in->item_slot, GetCleanName());
 				SendParcelAck();
+				DoParcelCancel();
 				return;
 			}
 
@@ -309,6 +311,7 @@ void Client::DoParcelSend(Parcel_Struct *parcel_in)
 					inst->GetItem()->Name
 				);
 				SendParcelAck();
+				DoParcelCancel();
 				return;
 			}
 
@@ -329,10 +332,18 @@ void Client::DoParcelSend(Parcel_Struct *parcel_in)
 			parcel_out.slot_id   = next_slot;
 			parcel_out.id        = 0;
 
-			AddParcel(parcel_out);
+			auto result = ParcelsRepository::InsertOne(database, parcel_out);
+			if (!result.id) {
+				LogError("Failed to add parcel to database.  From {} to {} item {} quantity {}", parcel_out.from_name,
+						 parcel_out.to_name, parcel_out.item_id, parcel_out.quantity);
+				Message(Chat::Yellow, "Unable to save parcel to the database. Please see an administrator.");
+				return;
+			}
+
 			DeleteItemInInventory(parcel_in->item_slot, quantity, true, true);
 			auto outapp = new EQApplicationPacket(OP_ShopSendParcel);
 			FastQueuePacket(&outapp);
+
 			if (inst->IsStackable() && (quantity - parcel_in->quantity > 0)) {
 				inst->SetCharges(quantity - parcel_in->quantity);
 				PutItemInInventory(parcel_in->item_slot, *inst, true);
@@ -364,11 +375,15 @@ void Client::DoParcelSend(Parcel_Struct *parcel_in)
 		case PARCEL_SEND_MONEY: {
 			auto item = database.GetItem(PARCEL_MONEY_ITEM_ID);
 			if (!item) {
+				DoParcelCancel();
+				SendParcelAck();
 				return;
 			}
 
-			auto inst = database.CreateItem(item, parcel_in->quantity);
+			auto inst = database.CreateItem(item, 1);
 			if (!inst) {
+				DoParcelCancel();
+				SendParcelAck();
 				return;
 			}
 
@@ -397,12 +412,10 @@ void Client::DoParcelSend(Parcel_Struct *parcel_in)
 			if (!result.id) {
 				LogError("Failed to add parcel to database.  From {} to {} item {} quantity {}", parcel_out.from_name,
 						 parcel_out.to_name, parcel_out.item_id, parcel_out.quantity);
-				DoParcelCancel();
-				SendParcelAck();
+				Message(Chat::Yellow, "Unable to save parcel to the database. Please see an administrator.");
 				return;
 			}
 
-			parcels.emplace(result.slot_id, result);
 			MessageString(
 				Chat::Yellow, PARCEL_DELIVERY, merchant->GetCleanName(), money.c_str(),
 				send_to_client.at(0).character_name.c_str());
@@ -652,7 +665,7 @@ void Client::SendParcelDelete(const ParcelRetrieve_Struct parcel_in)
 }
 
 
-uint32 Client::FindNextFreeParcelSlot(std::string &character_name)
+int32 Client::FindNextFreeParcelSlot(std::string &character_name)
 {
 	auto results = ParcelsRepository::GetWhere(
 		database, fmt::format("to_name = '{}' ORDER BY slot_id ASC", character_name.c_str()));
@@ -706,6 +719,6 @@ void Client::AddParcel(ParcelsRepository::Parcels parcel) {
 		return;
 	}
 
-	parcels.emplace(result.slot_id, result);
-	SetParcelCount(GetParcelCount() + 1);
+	//parcels.emplace(result.slot_id, result);
+	//SetParcelCount(GetParcelCount() + 1);
 }
