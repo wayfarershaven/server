@@ -6111,7 +6111,7 @@ namespace RoF2
 
 		if (strlen(item->Name) > 0) {
 			if (item->ID == PARCEL_MONEY_ITEM_ID) {
-				auto money = inst->DetermineMoneyStringForParcels(inst->GetCharges());
+				auto money = inst->DetermineMoneyStringForParcels(inst->GetPrice());
 				ob.write(money.c_str(), money.length());
 			}
 			else {

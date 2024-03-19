@@ -49,9 +49,15 @@ void Client::SendBulkParcels()
 			if (inst) {
 				if (inst->IsStackable()) {
 					inst->SetCharges(p.second.quantity);
+				}
+
+				if (item->ID == PARCEL_MONEY_ITEM_ID) {
+					inst->SetPrice(p.second.quantity);
+					inst->SetCharges(1);
 				} else {
 					inst->SetCharges(p.second.quantity > 0 ? p.second.quantity : 1);
 				}
+
 				inst->SetMerchantCount(1);
 				inst->SetMerchantSlot(p.second.slot_id);
 
@@ -121,9 +127,15 @@ void Client::SendParcel(Parcel_Struct parcel_in)
 		if (inst) {
 			if (inst->IsStackable()) {
 				inst->SetCharges(parcel.quantity);
+			}
+
+			if (item->ID == PARCEL_MONEY_ITEM_ID) {
+				inst->SetPrice(parcel.quantity);
+				inst->SetCharges(1);
 			} else {
 				inst->SetCharges(parcel.quantity > 0 ? parcel.quantity : 1);
 			}
+
 			inst->SetMerchantCount(1);
 			inst->SetMerchantSlot(parcel.slot_id);
 
@@ -493,8 +505,6 @@ void Client::DoParcelRetrieve(ParcelRetrieve_Struct parcel_in)
 					inst->DetermineMoneyStringForParcels(p->second.quantity).c_str(),
 					p->second.from_name.c_str()
 				);
-				DeleteParcel(p->second.id);
-				SendParcelDelete(parcel_in);
 				break;
 			}
 			default: {

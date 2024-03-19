@@ -2107,6 +2107,8 @@ const NPCType *ZoneDatabase::LoadNPCTypesData(uint32 npc_type_id, bool bulk_load
 			strn0cpy(t->lastname, n.lastname.c_str(), sizeof(t->lastname));
 		}
 		else if (!RuleB(NPC, DisableLastNames) && RuleB(Parcel, EnableParcelMerchants)) {
+			strn0cpy(t->lastname, n.lastname.c_str(), sizeof(t->lastname));
+			t->parcel_merchant = false;
 			for (auto const &p: parcel_merchants) {
 				if (n.id == p.merchant_id) {
 					t->parcel_merchant = true;
