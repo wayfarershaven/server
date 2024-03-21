@@ -563,7 +563,7 @@ void QuestManager::settimer(const std::string& timer_name, uint32 seconds, Mob* 
 		}
 	}
 
-	QTimerList.emplace_back(QuestTimer(seconds * 1000, ServerIsOwnerOnline_Struct, timer_name));
+	QTimerList.emplace_back(QuestTimer(seconds * 1000, owner, timer_name));
 
 	if (has_start_event) {
 		const std::string& export_string = fmt::format(
