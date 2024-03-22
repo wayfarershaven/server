@@ -340,7 +340,8 @@ void Client::DoParcelSend(Parcel_Struct *parcel_in)
 				return;
 			}
 
-			DeleteItemInInventory(parcel_in->item_slot, quantity, true, true);
+			RemoveItem(parcel_out.item_id, parcel_out.quantity);
+			//DeleteItemInInventory(parcel_in->item_slot, quantity, true, true);
 			auto outapp = new EQApplicationPacket(OP_ShopSendParcel);
 			FastQueuePacket(&outapp);
 
