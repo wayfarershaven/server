@@ -1,7 +1,7 @@
 #include "../client.h"
 #include "../worldserver.h"
-#include "parcels.h"
-#include "../common/events/player_events.h"
+#include "../parcels.h"
+#include "../../common/events/player_events.h"
 
 extern WorldServer worldserver;
 
