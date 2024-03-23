@@ -4176,10 +4176,11 @@ void Client::Handle_OP_BookButton(const EQApplicationPacket* app)
 	BookButton_Struct* book = reinterpret_cast<BookButton_Struct*>(app->pBuffer);
 
 	const EQ::ItemInstance* const inst = GetInv().GetItem(book->invslot);
-	if (inst && inst->GetItem()->Book)
+	if (inst && inst->GetItem())
 	{
-		// todo: if scribe book learn recipes and delete book from inventory
-		// todo: if cast book use its spell on target and delete book from inventory (unless reusable?)
+		// todo: cast spell button (unknown if anything on live uses this)
+		ScribeRecipes(inst->GetItem()->ID);
+		DeleteItemInInventory(book->invslot, 1, true);
 	}
 
 	EQApplicationPacket outapp(OP_FinishWindow, 0);
@@ -5616,8 +5617,19 @@ void Client::Handle_OP_CrystalCreate(const EQApplicationPacket *app)
 	}
 
 	// Prevent the client from creating more than they have.
-	const uint32 amount  = EQ::ClampUpper(quantity, current_quantity);
+	uint32 amount  = EQ::ClampUpper(quantity, current_quantity);
 	const uint32 item_id = is_radiant ? RuleI(Zone, RadiantCrystalItemID) : RuleI(Zone, EbonCrystalItemID);
+
+	const auto item = database.GetItem(item_id);
+	// Prevent pulling more than max stack size or 1,000 (if stackable), whichever is lesser
+	const uint32 max_reclaim_amount = EQ::Clamp(
+		item && item->Stackable ? item->StackSize : ItemStackSizeConstraint::Minimum,
+		ItemStackSizeConstraint::Minimum,
+		ItemStackSizeConstraint::Maximum
+	);
+	if (amount > max_reclaim_amount) {
+		amount = max_reclaim_amount;
+	}
 
 	const bool success = SummonItem(item_id, amount);
 	if (!success) {
