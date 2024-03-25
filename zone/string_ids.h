@@ -274,6 +274,7 @@
 #define SPARKLES					1236	//Your %1 sparkles.
 #define GROWS_DIM					1237	//Your %1 grows dim.
 #define BEGINS_TO_SHINE				1238	//Your %1 begins to shine.
+#define CANT_FIND_PLAYER			1276 	//I can't find a player named %1!
 #define SURNAME_REJECTED			1374	//Your new surname was rejected. Please try a different name.
 #define GUILD_DISBANDED				1377    //Your guild has been disbanded!  You are no longer a member of any guild.
 #define DUEL_DECLINE				1383	//%1 has declined your challenge to duel to the death.

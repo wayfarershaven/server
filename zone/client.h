@@ -365,7 +365,7 @@ public:
 	void AddParcel(ParcelsRepository::Parcels parcel);
 	void LoadParcels();
 	std::map<uint32, BaseParcelsRepository::Parcels> GetParcels() { return parcels; }
-	uint32 FindNextFreeParcelSlot(std::string &character_name);
+	int32 FindNextFreeParcelSlot(std::string &character_name);
 	void SendParcelIconStatus();
 
 	void SendBuyerResults(char *SearchQuery, uint32 SearchID);
@@ -1886,15 +1886,15 @@ private:
 	bool Trader;
 	bool Buyer;
 	std::string BuyerWelcomeMessage;
-	uint32                                           parcel_platinum;
-	uint32                                           parcel_gold;
-	uint32                                           parcel_silver;
-	uint32                                           parcel_copper;
+	int32                                            parcel_platinum;
+	int32                                            parcel_gold;
+	int32                                            parcel_silver;
+	int32                                            parcel_copper;
 	int32                                            parcel_count;
 	bool                                             parcel_enabled;
 	bool                                             parcel_merchant_engaged;
 	std::map<uint32, BaseParcelsRepository::Parcels> parcels{};
-	int                                              Haste; //precalced value
+	int Haste; //precalced value
 	uint32 tmSitting; // time stamp started sitting, used for HP regen bonus added on MAY 5, 2004
 
 	int32 environment_damage_modifier;

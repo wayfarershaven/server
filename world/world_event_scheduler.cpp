@@ -67,7 +67,7 @@ void WorldEventScheduler::Process(ZSList *zs_list)
 					safe_delete(pack);
 				}
 
-				if (RuleB(Parcel, EnableParcelMerchants) && e.event_type == ServerEvents::EVENT_TYPE_PARCEL_PRUNE) {
+				if (RuleB(Parcel, EnableParcelMerchants) && RuleB(Parcel, EnablePruning) && e.event_type == ServerEvents::EVENT_TYPE_PARCEL_PRUNE) {
 					LogScheduler("Parcel Prune Event Reached [{}]", e.event_data.c_str());
 
 					auto filter = fmt::format("sent_date < (NOW() - INTERVAL {} DAY)", RuleI(Parcel, ParcelPruneDelay));
