@@ -2605,6 +2605,10 @@ void EntityList::RemoveAllMobs()
 {
 	auto it = mob_list.begin();
 	while (it != mob_list.end()) {
+		if (!it->second) {
+			++it;
+			continue;
+		}
 		safe_delete(it->second);
 		free_ids.push(it->first);
 		it = mob_list.erase(it);
@@ -2742,6 +2746,10 @@ bool EntityList::RemoveMob(uint16 delete_id)
 
 	auto it = mob_list.find(delete_id);
 	if (it != mob_list.end()) {
+		if (!it->second) {
+			return false;
+		}
+		
 		if (npc_list.count(delete_id)) {
 			entity_list.RemoveNPC(delete_id);
 		}
