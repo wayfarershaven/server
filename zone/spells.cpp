@@ -2571,7 +2571,7 @@ bool Mob::SpellFinished(uint16 spell_id, Mob *spell_target, CastingSlot slot, in
 					Group *target_group = entity_list.GetGroupByMob(spell_target);
 					if(target_group) {
 						target_group->CastGroupSpell(this, spell_id);
-						if (!GetClass() == Class::Bard) {
+						if (target_group != GetGroup() && GetClass() != Class::Bard) {
 							SpellOnTarget(spell_id, this);
 						}
 					}
@@ -3126,8 +3126,16 @@ int Mob::CheckStackConflict(uint16 spellid1, int caster_level1, uint16 spellid2,
 						sp1.name, spellid1, blocked_effect, blocked_slot, blocked_below_value, sp2_value, (sp2_value < blocked_below_value)?"Blocked":"Not blocked");
 
 					if (sp2_value < blocked_below_value) {
-						LogSpells("Blocking spell because sp2_Value < blocked_below_value");
-						return -1;		//blocked
+						if (IsDetrimentalSpell(spellid2))
+						{
+							//Live fixed this in 2018 to allow detrimental spells to bypass being blocked by SPA 148
+							LogSpells("Detrimental spell [{}] ([{}]) avoids being blocked.", sp2.name, spellid2);
+						}
+						else
+						{
+							LogSpells("Blocking spell because sp2_Value < blocked_below_value");
+							return -1;		//blocked
+						}
 					}
 				} else {
 					LogSpells("[{}] ([{}]) blocks effect [{}] on slot [{}] below [{}], but we do not have that effect on that slot. Ignored",
@@ -4576,6 +4584,16 @@ bool Mob::SpellOnTarget(
 
 	safe_delete(action_packet);
 	safe_delete(message_packet);
+
+	/*
+		Bug: When an HP buff with a heal effect is applied for first time, the heal portion of the effect heals the client and
+		updates HPs correctly server side, but client side the HP bar does not register it as a heal thus you display as less than full HP.
+		However due to server thinking your healed, you are unable to correct it by healing.
+		Solution: You need to resend the HP update after buff completed and action packet resent.
+	*/
+	if ((IsEffectInSpell(spell_id, SE_TotalHP) || IsEffectInSpell(spell_id, SE_MaxHPChange)) && (IsEffectInSpell(spell_id, SE_CurrentHPOnce) || IsEffectInSpell(spell_id, SE_CurrentHP))) {
+		SendHPUpdate(true);
+	}
 
 	LogSpells("Cast of [{}] by [{}] on [{}] complete successfully", spell_id, GetName(), spelltar->GetName());
 
