@@ -5652,7 +5652,7 @@ ALTER TABLE `trader`
 )"
 	},
 	ManifestEntry{
-		.version     = 9277,
+		.version     = 9281,
 		.description = "2024_05_20_add_trader_in_progress_transaction.sql",
 		.check       = "SHOW COLUMNS FROM `trader` LIKE 'active_transaction'",
 		.condition   = "empty",
