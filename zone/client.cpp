@@ -1850,7 +1850,7 @@ void Client::FriendsWho(char *FriendsString) {
 void Client::UpdateAdmin(bool from_database) {
 	int16 tmp = admin;
 	if (from_database) {
-		admin = database.CheckStatus(account_id);
+		admin = database.GetAccountStatus(account_id);
 	}
 
 	if (tmp == admin && from_database) {
@@ -6788,6 +6788,8 @@ bool Client::RemoveAlternateCurrencyValue(uint32 currency_id, uint32 amount)
 	const uint32 new_amount = (current_amount - amount);
 
 	alternate_currency[currency_id] = new_amount;
+	database.UpdateAltCurrencyValue(CharacterID(), currency_id, new_amount);
+	SendAlternateCurrencyValue(currency_id);
 
 	if (parse->PlayerHasQuestSub(EVENT_ALT_CURRENCY_LOSS)) {
 		const std::string &export_string = fmt::format(
