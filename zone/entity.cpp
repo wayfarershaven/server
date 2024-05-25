@@ -526,7 +526,7 @@ void EntityList::MobProcess()
 			//	-- the zone is newly empty and we're allowing mobs to settle
 			if (
 				numclients > 0 || zone->quest_idle_override ||
-				(s2 && s2->PathWhenZoneIdle()) ||
+				(mob && s2 && s2->PathWhenZoneIdle()) ||
 				mob_settle_timer->Enabled()
 			) {
 				mob_dead = !mob->Process();
@@ -2954,11 +2954,6 @@ void EntityList::ScanCloseMobs(
 
 	for (auto &e : mob_list) {
 		auto mob = e.second;
-
-		if (!mob->IsNPC() && !mob->IsClient() && !mob->IsBot() && !mob->IsMerc()) {
-			continue;
-		}
-
 		if (mob->GetID() <= 0) {
 			continue;
 		}

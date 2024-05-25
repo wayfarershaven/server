@@ -1099,20 +1099,21 @@ Zone::Zone(uint32 in_zoneid, uint32 in_instanceid, const char* in_short_name)
 
 Zone::~Zone() {
 	spawn2_list.Clear();
-	safe_delete(zonemap);
-	safe_delete(watermap);
-	safe_delete(pathing);
 	if (worldserver.Connected()) {
 		worldserver.SetZoneData(0);
 	}
-	safe_delete_array(short_name);
-	safe_delete_array(long_name);
-	safe_delete(Weather_Timer);
 	npc_emote_list.clear();
 	zone_point_list.Clear();
 	entity_list.Clear();
+	parse->ReloadQuests();
 	ClearBlockedSpells();
 
+	safe_delete_array(short_name);
+	safe_delete_array(long_name);
+	safe_delete(Weather_Timer);
+	safe_delete(zonemap);
+	safe_delete(watermap);
+	safe_delete(pathing);
 	safe_delete(Instance_Timer);
 	safe_delete(Instance_Shutdown_Timer);
 	safe_delete(Instance_Warning_timer);
@@ -1139,6 +1140,11 @@ bool Zone::Init(bool is_static) {
 		if (r_name.size() > 0) {
 			RuleManager::Instance()->LoadRules(&database, r_name, false);
 		}
+	}
+
+	if (!map_name) {
+		LogError("No map name found for zone [{}]", GetShortName());
+		return false;
 	}
 
 	zonemap  = Map::LoadMapFile(map_name);
@@ -1367,9 +1373,9 @@ bool Zone::LoadZoneCFG(const char* filename, uint16 instance_version)
 	newzone_data.maxclip                   = z->maxclip;
 	newzone_data.time_type                 = z->time_type;
 	newzone_data.gravity                   = z->gravity;
-	newzone_data.fast_regen_hp             = z->fast_regen_hp;
-	newzone_data.fast_regen_mana           = z->fast_regen_mana;
-	newzone_data.fast_regen_endurance      = z->fast_regen_endurance;
+	newzone_data.fast_regen_hp             = z->fast_regen_hp > 0 ? z->fast_regen_hp : 180;
+	newzone_data.fast_regen_mana           = z->fast_regen_mana > 0 ? z->fast_regen_mana : 180;
+	newzone_data.fast_regen_endurance      = z->fast_regen_endurance > 0 ? z->fast_regen_endurance : 180;
 	newzone_data.npc_aggro_max_dist        = z->npc_max_aggro_dist;
 	newzone_data.underworld_teleport_index = z->underworld_teleport_index;
 	newzone_data.lava_damage               = z->lava_damage;
