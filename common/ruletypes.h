@@ -505,6 +505,7 @@ RULE_BOOL(Spells, ManaTapsRequireNPCMana, false, "Enabling will require target t
 RULE_INT(Spells, HarmTouchCritRatio, 200, "Harmtouch crit bonus, on top of BaseCritRatio")
 RULE_BOOL(Spells, UseClassicSpellFocus, false, "Enabling will tell the server to handle random focus damage as classic spell imports lack the limit values.")
 RULE_BOOL(Spells, ManaTapsOnAnyClass, false, "Enabling this will allow you to cast mana taps on any class, this will bypass ManaTapsRequireNPCMana rule.")
+RULE_INT(Spells, HealAmountMessageFilterThreshold, 100, "Lifetaps below this threshold will not have a message sent to the client (Heal will still process) 0 to Disable.")
 RULE_CATEGORY_END()
 
 RULE_CATEGORY(Combat)
@@ -603,6 +604,8 @@ RULE_INT(Combat, StunDuration, 2000, "Duration of stuns in ms. DEFAULT: 2000")
 RULE_BOOL(Combat, ClientStunMessage, false, "Client stunning NPC produces message. DEFAULT false")
 RULE_BOOL(Combat, BashTwoHanderUseShoulderAC, false, "Enable to use shoulder AC for bash calculations when two hander is equipped. Unproven if accurate DEFAULT: false")
 RULE_REAL(Combat, BashACBonusDivisor, 25.0, "this divides the AC value contribution to bash damage, lower to increase damage")
+RULE_BOOL(Combat, UseMobStaticOffenseSkill, false, "Toggle to enabled the use of a static offense skill for Mobs.  DEFAULT: false")
+RULE_BOOL(Combat, UseEnhancedMobStaticWeaponSkill, false, "Toggle to enabled the use of an enhanced (slightly higher hit rate) static weapon skill for Mobs.  DEFAULT: false")
 RULE_CATEGORY_END()
 
 RULE_CATEGORY(NPC)
