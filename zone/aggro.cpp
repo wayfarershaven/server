@@ -590,10 +590,6 @@ int EntityList::GetHatedCount(Mob *attacker, Mob *exclude, bool inc_gray_con)
 			continue;
 		}
 
-		if (!mob->CheckAggro(attacker)) {
-			continue;
-		}
-
 		float AggroRange = mob->GetAggroRange();
 
 		// Square it because we will be using DistNoRoot
