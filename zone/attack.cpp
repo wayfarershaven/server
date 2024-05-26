@@ -194,8 +194,15 @@ int Mob::GetTotalToHit(EQ::skills::SkillType skill, int chance_mod)
 	// unsure on the stacking order of these effects, rather hard to parse
 	// item mod2 accuracy isn't applied to range? Theory crafting and parses back it up I guess
 	// mod2 accuracy -- flat bonus
-	if (skill != EQ::skills::SkillArchery && skill != EQ::skills::SkillThrowing)
+	if (skill != EQ::skills::SkillArchery && skill != EQ::skills::SkillThrowing) {
 		accuracy += itembonuses.HitChance;
+	} else {
+		// Applying a scale factor as sources suggest Accuracy should reduce number of missing by 0.1% per point, so 150 = 15% reduction in misses.
+		// Based on my calculator 150 Accuracy was reducing misses by too much (closer to 20%)
+		// NOTE: This doesn't mean if you have a 30% miss chance you now miss 15%.  It means if you have a 30% miss chance you now have a 30% * (100% - 15%) = 30% * 85% = 25.5% miss chance
+		// Using same scale factor for Avoidance and Accuracy since they impact the formula about the same.
+		accuracy += itembonuses.HitChance * RuleI(Combat, PCAccuracyAvoidanceMod2Scale) / 100;
+	}
 
 	//518 Increase ATK accuracy by percentage, stackable
 	auto atkhit_bonus = itembonuses.Attack_Accuracy_Max_Percent + aabonuses.Attack_Accuracy_Max_Percent + spellbonuses.Attack_Accuracy_Max_Percent;
@@ -224,6 +231,11 @@ int Mob::GetTotalToHit(EQ::skills::SkillType skill, int chance_mod)
 		itembonuses.HitChanceEffect[skill] +
 		aabonuses.HitChanceEffect[skill] +
 		spellbonuses.HitChanceEffect[skill];
+
+	if (skill == EQ::skills::SkillArchery) {
+		hit_bonus += spellbonuses.increase_archery + aabonuses.increase_archery + itembonuses.increase_archery;
+		hit_bonus -= hit_bonus * RuleR(Combat, ArcheryHitPenalty);
+	}
 
 	accuracy = (accuracy * (100 + hit_bonus)) / 100;
 
@@ -963,6 +975,10 @@ int Mob::GetBestMeleeSkill()
 int Mob::offense(EQ::skills::SkillType skill)
 {
 	int offense = GetSkill(skill);
+	if (RuleB(Combat, UseMobStaticOffenseSkill) && IsNPC() && !IsPet() && !IsTempPet()) {
+		offense = GetMobFixedWeaponSkill();
+	}
+
 	int stat_bonus = GetSTR();
 
 	switch (skill) {
@@ -983,10 +999,20 @@ int Mob::offense(EQ::skills::SkillType skill)
 			break;
 	}
 
-	if (stat_bonus >= 75)
+	if (stat_bonus >= 75) {
 		offense += (2 * stat_bonus - 150) / 3;
+	}
 
-	offense += GetATK() + GetPetATKBonusFromOwner();
+	// GetATK() = ATK + itembonuses.ATK + spellbonuses.ATK.  However, ATK appears to already be itembonuses.ATK + spellbonuses.ATK for PCs, so as is, it is double counting attack
+	// This causes attack to be significantly more important than it should be based on era rule of thumbs.  I do not want to change the GetATK() function in case doing so breaks something,
+	// so instead I am just adding a /2 to remedy the double counting.  NPCs do not have this issue, so they are broken up.
+	// PCAttackPowerScaling is used to help bring attack power further in line with era estimates.
+	if (IsOfClientBotMerc()) {
+		offense += (GetATK() / 2 + GetPetATKBonusFromOwner()) * RuleI(Combat, PCAttackPowerScaling) / 100;
+	} else {
+		offense += GetATK();
+	}
+
 	return offense;
 }
 
@@ -1041,6 +1067,26 @@ void Mob::MeleeMitigation(Mob *attacker, DamageHitInfo &hit, ExtraAttackOptions 
 	}
 
 	auto roll = RollD20(hit.offense, mitigation);
+
+	// Add bonus to roll if level difference is sufficient
+	const int level_diff            = attacker->GetLevel() - GetLevel();
+	const int level_diff_roll_check = RuleI(Combat, LevelDifferenceRollCheck);
+
+	if (level_diff_roll_check >= 0) {
+		if (level_diff > level_diff_roll_check) {
+			roll += RuleR(Combat, LevelDifferenceRollBonus);
+
+			if (roll > 2.0f) {
+				roll = 2.0f;
+			}
+		} else if (level_diff < (-level_diff_roll_check)) {
+			roll -= RuleR(Combat, LevelDifferenceRollBonus);
+
+			if (roll < 0.1f) {
+				roll = 0.1f;
+			}
+		}
+	}
 
 	// +0.5 for rounding, min to 1 dmg
 	hit.damage_done = std::max(static_cast<int>(roll * static_cast<double>(hit.base_damage) + 0.5), 1);
@@ -2509,7 +2555,7 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 	auto app = new EQApplicationPacket(OP_Death, sizeof(Death_Struct));
 
 	auto d = (Death_Struct*) app->pBuffer;
- 
+
 	// Convert last message to color to avoid duplicate damage messages
 	// that occur in these rare cases when this is the death blow.
 	if (IsValidSpell(spell) &&
@@ -3085,12 +3131,16 @@ void Mob::AddToHateList(Mob* other, int64 hate /*= 0*/, int64 damage /*= 0*/, bo
 		// Spell Casting Subtlety etc
 		int64 hatemod = 100 + other->spellbonuses.hatemod + other->itembonuses.hatemod + other->aabonuses.hatemod;
 
-		if (hatemod < 1)
+		if (hatemod < 1) {
 			hatemod = 1;
+		}
 		hate = ((hate * (hatemod)) / 100);
-	}
-	else {
-		hate += 100; // 100 bonus initial aggro
+	} else {
+		if (IsCharmed()){
+			hate += RuleI(Aggro, InitialPetAggroBonus);
+		} else {
+			hate += RuleI(Aggro, InitialAggroBonus);
+		}
 	}
 
 	// Pet that is /pet hold on will not add to their hate list if they're not engaged
@@ -6323,6 +6373,9 @@ void Mob::CommonOutgoingHitSuccess(Mob* defender, DamageHitInfo &hit, ExtraAttac
 				MessageString(Chat::MeleeCrit, BOW_DOUBLE_DAMAGE);
 			}
 		}
+
+		//Scale Factor for Archery Damage Tuning
+		hit.damage_done *= RuleR(Combat, ArcheryBaseDamageBonus);
 	}
 
 	int extra_mincap = 0;
