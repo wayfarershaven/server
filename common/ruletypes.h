@@ -614,6 +614,7 @@ RULE_INT(Combat, PCAttackPowerScaling, 100, "Applies scaling to PC Attack Power 
 RULE_INT(Combat, PCAccuracyAvoidanceMod2Scale, 100, "Scale Factor for PC Accuracy and Avoidance (Mod2, found on items).  Found a value of 100 to make both too strong (75 = x0.75).  DEFAULT: 100 to not adjust existing Servers")
 RULE_BOOL(Combat, AllowRaidTargetBlind, false, "Toggle to allow raid targets to be blinded, default is false (Live-like)")
 RULE_BOOL(Combat, RogueBackstabHasteCorrection, false, "Toggle to enable correction for Haste impacting Backstab DPS too much.  DEFAULT: false")
+RULE_REAL(Combat, SlayDamageAdjustment, 1.0, "Slay Damage Adjustment Default: 1.0")
 RULE_CATEGORY_END()
 
 RULE_CATEGORY(NPC)
