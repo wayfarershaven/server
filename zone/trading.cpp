@@ -24,6 +24,7 @@
 #include "../common/misc_functions.h"
 #include "../common/events/player_event_logs.h"
 #include "../common/repositories/trader_repository.h"
+#include "../common/repositories/buyer_repository.h"
 
 #include "client.h"
 #include "entity.h"
@@ -2844,6 +2845,106 @@ void Client::UpdateBuyLine(const EQApplicationPacket *app) {
 	// /buyer mode is first turned on, once for each item
 	// A BuyLine is toggled on or off in the/buyer window.
 	//
+	if (ClientVersion() >= EQ::versions::ClientVersion::RoF)
+	{
+		char *buffer = (char *)app->pBuffer;
+
+		BuyerLine_Struct bl {};
+		bl.action   = VARSTRUCT_DECODE_TYPE(uint32, buffer);
+		bl.no_items = VARSTRUCT_DECODE_TYPE(uint32, buffer);
+		if (!bl.no_items)
+		{
+			return;
+		}
+		bl.buy_line.resize(bl.no_items);
+		memcpy(&bl.buy_line[0], buffer, bl.no_items * sizeof(BuyerLineItems_Struct));
+
+		for (auto const& b : bl.buy_line)
+		{
+			auto buyer_has_pp = false;
+			auto buyer_has_items = true;
+			for (auto const& i : b.trade_items) {
+				if (i.item_id != 0) {
+					if (GetInv().HasItem(i.item_id, invWhereWorn | invWherePersonal | invWhereCursor)) {
+						buyer_has_items = true;
+					}
+					else {
+						buyer_has_items = false;
+						break;
+					}
+				}
+			}
+			if (!buyer_has_items) {
+				Message(Chat::Red, "You no longer have the compensation items.  Please refresh you inventory and try creating the buy line again.");
+				return;
+			}
+
+			buyer_has_pp = HasMoney(b.item_cost * b.item_quantity);
+			if (!buyer_has_pp) {
+				Message(Chat::Red, "You do not have sufficient funds to support this buy line.  Lower price per unit or obtain more cash.");
+				return;
+			}
+
+			if (!buyer_has_items && !buyer_has_pp) {
+				LogTrading("{} tried to create a buyline and failed items check {} or failed money check {}",
+						   GetName(),
+						   buyer_has_items,
+						   buyer_has_pp
+				);
+				return;
+			}
+
+			BuyerRepository::DeleteBuyLine(database, CharacterID(), b.slot);
+			if (b.item_toggle) {
+				BuyerRepository::UpdateBuyLine(database, b, CharacterID());
+			}
+			auto outapp = new EQApplicationPacket(OP_BuyerItems, sizeof(b) + 4);
+			char* emu = (char*)outapp->pBuffer;
+
+			VARSTRUCT_ENCODE_TYPE(uint32, emu, Barter_BuyerItemUpdate);
+			memcpy(emu, &b, sizeof(b));
+
+			FastQueuePacket(&outapp);
+
+			if (IsThereACustomer()) {
+				//Update the Seller's Merchant Window if there is one.
+				Message(Chat::Yellow, "There is a player browsing.  Should resend the window data.");
+				auto customer = entity_list.GetClientByID(GetCustomerID());
+				if (!customer) {
+					return;
+				}
+
+				BuyerLineItems_Struct blis{};
+				blis.enabled = b.enabled;
+				blis.item_cost = b.item_cost;
+				blis.item_icon = b.item_icon;
+				blis.item_id = b.item_id;
+				blis.item_quantity = b.item_quantity;
+				blis.item_toggle = b.item_toggle;
+				blis.slot = b.slot;
+				strn0cpy(blis.item_name, b.item_name, sizeof(blis.item_name));
+				for (int i = 0; i < MAX_BUYER_COMPENSATION_ITEMS; i++) {
+					blis.trade_items[i].item_icon = b.trade_items[i].item_icon;
+					blis.trade_items[i].item_id = b.trade_items[i].item_id;
+					blis.trade_items[i].item_quantity = b.trade_items[i].item_quantity;
+					strn0cpy(blis.trade_items[i].item_name, b.trade_items[i].item_name, sizeof(blis.trade_items[i].item_name));
+				}
+
+				const EQ::ItemData* item = database.GetItem(b.item_id);
+
+				auto outapp = new EQApplicationPacket(OP_BuyerItems, sizeof(b) + 4);
+				char* emu = (char*)outapp->pBuffer;
+
+				VARSTRUCT_ENCODE_TYPE(uint32, emu, Barter_BuyerInspectBegin);
+				memcpy(emu, &b, sizeof(b));
+
+				customer->QueuePacket(outapp);
+				safe_delete(outapp);
+			}
+		}
+		return;
+	}
+
 	char* Buf = (char*)app->pBuffer;
 
 	char ItemName[64];

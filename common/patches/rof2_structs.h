@@ -3122,6 +3122,122 @@ enum RoF2BazaarTraderBuyerActions {
 	ReconcileItems  = 20
 };
 
+enum RoF2BuyerActions {
+	BuyerBuyLine         = 0x06,
+	BuyerModifyBuyLine   = 0x07,
+	BuyerRemoveItem      = 0x08,
+	BuyerSellItem        = 0x09,
+	BuyerInspectBegin    = 0x0b,
+	BuyerInspectEnd      = 0x0c,
+	BuyerAppearance      = 0x0d,
+	BuyerSendBuyLine     = 0x0e,
+	BuyerItemInspect     = 0x0f,
+	BuyerBrowsingBuyLine = 0x10,
+	BuyerWelcomeMessage  = 0x13
+};
+
+struct BuyerWelcomeMessageUpdate_Struct {
+	uint32 action;
+	char   unknown_004[64];
+	uint32 unknown_068;
+	char   welcome_message[256];
+};
+
+struct Buyer_SetAppearance_Struct {
+	uint32	action;
+	uint32	entity_id;
+	char	unknown[64];
+	uint32	enabled;
+};
+
+struct BuyerRemoveItem_Struct {
+	uint32	action;
+	uint32	unknown004;
+	uint32	slot_id;
+	uint32	toggle;
+};
+
+struct BuyerLineTradeItems_Struct {
+	uint32 item_id;
+	uint32 item_quantity;
+	uint32 item_icon;
+	char   item_name[64];
+};
+
+struct BuyerLineItems_Struct {
+	uint32                     slot;
+	uint8                      enabled;
+	uint32                     item_id;
+	char                       item_name[64];
+	uint32                     item_icon;
+	uint32                     item_quantity;
+	uint8                      item_toggle;
+	uint32                     item_cost;
+	BuyerLineTradeItems_Struct trade_items[MAX_BUYER_COMPENSATION_ITEMS];
+};
+
+struct BuyerLine_Struct {
+	uint32                             action;
+	uint32                             no_items;
+	std::vector<BuyerLineItems_Struct> buy_line;
+};
+
+struct BuyerLineSellItem_Struct {
+	uint32                     action;
+	uint32                     purchase_method; // 0 direct merchant, 1 via /barter window
+	uint32                     unknown008;
+	uint32                     buyer_entity_id;
+	uint32                     seller_entity_id;
+	char                       unknown[15];
+	uint32                     slot;
+	uint8                      enabled;
+	uint32                     item_id;
+	char                       item_name[64];
+	uint32                     item_icon;
+	uint32                     item_quantity;
+	uint8                      item_toggle;
+	uint32                     item_cost;
+	uint32                     no_trade_items;
+	BuyerLineTradeItems_Struct trade_items[10];
+	char                       unknown2[13];
+	uint32                     seller_quantity;
+};
+
+struct BuyerLineItemsSearch_Struct {
+	uint32                     slot;
+	uint8                      enabled;
+	uint32                     item_id;
+	char                       item_name[64];
+	uint32                     item_icon;
+	uint32                     item_quantity;
+	uint8                      item_toggle;
+	uint32                     item_cost;
+	uint32                     buyer_id;
+	BuyerLineTradeItems_Struct trade_items[MAX_BUYER_COMPENSATION_ITEMS];
+};
+
+struct BuyerLineSearch_Struct {
+	uint32                                   action;
+	uint32                                   no_items;
+	std::vector<BuyerLineItemsSearch_Struct> buy_line;
+};
+
+struct BuyerStart_Struct {
+	uint32                     action;
+	uint16                     no_buyer_lines;
+	uint32                     slot;
+	uint8                      enabled;
+	uint32                     item_id;
+	char                       item_name[1];    // vary length
+	uint32                     item_icon;
+	uint32                     item_quantity;
+	uint8                      toggle;
+	uint32                     item_cost;
+	uint32                     no_trade_items;
+	BuyerLineTradeItems_Struct trade_items[1]; // size is actually no_trade_items.  If 0, then this is not in packet
+	char                       unknown[13];
+};
+
 enum {
 	BazaarTrader_StartTraderMode  = 1,
 	BazaarTrader_EndTraderMode    = 2,

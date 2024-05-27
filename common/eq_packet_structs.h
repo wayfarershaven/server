@@ -3113,34 +3113,111 @@ struct BazaarSearchResults_Struct {
 // Barter/Buyer
 //
 //
+#define MAX_BUYER_COMPENSATION_ITEMS 10
+
 enum {
-	Barter_BuyerSearch = 0,
-	Barter_SellerSearch = 1,
-	Barter_BuyerModeOn = 2,
-	Barter_BuyerModeOff = 3,
-	Barter_BuyerItemUpdate = 5,
-	Barter_BuyerItemRemove = 6,
-	Barter_SellItem = 7,
+	Barter_BuyerSearch               = 0,
+	Barter_SellerSearch              = 1,
+	Barter_BuyerModeOn               = 2,
+	Barter_BuyerModeOff              = 3,
+	Barter_BuyerItemUpdate           = 5,
+	Barter_BuyerItemRemove           = 6,
+	Barter_SellItem                  = 7,
 	Barter_SellerTransactionComplete = 8,
-	Barter_BuyerTransactionComplete = 9,
-	Barter_BuyerInspectBegin = 10,
-	Barter_BuyerInspectEnd = 11,
-	Barter_BuyerAppearance = 12,
-	Barter_BuyerInspectWindow = 13,
-	Barter_BarterItemInspect = 14,
-	Barter_SellerBrowsing = 15,
-	Barter_BuyerSearchResults = 16,
-	Barter_Welcome = 17,
-	Barter_WelcomeMessageUpdate = 19,
-	Barter_BuyerItemInspect = 21,
-	Barter_Unknown23 = 23
+	Barter_BuyerTransactionComplete  = 9,
+	Barter_BuyerInspectBegin         = 10,
+	Barter_BuyerInspectEnd           = 11,
+	Barter_BuyerAppearance           = 12,
+	Barter_BuyerInspectWindow        = 13,
+	Barter_BarterItemInspect         = 14,
+	Barter_SellerBrowsing            = 15,
+	Barter_BuyerSearchResults        = 16,
+	Barter_Welcome                   = 17,
+	Barter_WelcomeMessageUpdate      = 19,
+	Barter_BuyerItemInspect          = 21,
+	Barter_Unknown23                 = 23
+};
+
+struct BuyerGeneric_Struct {
+	uint32 action;
 };
 
 struct BuyerWelcomeMessageUpdate_Struct {
-/*000*/	uint32	Action;
-/*004*/	char	WelcomeMessage[256];
+	uint32 action;
+	char   welcome_message[256];
 };
 
+struct BuyerLineTradeItems_Struct {
+	uint32 item_id;
+	uint32 item_quantity;
+	uint32 item_icon;
+	char   item_name[64];
+};
+
+struct BuyerLineItems_Struct {
+	uint32                     slot;
+	uint8                      enabled;
+	uint32                     item_id;
+	char                       item_name[64];
+	uint32                     item_icon;
+	uint32                     item_quantity;
+	uint8                      item_toggle;
+	uint32                     item_cost;
+	BuyerLineTradeItems_Struct trade_items[MAX_BUYER_COMPENSATION_ITEMS];
+};
+
+struct BuyerLine_Struct {
+	uint32                             action;
+	uint32                             no_items;
+	std::vector<BuyerLineItems_Struct> buy_line;
+};
+
+struct BuyerLineSellItem_Struct {
+	uint32                     action;
+	uint32                     purchase_method; // 0 direct merchant, 1 via /barter window
+	uint32                     unknown008;
+	uint32                     buyer_entity_id;
+	uint32                     seller_entity_id;
+	char                       unknown[15];
+	uint32                     slot;
+	uint8                      enabled;
+	uint32                     item_id;
+	char                       item_name[64];
+	uint32                     item_icon;
+	uint32                     item_quantity;
+	uint8                      item_toggle;
+	uint32                     item_cost;
+	uint32                     no_trade_items;
+	BuyerLineTradeItems_Struct trade_items[10];
+	char                       unknown2[13];
+	uint32                     seller_quantity;
+};
+
+struct BuyerLineItemsSearch_Struct {
+	uint32                     slot;
+	uint8                      enabled;
+	uint32                     item_id;
+	char                       item_name[64];
+	uint32                     item_icon;
+	uint32                     item_quantity;
+	uint8                      item_toggle;
+	uint32                     item_cost;
+	uint32                     buyer_id;
+	BuyerLineTradeItems_Struct trade_items[10];
+};
+
+struct BuyerLineSearch_Struct {
+	uint32                                   action;
+	uint32                                   no_items;
+	std::vector<BuyerLineItemsSearch_Struct> buy_line;
+};
+
+
+
+
+
+
+//old below here
 struct BuyerItemSearch_Struct {
 /*000*/	uint32	Unknown000;
 /*004*/	char	SearchString[64];

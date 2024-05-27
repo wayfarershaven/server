@@ -3872,7 +3872,7 @@ void Client::Handle_OP_Barter(const EQApplicationPacket *app)
 	case Barter_WelcomeMessageUpdate:
 	{
 		BuyerWelcomeMessageUpdate_Struct* bwmu = (BuyerWelcomeMessageUpdate_Struct*)app->pBuffer;
-		SetBuyerWelcomeMessage(bwmu->WelcomeMessage);
+		SetBuyerWelcomeMessage(bwmu->welcome_message);
 		break;
 	}
 
