@@ -3138,8 +3138,14 @@ enum {
 	Barter_Unknown23                 = 23
 };
 
+enum BuyerBarter {
+	Off = 0,
+	On  = 1
+};
+
 struct BuyerGeneric_Struct {
 	uint32 action;
+	char   payload[];
 };
 
 struct BuyerWelcomeMessageUpdate_Struct {
@@ -3152,6 +3158,17 @@ struct BuyerLineTradeItems_Struct {
 	uint32 item_quantity;
 	uint32 item_icon;
 	char   item_name[64];
+
+	template<class Archive>
+	void serialize(Archive &archive)
+	{
+		archive(
+			CEREAL_NVP(item_id),
+			CEREAL_NVP(item_quantity),
+			CEREAL_NVP(item_icon),
+			CEREAL_NVP(item_name)
+		);
+	}
 };
 
 struct BuyerLineItems_Struct {
@@ -3164,21 +3181,45 @@ struct BuyerLineItems_Struct {
 	uint8                      item_toggle;
 	uint32                     item_cost;
 	BuyerLineTradeItems_Struct trade_items[MAX_BUYER_COMPENSATION_ITEMS];
+
+	template<class Archive>
+	void serialize(Archive &archive)
+	{
+		archive(
+			CEREAL_NVP(slot),
+			CEREAL_NVP(enabled),
+			CEREAL_NVP(item_id),
+			CEREAL_NVP(item_name),
+			CEREAL_NVP(item_icon),
+			CEREAL_NVP(item_quantity),
+			CEREAL_NVP(item_toggle),
+			CEREAL_NVP(item_cost),
+			CEREAL_NVP(trade_items)
+		);
+	}
 };
 
 struct BuyerLine_Struct {
 	uint32                             action;
 	uint32                             no_items;
 	std::vector<BuyerLineItems_Struct> buy_line;
+
+	template<class Archive>
+	void serialize(Archive &archive)
+	{
+		archive(
+			CEREAL_NVP(action),
+			CEREAL_NVP(no_items),
+			CEREAL_NVP(buy_line)
+		);
+	}
 };
 
 struct BuyerLineSellItem_Struct {
 	uint32                     action;
 	uint32                     purchase_method; // 0 direct merchant, 1 via /barter window
-	uint32                     unknown008;
 	uint32                     buyer_entity_id;
 	uint32                     seller_entity_id;
-	char                       unknown[15];
 	uint32                     slot;
 	uint8                      enabled;
 	uint32                     item_id;
@@ -3189,8 +3230,29 @@ struct BuyerLineSellItem_Struct {
 	uint32                     item_cost;
 	uint32                     no_trade_items;
 	BuyerLineTradeItems_Struct trade_items[10];
-	char                       unknown2[13];
 	uint32                     seller_quantity;
+
+	template<class Archive>
+	void serialize(Archive &archive)
+	{
+		archive(
+			CEREAL_NVP(action),
+			CEREAL_NVP(purchase_method),
+			CEREAL_NVP(buyer_entity_id),
+			CEREAL_NVP(seller_entity_id),
+			CEREAL_NVP(slot),
+			CEREAL_NVP(enabled),
+			CEREAL_NVP(item_id),
+			CEREAL_NVP(item_name),
+			CEREAL_NVP(item_icon),
+			CEREAL_NVP(item_quantity),
+			CEREAL_NVP(item_toggle),
+			CEREAL_NVP(item_cost),
+			CEREAL_NVP(no_trade_items),
+			CEREAL_NVP(trade_items),
+			CEREAL_NVP(seller_quantity)
+		);
+	}
 };
 
 struct BuyerLineItemsSearch_Struct {
@@ -3212,6 +3274,12 @@ struct BuyerLineSearch_Struct {
 	std::vector<BuyerLineItemsSearch_Struct> buy_line;
 };
 
+struct BuyerSetAppearance_Struct {
+	uint32 action;
+	uint32 entity_id;
+	uint32 status; // 0 off 1 on
+	char   buyer_name[64];
+};
 
 
 

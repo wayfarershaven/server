@@ -3763,14 +3763,15 @@ void Client::Handle_OP_Barter(const EQApplicationPacket *app)
 	}
 
 	char* Buf = (char *)app->pBuffer;
+	auto in = (BuyerGeneric_Struct *)app->pBuffer;
 
 	// The first 4 bytes of the packet determine the action. A lot of Barter packets require the
 	// packet the client sent, sent back to it as an acknowledgement.
 	//
-	uint32 Action = VARSTRUCT_DECODE_TYPE(uint32, Buf);
+	//uint32 Action = VARSTRUCT_DECODE_TYPE(uint32, Buf);
 
 
-	switch (Action)
+	switch (in->action)
 	{
 
 	case Barter_BuyerSearch:
@@ -3904,7 +3905,7 @@ void Client::Handle_OP_Barter(const EQApplicationPacket *app)
 
 	default:
 		Message(Chat::Red, "Unrecognised Barter action.");
-		LogTrading("Unrecognised Barter Action [{}]", Action);
+		LogTrading("Unrecognised Barter Action [{}]", in->action);
 
 	}
 }

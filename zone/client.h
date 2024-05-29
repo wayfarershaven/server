@@ -375,6 +375,11 @@ public:
 	uint32 GetCustomerID() { return customer_id; }
 	void SetCustomerID(uint32 id) { customer_id = id; }
 
+	void   SetBuyerID(uint32 id) { buyer_id = id; }
+	void   SetBuyer(bool status) { buyer = status; }
+	uint32 GetBuyerID() { return buyer_id; }
+	bool   GetBuyer() { return buyer; }
+
 	void SendBuyerResults(char *SearchQuery, uint32 SearchID);
 	void ShowBuyLines(const EQApplicationPacket *app);
 	void SellToBuyer(const EQApplicationPacket *app);
@@ -1909,8 +1914,10 @@ private:
 	uint8 firstlogon;
 	uint32 mercid; // current merc
 	uint8 mercSlot; // selected merc slot
-	bool Buyer;
-	std::string BuyerWelcomeMessage;
+	bool                                                           buyer;
+	uint32                                                         buyer_id;
+	bool                                                           Buyer;
+	std::string                                                    BuyerWelcomeMessage;
 	int32                                                          m_parcel_platinum;
 	int32                                                          m_parcel_gold;
 	int32                                                          m_parcel_silver;

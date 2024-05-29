@@ -2811,31 +2811,29 @@ void Client::SendBuyerPacket(Client* Buyer) {
 	safe_delete(outapp);
 }
 
-void Client::ToggleBuyerMode(bool TurnOn) {
+void Client::ToggleBuyerMode(bool status)
+{
+	auto outapp = std::make_unique<EQApplicationPacket>(OP_Barter, sizeof(BuyerSetAppearance_Struct));
+	auto data = (BuyerSetAppearance_Struct *)outapp->pBuffer;
 
-	auto outapp = new EQApplicationPacket(OP_Barter, 13 + strlen(GetName()));
+	data->action    = Barter_BuyerAppearance;
+	data->entity_id = GetID();
 
-	char* Buf = (char*)outapp->pBuffer;
-
-	VARSTRUCT_ENCODE_TYPE(uint32, Buf, Barter_BuyerAppearance);
-	VARSTRUCT_ENCODE_TYPE(uint32, Buf, GetID());
-
-	if(TurnOn) {
-		VARSTRUCT_ENCODE_TYPE(uint32, Buf, 0x01);
+	if (status) {
+		data->status = BuyerBarter::On;
+		SetCustomerID(0);
+		SetBuyer(true);
+		SetBuyerID(GetID());
 	}
 	else {
-		VARSTRUCT_ENCODE_TYPE(uint32, Buf, 0x00);
-		database.DeleteBuyLines(CharacterID());
+		data->status = BuyerBarter::Off;
+		BuyerRepository::DeleteWhere(database, fmt::format("`char_id` = '{}'", GetID()));
 		SetCustomerID(0);
+		SetBuyer(false);
+		SetBuyerID(false);
 	}
 
-	VARSTRUCT_ENCODE_STRING(Buf, GetName());
-
-	entity_list.QueueClients(this, outapp, false);
-
-	safe_delete(outapp);
-
-	Buyer = TurnOn;
+	entity_list.QueueClients(this, outapp.get(), false);
 }
 
 void Client::UpdateBuyLine(const EQApplicationPacket *app) {
@@ -2847,17 +2845,26 @@ void Client::UpdateBuyLine(const EQApplicationPacket *app) {
 	//
 	if (ClientVersion() >= EQ::versions::ClientVersion::RoF)
 	{
-		char *buffer = (char *)app->pBuffer;
+		BuyerLine_Struct             bl{};
+		auto                         in = (BuyerGeneric_Struct *) app->pBuffer;
+		EQ::Util::MemoryStreamReader ss(
+			reinterpret_cast<char *>(in->payload),
+			app->size - sizeof(BuyerGeneric_Struct)
+		);
+		cereal::BinaryInputArchive   ar(ss);
+		ar(bl);
 
-		BuyerLine_Struct bl {};
-		bl.action   = VARSTRUCT_DECODE_TYPE(uint32, buffer);
-		bl.no_items = VARSTRUCT_DECODE_TYPE(uint32, buffer);
+		char *buffer = (char *) app->pBuffer;
+
+//		BuyerLine_Struct bl {};
+//		bl.action   = VARSTRUCT_DECODE_TYPE(uint32, buffer);
+//		bl.no_items = VARSTRUCT_DECODE_TYPE(uint32, buffer);
 		if (!bl.no_items)
 		{
 			return;
 		}
-		bl.buy_line.resize(bl.no_items);
-		memcpy(&bl.buy_line[0], buffer, bl.no_items * sizeof(BuyerLineItems_Struct));
+//		bl.buy_line.resize(bl.no_items);
+//		memcpy(&bl.buy_line[0], buffer, bl.no_items * sizeof(BuyerLineItems_Struct));
 
 		for (auto const& b : bl.buy_line)
 		{
