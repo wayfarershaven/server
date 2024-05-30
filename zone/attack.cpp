@@ -255,54 +255,77 @@ int Mob::GetTotalToHit(EQ::skills::SkillType skill, int chance_mod)
 //SYNC WITH: tune.cpp, mob.h Tunecompute_defense
 int Mob::compute_defense()
 {
+	LogDebug("DEBUG: Compute Defense Start");
 	int defense = GetSkill(EQ::skills::SkillDefense) * 400 / 225;
 
+	LogDebug("DEBUG: 1 Compute Defense: defense - [{}] - GetSkill - [{}]", defense, GetSkill(EQ::skills::SkillDefense));
 	// In new code, AGI becomes a large contributor to avoidance at low levels, since AGI isn't capped by Level but Defense is
 	// A scale factor is implemented for PCs to reduce the effect of AGI at low levels.  This isn't applied to NPCs since they can be
 	// easily controlled via the Database.
 	if (RuleB(Combat, LegacyComputeDefense)) {
+		LogDebug("DEBUG: 2a Compute Defense: defense [{}]", defense);
 		int agi_scale_factor = 1000;
-
+		LogDebug("DEBUG: 3a Compute Defense: agi_scale_factor [{}]", agi_scale_factor);
 		if (IsOfClientBot()) {
 			agi_scale_factor = std::min(1000, static_cast<int>(GetLevel()) * 1000 / 70); // Scales Agi Contribution for PC's Level, max Contribution at Level 70
+			LogDebug("DEBUG: 4a Compute Defense: agi_scale_factor [{}]", agi_scale_factor);
 		}
 
+		LogDebug("DEBUG: 5a Compute Defense: defense [{}] - agi_scale_factor [{}] - (800 * (GetAGI() [{}] - 40)) / 3600 / 1000", defense, agi_scale_factor, GetAGI());
 		defense += agi_scale_factor * (800 * (GetAGI() - 40)) / 3600 / 1000;
+		LogDebug("DEBUG: 6a Compute Defense: defense [{}]", defense);
 
 		if (IsOfClientBot()) {
+			LogDebug("DEBUG: 7a Compute Defense: Is Client - defense [{}] - GetHeroicAGI [{}]", defense, GetHeroicAGI());
 			defense += GetHeroicAGI() / 10;
+			LogDebug("DEBUG: 8a Compute Defense: defense [{}]", defense);
 		}
 
+		LogDebug("DEBUG: 9a Compute Defense: itembonuses.AvoidMeleeChance [{}] * PCAccuracyAvoidanceMod2Scale [{}] / 100", itembonuses.AvoidMeleeChance, RuleI(Combat, PCAccuracyAvoidanceMod2Scale));
 		defense += itembonuses.AvoidMeleeChance * RuleI(Combat, PCAccuracyAvoidanceMod2Scale) / 100; // item mod2
+		LogDebug("DEBUG: 10a Compute Defense: defense [{}]", defense);
 	} else {
+		LogDebug("DEBUG: 2b Compute Defense: defense [{}] -  (8000 * (GetAGI() [{}] - 40)) / 36000", defense, GetAGI());
 		defense += (8000 * (GetAGI() - 40)) / 36000;
+		LogDebug("DEBUG: 3b Compute Defense: defense [{}]", defense);
 
 		if (IsOfClientBot()) {
 			defense += itembonuses.heroic_agi_avoidance;
+			LogDebug("DEBUG: 4b Compute Defense: defense [{}]", defense);
 		}
 
 		defense += itembonuses.AvoidMeleeChance; // item mod2
+		LogDebug("DEBUG: 5b Compute Defense: defense [{}]", defense);
 	}
 
 
 	//516 SE_AC_Mitigation_Max_Percent
 	auto ac_bonus = itembonuses.AC_Mitigation_Max_Percent + aabonuses.AC_Mitigation_Max_Percent + spellbonuses.AC_Mitigation_Max_Percent;
+	LogDebug("DEBUG: 11 Compute Defense: ac_bonus [{}]", ac_bonus);
 	if (ac_bonus) {
 		defense += round(static_cast<double>(defense) * static_cast<double>(ac_bonus) * 0.0001);
+		LogDebug("DEBUG: 12 Compute Defense: defense [{}]", defense);
 	}
 
 	if (IsNPC()) {
+		LogDebug("DEBUG: 13 Compute Defense: IS NPC - defense [{}] + GetAvoidanceRating() [{}]", defense, CastToNPC()->GetAvoidanceRating());
 		defense += CastToNPC()->GetAvoidanceRating();
+
 	}
 
 	if (IsClient()) {
+		LogDebug("DEBUG: 14 Compute Defense: IS CLIENT defense [{}]", defense);
 		double reduction = CastToClient()->GetIntoxication() / 2.0;
+		LogDebug("DEBUG: 15 Compute Defense: reduction [{}]", reduction);
 		if (reduction > 20.0) {
+			LogDebug("DEBUG: 16 Compute Defense: reduction [{}] > 20.0", reduction);
 			reduction = std::min((110 - reduction) / 100.0, 1.0);
 			defense = reduction * static_cast<double>(defense);
+			LogDebug("DEBUG: 17 Compute Defense: reduction [{}] - defense [{}]", reduction, defense);
 		}
 	}
 
+	LogDebug("DEBUG: 18 Compute Defense: Final Defense [{}] - Return Defense [{}]", defense, std::max(1, defense));
 	return std::max(1, defense);
 }
 
