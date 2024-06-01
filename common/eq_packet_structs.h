@@ -3134,6 +3134,7 @@ enum {
 	Barter_BuyerSearchResults        = 16,
 	Barter_Welcome                   = 17,
 	Barter_WelcomeMessageUpdate      = 19,
+	Barter_Greeting                  = 20,
 	Barter_BuyerItemInspect          = 21,
 	Barter_Unknown23                 = 23
 };
@@ -3146,6 +3147,16 @@ enum BuyerBarter {
 struct BuyerGeneric_Struct {
 	uint32 action;
 	char   payload[];
+};
+
+struct BuyerBrowsing_Struct {
+	uint32 action;
+	char   char_name[64];
+};
+
+struct BuyerGreeting_Struct {
+	uint32 action;
+	uint32 buyer_id;
 };
 
 struct BuyerWelcomeMessageUpdate_Struct {

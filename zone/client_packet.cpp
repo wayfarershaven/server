@@ -3863,13 +3863,12 @@ void Client::Handle_OP_Barter(const EQApplicationPacket *app)
 
 	case Barter_Welcome:
 	{
-		SendBazaarWelcome();
+		SendBarterWelcome();
 		break;
 	}
 
-	case Barter_WelcomeMessageUpdate:
-	{
-		BuyerWelcomeMessageUpdate_Struct* bwmu = (BuyerWelcomeMessageUpdate_Struct*)app->pBuffer;
+	case Barter_WelcomeMessageUpdate: {
+		auto bwmu = (BuyerWelcomeMessageUpdate_Struct *) app->pBuffer;
 		SetBuyerWelcomeMessage(bwmu->welcome_message);
 		break;
 	}
@@ -3894,6 +3893,11 @@ void Client::Handle_OP_Barter(const EQApplicationPacket *app)
 		break;
 	}
 
+	case Barter_Greeting:
+	{
+		auto data = (BuyerGreeting_Struct *)app->pBuffer;
+		SendBuyerGreeting(data->buyer_id);
+	}
 	case Barter_Unknown23:
 	{
 		// Sent by SoD client for no discernible reason.
@@ -15516,7 +15520,7 @@ void Client::Handle_OP_Trader(const EQApplicationPacket *app)
 			break;
 		}
 		case TraderOn: {
-			if (Buyer) {
+			if (IsBuyer()) {
 				TraderEndTrader();
 				Message(Chat::Red, "You cannot be a Trader and Buyer at the same time.");
 				return;

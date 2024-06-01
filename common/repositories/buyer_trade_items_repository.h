@@ -1,11 +1,11 @@
-#ifndef EQEMU_BUYER_REPOSITORY_H
-#define EQEMU_BUYER_REPOSITORY_H
+#ifndef EQEMU_BUYER_TRADE_ITEMS_REPOSITORY_H
+#define EQEMU_BUYER_TRADE_ITEMS_REPOSITORY_H
 
 #include "../database.h"
 #include "../strings.h"
-#include "base/base_buyer_repository.h"
+#include "base/base_buyer_trade_items_repository.h"
 
-class BuyerRepository: public BaseBuyerRepository {
+class BuyerTradeItemsRepository: public BaseBuyerTradeItemsRepository {
 public:
 
     /**
@@ -32,10 +32,10 @@ public:
      *
      * Example custom methods in a repository
      *
-     * BuyerRepository::GetByZoneAndVersion(int zone_id, int zone_version)
-     * BuyerRepository::GetWhereNeverExpires()
-     * BuyerRepository::GetWhereXAndY()
-     * BuyerRepository::DeleteWhereXAndY()
+     * BuyerTradeItemsRepository::GetByZoneAndVersion(int zone_id, int zone_version)
+     * BuyerTradeItemsRepository::GetWhereNeverExpires()
+     * BuyerTradeItemsRepository::GetWhereXAndY()
+     * BuyerTradeItemsRepository::DeleteWhereXAndY()
      *
      * Most of the above could be covered by base methods, but if you as a developer
      * find yourself re-using logic for other parts of the code, its best to just make a
@@ -45,28 +45,6 @@ public:
 
 	// Custom extended repository methods here
 
-	static bool UpdateWelcomeMessage(Database& db, uint32 char_id, const char *message) {
-
-		auto const b = GetWhere(db, fmt::format("`char_id` = '{}';", char_id));
-
-		if (b.empty()) {
-			return false;
-		}
-
-		auto buyer = b.front();
-		buyer.welcome_message = message;
-		return UpdateOne(db, buyer);
-	}
-
-	static std::string GetWelcomeMessage(Database& db, uint64 buyer_id) {
-
-		auto const b = FindOne(db, buyer_id);
-		if (!b.id) {
-			return std::string();
-		}
-
-		return b.welcome_message;
-	}
 };
 
-#endif //EQEMU_BUYER_REPOSITORY_H
+#endif //EQEMU_BUYER_TRADE_ITEMS_REPOSITORY_H

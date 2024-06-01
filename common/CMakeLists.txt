@@ -340,7 +340,7 @@ SET(repositories
     repositories/books_repository.h
     repositories/bugs_repository.h
     repositories/bug_reports_repository.h
-    repositories/buyer_repository.h
+    repositories/buyer_buy_lines_repository.h
     repositories/buyer_trade_items_repository.h
     repositories/character_activities_repository.h
     repositories/character_alternate_abilities_repository.h

@@ -9,21 +9,22 @@
  * @docs https://docs.eqemu.io/developer/repositories
  */
 
-#ifndef EQEMU_BASE_BUYER_REPOSITORY_H
-#define EQEMU_BASE_BUYER_REPOSITORY_H
+#ifndef EQEMU_BASE_BUYER_TRADE_ITEMS_REPOSITORY_H
+#define EQEMU_BASE_BUYER_TRADE_ITEMS_REPOSITORY_H
 
 #include "../../database.h"
 #include "../../strings.h"
 #include <ctime>
 
-class BaseBuyerRepository {
+class BaseBuyerTradeItemsRepository {
 public:
-	struct Buyer {
+	struct BuyerTradeItems {
 		uint64_t    id;
-		uint32_t    char_id;
-		std::string char_name;
-		uint32_t    char_zone_id;
-		std::string welcome_message;
+		uint64_t    buyer_buy_lines_id;
+		int32_t     item_id;
+		int32_t     item_qty;
+		int32_t     item_icon;
+		std::string item_name;
 	};
 
 	static std::string PrimaryKey()
@@ -35,10 +36,11 @@ public:
 	{
 		return {
 			"id",
-			"char_id",
-			"char_name",
-			"char_zone_id",
-			"welcome_message",
+			"buyer_buy_lines_id",
+			"item_id",
+			"item_qty",
+			"item_icon",
+			"item_name",
 		};
 	}
 
@@ -46,10 +48,11 @@ public:
 	{
 		return {
 			"id",
-			"char_id",
-			"char_name",
-			"char_zone_id",
-			"welcome_message",
+			"buyer_buy_lines_id",
+			"item_id",
+			"item_qty",
+			"item_icon",
+			"item_name",
 		};
 	}
 
@@ -65,7 +68,7 @@ public:
 
 	static std::string TableName()
 	{
-		return std::string("buyer");
+		return std::string("buyer_trade_items");
 	}
 
 	static std::string BaseSelect()
@@ -86,36 +89,37 @@ public:
 		);
 	}
 
-	static Buyer NewEntity()
+	static BuyerTradeItems NewEntity()
 	{
-		Buyer e{};
+		BuyerTradeItems e{};
 
-		e.id              = 0;
-		e.char_id         = 0;
-		e.char_name       = "";
-		e.char_zone_id    = 0;
-		e.welcome_message = "";
+		e.id                 = 0;
+		e.buyer_buy_lines_id = 0;
+		e.item_id            = 0;
+		e.item_qty           = 0;
+		e.item_icon          = 0;
+		e.item_name          = "0";
 
 		return e;
 	}
 
-	static Buyer GetBuyer(
-		const std::vector<Buyer> &buyers,
-		int buyer_id
+	static BuyerTradeItems GetBuyerTradeItems(
+		const std::vector<BuyerTradeItems> &buyer_trade_itemss,
+		int buyer_trade_items_id
 	)
 	{
-		for (auto &buyer : buyers) {
-			if (buyer.id == buyer_id) {
-				return buyer;
+		for (auto &buyer_trade_items : buyer_trade_itemss) {
+			if (buyer_trade_items.id == buyer_trade_items_id) {
+				return buyer_trade_items;
 			}
 		}
 
 		return NewEntity();
 	}
 
-	static Buyer FindOne(
+	static BuyerTradeItems FindOne(
 		Database& db,
-		int buyer_id
+		int buyer_trade_items_id
 	)
 	{
 		auto results = db.QueryDatabase(
@@ -123,19 +127,20 @@ public:
 				"{} WHERE {} = {} LIMIT 1",
 				BaseSelect(),
 				PrimaryKey(),
-				buyer_id
+				buyer_trade_items_id
 			)
 		);
 
 		auto row = results.begin();
 		if (results.RowCount() == 1) {
-			Buyer e{};
+			BuyerTradeItems e{};
 
-			e.id              = row[0] ? strtoull(row[0], nullptr, 10) : 0;
-			e.char_id         = row[1] ? static_cast<uint32_t>(strtoul(row[1], nullptr, 10)) : 0;
-			e.char_name       = row[2] ? row[2] : "";
-			e.char_zone_id    = row[3] ? static_cast<uint32_t>(strtoul(row[3], nullptr, 10)) : 0;
-			e.welcome_message = row[4] ? row[4] : "";
+			e.id                 = row[0] ? strtoull(row[0], nullptr, 10) : 0;
+			e.buyer_buy_lines_id = row[1] ? strtoull(row[1], nullptr, 10) : 0;
+			e.item_id            = row[2] ? static_cast<int32_t>(atoi(row[2])) : 0;
+			e.item_qty           = row[3] ? static_cast<int32_t>(atoi(row[3])) : 0;
+			e.item_icon          = row[4] ? static_cast<int32_t>(atoi(row[4])) : 0;
+			e.item_name          = row[5] ? row[5] : "0";
 
 			return e;
 		}
@@ -145,7 +150,7 @@ public:
 
 	static int DeleteOne(
 		Database& db,
-		int buyer_id
+		int buyer_trade_items_id
 	)
 	{
 		auto results = db.QueryDatabase(
@@ -153,7 +158,7 @@ public:
 				"DELETE FROM {} WHERE {} = {}",
 				TableName(),
 				PrimaryKey(),
-				buyer_id
+				buyer_trade_items_id
 			)
 		);
 
@@ -162,17 +167,18 @@ public:
 
 	static int UpdateOne(
 		Database& db,
-		const Buyer &e
+		const BuyerTradeItems &e
 	)
 	{
 		std::vector<std::string> v;
 
 		auto columns = Columns();
 
-		v.push_back(columns[1] + " = " + std::to_string(e.char_id));
-		v.push_back(columns[2] + " = '" + Strings::Escape(e.char_name) + "'");
-		v.push_back(columns[3] + " = " + std::to_string(e.char_zone_id));
-		v.push_back(columns[4] + " = '" + Strings::Escape(e.welcome_message) + "'");
+		v.push_back(columns[1] + " = " + std::to_string(e.buyer_buy_lines_id));
+		v.push_back(columns[2] + " = " + std::to_string(e.item_id));
+		v.push_back(columns[3] + " = " + std::to_string(e.item_qty));
+		v.push_back(columns[4] + " = " + std::to_string(e.item_icon));
+		v.push_back(columns[5] + " = '" + Strings::Escape(e.item_name) + "'");
 
 		auto results = db.QueryDatabase(
 			fmt::format(
@@ -187,18 +193,19 @@ public:
 		return (results.Success() ? results.RowsAffected() : 0);
 	}
 
-	static Buyer InsertOne(
+	static BuyerTradeItems InsertOne(
 		Database& db,
-		Buyer e
+		BuyerTradeItems e
 	)
 	{
 		std::vector<std::string> v;
 
 		v.push_back(std::to_string(e.id));
-		v.push_back(std::to_string(e.char_id));
-		v.push_back("'" + Strings::Escape(e.char_name) + "'");
-		v.push_back(std::to_string(e.char_zone_id));
-		v.push_back("'" + Strings::Escape(e.welcome_message) + "'");
+		v.push_back(std::to_string(e.buyer_buy_lines_id));
+		v.push_back(std::to_string(e.item_id));
+		v.push_back(std::to_string(e.item_qty));
+		v.push_back(std::to_string(e.item_icon));
+		v.push_back("'" + Strings::Escape(e.item_name) + "'");
 
 		auto results = db.QueryDatabase(
 			fmt::format(
@@ -220,7 +227,7 @@ public:
 
 	static int InsertMany(
 		Database& db,
-		const std::vector<Buyer> &entries
+		const std::vector<BuyerTradeItems> &entries
 	)
 	{
 		std::vector<std::string> insert_chunks;
@@ -229,10 +236,11 @@ public:
 			std::vector<std::string> v;
 
 			v.push_back(std::to_string(e.id));
-			v.push_back(std::to_string(e.char_id));
-			v.push_back("'" + Strings::Escape(e.char_name) + "'");
-			v.push_back(std::to_string(e.char_zone_id));
-			v.push_back("'" + Strings::Escape(e.welcome_message) + "'");
+			v.push_back(std::to_string(e.buyer_buy_lines_id));
+			v.push_back(std::to_string(e.item_id));
+			v.push_back(std::to_string(e.item_qty));
+			v.push_back(std::to_string(e.item_icon));
+			v.push_back("'" + Strings::Escape(e.item_name) + "'");
 
 			insert_chunks.push_back("(" + Strings::Implode(",", v) + ")");
 		}
@@ -250,9 +258,9 @@ public:
 		return (results.Success() ? results.RowsAffected() : 0);
 	}
 
-	static std::vector<Buyer> All(Database& db)
+	static std::vector<BuyerTradeItems> All(Database& db)
 	{
-		std::vector<Buyer> all_entries;
+		std::vector<BuyerTradeItems> all_entries;
 
 		auto results = db.QueryDatabase(
 			fmt::format(
@@ -264,13 +272,14 @@ public:
 		all_entries.reserve(results.RowCount());
 
 		for (auto row = results.begin(); row != results.end(); ++row) {
-			Buyer e{};
+			BuyerTradeItems e{};
 
-			e.id              = row[0] ? strtoull(row[0], nullptr, 10) : 0;
-			e.char_id         = row[1] ? static_cast<uint32_t>(strtoul(row[1], nullptr, 10)) : 0;
-			e.char_name       = row[2] ? row[2] : "";
-			e.char_zone_id    = row[3] ? static_cast<uint32_t>(strtoul(row[3], nullptr, 10)) : 0;
-			e.welcome_message = row[4] ? row[4] : "";
+			e.id                 = row[0] ? strtoull(row[0], nullptr, 10) : 0;
+			e.buyer_buy_lines_id = row[1] ? strtoull(row[1], nullptr, 10) : 0;
+			e.item_id            = row[2] ? static_cast<int32_t>(atoi(row[2])) : 0;
+			e.item_qty           = row[3] ? static_cast<int32_t>(atoi(row[3])) : 0;
+			e.item_icon          = row[4] ? static_cast<int32_t>(atoi(row[4])) : 0;
+			e.item_name          = row[5] ? row[5] : "0";
 
 			all_entries.push_back(e);
 		}
@@ -278,9 +287,9 @@ public:
 		return all_entries;
 	}
 
-	static std::vector<Buyer> GetWhere(Database& db, const std::string &where_filter)
+	static std::vector<BuyerTradeItems> GetWhere(Database& db, const std::string &where_filter)
 	{
-		std::vector<Buyer> all_entries;
+		std::vector<BuyerTradeItems> all_entries;
 
 		auto results = db.QueryDatabase(
 			fmt::format(
@@ -293,13 +302,14 @@ public:
 		all_entries.reserve(results.RowCount());
 
 		for (auto row = results.begin(); row != results.end(); ++row) {
-			Buyer e{};
+			BuyerTradeItems e{};
 
-			e.id              = row[0] ? strtoull(row[0], nullptr, 10) : 0;
-			e.char_id         = row[1] ? static_cast<uint32_t>(strtoul(row[1], nullptr, 10)) : 0;
-			e.char_name       = row[2] ? row[2] : "";
-			e.char_zone_id    = row[3] ? static_cast<uint32_t>(strtoul(row[3], nullptr, 10)) : 0;
-			e.welcome_message = row[4] ? row[4] : "";
+			e.id                 = row[0] ? strtoull(row[0], nullptr, 10) : 0;
+			e.buyer_buy_lines_id = row[1] ? strtoull(row[1], nullptr, 10) : 0;
+			e.item_id            = row[2] ? static_cast<int32_t>(atoi(row[2])) : 0;
+			e.item_qty           = row[3] ? static_cast<int32_t>(atoi(row[3])) : 0;
+			e.item_icon          = row[4] ? static_cast<int32_t>(atoi(row[4])) : 0;
+			e.item_name          = row[5] ? row[5] : "0";
 
 			all_entries.push_back(e);
 		}
@@ -369,16 +379,17 @@ public:
 
 	static int ReplaceOne(
 		Database& db,
-		const Buyer &e
+		const BuyerTradeItems &e
 	)
 	{
 		std::vector<std::string> v;
 
 		v.push_back(std::to_string(e.id));
-		v.push_back(std::to_string(e.char_id));
-		v.push_back("'" + Strings::Escape(e.char_name) + "'");
-		v.push_back(std::to_string(e.char_zone_id));
-		v.push_back("'" + Strings::Escape(e.welcome_message) + "'");
+		v.push_back(std::to_string(e.buyer_buy_lines_id));
+		v.push_back(std::to_string(e.item_id));
+		v.push_back(std::to_string(e.item_qty));
+		v.push_back(std::to_string(e.item_icon));
+		v.push_back("'" + Strings::Escape(e.item_name) + "'");
 
 		auto results = db.QueryDatabase(
 			fmt::format(
@@ -393,7 +404,7 @@ public:
 
 	static int ReplaceMany(
 		Database& db,
-		const std::vector<Buyer> &entries
+		const std::vector<BuyerTradeItems> &entries
 	)
 	{
 		std::vector<std::string> insert_chunks;
@@ -402,10 +413,11 @@ public:
 			std::vector<std::string> v;
 
 			v.push_back(std::to_string(e.id));
-			v.push_back(std::to_string(e.char_id));
-			v.push_back("'" + Strings::Escape(e.char_name) + "'");
-			v.push_back(std::to_string(e.char_zone_id));
-			v.push_back("'" + Strings::Escape(e.welcome_message) + "'");
+			v.push_back(std::to_string(e.buyer_buy_lines_id));
+			v.push_back(std::to_string(e.item_id));
+			v.push_back(std::to_string(e.item_qty));
+			v.push_back(std::to_string(e.item_icon));
+			v.push_back("'" + Strings::Escape(e.item_name) + "'");
 
 			insert_chunks.push_back("(" + Strings::Implode(",", v) + ")");
 		}
@@ -424,4 +436,4 @@ public:
 	}
 };
 
-#endif //EQEMU_BASE_BUYER_REPOSITORY_H
+#endif //EQEMU_BASE_BUYER_TRADE_ITEMS_REPOSITORY_H

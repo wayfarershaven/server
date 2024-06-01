@@ -25,6 +25,7 @@
 #include "../common/events/player_event_logs.h"
 #include "../common/repositories/trader_repository.h"
 #include "../common/repositories/buyer_repository.h"
+#include "../common/repositories/buyer_buy_lines_repository.h"
 
 #include "client.h"
 #include "entity.h"
@@ -1782,6 +1783,12 @@ void Client::SendBazaarWelcome()
 	QueuePacket(outapp.get());
 }
 
+void Client::SendBarterWelcome()
+{
+	const auto results = BuyerBuyLinesRepository::GetWelcomeData(database);
+	MessageString(Chat::White, BUYER_WELCOME, std::to_string(results.count_of_buyers).c_str());
+}
+
 void Client::DoBazaarSearch(BazaarSearchCriteria_Struct search_criteria)
 {
 	auto results = Bazaar::GetSearchResults(database, search_criteria, GetZoneID());
@@ -2277,34 +2284,34 @@ void Client::SendBuyerResults(char* searchString, uint32 searchID) {
 
 	// This method is called when a potential seller in the /barter window searches for matching buyers
 	//
-	LogDebug("[CLIENT] Client::SendBuyerResults [{}]\n", searchString);
-
-	auto escSearchString = new char[strlen(searchString) * 2 + 1];
-	database.DoEscapeString(escSearchString, searchString, strlen(searchString));
-
-	std::string query = StringFormat("SELECT * FROM buyer WHERE item_name LIKE '%%%s%%' ORDER BY char_id LIMIT %i",
-							escSearchString, RuleI(Bazaar, MaxBarterSearchResults));
-	safe_delete_array(escSearchString);
-	auto results = database.QueryDatabase(query);
-    if (!results.Success()) {
-        return;
-    }
-
-    int numberOfRows = results.RowCount();
-
-    if(numberOfRows == RuleI(Bazaar, MaxBarterSearchResults))
-        Message(Chat::Yellow, "Your search found too many results; some are not displayed.");
-    else if(strlen(searchString) == 0)
-        Message(Chat::NPCQuestSay, "There are %i Buy Lines.", numberOfRows);
-    else
-        Message(Chat::NPCQuestSay, "There are %i Buy Lines that match the search string '%s'.", numberOfRows, searchString);
-
-    if(numberOfRows == 0)
-        return;
+//	LogDebug("[CLIENT] Client::SendBuyerResults [{}]\n", searchString);
+//
+//	auto escSearchString = new char[strlen(searchString) * 2 + 1];
+//	database.DoEscapeString(escSearchString, searchString, strlen(searchString));
+//
+//	std::string query = StringFormat("SELECT * FROM buyer WHERE item_name LIKE '%%%s%%' ORDER BY char_id LIMIT %i",
+//							escSearchString, RuleI(Bazaar, MaxBarterSearchResults));
+//	safe_delete_array(escSearchString);
+//	auto results = database.QueryDatabase(query);
+//    if (!results.Success()) {
+//        return;
+//    }
+//
+//    int numberOfRows = results.RowCount();
+//
+//    if(numberOfRows == RuleI(Bazaar, MaxBarterSearchResults))
+//        Message(Chat::Yellow, "Your search found too many results; some are not displayed.");
+//    else if(strlen(searchString) == 0)
+//        Message(Chat::NPCQuestSay, "There are %i Buy Lines.", numberOfRows);
+//    else
+//        Message(Chat::NPCQuestSay, "There are %i Buy Lines that match the search string '%s'.", numberOfRows, searchString);
+//
+//    if(numberOfRows == 0)
+//        return;
 
 	if (ClientVersion() >= EQ::versions::ClientVersion::RoF) {
 		auto search_string = std::string(searchString);
-		auto results = BuyerRepository::SearchBuyLines(database, search_string);
+		auto results = BuyerBuyLinesRepository::SearchBuyLines(database, search_string);
 
 		std::string buyer_name = "ID {} not in zone.";
 
@@ -2380,15 +2387,15 @@ void Client::SendBuyerResults(char* searchString, uint32 searchID) {
 			auto buyer = entity_list.GetClientByCharID(b.buyer_id);
 			if (buyer) {
 				VARSTRUCT_ENCODE_TYPE(uint32, emu, buyer->GetID());
-				VARSTRUCT_ENCODE_TYPE(uint32, emu, GetID());
 				VARSTRUCT_ENCODE_TYPE(uint32, emu, b.buyer_id);
+				VARSTRUCT_ENCODE_TYPE(uint32, emu, GetID());
 //				VARSTRUCT_ENCODE_TYPE(uint32, emu, buyer->GetZoneID());
 				VARSTRUCT_ENCODE_STRING(emu, buyer->GetName())
 			}
 			else {
 				VARSTRUCT_ENCODE_TYPE(uint32, emu, 0);
-				VARSTRUCT_ENCODE_TYPE(uint32, emu, GetID());
 				VARSTRUCT_ENCODE_TYPE(uint32, emu, b.buyer_id);
+				VARSTRUCT_ENCODE_TYPE(uint32, emu, GetID());
 				VARSTRUCT_ENCODE_STRING(emu, b.buyer_name.c_str());
 			}
 		}
@@ -2396,64 +2403,64 @@ void Client::SendBuyerResults(char* searchString, uint32 searchID) {
 		return;
 	}
 
-	uint32 lastCharID = 0;
-	Client *buyer = nullptr;
-
-	for (auto &row = results.begin(); row != results.end(); ++row) {
-        char itemName[64];
-
-        uint32 charID = Strings::ToInt(row[0]);
-		uint32 buySlot = Strings::ToInt(row[1]);
-		uint32 itemID = Strings::ToInt(row[2]);
-		strcpy(itemName, row[3]);
-		uint32 quantity = Strings::ToInt(row[4]);
-		uint32 price = Strings::ToInt(row[5]);
-
-        // Each item in the search results is sent as a single fixed length packet, although the position of
-		// the fields varies due to the use of variable length strings. The reason the packet is so big, is
-		// to allow item compensation, e.g. a buyer could offer to buy a Blade Of Carnage for 10000pp plus
-		// other items in exchange. Item compensation is not currently supported in EQEmu.
-		//
-		auto outapp = new EQApplicationPacket(OP_Barter, 940);
-
-		char *buf = (char *)outapp->pBuffer;
-
-		const EQ::ItemData* item = database.GetItem(itemID);
-
-		if(!item) {
-			safe_delete(outapp);
-            continue;
-		}
-
-        // Save having to scan the client list when dealing with multiple buylines for the same Character.
-		if(charID != lastCharID) {
-			buyer = entity_list.GetClientByCharID(charID);
-			lastCharID = charID;
-		}
-
-		if(!buyer) {
-			safe_delete(outapp);
-            continue;
-		}
-
-        VARSTRUCT_ENCODE_TYPE(uint32, buf, Barter_BuyerSearchResults);	// Command
-		VARSTRUCT_ENCODE_TYPE(uint32, buf, searchID);			// Match up results with the request
-		VARSTRUCT_ENCODE_TYPE(uint32, buf, buySlot);			// Slot in this Buyer's list
-		VARSTRUCT_ENCODE_TYPE(uint8, buf, 0x01);				// Unknown - probably a flag field
-		VARSTRUCT_ENCODE_TYPE(uint32, buf, itemID);			// ItemID
-		VARSTRUCT_ENCODE_STRING(buf, itemName);			// Itemname
-		VARSTRUCT_ENCODE_TYPE(uint32, buf, item->Icon);			// Icon
-		VARSTRUCT_ENCODE_TYPE(uint32, buf, quantity);			// Quantity
-		VARSTRUCT_ENCODE_TYPE(uint8, buf, 0x01);				// Unknown - probably a flag field
-		VARSTRUCT_ENCODE_TYPE(uint32, buf, price);				// Price
-		VARSTRUCT_ENCODE_TYPE(uint32, buf, buyer->GetID());		// Entity ID
-		VARSTRUCT_ENCODE_TYPE(uint32, buf, 0);				// Flag for + Items , probably ItemCount
-		VARSTRUCT_ENCODE_STRING(buf, buyer->GetName());		// Seller Name
-
-
-		QueuePacket(outapp);
-		safe_delete(outapp);
-    }
+//	uint32 lastCharID = 0;
+//	Client *buyer = nullptr;
+//
+//	for (auto row = results.begin(); row != results.end(); ++row) {
+//        char itemName[64];
+//
+//        uint32 charID = Strings::ToInt(row[0]);
+//		uint32 buySlot = Strings::ToInt(row[1]);
+//		uint32 itemID = Strings::ToInt(row[2]);
+//		strcpy(itemName, row[3]);
+//		uint32 quantity = Strings::ToInt(row[4]);
+//		uint32 price = Strings::ToInt(row[5]);
+//
+//        // Each item in the search results is sent as a single fixed length packet, although the position of
+//		// the fields varies due to the use of variable length strings. The reason the packet is so big, is
+//		// to allow item compensation, e.g. a buyer could offer to buy a Blade Of Carnage for 10000pp plus
+//		// other items in exchange. Item compensation is not currently supported in EQEmu.
+//		//
+//		auto outapp = new EQApplicationPacket(OP_Barter, 940);
+//
+//		char *buf = (char *)outapp->pBuffer;
+//
+//		const EQ::ItemData* item = database.GetItem(itemID);
+//
+//		if(!item) {
+//			safe_delete(outapp);
+//            continue;
+//		}
+//
+//        // Save having to scan the client list when dealing with multiple buylines for the same Character.
+//		if(charID != lastCharID) {
+//			buyer = entity_list.GetClientByCharID(charID);
+//			lastCharID = charID;
+//		}
+//
+//		if(!buyer) {
+//			safe_delete(outapp);
+//            continue;
+//		}
+//
+//        VARSTRUCT_ENCODE_TYPE(uint32, buf, Barter_BuyerSearchResults);	// Command
+//		VARSTRUCT_ENCODE_TYPE(uint32, buf, searchID);			// Match up results with the request
+//		VARSTRUCT_ENCODE_TYPE(uint32, buf, buySlot);			// Slot in this Buyer's list
+//		VARSTRUCT_ENCODE_TYPE(uint8, buf, 0x01);				// Unknown - probably a flag field
+//		VARSTRUCT_ENCODE_TYPE(uint32, buf, itemID);			// ItemID
+//		VARSTRUCT_ENCODE_STRING(buf, itemName);			// Itemname
+//		VARSTRUCT_ENCODE_TYPE(uint32, buf, item->Icon);			// Icon
+//		VARSTRUCT_ENCODE_TYPE(uint32, buf, quantity);			// Quantity
+//		VARSTRUCT_ENCODE_TYPE(uint8, buf, 0x01);				// Unknown - probably a flag field
+//		VARSTRUCT_ENCODE_TYPE(uint32, buf, price);				// Price
+//		VARSTRUCT_ENCODE_TYPE(uint32, buf, buyer->GetID());		// Entity ID
+//		VARSTRUCT_ENCODE_TYPE(uint32, buf, 0);				// Flag for + Items , probably ItemCount
+//		VARSTRUCT_ENCODE_STRING(buf, buyer->GetName());		// Seller Name
+//
+//
+//		QueuePacket(outapp);
+//		safe_delete(outapp);
+//    }
 
 }
 
@@ -2477,7 +2484,7 @@ void Client::ShowBuyLines(const EQApplicationPacket *app)
 
 	if (ClientVersion() >= EQ::versions::ClientVersion::RoF) {
 
-		auto results = BuyerRepository::GetBuyLine(database, Buyer->CharacterID());
+		auto results = BuyerBuyLinesRepository::GetBuyLine(database, Buyer->CharacterID());
 
 		std::stringstream           ss{};
 		cereal::BinaryOutputArchive ar(ss);
@@ -2514,10 +2521,10 @@ void Client::ShowBuyLines(const EQApplicationPacket *app)
 		return;
 	}
 
-	const char *WelcomeMessagePointer = Buyer->GetBuyerWelcomeMessage();
+	auto WelcomeMessagePointer = BuyerRepository::GetWelcomeMessage(database, Buyer->GetBuyerID());
 
-	if(strlen(WelcomeMessagePointer) > 0)
-		Message(Chat::NPCQuestSay, "%s greets you, '%s'.", Buyer->GetName(), WelcomeMessagePointer);
+	if(WelcomeMessagePointer.length() > 0)
+		Message(Chat::NPCQuestSay, "%s greets you, '%s'.", Buyer->GetName(), WelcomeMessagePointer.c_str());
 
 	auto outapp = new EQApplicationPacket(OP_Barter, sizeof(BuyerBrowsing_Struct));
 
@@ -2532,7 +2539,7 @@ void Client::ShowBuyLines(const EQApplicationPacket *app)
 
 	safe_delete(outapp);
 
-    std::string query = StringFormat("SELECT * FROM buyer WHERE charid = %i", Buyer->CharacterID());
+    std::string query = StringFormat("SELECT * FROM buyer WHERE char_id = %i", Buyer->CharacterID());
     auto results = database.QueryDatabase(query);
     if (!results.Success() || results.RowCount() == 0)
         return;
@@ -2949,17 +2956,22 @@ void Client::ToggleBuyerMode(bool status)
 	data->entity_id = GetID();
 
 	if (status) {
+		BuyerRepository::Buyer b{};
+		b.id           = 0;
+		b.char_id      = CharacterID();
+		b.char_zone_id = GetZoneID();
+		b.char_name    = GetCleanName();
+		auto e = BuyerRepository::InsertOne(database, b);
+
 		data->status = BuyerBarter::On;
 		SetCustomerID(0);
-		SetBuyer(true);
-		SetBuyerID(GetID());
+		SetBuyerID(CharacterID());
 	}
 	else {
 		data->status = BuyerBarter::Off;
 		BuyerRepository::DeleteWhere(database, fmt::format("`char_id` = '{}'", CharacterID()));
 		SetCustomerID(0);
-		SetBuyer(false);
-		SetBuyerID(false);
+		SetBuyerID(0);
 	}
 
 	entity_list.QueueClients(this, outapp.get(), false);
@@ -3025,9 +3037,9 @@ void Client::UpdateBuyLine(const EQApplicationPacket *app)
 				return;
 			}
 
-			BuyerRepository::DeleteBuyLine(database, CharacterID(), b.slot);
+			BuyerBuyLinesRepository::DeleteBuyLine(database, CharacterID(), b.slot);
 			if (b.item_toggle) {
-				BuyerRepository::UpdateBuyLine(database, b, CharacterID());
+				BuyerBuyLinesRepository::UpdateBuyLine(database, b, CharacterID());
 			}
 
 			auto outapp = std::make_unique<EQApplicationPacket>(OP_BuyerItems, sizeof(b) + 4);
@@ -3837,4 +3849,28 @@ void Client::BuyTraderItemOutsideBazaar(TraderBuy_Struct *tbs, const EQApplicati
 	strn0cpy(out_data->trader_buy_struct.buyer_name, GetCleanName(), sizeof(out_data->trader_buy_struct.buyer_name));
 
 	worldserver.SendPacket(out_server.release());
+}
+
+void Client::SetBuyerWelcomeMessage(const char* welcome_message)
+{
+	BuyerRepository::UpdateWelcomeMessage(database, CharacterID(), welcome_message);
+}
+
+void Client::SendBuyerGreeting(uint32 buyer_id) {
+	auto buyer = BuyerRepository::GetWhere(database, fmt::format("`char_id` = '{}'", buyer_id));
+	if (buyer.empty()) {
+		return;
+	}
+
+	Message(Chat::White, buyer.front().welcome_message.c_str());
+}
+
+void Client::SendSellerBrowsing(std::string &browser) {
+	auto outapp = std::make_unique<EQApplicationPacket>(OP_Barter, sizeof(BuyerBrowsing_Struct));
+	auto eq = (BuyerBrowsing_Struct *)outapp->pBuffer;
+
+	eq->action = Barter_SellerBrowsing;
+	strn0cpy(eq->char_name, browser.c_str(), sizeof(eq->char_name));
+
+	QueuePacket(outapp.get());
 }

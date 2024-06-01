@@ -203,7 +203,6 @@ Client::Client(EQStreamInterface *ieqs) : Mob(
 	port = ntohs(eqs->GetRemotePort());
 	client_state = CLIENT_CONNECTING;
 	SetTrader(false);
-	Buyer = false;
 	Haste = 0;
 	SetCustomerID(0);
 	SetTraderID(0);
@@ -425,7 +424,7 @@ Client::~Client() {
 		TraderEndTrader();
 	}
 
-	if(Buyer)
+	if(IsBuyer())
 		ToggleBuyerMode(false);
 
 	if(conn_state != ClientConnectFinished) {
@@ -11975,7 +11974,7 @@ void Client::SendPath(Mob* target)
 		target->IsClient() &&
 		(
 			target->CastToClient()->IsTrader() ||
-			target->CastToClient()->Buyer
+			target->CastToClient()->IsBuyer()
 		)
 		) {
 		Message(

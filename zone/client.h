@@ -309,6 +309,7 @@ public:
 	void SendBuyerPacket(Client* Buyer);
 	GetItems_Struct* GetTraderItems();
 	void SendBazaarWelcome();
+	void SendBarterWelcome();
 	void DyeArmor(EQ::TintProfile* dye);
 	void DyeArmorBySlot(uint8 slot, uint8 red, uint8 green, uint8 blue, uint8 use_tint = 0x00);
 	uint8 SlotConvert(uint8 slot,bool bracer=false);
@@ -375,10 +376,12 @@ public:
 	uint32 GetCustomerID() { return customer_id; }
 	void SetCustomerID(uint32 id) { customer_id = id; }
 
-	void   SetBuyerID(uint32 id) { buyer_id = id; }
-	void   SetBuyer(bool status) { buyer = status; }
-	uint32 GetBuyerID() { return buyer_id; }
-	bool   GetBuyer() { return buyer; }
+	void   SetBuyerID(uint64 id) { m_buyer_id = id; }
+	uint32 GetBuyerID() { return m_buyer_id; }
+	bool   IsBuyer() { return m_buyer_id != 0 ? true : false; }
+	void   SetBuyerWelcomeMessage(const char* welcome_message);
+	void   SendBuyerGreeting(uint32 char_id);
+	void   SendSellerBrowsing(std::string &browser);
 
 	void SendBuyerResults(char *SearchQuery, uint32 SearchID);
 	void ShowBuyLines(const EQApplicationPacket *app);
@@ -386,8 +389,6 @@ public:
 	void ToggleBuyerMode(bool TurnOn);
 	void UpdateBuyLine(const EQApplicationPacket *app);
 	void BuyerItemSearch(const EQApplicationPacket *app);
-	void SetBuyerWelcomeMessage(const char* WelcomeMessage) { BuyerWelcomeMessage = WelcomeMessage; }
-	const char* GetBuyerWelcomeMessage() { return BuyerWelcomeMessage.c_str(); }
 
 	void FillSpawnStruct(NewSpawn_Struct* ns, Mob* ForWho);
 	bool ShouldISpawnFor(Client *c) { return !GMHideMe(c) && !IsHoveringForRespawn(); }
@@ -1097,7 +1098,6 @@ public:
 	uint16 GetTraderID() { return trader_id; }
 	void SetTraderID(uint16 id) { trader_id = id; }
 
-	inline bool IsBuyer() const { return(Buyer); }
 	eqFilterMode GetFilter(eqFilterType filter_id) const { return ClientFilters[filter_id]; }
 	void SetFilter(eqFilterType filter_id, eqFilterMode filter_mode) { ClientFilters[filter_id] = filter_mode; }
 
@@ -1914,10 +1914,7 @@ private:
 	uint8 firstlogon;
 	uint32 mercid; // current merc
 	uint8 mercSlot; // selected merc slot
-	bool                                                           buyer;
-	uint32                                                         buyer_id;
-	bool                                                           Buyer;
-	std::string                                                    BuyerWelcomeMessage;
+	uint32                                                         m_buyer_id;
 	int32                                                          m_parcel_platinum;
 	int32                                                          m_parcel_gold;
 	int32                                                          m_parcel_silver;

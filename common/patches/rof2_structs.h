@@ -3134,7 +3134,9 @@ enum RoF2BuyerActions {
 	BuyerItemInspect     = 0x0f,
 	BuyerBrowsingBuyLine = 0x10,
 	BarterWelcomeMessage = 0x11,
-	BuyerWelcomeMessage  = 0x13
+	BuyerWelcomeMessage  = 0x13,
+	BuyerGreeting        = 0x14,
+	BuyerInventoryFull = 0x16
 };
 
 struct BarterItemSearchLinkRequest_Struct {
