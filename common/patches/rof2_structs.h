@@ -3133,7 +3133,19 @@ enum RoF2BuyerActions {
 	BuyerSendBuyLine     = 0x0e,
 	BuyerItemInspect     = 0x0f,
 	BuyerBrowsingBuyLine = 0x10,
+	BarterWelcomeMessage = 0x11,
 	BuyerWelcomeMessage  = 0x13
+};
+
+struct BarterItemSearchLinkRequest_Struct {
+	uint32 action;
+	uint32 unknown_004;
+	uint32 seller_id;
+	uint32 buyer_id;
+	uint32 unknown_016;
+	uint32 slot_id; // 0xffffffff main buy line 0x0 trade_item_1, 0x1 trade_item_2
+	uint32 item_id;
+	uint32 unknown_028;
 };
 
 struct BuyerWelcomeMessageUpdate_Struct {

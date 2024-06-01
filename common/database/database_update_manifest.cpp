@@ -5661,6 +5661,39 @@ ALTER TABLE `trader`
 	ADD PRIMARY KEY (`id`),
 	ADD INDEX `charid_slotid` (`char_id`, `slot_id`);
 )"
+	},
+	ManifestEntry{
+		.version     = 9281,
+		.description = "2024_05_29_update_buyer_support.sql",
+		.check       = "SHOW COLUMNS FROM `buyer` LIKE 'id'",
+		.condition   = "empty",
+		.match       = "",
+		.sql         = R"(
+ALTER TABLE `buyer`
+	ADD COLUMN `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT FIRST,
+	CHANGE COLUMN `charid` `char_id` INT(11) NOT NULL DEFAULT '0' AFTER `id`,
+	CHANGE COLUMN `buyslot` `buy_slot` INT(11) NOT NULL DEFAULT '0' AFTER `char_id`,
+	CHANGE COLUMN `itemid` `item_id` INT(11) NOT NULL DEFAULT '0' AFTER `buy_slot`,
+	CHANGE COLUMN `itemname` `item_name` VARCHAR(65) NOT NULL DEFAULT '' COLLATE 'latin1_swedish_ci' AFTER `item_id`,
+	DROP PRIMARY KEY,
+	ADD PRIMARY KEY (`id`) USING BTREE,
+	ADD UNIQUE INDEX `charid_buyslot` (`char_id`, `buy_slot`);
+
+CREATE TABLE `buyer_trade_items` (
+	`id` BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+	`buyer_id` BIGINT(20) UNSIGNED NOT NULL DEFAULT '0',
+	`item_id` INT(11) NOT NULL DEFAULT '0',
+	`item_qty` INT(11) NOT NULL DEFAULT '0',
+	`item_icon` INT(11) NOT NULL DEFAULT '0',
+	`item_name` VARCHAR(64) NOT NULL DEFAULT '0' COLLATE 'latin1_swedish_ci',
+	PRIMARY KEY (`id`) USING BTREE,
+	INDEX `buyerid` (`buyer_id`) USING BTREE,
+	CONSTRAINT `fk_buyer_id` FOREIGN KEY (`buyer_id`) REFERENCES `buyer` (`id`) ON UPDATE NO ACTION ON DELETE CASCADE
+)
+COLLATE='latin1_swedish_ci'
+ENGINE=InnoDB
+AUTO_INCREMENT=1;
+)"
 	}
 // -- template; copy/paste this when you need to create a new entry
 //	ManifestEntry{

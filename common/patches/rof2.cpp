@@ -740,9 +740,9 @@ namespace RoF2
 
 	ENCODE(OP_BuyerItems)
 	{
-		auto GetNoSubItems = [](BuyerLineItems_Struct* emu) -> int {
+		auto GetNoSubItems = [&](BuyerLineItems_Struct &emu) -> int {
 			for (int i = 0; i < MAX_BUYER_COMPENSATION_ITEMS; i++) {
-				if (emu->trade_items[i].item_id != 0) {
+				if (emu.trade_items[i].item_id != 0) {
 					continue;
 				}
 				return i;
@@ -764,7 +764,7 @@ namespace RoF2
 
 				auto outapp = new EQApplicationPacket(OP_BuyerItems, sizeof(bl) + 4);
 				char* eq = (char*)outapp->pBuffer;
-				auto nosubitems = GetNoSubItems(emu);
+				auto nosubitems = GetNoSubItems(*emu);
 
 				VARSTRUCT_ENCODE_TYPE(uint32, eq, structs::RoF2BuyerActions::BuyerModifyBuyLine);
 				VARSTRUCT_ENCODE_TYPE(uint32, eq, 0);
@@ -787,38 +787,46 @@ namespace RoF2
 				dest->FastQueuePacket(&outapp);
 				safe_delete(inapp);
 				break;
-
-
 			}
 			case Barter_BuyerInspectBegin:
 			{
-				auto emu = (BuyerLineItems_Struct*)&inapp->pBuffer[4];
-				BuyerLineItems_Struct bl{};
+				auto emu = (BuyerGeneric_Struct *)inapp->pBuffer;
 
-				auto outapp = new EQApplicationPacket(OP_BuyerItems, sizeof(bl) + 4);
-				char* eq = (char*)outapp->pBuffer;
-				auto nosubitems = GetNoSubItems(emu);
+				BuyerLineItems_Struct bli{};
+				EQ::Util::MemoryStreamReader       ss(
+					reinterpret_cast<char *>(emu->payload),
+					inapp->size - sizeof(BuyerGeneric_Struct)
+				);
+				cereal::BinaryInputArchive ar(ss);
+				ar(bli);
+//				auto emu = (BuyerLineItems_Struct*)&inapp->pBuffer[4];
+//				BuyerLineItems_Struct bl{};
+
+				auto packet     = std::make_unique<EQApplicationPacket>(OP_BuyerItems, sizeof(bli));
+				char *eq        = (char *) packet->pBuffer;
+				auto nosubitems = GetNoSubItems(bli);
 
 				VARSTRUCT_ENCODE_TYPE(uint32, eq, structs::RoF2BuyerActions::BuyerSendBuyLine);
-				VARSTRUCT_ENCODE_TYPE(uint32, eq, emu->slot);
-				VARSTRUCT_ENCODE_TYPE(uint32, eq, emu->slot);
-				VARSTRUCT_ENCODE_TYPE(uint8, eq, emu->enabled ? 1 : 0);
-				VARSTRUCT_ENCODE_TYPE(uint32, eq, emu->item_id);
-				VARSTRUCT_ENCODE_STRING(eq, emu->item_name);
-				VARSTRUCT_ENCODE_TYPE(uint32, eq, emu->item_icon);
-				VARSTRUCT_ENCODE_TYPE(uint32, eq, emu->item_quantity);
-				VARSTRUCT_ENCODE_TYPE(uint8, eq, emu->item_toggle ? 1 : 0);
-				VARSTRUCT_ENCODE_TYPE(uint32, eq, emu->item_cost);
+				VARSTRUCT_ENCODE_TYPE(uint32, eq, bli.slot);
+				VARSTRUCT_ENCODE_TYPE(uint32, eq, bli.slot);
+				VARSTRUCT_ENCODE_TYPE(uint8, eq, bli.enabled ? 1 : 0);
+				VARSTRUCT_ENCODE_TYPE(uint32, eq, bli.item_id);
+				VARSTRUCT_ENCODE_STRING(eq, bli.item_name);
+				VARSTRUCT_ENCODE_TYPE(uint32, eq, bli.item_icon);
+				VARSTRUCT_ENCODE_TYPE(uint32, eq, bli.item_quantity);
+				VARSTRUCT_ENCODE_TYPE(uint8, eq, bli.item_toggle ? 1 : 0);
+				VARSTRUCT_ENCODE_TYPE(uint32, eq, bli.item_cost);
 				VARSTRUCT_ENCODE_TYPE(uint32, eq, nosubitems);
 
 				for (int i = 0; i < nosubitems; i++) {
-					VARSTRUCT_ENCODE_TYPE(uint32, eq, emu->trade_items[i].item_id);
-					VARSTRUCT_ENCODE_TYPE(uint32, eq, emu->trade_items[i].item_quantity);
-					VARSTRUCT_ENCODE_TYPE(uint32, eq, emu->trade_items[i].item_icon);
-					VARSTRUCT_ENCODE_STRING(eq, emu->trade_items[i].item_name);
+					VARSTRUCT_ENCODE_TYPE(uint32, eq, bli.trade_items[i].item_id);
+					VARSTRUCT_ENCODE_TYPE(uint32, eq, bli.trade_items[i].item_quantity);
+					VARSTRUCT_ENCODE_TYPE(uint32, eq, bli.trade_items[i].item_icon);
+					VARSTRUCT_ENCODE_STRING(eq, bli.trade_items[i].item_name);
 				}
-				dest->FastQueuePacket(&outapp);
+				dest->QueuePacket(packet.get());
 				safe_delete(inapp);
+
 				break;
 			}
 			default:
@@ -4850,11 +4858,18 @@ namespace RoF2
 				break;
 			}
 			case structs::RoF2BuyerActions::BuyerItemInspect: {
-				LogTradingDetail("(RoF2) Buyer Inspect Item <green>[{}]", 9999);
+				SETUP_DIRECT_DECODE(BarterItemSearchLinkRequest_Struct, structs::BarterItemSearchLinkRequest_Struct);
+				LogTradingDetail("(RoF2) Seller ID <green>[{}] Inspecting Item <green>[{}] from Buyer ID <green>[{}] ",
+								 eq->seller_id,
+								 eq->item_id,
+								 eq->buyer_id
+				);
 
-				auto emu = (BuyerGeneric_Struct *) __packet->pBuffer;
-				emu->action = Barter_BarterItemInspect;
+				emu->action      = Barter_BarterItemInspect;
+				emu->item_id     = eq->item_id;
+				emu->searcher_id = eq->seller_id;
 
+				FINISH_DIRECT_DECODE();
 				break;
 			}
 			default: {

@@ -427,7 +427,7 @@ void ZoneDatabase::DeleteBuyLines(uint32 CharID) {
         return;
 	}
 
-    std::string query = StringFormat("DELETE FROM buyer WHERE charid = %i", CharID);
+    std::string query = StringFormat("DELETE FROM buyer WHERE char_id = %i", CharID);
 	auto results = QueryDatabase(query);
 	if (!results.Success())
 			LogDebug("[CLIENT] Failed to delete buyer item data for charid: [{}], the error was: [{}]\n",CharID,results.ErrorMessage().c_str());

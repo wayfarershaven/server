@@ -3780,12 +3780,11 @@ void Client::Handle_OP_Barter(const EQApplicationPacket *app)
 		break;
 	}
 
-	case Barter_SellerSearch:
-	{
-		BarterSearchRequest_Struct *bsr = (BarterSearchRequest_Struct*)app->pBuffer;
-		SendBuyerResults(bsr->SearchString, bsr->SearchID);
-		break;
-	}
+		case Barter_SellerSearch: {
+			auto bsr = (BarterSearchRequest_Struct *) app->pBuffer;
+			SendBuyerResults(bsr->search_string, bsr->search_id);
+			break;
+		}
 
 	case Barter_BuyerModeOn:
 	{
@@ -3846,17 +3845,15 @@ void Client::Handle_OP_Barter(const EQApplicationPacket *app)
 
 	case Barter_BarterItemInspect:
 	{
-		BarterItemSearchLinkRequest_Struct* bislr = (BarterItemSearchLinkRequest_Struct*)app->pBuffer;
+		auto               bislr = (BarterItemSearchLinkRequest_Struct *) app->pBuffer;
+		const EQ::ItemData *item = database.GetItem(bislr->item_id);
 
-		const EQ::ItemData* item = database.GetItem(bislr->ItemID);
-
-		if (!item)
+		if (!item) {
 			Message(Chat::Red, "Error: This item does not exist!");
-		else
-		{
-			EQ::ItemInstance* inst = database.CreateItem(item);
-			if (inst)
-			{
+		}
+		else {
+			EQ::ItemInstance *inst = database.CreateItem(item);
+			if (inst) {
 				SendItemPacket(0, inst, ItemPacketViewLink);
 				safe_delete(inst);
 			}
@@ -3866,7 +3863,7 @@ void Client::Handle_OP_Barter(const EQApplicationPacket *app)
 
 	case Barter_Welcome:
 	{
-		//SendBazaarWelcome();
+		SendBazaarWelcome();
 		break;
 	}
 

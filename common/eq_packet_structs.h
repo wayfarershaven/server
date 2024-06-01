@@ -3201,7 +3201,10 @@ struct BuyerLineItems_Struct {
 
 struct BuyerLine_Struct {
 	uint32                             action;
-	uint32                             no_items;
+	union {
+		uint32 no_items;
+		uint32 string_length;
+	};
 	std::vector<BuyerLineItems_Struct> buy_line;
 
 	template<class Archive>
@@ -3265,6 +3268,7 @@ struct BuyerLineItemsSearch_Struct {
 	uint8                      item_toggle;
 	uint32                     item_cost;
 	uint32                     buyer_id;
+	std::string                buyer_name;
 	BuyerLineTradeItems_Struct trade_items[10];
 };
 
@@ -3307,9 +3311,9 @@ struct	BuyerItemSearchResults_Struct {
 };
 
 struct BarterSearchRequest_Struct {
-	uint32	Action;
-	char	SearchString[64];
-	uint32	SearchID;
+	uint32	action;
+	char	search_string[64];
+	uint32	search_id;
 };
 
 struct BuyerItemSearchLinkRequest_Struct {
@@ -3320,12 +3324,12 @@ struct BuyerItemSearchLinkRequest_Struct {
 };
 
 struct BarterItemSearchLinkRequest_Struct {
-/*000*/	uint32	Action;	// 0x0000000E
-/*004*/	uint32	SearcherID;
-/*008*/	uint32	Unknown008;
-/*012*/	uint32	Unknown012;
-/*016*/	uint32	ItemID;
-/*020*/	uint32	Unknown020;
+/*000*/	uint32	action;	// 0x0000000E
+/*004*/	uint32	searcher_id;
+/*008*/	uint32	unknown_008;
+/*012*/	uint32	unknown_012;
+/*016*/	uint32	item_id;
+/*020*/	uint32	unknown_020;
 };
 
 struct BuyerInspectRequest_Struct {
