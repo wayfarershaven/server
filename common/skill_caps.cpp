@@ -10,10 +10,6 @@ SkillCaps *SkillCaps::SetContentDatabase(Database *db)
 
 SkillCapsRepository::SkillCaps SkillCaps::GetSkillCap(uint8 class_id, EQ::skills::SkillType skill_id, uint8 level)
 {
-	if (!IsPlayerClass(class_id)) {
-		return SkillCapsRepository::NewEntity();
-	}
-
 	const uint64_t key = (class_id * 1000000) + (level * 1000) + static_cast<uint32>(skill_id);
 
 	auto pos = m_skill_caps.find(key);
