@@ -10,18 +10,32 @@ SkillCaps *SkillCaps::SetContentDatabase(Database *db)
 
 SkillCapsRepository::SkillCaps SkillCaps::GetSkillCap(uint8 class_id, EQ::skills::SkillType skill_id, uint8 level)
 {
-	if (!IsPlayerClass(class_id)) {
-		return SkillCapsRepository::NewEntity();
-	}
+    if (!IsPlayerClass(class_id)) {
+        return SkillCapsRepository::NewEntity();
+    }
 
-	const uint64_t key = (class_id * 1000000) + (level * 1000) + static_cast<uint32>(skill_id);
+    int skill_max_level = RuleI(Character, SkillCapMaxLevel);
+    if (skill_max_level < 1) {
+        skill_max_level = RuleI(Character, MaxLevel);
+    }
 
-	auto pos = m_skill_caps.find(key);
-	if (pos != m_skill_caps.end()) {
-		return pos->second;
-	}
+    const uint32 class_count = Class::PLAYER_CLASS_COUNT;
+    const uint32 skill_count = EQ::skills::HIGHEST_SKILL + 1;
+    if (class_id > class_count || static_cast<uint32>(skill_id) > skill_count) {
+        return SkillCapsRepository::NewEntity();
+    }
 
-	return SkillCapsRepository::NewEntity();
+    if (level > static_cast<uint8>(skill_max_level)) {
+        level = static_cast<uint8>(skill_max_level);
+    }
+
+    const uint64_t key = (class_id * 1000000) + (level * 1000) + static_cast<uint32>(skill_id);
+    auto pos = m_skill_caps.find(key);
+    if (pos != m_skill_caps.end()) {
+        return pos->second;
+    }
+
+    return SkillCapsRepository::NewEntity();
 }
 
 uint8 SkillCaps::GetSkillTrainLevel(uint8 class_id, EQ::skills::SkillType skill_id, uint8 level)
