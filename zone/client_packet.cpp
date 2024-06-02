@@ -65,6 +65,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include "../common/repositories/account_repository.h"
 #include "../common/repositories/character_corpses_repository.h"
 #include "../common/repositories/guild_tributes_repository.h"
+#include "../common/repositories/buyer_buy_lines_repository.h"
 
 #include "../common/events/player_event_logs.h"
 #include "../common/repositories/character_stats_record_repository.h"
@@ -764,7 +765,7 @@ void Client::CompleteConnect()
 
 	entity_list.SendIllusionWearChange(this);
 
-	entity_list.SendTraders(this);
+//	entity_list.SendTraders(this);
 
 	SendWearChangeAndLighting(EQ::textures::LastTexture);
 	Mob* pet = GetPet();
@@ -3813,10 +3814,9 @@ void Client::Handle_OP_Barter(const EQApplicationPacket *app)
 		break;
 	}
 
-	case Barter_BuyerItemRemove:
-	{
-		BuyerRemoveItem_Struct* bris = (BuyerRemoveItem_Struct*)app->pBuffer;
-		database.RemoveBuyLine(CharacterID(), bris->BuySlot);
+	case Barter_BuyerItemRemove: {
+		auto bris = (BuyerRemoveItem_Struct *) app->pBuffer;
+		BuyerBuyLinesRepository::DeleteBuyLine(database, CharacterID(), bris->buy_slot_id);
 		QueuePacket(app);
 		break;
 	}
@@ -3836,7 +3836,7 @@ void Client::Handle_OP_Barter(const EQApplicationPacket *app)
 	case Barter_BuyerInspectEnd:
 	{
 		BuyerInspectRequest_Struct* bir = (BuyerInspectRequest_Struct*)app->pBuffer;
-		Client *Buyer = entity_list.GetClientByID(bir->BuyerID);
+		Client *Buyer = entity_list.GetClientByID(bir->buyer_id);
 		if (Buyer)
 			Buyer->WithCustomer(0);
 

@@ -2467,24 +2467,30 @@ void Client::SendBuyerResults(char* searchString, uint32 searchID) {
 void Client::ShowBuyLines(const EQApplicationPacket *app)
 {
 
-	BuyerInspectRequest_Struct *bir = (BuyerInspectRequest_Struct *) app->pBuffer;
+	auto bir   = (BuyerInspectRequest_Struct *) app->pBuffer;
+	auto buyer = entity_list.GetClientByID(bir->buyer_id);
 
-	Client *Buyer = entity_list.GetClientByID(bir->BuyerID);
-
-	if (!Buyer) {
-		bir->Approval = 0; // Tell the client that the Buyer is unavailable
+	if (!buyer || buyer->GetCustomerID()) {
+		bir->approval = 0; // Tell the client that the Buyer is unavailable
 		QueuePacket(app);
-		Message(Chat::Red, "The Buyer has gone away.");
+		MessageString(Chat::Yellow, TRADER_BUSY);
 		return;
 	}
 
-	bir->Approval = Buyer->WithCustomer(GetID());
-
-	QueuePacket(app);
-
 	if (ClientVersion() >= EQ::versions::ClientVersion::RoF) {
+		bir->approval = buyer->WithCustomer(GetID());
+		QueuePacket(app);
 
-		auto results = BuyerBuyLinesRepository::GetBuyLine(database, Buyer->CharacterID());
+		auto results  = BuyerBuyLinesRepository::GetBuyLines(database, buyer->CharacterID());
+		auto greeting = BuyerRepository::GetWelcomeMessage(database, buyer->GetBuyerID());
+
+		if (greeting.length() == 0) {
+			greeting = "Welcome!";
+		}
+
+		MessageString(Chat::NPCQuestSay, BUYER_GREETING, buyer->GetName(), greeting.c_str());
+		const std::string name(GetName());
+		buyer->SendSellerBrowsing(name);
 
 		std::stringstream           ss{};
 		cereal::BinaryOutputArchive ar(ss);
@@ -2515,70 +2521,72 @@ void Client::ShowBuyLines(const EQApplicationPacket *app)
 		return;
 	}
 
-
-	if(bir->Approval == 0) {
-		MessageString(Chat::Yellow, TRADER_BUSY);
-		return;
-	}
-
-	auto WelcomeMessagePointer = BuyerRepository::GetWelcomeMessage(database, Buyer->GetBuyerID());
-
-	if(WelcomeMessagePointer.length() > 0)
-		Message(Chat::NPCQuestSay, "%s greets you, '%s'.", Buyer->GetName(), WelcomeMessagePointer.c_str());
-
-	auto outapp = new EQApplicationPacket(OP_Barter, sizeof(BuyerBrowsing_Struct));
-
-	BuyerBrowsing_Struct* bb = (BuyerBrowsing_Struct*)outapp->pBuffer;
-
-	// This packet produces the SoandSo is browsing your Buy Lines message
-	bb->Action = Barter_SellerBrowsing;
-
-	sprintf(bb->PlayerName, "%s", GetName());
-
-	Buyer->QueuePacket(outapp);
-
-	safe_delete(outapp);
-
-    std::string query = StringFormat("SELECT * FROM buyer WHERE char_id = %i", Buyer->CharacterID());
-    auto results = database.QueryDatabase(query);
-    if (!results.Success() || results.RowCount() == 0)
-        return;
-
-    for (auto &row = results.begin(); row != results.end(); ++row) {
-        char ItemName[64];
-        uint32 BuySlot = Strings::ToInt(row[1]);
-        uint32 ItemID = Strings::ToInt(row[2]);
-		strcpy(ItemName, row[3]);
-		uint32 Quantity = Strings::ToInt(row[4]);
-		uint32 Price = Strings::ToInt(row[5]);
-
-		auto outapp = new EQApplicationPacket(OP_Barter, 936);
-
-		char *Buf = (char *)outapp->pBuffer;
-
-		const EQ::ItemData* item = database.GetItem(ItemID);
-
-		if(!item) {
-			safe_delete(outapp);
-            continue;
-		}
-
-        VARSTRUCT_ENCODE_TYPE(uint32, Buf, Barter_BuyerInspectWindow);
-		VARSTRUCT_ENCODE_TYPE(uint32, Buf, BuySlot);
-		VARSTRUCT_ENCODE_TYPE(uint8, Buf, 1);				// Flag
-		VARSTRUCT_ENCODE_TYPE(uint32, Buf, ItemID);
-		VARSTRUCT_ENCODE_STRING(Buf, ItemName);
-		VARSTRUCT_ENCODE_TYPE(uint32, Buf, item->Icon);
-		VARSTRUCT_ENCODE_TYPE(uint32, Buf, Quantity);
-		VARSTRUCT_ENCODE_TYPE(uint8, Buf, 1);				// Flag
-		VARSTRUCT_ENCODE_TYPE(uint32, Buf, Price);
-		VARSTRUCT_ENCODE_TYPE(uint32, Buf, Buyer->GetID());
-		VARSTRUCT_ENCODE_TYPE(uint32, Buf, 0);
-		VARSTRUCT_ENCODE_STRING(Buf, Buyer->GetName());
-
-		QueuePacket(outapp);
-		safe_delete(outapp);
-    }
+//	bir->approval = buyer->WithCustomer(GetID());
+//	QueuePacket(app);
+//
+//	if(bir->approval == 0) {
+//		MessageString(Chat::Yellow, TRADER_BUSY);
+//		return;
+//	}
+//
+//	auto WelcomeMessagePointer = BuyerRepository::GetWelcomeMessage(database, buyer->GetBuyerID());
+//
+//	if(WelcomeMessagePointer.length() > 0)
+//		Message(Chat::NPCQuestSay, "%s greets you, '%s'.", buyer->GetName(), WelcomeMessagePointer.c_str());
+//
+//	auto outapp = new EQApplicationPacket(OP_Barter, sizeof(BuyerBrowsing_Struct));
+//
+//	BuyerBrowsing_Struct* bb = (BuyerBrowsing_Struct*)outapp->pBuffer;
+//
+//	// This packet produces the SoandSo is browsing your Buy Lines message
+//	bb->action = Barter_SellerBrowsing;
+//
+//	sprintf(bb->char_name, "%s", GetName());
+//
+//	buyer->QueuePacket(outapp);
+//
+//	safe_delete(outapp);
+//
+//    std::string query = StringFormat("SELECT * FROM buyer WHERE char_id = %i", buyer->CharacterID());
+//    auto results = database.QueryDatabase(query);
+//    if (!results.Success() || results.RowCount() == 0)
+//        return;
+//
+//    for (auto row = results.begin(); row != results.end(); ++row) {
+//        char ItemName[64];
+//        uint32 BuySlot = Strings::ToInt(row[1]);
+//        uint32 ItemID = Strings::ToInt(row[2]);
+//		strcpy(ItemName, row[3]);
+//		uint32 Quantity = Strings::ToInt(row[4]);
+//		uint32 Price = Strings::ToInt(row[5]);
+//
+//		auto outapp = new EQApplicationPacket(OP_Barter, 936);
+//
+//		char *Buf = (char *)outapp->pBuffer;
+//
+//		const EQ::ItemData* item = database.GetItem(ItemID);
+//
+//		if(!item) {
+//			safe_delete(outapp);
+//            continue;
+//		}
+//
+//        VARSTRUCT_ENCODE_TYPE(uint32, Buf, Barter_BuyerInspectWindow);
+//		VARSTRUCT_ENCODE_TYPE(uint32, Buf, BuySlot);
+//		VARSTRUCT_ENCODE_TYPE(uint8, Buf, 1);				// Flag
+//		VARSTRUCT_ENCODE_TYPE(uint32, Buf, ItemID);
+//		VARSTRUCT_ENCODE_STRING(Buf, ItemName);
+//		VARSTRUCT_ENCODE_TYPE(uint32, Buf, item->Icon);
+//		VARSTRUCT_ENCODE_TYPE(uint32, Buf, Quantity);
+//		VARSTRUCT_ENCODE_TYPE(uint8, Buf, 1);				// Flag
+//		VARSTRUCT_ENCODE_TYPE(uint32, Buf, Price);
+//		VARSTRUCT_ENCODE_TYPE(uint32, Buf, buyer->GetID());
+//		VARSTRUCT_ENCODE_TYPE(uint32, Buf, 0);
+//		VARSTRUCT_ENCODE_STRING(Buf, buyer->GetName());
+//
+//		QueuePacket(outapp);
+//		safe_delete(outapp);
+//    }
 }
 
 void Client::SellToBuyer(const EQApplicationPacket *app) {
@@ -3865,7 +3873,7 @@ void Client::SendBuyerGreeting(uint32 buyer_id) {
 	Message(Chat::White, buyer.front().welcome_message.c_str());
 }
 
-void Client::SendSellerBrowsing(std::string &browser) {
+void Client::SendSellerBrowsing(const std::string &browser) {
 	auto outapp = std::make_unique<EQApplicationPacket>(OP_Barter, sizeof(BuyerBrowsing_Struct));
 	auto eq = (BuyerBrowsing_Struct *)outapp->pBuffer;
 

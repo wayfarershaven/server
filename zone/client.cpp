@@ -385,6 +385,8 @@ Client::Client(EQStreamInterface *ieqs) : Mob(
 	m_parcel_merchant_engaged = false;
 	m_parcels.clear();
 
+	m_buyer_id = 0;
+
 	SetBotPulling(false);
 	SetBotPrecombat(false);
 
@@ -424,8 +426,9 @@ Client::~Client() {
 		TraderEndTrader();
 	}
 
-	if(IsBuyer())
+	if(IsBuyer()) {
 		ToggleBuyerMode(false);
+	}
 
 	if(conn_state != ClientConnectFinished) {
 		LogDebug("Client [{}] was destroyed before reaching the connected state:", GetName());
@@ -2164,6 +2167,7 @@ void Client::FillSpawnStruct(NewSpawn_Struct* ns, Mob* ForWho)
 	ns->spawn.gm		= GetGM() ? 1 : 0;
 	ns->spawn.guildID	= GuildID();
 	ns->spawn.trader	= IsTrader();
+	ns->spawn.buyer     = IsBuyer();
 //	ns->spawn.linkdead	= IsLD() ? 1 : 0;
 //	ns->spawn.pvp		= GetPVP(false) ? 1 : 0;
 	ns->spawn.show_name = true;

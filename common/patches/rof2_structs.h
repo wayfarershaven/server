@@ -354,15 +354,15 @@ struct Spawn_Struct_Bitfields
 /*29*/	unsigned   showname:1;
 /*30*/	unsigned   idleanimationsoff:1; // what we called statue?
 /*31*/	unsigned   untargetable:1;	// bClickThrough
-/* do these later
-32	unsigned   buyer:1;
-33	unsigned   offline:1;
-34	unsigned   interactiveobject:1;
-35	unsigned   flung:1; // hmm this vfunc appears to do stuff with leve and flung variables
-36	unsigned   title:1;
-37	unsigned   suffix:1;
-38	unsigned   padding1:1;
-39	unsigned   padding2:1;
+	// byte 5
+/*32	unsigned   buyer:1;
+/*33	unsigned   offline:1;
+/*34	unsigned   interactiveobject:1;
+/*35	unsigned   flung:1; // hmm this vfunc appears to do stuff with leve and flung variables
+/*36	unsigned   title:1;
+/*37	unsigned   suffix:1;
+/*38	unsigned   padding1:1;
+/*39	unsigned   padding2:1;
 40	unsinged   padding3:1;
 */
 	/*

@@ -6,6 +6,7 @@
 #include "base/base_buyer_buy_lines_repository.h"
 #include "buyer_trade_items_repository.h"
 #include "character_data_repository.h"
+#include "buyer_repository.h"
 
 #include "../eq_packet_structs.h"
 
@@ -93,50 +94,24 @@ public:
 		return e.id;
 	}
 
-	static bool ClearBuyerTables(Database& db)
-	{
-		std::string query = fmt::format("DELETE FROM buyer");
-		auto results = db.QueryDatabase(query);
-		if (!results.Success()) {
-			return false;
-		}
-
-		query = fmt::format("DELETE FROM buyer_trade_items");
-		results = db.QueryDatabase(query);
-		if (!results.Success()) {
-			return false;
-		}
-		return true;
-	}
-
-	static bool DeleteBuyLine(Database& db, uint32 char_id, int32 slot_id = 0xffffffff)
+	static int DeleteBuyLine(Database &db, uint32 char_id, int32 slot_id = 0xffffffff)
 	{
 		if (slot_id == 0xffffffff) {
-			std::string query = fmt::format("DELETE FROM buyer WHERE char_id = {}",
-											char_id
-			);
-			auto results = db.QueryDatabase(query);
-			if (!results.Success()) {
-				return false;
-			}
-
-			return true;
+			return DeleteWhere(db, fmt::format("`char_id` = '{}'", char_id));
 		}
 		else {
-			std::string query = fmt::format("DELETE FROM buyer WHERE char_id = {} AND buy_slot_id = {}",
-											char_id,
-											slot_id
+			return DeleteWhere(
+				db,
+				fmt::format(
+					"`char_id` = '{}' AND `buy_slot_id` = '{}'",
+					char_id,
+					slot_id
+				)
 			);
-			auto results = db.QueryDatabase(query);
-			if (!results.Success()) {
-				return false;
-			}
-
-			return true;
 		}
 	}
 
-	static std::vector<BuyerLineItems_Struct> GetBuyLine(Database &db, uint32 char_id)
+	static std::vector<BuyerLineItems_Struct> GetBuyLines(Database &db, uint32 char_id)
 	{
 		std::vector<BuyerLineItems_Struct> all_entries{};
 
@@ -144,7 +119,7 @@ public:
 		auto  buy_line_trade_items = BuyerTradeItemsRepository::GetWhere(
 			db,
 			fmt::format(
-				"`buyer_id` IN (SELECT b.id FROM buyer AS b WHERE b.char_id = '{}')",
+				"`buyer_buy_lines_id` IN (SELECT b.id FROM buyer_buy_lines AS b WHERE b.char_id = '{}')",
 				char_id
 			)
 		);
@@ -174,50 +149,6 @@ public:
 		}
 
 		return all_entries;
-	}
-
-	static BuyerLineItems_Struct GetOneBuyLine(Database& db, uint32 buyer_id, uint32 slot_id)
-	{
-		BuyerLineItems_Struct b{};
-
-		int string_size = 0;
-		std::string query = fmt::format("SELECT `buy_slot`, `item_id`, `item_name`, `quantity`, `price` "
-										"FROM buyer WHERE buyer.char_id = {} AND buyer.buy_slot = {};",
-										buyer_id,
-										slot_id
-		);
-		auto results = db.QueryDatabase(query);
-		if (!results.Success()) {
-			return b;
-		}
-
-		for (auto r : results) {
-			b.item_toggle = 1;
-			b.slot = Strings::ToInt(r[0]);
-			b.item_id = Strings::ToInt(r[1]);
-			b.item_quantity = Strings::ToInt(r[3]);
-			b.item_cost = Strings::ToInt(r[4]);
-			strn0cpy(b.item_name, r[2] ? r[2] : "", sizeof(b.item_name));
-
-			query = fmt::format("SELECT `item_id`, `item_qty`, `item_icon`, `item_name` "
-								"FROM buyer_trade_items "
-								"WHERE buyer_trade_items.char_id = {} AND slot_id = {};",
-								buyer_id,
-								b.slot
-			);
-			auto results_details = db.QueryDatabase(query);
-			if (results_details.RowCount() > 0) {
-				int i = 0;
-				for (auto d : results_details) {
-					b.trade_items[i].item_id = Strings::ToInt(d[0]);
-					b.trade_items[i].item_quantity = Strings::ToInt(d[1]);
-					b.trade_items[i].item_icon = Strings::ToInt(d[2]);
-					strn0cpy(b.trade_items[i].item_name, d[3] ? d[3] : "", sizeof(b.trade_items[i].item_name));
-					i++;
-				}
-			}
-		}
-		return b;
 	}
 
 	static BuyerLineSearch_Struct SearchBuyLines(Database& db, std::string& search_string)

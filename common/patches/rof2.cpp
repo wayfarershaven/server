@@ -370,8 +370,8 @@ namespace RoF2
 				auto eq     = (structs::Buyer_SetAppearance_Struct *) outapp->pBuffer;
 
 				eq->action    = structs::RoF2BuyerActions::BuyerAppearance;
-				eq->entity_id = emu->BuyerID;
-				eq->enabled   = emu->Approval;
+				eq->entity_id = emu->buyer_id;
+				eq->enabled   = emu->approval;
 
 				dest->FastQueuePacket(&outapp);
 				safe_delete(in);
@@ -386,7 +386,7 @@ namespace RoF2
 				auto eq     = (structs::BuyerRemoveItem_Struct *) outapp->pBuffer;
 
 				eq->action  = structs::RoF2BuyerActions::BuyerModifyBuyLine;
-				eq->slot_id = emu->BuySlot;
+				eq->slot_id = emu->buy_slot_id;
 				eq->toggle  = 0;
 
 				dest->FastQueuePacket(&outapp);
@@ -4502,6 +4502,9 @@ namespace RoF2
 			if (emu->DestructibleObject) {
 				OtherData = OtherData | 0xe1;	// Live has 0xe1 for OtherData
 			}
+			if (emu->buyer) {
+				OtherData = OtherData | 0x01;
+			}
 
 			VARSTRUCT_ENCODE_TYPE(uint8, Buffer, OtherData);
 			// float EmitterScalingRadius
@@ -4824,15 +4827,14 @@ namespace RoF2
 
 		switch (action) {
 			case structs::RoF2BuyerActions::BuyerRemoveItem: {
-				LogTradingDetail("(RoF2) Buyer Remove Item <green>[{}]", 9999);
-
 				auto emu = (BuyerGeneric_Struct *) __packet->pBuffer;
 				emu->action = Barter_BuyerItemRemove;
+				LogTradingDetail("(RoF2) Buyer Remove Item");
 
 				break;
 			}
 			case structs::RoF2BuyerActions::BuyerInspectBegin: {
-				LogTradingDetail("(RoF2) Buyer Inspect Begin Item <green>[{}]", 9999);
+				LogTradingDetail("(RoF2) Buyer Inspect Begin Item");
 
 				auto emu    = (BuyerGeneric_Struct *) __packet->pBuffer;
 				emu->action = Barter_BuyerInspectBegin;
@@ -4840,7 +4842,7 @@ namespace RoF2
 				break;
 			}
 			case structs::RoF2BuyerActions::BuyerInspectEnd: {
-				LogTradingDetail("(RoF2) Buyer Inspect End Item <green>[{}]", 9999);
+				LogTradingDetail("(RoF2) Buyer Inspect End Item ");
 
 				auto emu    = (BuyerGeneric_Struct *) __packet->pBuffer;
 				emu->action = Barter_BuyerInspectEnd;

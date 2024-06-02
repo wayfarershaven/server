@@ -376,12 +376,12 @@ public:
 	uint32 GetCustomerID() { return customer_id; }
 	void SetCustomerID(uint32 id) { customer_id = id; }
 
-	void   SetBuyerID(uint64 id) { m_buyer_id = id; }
+	void   SetBuyerID(uint32 id) { m_buyer_id = id; }
 	uint32 GetBuyerID() { return m_buyer_id; }
 	bool   IsBuyer() { return m_buyer_id != 0 ? true : false; }
 	void   SetBuyerWelcomeMessage(const char* welcome_message);
 	void   SendBuyerGreeting(uint32 char_id);
-	void   SendSellerBrowsing(std::string &browser);
+	void   SendSellerBrowsing(const std::string &browser);
 
 	void SendBuyerResults(char *SearchQuery, uint32 SearchID);
 	void ShowBuyLines(const EQApplicationPacket *app);

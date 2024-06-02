@@ -58,14 +58,14 @@ public:
 		return UpdateOne(db, buyer);
 	}
 
-	static std::string GetWelcomeMessage(Database& db, uint64 buyer_id) {
+	static std::string GetWelcomeMessage(Database& db, uint32 char_id) {
 
-		auto const b = FindOne(db, buyer_id);
-		if (!b.id) {
+		auto const b = GetWhere(db, fmt::format("`char_id` = '{}' LIMIT 1;", char_id));
+		if (b.empty()) {
 			return std::string();
 		}
 
-		return b.welcome_message;
+		return b.front().welcome_message;
 	}
 };
 

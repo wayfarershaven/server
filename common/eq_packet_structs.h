@@ -323,6 +323,7 @@ union
 	bool show_name;
 	bool guild_show;
 	bool trader;
+	bool buyer;
 };
 
 struct PlayerState_Struct {
@@ -3144,6 +3145,11 @@ enum BuyerBarter {
 	On  = 1
 };
 
+struct BuyerRemoveItem_Struct {
+	uint32	action;
+	uint32	buy_slot_id;
+};
+
 struct BuyerGeneric_Struct {
 	uint32 action;
 	char   payload[];
@@ -3296,6 +3302,29 @@ struct BuyerSetAppearance_Struct {
 	char   buyer_name[64];
 };
 
+struct BarterItemSearchLinkRequest_Struct {
+	uint32 action;
+	uint32 searcher_id;
+	uint32 unknown_008;
+	uint32 unknown_012;
+	uint32 item_id;
+	uint32 unknown_020;
+};
+
+struct BuyerInspectRequest_Struct {
+	uint32	action;
+	uint32	buyer_id;
+	uint32	approval;
+};
+
+struct BarterSearchRequest_Struct {
+	uint32	action;
+	char	search_string[64];
+	uint32	search_id;
+};
+
+
+
 
 
 
@@ -3321,11 +3350,6 @@ struct	BuyerItemSearchResults_Struct {
 	BuyerItemSearchResultEntry_Struct	Results[MAX_BUYER_ITEMSEARCH_RESULTS];
 };
 
-struct BarterSearchRequest_Struct {
-	uint32	action;
-	char	search_string[64];
-	uint32	search_id;
-};
 
 struct BuyerItemSearchLinkRequest_Struct {
 /*000*/	uint32	Action;	// 0x00000015
@@ -3334,30 +3358,7 @@ struct BuyerItemSearchLinkRequest_Struct {
 /*012*/	uint32	Unknown012;
 };
 
-struct BarterItemSearchLinkRequest_Struct {
-/*000*/	uint32	action;	// 0x0000000E
-/*004*/	uint32	searcher_id;
-/*008*/	uint32	unknown_008;
-/*012*/	uint32	unknown_012;
-/*016*/	uint32	item_id;
-/*020*/	uint32	unknown_020;
-};
 
-struct BuyerInspectRequest_Struct {
-	uint32	Action;
-	uint32	BuyerID;
-	uint32	Approval;
-};
-
-struct BuyerBrowsing_Struct {
-	uint32	Action;
-	char	PlayerName[64];
-};
-
-struct BuyerRemoveItem_Struct {
-	uint32	Action;
-	uint32	BuySlot;
-};
 
 struct ServerSideFilters_Struct {
 uint8	clientattackfilters;	// 0) No, 1) All (players) but self, 2) All (players) but group
