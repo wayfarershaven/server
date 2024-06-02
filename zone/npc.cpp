@@ -799,6 +799,10 @@ bool NPC::Process()
 		}
 	}
 
+	if (flee_timer.Check()) {
+		CheckFlee();
+	}
+
 	AI_Process();
 
 	return true;
@@ -1220,7 +1224,7 @@ uint32 ZoneDatabase::CreateNewNPCCommand(
 	e.walkspeed       = n->GetWalkspeed();
 	e.prim_melee_type = n->GetPrimSkill();
 	e.sec_melee_type  = n->GetSecSkill();
-	
+
 	e.bodytype        = n->GetBodyType();
 	e.npc_faction_id  = n->GetNPCFactionID();
 	e.aggroradius     = n->GetAggroRange();
@@ -1235,7 +1239,7 @@ uint32 ZoneDatabase::CreateNewNPCCommand(
 	e.WIS             = n->GetWIS();
 	e._INT            = n->GetINT();
 	e.CHA             = n->GetCHA();
-	
+
 	e.PR              = n->GetPR();
 	e.MR              = n->GetMR();
 	e.DR              = n->GetDR();
@@ -1255,7 +1259,7 @@ uint32 ZoneDatabase::CreateNewNPCCommand(
 	e.healscale       = n->GetHealScale();
 	e.Avoidance       = n->GetAvoidanceRating();
 	e.heroic_strikethrough = n->GetHeroicStrikethrough();
-	
+
 	e.see_hide        = n->SeeHide();
 	e.see_improved_hide = n->SeeImprovedHide();
 	e.see_invis       = n->SeeInvisible();
