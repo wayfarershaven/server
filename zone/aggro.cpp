@@ -564,46 +564,44 @@ bool Mob::CheckWillAggro(Mob *mob) {
 	return false;
 }
 
-int EntityList::GetHatedCount(Mob *attacker, Mob *exclude, bool inc_gray_con)
+int EntityList::GetHatedCount(Mob *attacker, Mob *exclude, bool inc_gray_con, bool include_pets)
 {
 	// Return a list of how many non-feared, non-mezzed, non-green mobs, within aggro range, hate *attacker
-	if (!attacker)
+	if (!attacker) {
 		return 0;
+	}
 
 	int Count = 0;
 
 	for (auto it = npc_list.begin(); it != npc_list.end(); ++it) {
 		NPC *mob = it->second;
-		if (!mob || (mob == exclude)) {
-			continue;
-		}
 
-		if (!mob->IsEngaged()) {
-			continue;
-		}
-
-		if (mob->IsFeared() || mob->IsMezzed()) {
-			continue;
-		}
-
-		if (!inc_gray_con && attacker->GetLevelCon(mob->GetLevel()) == ConsiderColor::Gray) {
-			continue;
-		}
-
-		if (!mob->CheckAggro(attacker)) {
+		if (
+			!mob ||
+			mob == exclude ||
+			!mob->IsEngaged() ||
+			mob->IsFeared() ||
+			mob->IsMezzed() ||
+			(!inc_gray_con && attacker->GetLevelCon(mob->GetLevel()) == ConsiderColor::Gray)
+		) {
 			continue;
 		}
 
 		float AggroRange = mob->GetAggroRange();
 
-		// Square it because we will be using DistNoRoot
-
 		AggroRange *= AggroRange;
+
+		LogHateDetail("AggroRange [{}] - DistanceSquared [{}]", AggroRange, DistanceSquared(mob->GetPosition(), attacker->GetPosition()) > AggroRange);
 
 		if (DistanceSquared(mob->GetPosition(), attacker->GetPosition()) > AggroRange) {
 			continue;
 		}
-		Count++;
+
+		LogHateDetail("include_pets = [{}] - mob->IsPet() [{}]", include_pets, mob->IsPet());
+
+		if ((include_pets && mob->IsPet()) || !include_pets) {
+			Count++;
+		}
 	}
 	return Count;
 }

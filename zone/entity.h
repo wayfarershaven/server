@@ -496,7 +496,7 @@ public:
 	bool	LimitCheckGroup(uint32 spawngroup_id, int count);
 	bool	LimitCheckName(const char* npc_name);
 
-	int		GetHatedCount(Mob *attacker, Mob *exclude, bool inc_gray_con);
+	int		GetHatedCount(Mob *attacker, Mob *exclude, bool inc_gray_con, bool include_pet = false);
 	bool	Merc_AICheckCloseBeneficialSpells(Merc* caster, uint8 iChance, float iRange, uint32 iSpellTypes);
 	Mob*	GetTargetForMez(Mob* caster);
 	uint32	CheckNPCsClose(Mob *center);

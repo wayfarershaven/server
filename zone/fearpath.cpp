@@ -75,8 +75,7 @@ void Mob::CheckFlee()
 		GetLevel() <= RuleI(Combat, FleeGrayMaxLevel)) {
 		flee_ratio = RuleI(Combat, FleeGrayHPRatio);
 		LogFlee("Mob [{}] using combat flee gray hp_ratio [{}] flee_ratio [{}]", GetCleanName(), hp_ratio, flee_ratio);
-	}
-	else if (flee_ratio == 0) {
+	} else if (flee_ratio == 0) {
 		flee_ratio = RuleI(Combat, FleeHPRatio);
 		LogFlee("Mob [{}] using combat flee hp_ratio [{}] flee_ratio [{}]", GetCleanName(), hp_ratio, flee_ratio);
 	}
@@ -141,7 +140,7 @@ void Mob::CheckFlee()
 	// if FleeIfNotAlone is true, we skip alone check
 	// roll chance
 	if (GetSpecialAbility(ALWAYS_FLEE) ||
-		((RuleB(Combat, FleeIfNotAlone) || entity_list.GetHatedCount(hate_top, this, true) == 0) &&
+		((RuleB(Combat, FleeIfNotAlone) || entity_list.GetHatedCount(hate_top, this, true, RuleB(Combat, FleeCountIncludePets)) == 0) &&
 		 zone->random.Roll(flee_chance))) {
 
 		LogFlee(
