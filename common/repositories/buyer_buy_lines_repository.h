@@ -124,26 +124,28 @@ public:
 			)
 		);
 
+		all_entries.reserve(buy_line.size());
+
 		for (auto const &l: buy_line) {
 			BuyerLineItems_Struct bli{};
 			bli.item_id       = l.item_id;
 			bli.item_cost     = l.item_price;
 			bli.item_quantity = l.item_quantity;
+			bli.slot          = l.buy_slot_id;
 			strn0cpy(bli.item_name, l.item_name.c_str(), sizeof(bli.item_name));
 
-			uint32 slot = 0;
-
 			for (auto const &i: GetSubIDs(buy_line_trade_items, l.id)) {
-				bli.trade_items[slot].item_id       = buy_line_trade_items.at(i).item_id;
-				bli.trade_items[slot].item_icon     = buy_line_trade_items.at(i).item_icon;
-				bli.trade_items[slot].item_quantity = buy_line_trade_items.at(i).item_qty;
-				bli.trade_items[slot].item_id       = buy_line_trade_items.at(i).item_id;
+				BuyerLineTradeItems_Struct blti{};
+				blti.item_id       = buy_line_trade_items.at(i).item_id;
+				blti.item_icon     = buy_line_trade_items.at(i).item_icon;
+				blti.item_quantity = buy_line_trade_items.at(i).item_qty;
+				blti.item_id       = buy_line_trade_items.at(i).item_id;
 				strn0cpy(
-					bli.trade_items[slot].item_name,
+					blti.item_name,
 					buy_line_trade_items.at(i).item_name.c_str(),
-					sizeof(bli.trade_items[slot].item_name)
+					sizeof(blti.item_name)
 				);
-				slot++;
+				bli.trade_items.push_back(blti);
 			}
 			all_entries.push_back(bli);
 		}

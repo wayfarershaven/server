@@ -2341,7 +2341,7 @@ void Client::SendBuyerResults(char* searchString, uint32 searchID) {
 			p_size += 3 * sizeof(uint32);
 		}
 
-		BuyerLine_Struct bl{};
+		BuyerBuyLines_Struct bl{};
 
 		//Create packet
 
@@ -2466,7 +2466,6 @@ void Client::SendBuyerResults(char* searchString, uint32 searchID) {
 
 void Client::ShowBuyLines(const EQApplicationPacket *app)
 {
-
 	auto bir   = (BuyerInspectRequest_Struct *) app->pBuffer;
 	auto buyer = entity_list.GetClientByID(bir->buyer_id);
 
@@ -2495,13 +2494,11 @@ void Client::ShowBuyLines(const EQApplicationPacket *app)
 		std::stringstream           ss{};
 		cereal::BinaryOutputArchive ar(ss);
 
-		uint32 slot = 0;
 		for (auto l : results) {
 			const EQ::ItemData *item = database.GetItem(l.item_id);
 			l.enabled     = 1;
 			l.item_icon   = item->Icon;
 			l.item_toggle = 1;
-			l.slot        = slot;
 
 			{ ar(l); }
 
@@ -2515,7 +2512,6 @@ void Client::ShowBuyLines(const EQApplicationPacket *app)
 
 			ss.str("");
 			ss.clear();
-			slot++;
 		}
 		
 		return;
@@ -2993,20 +2989,29 @@ void Client::UpdateBuyLine(const EQApplicationPacket *app)
 	// A BuyLine is toggled on or off in the/buyer window.
 	//
 	if (ClientVersion() >= EQ::versions::ClientVersion::RoF) {
-		BuyerLine_Struct             bl{};
+		BuyerBuyLines_Struct bl{};
 		auto                         in = (BuyerGeneric_Struct *) app->pBuffer;
-		EQ::Util::MemoryStreamReader ss(reinterpret_cast<char *>(in->payload), app->size - sizeof(BuyerGeneric_Struct));
-		cereal::BinaryInputArchive   ar(ss);
+		EQ::Util::MemoryStreamReader ss_in(reinterpret_cast<char *>(in->payload), app->size - sizeof(BuyerGeneric_Struct));
+		cereal::BinaryInputArchive   ar(ss_in);
 		ar(bl);
 
-		char *buffer = (char *) app->pBuffer;
-		if (!bl.no_items) {
+		if (bl.buy_lines.empty()) {
 			return;
 		}
 
-		for (auto const &b: bl.buy_line) {
-			auto buyer_has_pp    = false;
-			auto buyer_has_items = true;
+		// Items to do for checking
+		// Buyer has the money
+		// buyer has the items
+		// the items(s) cannot be no drop, augmented
+		// buyer cannot have the 'buying item' already if it is lore
+		// buyer cannot offer the item that they are attempting to buy
+
+		std::stringstream           ss_out{};
+		cereal::BinaryOutputArchive ar_out(ss_out);
+
+		for (auto const &b: bl.buy_lines) {
+			auto            buyer_has_pp    = false;
+			auto            buyer_has_items = true;
 			for (auto const &i: b.trade_items) {
 				if (i.item_id != 0) {
 					if (GetInv().HasItem(i.item_id, invWhereWorn | invWherePersonal | invWhereCursor)) {
@@ -3050,23 +3055,28 @@ void Client::UpdateBuyLine(const EQApplicationPacket *app)
 				BuyerBuyLinesRepository::UpdateBuyLine(database, b, CharacterID());
 			}
 
-			auto outapp = std::make_unique<EQApplicationPacket>(OP_BuyerItems, sizeof(b) + 4);
-			auto emu    = (BuyerGeneric_Struct *) outapp->pBuffer;
+			{ ar_out(b); }
 
-			emu->action = Barter_BuyerItemUpdate;
-			memcpy(emu->payload, &b, sizeof(b));
-			//char *emu   = (char *) outapp->pBuffer;
-			//VARSTRUCT_ENCODE_TYPE(uint32, emu, Barter_BuyerItemUpdate);
+			uint32 packet_size = ss_out.str().length() + sizeof(BuyerGeneric_Struct);
+			auto   out         = std::make_unique<EQApplicationPacket>(OP_BuyerItems, packet_size);
+			auto   data        = (BazaarSearchMessaging_Struct *) out->pBuffer;
 
-			QueuePacket(outapp.get());
+			data->action = Barter_BuyerItemUpdate;
+			memcpy(data->payload, ss_out.str().data(), ss_out.str().length());
+			QueuePacket(out.get());
 
-			if (IsThereACustomer()) {
+			ss_out.str("");
+			ss_out.clear();
+
+			if (IsThereACustomer() && b.item_toggle) {
 				//Update the Seller's Merchant Window if there is one.
 				Message(Chat::Yellow, "There is a player browsing.  Should resend the window data.");
 				auto customer = entity_list.GetClientByID(GetCustomerID());
 				if (!customer) {
 					return;
 				}
+				std::stringstream           ss_customer{};
+				cereal::BinaryOutputArchive ar_customer(ss_customer);
 
 				BuyerLineItems_Struct blis{};
 				blis.enabled       = b.enabled;
@@ -3077,28 +3087,29 @@ void Client::UpdateBuyLine(const EQApplicationPacket *app)
 				blis.item_toggle   = b.item_toggle;
 				blis.slot          = b.slot;
 				strn0cpy(blis.item_name, b.item_name, sizeof(blis.item_name));
-				for (int i = 0; i < MAX_BUYER_COMPENSATION_ITEMS; i++) {
-					blis.trade_items[i].item_icon     = b.trade_items[i].item_icon;
-					blis.trade_items[i].item_id       = b.trade_items[i].item_id;
-					blis.trade_items[i].item_quantity = b.trade_items[i].item_quantity;
-					strn0cpy(
-						blis.trade_items[i].item_name,
-						b.trade_items[i].item_name,
-						sizeof(blis.trade_items[i].item_name));
+				for (auto const& i:b.trade_items) {
+					BuyerLineTradeItems_Struct bltis{};
+					bltis.item_icon     = i.item_icon;
+					bltis.item_id       = i.item_id;
+					bltis.item_quantity = i.item_quantity;
+					strn0cpy(bltis.item_name, i.item_name, sizeof(bltis.item_name));
+					blis.trade_items.push_back(bltis);
 				}
 
-				const EQ::ItemData *item = database.GetItem(b.item_id);
+					{ ar_customer(blis); }
 
-				auto outapp = std::make_unique<EQApplicationPacket>(OP_BuyerItems, sizeof(b) + 4);
-				//char *emu = (char *) outapp->pBuffer;
-				//VARSTRUCT_ENCODE_TYPE(uint32, emu, Barter_BuyerInspectBegin);
-				auto emu    = (BuyerGeneric_Struct *) outapp->pBuffer;
-				emu->action = Barter_BuyerInspectBegin;
-				memcpy(emu->payload, &b, sizeof(b));
+					auto packet = std::make_unique<EQApplicationPacket>(OP_BuyerItems, ss_customer.str().length() + sizeof(BuyerGeneric_Struct));
+					auto emu    = (BuyerGeneric_Struct *) packet->pBuffer;
 
-				customer->QueuePacket(outapp.get());
+					emu->action = Barter_BuyerInspectBegin;
+					memcpy(emu->payload, ss_customer.str().data(), ss_customer.str().length());
+
+					customer->QueuePacket(packet.get());
+
+					ss_customer.str("");
+					ss_customer.clear();
+				}
 			}
-		}
 		return;
 	}
 
@@ -3174,54 +3185,76 @@ void Client::UpdateBuyLine(const EQApplicationPacket *app)
 
 void Client::BuyerItemSearch(const EQApplicationPacket *app) {
 
-	BuyerItemSearch_Struct* bis = (BuyerItemSearch_Struct*)app->pBuffer;
-
-	auto outapp = new EQApplicationPacket(OP_Barter, sizeof(BuyerItemSearchResults_Struct));
-
-	BuyerItemSearchResults_Struct* bisr = (BuyerItemSearchResults_Struct*)outapp->pBuffer;
-
-	const EQ::ItemData* item = 0;
-
-	int Count=0;
-
-	char Name[64];
-	char Criteria[255];
-
-	strn0cpy(Criteria, bis->SearchString, sizeof(Criteria));
-
-	strupr(Criteria);
-
-	char* pdest;
-
+	auto bis = (BuyerItemSearch_Struct *) app->pBuffer;
+	const EQ::ItemData *item = 0;
 	uint32 it = 0;
 
-	while ((item = database.IterateItems(&it))) {
+	BuyerItemSearchResults_Struct bisr{};
 
-		strn0cpy(Name, item->Name, sizeof(Name));
-
-		strupr(Name);
-
-		pdest = strstr(Name, Criteria);
-
-		if (pdest != nullptr) {
-			sprintf(bisr->Results[Count].ItemName, "%s", item->Name);
-			bisr->Results[Count].ItemID = item->ID;
-			bisr->Results[Count].Unknown068 = item->Icon;
-			bisr->Results[Count].Unknown072 = 0x00000000;
-			Count++;
+	while ((item = database.IterateItems(&it)) && bisr.results.size() <= RuleI(Bazaar, MaxBuyerInventorySearchResults)) {
+		if (!item->NoDrop) {
+			continue;
 		}
-		if (Count == MAX_BUYER_ITEMSEARCH_RESULTS)
-			break;
+
+		auto item_name_match = std::strstr(
+			Strings::ToLower(item->Name).c_str(),
+			Strings::ToLower(bis->search_string).c_str()
+		);
+
+		if (item_name_match) {
+			BuyerItemSearchResultEntry_Struct bisre{};
+			bisre.item_id   = item->ID;
+			bisre.item_icon = item->Icon;
+			strn0cpy(bisre.item_name, item->Name, sizeof(bisre.item_name));
+			bisr.results.push_back(bisre);
+		}
 	}
-	if (Count == MAX_BUYER_ITEMSEARCH_RESULTS)
-		Message(Chat::Yellow, "Your search returned more than %i results. Only the first %i are displayed.",
-				MAX_BUYER_ITEMSEARCH_RESULTS, MAX_BUYER_ITEMSEARCH_RESULTS);
 
-	bisr->Action = Barter_BuyerSearch;
-	bisr->ResultCount = Count;
+	bisr.action = Barter_BuyerSearchResults;
+	bisr.result_count = bisr.results.size();
 
-	QueuePacket(outapp);
-	safe_delete(outapp);
+	std::stringstream           ss{};
+	cereal::BinaryOutputArchive ar(ss);
+	{ ar(bisr); }
+
+	uint32 packet_size = sizeof(BuyerGeneric_Struct) + ss.str().length();
+	auto outapp = std::make_unique<EQApplicationPacket>(OP_Barter, packet_size);
+	auto emu    = (BuyerGeneric_Struct *) outapp->pBuffer;
+
+	emu->action = Barter_BuyerSearchResults;
+	memcpy(emu->payload, ss.str().data(), ss.str().length());
+
+	QueuePacket(outapp.get());
+
+	ss.str("");
+	ss.clear();
+
+//
+//		strn0cpy(Name, item->Name, sizeof(Name));
+//
+//		strupr(Name);
+//
+//		pdest = strstr(Name, Criteria);
+//
+//		if (pdest != nullptr) {
+//			sprintf(bisr->Results[Count].ItemName, "%s", item->Name);
+//			bisr->Results[Count].ItemID = item->ID;
+//			bisr->Results[Count].Unknown068 = item->Icon;
+//			bisr->Results[Count].Unknown072 = 0x00000000;
+//			Count++;
+//		}
+//		if (Count == MAX_BUYER_ITEMSEARCH_RESULTS)
+//			break;
+//	}
+//	if (Count == MAX_BUYER_ITEMSEARCH_RESULTS)
+//		Message(Chat::Yellow, "Your search returned more than %i results. Only the first %i are displayed.",
+//				MAX_BUYER_ITEMSEARCH_RESULTS, MAX_BUYER_ITEMSEARCH_RESULTS);
+//
+//	bisr->Action = Barter_BuyerSearch;
+//	bisr->ResultCount = Count;
+//
+//	QueuePacket(outapp);
+//	safe_delete(outapp);
 }
 
 const std::string &Client::GetMailKeyFull() const

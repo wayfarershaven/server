@@ -3123,6 +3123,7 @@ enum RoF2BazaarTraderBuyerActions {
 };
 
 enum RoF2BuyerActions {
+	BuyerSearchResults   = 0x00,
 	BuyerBuyLine         = 0x06,
 	BuyerModifyBuyLine   = 0x07,
 	BuyerRemoveItem      = 0x08,
@@ -3225,6 +3226,19 @@ struct BuyerStart_Struct {
 	uint32                     no_trade_items;
 	BuyerLineTradeItems_Struct trade_items[1]; // size is actually no_trade_items.  If 0, then this is not in packet
 	char                       unknown[13];
+};
+
+struct BuyerItemSearchResultEntry_Struct {
+	char   item_name[64];
+	uint32 item_id;
+	uint32 item_icon;
+	uint32 unknown_072;
+};
+
+struct BuyerItemSearchResults_Struct {
+	uint32                            action;
+	uint32                            result_count;
+	BuyerItemSearchResultEntry_Struct results[];
 };
 
 enum {

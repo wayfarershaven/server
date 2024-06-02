@@ -3189,15 +3189,15 @@ struct BuyerLineTradeItems_Struct {
 };
 
 struct BuyerLineItems_Struct {
-	uint32                     slot;
-	uint8                      enabled;
-	uint32                     item_id;
-	char                       item_name[64];
-	uint32                     item_icon;
-	uint32                     item_quantity;
-	uint8                      item_toggle;
-	uint32                     item_cost;
-	BuyerLineTradeItems_Struct trade_items[MAX_BUYER_COMPENSATION_ITEMS];
+	uint32                                  slot;
+	uint8                                   enabled;
+	uint32                                  item_id;
+	char                                    item_name[64];
+	uint32                                  item_icon;
+	uint32                                  item_quantity;
+	uint8                                   item_toggle;
+	uint32                                  item_cost;
+	std::vector<BuyerLineTradeItems_Struct> trade_items;
 
 	template<class Archive>
 	void serialize(Archive &archive)
@@ -3216,13 +3216,13 @@ struct BuyerLineItems_Struct {
 	}
 };
 
-struct BuyerLine_Struct {
+struct BuyerBuyLines_Struct {
 	uint32                             action;
 	union {
 		uint32 no_items;
 		uint32 string_length;
 	};
-	std::vector<BuyerLineItems_Struct> buy_line;
+	std::vector<BuyerLineItems_Struct> buy_lines;
 
 	template<class Archive>
 	void serialize(Archive &archive)
@@ -3230,7 +3230,7 @@ struct BuyerLine_Struct {
 		archive(
 			CEREAL_NVP(action),
 			CEREAL_NVP(no_items),
-			CEREAL_NVP(buy_line)
+			CEREAL_NVP(buy_lines)
 		);
 	}
 };
@@ -3323,32 +3323,51 @@ struct BarterSearchRequest_Struct {
 	uint32	search_id;
 };
 
+struct BuyerItemSearch_Struct {
+	uint32 action;
+	char   search_string[64];
+};
 
+struct BuyerItemSearchResultEntry_Struct {
+	char   item_name[64];
+	uint32 item_id;
+	uint32 item_icon;
+	uint32 unknown_072;
+
+	template<class Archive>
+	void serialize(Archive &archive)
+	{
+		archive(
+			CEREAL_NVP(item_name),
+			CEREAL_NVP(item_id),
+			CEREAL_NVP(item_icon),
+			CEREAL_NVP(unknown_072)
+		);
+	}
+};
+
+struct BuyerItemSearchResults_Struct {
+	uint32                                         action;
+	uint32                                         result_count;
+	std::vector<BuyerItemSearchResultEntry_Struct> results;
+
+	template<class Archive>
+	void serialize(Archive &archive)
+	{
+		archive(
+			CEREAL_NVP(action),
+			CEREAL_NVP(result_count),
+			CEREAL_NVP(results)
+		);
+	}
+};
 
 
 
 
 
 //old below here
-struct BuyerItemSearch_Struct {
-/*000*/	uint32	Unknown000;
-/*004*/	char	SearchString[64];
-};
 
-struct	BuyerItemSearchResultEntry_Struct {
-/*000*/	char	ItemName[64];
-/*064*/	uint32	ItemID;
-/*068*/	uint32	Unknown068;
-/*072*/	uint32	Unknown072;
-};
-
-#define MAX_BUYER_ITEMSEARCH_RESULTS 200
-
-struct	BuyerItemSearchResults_Struct {
-	uint32	Action;
-	uint32	ResultCount;
-	BuyerItemSearchResultEntry_Struct	Results[MAX_BUYER_ITEMSEARCH_RESULTS];
-};
 
 
 struct BuyerItemSearchLinkRequest_Struct {

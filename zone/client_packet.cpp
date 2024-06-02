@@ -3772,14 +3772,12 @@ void Client::Handle_OP_Barter(const EQApplicationPacket *app)
 	//uint32 Action = VARSTRUCT_DECODE_TYPE(uint32, Buf);
 
 
-	switch (in->action)
-	{
+	switch (in->action) {
 
-	case Barter_BuyerSearch:
-	{
-		BuyerItemSearch(app);
-		break;
-	}
+		case Barter_BuyerSearch: {
+			BuyerItemSearch(app);
+			break;
+		}
 
 		case Barter_SellerSearch: {
 			auto bsr = (BarterSearchRequest_Struct *) app->pBuffer;
@@ -3787,80 +3785,72 @@ void Client::Handle_OP_Barter(const EQApplicationPacket *app)
 			break;
 		}
 
-	case Barter_BuyerModeOn:
-	{
-		if (!IsTrader()) {
-			ToggleBuyerMode(true);
+		case Barter_BuyerModeOn: {
+			if (!IsTrader()) {
+				ToggleBuyerMode(true);
+			}
+			else {
+				Buf = (char *) app->pBuffer;
+				VARSTRUCT_ENCODE_TYPE(uint32, Buf, Barter_BuyerModeOff);
+				Message(Chat::Red, "You cannot be a Trader and Buyer at the same time.");
+			}
+			QueuePacket(app);
+			break;
 		}
-		else {
-			Buf = (char *)app->pBuffer;
-			VARSTRUCT_ENCODE_TYPE(uint32, Buf, Barter_BuyerModeOff);
-			Message(Chat::Red, "You cannot be a Trader and Buyer at the same time.");
+
+		case Barter_BuyerModeOff: {
+			QueuePacket(app);
+			ToggleBuyerMode(false);
+			break;
 		}
-		QueuePacket(app);
-		break;
-	}
 
-	case Barter_BuyerModeOff:
-	{
-		QueuePacket(app);
-		ToggleBuyerMode(false);
-		break;
-	}
-
-	case Barter_BuyerItemUpdate:
-	{
-		UpdateBuyLine(app);
-		break;
-	}
-
-	case Barter_BuyerItemRemove: {
-		auto bris = (BuyerRemoveItem_Struct *) app->pBuffer;
-		BuyerBuyLinesRepository::DeleteBuyLine(database, CharacterID(), bris->buy_slot_id);
-		QueuePacket(app);
-		break;
-	}
-
-	case Barter_SellItem:
-	{
-		SellToBuyer(app);
-		break;
-	}
-
-	case Barter_BuyerInspectBegin:
-	{
-		ShowBuyLines(app);
-		break;
-	}
-
-	case Barter_BuyerInspectEnd:
-	{
-		BuyerInspectRequest_Struct* bir = (BuyerInspectRequest_Struct*)app->pBuffer;
-		Client *Buyer = entity_list.GetClientByID(bir->buyer_id);
-		if (Buyer)
-			Buyer->WithCustomer(0);
-
-		break;
-	}
-
-	case Barter_BarterItemInspect:
-	{
-		auto               bislr = (BarterItemSearchLinkRequest_Struct *) app->pBuffer;
-		const EQ::ItemData *item = database.GetItem(bislr->item_id);
-
-		if (!item) {
-			Message(Chat::Red, "Error: This item does not exist!");
+		case Barter_BuyerItemUpdate: {
+			UpdateBuyLine(app);
+			break;
 		}
-		else {
+
+		case Barter_BuyerItemRemove: {
+			auto bris = (BuyerRemoveItem_Struct *) app->pBuffer;
+			BuyerBuyLinesRepository::DeleteBuyLine(database, CharacterID(), bris->buy_slot_id);
+			QueuePacket(app);
+			break;
+		}
+
+		case Barter_SellItem: {
+			SellToBuyer(app);
+			break;
+		}
+
+		case Barter_BuyerInspectBegin: {
+			ShowBuyLines(app);
+			break;
+		}
+
+		case Barter_BuyerInspectEnd: {
+			auto bir   = (BuyerInspectRequest_Struct *) app->pBuffer;
+			auto buyer = entity_list.GetClientByID(bir->buyer_id);
+			if (buyer) {
+				buyer->WithCustomer(0);
+			}
+
+			break;
+		}
+		case Barter_BarterItemInspect: {
+			auto               bislr = (BarterItemSearchLinkRequest_Struct *) app->pBuffer;
+			const EQ::ItemData *item = database.GetItem(bislr->item_id);
+
+			if (!item) {
+				Message(Chat::Red, "Error: This item does not exist!");
+				return;
+			}
+
 			EQ::ItemInstance *inst = database.CreateItem(item);
 			if (inst) {
 				SendItemPacket(0, inst, ItemPacketViewLink);
 				safe_delete(inst);
 			}
-		}
 		break;
 	}
-
 	case Barter_Welcome:
 	{
 		SendBarterWelcome();

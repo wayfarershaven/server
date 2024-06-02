@@ -413,6 +413,34 @@ namespace RoF2
 				return;
 				break;
 			}
+			case Barter_BuyerSearchResults: {
+				BuyerItemSearchResults_Struct bisr{};
+				auto                          emu = (BuyerGeneric_Struct *) in->pBuffer;
+				EQ::Util::MemoryStreamReader  ss(
+					reinterpret_cast<char *>(emu->payload),
+					in->size - sizeof(BuyerGeneric_Struct)
+				);
+				cereal::BinaryInputArchive    ar(ss);
+				ar(bisr);
+
+				LogTradingDetail("Sending item search results <green>[{}]", bisr.result_count);
+
+				uint32 packet_size = bisr.result_count * sizeof(structs::BuyerItemSearchResultEntry_Struct) + 8;
+				auto outapp = std::make_unique<EQApplicationPacket>(OP_Barter, packet_size);
+				auto eq = (char*)outapp->pBuffer;
+
+				VARSTRUCT_ENCODE_TYPE(uint32, eq, structs::RoF2BuyerActions::BuyerSearchResults);
+				VARSTRUCT_ENCODE_TYPE(uint32, eq, bisr.result_count);
+				for (auto const& i:bisr.results) {
+					strn0cpy(eq, i.item_name, 64);
+					eq += 64;
+					VARSTRUCT_ENCODE_TYPE(uint32, eq, i.item_id);
+					VARSTRUCT_ENCODE_TYPE(uint32, eq, i.item_icon);
+					VARSTRUCT_SKIP_TYPE(uint32, eq);
+				}
+				dest->QueuePacket(outapp.get());
+				break;
+			}
 			default: {
 				LogTradingDetail("Unhandled action <red>[{}]", sub_action);
 				dest->FastQueuePacket(&in);
@@ -753,38 +781,50 @@ namespace RoF2
 		EQApplicationPacket* inapp = *p;
 		*p = nullptr;
 
-		auto action = *(uint32*)inapp->pBuffer;
+		auto action = *(uint32 *) inapp->pBuffer;
 
 		switch (action)
 		{
-			case Barter_BuyerItemUpdate:
-			{
-				auto emu = (BuyerLineItems_Struct*)&inapp->pBuffer[4];
-				BuyerLineItems_Struct bl{};
+			case Barter_BuyerItemUpdate: {
+				BuyerLineItems_Struct        bl{};
+				auto                         emu = (BuyerGeneric_Struct *) inapp->pBuffer;
+				EQ::Util::MemoryStreamReader ss(
+					reinterpret_cast<char *>(emu->payload),
+					inapp->size - sizeof(BuyerGeneric_Struct)
+				);
+				cereal::BinaryInputArchive   ar(ss);
+				ar(bl);
 
-				auto outapp = new EQApplicationPacket(OP_BuyerItems, sizeof(bl) + 4);
-				char* eq = (char*)outapp->pBuffer;
-				auto nosubitems = GetNoSubItems(*emu);
+				//packet size
+				auto packet_size = strlen(bl.item_name) + 1 + 34;
+				for (auto const &b: bl.trade_items) {
+					packet_size += strlen(b.item_name) + 1;
+					packet_size += 12;
+				}
+
+				auto outapp = std::make_unique<EQApplicationPacket>(OP_BuyerItems, packet_size);
+				char *eq = (char *) outapp->pBuffer;
+				auto no_trade_items = bl.trade_items.size();
 
 				VARSTRUCT_ENCODE_TYPE(uint32, eq, structs::RoF2BuyerActions::BuyerModifyBuyLine);
 				VARSTRUCT_ENCODE_TYPE(uint32, eq, 0);
-				VARSTRUCT_ENCODE_TYPE(uint32, eq, emu->slot);
-				VARSTRUCT_ENCODE_TYPE(uint8, eq, emu->enabled ? 1 : 0);
-				VARSTRUCT_ENCODE_TYPE(uint32, eq, emu->item_id);
-				VARSTRUCT_ENCODE_STRING(eq, emu->item_name);
-				VARSTRUCT_ENCODE_TYPE(uint32, eq, emu->item_icon);
-				VARSTRUCT_ENCODE_TYPE(uint32, eq, emu->item_quantity);
-				VARSTRUCT_ENCODE_TYPE(uint8, eq, emu->item_toggle ? 1 : 0);
-				VARSTRUCT_ENCODE_TYPE(uint32, eq, emu->item_cost);
-				VARSTRUCT_ENCODE_TYPE(uint32, eq, nosubitems);
+				VARSTRUCT_ENCODE_TYPE(uint32, eq, bl.slot);
+				VARSTRUCT_ENCODE_TYPE(uint8, eq, bl.enabled ? 1 : 0);
+				VARSTRUCT_ENCODE_TYPE(uint32, eq, bl.item_id);
+				VARSTRUCT_ENCODE_STRING(eq, bl.item_name);
+				VARSTRUCT_ENCODE_TYPE(uint32, eq, bl.item_icon);
+				VARSTRUCT_ENCODE_TYPE(uint32, eq, bl.item_quantity);
+				VARSTRUCT_ENCODE_TYPE(uint8, eq, bl.item_toggle ? 1 : 0);
+				VARSTRUCT_ENCODE_TYPE(uint32, eq, bl.item_cost);
+				VARSTRUCT_ENCODE_TYPE(uint32, eq, no_trade_items);
 
-				for (int i = 0; i < nosubitems; i++) {
-					VARSTRUCT_ENCODE_TYPE(uint32, eq, emu->trade_items[i].item_id);
-					VARSTRUCT_ENCODE_TYPE(uint32, eq, emu->trade_items[i].item_quantity);
-					VARSTRUCT_ENCODE_TYPE(uint32, eq, emu->trade_items[i].item_icon);
-					VARSTRUCT_ENCODE_STRING(eq, emu->trade_items[i].item_name);
+				for (int i = 0; i < no_trade_items; i++) {
+					VARSTRUCT_ENCODE_TYPE(uint32, eq, bl.trade_items[i].item_id);
+					VARSTRUCT_ENCODE_TYPE(uint32, eq, bl.trade_items[i].item_quantity);
+					VARSTRUCT_ENCODE_TYPE(uint32, eq, bl.trade_items[i].item_icon);
+					VARSTRUCT_ENCODE_STRING(eq, bl.trade_items[i].item_name);
 				}
-				dest->FastQueuePacket(&outapp);
+				dest->QueuePacket(outapp.get());
 				safe_delete(inapp);
 				break;
 			}
@@ -799,12 +839,17 @@ namespace RoF2
 				);
 				cereal::BinaryInputArchive ar(ss);
 				ar(bli);
-//				auto emu = (BuyerLineItems_Struct*)&inapp->pBuffer[4];
-//				BuyerLineItems_Struct bl{};
 
-				auto packet     = std::make_unique<EQApplicationPacket>(OP_BuyerItems, sizeof(bli));
-				char *eq        = (char *) packet->pBuffer;
-				auto nosubitems = GetNoSubItems(bli);
+				//packet size
+				auto packet_size = strlen(bli.item_name) + 1 + 34;
+				for (auto const &b: bli.trade_items) {
+					packet_size += strlen(b.item_name) + 1;
+					packet_size += 12;
+				}
+
+				auto packet     = std::make_unique<EQApplicationPacket>(OP_BuyerItems, packet_size);
+				char *eq            = (char *) packet->pBuffer;
+				auto no_trade_items = bli.trade_items.size();
 
 				VARSTRUCT_ENCODE_TYPE(uint32, eq, structs::RoF2BuyerActions::BuyerSendBuyLine);
 				VARSTRUCT_ENCODE_TYPE(uint32, eq, bli.slot);
@@ -816,13 +861,13 @@ namespace RoF2
 				VARSTRUCT_ENCODE_TYPE(uint32, eq, bli.item_quantity);
 				VARSTRUCT_ENCODE_TYPE(uint8, eq, bli.item_toggle ? 1 : 0);
 				VARSTRUCT_ENCODE_TYPE(uint32, eq, bli.item_cost);
-				VARSTRUCT_ENCODE_TYPE(uint32, eq, nosubitems);
+				VARSTRUCT_ENCODE_TYPE(uint32, eq, no_trade_items);
 
-				for (int i = 0; i < nosubitems; i++) {
-					VARSTRUCT_ENCODE_TYPE(uint32, eq, bli.trade_items[i].item_id);
-					VARSTRUCT_ENCODE_TYPE(uint32, eq, bli.trade_items[i].item_quantity);
-					VARSTRUCT_ENCODE_TYPE(uint32, eq, bli.trade_items[i].item_icon);
-					VARSTRUCT_ENCODE_STRING(eq, bli.trade_items[i].item_name);
+				for (auto const& i:bli.trade_items) {
+					VARSTRUCT_ENCODE_TYPE(uint32, eq, i.item_id);
+					VARSTRUCT_ENCODE_TYPE(uint32, eq, i.item_quantity);
+					VARSTRUCT_ENCODE_TYPE(uint32, eq, i.item_icon);
+					VARSTRUCT_ENCODE_STRING(eq, i.item_name);
 				}
 				dest->QueuePacket(packet.get());
 				safe_delete(inapp);
@@ -4968,17 +5013,18 @@ namespace RoF2
 			case structs::RoF2BuyerActions::BuyerModifyBuyLine:
 			case structs::RoF2BuyerActions::BuyerBuyLine:
 			{
-				BuyerLine_Struct buyer_line{};
-				auto buffer = (char*)__packet->pBuffer;
+				BuyerBuyLines_Struct buyer_buy_lines{};
+				auto                 buffer = (char*)__packet->pBuffer;
 
-				buyer_line.action   = VARSTRUCT_DECODE_TYPE(uint32, buffer);
+				buyer_buy_lines.action = VARSTRUCT_DECODE_TYPE(uint32, buffer);
 
-				buyer_line.no_items = 1;
+				buyer_buy_lines.no_items = 1;
 				if (action == structs::RoF2BuyerActions::BuyerBuyLine) {
-					buyer_line.no_items = VARSTRUCT_DECODE_TYPE(uint16, buffer);
+					buyer_buy_lines.no_items = VARSTRUCT_DECODE_TYPE(uint16, buffer);
 				}
 
-				for (int i = 0; i < buyer_line.no_items; i++) {
+				buyer_buy_lines.buy_lines.reserve(buyer_buy_lines.no_items);
+				for (int i = 0; i < buyer_buy_lines.no_items; i++) {
 					BuyerLineItems_Struct b{};
 					b.slot    = VARSTRUCT_DECODE_TYPE(uint32, buffer);
 					b.enabled = VARSTRUCT_DECODE_TYPE(uint8, buffer);
@@ -4989,24 +5035,28 @@ namespace RoF2
 					b.item_toggle    = VARSTRUCT_DECODE_TYPE(uint8, buffer);
 					b.item_cost      = VARSTRUCT_DECODE_TYPE(uint32, buffer);
 					auto trade_items = VARSTRUCT_DECODE_TYPE(uint32, buffer);
+					buyer_buy_lines.buy_lines.push_back(b);
 
 					if (trade_items > 0) {
+						buyer_buy_lines.buy_lines[i].trade_items.reserve(trade_items);
 						for (int x = 0; x < trade_items; x++) {
-							b.trade_items[x].item_id       = VARSTRUCT_DECODE_TYPE(uint32, buffer);
-							b.trade_items[x].item_quantity = VARSTRUCT_DECODE_TYPE(uint32, buffer);
-							b.trade_items[x].item_icon     = VARSTRUCT_DECODE_TYPE(uint32, buffer);
-							VARSTRUCT_DECODE_STRING(b.trade_items[x].item_name, buffer);
+							BuyerLineTradeItems_Struct blti{};
+							blti.item_id       = VARSTRUCT_DECODE_TYPE(uint32, buffer);
+							blti.item_quantity = VARSTRUCT_DECODE_TYPE(uint32, buffer);
+							blti.item_icon     = VARSTRUCT_DECODE_TYPE(uint32, buffer);
+							VARSTRUCT_DECODE_STRING(blti.item_name, buffer);
+							buyer_buy_lines.buy_lines[i].trade_items.push_back(blti);
 						}
 					}
 					buffer += 13;
-					buyer_line.buy_line.push_back(b);
+					//buyer_buy_lines.buy_lines.push_back(b);
 				}
 
 				buffer = nullptr;
 				std::stringstream           ss{};
 				cereal::BinaryOutputArchive ar(ss);
 				{
-					ar(buyer_line);
+					ar(buyer_buy_lines);
 				}
 
 				auto new_size     = sizeof(BuyerGeneric_Struct) + ss.str().length();
