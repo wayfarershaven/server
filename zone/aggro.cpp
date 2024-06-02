@@ -599,10 +599,12 @@ int EntityList::GetHatedCount(Mob *attacker, Mob *exclude, bool inc_gray_con, bo
 
 		LogHateDetail("include_pets = [{}] - mob->IsPet() [{}]", include_pets, mob->IsPet());
 
-		if ((include_pets && mob->IsPet()) || !include_pets) {
+		if ((include_pets && mob->IsPet()) || !mob->IsPet()) {
 			Count++;
 		}
 	}
+
+	LogHateDetail("Total Count - [{}]", Count);
 	return Count;
 }
 
