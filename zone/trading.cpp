@@ -2999,6 +2999,8 @@ void Client::UpdateBuyLine(const EQApplicationPacket *app)
 			return;
 		}
 
+		auto current_buy_lines = BuyerBuyLinesRepository::GetWhere(database, fmt::format("`char_id` = '{}'", GetBuyerID()));
+
 		// Items to do for checking
 		// Buyer has the money
 		// buyer has the items
@@ -3068,13 +3070,25 @@ void Client::UpdateBuyLine(const EQApplicationPacket *app)
 			ss_out.str("");
 			ss_out.clear();
 
-			if (IsThereACustomer() && b.item_toggle) {
+			if (IsThereACustomer()) {
 				//Update the Seller's Merchant Window if there is one.
 				Message(Chat::Yellow, "There is a player browsing.  Should resend the window data.");
 				auto customer = entity_list.GetClientByID(GetCustomerID());
 				if (!customer) {
 					return;
 				}
+
+				auto it = std::find_if(
+					current_buy_lines.cbegin(),
+					current_buy_lines.cend(),
+					[&](const BaseBuyerBuyLinesRepository::BuyerBuyLines bl) {
+						return bl.buy_slot_id == b.slot;
+					}
+				);
+				if (it == std::end(current_buy_lines) && !b.item_toggle) {
+					return;
+				}
+
 				std::stringstream           ss_customer{};
 				cereal::BinaryOutputArchive ar_customer(ss_customer);
 
@@ -3191,7 +3205,7 @@ void Client::BuyerItemSearch(const EQApplicationPacket *app) {
 
 	BuyerItemSearchResults_Struct bisr{};
 
-	while ((item = database.IterateItems(&it)) && bisr.results.size() <= RuleI(Bazaar, MaxBuyerInventorySearchResults)) {
+	while ((item = database.IterateItems(&it)) && bisr.results.size() < RuleI(Bazaar, MaxBuyerInventorySearchResults)) {
 		if (!item->NoDrop) {
 			continue;
 		}
