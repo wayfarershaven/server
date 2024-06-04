@@ -62,4 +62,6 @@ bool IsPositionWithinSimpleCylinder(const glm::vec4 &p1, const glm::vec4 &cylind
 
 float CalculateHeadingAngleBetweenPositions(float x1, float y1, float x2, float y2);
 
+bool IsWithinCircularArc(glm::vec4 arc_center, glm::vec4 point, uint32 arc_offset, uint32 arc_radius, uint32 arc_radius_limit);
+
 #endif

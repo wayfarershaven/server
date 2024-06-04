@@ -5066,6 +5066,10 @@ namespace RoF2
 				auto emu          = (BuyerGeneric_Struct *) __packet->pBuffer;
 				emu->action       = Barter_BuyerItemUpdate;
 
+				if (action == structs::RoF2BuyerActions::BuyerBuyLine) {
+					emu->action = Barter_BuyerItemStart;
+				}
+
 				memcpy(emu->payload, ss.str().data(), ss.str().length());
 				__packet->SetOpcode(OP_Barter);
 

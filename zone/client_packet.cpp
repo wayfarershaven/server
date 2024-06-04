@@ -3790,22 +3790,28 @@ void Client::Handle_OP_Barter(const EQApplicationPacket *app)
 				ToggleBuyerMode(true);
 			}
 			else {
-				Buf = (char *) app->pBuffer;
-				VARSTRUCT_ENCODE_TYPE(uint32, Buf, Barter_BuyerModeOff);
+				ToggleBuyerMode(false);
+//				Buf = (char *) app->pBuffer;
+//				VARSTRUCT_ENCODE_TYPE(uint32, Buf, Barter_BuyerModeOff);
 				Message(Chat::Red, "You cannot be a Trader and Buyer at the same time.");
 			}
-			QueuePacket(app);
+			//QueuePacket(app);
 			break;
 		}
 
 		case Barter_BuyerModeOff: {
-			QueuePacket(app);
+			//QueuePacket(app);
 			ToggleBuyerMode(false);
 			break;
 		}
 
 		case Barter_BuyerItemUpdate: {
 			UpdateBuyLine(app);
+			break;
+		}
+
+		case Barter_BuyerItemStart: {
+			CreateStartingBuyLines(app);
 			break;
 		}
 
@@ -4976,6 +4982,10 @@ void Client::Handle_OP_ClientUpdate(const EQApplicationPacket *app) {
 		// End trader mode if we move
 		if (IsTrader()) {
 			TraderEndTrader();
+		}
+
+		if (IsBuyer()) {
+			ToggleBuyerMode(false);
 		}
 
 		/* Break Hide if moving without sneaking and set rewind timer if moved */

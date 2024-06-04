@@ -382,12 +382,15 @@ public:
 	void   SetBuyerWelcomeMessage(const char* welcome_message);
 	void   SendBuyerGreeting(uint32 char_id);
 	void   SendSellerBrowsing(const std::string &browser);
+	void   SendBuyerMode(bool status);
+	bool   IsInBuyerSpace();
 
 	void SendBuyerResults(char *SearchQuery, uint32 SearchID);
 	void ShowBuyLines(const EQApplicationPacket *app);
 	void SellToBuyer(const EQApplicationPacket *app);
 	void ToggleBuyerMode(bool TurnOn);
 	void UpdateBuyLine(const EQApplicationPacket *app);
+	void CreateStartingBuyLines(const EQApplicationPacket *app);
 	void BuyerItemSearch(const EQApplicationPacket *app);
 
 	void FillSpawnStruct(NewSpawn_Struct* ns, Mob* ForWho);

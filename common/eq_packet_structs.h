@@ -3121,6 +3121,7 @@ enum {
 	Barter_SellerSearch              = 1,
 	Barter_BuyerModeOn               = 2,
 	Barter_BuyerModeOff              = 3,
+	Barter_BuyerItemStart            = 4,
 	Barter_BuyerItemUpdate           = 5,
 	Barter_BuyerItemRemove           = 6,
 	Barter_SellItem                  = 7,

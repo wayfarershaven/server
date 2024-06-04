@@ -2959,7 +2959,7 @@ void Client::ToggleBuyerMode(bool status)
 	data->action    = Barter_BuyerAppearance;
 	data->entity_id = GetID();
 
-	if (status) {
+	if (status && IsInBuyerSpace()) {
 		BuyerRepository::Buyer b{};
 		b.id           = 0;
 		b.char_id      = CharacterID();
@@ -2970,12 +2970,14 @@ void Client::ToggleBuyerMode(bool status)
 		data->status = BuyerBarter::On;
 		SetCustomerID(0);
 		SetBuyerID(CharacterID());
+		SendBuyerMode(true);
 	}
 	else {
 		data->status = BuyerBarter::Off;
 		BuyerRepository::DeleteWhere(database, fmt::format("`char_id` = '{}'", CharacterID()));
 		SetCustomerID(0);
 		SetBuyerID(0);
+		SendBuyerMode(false);
 	}
 
 	entity_list.QueueClients(this, outapp.get(), false);
@@ -2999,8 +3001,23 @@ void Client::UpdateBuyLine(const EQApplicationPacket *app)
 			return;
 		}
 
-		auto current_buy_lines = BuyerBuyLinesRepository::GetWhere(database, fmt::format("`char_id` = '{}'", GetBuyerID()));
+		uint64 current_total_cost = 0;
+		uint64 proposed_total_cost = 0;
 
+		auto current_buy_lines = BuyerBuyLinesRepository::GetWhere(database, fmt::format("`char_id` = '{}'", GetBuyerID()));
+		for (auto const& buy_line:current_buy_lines) {
+			current_total_cost += buy_line.item_price * buy_line.item_quantity;
+		}
+
+		for (auto const& buy_line:bl.buy_lines) {
+			if (buy_line.item_toggle) {
+				proposed_total_cost += buy_line.item_cost * buy_line.item_quantity;
+			}
+		}
+
+		if (proposed_total_cost > GetCarriedMoney()) {
+			Message(Chat::Yellow, "Not enough money");
+		}
 		// Items to do for checking
 		// Buyer has the money
 		// buyer has the items
@@ -3011,46 +3028,77 @@ void Client::UpdateBuyLine(const EQApplicationPacket *app)
 		std::stringstream           ss_out{};
 		cereal::BinaryOutputArchive ar_out(ss_out);
 
+		bool buyer_has_items = true;
+		bool buyer_has_money = false;
+
 		for (auto const &b: bl.buy_lines) {
-			auto            buyer_has_pp    = false;
-			auto            buyer_has_items = true;
-			for (auto const &i: b.trade_items) {
-				if (i.item_id != 0) {
-					if (GetInv().HasItem(i.item_id, invWhereWorn | invWherePersonal | invWhereCursor)) {
-						buyer_has_items = true;
-					}
-					else {
+			auto buy_item_slot_id = GetInv().HasItem(b.item_id, b.item_quantity, invWherePersonal);
+			auto buy_item         = buy_item_slot_id == INVALID_INDEX ? nullptr : GetInv().GetItem(buy_item_slot_id);
+			if (buy_item && CheckLoreConflict(buy_item->GetItem())) {
+				//Cannot buy an item if you already have it and it is lore
+				buyer_has_items = false;
+				Message(Chat::Yellow, "Purchasing will cause a lore conflict Error");
+				ToggleBuyerMode(false);
+				return;
+			}
+			for (auto const &ti: b.trade_items) {
+				if (ti.item_id != 0) {
+					auto item_slot_id = GetInv().HasItem(ti.item_id, ti.item_quantity, invWherePersonal);
+					auto item         = item_slot_id == INVALID_INDEX ? nullptr : GetInv().GetItem(item_slot_id);
+					if (item && item->IsAugmented()) {
+						//Cannot use augmented items as compensation
+						Message(Chat::Yellow, "cannout offer an augmented item Error");
 						buyer_has_items = false;
-						break;
+						ToggleBuyerMode(false);
+						return;
+					}
+					if (item && !item->IsDroppable()) {
+						//Cannot use NO TRADE as compensation
+						Message(Chat::Yellow, "Cannot offer no drop item Error");
+						buyer_has_items = false;
+						ToggleBuyerMode(false);
+						return;
+					}
+					for (auto const& bl2:bl.buy_lines) {
+						if (bl2.item_id == ti.item_id) {
+							//Cannot offer the item you are trying to buy as compensation
+							Message(Chat::Yellow, "Cannot offer an item as compensation that you are buying. Error");
+							buyer_has_items = false;
+							ToggleBuyerMode(false);
+							return;
+						}
 					}
 				}
 			}
-			if (!buyer_has_items) {
-				Message(
-					Chat::Red,
-					"You no longer have the compensation items.  Please refresh you inventory and try creating the "
-					"buy line again."
-				);
-				return;
-			}
 
-			buyer_has_pp = HasMoney(b.item_cost * b.item_quantity);
-			if (!buyer_has_pp) {
-				Message(
-					Chat::Red,
-					"You do not have sufficient funds to support this buy line.  Lower price per unit or obtain more cash."
-				);
-				return;
-			}
-
-			if (!buyer_has_items && !buyer_has_pp) {
-				LogTrading("{} tried to create a buyline and failed items check {} or failed money check {}",
-						   GetName(),
-						   buyer_has_items,
-						   buyer_has_pp
-				);
-				return;
-			}
+//
+//
+//			if (!buyer_has_items) {
+//				Message(
+//					Chat::Red,
+//					"You no longer have the compensation items.  Please refresh you inventory and try creating the "
+//					"buy line again."
+//				);
+//				return;
+//			}
+//
+//			buyer_has_pp = HasMoney(b.item_cost * b.item_quantity);
+//			if (!buyer_has_pp) {
+//				Message(
+//					Chat::Red,
+//					"You do not have sufficient funds to support this buy line.  Lower price per unit or obtain more cash."
+//				);
+//				return;
+//			}
+//
+//			if (!buyer_has_items && !buyer_has_pp) {
+//				LogTrading("{} tried to create a buyline and failed items check {} or failed money check {}",
+//						   GetName(),
+//						   buyer_has_items,
+//						   buyer_has_pp
+//				);
+//				return;
+//			}
 
 			BuyerBuyLinesRepository::DeleteBuyLine(database, CharacterID(), b.slot);
 			if (b.item_toggle) {
@@ -3928,4 +3976,229 @@ void Client::SendSellerBrowsing(const std::string &browser) {
 	strn0cpy(eq->char_name, browser.c_str(), sizeof(eq->char_name));
 
 	QueuePacket(outapp.get());
+}
+
+void Client::SendBuyerMode(bool status) {
+	auto outapp = std::make_unique<EQApplicationPacket>(OP_Barter, 4);
+	auto emu = (BuyerGeneric_Struct *)outapp->pBuffer;
+
+	emu->action = status ? Barter_BuyerModeOn : Barter_BuyerModeOff;
+
+	QueuePacket(outapp.get());
+}
+
+bool Client::IsInBuyerSpace()
+{
+#define BUYER_DOOR_ARC_RADIUS_HIGH    91
+#define BUYER_DOOR_ARC_RADIUS_LOW     71
+#define BUYER_DOOR_OPEN_TYPE         155
+#define TRADER_DOOR_OPEN_TYPE        153
+
+	struct BuyerDoorDataStruct {
+		uint32 door_id;
+		uint32 arc_offset;
+	};
+
+	std::vector<BuyerDoorDataStruct> buyer_door_data = {
+		{.door_id = 2}, {.arc_offset = 90},{.door_id = 3} ,{.arc_offset = 0} ,{.door_id = 4},  {.arc_offset = 0},
+		{.door_id = 5}, {.arc_offset = 0} ,{.door_id = 6} ,{.arc_offset = 90},{.door_id = 7},  {.arc_offset = 0},
+		{.door_id = 8}, {.arc_offset = 0} ,{.door_id = 9} ,{.arc_offset = 0} ,{.door_id = 10}, {.arc_offset = 0},
+		{.door_id = 11},{.arc_offset = 0} ,{.door_id = 12},{.arc_offset = 0} ,{.door_id = 13}, {.arc_offset = 0},
+		{.door_id = 14},{.arc_offset = 0} ,{.door_id = 15},{.arc_offset = 0} ,{.door_id = 16}, {.arc_offset = 90},
+		{.door_id = 17},{.arc_offset = 0} ,{.door_id = 18},{.arc_offset = 0} ,{.door_id = 19}, {.arc_offset = 0},
+		{.door_id = 20},{.arc_offset = 0} ,{.door_id = 21},{.arc_offset = 0} ,{.door_id = 22}, {.arc_offset = 0},
+		{.door_id = 23},{.arc_offset = 0} ,{.door_id = 24},{.arc_offset = 0} ,{.door_id = 25}, {.arc_offset = 0},
+		{.door_id = 26},{.arc_offset = 0} ,{.door_id = 27},{.arc_offset = 0} ,{.door_id = 28}, {.arc_offset = 0},
+		{.door_id = 29},{.arc_offset = 90},{.door_id = 30},{.arc_offset = 0} ,{.door_id = 31}, {.arc_offset = 0},
+		{.door_id = 32},{.arc_offset = 0} ,{.door_id = 33},{.arc_offset = 0} ,{.door_id = 34}, {.arc_offset = 0},
+		{.door_id = 35},{.arc_offset = 0} ,{.door_id = 36},{.arc_offset = 90},{.door_id = 37}, {.arc_offset = 0},
+		{.door_id = 38},{.arc_offset = 0} ,{.door_id = 39},{.arc_offset = 0} ,{.door_id = 40}, {.arc_offset = 0},
+		{.door_id = 41},{.arc_offset = 0} ,{.door_id = 42},{.arc_offset = 0} ,{.door_id = 43}, {.arc_offset = 90},
+		{.door_id = 44},{.arc_offset = 0} ,{.door_id = 45},{.arc_offset = 0} ,{.door_id = 46}, {.arc_offset = 0},
+		{.door_id = 47},{.arc_offset = 0} ,{.door_id = 48},{.arc_offset = 0} ,{.door_id = 49}, {.arc_offset = 0},
+		{.door_id = 50},{.arc_offset = 90},{.door_id = 51},{.arc_offset = 90},{.door_id = 52}, {.arc_offset = 0},
+		{.door_id = 53},{.arc_offset = 0} ,{.door_id = 54},{.arc_offset = 0}, {.door_id = 55}, {.arc_offset = 0},
+		{.door_id = 56},{.arc_offset = 0} ,{.door_id = 57},{.arc_offset = 0}, {.door_id = 122},{.arc_offset = 0}
+	};
+
+	auto m_location = GetPosition();
+
+	for (auto const &d: buyer_door_data) {
+		auto door = entity_list.GetDoorsByDoorID(d.door_id);
+		if (door && IsWithinCircularArc(
+			door->GetPosition(),
+			m_location,
+			d.arc_offset,
+			BUYER_DOOR_ARC_RADIUS_HIGH,
+			BUYER_DOOR_ARC_RADIUS_LOW
+		)
+		) {
+			return true;
+		}
+	}
+	return false;
+}
+
+void Client::CreateStartingBuyLines(const EQApplicationPacket *app)
+{
+	// This method is called when:
+	//
+	// /buyer mode is first turned on, once for each item
+	// A BuyLine is toggled on or off in the/buyer window.
+	//
+	if (ClientVersion() >= EQ::versions::ClientVersion::RoF) {
+		BuyerBuyLines_Struct bl{};
+		auto                         in = (BuyerGeneric_Struct *) app->pBuffer;
+		EQ::Util::MemoryStreamReader ss_in(reinterpret_cast<char *>(in->payload), app->size - sizeof(BuyerGeneric_Struct));
+		cereal::BinaryInputArchive   ar(ss_in);
+		ar(bl);
+
+		if (bl.buy_lines.empty()) {
+			return;
+		}
+
+		uint64 current_total_cost = 0;
+		uint64 proposed_total_cost = 0;
+
+		auto current_buy_lines = BuyerBuyLinesRepository::GetWhere(database, fmt::format("`char_id` = '{}'", GetBuyerID()));
+		for (auto const& buy_line:current_buy_lines) {
+			current_total_cost += buy_line.item_price * buy_line.item_quantity;
+		}
+
+		for (auto const& buy_line:bl.buy_lines) {
+			if (buy_line.item_toggle) {
+				proposed_total_cost += buy_line.item_cost * buy_line.item_quantity;
+			}
+		}
+
+		if (proposed_total_cost > GetCarriedMoney()) {
+			Message(Chat::Yellow, "Not enough money");
+		}
+		// Items to do for checking
+		// Buyer has the money
+		// buyer has the items
+		// the items(s) cannot be no drop, augmented
+		// buyer cannot have the 'buying item' already if it is lore
+		// buyer cannot offer the item that they are attempting to buy
+
+		std::stringstream           ss_out{};
+		cereal::BinaryOutputArchive ar_out(ss_out);
+
+		bool buyer_has_items = true;
+		bool buyer_has_money = false;
+
+		for (auto const &b: bl.buy_lines) {
+			auto buy_item_slot_id = GetInv().HasItem(b.item_id, b.item_quantity, invWherePersonal);
+			auto buy_item         = buy_item_slot_id == INVALID_INDEX ? nullptr : GetInv().GetItem(buy_item_slot_id);
+			if (buy_item && CheckLoreConflict(buy_item->GetItem())) {
+				//Cannot buy an item if you already have it and it is lore
+				buyer_has_items = false;
+				Message(Chat::Yellow, "Purchasing will cause a lore conflict Error");
+				ToggleBuyerMode(false);
+				return;
+			}
+			for (auto const &ti: b.trade_items) {
+				if (ti.item_id != 0) {
+					auto item_slot_id = GetInv().HasItem(ti.item_id, ti.item_quantity, invWherePersonal);
+					auto item         = item_slot_id == INVALID_INDEX ? nullptr : GetInv().GetItem(item_slot_id);
+					if (item && item->IsAugmented()) {
+						//Cannot use augmented items as compensation
+						Message(Chat::Yellow, "cannout offer an augmented item Error");
+						buyer_has_items = false;
+						ToggleBuyerMode(false);
+						return;
+					}
+					if (item && !item->IsDroppable()) {
+						//Cannot use NO TRADE as compensation
+						Message(Chat::Yellow, "Cannot offer no drop item Error");
+						buyer_has_items = false;
+						ToggleBuyerMode(false);
+						return;
+					}
+					for (auto const& bl2:bl.buy_lines) {
+						if (bl2.item_id == ti.item_id) {
+							//Cannot offer the item you are trying to buy as compensation
+							Message(Chat::Yellow, "Cannot offer an item as compensation that you are buying. Error");
+							buyer_has_items = false;
+							ToggleBuyerMode(false);
+							return;
+						}
+					}
+				}
+			}
+
+			BuyerBuyLinesRepository::DeleteBuyLine(database, CharacterID(), b.slot);
+			if (b.item_toggle) {
+				BuyerBuyLinesRepository::UpdateBuyLine(database, b, CharacterID());
+			}
+
+			{ ar_out(b); }
+
+			uint32 packet_size = ss_out.str().length() + sizeof(BuyerGeneric_Struct);
+			auto   out         = std::make_unique<EQApplicationPacket>(OP_BuyerItems, packet_size);
+			auto   data        = (BazaarSearchMessaging_Struct *) out->pBuffer;
+
+			data->action = Barter_BuyerItemUpdate;
+			memcpy(data->payload, ss_out.str().data(), ss_out.str().length());
+			QueuePacket(out.get());
+
+			ss_out.str("");
+			ss_out.clear();
+
+			if (IsThereACustomer()) {
+				//Update the Seller's Merchant Window if there is one.
+				Message(Chat::Yellow, "There is a player browsing.  Should resend the window data.");
+				auto customer = entity_list.GetClientByID(GetCustomerID());
+				if (!customer) {
+					return;
+				}
+
+				auto it = std::find_if(
+					current_buy_lines.cbegin(),
+					current_buy_lines.cend(),
+					[&](const BaseBuyerBuyLinesRepository::BuyerBuyLines bl) {
+						return bl.buy_slot_id == b.slot;
+					}
+				);
+				if (it == std::end(current_buy_lines) && !b.item_toggle) {
+					return;
+				}
+
+				std::stringstream           ss_customer{};
+				cereal::BinaryOutputArchive ar_customer(ss_customer);
+
+				BuyerLineItems_Struct blis{};
+				blis.enabled       = b.enabled;
+				blis.item_cost     = b.item_cost;
+				blis.item_icon     = b.item_icon;
+				blis.item_id       = b.item_id;
+				blis.item_quantity = b.item_quantity;
+				blis.item_toggle   = b.item_toggle;
+				blis.slot          = b.slot;
+				strn0cpy(blis.item_name, b.item_name, sizeof(blis.item_name));
+				for (auto const& i:b.trade_items) {
+					BuyerLineTradeItems_Struct bltis{};
+					bltis.item_icon     = i.item_icon;
+					bltis.item_id       = i.item_id;
+					bltis.item_quantity = i.item_quantity;
+					strn0cpy(bltis.item_name, i.item_name, sizeof(bltis.item_name));
+					blis.trade_items.push_back(bltis);
+				}
+
+				{ ar_customer(blis); }
+
+				auto packet = std::make_unique<EQApplicationPacket>(OP_BuyerItems, ss_customer.str().length() + sizeof(BuyerGeneric_Struct));
+				auto emu    = (BuyerGeneric_Struct *) packet->pBuffer;
+
+				emu->action = Barter_BuyerInspectBegin;
+				memcpy(emu->payload, ss_customer.str().data(), ss_customer.str().length());
+
+				customer->QueuePacket(packet.get());
+
+				ss_customer.str("");
+				ss_customer.clear();
+			}
+		}
+		return;
+	}
 }
