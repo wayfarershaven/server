@@ -5807,7 +5807,7 @@ void Client::Handle_OP_DeleteItem(const EQApplicationPacket *app)
 			RecordPlayerEventLog(PlayerEvent::ITEM_DESTROY, e);
 		}
 	}
-	
+
 	DeleteItemInInventory(alc->from_slot, 1);
 }
 
@@ -11536,8 +11536,8 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
 				entity_list.MessageCloseString(this, false, 200, 10, STRING_FEIGNFAILED, mypet->GetCleanName());
 			}
 			else {
-				bool immune_aggro = GetSpecialAbility(IMMUNE_AGGRO);
-				mypet->SetSpecialAbility(IMMUNE_AGGRO, 1);
+				bool has_aggro_immunity = GetSpecialAbility(SpecialAbility::AggroImmunity);
+				mypet->SetSpecialAbility(SpecialAbility::AggroImmunity, 1);
 				mypet->WipeHateList();
 				mypet->SetPetOrder(SPO_FeignDeath);
 				mypet->SetRunAnimSpeed(0);
@@ -11549,8 +11549,8 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
 					mypet->InterruptSpell();
 				}
 
-				if (!immune_aggro) {
-					mypet->SetSpecialAbility(IMMUNE_AGGRO, 0);
+				if (!has_aggro_immunity) {
+					mypet->SetSpecialAbility(SpecialAbility::AggroImmunity, 0);
 				}
 			}
 		}
@@ -11882,8 +11882,8 @@ void Client::Handle_OP_PickPocket(const EQApplicationPacket *app)
 	}
 	else if (victim->IsNPC()) {
 		auto body = victim->GetBodyType();
-		if (body == BT_Humanoid || body == BT_Monster || body == BT_Giant ||
-			body == BT_Lycanthrope) {
+		if (body == BodyType::Humanoid || body == BodyType::Monster || body == BodyType::Giant ||
+			body == BodyType::Lycanthrope) {
 			victim->CastToNPC()->PickPocket(this);
 			return;
 		}
@@ -14999,9 +14999,9 @@ void Client::Handle_OP_TargetCommand(const EQApplicationPacket *app)
 
 	if (nt) {
 		if (GetGM() || (!nt->IsInvisible(this) && (DistanceSquared(m_Position, nt->GetPosition()) <= TARGETING_RANGE*TARGETING_RANGE))) {
-			if (nt->GetBodyType() == BT_NoTarget2 ||
-				nt->GetBodyType() == BT_Special ||
-				nt->GetBodyType() == BT_NoTarget) {
+			if (nt->GetBodyType() == BodyType::NoTarget2 ||
+				nt->GetBodyType() == BodyType::Special ||
+				nt->GetBodyType() == BodyType::NoTarget) {
 				can_target = false;
 			}
 			else {
@@ -15144,8 +15144,8 @@ void Client::Handle_OP_TargetMouse(const EQApplicationPacket *app)
 			GetTarget()->IsTargeted(1);
 			return;
 		}
-		else if (GetTarget()->GetBodyType() == BT_NoTarget2 || GetTarget()->GetBodyType() == BT_Special
-			|| GetTarget()->GetBodyType() == BT_NoTarget)
+		else if (GetTarget()->GetBodyType() == BodyType::NoTarget2 || GetTarget()->GetBodyType() == BodyType::Special
+			|| GetTarget()->GetBodyType() == BodyType::NoTarget)
 		{
 			auto message = fmt::format(
 				"[{}] attempting to target something untargetable [{}] bodytype [{}]",

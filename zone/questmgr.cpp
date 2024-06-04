@@ -1371,7 +1371,7 @@ void QuestManager::sfollow() {
 	owner->SetFollowID(0);
 }
 
-void QuestManager::changedeity(int deity_id) {
+void QuestManager::changedeity(uint32 deity_id) {
 	QuestManagerCurrentQuestVars();
 	//Changes the deity.
 	if(initiator)
@@ -1483,8 +1483,8 @@ std::string QuestManager::getlanguagename(uint8 language_id) {
 	return EQ::constants::GetLanguageName(language_id);
 }
 
-std::string QuestManager::getbodytypename(uint32 bodytype_id) {
-	return EQ::constants::GetBodyTypeName(static_cast<bodyType>(bodytype_id));
+std::string QuestManager::getbodytypename(uint8 body_type_id) {
+	return BodyType::GetName(body_type_id);
 }
 
 std::string QuestManager::getconsiderlevelname(uint8 consider_level) {
@@ -4364,7 +4364,7 @@ std::string QuestManager::getgendername(uint32 gender_id) {
 }
 
 std::string QuestManager::getdeityname(uint32 deity_id) {
-	return EQ::deity::GetDeityName(static_cast<EQ::deity::DeityType>(deity_id));
+	return Deity::GetName(deity_id);
 }
 
 std::string QuestManager::getinventoryslotname(int16 slot_id) {

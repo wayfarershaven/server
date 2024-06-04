@@ -513,7 +513,7 @@ void Perl__sfollow()
 	quest_manager.sfollow();
 }
 
-void Perl__changedeity(int deity_id)
+void Perl__changedeity(uint32 deity_id)
 {
 	quest_manager.changedeity(deity_id);
 }
@@ -4740,9 +4740,9 @@ std::string Perl__getlanguagename(uint8 language_id)
 	return quest_manager.getlanguagename(language_id);
 }
 
-std::string Perl__getbodytypename(uint32 bodytype_id)
+std::string Perl__getbodytypename(uint8 body_type_id)
 {
-	return quest_manager.getbodytypename(bodytype_id);
+	return quest_manager.getbodytypename(body_type_id);
 }
 
 std::string Perl__getconsiderlevelname(uint8 consider_level)
@@ -5850,9 +5850,9 @@ uint16 Perl__get_class_bitmask(uint8 class_id)
 	return GetPlayerClassBit(class_id);
 }
 
-uint32 Perl__get_deity_bitmask(uint16 deity_id)
+uint32 Perl__get_deity_bitmask(uint32 deity_id)
 {
-	return static_cast<uint32>(EQ::deity::GetDeityBitmask(static_cast<EQ::deity::DeityType>(deity_id)));
+	return Deity::GetBitmask(deity_id);
 }
 
 uint16 Perl__get_race_bitmask(uint16 race_id)
