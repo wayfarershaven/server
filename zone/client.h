@@ -384,6 +384,7 @@ public:
 	void   SendSellerBrowsing(const std::string &browser);
 	void   SendBuyerMode(bool status);
 	bool   IsInBuyerSpace();
+	void   SendBuyLineUpdate(const BuyerLineItems_Struct &buy_line);
 
 	void SendBuyerResults(char *SearchQuery, uint32 SearchID);
 	void ShowBuyLines(const EQApplicationPacket *app);
