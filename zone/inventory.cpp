@@ -1864,6 +1864,10 @@ bool Client::SwapItem(MoveItem_Struct* move_in) {
 		LogInventory("Dest slot [{}] has item [{}] ([{}]) with [{}] charges in it", dst_slot_id, dst_inst->GetItem()->Name, dst_inst->GetItem()->ID, dst_inst->GetCharges());
 		dstitemid = dst_inst->GetItem()->ID;
 	}
+	if (IsBuyer() && srcitemid > 0) {
+		CheckIfMovedItemIsPartOfBuyLines(srcitemid);
+	}
+
 	if (IsTrader() && srcitemid>0){
 		EQ::ItemInstance* srcbag;
 		EQ::ItemInstance* dstbag;

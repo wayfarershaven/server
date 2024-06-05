@@ -45,6 +45,37 @@ public:
 
 	// Custom extended repository methods here
 
+	static std::vector<BuyerTradeItems> GetTradeItems(Database& db, const uint32 char_id)
+	{
+		std::vector<BuyerTradeItems> all_entries;
+
+		auto results = db.QueryDatabase(
+			fmt::format(
+				"SELECT bti.* "
+				"FROM buyer_trade_items AS bti "
+				"INNER JOIN buyer_buy_lines AS bbl ON bti.buyer_buy_lines_id = bbl.id "
+				"WHERE bbl.char_id = '{}';",
+				char_id
+			)
+		);
+
+		all_entries.reserve(results.RowCount());
+
+		for (auto row = results.begin(); row != results.end(); ++row) {
+			BuyerTradeItems e{};
+
+			e.id                 = row[0] ? strtoull(row[0], nullptr, 10) : 0;
+			e.buyer_buy_lines_id = row[1] ? strtoull(row[1], nullptr, 10) : 0;
+			e.item_id            = row[2] ? static_cast<int32_t>(atoi(row[2])) : 0;
+			e.item_qty           = row[3] ? static_cast<int32_t>(atoi(row[3])) : 0;
+			e.item_icon          = row[4] ? static_cast<int32_t>(atoi(row[4])) : 0;
+			e.item_name          = row[5] ? row[5] : "0";
+
+			all_entries.push_back(e);
+		}
+
+		return all_entries;
+	}
 };
 
 #endif //EQEMU_BUYER_TRADE_ITEMS_REPOSITORY_H

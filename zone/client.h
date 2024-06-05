@@ -385,12 +385,13 @@ public:
 	void   SendBuyerMode(bool status);
 	bool   IsInBuyerSpace();
 	void   SendBuyLineUpdate(const BuyerLineItems_Struct &buy_line);
+	void   CheckIfMovedItemIsPartOfBuyLines(uint32 item_id);
 
 	void SendBuyerResults(char *SearchQuery, uint32 SearchID);
 	void ShowBuyLines(const EQApplicationPacket *app);
 	void SellToBuyer(const EQApplicationPacket *app);
 	void ToggleBuyerMode(bool TurnOn);
-	void UpdateBuyLine(const EQApplicationPacket *app);
+	void ModifyBuyLine(const EQApplicationPacket *app);
 	void CreateStartingBuyLines(const EQApplicationPacket *app);
 	void BuyerItemSearch(const EQApplicationPacket *app);
 

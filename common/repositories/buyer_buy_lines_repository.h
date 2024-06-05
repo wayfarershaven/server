@@ -55,7 +55,7 @@ public:
 		uint32 count_of_items;
 	};
 
-	static int UpdateBuyLine(Database& db, const BuyerLineItems_Struct b, uint32 char_id)
+	static int CreateBuyLine(Database& db, const BuyerLineItems_Struct b, uint32 char_id)
 	{
 		auto buyer = BuyerRepository::GetWhere(db, fmt::format("`char_id` = '{}' LIMIT 1", char_id));
 		if (buyer.empty()){
@@ -92,6 +92,41 @@ public:
 		}
 
 		return e.id;
+	}
+
+	static int ModifyBuyLine(Database& db, const BuyerLineItems_Struct b, uint32 char_id)
+	{
+		auto b_lines = GetWhere(db, fmt::format("`char_id` = '{}' AND `buy_slot_id` = '{}';", char_id, b.slot));
+		if (b_lines.empty() || b_lines.size() > 1){
+			return 0;
+		}
+
+		auto b_line = b_lines.front();
+
+		b_line.item_quantity = b.item_quantity;
+		b_line.item_price    = b.item_cost;
+		auto e = UpdateOne(db, b_line);
+
+		std::vector<BuyerTradeItemsRepository::BuyerTradeItems> queue;
+
+		BuyerTradeItemsRepository::DeleteWhere(db, fmt::format("`buyer_buy_lines_id` = '{}';", b_line.id));
+		for (auto const &r: b.trade_items) {
+			BuyerTradeItemsRepository::BuyerTradeItems bti{};
+			bti.id                 = 0;
+			bti.buyer_buy_lines_id = b_line.id;
+			bti.item_id            = r.item_id;
+			bti.item_qty           = r.item_quantity;
+			bti.item_icon          = r.item_icon;
+			bti.item_name          = r.item_name;
+
+			bti.item_id ? queue.push_back(bti) : __nop() ;
+		}
+
+		if (!queue.empty()) {
+			BuyerTradeItemsRepository::InsertMany(db, queue);
+		}
+
+		return 1;
 	}
 
 	static int DeleteBuyLine(Database &db, uint32 char_id, int32 slot_id = 0xffffffff)

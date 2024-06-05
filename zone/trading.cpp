@@ -2960,31 +2960,34 @@ void Client::ToggleBuyerMode(bool status)
 	data->entity_id = GetID();
 
 	if (status && IsInBuyerSpace()) {
+		SetBuyerID(CharacterID());
+
 		BuyerRepository::Buyer b{};
 		b.id           = 0;
-		b.char_id      = CharacterID();
+		b.char_id      = GetBuyerID();
 		b.char_zone_id = GetZoneID();
 		b.char_name    = GetCleanName();
 		auto e = BuyerRepository::InsertOne(database, b);
 
 		data->status = BuyerBarter::On;
 		SetCustomerID(0);
-		SetBuyerID(CharacterID());
 		SendBuyerMode(true);
+		Message(Chat::Red, "Barter Mode ON.");
 	}
 	else {
 		data->status = BuyerBarter::Off;
-		BuyerRepository::DeleteWhere(database, fmt::format("`char_id` = '{}'", CharacterID()));
+		BuyerRepository::DeleteWhere(database, fmt::format("`char_id` = '{}'", GetBuyerID()));
 		SetCustomerID(0);
 		SetBuyerID(0);
 		SendBuyerMode(false);
 		IsInBuyerSpace() ? __nop() : Message(Chat::Red, "You must be in a Barter Stall to start Barter Mode.");
+		Message(Chat::Red, "Barter Mode OFF.");
 	}
 
 	entity_list.QueueClients(this, outapp.get(), false);
 }
 
-void Client::UpdateBuyLine(const EQApplicationPacket *app)
+void Client::ModifyBuyLine(const EQApplicationPacket *app)
 {
 	// This method is called when:
 	//
@@ -3003,7 +3006,6 @@ void Client::UpdateBuyLine(const EQApplicationPacket *app)
 		}
 
 		uint64 current_total_cost = 0;
-		uint64 proposed_total_cost = 0;
 
 		auto current_buy_lines = BuyerBuyLinesRepository::GetWhere(
 			database,
@@ -3030,6 +3032,7 @@ void Client::UpdateBuyLine(const EQApplicationPacket *app)
 				if (current_total_cost > GetCarriedMoney()) {
 					buy_line.item_cost     = it->item_price;
 					buy_line.item_quantity = it->item_quantity;
+					Message(Chat::Yellow, "You currently do not have sufficient funds to support your modification.");
 					SendBuyLineUpdate(buy_line);
 					return;
 				}
@@ -3040,7 +3043,7 @@ void Client::UpdateBuyLine(const EQApplicationPacket *app)
 		}
 
 		if (current_total_cost > GetCarriedMoney()) {
-			Message(Chat::Yellow, "You currently do not have sufficient funds to support your buy lines.");
+			Message(Chat::Yellow, "You currently do not have sufficient funds to support your modified buy line.");
 			buy_line.item_toggle = 0;
 			SendBuyLineUpdate(buy_line);
 			return;
@@ -3118,7 +3121,7 @@ void Client::UpdateBuyLine(const EQApplicationPacket *app)
 		}
 
 		if (buy_line.item_toggle) {
-			BuyerBuyLinesRepository::UpdateBuyLine(database, buy_line, CharacterID());
+			BuyerBuyLinesRepository::ModifyBuyLine(database, buy_line, CharacterID());
 		} else {
 			BuyerBuyLinesRepository::DeleteBuyLine(database, CharacterID(), buy_line.slot);
 		}
@@ -4150,7 +4153,7 @@ void Client::CreateStartingBuyLines(const EQApplicationPacket *app)
 		cereal::BinaryOutputArchive ar_out(ss_out);
 
 		for (auto const &b: bl.buy_lines) {
-			BuyerBuyLinesRepository::UpdateBuyLine(database, b, CharacterID());
+			BuyerBuyLinesRepository::CreateBuyLine(database, b, CharacterID());
 
 			{ ar_out(b); }
 
@@ -4184,5 +4187,35 @@ void Client::SendBuyLineUpdate(const BuyerLineItems_Struct &buy_line) {
 
 	ss_out.str("");
 	ss_out.clear();
+}
 
+void Client::CheckIfMovedItemIsPartOfBuyLines(uint32 item_id)
+{
+	auto b_trade_items = BuyerTradeItemsRepository::GetTradeItems(database, GetBuyerID());
+	if (b_trade_items.empty()) {
+		return;
+	}
+
+	auto it = std::find_if(
+		b_trade_items.cbegin(),
+		b_trade_items.cend(),
+		[&](const BaseBuyerTradeItemsRepository::BuyerTradeItems bti) {
+			return bti.item_id == item_id;
+		}
+	);
+	if (it != std::end(b_trade_items)) {
+		auto item = GetInv().GetItem(GetInv().HasItem(item_id, 1, invWherePersonal));
+		if (!item) {
+			return;
+		}
+
+		Message(
+			Chat::Red,
+			fmt::format(
+				"You moved an item ({}) that is part of an active buy line.",
+				item->GetItem()->Name
+			).c_str()
+		);
+		ToggleBuyerMode(false);
+	}
 }

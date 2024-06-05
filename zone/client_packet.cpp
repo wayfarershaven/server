@@ -3806,7 +3806,7 @@ void Client::Handle_OP_Barter(const EQApplicationPacket *app)
 		}
 
 		case Barter_BuyerItemUpdate: {
-			UpdateBuyLine(app);
+			ModifyBuyLine(app);
 			break;
 		}
 
