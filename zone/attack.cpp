@@ -5459,7 +5459,7 @@ void Mob::DoUndeadSlay(DamageHitInfo &hit, int crit_mod)
 {
 
 	int slay_damage_bonus = std::max(
-			{aabonuses.SlayUndead[SBIndex::SLAYUNDEAD_DMG_MOD], itembonuses.SlayUndead[SBIndex::SLAYUNDEAD_DMG_MOD], spellbonuses.SlayUndead[SBIndex::SLAYUNDEAD_DMG_MOD] });
+			{ aabonuses.SlayUndead[1], itembonuses.SlayUndead[1], spellbonuses.SlayUndead[1] });
 
 	LogCombatDetail("Slayundead bonus [{}]", slay_damage_bonus);
 
@@ -5478,7 +5478,7 @@ void Mob::DoUndeadSlay(DamageHitInfo &hit, int crit_mod)
 			FilterMeleeCrits, /* FilterType: 12 */
 			slay_sex, /* MessageFormat: %1's holy blade cleanses her target!(%2) */
 			GetCleanName(), /* Message1 */
-			itoa(hit.damage_done + hit.min_damage) /* Message2 */
+			itoa(hit.damage_done) /* Message2 */
 	);
 }
 
@@ -5520,6 +5520,13 @@ void Mob::TryCriticalHit(Mob *defender, DamageHitInfo &hit, ExtraAttackOptions *
 
 	int crit_mod = EQ::ClampLower((170 + GetCritDmgMod(hit.skill)), 100);
 
+	// Step 2: Calculate damage
+	hit.damage_done = std::max(hit.damage_done, hit.base_damage) + 5;
+	int og_damage = hit.damage_done;
+	hit.damage_done = hit.damage_done * crit_mod / 100;
+
+	LogCombatDetail("Crit info: [{}] scaled from: [{}] - IsUndeadForSlay: [{}]", hit.damage_done, og_damage, IsUndeadForSlay() ? "true" : "false");
+
 	// Try Slay Undead
 	if (defender->IsUndeadForSlay()) {
 		float chance = GetUndeadSlayRate() / 100.0f;
@@ -5530,13 +5537,6 @@ void Mob::TryCriticalHit(Mob *defender, DamageHitInfo &hit, ExtraAttackOptions *
 			return;
 		}
 	}
-
-		// Step 2: Calculate damage
-	hit.damage_done = std::max(hit.damage_done, hit.base_damage) + 5;
-	int og_damage = hit.damage_done;
-	hit.damage_done = hit.damage_done * crit_mod / 100;
-
-	LogCombatDetail("Crit info: [{}] scaled from: [{}] - IsUndeadForSlay: [{}]", hit.damage_done, og_damage, IsUndeadForSlay() ? "true" : "false");
 
 	// Step 3: Check deadly strike
 	if (GetClass() == Class::Rogue && hit.skill == EQ::skills::SkillThrowing && BehindMob(defender, GetX(), GetY())) {
@@ -5561,7 +5561,7 @@ void Mob::TryCriticalHit(Mob *defender, DamageHitInfo &hit, ExtraAttackOptions *
 					DEADLY_STRIKE, /* MessageFormat: %1 scores a Deadly Strike!(%2) */
 					0,
 					GetCleanName(), /* Message1 */
-					itoa(hit.damage_done + hit.min_damage) /* Message2 */
+					itoa(hit.damage_done) /* Message2 */
 			);
 			return;
 		}
