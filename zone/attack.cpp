@@ -5423,9 +5423,10 @@ void Mob::TryCriticalHit(Mob *defender, DamageHitInfo &hit, ExtraAttackOptions *
 	// 1: Try Slay Undead
 	if (defender->GetBodyType() == BodyType::Undead || defender->GetBodyType() == BodyType::SummonedUndead ||
 		defender->GetBodyType() == BodyType::Vampire) {
-		int slay_rate_bonus = aabonuses.SlayUndead[SBIndex::SLAYUNDEAD_RATE_MOD] + itembonuses.SlayUndead[SBIndex::SLAYUNDEAD_RATE_MOD] + spellbonuses.SlayUndead[SBIndex::SLAYUNDEAD_RATE_MOD];
+		int slay_rate_bonus = aabonuses.SlayUndead[1] + itembonuses.SlayUndead[1] + spellbonuses.SlayUndead[1];
 
 		LogCombatDetail("Slayundead hit rate [{}]", slay_rate_bonus);
+
 
 		LogCombatDetail("Slayundead AA debug: SBIndex 0 (SLAYUNDEAD_DMG_MOD) [{}] [{}] - SBINDEX 1 (SLAYUNDEAD_RATE_MOD) [{}] [{}]",SBIndex::SLAYUNDEAD_DMG_MOD, aabonuses.SlayUndead[SBIndex::SLAYUNDEAD_DMG_MOD], SBIndex::SLAYUNDEAD_RATE_MOD, aabonuses.SlayUndead[SBIndex::SLAYUNDEAD_RATE_MOD]);
 
@@ -5435,7 +5436,7 @@ void Mob::TryCriticalHit(Mob *defender, DamageHitInfo &hit, ExtraAttackOptions *
 
 			if (zone->random.Roll(slay_chance)) {
 				int slay_damage_bonus = std::max(
-				{aabonuses.SlayUndead[SBIndex::SLAYUNDEAD_DMG_MOD], itembonuses.SlayUndead[SBIndex::SLAYUNDEAD_DMG_MOD], spellbonuses.SlayUndead[SBIndex::SLAYUNDEAD_DMG_MOD] });
+				{aabonuses.SlayUndead[0], itembonuses.SlayUndead[0], spellbonuses.SlayUndead[0] });
 
 				LogCombatDetail("Slayundead damage bonus rate [{}]", slay_damage_bonus);
 
