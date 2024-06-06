@@ -5427,6 +5427,8 @@ void Mob::TryCriticalHit(Mob *defender, DamageHitInfo &hit, ExtraAttackOptions *
 
 		LogCombatDetail("Slayundead hit rate [{}]", slay_rate_bonus);
 
+		LogCombatDetail("Slayundead AA debug: SBIndex 0 (SLAYUNDEAD_DMG_MOD) [{}] [{}] - SBINDEX 1 (SLAYUNDEAD_RATE_MOD) [{}] [{}]",SBIndex::SLAYUNDEAD_DMG_MOD, aabonuses.SlayUndead[SBIndex::SLAYUNDEAD_DMG_MOD], SBIndex::SLAYUNDEAD_RATE_MOD, aabonuses.SlayUndead[SBIndex::SLAYUNDEAD_RATE_MOD]);
+
 		if (slay_rate_bonus) {
 			float slay_chance = static_cast<float>(slay_rate_bonus) / 10000.0f;
 			LogCombatDetail("Slayundead chance [{}]", slay_chance);
