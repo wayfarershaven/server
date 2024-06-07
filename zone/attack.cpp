@@ -5431,8 +5431,11 @@ void Mob::TryCriticalHit(Mob *defender, DamageHitInfo &hit, ExtraAttackOptions *
 			float slay_chance = ((static_cast<float>(slay_rate_bonus) / 10000.0f) * RuleR(Combat, SlayRateMultiplier));
 
 			if (zone->random.Roll(slay_chance)) {
-				int slay_damage_bonus = std::max(
-				{aabonuses.SlayUndead[SBIndex::SLAYUNDEAD_DMG_MOD], itembonuses.SlayUndead[SBIndex::SLAYUNDEAD_DMG_MOD], spellbonuses.SlayUndead[SBIndex::SLAYUNDEAD_DMG_MOD] });
+				int slay_damage_bonus = aabonuses.SlayUndead[SBIndex::SLAYUNDEAD_DMG_MOD] + itembonuses.SlayUndead[SBIndex::SLAYUNDEAD_DMG_MOD] + spellbonuses.SlayUndead[SBIndex::SLAYUNDEAD_DMG_MOD];
+
+				LogCombatDetail("aa bonus damage [{}]", aabonuses.SlayUndead[SBIndex::SLAYUNDEAD_DMG_MOD]);
+				LogCombatDetail("item bonus damage [{}]", itembonuses.SlayUndead[SBIndex::SLAYUNDEAD_DMG_MOD]);
+				LogCombatDetail("spell bonus damage [{}]", spellbonuses.SlayUndead[SBIndex::SLAYUNDEAD_DMG_MOD]);
 
 				LogCombatDetail("Slayundead damage bonus [{}]", slay_damage_bonus);
 

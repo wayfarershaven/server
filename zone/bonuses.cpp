@@ -3589,8 +3589,8 @@ void Mob::ApplySpellsBonuses(uint16 spell_id, uint8 casterlevel, StatBonuses *ne
 
 			case SE_SlayUndead: {
 				if (new_bonus->SlayUndead[SBIndex::SLAYUNDEAD_DMG_MOD] < effect_value) {
-					new_bonus->SlayUndead[SBIndex::SLAYUNDEAD_RATE_MOD] = effect_value; // Rate
-					new_bonus->SlayUndead[SBIndex::SLAYUNDEAD_DMG_MOD] = limit_value; // Damage Modifier
+					new_bonus->SlayUndead[SBIndex::SLAYUNDEAD_RATE_MOD] = limit_value; // Rate
+					new_bonus->SlayUndead[SBIndex::SLAYUNDEAD_DMG_MOD] = effect_value; // Damage Modifier
 				}
 				break;
 			}
