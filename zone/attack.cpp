@@ -5423,31 +5423,32 @@ void Mob::TryCriticalHit(Mob *defender, DamageHitInfo &hit, ExtraAttackOptions *
 	// 1: Try Slay Undead
 	if (defender->GetBodyType() == BodyType::Undead || defender->GetBodyType() == BodyType::SummonedUndead ||
 		defender->GetBodyType() == BodyType::Vampire) {
-		int slay_rate_bonus = aabonuses.SlayUndead[0] + itembonuses.SlayUndead[0] + spellbonuses.SlayUndead[0];
+		int slay_rate_bonus = aabonuses.SlayUndead[SBIndex::SLAYUNDEAD_RATE_MOD] + itembonuses.SlayUndead[SBIndex::SLAYUNDEAD_RATE_MOD] + spellbonuses.SlayUndead[SBIndex::SLAYUNDEAD_RATE_MOD];
 
 		LogCombatDetail("Slayundead hit rate [{}]", slay_rate_bonus);
 
 		if (slay_rate_bonus) {
 			float slay_chance = static_cast<float>(slay_rate_bonus) / 10000.0f;
-			LogCombatDetail("Slayundead chance [{}]", slay_chance);
 
 			if (zone->random.Roll(slay_chance)) {
 				int slay_damage_bonus = std::max(
-				{aabonuses.SlayUndead[1], itembonuses.SlayUndead[1], spellbonuses.SlayUndead[1] });
+				{aabonuses.SlayUndead[SBIndex::SLAYUNDEAD_DMG_MOD], itembonuses.SlayUndead[SBIndex::SLAYUNDEAD_DMG_MOD], spellbonuses.SlayUndead[SBIndex::SLAYUNDEAD_DMG_MOD] });
 
-				LogCombatDetail("Slayundead damage bonus rate [{}]", slay_damage_bonus);
+				LogCombatDetail("Slayundead damage bonus [{}]", slay_damage_bonus);
 
 				hit.damage_done = std::max(hit.damage_done, hit.base_damage) + 5;
 				hit.damage_done = (hit.damage_done * slay_damage_bonus) / 100;
-				hit.damage_done = static_cast<int>(hit.damage_done * RuleR(Combat, SlayDamageAdjustment));
+				hit.damage_done = static_cast<int>(hit.damage_done * RuleR(Combat, SlayDamageMultiplier));
 
 				int min_slay = (hit.min_damage + 5) * slay_damage_bonus / 100;
+
+				LogCombatDetail(" Calculated Slayundead damage [{}] - Min Slay Undead Damage [{}]", hit.damage_done, min_slay);
 
 				if (hit.damage_done < min_slay) {
 					hit.damage_done = min_slay;
 				}
 
-				LogCombatDetail("Slayundead damage [{}]", hit.damage_done);
+				LogCombatDetail("Final Slayundead damage [{}]", hit.damage_done);
 
 				int slay_sex = GetGender() == Gender::Female ? FEMALE_SLAYUNDEAD : MALE_SLAYUNDEAD;
 
@@ -5457,10 +5458,10 @@ void Mob::TryCriticalHit(Mob *defender, DamageHitInfo &hit, ExtraAttackOptions *
 					RuleI(Range, CriticalDamage),
 					Chat::MeleeCrit, /* Type: 301 */
 					FilterMeleeCrits, /* FilterType: 12 */
-					slay_sex, /* MessageFormat: %1's holy blade cleanses her target!(%2) */
+					slay_sex,
 					0,
 					GetCleanName(), /* Message1 */
-					itoa(hit.damage_done + hit.min_damage) /* Message2 */
+					itoa(hit.damage_done) /* Message2 */
 				);
 				return;
 			}

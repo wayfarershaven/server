@@ -1439,8 +1439,8 @@ void Mob::ApplyAABonuses(const AA::Rank &rank, StatBonuses *newbon)
 
 		case SE_SlayUndead: {
 			if (newbon->SlayUndead[SBIndex::SLAYUNDEAD_DMG_MOD] < base_value) {
-				newbon->SlayUndead[SBIndex::SLAYUNDEAD_RATE_MOD] = base_value; // Rate
-				newbon->SlayUndead[SBIndex::SLAYUNDEAD_DMG_MOD] = limit_value; // Damage Modifier
+				newbon->SlayUndead[SBIndex::SLAYUNDEAD_DMG_MOD] = base_value; // Rate
+				newbon->SlayUndead[SBIndex::SLAYUNDEAD_RATE_MOD] = limit_value; // Damage Modifier
 			}
 			break;
 		}
