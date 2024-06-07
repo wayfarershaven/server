@@ -5441,6 +5441,12 @@ void Mob::TryCriticalHit(Mob *defender, DamageHitInfo &hit, ExtraAttackOptions *
 				hit.damage_done = (hit.damage_done * slay_damage_bonus) / 100;
 				hit.damage_done = static_cast<int>(hit.damage_done * RuleR(Combat, SlayDamageAdjustment));
 
+				int min_slay = (hit.min_damage + 5) * slay_damage_bonus / 100;
+
+				if (hit.damage_done < min_slay) {
+					hit.damage_done = min_slay;
+				}
+
 				LogCombatDetail("Slayundead damage [{}]", hit.damage_done);
 
 				int slay_sex = GetGender() == Gender::Female ? FEMALE_SLAYUNDEAD : MALE_SLAYUNDEAD;
