@@ -5428,7 +5428,7 @@ void Mob::TryCriticalHit(Mob *defender, DamageHitInfo &hit, ExtraAttackOptions *
 		LogCombatDetail("Slayundead hit rate [{}]", slay_rate_bonus);
 
 		if (slay_rate_bonus) {
-			float slay_chance = static_cast<float>(slay_rate_bonus) / 10000.0f;
+			float slay_chance = ((static_cast<float>(slay_rate_bonus) / 10000.0f) * RuleR(Combat, SlayRateMultiplier));
 
 			if (zone->random.Roll(slay_chance)) {
 				int slay_damage_bonus = std::max(
