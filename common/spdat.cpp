@@ -431,6 +431,16 @@ bool IsCharmSpell(uint16 spell_id)
 	return IsEffectInSpell(spell_id, SE_Charm);
 }
 
+bool IsRessurectionSpell(uint16 spell_id) {
+	return (
+		spell_id == SPELL_RESURRECTION_SICKNESS ||
+		spell_id == SPELL_RESURRECTION_SICKNESS2 ||
+		spell_id == SPELL_RESURRECTION_SICKNESS3 ||
+		spell_id == SPELL_RESURRECTION_SICKNESS4 ||
+		spell_id == SPELL_REVIVAL_SICKNESS
+	);
+}
+
 bool IsBlindSpell(uint16 spell_id)
 {
 	return IsEffectInSpell(spell_id, SE_Blind);
@@ -1449,6 +1459,7 @@ bool IsDebuffSpell(uint16 spell_id)
 		IsStunSpell(spell_id) ||
 		IsMesmerizeSpell(spell_id) ||
 		IsCharmSpell(spell_id) ||
+		IsRessurectionSpell(spell_id) ||
 		IsSlowSpell(spell_id) ||
 		IsEffectInSpell(spell_id, SE_Root) ||
 		IsEffectInSpell(spell_id, SE_CancelMagic) ||
