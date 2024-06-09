@@ -188,11 +188,25 @@ public:
 		return all_entries;
 	}
 
-	static BuyerLineSearch_Struct SearchBuyLines(Database& db, std::string& search_string)
+	static BuyerLineSearch_Struct SearchBuyLines(Database& db, std::string& search_string, uint32 char_id = 0, uint32 zone_id = 0)
 	{
 		BuyerLineSearch_Struct all_entries{};
+		std::string where_clause(fmt::format("`item_name` LIKE \"%{}%\" ", search_string));
 
-		auto buy_line = GetWhere(db, fmt::format("`item_name` LIKE \"%{}%\";", search_string));
+		if (char_id) {
+			where_clause += fmt::format("AND `char_id` = '{}' ", char_id);
+		}
+
+		if (zone_id) {
+			auto buyers = BuyerRepository::GetWhere(db, fmt::format("`char_zone_id` = '{}'", zone_id));
+			std::vector<std::string> char_ids{};
+			for (auto const &bl : buyers) {
+				char_ids.push_back((std::to_string(bl.char_id)));
+			}
+			where_clause += fmt::format("AND `char_id` IN ({}) ", Strings::Implode(", ", char_ids));
+		}
+
+		auto buy_line = GetWhere(db, where_clause);
 
 		std::vector<std::string> ids{};
 		std::vector<std::string> char_ids{};
@@ -209,10 +223,10 @@ public:
 			)
 		);
 
-		auto char_names = CharacterDataRepository::GetWhere(
+		auto char_names = BuyerRepository::GetWhere(
 			db,
 			fmt::format(
-				"`id` IN ({});",
+				"`char_id` IN ({});",
 				Strings::Implode(", ", char_ids)
 			)
 		);
@@ -227,9 +241,9 @@ public:
 			auto it = std::find_if(
 				char_names.cbegin(),
 				char_names.cend(),
-				[&](BaseCharacterDataRepository::CharacterData e) { return e.id = l.char_id; }
+				[&](BuyerRepository::Buyer e) { return e.char_id = l.char_id; }
 			);
-			blis.buyer_name = it != char_names.end() ? it->name : std::string("");
+			blis.buyer_name = it != char_names.end() ? it->char_name : std::string("");
 			strn0cpy(blis.item_name, l.item_name.c_str(), sizeof(blis.item_name));
 
 			uint32 slot = 0;

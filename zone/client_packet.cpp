@@ -3781,7 +3781,7 @@ void Client::Handle_OP_Barter(const EQApplicationPacket *app)
 
 		case Barter_SellerSearch: {
 			auto bsr = (BarterSearchRequest_Struct *) app->pBuffer;
-			SendBuyerResults(bsr->search_string, bsr->search_id);
+			SendBuyerResults(*bsr);
 			break;
 		}
 

@@ -2280,7 +2280,7 @@ static void UpdateTraderCustomerPriceChanged(
 //	safe_delete(inst);
 }
 
-void Client::SendBuyerResults(char* searchString, uint32 searchID) {
+void Client::SendBuyerResults(BarterSearchRequest_Struct& bsr) {
 
 	// This method is called when a potential seller in the /barter window searches for matching buyers
 	//
@@ -2310,8 +2310,20 @@ void Client::SendBuyerResults(char* searchString, uint32 searchID) {
 //        return;
 
 	if (ClientVersion() >= EQ::versions::ClientVersion::RoF) {
-		auto search_string = std::string(searchString);
-		auto results = BuyerBuyLinesRepository::SearchBuyLines(database, search_string);
+		std::string search_string(bsr.search_string);
+		BuyerLineSearch_Struct results{};
+
+		if (bsr.search_scope == 1) {
+			// Local Buyers
+			results = BuyerBuyLinesRepository::SearchBuyLines(database, search_string, 0, GetZoneID());
+		}
+		else if (bsr.buyer_id) {
+			// Specific Buyer
+			results = BuyerBuyLinesRepository::SearchBuyLines(database, search_string, bsr.buyer_id);
+		} else {
+			// All Buyers
+			results = BuyerBuyLinesRepository::SearchBuyLines(database, search_string);
+		}
 
 		std::string buyer_name = "ID {} not in zone.";
 
@@ -2322,7 +2334,7 @@ void Client::SendBuyerResults(char* searchString, uint32 searchID) {
 		for (auto const& b : results.buy_line) {
 			p_size += 6 * sizeof(uint32) + 2 * sizeof(uint8);
 			p_size += strlen(b.item_name) + 1;
-			std::string buyer_name = "";
+			buyer_name = "";
 			auto buyer = entity_list.GetClientByCharID(b.buyer_id);
 			if (buyer) {
 				buyer_name = buyer->GetName();
@@ -2360,7 +2372,7 @@ void Client::SendBuyerResults(char* searchString, uint32 searchID) {
 
 		VARSTRUCT_ENCODE_TYPE(uint32, emu, 1);					//action of 1
 		VARSTRUCT_ENCODE_STRING(emu, search_string.c_str());
-		VARSTRUCT_ENCODE_TYPE(uint32, emu, searchID);
+		VARSTRUCT_ENCODE_TYPE(uint32, emu, bsr.transaction_id);
 		VARSTRUCT_ENCODE_TYPE(uint32, emu, 0);
 		VARSTRUCT_ENCODE_TYPE(uint32, emu, 0);
 		VARSTRUCT_ENCODE_TYPE(uint8,  emu, 1);
@@ -2388,8 +2400,8 @@ void Client::SendBuyerResults(char* searchString, uint32 searchID) {
 			if (buyer) {
 				VARSTRUCT_ENCODE_TYPE(uint32, emu, buyer->GetID());
 				VARSTRUCT_ENCODE_TYPE(uint32, emu, b.buyer_id);
-				VARSTRUCT_ENCODE_TYPE(uint32, emu, GetID());
-//				VARSTRUCT_ENCODE_TYPE(uint32, emu, buyer->GetZoneID());
+//				VARSTRUCT_ENCODE_TYPE(uint32, emu, GetID());
+				VARSTRUCT_ENCODE_TYPE(uint32, emu, buyer->GetZoneID());
 				VARSTRUCT_ENCODE_STRING(emu, buyer->GetName())
 			}
 			else {

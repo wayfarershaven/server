@@ -387,7 +387,7 @@ public:
 	void   SendBuyLineUpdate(const BuyerLineItems_Struct &buy_line);
 	void   CheckIfMovedItemIsPartOfBuyLines(uint32 item_id);
 
-	void SendBuyerResults(char *SearchQuery, uint32 SearchID);
+	void SendBuyerResults(BarterSearchRequest_Struct& bsr);
 	void ShowBuyLines(const EQApplicationPacket *app);
 	void SellToBuyer(const EQApplicationPacket *app);
 	void ToggleBuyerMode(bool TurnOn);

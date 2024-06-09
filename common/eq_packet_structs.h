@@ -3321,7 +3321,11 @@ struct BuyerInspectRequest_Struct {
 struct BarterSearchRequest_Struct {
 	uint32	action;
 	char	search_string[64];
-	uint32	search_id;
+	uint32 transaction_id;
+	uint32 unknown_072;
+	uint32 buyer_id;
+	uint8  search_scope;        //0 All Buyers, 1 Local Buyers
+	uint16 zone_id;
 };
 
 struct BuyerItemSearch_Struct {
