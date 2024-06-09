@@ -4854,3 +4854,18 @@ bool Client::HasItemOnCorpse(uint32 item_id)
 
 	return false;
 }
+
+bool Client::PutItemInInventoryWithStacking(Client* c, EQ::ItemInstance* inst) {
+	auto free_id = c->GetInv().FindFirstFreeSlotThatFitsItem(inst->GetItem());
+	if (inst->IsStackable()) {
+		if (c->TryStacking(inst, ItemPacketTrade, true, false)) {
+			return true;
+		}
+		else if (free_id != INVALID_INDEX) {
+			if (c->PutItemInInventory(free_id, *inst, true)) {
+				return true;
+			}
+		}
+	}
+	return false;
+};

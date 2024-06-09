@@ -5099,11 +5099,14 @@ namespace RoF2
 				sell_item.no_trade_items = VARSTRUCT_DECODE_TYPE(uint32, buffer);
 
 				if (sell_item.no_trade_items > 0) {
+					sell_item.trade_items.reserve(sell_item.no_trade_items);
 					for (int x = 0; x < sell_item.no_trade_items; x++) {
-						sell_item.trade_items[x].item_id       = VARSTRUCT_DECODE_TYPE(uint32, buffer);
-						sell_item.trade_items[x].item_quantity = VARSTRUCT_DECODE_TYPE(uint32, buffer);
-						sell_item.trade_items[x].item_icon     = VARSTRUCT_DECODE_TYPE(uint32, buffer);
-						VARSTRUCT_DECODE_STRING(sell_item.trade_items[x].item_name, buffer);
+						BuyerLineTradeItems_Struct blti{};
+						blti.item_id       = VARSTRUCT_DECODE_TYPE(uint32, buffer);
+						blti.item_quantity = VARSTRUCT_DECODE_TYPE(uint32, buffer);
+						blti.item_icon     = VARSTRUCT_DECODE_TYPE(uint32, buffer);
+						VARSTRUCT_DECODE_STRING(blti.item_name, buffer);
+						sell_item.trade_items.push_back(blti);
 					}
 				}
 				buffer += 13;

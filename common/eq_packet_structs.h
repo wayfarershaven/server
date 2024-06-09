@@ -3237,21 +3237,21 @@ struct BuyerBuyLines_Struct {
 };
 
 struct BuyerLineSellItem_Struct {
-	uint32                     action;
-	uint32                     purchase_method; // 0 direct merchant, 1 via /barter window
-	uint32                     buyer_entity_id;
-	uint32                     seller_entity_id;
-	uint32                     slot;
-	uint8                      enabled;
-	uint32                     item_id;
-	char                       item_name[64];
-	uint32                     item_icon;
-	uint32                     item_quantity;
-	uint8                      item_toggle;
-	uint32                     item_cost;
-	uint32                     no_trade_items;
-	BuyerLineTradeItems_Struct trade_items[10];
-	uint32                     seller_quantity;
+	uint32                                  action;
+	uint32                                  purchase_method; // 0 direct merchant, 1 via /barter window
+	uint32                                  buyer_entity_id;
+	uint32                                  seller_entity_id;
+	uint32                                  slot;
+	uint8                                   enabled;
+	uint32                                  item_id;
+	char                                    item_name[64];
+	uint32                                  item_icon;
+	uint32                                  item_quantity;
+	uint8                                   item_toggle;
+	uint32                                  item_cost;
+	uint32                                  no_trade_items;
+	std::vector<BuyerLineTradeItems_Struct> trade_items;
+	uint32                                  seller_quantity;
 
 	template<class Archive>
 	void serialize(Archive &archive)
