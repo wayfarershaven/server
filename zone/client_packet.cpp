@@ -921,6 +921,7 @@ void Client::CompleteConnect()
 
 	if (ClientVersion() >= EQ::versions::ClientVersion::RoF) {
 		SendBulkBazaarTraders();
+		SendBulkBazaarBuyers();
 	}
 
 	// TODO: load these states

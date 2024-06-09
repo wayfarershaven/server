@@ -4187,7 +4187,7 @@ void Client::SendWindowUpdatesToSellerAndBuyer(const BuyerLineSellItem_Struct& b
 void Client::SendBuyerToBarterWindow(Client *buyer, uint32 action)
 {
 	auto server_packet = std::make_unique<ServerPacket>(
-		ServerOP_BecomeBuyer,
+		ServerOP_BuyerMessaging,
 		sizeof(BuyerMessaging_Struct)
 	);
 	auto data          = (BuyerMessaging_Struct *) server_packet->pBuffer;
@@ -4199,4 +4199,27 @@ void Client::SendBuyerToBarterWindow(Client *buyer, uint32 action)
 	strn0cpy(data->buyer_name, buyer->GetCleanName(), sizeof(data->buyer_name));
 
 	worldserver.SendPacket(server_packet.get());
+}
+
+void Client::SendBulkBazaarBuyers()
+{
+	auto results = BuyerRepository::All(database);
+
+	if (results.empty()) {
+		return;
+	}
+
+	auto outapp = std::make_unique<EQApplicationPacket>(OP_Barter, sizeof(BuyerAddBuyertoBarterWindow_Struct));
+	auto emu    = (BuyerAddBuyertoBarterWindow_Struct *) outapp->pBuffer;
+
+	for (auto const &b: results) {
+		auto buyer = entity_list.GetClientByCharID(b.char_id);
+		emu->action          = Barter_AddToBarterWindow;
+		emu->buyer_id        = b.char_id;
+		emu->buyer_entity_id = buyer ? buyer->GetID() : 0;
+		emu->zone_id         = buyer ? buyer->GetZoneID() : 0;
+		strn0cpy(emu->buyer_name, b.char_name.c_str(), sizeof(emu->buyer_name));
+
+		QueuePacket(outapp.get());
+	}
 }

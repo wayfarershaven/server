@@ -3140,7 +3140,8 @@ enum {
 	Barter_BuyerItemInspect          = 21,
 	Barter_Unknown23                 = 23,
 	Barter_AddToBarterWindow         = 26,
-	Barter_RemoveFromBarterWindow    = 27
+	Barter_RemoveFromBarterWindow    = 27,
+	Barter_RequestOnlineBuyers       = 50  //Not a client item.  Used for inter-zone communications
 };
 
 enum BuyerBarter {
