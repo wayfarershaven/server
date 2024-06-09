@@ -3997,6 +3997,43 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 
 			break;
 		}
+		case ServerOP_BecomeBuyer: {
+			auto in = (BuyerMessaging_Struct *) pack->pBuffer;
+
+			switch (in->action) {
+				case Barter_AddToBarterWindow: {
+					auto outapp = std::make_unique<EQApplicationPacket>(
+						OP_Barter,
+						sizeof(BuyerAddBuyertoBarterWindow_Struct)
+					);
+					auto emu    = (BuyerAddBuyertoBarterWindow_Struct *) outapp->pBuffer;
+
+					emu->action          = Barter_AddToBarterWindow;
+					emu->buyer_entity_id = in->buyer_entity_id;
+					emu->buyer_id        = in->buyer_id;
+					emu->zone_id         = in->zone_id;
+					strn0cpy(emu->buyer_name, in->buyer_name, sizeof(emu->buyer_name));
+
+					entity_list.QueueClients(nullptr, outapp.get());
+
+					break;
+				}
+				case Barter_RemoveFromBarterWindow: {
+					auto outapp = std::make_unique<EQApplicationPacket>(
+						OP_Barter,
+						sizeof(BuyerRemoveBuyerFromBarterWindow_Struct)
+					);
+					auto emu    = (BuyerRemoveBuyerFromBarterWindow_Struct *) outapp->pBuffer;
+
+					emu->action   = Barter_RemoveFromBarterWindow;
+					emu->buyer_id = in->buyer_id;
+
+					entity_list.QueueClients(nullptr, outapp.get());
+
+					break;
+				}
+			}
+		}
 		default: {
 			LogInfo("Unknown ZS Opcode [{}] size [{}]", (int) pack->opcode, pack->size);
 			break;

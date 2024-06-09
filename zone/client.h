@@ -307,6 +307,7 @@ public:
 	bool TryStacking(EQ::ItemInstance* item, uint8 type = ItemPacketTrade, bool try_worn = true, bool try_cursor = true);
 	void SendTraderPacket(Client* trader, uint32 Unknown72 = 51);
 	void SendBuyerPacket(Client* Buyer);
+	void SendBuyerToBarterWindow(Client* buyer, uint32 action);
 	GetItems_Struct* GetTraderItems();
 	void SendBazaarWelcome();
 	void SendBarterWelcome();

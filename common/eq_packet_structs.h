@@ -3138,7 +3138,9 @@ enum {
 	Barter_WelcomeMessageUpdate      = 19,
 	Barter_Greeting                  = 20,
 	Barter_BuyerItemInspect          = 21,
-	Barter_Unknown23                 = 23
+	Barter_Unknown23                 = 23,
+	Barter_AddToBarterWindow         = 26,
+	Barter_RemoveFromBarterWindow    = 27
 };
 
 enum BuyerBarter {
@@ -3154,6 +3156,27 @@ struct BuyerRemoveItem_Struct {
 struct BuyerGeneric_Struct {
 	uint32 action;
 	char   payload[];
+};
+
+struct BuyerMessaging_Struct {
+	uint32 action;
+	uint32 zone_id;
+	uint32 buyer_id;
+	uint32 buyer_entity_id;
+	char   buyer_name[64];
+};
+
+struct BuyerAddBuyertoBarterWindow_Struct {
+	uint32 action;
+	uint32 zone_id;
+	uint32 buyer_id;
+	uint32 buyer_entity_id;
+	char   buyer_name[64];
+};
+
+struct BuyerRemoveBuyerFromBarterWindow_Struct {
+	uint32 action;
+	uint32 buyer_id;
 };
 
 struct BuyerBrowsing_Struct {

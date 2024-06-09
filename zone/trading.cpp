@@ -2828,14 +2828,16 @@ void Client::ToggleBuyerMode(bool status)
 		data->status = BuyerBarter::On;
 		SetCustomerID(0);
 		SendBuyerMode(true);
+		SendBuyerToBarterWindow(this, Barter_AddToBarterWindow);
 		Message(Chat::Yellow, "Barter Mode ON.");
 	}
 	else {
 		data->status = BuyerBarter::Off;
 		BuyerRepository::DeleteWhere(database, fmt::format("`char_id` = '{}'", GetBuyerID()));
 		SetCustomerID(0);
-		SetBuyerID(0);
+		SendBuyerToBarterWindow(this, Barter_RemoveFromBarterWindow);
 		SendBuyerMode(false);
+		SetBuyerID(0);
 		IsInBuyerSpace() ? __nop() : Message(Chat::Red, "You must be in a Barter Stall to start Barter Mode.");
 		Message(Chat::Yellow, "Barter Mode OFF.");
 	}
@@ -4180,4 +4182,21 @@ void Client::SendWindowUpdatesToSellerAndBuyer(const BuyerLineSellItem_Struct& b
 		// Update buyer database entries
 		BuyerBuyLinesRepository::ModifyBuyLine(database, bli, buyer->GetBuyerID());
 	}
+}
+
+void Client::SendBuyerToBarterWindow(Client *buyer, uint32 action)
+{
+	auto server_packet = std::make_unique<ServerPacket>(
+		ServerOP_BecomeBuyer,
+		sizeof(BuyerMessaging_Struct)
+	);
+	auto data          = (BuyerMessaging_Struct *) server_packet->pBuffer;
+
+	data->action          = action;
+	data->zone_id         = buyer->GetZoneID();
+	data->buyer_id        = buyer->GetBuyerID();
+	data->buyer_entity_id = buyer->GetID();
+	strn0cpy(data->buyer_name, buyer->GetCleanName(), sizeof(data->buyer_name));
+
+	worldserver.SendPacket(server_packet.get());
 }
