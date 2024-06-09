@@ -1066,7 +1066,7 @@ public:
 	int32 GetItemIDAt(int16 slot_id);
 	int32 GetAugmentIDAt(int16 slot_id, uint8 augslot);
 	bool PutItemInInventory(int16 slot_id, const EQ::ItemInstance& inst, bool client_update = false);
-	bool PutItemInInventoryWithStacking(Client* c, const EQ::ItemInstance* inst);
+	bool PutItemInInventoryWithStacking(Client* c, EQ::ItemInstance* inst);
 	bool PushItemOnCursor(const EQ::ItemInstance& inst, bool client_update = false);
 	void SendCursorBuffer();
 	void DeleteItemInInventory(int16 slot_id, int16 quantity = 0, bool client_update = false, bool update_db = true);
