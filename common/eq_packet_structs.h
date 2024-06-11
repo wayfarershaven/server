@@ -3138,10 +3138,10 @@ enum {
 	Barter_WelcomeMessageUpdate      = 19,
 	Barter_Greeting                  = 20,
 	Barter_BuyerItemInspect          = 21,
-	Barter_Unknown23                 = 23,
+	Barter_OpenBarterWindow          = 23,
 	Barter_AddToBarterWindow         = 26,
 	Barter_RemoveFromBarterWindow    = 27,
-	Barter_RequestOnlineBuyers       = 50  //Not a client item.  Used for inter-zone communications
+	Barter_RemoveFromMerchantWindow  = 50   //Not a client item.  Used for internal communications.
 };
 
 enum BuyerBarter {
@@ -3152,6 +3152,13 @@ enum BuyerBarter {
 struct BuyerRemoveItem_Struct {
 	uint32	action;
 	uint32	buy_slot_id;
+};
+
+struct BuyerRemoveItemFromMerchantWindow_Struct {
+	uint32 action;
+	uint32 unknown_004;
+	uint32 buy_slot_id;
+	uint32 unknown_012;
 };
 
 struct BuyerGeneric_Struct {
@@ -3301,23 +3308,59 @@ struct BuyerLineSellItem_Struct {
 };
 
 struct BuyerLineItemsSearch_Struct {
-	uint32                     slot;
-	uint8                      enabled;
-	uint32                     item_id;
-	char                       item_name[64];
-	uint32                     item_icon;
-	uint32                     item_quantity;
-	uint8                      item_toggle;
-	uint32                     item_cost;
-	uint32                     buyer_id;
-	std::string                buyer_name;
-	BuyerLineTradeItems_Struct trade_items[10];
+	uint32                                  slot;
+	uint8                                   enabled;
+	uint32                                  item_id;
+	char                                    item_name[64];
+	uint32                                  item_icon;
+	uint32                                  item_quantity;
+	uint8                                   item_toggle;
+	uint32                                  item_cost;
+	uint32                                  buyer_id;
+	uint32                                  buyer_entity_id;
+	uint32                                  buyer_zone_id;
+	std::string                             buyer_name;
+	std::vector<BuyerLineTradeItems_Struct> trade_items;
+
+	template<class Archive>
+	void serialize(Archive &archive)
+	{
+		archive(
+			CEREAL_NVP(slot),
+			CEREAL_NVP(enabled),
+			CEREAL_NVP(item_id),
+			CEREAL_NVP(item_name),
+			CEREAL_NVP(item_icon),
+			CEREAL_NVP(item_quantity),
+			CEREAL_NVP(item_toggle),
+			CEREAL_NVP(item_cost),
+			CEREAL_NVP(buyer_id),
+			CEREAL_NVP(buyer_entity_id),
+			CEREAL_NVP(buyer_zone_id),
+			CEREAL_NVP(buyer_name),
+			CEREAL_NVP(trade_items)
+		);
+	}
 };
 
 struct BuyerLineSearch_Struct {
 	uint32                                   action;
 	uint32                                   no_items;
+	std::string                              search_string;
+	uint32                                   transaction_id;
 	std::vector<BuyerLineItemsSearch_Struct> buy_line;
+
+	template<class Archive>
+	void serialize(Archive &archive)
+	{
+		archive(
+			CEREAL_NVP(action),
+			CEREAL_NVP(no_items),
+			CEREAL_NVP(search_string),
+			CEREAL_NVP(transaction_id),
+			CEREAL_NVP(buy_line)
+		);
+	}
 };
 
 struct BuyerSetAppearance_Struct {

@@ -63,14 +63,15 @@ public:
 		}
 
 		BuyerBuyLinesRepository::BuyerBuyLines buy_lines{};
-		buy_lines.id            = 0;
-		buy_lines.buyer_id      = buyer.front().id;
-		buy_lines.char_id       = char_id;
-		buy_lines.buy_slot_id   = b.slot;
-		buy_lines.item_id       = b.item_id;
-		buy_lines.item_name     = b.item_name;
-		buy_lines.item_quantity = b.item_quantity;
-		buy_lines.item_price    = b.item_cost;
+		buy_lines.id          = 0;
+		buy_lines.buyer_id    = buyer.front().id;
+		buy_lines.char_id     = char_id;
+		buy_lines.buy_slot_id = b.slot;
+		buy_lines.item_id     = b.item_id;
+		buy_lines.item_name   = b.item_name;
+		buy_lines.item_icon   = b.item_icon;
+		buy_lines.item_qty    = b.item_quantity;
+		buy_lines.item_price  = b.item_cost;
 		auto e = InsertOne(db, buy_lines);
 
 		std::vector<BuyerTradeItemsRepository::BuyerTradeItems> queue;
@@ -103,8 +104,9 @@ public:
 
 		auto b_line = b_lines.front();
 
-		b_line.item_quantity = b.item_quantity;
-		b_line.item_price    = b.item_cost;
+		b_line.item_qty   = b.item_quantity;
+		b_line.item_price = b.item_cost;
+		b_line.item_icon  = b.item_icon;
 		auto e = UpdateOne(db, b_line);
 
 		std::vector<BuyerTradeItemsRepository::BuyerTradeItems> queue;
@@ -165,19 +167,19 @@ public:
 			BuyerLineItems_Struct bli{};
 			bli.item_id       = l.item_id;
 			bli.item_cost     = l.item_price;
-			bli.item_quantity = l.item_quantity;
+			bli.item_quantity = l.item_qty;
 			bli.slot          = l.buy_slot_id;
 			strn0cpy(bli.item_name, l.item_name.c_str(), sizeof(bli.item_name));
 
 			for (auto const &i: GetSubIDs(buy_line_trade_items, l.id)) {
 				BuyerLineTradeItems_Struct blti{};
-				blti.item_id       = buy_line_trade_items.at(i).item_id;
-				blti.item_icon     = buy_line_trade_items.at(i).item_icon;
-				blti.item_quantity = buy_line_trade_items.at(i).item_qty;
-				blti.item_id       = buy_line_trade_items.at(i).item_id;
+				blti.item_id       = i.item_id;
+				blti.item_icon     = i.item_icon;
+				blti.item_quantity = i.item_qty;
+				blti.item_id       = i.item_id;
 				strn0cpy(
 					blti.item_name,
-					buy_line_trade_items.at(i).item_name.c_str(),
+					i.item_name.c_str(),
 					sizeof(blti.item_name)
 				);
 				bli.trade_items.push_back(blti);
@@ -236,28 +238,28 @@ public:
 			BuyerLineItemsSearch_Struct blis{};
 			blis.item_id       = l.item_id;
 			blis.item_cost     = l.item_price;
-			blis.item_quantity = l.item_quantity;
+			blis.item_icon     = l.item_icon;
+			blis.item_quantity = l.item_qty;
 			blis.buyer_id      = l.char_id;
 			auto it = std::find_if(
 				char_names.cbegin(),
 				char_names.cend(),
 				[&](BuyerRepository::Buyer e) { return e.char_id = l.char_id; }
 			);
-			blis.buyer_name = it != char_names.end() ? it->char_name : std::string("");
+			blis.buyer_name      = it != char_names.end() ? it->char_name : std::string("");
+			blis.buyer_entity_id = it != char_names.end() ? it->char_entity_id : 0;
+			blis.buyer_zone_id = it != char_names.end() ? it->char_zone_id : 0;
 			strn0cpy(blis.item_name, l.item_name.c_str(), sizeof(blis.item_name));
 
-			uint32 slot = 0;
 			for (auto const &i: GetSubIDs(buy_line_trade_items, l.id)) {
-				blis.trade_items[slot].item_id       = buy_line_trade_items.at(i).item_id;
-				blis.trade_items[slot].item_icon     = buy_line_trade_items.at(i).item_icon;
-				blis.trade_items[slot].item_quantity = buy_line_trade_items.at(i).item_qty;
-				blis.trade_items[slot].item_id       = buy_line_trade_items.at(i).item_id;
-				strn0cpy(
-					blis.trade_items[slot].item_name,
-					buy_line_trade_items.at(i).item_name.c_str(),
-					sizeof(blis.trade_items[slot].item_name)
-				);
-				slot++;
+				BuyerLineTradeItems_Struct e{};
+				e.item_id       = i.item_id;
+				e.item_icon     = i.item_icon;
+				e.item_quantity = i.item_qty;
+				e.item_id       = i.item_id;
+				strn0cpy(e.item_name, i.item_name.c_str(), sizeof(e.item_name));
+
+				blis.trade_items.push_back(e);
 			}
 			all_entries.buy_line.push_back(blis);
 		}
@@ -265,23 +267,27 @@ public:
 		return all_entries;
 	}
 
-	static std::vector<uint64> GetSubIDs(std::vector<BuyerTradeItemsRepository::BuyerTradeItems> &in, uint64 id) {
-		std::vector<uint64> indices{};
-		auto                it = in.begin();
+	static std::vector<BuyerTradeItemsRepository::BuyerTradeItems>
+	GetSubIDs(std::vector<BuyerTradeItemsRepository::BuyerTradeItems> &in, uint64 id)
+	{
+		std::vector<BuyerTradeItemsRepository::BuyerTradeItems> results{};
+		std::vector<uint64>                                     indices{};
+
+		auto it = in.begin();
 		while ((it = std::find_if(
 			it,
 			in.end(),
-			[&](BuyerTradeItemsRepository::BuyerTradeItems const &e)
-			{
+			[&](BuyerTradeItemsRepository::BuyerTradeItems const &e) {
 				return e.buyer_buy_lines_id == id;
 			}
 		))
 			   != in.end()
 			) {
 			indices.push_back(std::distance(in.begin(), it));
+			results.push_back(*it);
 			it++;
 		}
-		return indices;
+		return results;
 	}
 
 	static WelcomeData_Struct GetWelcomeData(Database &db)

@@ -874,6 +874,101 @@ namespace RoF2
 
 				break;
 			}
+			case Barter_BuyerSearch: {
+				BuyerLineSearch_Struct       bls{};
+				auto                         emu = (BuyerGeneric_Struct *) inapp->pBuffer;
+				EQ::Util::MemoryStreamReader ss(
+					reinterpret_cast<char *>(emu->payload),
+					inapp->size - sizeof(BuyerGeneric_Struct)
+				);
+				cereal::BinaryInputArchive   ar(ss);
+				ar(bls);
+				LogTrading("(RoF2) Barter_BuyerSearch action <green>[{}]", emu->action);
+
+				//Calculate size of packet
+				auto p_size = 0;
+				p_size += 5 * sizeof(uint32) + 1 * sizeof(uint8);
+				p_size += bls.search_string.length() + 1;
+				for (auto const& b : bls.buy_line) {
+					p_size += 6 * sizeof(uint32) + 2 * sizeof(uint8);
+					p_size += strlen(b.item_name) + 1;
+//					buyer_name = "";
+//					auto buyer = entity_list.GetClientByCharID(b.buyer_id);
+//					if (buyer) {
+//						buyer_name = buyer->GetName();
+					p_size += b.buyer_name.length() + 1;
+//					}
+//					else {
+//						//buyer_name = fmt::format("ID {} not in zone.", b.buyer_id);
+//						p_size += b.buyer_name.length() + 1;//buyer_name.length() + 1;
+//					}
+					for (auto const& d : b.trade_items) {
+						if (d.item_id != 0) {
+							p_size += strlen(d.item_name) + 1;
+							p_size += 3 * sizeof(uint32);
+						}
+					}
+					p_size += 3 * sizeof(uint32);
+				}
+
+				BuyerBuyLines_Struct bl{};
+
+				//Create packet
+
+				auto GetNoSubItems = [](BuyerLineItemsSearch_Struct emu) -> int {
+					for (int i = 0; i < MAX_BUYER_COMPENSATION_ITEMS; i++) {
+						if (emu.trade_items[i].item_id != 0) {
+							continue;
+						}
+						return i;
+					}
+					return 0;
+				};
+
+				auto outapp = std::make_unique<EQApplicationPacket>(OP_BuyerItems, p_size);
+				auto eq     = (char*)outapp->pBuffer;
+
+				VARSTRUCT_ENCODE_TYPE(uint32, eq, 1);					//action of 1
+				VARSTRUCT_ENCODE_STRING(eq, bls.search_string.c_str());
+				VARSTRUCT_ENCODE_TYPE(uint32, eq, bls.transaction_id);
+				VARSTRUCT_ENCODE_TYPE(uint32, eq, 0);
+				VARSTRUCT_ENCODE_TYPE(uint32, eq, 0);
+				VARSTRUCT_ENCODE_TYPE(uint8, eq, 1);
+				VARSTRUCT_ENCODE_TYPE(uint32, eq, bls.no_items);
+				for (auto const& b : bls.buy_line) {
+					VARSTRUCT_ENCODE_TYPE(uint32, eq, b.slot);
+					VARSTRUCT_ENCODE_TYPE(uint8, eq, 1);
+					VARSTRUCT_ENCODE_TYPE(uint32, eq, b.item_id);
+					VARSTRUCT_ENCODE_STRING(eq, b.item_name);
+					VARSTRUCT_ENCODE_TYPE(uint32, eq, b.item_icon);
+					VARSTRUCT_ENCODE_TYPE(uint32, eq, b.item_quantity);
+					VARSTRUCT_ENCODE_TYPE(uint8, eq, 1);
+					VARSTRUCT_ENCODE_TYPE(uint32, eq, b.item_cost);
+					auto no_sub_items = b.trade_items.size();
+					VARSTRUCT_ENCODE_TYPE(uint32, eq, no_sub_items);
+					for (auto const& i:b.trade_items) {
+						VARSTRUCT_ENCODE_TYPE(uint32, eq, i.item_id);
+						VARSTRUCT_ENCODE_TYPE(uint32, eq, i.item_quantity);
+						VARSTRUCT_ENCODE_TYPE(uint32, eq, i.item_icon);
+						VARSTRUCT_ENCODE_STRING(eq, i.item_name);
+					}
+					//if (buyer) {
+					VARSTRUCT_ENCODE_TYPE(uint32, eq, b.buyer_entity_id);
+					VARSTRUCT_ENCODE_TYPE(uint32, eq, b.buyer_id);
+//				VARSTRUCT_ENCODE_TYPE(uint32, emu, GetID());
+					VARSTRUCT_ENCODE_TYPE(uint32, eq, b.buyer_zone_id);
+					VARSTRUCT_ENCODE_STRING(eq, b.buyer_name.c_str());
+//					}
+//					else {
+//						VARSTRUCT_ENCODE_TYPE(uint32, eq, 0);
+//						VARSTRUCT_ENCODE_TYPE(uint32, eq, b.buyer_id);
+//						VARSTRUCT_ENCODE_TYPE(uint32, eq, GetID());
+//						VARSTRUCT_ENCODE_STRING(eq, b.buyer_name.c_str());
+//					}
+				}
+				dest->QueuePacket(outapp.get());
+				break;
+			}
 			default:
 			{
 				dest->FastQueuePacket(&inapp);

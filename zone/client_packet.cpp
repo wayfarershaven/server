@@ -921,7 +921,7 @@ void Client::CompleteConnect()
 
 	if (ClientVersion() >= EQ::versions::ClientVersion::RoF) {
 		SendBulkBazaarTraders();
-		SendBulkBazaarBuyers();
+		//SendBulkBazaarBuyers();
 	}
 
 	// TODO: load these states
@@ -3895,9 +3895,9 @@ void Client::Handle_OP_Barter(const EQApplicationPacket *app)
 		auto data = (BuyerGreeting_Struct *)app->pBuffer;
 		SendBuyerGreeting(data->buyer_id);
 	}
-	case Barter_Unknown23:
+	case Barter_OpenBarterWindow:
 	{
-		// Sent by SoD client for no discernible reason.
+		SendBulkBazaarBuyers();
 		break;
 	}
 

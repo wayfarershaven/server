@@ -21,6 +21,7 @@ public:
 	struct Buyer {
 		uint64_t    id;
 		uint32_t    char_id;
+		uint32_t    char_entity_id;
 		std::string char_name;
 		uint32_t    char_zone_id;
 		std::string welcome_message;
@@ -36,6 +37,7 @@ public:
 		return {
 			"id",
 			"char_id",
+			"char_entity_id",
 			"char_name",
 			"char_zone_id",
 			"welcome_message",
@@ -47,6 +49,7 @@ public:
 		return {
 			"id",
 			"char_id",
+			"char_entity_id",
 			"char_name",
 			"char_zone_id",
 			"welcome_message",
@@ -92,6 +95,7 @@ public:
 
 		e.id              = 0;
 		e.char_id         = 0;
+		e.char_entity_id  = 0;
 		e.char_name       = "";
 		e.char_zone_id    = 0;
 		e.welcome_message = "";
@@ -133,9 +137,10 @@ public:
 
 			e.id              = row[0] ? strtoull(row[0], nullptr, 10) : 0;
 			e.char_id         = row[1] ? static_cast<uint32_t>(strtoul(row[1], nullptr, 10)) : 0;
-			e.char_name       = row[2] ? row[2] : "";
-			e.char_zone_id    = row[3] ? static_cast<uint32_t>(strtoul(row[3], nullptr, 10)) : 0;
-			e.welcome_message = row[4] ? row[4] : "";
+			e.char_entity_id  = row[2] ? static_cast<uint32_t>(strtoul(row[2], nullptr, 10)) : 0;
+			e.char_name       = row[3] ? row[3] : "";
+			e.char_zone_id    = row[4] ? static_cast<uint32_t>(strtoul(row[4], nullptr, 10)) : 0;
+			e.welcome_message = row[5] ? row[5] : "";
 
 			return e;
 		}
@@ -170,9 +175,10 @@ public:
 		auto columns = Columns();
 
 		v.push_back(columns[1] + " = " + std::to_string(e.char_id));
-		v.push_back(columns[2] + " = '" + Strings::Escape(e.char_name) + "'");
-		v.push_back(columns[3] + " = " + std::to_string(e.char_zone_id));
-		v.push_back(columns[4] + " = '" + Strings::Escape(e.welcome_message) + "'");
+		v.push_back(columns[2] + " = " + std::to_string(e.char_entity_id));
+		v.push_back(columns[3] + " = '" + Strings::Escape(e.char_name) + "'");
+		v.push_back(columns[4] + " = " + std::to_string(e.char_zone_id));
+		v.push_back(columns[5] + " = '" + Strings::Escape(e.welcome_message) + "'");
 
 		auto results = db.QueryDatabase(
 			fmt::format(
@@ -196,6 +202,7 @@ public:
 
 		v.push_back(std::to_string(e.id));
 		v.push_back(std::to_string(e.char_id));
+		v.push_back(std::to_string(e.char_entity_id));
 		v.push_back("'" + Strings::Escape(e.char_name) + "'");
 		v.push_back(std::to_string(e.char_zone_id));
 		v.push_back("'" + Strings::Escape(e.welcome_message) + "'");
@@ -230,6 +237,7 @@ public:
 
 			v.push_back(std::to_string(e.id));
 			v.push_back(std::to_string(e.char_id));
+			v.push_back(std::to_string(e.char_entity_id));
 			v.push_back("'" + Strings::Escape(e.char_name) + "'");
 			v.push_back(std::to_string(e.char_zone_id));
 			v.push_back("'" + Strings::Escape(e.welcome_message) + "'");
@@ -268,9 +276,10 @@ public:
 
 			e.id              = row[0] ? strtoull(row[0], nullptr, 10) : 0;
 			e.char_id         = row[1] ? static_cast<uint32_t>(strtoul(row[1], nullptr, 10)) : 0;
-			e.char_name       = row[2] ? row[2] : "";
-			e.char_zone_id    = row[3] ? static_cast<uint32_t>(strtoul(row[3], nullptr, 10)) : 0;
-			e.welcome_message = row[4] ? row[4] : "";
+			e.char_entity_id  = row[2] ? static_cast<uint32_t>(strtoul(row[2], nullptr, 10)) : 0;
+			e.char_name       = row[3] ? row[3] : "";
+			e.char_zone_id    = row[4] ? static_cast<uint32_t>(strtoul(row[4], nullptr, 10)) : 0;
+			e.welcome_message = row[5] ? row[5] : "";
 
 			all_entries.push_back(e);
 		}
@@ -297,9 +306,10 @@ public:
 
 			e.id              = row[0] ? strtoull(row[0], nullptr, 10) : 0;
 			e.char_id         = row[1] ? static_cast<uint32_t>(strtoul(row[1], nullptr, 10)) : 0;
-			e.char_name       = row[2] ? row[2] : "";
-			e.char_zone_id    = row[3] ? static_cast<uint32_t>(strtoul(row[3], nullptr, 10)) : 0;
-			e.welcome_message = row[4] ? row[4] : "";
+			e.char_entity_id  = row[2] ? static_cast<uint32_t>(strtoul(row[2], nullptr, 10)) : 0;
+			e.char_name       = row[3] ? row[3] : "";
+			e.char_zone_id    = row[4] ? static_cast<uint32_t>(strtoul(row[4], nullptr, 10)) : 0;
+			e.welcome_message = row[5] ? row[5] : "";
 
 			all_entries.push_back(e);
 		}
@@ -376,6 +386,7 @@ public:
 
 		v.push_back(std::to_string(e.id));
 		v.push_back(std::to_string(e.char_id));
+		v.push_back(std::to_string(e.char_entity_id));
 		v.push_back("'" + Strings::Escape(e.char_name) + "'");
 		v.push_back(std::to_string(e.char_zone_id));
 		v.push_back("'" + Strings::Escape(e.welcome_message) + "'");
@@ -403,6 +414,7 @@ public:
 
 			v.push_back(std::to_string(e.id));
 			v.push_back(std::to_string(e.char_id));
+			v.push_back(std::to_string(e.char_entity_id));
 			v.push_back("'" + Strings::Escape(e.char_name) + "'");
 			v.push_back(std::to_string(e.char_zone_id));
 			v.push_back("'" + Strings::Escape(e.welcome_message) + "'");

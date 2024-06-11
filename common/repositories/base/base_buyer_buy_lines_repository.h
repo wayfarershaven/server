@@ -24,9 +24,10 @@ public:
 		uint32_t    char_id;
 		int32_t     buy_slot_id;
 		int32_t     item_id;
-		std::string item_name;
-		int32_t     item_quantity;
+		int32_t     item_qty;
 		int32_t     item_price;
+		uint32_t    item_icon;
+		std::string item_name;
 	};
 
 	static std::string PrimaryKey()
@@ -42,9 +43,10 @@ public:
 			"char_id",
 			"buy_slot_id",
 			"item_id",
-			"item_name",
-			"item_quantity",
+			"item_qty",
 			"item_price",
+			"item_icon",
+			"item_name",
 		};
 	}
 
@@ -56,9 +58,10 @@ public:
 			"char_id",
 			"buy_slot_id",
 			"item_id",
-			"item_name",
-			"item_quantity",
+			"item_qty",
 			"item_price",
+			"item_icon",
+			"item_name",
 		};
 	}
 
@@ -99,14 +102,15 @@ public:
 	{
 		BuyerBuyLines e{};
 
-		e.id            = 0;
-		e.buyer_id      = 0;
-		e.char_id       = 0;
-		e.buy_slot_id   = 0;
-		e.item_id       = 0;
-		e.item_name     = "";
-		e.item_quantity = 0;
-		e.item_price    = 0;
+		e.id          = 0;
+		e.buyer_id    = 0;
+		e.char_id     = 0;
+		e.buy_slot_id = 0;
+		e.item_id     = 0;
+		e.item_qty    = 0;
+		e.item_price  = 0;
+		e.item_icon   = 0;
+		e.item_name   = "";
 
 		return e;
 	}
@@ -143,14 +147,15 @@ public:
 		if (results.RowCount() == 1) {
 			BuyerBuyLines e{};
 
-			e.id            = row[0] ? strtoull(row[0], nullptr, 10) : 0;
-			e.buyer_id      = row[1] ? strtoull(row[1], nullptr, 10) : 0;
-			e.char_id       = row[2] ? static_cast<uint32_t>(strtoul(row[2], nullptr, 10)) : 0;
-			e.buy_slot_id   = row[3] ? static_cast<int32_t>(atoi(row[3])) : 0;
-			e.item_id       = row[4] ? static_cast<int32_t>(atoi(row[4])) : 0;
-			e.item_name     = row[5] ? row[5] : "";
-			e.item_quantity = row[6] ? static_cast<int32_t>(atoi(row[6])) : 0;
-			e.item_price    = row[7] ? static_cast<int32_t>(atoi(row[7])) : 0;
+			e.id          = row[0] ? strtoull(row[0], nullptr, 10) : 0;
+			e.buyer_id    = row[1] ? strtoull(row[1], nullptr, 10) : 0;
+			e.char_id     = row[2] ? static_cast<uint32_t>(strtoul(row[2], nullptr, 10)) : 0;
+			e.buy_slot_id = row[3] ? static_cast<int32_t>(atoi(row[3])) : 0;
+			e.item_id     = row[4] ? static_cast<int32_t>(atoi(row[4])) : 0;
+			e.item_qty    = row[5] ? static_cast<int32_t>(atoi(row[5])) : 0;
+			e.item_price  = row[6] ? static_cast<int32_t>(atoi(row[6])) : 0;
+			e.item_icon   = row[7] ? static_cast<uint32_t>(strtoul(row[7], nullptr, 10)) : 0;
+			e.item_name   = row[8] ? row[8] : "";
 
 			return e;
 		}
@@ -188,9 +193,10 @@ public:
 		v.push_back(columns[2] + " = " + std::to_string(e.char_id));
 		v.push_back(columns[3] + " = " + std::to_string(e.buy_slot_id));
 		v.push_back(columns[4] + " = " + std::to_string(e.item_id));
-		v.push_back(columns[5] + " = '" + Strings::Escape(e.item_name) + "'");
-		v.push_back(columns[6] + " = " + std::to_string(e.item_quantity));
-		v.push_back(columns[7] + " = " + std::to_string(e.item_price));
+		v.push_back(columns[5] + " = " + std::to_string(e.item_qty));
+		v.push_back(columns[6] + " = " + std::to_string(e.item_price));
+		v.push_back(columns[7] + " = " + std::to_string(e.item_icon));
+		v.push_back(columns[8] + " = '" + Strings::Escape(e.item_name) + "'");
 
 		auto results = db.QueryDatabase(
 			fmt::format(
@@ -217,9 +223,10 @@ public:
 		v.push_back(std::to_string(e.char_id));
 		v.push_back(std::to_string(e.buy_slot_id));
 		v.push_back(std::to_string(e.item_id));
-		v.push_back("'" + Strings::Escape(e.item_name) + "'");
-		v.push_back(std::to_string(e.item_quantity));
+		v.push_back(std::to_string(e.item_qty));
 		v.push_back(std::to_string(e.item_price));
+		v.push_back(std::to_string(e.item_icon));
+		v.push_back("'" + Strings::Escape(e.item_name) + "'");
 
 		auto results = db.QueryDatabase(
 			fmt::format(
@@ -254,9 +261,10 @@ public:
 			v.push_back(std::to_string(e.char_id));
 			v.push_back(std::to_string(e.buy_slot_id));
 			v.push_back(std::to_string(e.item_id));
-			v.push_back("'" + Strings::Escape(e.item_name) + "'");
-			v.push_back(std::to_string(e.item_quantity));
+			v.push_back(std::to_string(e.item_qty));
 			v.push_back(std::to_string(e.item_price));
+			v.push_back(std::to_string(e.item_icon));
+			v.push_back("'" + Strings::Escape(e.item_name) + "'");
 
 			insert_chunks.push_back("(" + Strings::Implode(",", v) + ")");
 		}
@@ -290,14 +298,15 @@ public:
 		for (auto row = results.begin(); row != results.end(); ++row) {
 			BuyerBuyLines e{};
 
-			e.id            = row[0] ? strtoull(row[0], nullptr, 10) : 0;
-			e.buyer_id      = row[1] ? strtoull(row[1], nullptr, 10) : 0;
-			e.char_id       = row[2] ? static_cast<uint32_t>(strtoul(row[2], nullptr, 10)) : 0;
-			e.buy_slot_id   = row[3] ? static_cast<int32_t>(atoi(row[3])) : 0;
-			e.item_id       = row[4] ? static_cast<int32_t>(atoi(row[4])) : 0;
-			e.item_name     = row[5] ? row[5] : "";
-			e.item_quantity = row[6] ? static_cast<int32_t>(atoi(row[6])) : 0;
-			e.item_price    = row[7] ? static_cast<int32_t>(atoi(row[7])) : 0;
+			e.id          = row[0] ? strtoull(row[0], nullptr, 10) : 0;
+			e.buyer_id    = row[1] ? strtoull(row[1], nullptr, 10) : 0;
+			e.char_id     = row[2] ? static_cast<uint32_t>(strtoul(row[2], nullptr, 10)) : 0;
+			e.buy_slot_id = row[3] ? static_cast<int32_t>(atoi(row[3])) : 0;
+			e.item_id     = row[4] ? static_cast<int32_t>(atoi(row[4])) : 0;
+			e.item_qty    = row[5] ? static_cast<int32_t>(atoi(row[5])) : 0;
+			e.item_price  = row[6] ? static_cast<int32_t>(atoi(row[6])) : 0;
+			e.item_icon   = row[7] ? static_cast<uint32_t>(strtoul(row[7], nullptr, 10)) : 0;
+			e.item_name   = row[8] ? row[8] : "";
 
 			all_entries.push_back(e);
 		}
@@ -322,14 +331,15 @@ public:
 		for (auto row = results.begin(); row != results.end(); ++row) {
 			BuyerBuyLines e{};
 
-			e.id            = row[0] ? strtoull(row[0], nullptr, 10) : 0;
-			e.buyer_id      = row[1] ? strtoull(row[1], nullptr, 10) : 0;
-			e.char_id       = row[2] ? static_cast<uint32_t>(strtoul(row[2], nullptr, 10)) : 0;
-			e.buy_slot_id   = row[3] ? static_cast<int32_t>(atoi(row[3])) : 0;
-			e.item_id       = row[4] ? static_cast<int32_t>(atoi(row[4])) : 0;
-			e.item_name     = row[5] ? row[5] : "";
-			e.item_quantity = row[6] ? static_cast<int32_t>(atoi(row[6])) : 0;
-			e.item_price    = row[7] ? static_cast<int32_t>(atoi(row[7])) : 0;
+			e.id          = row[0] ? strtoull(row[0], nullptr, 10) : 0;
+			e.buyer_id    = row[1] ? strtoull(row[1], nullptr, 10) : 0;
+			e.char_id     = row[2] ? static_cast<uint32_t>(strtoul(row[2], nullptr, 10)) : 0;
+			e.buy_slot_id = row[3] ? static_cast<int32_t>(atoi(row[3])) : 0;
+			e.item_id     = row[4] ? static_cast<int32_t>(atoi(row[4])) : 0;
+			e.item_qty    = row[5] ? static_cast<int32_t>(atoi(row[5])) : 0;
+			e.item_price  = row[6] ? static_cast<int32_t>(atoi(row[6])) : 0;
+			e.item_icon   = row[7] ? static_cast<uint32_t>(strtoul(row[7], nullptr, 10)) : 0;
+			e.item_name   = row[8] ? row[8] : "";
 
 			all_entries.push_back(e);
 		}
@@ -409,9 +419,10 @@ public:
 		v.push_back(std::to_string(e.char_id));
 		v.push_back(std::to_string(e.buy_slot_id));
 		v.push_back(std::to_string(e.item_id));
-		v.push_back("'" + Strings::Escape(e.item_name) + "'");
-		v.push_back(std::to_string(e.item_quantity));
+		v.push_back(std::to_string(e.item_qty));
 		v.push_back(std::to_string(e.item_price));
+		v.push_back(std::to_string(e.item_icon));
+		v.push_back("'" + Strings::Escape(e.item_name) + "'");
 
 		auto results = db.QueryDatabase(
 			fmt::format(
@@ -439,9 +450,10 @@ public:
 			v.push_back(std::to_string(e.char_id));
 			v.push_back(std::to_string(e.buy_slot_id));
 			v.push_back(std::to_string(e.item_id));
-			v.push_back("'" + Strings::Escape(e.item_name) + "'");
-			v.push_back(std::to_string(e.item_quantity));
+			v.push_back(std::to_string(e.item_qty));
 			v.push_back(std::to_string(e.item_price));
+			v.push_back(std::to_string(e.item_icon));
+			v.push_back("'" + Strings::Escape(e.item_name) + "'");
 
 			insert_chunks.push_back("(" + Strings::Implode(",", v) + ")");
 		}

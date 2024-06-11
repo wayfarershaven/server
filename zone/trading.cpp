@@ -2325,94 +2325,34 @@ void Client::SendBuyerResults(BarterSearchRequest_Struct& bsr) {
 			results = BuyerBuyLinesRepository::SearchBuyLines(database, search_string);
 		}
 
+		if (results.buy_line.empty()) {
+			Message(Chat::White, "No buylines could be found.");
+			return;
+		}
+
 		std::string buyer_name = "ID {} not in zone.";
-
-		//Calculate size of packet
-		auto p_size = 0;
-		p_size += 5 * sizeof(uint32) + 1 * sizeof(uint8);
-		p_size += search_string.length() + 1;
-		for (auto const& b : results.buy_line) {
-			p_size += 6 * sizeof(uint32) + 2 * sizeof(uint8);
-			p_size += strlen(b.item_name) + 1;
-			buyer_name = "";
-			auto buyer = entity_list.GetClientByCharID(b.buyer_id);
-			if (buyer) {
-				buyer_name = buyer->GetName();
-				p_size += strlen(buyer->GetName()) + 1;
-			}
-			else {
-				//buyer_name = fmt::format("ID {} not in zone.", b.buyer_id);
-				p_size += b.buyer_name.length() + 1;//buyer_name.length() + 1;
-			}
-			for (auto const& d : b.trade_items) {
-				if (d.item_id != 0) {
-					p_size += strlen(d.item_name) + 1;
-					p_size += 3 * sizeof(uint32);
-				}
-			}
-			p_size += 3 * sizeof(uint32);
+		if (search_string.empty()) {
+			search_string = "*";
 		}
 
-		BuyerBuyLines_Struct bl{};
+		results.search_string  = std::move(search_string);
+		results.transaction_id = bsr.transaction_id;
+		std::stringstream ss{};
+		cereal::BinaryOutputArchive ar(ss);
 
-		//Create packet
+		{ ar(results); }
 
-		auto GetNoSubItems = [](BuyerLineItemsSearch_Struct emu) -> int {
-			for (int i = 0; i < MAX_BUYER_COMPENSATION_ITEMS; i++) {
-				if (emu.trade_items[i].item_id != 0) {
-					continue;
-				}
-				return i;
-			}
-			return 0;
-		};
+		auto packet = std::make_unique<EQApplicationPacket>(OP_BuyerItems, ss.str().length() + sizeof(BuyerGeneric_Struct));
+		auto emu    = (BuyerGeneric_Struct *) packet->pBuffer;
 
-		auto outapp = new EQApplicationPacket(OP_BuyerItems, p_size);
-		auto emu = (char*)outapp->pBuffer;
+		emu->action = Barter_BuyerSearch;
+		memcpy(emu->payload, ss.str().data(), ss.str().length());
 
-		VARSTRUCT_ENCODE_TYPE(uint32, emu, 1);					//action of 1
-		VARSTRUCT_ENCODE_STRING(emu, search_string.c_str());
-		VARSTRUCT_ENCODE_TYPE(uint32, emu, bsr.transaction_id);
-		VARSTRUCT_ENCODE_TYPE(uint32, emu, 0);
-		VARSTRUCT_ENCODE_TYPE(uint32, emu, 0);
-		VARSTRUCT_ENCODE_TYPE(uint8,  emu, 1);
-		VARSTRUCT_ENCODE_TYPE(uint32, emu, results.no_items);
-		for (auto const& b : results.buy_line) {
-			const EQ::ItemData* item = database.GetItem(b.item_id);
-			VARSTRUCT_ENCODE_TYPE(uint32, emu, b.slot);
-			VARSTRUCT_ENCODE_TYPE(uint8,  emu, 1);
-			VARSTRUCT_ENCODE_TYPE(uint32, emu, b.item_id);
-			VARSTRUCT_ENCODE_STRING(emu, b.item_name);
-			VARSTRUCT_ENCODE_TYPE(uint32, emu, item->Icon);
-			VARSTRUCT_ENCODE_TYPE(uint32, emu, b.item_quantity);
-			VARSTRUCT_ENCODE_TYPE(uint8, emu, 1);
-			VARSTRUCT_ENCODE_TYPE(uint32, emu, b.item_cost);
-			auto no_sub_items = GetNoSubItems(b);
-			VARSTRUCT_ENCODE_TYPE(uint32, emu, no_sub_items);
-			for (int i = 0; i < no_sub_items; i++) {
-				item = database.GetItem(b.trade_items[i].item_id);
-				VARSTRUCT_ENCODE_TYPE(uint32, emu, b.trade_items[i].item_id);
-				VARSTRUCT_ENCODE_TYPE(uint32, emu, b.trade_items[i].item_quantity);
-				VARSTRUCT_ENCODE_TYPE(uint32, emu, item->Icon);
-				VARSTRUCT_ENCODE_STRING(emu, b.trade_items[i].item_name);
-			}
-			auto buyer = entity_list.GetClientByCharID(b.buyer_id);
-			if (buyer) {
-				VARSTRUCT_ENCODE_TYPE(uint32, emu, buyer->GetID());
-				VARSTRUCT_ENCODE_TYPE(uint32, emu, b.buyer_id);
-//				VARSTRUCT_ENCODE_TYPE(uint32, emu, GetID());
-				VARSTRUCT_ENCODE_TYPE(uint32, emu, buyer->GetZoneID());
-				VARSTRUCT_ENCODE_STRING(emu, buyer->GetName())
-			}
-			else {
-				VARSTRUCT_ENCODE_TYPE(uint32, emu, 0);
-				VARSTRUCT_ENCODE_TYPE(uint32, emu, b.buyer_id);
-				VARSTRUCT_ENCODE_TYPE(uint32, emu, GetID());
-				VARSTRUCT_ENCODE_STRING(emu, b.buyer_name.c_str());
-			}
-		}
-		FastQueuePacket(&outapp);
-		return;
+		QueuePacket(packet.get());
+
+		ss.str("");
+		ss.clear();
+
 	}
 
 //	uint32 lastCharID = 0;
@@ -2632,10 +2572,12 @@ void Client::SellToBuyer(const EQApplicationPacket *app)
 					}
 
 					auto trade_item = ti_slot_id == INVALID_INDEX ? nullptr : buyer->GetInv().GetItem(ti_slot_id);
-
+					if (!trade_item) {
+						return;
+					}
 				}
 
-				uint64 total_cost = (uint64) sell_line.item_cost * (uint64) sell_line.item_quantity;
+				uint64 total_cost = (uint64) sell_line.item_cost * (uint64) sell_line.seller_quantity;
 				if (!buyer->HasMoney(total_cost)) {
 					LogTradingDetail(
 						"Seller attempting to sell item <green>[{}] to buyer <green>[{}] though buyer does not have enough money <red>[{}]",
@@ -2646,16 +2588,20 @@ void Client::SellToBuyer(const EQApplicationPacket *app)
 					buyer_error = true;
 				}
 
-				auto buy_item_slot_id = buyer->GetInv().HasItem(
+				auto buy_item_slot_id = GetInv().HasItem(
 					sell_line.item_id,
-					sell_line.item_quantity,
-					invWhereBank || invWhereCursor || invWherePersonal || invWhereWorn
+					sell_line.seller_quantity,
+					invWherePersonal
 				);
 				auto buy_item         =
-						 buy_item_slot_id == INVALID_INDEX ? nullptr : buyer->GetInv().GetItem(buy_item_slot_id);
-				if (buy_item && CheckLoreConflict(buy_item->GetItem())) {
+						 buy_item_slot_id == INVALID_INDEX ? nullptr : GetInv().GetItem(buy_item_slot_id);
+				if (!buy_item) {
+					return;
+				}
+
+				if (buy_item && buyer->CheckLoreConflict(buy_item->GetItem())) {
 					LogTradingDetail(
-						"Seller attempting to sell item <green>[{}] to buyer <green>[{}] though buyer does already has the item which is LORE.",
+						"Seller attempting to sell item <green>[{}] to buyer <green>[{}] though buyer already has the item which is LORE.",
 						sell_line.item_name,
 						buyer->GetCleanName()
 					);
@@ -2668,26 +2614,29 @@ void Client::SellToBuyer(const EQApplicationPacket *app)
 				//check that the item is not augmented
 
 				bool seller_error      = false;
-				auto sell_item_slot_id = GetInv().HasItem(sell_line.item_id, sell_line.item_quantity, invWherePersonal);
+				auto sell_item_slot_id = GetInv().HasItem(sell_line.item_id, sell_line.seller_quantity, invWherePersonal);
 				auto sell_item         =
 						 sell_item_slot_id == INVALID_INDEX ? nullptr : GetInv().GetItem(sell_item_slot_id);
 				if (!sell_item) {
 					seller_error = true;
 					LogTradingDetail("Seller no longer has item <red>[{}] to sell to buyer <red>[{}]",
 									 sell_line.item_name,
-									 buyer->GetCleanName());
+									 buyer->GetCleanName()
+					);
 				}
 
-				if (sell_item->IsAugmented()) {
+				if (sell_item && sell_item->IsAugmentable() && sell_item->IsAugmented()) {
 					seller_error = true;
 					LogTradingDetail("Seller item <red>[{}] is augmented therefore cannot be sold.",
-									 sell_line.item_name);
+									 sell_line.item_name
+					);
 				}
 
 				if (buyer_error || seller_error) {
 					LogTradingDetail("Buyer error <red>[{}] Seller Error <red>[{}]  Sell/Buy Transaction Failed.",
 									 buyer_error,
-									 seller_error);
+									 seller_error
+					);
 					return;
 				}
 
@@ -2819,10 +2768,12 @@ void Client::ToggleBuyerMode(bool status)
 		SetBuyerID(CharacterID());
 
 		BuyerRepository::Buyer b{};
-		b.id           = 0;
-		b.char_id      = GetBuyerID();
-		b.char_zone_id = GetZoneID();
-		b.char_name    = GetCleanName();
+		b.id             = 0;
+		b.char_id        = GetBuyerID();
+		b.char_entity_id = GetID();
+		b.char_zone_id   = GetZoneID();
+		b.char_name      = GetCleanName();
+		BuyerRepository::DeleteWhere(database, fmt::format("`char_id` = '{}';", GetBuyerID()));
 		auto e = BuyerRepository::InsertOne(database, b);
 
 		data->status = BuyerBarter::On;
@@ -2871,7 +2822,7 @@ void Client::ModifyBuyLine(const EQApplicationPacket *app)
 		);
 
 		for (auto const &buy_line: current_buy_lines) {
-			current_total_cost += buy_line.item_price * buy_line.item_quantity;
+			current_total_cost += buy_line.item_price * buy_line.item_qty;
 		}
 
 		auto buy_line = bl.buy_lines.front();
@@ -2886,10 +2837,10 @@ void Client::ModifyBuyLine(const EQApplicationPacket *app)
 		if (buy_line.item_toggle) {
 			current_total_cost += buy_line.item_cost * buy_line.item_quantity;
 			if (it != std::end(current_buy_lines)) {
-				current_total_cost -= it->item_price * it->item_quantity;
+				current_total_cost -= it->item_price * it->item_qty;
 				if (current_total_cost > GetCarriedMoney()) {
 					buy_line.item_cost     = it->item_price;
-					buy_line.item_quantity = it->item_quantity;
+					buy_line.item_quantity = it->item_qty;
 					Message(Chat::Yellow, "You currently do not have sufficient funds to support your modification.");
 					SendBuyLineUpdate(buy_line);
 					return;
@@ -2978,10 +2929,11 @@ void Client::ModifyBuyLine(const EQApplicationPacket *app)
 			return;
 		}
 
+		buy_line.item_icon = database.GetItem(buy_line.item_id)->Icon;
 		if (buy_line.item_toggle) {
-			BuyerBuyLinesRepository::ModifyBuyLine(database, buy_line, CharacterID());
+			BuyerBuyLinesRepository::ModifyBuyLine(database, buy_line, GetBuyerID());
 		} else {
-			BuyerBuyLinesRepository::DeleteBuyLine(database, CharacterID(), buy_line.slot);
+			BuyerBuyLinesRepository::DeleteBuyLine(database, GetBuyerID(), buy_line.slot);
 		}
 
 		SendBuyLineUpdate(buy_line);
@@ -4010,7 +3962,9 @@ void Client::CreateStartingBuyLines(const EQApplicationPacket *app)
 		std::stringstream           ss_out{};
 		cereal::BinaryOutputArchive ar_out(ss_out);
 
-		for (auto const &b: bl.buy_lines) {
+		for (auto &b: bl.buy_lines) {
+			//auto bb = database.GetItem(b.item_id);
+			//b.item_icon = bb ? bb->Icon : 0;
 			BuyerBuyLinesRepository::CreateBuyLine(database, b, CharacterID());
 
 			{ ar_out(b); }
@@ -4088,16 +4042,17 @@ void Client::SendWindowUpdatesToSellerAndBuyer(const BuyerLineSellItem_Struct& b
 
 	if (blsi.item_quantity - blsi.seller_quantity <= 0) {
 		// Update the seller's merchant window
-		auto outapp = new EQApplicationPacket(OP_BuyerItems, 16);
-		auto data   = (char *)outapp->pBuffer;
-		auto eq     = data;
+		auto outapp = std::make_unique<EQApplicationPacket>(OP_BuyerItems, sizeof(BuyerRemoveItemFromMerchantWindow_Struct));
+		auto data   = (BuyerRemoveItemFromMerchantWindow_Struct *)outapp->pBuffer;
 
-		VARSTRUCT_ENCODE_TYPE(uint32, eq, 0x0e); // remove action
-		VARSTRUCT_SKIP_TYPE(uint32, eq);
-		VARSTRUCT_ENCODE_TYPE(uint32, eq, blsi.slot);
-		VARSTRUCT_ENCODE_TYPE(uint32, eq, 0);
+//		VARSTRUCT_ENCODE_TYPE(uint32, eq, 0x0e); // remove action
+//		VARSTRUCT_SKIP_TYPE(uint32, eq);
+//		VARSTRUCT_ENCODE_TYPE(uint32, eq, blsi.slot);
+//		VARSTRUCT_ENCODE_TYPE(uint32, eq, 0);
 
-		FastQueuePacket(&outapp);
+		data->action = Barter_RemoveFromMerchantWindow;
+		data->buy_slot_id = blsi.slot;
+		QueuePacket(outapp.get());
 
 		// Update the Buyer's BuyLine Window
 
@@ -4126,13 +4081,13 @@ void Client::SendWindowUpdatesToSellerAndBuyer(const BuyerLineSellItem_Struct& b
 		{ ar(bl); }
 
 		uint32 packet_size = ss.str().length() + sizeof(BuyerGeneric_Struct);
-		outapp = new EQApplicationPacket(OP_BuyerItems, packet_size);
+		outapp = std::make_unique<EQApplicationPacket>(OP_BuyerItems, packet_size);
 		auto emu = (BuyerGeneric_Struct *)outapp->pBuffer;
 
 		emu->action = Barter_BuyerItemUpdate;
 		memcpy(emu->payload, ss.str().data(), ss.str().length());
 
-		buyer->FastQueuePacket(&outapp);
+		buyer->QueuePacket(outapp.get());
 		BuyerBuyLinesRepository::DeleteBuyLine(database, buyer->CharacterID(), blsi.slot);
 	}
 	else {
@@ -4142,10 +4097,10 @@ void Client::SendWindowUpdatesToSellerAndBuyer(const BuyerLineSellItem_Struct& b
 
 		BuyerLineItems_Struct bli {};
 
-		const EQ::ItemData *item = database.GetItem(blsi.item_id);
+//		const EQ::ItemData *item = database.GetItem(blsi.item_id);
 		bli.enabled              = 1;
 		bli.item_cost            = blsi.item_cost;
-		bli.item_icon            = item->Icon;
+		bli.item_icon            = blsi.item_icon;
 		bli.item_id              = blsi.item_id;
 		bli.item_quantity        = blsi.item_quantity - blsi.seller_quantity;
 		bli.item_toggle          = 1;
@@ -4162,22 +4117,22 @@ void Client::SendWindowUpdatesToSellerAndBuyer(const BuyerLineSellItem_Struct& b
 		{ ar(bli); }
 
 		uint32 packet_size = ss.str().length() + sizeof(BuyerGeneric_Struct);
-		auto  outapp = new EQApplicationPacket(OP_BuyerItems, packet_size);
+		auto  outapp = std::make_unique<EQApplicationPacket>(OP_BuyerItems, packet_size);
 		auto emu    = (BuyerGeneric_Struct *)outapp->pBuffer;
 
 		emu->action = Barter_BuyerInspectBegin;
 		memcpy(emu->payload, ss.str().data(), ss.str().length());
 
-		FastQueuePacket(&outapp);
+		QueuePacket(outapp.get());
 
 		// send the buyline to the buyer buyline window with quantity removed
-		outapp = new EQApplicationPacket(OP_BuyerItems, packet_size);
+		outapp = std::make_unique<EQApplicationPacket>(OP_BuyerItems, packet_size);
 		emu    = (BuyerGeneric_Struct *)outapp->pBuffer;
 
 		emu->action = Barter_BuyerItemUpdate;
 		memcpy(emu->payload, ss.str().data(), ss.str().length());
 
-		buyer->FastQueuePacket(&outapp);
+		buyer->QueuePacket(outapp.get());
 
 		// Update buyer database entries
 		BuyerBuyLinesRepository::ModifyBuyLine(database, bli, buyer->GetBuyerID());
