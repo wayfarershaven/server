@@ -3107,19 +3107,19 @@ struct EnvDamage2_Struct {
 
 //Bazaar Stuff
 enum RoF2BazaarTraderBuyerActions {
-	Zero            = 0,
-	BeginTraderMode = 1,
-	EndTraderMode   = 2,
-	PriceUpdate     = 3,
-	EndTransaction  = 4,
-	BazaarSearch    = 7,
-	WelcomeMessage  = 9,
-	BuyTraderItem   = 10,
-	ListTraderItems = 11,
-	BazaarInspect   = 18,
-	ClickTrader     = 28,
-	ItemMove        = 19,
-	ReconcileItems  = 20
+	Zero             = 0,
+	BeginTraderMode  = 1,
+	EndTraderMode    = 2,
+	PriceUpdate      = 3,
+	EndTransaction   = 4,
+	BazaarSearch     = 7,
+	WelcomeMessage   = 9,
+	BuyTraderItem    = 10,
+	ListTraderItems  = 11,
+	BazaarInspect    = 18,
+	ClickTrader      = 28,
+	ItemMove         = 19,
+	ReconcileItems   = 20
 };
 
 enum RoF2BuyerActions {
@@ -3128,6 +3128,7 @@ enum RoF2BuyerActions {
 	BuyerModifyBuyLine   = 0x07,
 	BuyerRemoveItem      = 0x08,
 	BuyerSellItem        = 0x09,
+	BuyerBuyItem         = 0x0a,
 	BuyerInspectBegin    = 0x0b,
 	BuyerInspectEnd      = 0x0c,
 	BuyerAppearance      = 0x0d,
@@ -3137,7 +3138,7 @@ enum RoF2BuyerActions {
 	BarterWelcomeMessage = 0x11,
 	BuyerWelcomeMessage  = 0x13,
 	BuyerGreeting        = 0x14,
-	BuyerInventoryFull = 0x16
+	BuyerInventoryFull   = 0x16
 };
 
 struct BarterItemSearchLinkRequest_Struct {

@@ -969,6 +969,77 @@ namespace RoF2
 				dest->QueuePacket(outapp.get());
 				break;
 			}
+			case Barter_RemoveFromMerchantWindow: {
+				auto emu = (BuyerRemoveItemFromMerchantWindow_Struct *)inapp->pBuffer;
+
+				emu->action = structs::RoF2BuyerActions::BuyerSendBuyLine;
+				dest->FastQueuePacket(&inapp);
+				break;
+			}
+			case Barter_BuyerTransactionComplete:
+			case Barter_SellerTransactionComplete: {
+				BuyerLineSellItem_Struct     blsi{};
+				auto                         emu = (BuyerGeneric_Struct *) inapp->pBuffer;
+				EQ::Util::MemoryStreamReader ss(
+					reinterpret_cast<char *>(emu->payload),
+					inapp->size - sizeof(BuyerGeneric_Struct)
+				);
+				cereal::BinaryInputArchive   ar(ss);
+				ar(blsi);
+
+
+				//packet size
+				auto packet_size = strlen(blsi.item_name) * 2 + 2 + 48 + 30 + blsi.seller_name.length() + 1 +
+								   blsi.buyer_name.length() + 1;
+				for (auto const &b: blsi.trade_items) {
+					packet_size += strlen(b.item_name) + 1;
+					packet_size += 12;
+				}
+
+				auto outapp = std::make_unique<EQApplicationPacket>(OP_BuyerItems, packet_size);
+				auto eq     = (char *) outapp->pBuffer;
+
+				switch (action) {
+					case Barter_BuyerTransactionComplete: {
+						VARSTRUCT_ENCODE_TYPE(uint32, eq, structs::RoF2BuyerActions::BuyerBuyItem);
+						break;
+					}
+					case Barter_SellerTransactionComplete: {
+						VARSTRUCT_ENCODE_TYPE(uint32, eq, structs::RoF2BuyerActions::BuyerSellItem);
+						break;
+					}
+				}
+				VARSTRUCT_ENCODE_TYPE(uint32, eq, blsi.sub_action);
+				eq += 20;
+				VARSTRUCT_ENCODE_STRING(eq, blsi.buyer_name.c_str());
+				VARSTRUCT_ENCODE_STRING(eq, blsi.item_name);
+				VARSTRUCT_ENCODE_STRING(eq, blsi.seller_name.c_str());
+				VARSTRUCT_ENCODE_TYPE(uint32, eq, 0xFFFFFFFF);
+				VARSTRUCT_ENCODE_TYPE(uint32, eq, 0xFFFFFFFF);
+				eq += 1;
+				VARSTRUCT_ENCODE_STRING(eq, blsi.item_name);
+				eq += 9;
+				VARSTRUCT_ENCODE_TYPE(uint32, eq, blsi.item_cost);
+				VARSTRUCT_ENCODE_TYPE(uint32, eq, blsi.trade_items.size());
+
+				for (auto const& i:blsi.trade_items) {
+					VARSTRUCT_ENCODE_TYPE(uint32, eq, 0);
+					VARSTRUCT_ENCODE_TYPE(uint32, eq, i.item_quantity);
+					VARSTRUCT_ENCODE_TYPE(uint32, eq, 0);
+					VARSTRUCT_ENCODE_STRING(eq, i.item_name);
+				}
+
+				VARSTRUCT_ENCODE_TYPE(uint32, eq, 0);
+				VARSTRUCT_ENCODE_TYPE(uint32, eq, 0);
+				VARSTRUCT_ENCODE_TYPE(uint32, eq, 0);
+				VARSTRUCT_ENCODE_TYPE(uint32, eq, 0xFFFFFF);
+				VARSTRUCT_ENCODE_TYPE(uint32, eq, 0);
+				VARSTRUCT_ENCODE_TYPE(uint32, eq, blsi.seller_quantity);
+
+
+				dest->QueuePacket(outapp.get());
+				break;
+			}
 			default:
 			{
 				dest->FastQueuePacket(&inapp);

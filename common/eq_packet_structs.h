@@ -3116,7 +3116,7 @@ struct BazaarSearchResults_Struct {
 //
 #define MAX_BUYER_COMPENSATION_ITEMS 10
 
-enum {
+enum BarterBuyerActions {
 	Barter_BuyerSearch               = 0,
 	Barter_SellerSearch              = 1,
 	Barter_BuyerModeOn               = 2,
@@ -3144,6 +3144,10 @@ enum {
 	Barter_RemoveFromMerchantWindow  = 50   //Not a client item.  Used for internal communications.
 };
 
+enum BarterBuyerSubActions {
+	Barter_Success = 0,
+	Barter_Failure = 1
+};
 enum BuyerBarter {
 	Off = 0,
 	On  = 1
@@ -3269,9 +3273,12 @@ struct BuyerBuyLines_Struct {
 
 struct BuyerLineSellItem_Struct {
 	uint32                                  action;
+	uint32                                  sub_action;
 	uint32                                  purchase_method; // 0 direct merchant, 1 via /barter window
 	uint32                                  buyer_entity_id;
+	std::string                             buyer_name;
 	uint32                                  seller_entity_id;
+	std::string                             seller_name;
 	uint32                                  slot;
 	uint8                                   enabled;
 	uint32                                  item_id;
@@ -3289,9 +3296,12 @@ struct BuyerLineSellItem_Struct {
 	{
 		archive(
 			CEREAL_NVP(action),
+			CEREAL_NVP(sub_action),
 			CEREAL_NVP(purchase_method),
 			CEREAL_NVP(buyer_entity_id),
+			CEREAL_NVP(buyer_name),
 			CEREAL_NVP(seller_entity_id),
+			CEREAL_NVP(seller_name),
 			CEREAL_NVP(slot),
 			CEREAL_NVP(enabled),
 			CEREAL_NVP(item_id),

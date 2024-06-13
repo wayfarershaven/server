@@ -397,6 +397,7 @@ public:
 	void CreateStartingBuyLines(const EQApplicationPacket *app);
 	void BuyerItemSearch(const EQApplicationPacket *app);
 	void SendWindowUpdatesToSellerAndBuyer(const BuyerLineSellItem_Struct& blsi);
+	void SendBarterBuyerClientMessage(Client* c, BuyerLineSellItem_Struct& blsi, BarterBuyerActions action, BarterBuyerSubActions sub_action);
 
 	void FillSpawnStruct(NewSpawn_Struct* ns, Mob* ForWho);
 	bool ShouldISpawnFor(Client *c) { return !GMHideMe(c) && !IsHoveringForRespawn(); }
