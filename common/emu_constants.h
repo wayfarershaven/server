@@ -741,4 +741,8 @@ static std::map<uint32, std::string> bug_category_names = {
 	{ Bug::Category::Mercenaries,   "Mercenaries" }
 };
 
+struct BuylineItemDetails_Struct {
+	uint64      item_cost;
+	uint32      item_quantity;
+};
 #endif /*COMMON_EMU_CONSTANTS_H*/

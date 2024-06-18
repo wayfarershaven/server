@@ -5275,8 +5275,16 @@ namespace RoF2
 						sell_item.trade_items.push_back(blti);
 					}
 				}
-				buffer += 13;
-				sell_item.seller_quantity = VARSTRUCT_DECODE_TYPE(uint32, buffer);
+
+				sell_item.buyer_entity_id  = VARSTRUCT_DECODE_TYPE(uint32, buffer);
+				sell_item.seller_entity_id = VARSTRUCT_DECODE_TYPE(uint32, buffer);
+				sell_item.zone_id          = VARSTRUCT_DECODE_TYPE(uint32, buffer);
+				sell_item.buyer_name       = std::string(buffer, strlen(buffer));
+				buffer += sell_item.buyer_name.length() + 1;
+				sell_item.seller_quantity  = VARSTRUCT_DECODE_TYPE(uint32, buffer);
+
+				//buffer += 13;
+				buffer += 4;
 
 				buffer = nullptr;
 				std::stringstream           ss{};

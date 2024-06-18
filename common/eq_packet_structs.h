@@ -3145,9 +3145,12 @@ enum BarterBuyerActions {
 };
 
 enum BarterBuyerSubActions {
-	Barter_Success = 0,
-	Barter_Failure = 1
+	Barter_Success  = 0,
+	Barter_Failure  = 1,
+	Barter_SellerDoesNotHaveItem = 6,
+	Barter_SameZone = 8
 };
+
 enum BuyerBarter {
 	Off = 0,
 	On  = 1
@@ -3176,6 +3179,14 @@ struct BuyerMessaging_Struct {
 	uint32 buyer_id;
 	uint32 buyer_entity_id;
 	char   buyer_name[64];
+	uint32 buy_item_id;
+	uint32 buy_item_qty;
+	uint64 buy_item_cost;
+	uint32 seller_entity_id;
+	char   seller_name[64];
+	char   item_name[64];
+	uint32 slot;
+	uint32 seller_quantity;
 };
 
 struct BuyerAddBuyertoBarterWindow_Struct {
@@ -3290,6 +3301,7 @@ struct BuyerLineSellItem_Struct {
 	uint32                                  no_trade_items;
 	std::vector<BuyerLineTradeItems_Struct> trade_items;
 	uint32                                  seller_quantity;
+	uint32                                  zone_id;
 
 	template<class Archive>
 	void serialize(Archive &archive)
@@ -3312,7 +3324,8 @@ struct BuyerLineSellItem_Struct {
 			CEREAL_NVP(item_cost),
 			CEREAL_NVP(no_trade_items),
 			CEREAL_NVP(trade_items),
-			CEREAL_NVP(seller_quantity)
+			CEREAL_NVP(seller_quantity),
+			CEREAL_NVP(zone_id)
 		);
 	}
 };

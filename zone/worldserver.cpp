@@ -4032,6 +4032,113 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 
 					break;
 				}
+				case Barter_SellItem: {
+					auto buyer = entity_list.GetClientByID(in->buyer_entity_id);
+					if (!buyer) {
+						return;
+					}
+
+					uint64 cost = in->buy_item_qty * in->seller_quantity;
+					if (cost > buyer->GetCarriedMoney()) {
+						return;
+					}
+
+					buyer->TakeMoneyFromPP(cost, true);
+
+					BuyerLineSellItem_Struct sell_line{};
+					sell_line.item_id         = in->buy_item_id;
+					sell_line.item_quantity   = in->buy_item_qty;
+					sell_line.item_cost       = in->buy_item_cost;
+					sell_line.seller_name     = in->seller_name;
+					sell_line.buyer_name      = in->buyer_name;
+					sell_line.seller_quantity = in->seller_quantity;
+					sell_line.slot            = in->slot;
+					strn0cpy(sell_line.item_name, in->item_name, sizeof(sell_line.item_name));
+
+					buyer->SendBarterBuyerClientMessage(buyer, sell_line, Barter_BuyerTransactionComplete, Barter_Success);
+
+					BuyerLineSellItem_Struct blis{};
+					blis.item_cost     = in->buy_item_cost;
+					blis.item_id       = in->buy_item_id;
+					blis.item_quantity = in->buy_item_qty;
+					blis.slot          = in->slot;
+					blis.seller_quantity = in->seller_quantity;
+					strn0cpy(blis.item_name, in->item_name, sizeof(blis.item_name));
+					//buyer->SendBuyLineUpdate(blis);
+					buyer->SendWindowUpdatesToSellerAndBuyer(blis);
+
+					in->action        = Barter_BuyerTransactionComplete;
+					in->buy_item_cost = cost;
+					in->buyer_id      = buyer->GetBuyerID();
+
+					worldserver.SendPacket(pack);
+					break;
+				}
+				case Barter_BuyerTransactionComplete: {
+					auto seller = entity_list.GetClientByID(in->seller_entity_id);
+					if (!seller) {
+						return;
+					}
+
+					CharacterParcelsRepository::CharacterParcels parcel_out{};
+					auto next_slot = seller->FindNextFreeParcelSlot(in->buyer_id);
+					if (next_slot == INVALID_INDEX) {
+						return;
+					}
+
+					auto item = database.CreateItem(in->buy_item_id, in->buy_item_qty);
+
+					parcel_out.from_name  = in->seller_name;
+					parcel_out.note       = "Delivered from a Barter Sell";
+					parcel_out.sent_date  = time(nullptr);
+					parcel_out.quantity   = item->IsStackable() ? in->buy_item_qty : item->GetCharges();
+					parcel_out.item_id    = item->GetItem()->ID;
+					parcel_out.aug_slot_1 = 0;
+					parcel_out.aug_slot_2 = 0;
+					parcel_out.aug_slot_3 = 0;
+					parcel_out.aug_slot_4 = 0;
+					parcel_out.aug_slot_5 = 0;
+					parcel_out.aug_slot_6 = 0;
+					parcel_out.char_id    = in->buyer_id;
+					parcel_out.slot_id    = next_slot;
+					parcel_out.id         = 0;
+					auto result = CharacterParcelsRepository::InsertOne(database, parcel_out);
+
+					Parcel_Struct ps{};
+					ps.item_slot = parcel_out.slot_id;
+					strn0cpy(ps.send_to, in->buyer_name, sizeof(ps.send_to));
+					seller->SendParcelDeliveryToWorld(ps);
+
+					next_slot = seller->FindNextFreeParcelSlot(seller->CharacterID());
+					if (next_slot == INVALID_INDEX) {
+						return;
+					}
+
+					parcel_out.from_name = in->buyer_name;
+					parcel_out.quantity  = in->buy_item_cost;
+					parcel_out.item_id   = PARCEL_MONEY_ITEM_ID;
+					parcel_out.char_id   = seller->CharacterID();
+					parcel_out.slot_id   = next_slot;
+					parcel_out.id        = 0;
+					result = CharacterParcelsRepository::InsertOne(database, parcel_out);
+
+					ps.item_slot = parcel_out.slot_id;
+					strn0cpy(ps.send_to, in->seller_name, sizeof(ps.send_to));
+					seller->SendParcelDeliveryToWorld(ps);
+
+					auto buy_item_slot_id = seller->GetInv().HasItem(
+						in->buy_item_id,
+						in->buy_item_qty,
+						invWherePersonal
+					);
+					auto buy_item = buy_item_slot_id == INVALID_INDEX ? nullptr : seller->GetInv().GetItem(buy_item_slot_id);
+					if (!buy_item) {
+						break;
+					}
+					seller->RemoveItem(in->buy_item_id, in->buy_item_qty);
+
+					break;
+				}
 			}
 		}
 		default: {

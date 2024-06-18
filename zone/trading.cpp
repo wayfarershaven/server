@@ -35,6 +35,7 @@
 #include "string_ids.h"
 #include "worldserver.h"
 #include "../common/bazaar.h"
+#include <numeric>
 
 class QueryServ;
 
@@ -2551,7 +2552,7 @@ void Client::SellToBuyer(const EQApplicationPacket *app)
 		sell_line.seller_name = GetCleanName();
 
 		switch (sell_line.purchase_method) {
-			case 0: {
+			case ByVendor: {
 				auto buyer = entity_list.GetClientByID(sell_line.buyer_entity_id);
 				if (!buyer) {
 					return;
@@ -2733,9 +2734,64 @@ void Client::SellToBuyer(const EQApplicationPacket *app)
 //					).c_str()
 //				);
 
-				return;
+				break;
 			}
-				SendBarterBuyerClientMessage(this, sell_line, Barter_SellerTransactionComplete, Barter_Failure);
+			case ByParcel: {
+				if (!RuleB(Parcel, EnableParcelMerchants) || !RuleB(Bazaar, EnableParcelDelivery)) {
+					LogTrading(
+						"Barter sell attempt by parcel delivery though 'Parcel:EnableParcelMerchants' or "
+						"'Bazaar::EnableParcelDelivery' not enabled."
+					);
+					Message(
+						Chat::Yellow,
+						"The barter parcel delivery system is not enabled on this server.  Please visit the vendor directly in the Bazaar."
+					);
+					SendBarterBuyerClientMessage(this, sell_line, Barter_SellerTransactionComplete, Barter_Failure);
+					break;
+				}
+
+				if (sell_line.trade_items.size() > 0) {
+					SendBarterBuyerClientMessage(this, sell_line, Barter_SellerTransactionComplete, Barter_SameZone);
+					break;
+				}
+
+				auto buy_item_slot_id = GetInv().HasItem(
+					sell_line.item_id,
+					sell_line.seller_quantity,
+					invWherePersonal
+				);
+				auto buy_item = buy_item_slot_id == INVALID_INDEX ? nullptr : GetInv().GetItem(buy_item_slot_id);
+				if (!buy_item) {
+					SendBarterBuyerClientMessage(this, sell_line, Barter_SellerTransactionComplete, Barter_SellerDoesNotHaveItem);
+					break;
+				}
+
+				SendBarterBuyerClientMessage(this, sell_line, Barter_SellerTransactionComplete, Barter_Success);
+
+				auto server_packet = std::make_unique<ServerPacket>(
+					ServerOP_BuyerMessaging,
+					sizeof(BuyerMessaging_Struct)
+				);
+				auto data          = (BuyerMessaging_Struct *) server_packet->pBuffer;
+
+				data->action           = Barter_SellItem;
+				data->buyer_entity_id  = sell_line.buyer_entity_id;
+				data->seller_entity_id = GetID();
+				data->buy_item_id      = sell_line.item_id;
+				data->buy_item_qty     = sell_line.item_quantity;
+				data->buy_item_cost    = sell_line.item_cost;
+				data->zone_id          = GetZoneID();
+				data->slot             = sell_line.slot;
+				data->seller_quantity = sell_line.seller_quantity;
+				strn0cpy(data->item_name, sell_line.item_name, sizeof(data->item_name));
+				strn0cpy(data->buyer_name, sell_line.buyer_name.c_str(), sizeof(data->buyer_name));
+				strn0cpy(data->seller_name, GetCleanName(), sizeof(data->seller_name));
+
+				worldserver.SendPacket(server_packet.get());
+
+				break;
+			}
+//				SendBarterBuyerClientMessage(this, sell_line, Barter_SellerTransactionComplete, Barter_SameZone);
 				//SendBarterBuyerClientMessage(buyer, sell_line, Barter_SellerTransactionComplete, BarterBuyerSubActions::Failure);
 
 //				//Send failure message
@@ -2796,13 +2852,13 @@ void Client::ToggleBuyerMode(bool status)
 	}
 	else {
 		data->status = BuyerBarter::Off;
-		BuyerRepository::DeleteWhere(database, fmt::format("`char_id` = '{}'", GetBuyerID()));
+		auto results = BuyerRepository::DeleteWhere(database, fmt::format("`char_id` = '{}'", GetBuyerID()));
 		SetCustomerID(0);
 		SendBuyerToBarterWindow(this, Barter_RemoveFromBarterWindow);
 		SendBuyerMode(false);
 		SetBuyerID(0);
 		IsInBuyerSpace() ? __nop() : Message(Chat::Red, "You must be in a Barter Stall to start Barter Mode.");
-		Message(Chat::Yellow, "Barter Mode OFF.");
+		Message(Chat::Yellow, fmt::format("Barter Mode OFF. Buy lines deactivated.", results).c_str());
 	}
 
 	entity_list.QueueClients(this, outapp.get(), false);
@@ -2818,7 +2874,10 @@ void Client::ModifyBuyLine(const EQApplicationPacket *app)
 	if (ClientVersion() >= EQ::versions::ClientVersion::RoF) {
 		BuyerBuyLines_Struct bl{};
 		auto                         in = (BuyerGeneric_Struct *) app->pBuffer;
-		EQ::Util::MemoryStreamReader ss_in(reinterpret_cast<char *>(in->payload), app->size - sizeof(BuyerGeneric_Struct));
+		EQ::Util::MemoryStreamReader ss_in(
+			reinterpret_cast<char *>(in->payload),
+			app->size - sizeof(BuyerGeneric_Struct)
+		);
 		cereal::BinaryInputArchive   ar(ss_in);
 		ar(bl);
 
@@ -2827,137 +2886,87 @@ void Client::ModifyBuyLine(const EQApplicationPacket *app)
 		}
 
 		uint64 current_total_cost = 0;
+		auto   current_buy_lines  = BuyerBuyLinesRepository::GetBuyLines(database, CharacterID());
 
-		auto current_buy_lines = BuyerBuyLinesRepository::GetWhere(
-			database,
-			fmt::format("`char_id` = '{}'", GetBuyerID())
-		);
+		std::map<uint32, BuylineItemDetails_Struct> item_map;
+		BuildBuyLineMapFromVector(item_map,current_buy_lines);
 
-		for (auto const &buy_line: current_buy_lines) {
-			current_total_cost += buy_line.item_price * buy_line.item_qty;
-		}
+		current_total_cost = ValidateBuyLineCost(item_map);
 
 		auto buy_line = bl.buy_lines.front();
 		auto it = std::find_if(
 			current_buy_lines.cbegin(),
 			current_buy_lines.cend(),
-			[&](BuyerBuyLinesRepository::BuyerBuyLines bl) {
-				return bl.buy_slot_id == buy_line.slot;
+			[&](BuyerLineItems_Struct bl) {
+				return bl.slot == buy_line.slot;
 			}
 		);
 
 		if (buy_line.item_toggle) {
 			current_total_cost += buy_line.item_cost * buy_line.item_quantity;
 			if (it != std::end(current_buy_lines)) {
-				current_total_cost -= it->item_price * it->item_qty;
+				current_total_cost -= it->item_cost * it->item_quantity;
 				if (current_total_cost > GetCarriedMoney()) {
-					buy_line.item_cost     = it->item_price;
-					buy_line.item_quantity = it->item_qty;
-					Message(Chat::Yellow, "You currently do not have sufficient funds to support your modification.");
+					buy_line.item_cost     = it->item_cost;
+					buy_line.item_quantity = it->item_quantity;
+					Message(
+						Chat::Red,
+						fmt::format(
+							"You currently do not have sufficient funds to support your buy lines. You have {} and need {}",
+							DetermineMoneyString(GetCarriedMoney()),
+							DetermineMoneyString(current_total_cost)).c_str()
+					);
 					SendBuyLineUpdate(buy_line);
 					return;
 				}
+				else {
+					RemoveItemFromBuyLineMap(item_map, *it);
+					BuildBuyLineMapFromVector(item_map, bl.buy_lines);
+				}
+			}
+			else {
+				BuildBuyLineMapFromVector(item_map, bl.buy_lines);
 			}
 		}
 		else {
-			current_total_cost -= buy_line.item_cost;
+			current_total_cost -= buy_line.item_cost * buy_line.item_quantity;
 		}
 
 		if (current_total_cost > GetCarriedMoney()) {
-			Message(Chat::Yellow, "You currently do not have sufficient funds to support your modified buy line.");
+			Message(
+				Chat::Red,
+				fmt::format(
+					"You currently do not have sufficient funds to support your buy lines. You have {} and need {}",
+					DetermineMoneyString(GetCarriedMoney()),
+					DetermineMoneyString(current_total_cost)).c_str()
+			);
 			buy_line.item_toggle = 0;
 			SendBuyLineUpdate(buy_line);
 			return;
 		}
-		// Items to do for checking
-		// Buyer has the money
-		// buyer has the items
-		// the items(s) cannot be no drop, augmented
-		// buyer cannot have the 'buying item' already if it is lore
-		// buyer cannot offer the item that they are attempting to buy
 
 		bool buyer_error = false;
 
-		auto buy_item_slot_id = GetInv().HasItem(buy_line.item_id, buy_line.item_quantity, invWhereBank || invWhereCursor || invWherePersonal || invWhereWorn);
-		auto buy_item         = buy_item_slot_id == INVALID_INDEX ? nullptr : GetInv().GetItem(buy_item_slot_id);
-		if (buy_item && CheckLoreConflict(buy_item->GetItem())) {
-			//Cannot buy an item if you already have it and it is lore
-			buyer_error = true;
-			Message(
-				Chat::Yellow,
-				fmt::format(
-					"You already have a {}. Purchasing another will cause a lore conflict.",
-					buy_item->GetItem()->Name
-				).c_str()
-			);
-			buyer_error = true;
-		}
-		for (auto const &ti: buy_line.trade_items) {
-			if (ti.item_id != 0) {
-				auto item_slot_id = GetInv().HasItem(ti.item_id, ti.item_quantity * buy_line.item_quantity, invWherePersonal);
-				auto item         = item_slot_id == INVALID_INDEX ? nullptr : GetInv().GetItem(item_slot_id);
-				if (!item) {
-					Message(Chat::Red, "You do not have enough {} to support the quantity of the buy line.");
-					buyer_error = true;
-					break;
-				}
-
-				if (item && item->IsAugmented()) {
-					//Cannot use augmented items as compensation
-					Message(
-						Chat::Yellow,
-						fmt::format(
-							"You cannot offer {} because it is augmented.",
-							item->GetItem()->Name
-						).c_str()
-					);
-					buyer_error = true;
-					break;
-				}
-
-				if (item && !item->IsDroppable()) {
-					//Cannot use NO TRADE as compensation
-					Message(
-						Chat::Yellow,
-						fmt::format(
-							"You cannot offer {} because it is NoTrade.",
-							item->GetItem()->Name
-						).c_str()
-					);
-					buyer_error = true;
-					break;
-				}
-
-				for (auto const &bl2: bl.buy_lines) {
-					if (bl2.item_id == ti.item_id) {
-						//Cannot offer the item you are trying to buy as compensation
-						Message(
-							Chat::Yellow,
-							fmt::format(
-								"You cannot offer {} as compensation when you have a buy line for the same item.",
-								item->GetItem()->Name
-							).c_str()
-						);
-						buyer_error = true;
-						break;
-					}
-				}
-			}
-		}
-
-		if (buyer_error) {
-			return;
+		if (!ValidateBuyLineItems(item_map)) {
+			buy_line.item_toggle = 0;
 		}
 
 		buy_line.item_icon = database.GetItem(buy_line.item_id)->Icon;
 		if (buy_line.item_toggle && it != std::end(current_buy_lines)) {
 			BuyerBuyLinesRepository::ModifyBuyLine(database, buy_line, GetBuyerID());
+			Message(Chat::Yellow, fmt::format("Buy line for {} modified.", buy_line.item_name).c_str());
 		}
 		else if (buy_line.item_toggle && it == std::end(current_buy_lines)) {
 			BuyerBuyLinesRepository::CreateBuyLine(database, buy_line, GetBuyerID());
+			Message(Chat::Yellow, fmt::format("Buy line for {} enabled.", buy_line.item_name).c_str());
+		}
+		else if (!buy_line.item_toggle) {
+			BuyerBuyLinesRepository::DeleteBuyLine(database, GetBuyerID(), buy_line.slot);
+			Message(Chat::Yellow, fmt::format("Buy line for {} disabled.", buy_line.item_name).c_str());
 		}
 		else {
 			BuyerBuyLinesRepository::DeleteBuyLine(database, GetBuyerID(), buy_line.slot);
+			Message(Chat::Yellow, fmt::format("Unhandled modification.  Buy line for {} disabled.", buy_line.item_name).c_str());
 		}
 
 		SendBuyLineUpdate(buy_line);
@@ -2972,8 +2981,8 @@ void Client::ModifyBuyLine(const EQApplicationPacket *app)
 			auto it = std::find_if(
 				current_buy_lines.cbegin(),
 				current_buy_lines.cend(),
-				[&](const BuyerBuyLinesRepository::BuyerBuyLines bl) {
-					return bl.buy_slot_id == buy_line.slot;
+				[&](BuyerLineItems_Struct bl) {
+					return bl.slot == buy_line.slot;
 				}
 			);
 			if (it == std::end(current_buy_lines) && !buy_line.item_toggle) {
@@ -3905,87 +3914,20 @@ void Client::CreateStartingBuyLines(const EQApplicationPacket *app)
 			return;
 		}
 
-		uint64 proposed_total_cost = 0;
+		std::map<uint32, BuylineItemDetails_Struct> item_map{};
 
-		for (auto const &buy_line: bl.buy_lines) {
-			if (buy_line.item_toggle) {
-				proposed_total_cost += buy_line.item_cost * buy_line.item_quantity;
-			}
-		}
-
-		if (proposed_total_cost > GetCarriedMoney()) {
-			Message(Chat::Yellow, "You currently do not have sufficient funds to support your buy lines.");
+		if (!BuildBuyLineMap(item_map, bl)) {
 			ToggleBuyerMode(false);
 			return;
 		}
 
-		bool buyer_error = false;
-
-		for (auto const &b: bl.buy_lines) {
-			auto buy_item_slot_id = GetInv().HasItem(b.item_id, b.item_quantity, invWherePersonal);
-			auto buy_item         = buy_item_slot_id == INVALID_INDEX ? nullptr : GetInv().GetItem(buy_item_slot_id);
-			if (buy_item && CheckLoreConflict(buy_item->GetItem())) {
-				//Cannot buy an item if you already have it and it is lore
-				buyer_error = true;
-				Message(
-					Chat::Yellow,
-					fmt::format(
-						"You already have a {}. Purchasing another will cause a lore conflict.",
-						buy_item->GetItem()->Name
-					).c_str());
-				buyer_error = true;
-				break;
-			}
-			for (auto const &ti: b.trade_items) {
-				if (ti.item_id != 0) {
-					auto item_slot_id = GetInv().HasItem(ti.item_id, ti.item_quantity * b.item_quantity, invWherePersonal);
-					auto item         = item_slot_id == INVALID_INDEX ? nullptr : GetInv().GetItem(item_slot_id);
-					if (!item) {
-						Message(Chat::Red, "You do not have enough {} to support the quantity of the buy line.");
-						buyer_error = true;
-						break;
-					}
-
-					if (item && item->IsAugmented()) {
-						//Cannot use augmented items as compensation
-						Message(
-							Chat::Yellow,
-							fmt::format(
-								"You cannot offer {} because it is augmented.",
-								item->GetItem()->Name
-							).c_str());
-						buyer_error = true;
-						break;
-					}
-
-					if (item && !item->IsDroppable()) {
-						//Cannot use NO TRADE as compensation
-						Message(
-							Chat::Yellow,
-							fmt::format(
-								"You cannot offer {} because it is NoTrade.",
-								item->GetItem()->Name
-							).c_str());
-						buyer_error = true;
-						break;
-					}
-					for (auto const &bl2: bl.buy_lines) {
-						if (bl2.item_id == ti.item_id) {
-							//Cannot offer the item you are trying to buy as compensation
-							Message(
-								Chat::Yellow,
-								fmt::format(
-									"You cannot offer {} as compensation when you have a buy line for the same item.",
-									item->GetItem()->Name
-								).c_str());
-							buyer_error = true;
-							break;
-						}
-					}
-				}
-			}
+		auto proposed_total_cost = ValidateBuyLineCost(item_map);
+		if (proposed_total_cost == 0) {
+			ToggleBuyerMode(false);
+			return;
 		}
-		if (buyer_error) {
+
+		if (!ValidateBuyLineItems(item_map)) {
 			ToggleBuyerMode(false);
 			return;
 		}
@@ -4009,6 +3951,8 @@ void Client::CreateStartingBuyLines(const EQApplicationPacket *app)
 			ss_out.str("");
 			ss_out.clear();
 		}
+
+		Message(Chat::Yellow, fmt::format("{} buy lines enabled.", bl.buy_lines.size()).c_str());
 	}
 }
 
@@ -4061,7 +4005,7 @@ void Client::CheckIfMovedItemIsPartOfBuyLines(uint32 item_id)
 	}
 }
 
-void Client::SendWindowUpdatesToSellerAndBuyer(const BuyerLineSellItem_Struct& blsi)
+void Client::SendWindowUpdatesToSellerAndBuyer(BuyerLineSellItem_Struct& blsi)
 {
 	auto buyer  = entity_list.GetClientByID(blsi.buyer_entity_id);
 	auto seller = this;
@@ -4230,4 +4174,242 @@ void Client::SendBarterBuyerClientMessage(
 	memcpy(emu->payload, ss.str().data(), ss.str().length());
 
 	c->QueuePacket(outapp.get());
+}
+
+bool Client::BuildBuyLineMap(std::map<uint32, BuylineItemDetails_Struct> &item_map, BuyerBuyLines_Struct &bl)
+{
+	bool buyer_error = false;
+
+	for (auto const &b: bl.buy_lines) {
+		if (item_map.contains(b.item_id) && item_map[b.item_id].item_cost > 0) {
+			Message(
+				Chat::Red,
+				fmt::format(
+					"You cannot have two buy lines for the same item {}. Buy line not possible.",
+					b.item_name
+				).c_str()
+			);
+			buyer_error = true;
+			break;
+		}
+		BuylineItemDetails_Struct t = {b.item_quantity * b.item_cost, b.item_quantity};
+		item_map.emplace(b.item_id, t);
+		for (auto const &i: b.trade_items) {
+			if (item_map.contains(i.item_id) && item_map[i.item_id].item_cost > 0) {
+				Message(
+					Chat::Red,
+					fmt::format(
+						"You cannot buy {} and offer the same item as compensation. Buy line not possible.",
+						i.item_name
+					).c_str()
+				);
+				buyer_error = true;
+				break;
+			}
+			if (item_map.contains(i.item_id)) {
+				item_map[i.item_id].item_quantity += i.item_quantity * b.item_quantity;
+				continue;
+			}
+			t = {0, i.item_quantity * b.item_quantity};
+			item_map.emplace(i.item_id, t);
+		}
+	}
+
+	if (buyer_error) {
+		return false;
+	}
+
+	return true;
+}
+
+bool Client::BuildBuyLineMapFromVector(
+	std::map<uint32, BuylineItemDetails_Struct> &item_map,
+	std::vector<BuyerLineItems_Struct> &bl
+)
+{
+
+	bool buyer_error = false;
+
+	for (auto const &b: bl) {
+		if (item_map.contains(b.item_id) && item_map[b.item_id].item_cost > 0) {
+			Message(
+				Chat::Red,
+				fmt::format(
+					"You cannot have two buy lines for the same item {}. Buy line not possible.",
+					b.item_name
+				).c_str()
+			);
+			buyer_error = true;
+			break;
+		}
+		BuylineItemDetails_Struct t = {b.item_quantity * b.item_cost, b.item_quantity};
+		item_map.emplace(b.item_id, t);
+		for (auto const &i: b.trade_items) {
+			if (item_map.contains(i.item_id) && item_map[i.item_id].item_cost > 0) {
+				Message(
+					Chat::Red,
+					fmt::format(
+						"You cannot buy {} and offer the same item as compensation. Buy line not possible.",
+						i.item_name
+					).c_str()
+				);
+				buyer_error = true;
+				break;
+			}
+			if (item_map.contains(i.item_id)) {
+				item_map[i.item_id].item_quantity += i.item_quantity * b.item_quantity;
+				continue;
+			}
+			t = {0, i.item_quantity * b.item_quantity};
+			item_map.emplace(i.item_id, t);
+		}
+	}
+
+	if (buyer_error) {
+		return false;
+	}
+
+	return true;
+}
+
+bool
+Client::RemoveItemFromBuyLineMap(std::map<uint32, BuylineItemDetails_Struct> &item_map, const BuyerLineItems_Struct &bl)
+{
+
+	bool buyer_error = false;
+
+	if (item_map.contains(bl.item_id) && item_map[bl.item_id].item_cost > 0) {
+		item_map.erase(bl.item_id);
+	}
+
+	for (auto const &i: bl.trade_items) {
+		if (item_map.contains(i.item_id) && item_map[i.item_id].item_quantity - i.item_quantity == 0) {
+			item_map.erase(i.item_id);
+		}
+		else {
+			item_map[i.item_id].item_quantity -= i.item_quantity;
+		}
+	}
+
+	return true;
+}
+
+bool Client::ValidateBuyLineItems(std::map<uint32, BuylineItemDetails_Struct> &item_map)
+{
+	bool buyer_error = false;
+
+	for (auto const &i: item_map) {
+		auto item = database.GetItem(i.first);
+		// We are buying this item.
+		if (i.second.item_cost > 0) {
+			auto buy_item_slot_id = GetInv().HasItem(i.first, i.second.item_quantity, invWherePersonal);
+			auto buy_item         = buy_item_slot_id == INVALID_INDEX ? nullptr : GetInv().GetItem(buy_item_slot_id);
+			if (buy_item && CheckLoreConflict(buy_item->GetItem())) {
+				//Cannot buy an item if you already have it and it is lore
+				Message(
+					Chat::Red,
+					fmt::format(
+						"You already have a {}. Purchasing another will cause a lore conflict. Buy line not possible.",
+						buy_item->GetItem()->Name
+					).c_str()
+				);
+				buyer_error = true;
+				break;
+			}
+		}
+		if (i.second.item_cost == 0) {
+//			Message(
+//				Chat::Yellow,
+//				fmt::format("Looking for {:>2} {:>8} {}", i.second.item_quantity, i.first, item->Name).c_str()
+//			);
+			if (i.second.item_quantity > 1 && CheckLoreConflict(item)) {
+				Message(
+					Chat::Red,
+					fmt::format(
+						"Your buy line requires {} {}s however the item is LORE. Buy line not possible.",
+						i.second.item_quantity,
+						item->Name
+					).c_str()
+				);
+				buyer_error = true;
+				break;
+			}
+
+			auto buy_item_slot_id = GetInv().HasItem(i.first, i.second.item_quantity, invWherePersonal);
+			auto buy_item         = buy_item_slot_id == INVALID_INDEX ? nullptr : GetInv().GetItem(buy_item_slot_id);
+
+			if (!buy_item) {
+				Message(
+					Chat::Red,
+					fmt::format(
+						"The buy line requires {} {}{} which could not be found. Buy line not possible.",
+						i.second.item_quantity,
+						item->Name,
+						i.second.item_quantity > 1 ? "s" : ""
+					).c_str()
+				);
+				buyer_error = true;
+				break;
+			}
+
+			if (buy_item->IsAugmentable() && buy_item->IsAugmented()) {
+				//Cannot use augmented items as compensation
+				Message(
+					Chat::Red,
+					fmt::format(
+						"You cannot offer {} because it is augmented. Buy line not possible.",
+						buy_item->GetItem()->Name
+					).c_str()
+				);
+				buyer_error = true;
+				break;
+			}
+
+			if (!buy_item->IsDroppable()) {
+				//Cannot use NO TRADE items as compensation
+				Message(
+					Chat::Red,
+					fmt::format(
+						"You cannot offer {} because it is NoTrade. Buy line not possible.",
+						buy_item->GetItem()->Name
+					).c_str());
+				buyer_error = true;
+				break;
+			}
+
+			//All seems fine.  Player has the correct compensation item(s)
+//			Message(
+//				Chat::Yellow,
+//				fmt::format("Player has {:>2} {:>8} {}", i.second.item_quantity, i.first, item->Name).c_str());
+			buyer_error = false;
+		}
+	}
+
+	return !buyer_error;
+}
+
+uint64 Client::ValidateBuyLineCost(std::map<uint32, BuylineItemDetails_Struct> &item_map)
+{
+	uint64 proposed_total_cost = std::accumulate(
+		item_map.cbegin(),
+		item_map.cend(),
+		0,
+		[](auto prev_sum, const std::pair<uint32, BuylineItemDetails_Struct> &x) {
+			return prev_sum + x.second.item_cost;
+		}
+	);
+	//Message(Chat::Red, fmt::format("Proposed Cost is {}", DetermineMoneyString(proposed_total_cost)).c_str());
+
+	if (proposed_total_cost > GetCarriedMoney()) {
+		Message(
+			Chat::Red,
+			fmt::format(
+				"You currently do not have sufficient funds to support your buy lines. You have {} and need {}",
+				DetermineMoneyString(GetCarriedMoney()),
+				DetermineMoneyString(proposed_total_cost)).c_str()
+		);
+		return 0;
+	}
+
+	return proposed_total_cost;
 }

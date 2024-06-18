@@ -70,6 +70,7 @@ namespace EQ
 #include "../common/data_verification.h"
 #include "../common/repositories/character_parcels_repository.h"
 #include "../common/repositories/trader_repository.h"
+#include "../common/repositories/buyer_buy_lines_repository.h"
 
 #ifdef _WINDOWS
 	// since windows defines these within windef.h (which windows.h include)
@@ -396,8 +397,13 @@ public:
 	void ModifyBuyLine(const EQApplicationPacket *app);
 	void CreateStartingBuyLines(const EQApplicationPacket *app);
 	void BuyerItemSearch(const EQApplicationPacket *app);
-	void SendWindowUpdatesToSellerAndBuyer(const BuyerLineSellItem_Struct& blsi);
+	void SendWindowUpdatesToSellerAndBuyer(BuyerLineSellItem_Struct& blsi);
 	void SendBarterBuyerClientMessage(Client* c, BuyerLineSellItem_Struct& blsi, BarterBuyerActions action, BarterBuyerSubActions sub_action);
+	bool BuildBuyLineMap(std::map<uint32, BuylineItemDetails_Struct>& item_map, BuyerBuyLines_Struct& bl);
+	bool BuildBuyLineMapFromVector(std::map<uint32, BuylineItemDetails_Struct>& item_map, std::vector<BuyerLineItems_Struct>& bl);
+	bool RemoveItemFromBuyLineMap(std::map<uint32, BuylineItemDetails_Struct>& item_map, const BuyerLineItems_Struct& bl);
+	bool ValidateBuyLineItems(std::map<uint32, BuylineItemDetails_Struct>& item_map);
+	uint64 ValidateBuyLineCost(std::map<uint32, BuylineItemDetails_Struct>& item_map);
 
 	void FillSpawnStruct(NewSpawn_Struct* ns, Mob* ForWho);
 	bool ShouldISpawnFor(Client *c) { return !GMHideMe(c) && !IsHoveringForRespawn(); }
