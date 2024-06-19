@@ -382,6 +382,8 @@ public:
 	void   SetBuyerID(uint32 id) { m_buyer_id = id; }
 	uint32 GetBuyerID() { return m_buyer_id; }
 	bool   IsBuyer() { return m_buyer_id != 0 ? true : false; }
+	bool   IsBarterWindowDirty() { return m_barter_window_dirty; }
+	void   SetBarterWindowDirty(bool status) { m_barter_window_dirty = status; }
 	void   SetBuyerWelcomeMessage(const char* welcome_message);
 	void   SendBuyerGreeting(uint32 char_id);
 	void   SendSellerBrowsing(const std::string &browser);
@@ -398,7 +400,7 @@ public:
 	void CreateStartingBuyLines(const EQApplicationPacket *app);
 	void BuyerItemSearch(const EQApplicationPacket *app);
 	void SendWindowUpdatesToSellerAndBuyer(BuyerLineSellItem_Struct& blsi);
-	void SendBarterBuyerClientMessage(Client* c, BuyerLineSellItem_Struct& blsi, BarterBuyerActions action, BarterBuyerSubActions sub_action);
+	void SendBarterBuyerClientMessage(Client* c, BuyerLineSellItem_Struct& blsi, BarterBuyerActions action, BarterBuyerSubActions sub_action, BarterBuyerSubActions error_code);
 	bool BuildBuyLineMap(std::map<uint32, BuylineItemDetails_Struct>& item_map, BuyerBuyLines_Struct& bl);
 	bool BuildBuyLineMapFromVector(std::map<uint32, BuylineItemDetails_Struct>& item_map, std::vector<BuyerLineItems_Struct>& bl);
 	bool RemoveItemFromBuyLineMap(std::map<uint32, BuylineItemDetails_Struct>& item_map, const BuyerLineItems_Struct& bl);
@@ -1931,6 +1933,7 @@ private:
 	uint32 mercid; // current merc
 	uint8 mercSlot; // selected merc slot
 	uint32                                                         m_buyer_id;
+	bool                                                           m_barter_window_dirty;
 	int32                                                          m_parcel_platinum;
 	int32                                                          m_parcel_gold;
 	int32                                                          m_parcel_silver;

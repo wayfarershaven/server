@@ -236,6 +236,7 @@ public:
 		all_entries.no_items = buy_line.size();
 		for (auto const &l: buy_line) {
 			BuyerLineItemsSearch_Struct blis{};
+			blis.slot          = l.buy_slot_id;
 			blis.item_id       = l.item_id;
 			blis.item_cost     = l.item_price;
 			blis.item_icon     = l.item_icon;

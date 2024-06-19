@@ -915,16 +915,16 @@ namespace RoF2
 
 				//Create packet
 
-				auto GetNoSubItems = [](BuyerLineItemsSearch_Struct emu) -> int {
-					for (int i = 0; i < MAX_BUYER_COMPENSATION_ITEMS; i++) {
-						if (emu.trade_items[i].item_id != 0) {
-							continue;
-						}
-						return i;
-					}
-					return 0;
-				};
-
+//				auto GetNoSubItems = [](BuyerLineItemsSearch_Struct emu) -> int {
+//					for (int i = 0; i < MAX_BUYER_COMPENSATION_ITEMS; i++) {
+//						if (emu.trade_items[i].item_id != 0) {
+//							continue;
+//						}
+//						return i;
+//					}
+//					return 0;
+//				};
+//
 				auto outapp = std::make_unique<EQApplicationPacket>(OP_BuyerItems, p_size);
 				auto eq     = (char*)outapp->pBuffer;
 
@@ -1010,7 +1010,8 @@ namespace RoF2
 					}
 				}
 				VARSTRUCT_ENCODE_TYPE(uint32, eq, blsi.sub_action);
-				eq += 20;
+				VARSTRUCT_ENCODE_TYPE(uint32, eq, blsi.error_code);
+				eq += 16;
 				VARSTRUCT_ENCODE_STRING(eq, blsi.buyer_name.c_str());
 				VARSTRUCT_ENCODE_STRING(eq, blsi.item_name);
 				VARSTRUCT_ENCODE_STRING(eq, blsi.seller_name.c_str());

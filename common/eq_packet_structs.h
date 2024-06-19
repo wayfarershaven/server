@@ -3147,6 +3147,7 @@ enum BarterBuyerActions {
 enum BarterBuyerSubActions {
 	Barter_Success  = 0,
 	Barter_Failure  = 1,
+	Barter_DataOutOfDate = 4,
 	Barter_SellerDoesNotHaveItem = 6,
 	Barter_SameZone = 8
 };
@@ -3182,6 +3183,7 @@ struct BuyerMessaging_Struct {
 	uint32 buy_item_id;
 	uint32 buy_item_qty;
 	uint64 buy_item_cost;
+	uint32 buy_item_icon;
 	uint32 seller_entity_id;
 	char   seller_name[64];
 	char   item_name[64];
@@ -3285,6 +3287,7 @@ struct BuyerBuyLines_Struct {
 struct BuyerLineSellItem_Struct {
 	uint32                                  action;
 	uint32                                  sub_action;
+	uint32                                  error_code;
 	uint32                                  purchase_method; // 0 direct merchant, 1 via /barter window
 	uint32                                  buyer_entity_id;
 	std::string                             buyer_name;
@@ -3309,6 +3312,7 @@ struct BuyerLineSellItem_Struct {
 		archive(
 			CEREAL_NVP(action),
 			CEREAL_NVP(sub_action),
+			CEREAL_NVP(error_code),
 			CEREAL_NVP(purchase_method),
 			CEREAL_NVP(buyer_entity_id),
 			CEREAL_NVP(buyer_name),

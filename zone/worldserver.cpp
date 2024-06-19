@@ -4055,14 +4055,18 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 					sell_line.slot            = in->slot;
 					strn0cpy(sell_line.item_name, in->item_name, sizeof(sell_line.item_name));
 
-					buyer->SendBarterBuyerClientMessage(buyer, sell_line, Barter_BuyerTransactionComplete, Barter_Success);
+					buyer->SendBarterBuyerClientMessage(buyer, sell_line, Barter_BuyerTransactionComplete, Barter_Success, Barter_Success);
 
 					BuyerLineSellItem_Struct blis{};
-					blis.item_cost     = in->buy_item_cost;
-					blis.item_id       = in->buy_item_id;
-					blis.item_quantity = in->buy_item_qty;
-					blis.slot          = in->slot;
+					blis.enabled         = 1;
+					blis.item_toggle     = 1;
+					blis.item_cost       = in->buy_item_cost;
+					blis.item_id         = in->buy_item_id;
+					blis.item_quantity   = in->buy_item_qty;
+					blis.item_icon       = in->buy_item_icon;
+					blis.slot            = in->slot;
 					blis.seller_quantity = in->seller_quantity;
+					blis.buyer_entity_id = in->buyer_entity_id;
 					strn0cpy(blis.item_name, in->item_name, sizeof(blis.item_name));
 					//buyer->SendBuyLineUpdate(blis);
 					buyer->SendWindowUpdatesToSellerAndBuyer(blis);

@@ -2314,6 +2314,7 @@ void Client::SendBuyerResults(BarterSearchRequest_Struct& bsr) {
 		std::string search_string(bsr.search_string);
 		BuyerLineSearch_Struct results{};
 
+		SetBarterWindowDirty(false);
 		if (bsr.search_scope == 1) {
 			// Local Buyers
 			results = BuyerBuyLinesRepository::SearchBuyLines(database, search_string, 0, GetZoneID());
@@ -2672,10 +2673,10 @@ void Client::SellToBuyer(const EQApplicationPacket *app)
 				SendWindowUpdatesToSellerAndBuyer(sell_line);
 
 				//Send purchase message to Seller
-				SendBarterBuyerClientMessage(this, sell_line, Barter_SellerTransactionComplete, Barter_Success);
+				SendBarterBuyerClientMessage(this, sell_line, Barter_SellerTransactionComplete, Barter_Success, Barter_Success);
 
 				//Send purchase message to Buyer
-				SendBarterBuyerClientMessage(buyer, sell_line, Barter_BuyerTransactionComplete, Barter_Success);
+				SendBarterBuyerClientMessage(buyer, sell_line, Barter_BuyerTransactionComplete, Barter_Success, Barter_Success);
 
 //				//packet size
 //				auto packet_size = strlen(sell_line.item_name) * 2 + 2 + 48 + 30 + strlen(GetName()) + 1 +
@@ -2746,12 +2747,17 @@ void Client::SellToBuyer(const EQApplicationPacket *app)
 						Chat::Yellow,
 						"The barter parcel delivery system is not enabled on this server.  Please visit the vendor directly in the Bazaar."
 					);
-					SendBarterBuyerClientMessage(this, sell_line, Barter_SellerTransactionComplete, Barter_Failure);
+					SendBarterBuyerClientMessage(this, sell_line, Barter_SellerTransactionComplete, Barter_Failure, Barter_Failure);
+					break;
+				}
+
+				if (IsBarterWindowDirty()) {
+					SendBarterBuyerClientMessage(this, sell_line, Barter_SellerTransactionComplete, Barter_Failure, Barter_DataOutOfDate);
 					break;
 				}
 
 				if (sell_line.trade_items.size() > 0) {
-					SendBarterBuyerClientMessage(this, sell_line, Barter_SellerTransactionComplete, Barter_SameZone);
+					SendBarterBuyerClientMessage(this, sell_line, Barter_SellerTransactionComplete, Barter_Failure, Barter_SameZone);
 					break;
 				}
 
@@ -2762,11 +2768,13 @@ void Client::SellToBuyer(const EQApplicationPacket *app)
 				);
 				auto buy_item = buy_item_slot_id == INVALID_INDEX ? nullptr : GetInv().GetItem(buy_item_slot_id);
 				if (!buy_item) {
-					SendBarterBuyerClientMessage(this, sell_line, Barter_SellerTransactionComplete, Barter_SellerDoesNotHaveItem);
+					SendBarterBuyerClientMessage(this, sell_line, Barter_SellerTransactionComplete, Barter_Failure, Barter_SellerDoesNotHaveItem);
+					SetBarterWindowDirty(false);
 					break;
 				}
 
-				SendBarterBuyerClientMessage(this, sell_line, Barter_SellerTransactionComplete, Barter_Success);
+				SetBarterWindowDirty(true);
+				SendBarterBuyerClientMessage(this, sell_line, Barter_SellerTransactionComplete, Barter_Success, Barter_Success);
 
 				auto server_packet = std::make_unique<ServerPacket>(
 					ServerOP_BuyerMessaging,
@@ -2780,9 +2788,10 @@ void Client::SellToBuyer(const EQApplicationPacket *app)
 				data->buy_item_id      = sell_line.item_id;
 				data->buy_item_qty     = sell_line.item_quantity;
 				data->buy_item_cost    = sell_line.item_cost;
+				data->buy_item_icon    = sell_line.item_icon;
 				data->zone_id          = GetZoneID();
 				data->slot             = sell_line.slot;
-				data->seller_quantity = sell_line.seller_quantity;
+				data->seller_quantity  = sell_line.seller_quantity;
 				strn0cpy(data->item_name, sell_line.item_name, sizeof(data->item_name));
 				strn0cpy(data->buyer_name, sell_line.buyer_name.c_str(), sizeof(data->buyer_name));
 				strn0cpy(data->seller_name, GetCleanName(), sizeof(data->seller_name));
@@ -4156,13 +4165,15 @@ void Client::SendBarterBuyerClientMessage(
 	Client *c,
 	BuyerLineSellItem_Struct &blsi,
 	BarterBuyerActions action,
-	BarterBuyerSubActions sub_action
+	BarterBuyerSubActions sub_action,
+	BarterBuyerSubActions error_code
 )
 {
 	std::stringstream           ss{};
 	cereal::BinaryOutputArchive ar(ss);
 
 	blsi.sub_action = sub_action;
+	blsi.error_code = error_code;
 
 	{ ar(blsi); }
 
