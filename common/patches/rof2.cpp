@@ -5251,9 +5251,8 @@ namespace RoF2
 				sell_item.action          = VARSTRUCT_DECODE_TYPE(uint32, buffer);
 				sell_item.purchase_method = VARSTRUCT_DECODE_TYPE(uint32, buffer);
 				buffer += 4;
-				//Sell_Item.unknown008 = VARSTRUCT_DECODE_TYPE(uint32, buffer);
-				sell_item.buyer_entity_id  = VARSTRUCT_DECODE_TYPE(uint32, buffer);
-				sell_item.seller_entity_id = VARSTRUCT_DECODE_TYPE(uint32, buffer);
+				sell_item.buyer_entity_id = VARSTRUCT_DECODE_TYPE(uint32, buffer);
+				sell_item.buyer_id        = VARSTRUCT_DECODE_TYPE(uint32, buffer);
 				buffer += 11;
 				sell_item.slot    = VARSTRUCT_DECODE_TYPE(uint32, buffer);
 				sell_item.enabled = VARSTRUCT_DECODE_TYPE(uint8, buffer);
@@ -5277,11 +5276,17 @@ namespace RoF2
 					}
 				}
 
-				sell_item.buyer_entity_id  = VARSTRUCT_DECODE_TYPE(uint32, buffer);
-				sell_item.seller_entity_id = VARSTRUCT_DECODE_TYPE(uint32, buffer);
-				sell_item.zone_id          = VARSTRUCT_DECODE_TYPE(uint32, buffer);
-				sell_item.buyer_name       = std::string(buffer, strlen(buffer));
-				buffer += sell_item.buyer_name.length() + 1;
+				if (sell_item.purchase_method) {
+					sell_item.buyer_entity_id = VARSTRUCT_DECODE_TYPE(uint32, buffer);
+					sell_item.buyer_id = VARSTRUCT_DECODE_TYPE(uint32, buffer);
+					sell_item.zone_id = VARSTRUCT_DECODE_TYPE(uint32, buffer);
+					sell_item.buyer_name = std::string(buffer, strlen(buffer));
+					buffer += sell_item.buyer_name.length() + 1;
+				}
+				else {
+					buffer += 13;
+				}
+
 				sell_item.seller_quantity  = VARSTRUCT_DECODE_TYPE(uint32, buffer);
 
 				//buffer += 13;

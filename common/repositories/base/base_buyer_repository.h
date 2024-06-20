@@ -24,6 +24,7 @@ public:
 		uint32_t    char_entity_id;
 		std::string char_name;
 		uint32_t    char_zone_id;
+		time_t      transaction_date;
 		std::string welcome_message;
 	};
 
@@ -40,6 +41,7 @@ public:
 			"char_entity_id",
 			"char_name",
 			"char_zone_id",
+			"transaction_date",
 			"welcome_message",
 		};
 	}
@@ -52,6 +54,7 @@ public:
 			"char_entity_id",
 			"char_name",
 			"char_zone_id",
+			"UNIX_TIMESTAMP(transaction_date)",
 			"welcome_message",
 		};
 	}
@@ -93,12 +96,13 @@ public:
 	{
 		Buyer e{};
 
-		e.id              = 0;
-		e.char_id         = 0;
-		e.char_entity_id  = 0;
-		e.char_name       = "";
-		e.char_zone_id    = 0;
-		e.welcome_message = "";
+		e.id               = 0;
+		e.char_id          = 0;
+		e.char_entity_id   = 0;
+		e.char_name        = "";
+		e.char_zone_id     = 0;
+		e.transaction_date = 0;
+		e.welcome_message  = "";
 
 		return e;
 	}
@@ -135,12 +139,13 @@ public:
 		if (results.RowCount() == 1) {
 			Buyer e{};
 
-			e.id              = row[0] ? strtoull(row[0], nullptr, 10) : 0;
-			e.char_id         = row[1] ? static_cast<uint32_t>(strtoul(row[1], nullptr, 10)) : 0;
-			e.char_entity_id  = row[2] ? static_cast<uint32_t>(strtoul(row[2], nullptr, 10)) : 0;
-			e.char_name       = row[3] ? row[3] : "";
-			e.char_zone_id    = row[4] ? static_cast<uint32_t>(strtoul(row[4], nullptr, 10)) : 0;
-			e.welcome_message = row[5] ? row[5] : "";
+			e.id               = row[0] ? strtoull(row[0], nullptr, 10) : 0;
+			e.char_id          = row[1] ? static_cast<uint32_t>(strtoul(row[1], nullptr, 10)) : 0;
+			e.char_entity_id   = row[2] ? static_cast<uint32_t>(strtoul(row[2], nullptr, 10)) : 0;
+			e.char_name        = row[3] ? row[3] : "";
+			e.char_zone_id     = row[4] ? static_cast<uint32_t>(strtoul(row[4], nullptr, 10)) : 0;
+			e.transaction_date = strtoll(row[5] ? row[5] : "-1", nullptr, 10);
+			e.welcome_message  = row[6] ? row[6] : "";
 
 			return e;
 		}
@@ -178,7 +183,8 @@ public:
 		v.push_back(columns[2] + " = " + std::to_string(e.char_entity_id));
 		v.push_back(columns[3] + " = '" + Strings::Escape(e.char_name) + "'");
 		v.push_back(columns[4] + " = " + std::to_string(e.char_zone_id));
-		v.push_back(columns[5] + " = '" + Strings::Escape(e.welcome_message) + "'");
+		v.push_back(columns[5] + " = FROM_UNIXTIME(" + (e.transaction_date > 0 ? std::to_string(e.transaction_date) : "null") + ")");
+		v.push_back(columns[6] + " = '" + Strings::Escape(e.welcome_message) + "'");
 
 		auto results = db.QueryDatabase(
 			fmt::format(
@@ -205,6 +211,7 @@ public:
 		v.push_back(std::to_string(e.char_entity_id));
 		v.push_back("'" + Strings::Escape(e.char_name) + "'");
 		v.push_back(std::to_string(e.char_zone_id));
+		v.push_back("FROM_UNIXTIME(" + (e.transaction_date > 0 ? std::to_string(e.transaction_date) : "null") + ")");
 		v.push_back("'" + Strings::Escape(e.welcome_message) + "'");
 
 		auto results = db.QueryDatabase(
@@ -240,6 +247,7 @@ public:
 			v.push_back(std::to_string(e.char_entity_id));
 			v.push_back("'" + Strings::Escape(e.char_name) + "'");
 			v.push_back(std::to_string(e.char_zone_id));
+			v.push_back("FROM_UNIXTIME(" + (e.transaction_date > 0 ? std::to_string(e.transaction_date) : "null") + ")");
 			v.push_back("'" + Strings::Escape(e.welcome_message) + "'");
 
 			insert_chunks.push_back("(" + Strings::Implode(",", v) + ")");
@@ -274,12 +282,13 @@ public:
 		for (auto row = results.begin(); row != results.end(); ++row) {
 			Buyer e{};
 
-			e.id              = row[0] ? strtoull(row[0], nullptr, 10) : 0;
-			e.char_id         = row[1] ? static_cast<uint32_t>(strtoul(row[1], nullptr, 10)) : 0;
-			e.char_entity_id  = row[2] ? static_cast<uint32_t>(strtoul(row[2], nullptr, 10)) : 0;
-			e.char_name       = row[3] ? row[3] : "";
-			e.char_zone_id    = row[4] ? static_cast<uint32_t>(strtoul(row[4], nullptr, 10)) : 0;
-			e.welcome_message = row[5] ? row[5] : "";
+			e.id               = row[0] ? strtoull(row[0], nullptr, 10) : 0;
+			e.char_id          = row[1] ? static_cast<uint32_t>(strtoul(row[1], nullptr, 10)) : 0;
+			e.char_entity_id   = row[2] ? static_cast<uint32_t>(strtoul(row[2], nullptr, 10)) : 0;
+			e.char_name        = row[3] ? row[3] : "";
+			e.char_zone_id     = row[4] ? static_cast<uint32_t>(strtoul(row[4], nullptr, 10)) : 0;
+			e.transaction_date = strtoll(row[5] ? row[5] : "-1", nullptr, 10);
+			e.welcome_message  = row[6] ? row[6] : "";
 
 			all_entries.push_back(e);
 		}
@@ -304,12 +313,13 @@ public:
 		for (auto row = results.begin(); row != results.end(); ++row) {
 			Buyer e{};
 
-			e.id              = row[0] ? strtoull(row[0], nullptr, 10) : 0;
-			e.char_id         = row[1] ? static_cast<uint32_t>(strtoul(row[1], nullptr, 10)) : 0;
-			e.char_entity_id  = row[2] ? static_cast<uint32_t>(strtoul(row[2], nullptr, 10)) : 0;
-			e.char_name       = row[3] ? row[3] : "";
-			e.char_zone_id    = row[4] ? static_cast<uint32_t>(strtoul(row[4], nullptr, 10)) : 0;
-			e.welcome_message = row[5] ? row[5] : "";
+			e.id               = row[0] ? strtoull(row[0], nullptr, 10) : 0;
+			e.char_id          = row[1] ? static_cast<uint32_t>(strtoul(row[1], nullptr, 10)) : 0;
+			e.char_entity_id   = row[2] ? static_cast<uint32_t>(strtoul(row[2], nullptr, 10)) : 0;
+			e.char_name        = row[3] ? row[3] : "";
+			e.char_zone_id     = row[4] ? static_cast<uint32_t>(strtoul(row[4], nullptr, 10)) : 0;
+			e.transaction_date = strtoll(row[5] ? row[5] : "-1", nullptr, 10);
+			e.welcome_message  = row[6] ? row[6] : "";
 
 			all_entries.push_back(e);
 		}
@@ -389,6 +399,7 @@ public:
 		v.push_back(std::to_string(e.char_entity_id));
 		v.push_back("'" + Strings::Escape(e.char_name) + "'");
 		v.push_back(std::to_string(e.char_zone_id));
+		v.push_back("FROM_UNIXTIME(" + (e.transaction_date > 0 ? std::to_string(e.transaction_date) : "null") + ")");
 		v.push_back("'" + Strings::Escape(e.welcome_message) + "'");
 
 		auto results = db.QueryDatabase(
@@ -417,6 +428,7 @@ public:
 			v.push_back(std::to_string(e.char_entity_id));
 			v.push_back("'" + Strings::Escape(e.char_name) + "'");
 			v.push_back(std::to_string(e.char_zone_id));
+			v.push_back("FROM_UNIXTIME(" + (e.transaction_date > 0 ? std::to_string(e.transaction_date) : "null") + ")");
 			v.push_back("'" + Strings::Escape(e.welcome_message) + "'");
 
 			insert_chunks.push_back("(" + Strings::Implode(",", v) + ")");

@@ -3290,6 +3290,7 @@ struct BuyerLineSellItem_Struct {
 	uint32                                  error_code;
 	uint32                                  purchase_method; // 0 direct merchant, 1 via /barter window
 	uint32                                  buyer_entity_id;
+	uint32                                  buyer_id;
 	std::string                             buyer_name;
 	uint32                                  seller_entity_id;
 	std::string                             seller_name;
@@ -3315,6 +3316,7 @@ struct BuyerLineSellItem_Struct {
 			CEREAL_NVP(error_code),
 			CEREAL_NVP(purchase_method),
 			CEREAL_NVP(buyer_entity_id),
+			CEREAL_NVP(buyer_id),
 			CEREAL_NVP(buyer_name),
 			CEREAL_NVP(seller_entity_id),
 			CEREAL_NVP(seller_name),
