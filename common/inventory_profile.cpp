@@ -1801,7 +1801,7 @@ int16 EQ::InventoryProfile::FindFirstFreeSlotThatFitsItem(const EQ::ItemData *it
 				auto bag_item = GetItem(base_slot_id + bag_slot);
 				if (!bag_item) {
 					// Found available slot within bag
-					return i;
+					return base_slot_id + bag_slot;
 				}
 			}
 		}

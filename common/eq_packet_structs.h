@@ -3141,7 +3141,8 @@ enum BarterBuyerActions {
 	Barter_OpenBarterWindow          = 23,
 	Barter_AddToBarterWindow         = 26,
 	Barter_RemoveFromBarterWindow    = 27,
-	Barter_RemoveFromMerchantWindow  = 50   //Not a client item.  Used for internal communications.
+	Barter_RemoveFromMerchantWindow  = 50,   //Not a client item.  Used for internal communications.
+	Barter_FailedTransaction         = 51
 };
 
 enum BarterBuyerSubActions {

@@ -382,8 +382,6 @@ public:
 	void   SetBuyerID(uint32 id) { m_buyer_id = id; }
 	uint32 GetBuyerID() { return m_buyer_id; }
 	bool   IsBuyer() { return m_buyer_id != 0 ? true : false; }
-//	bool   IsBarterWindowDirty() { return m_barter_window_dirty; }
-//	void   SetBarterWindowDirty(bool status) { m_barter_window_dirty = status; }
 	void   SetBarterTime() { m_barter_time = time(nullptr); }
 	uint32 GetBarterTime() { return m_barter_time; }
 	void   SetBuyerWelcomeMessage(const char* welcome_message);
@@ -1936,7 +1934,6 @@ private:
 	uint8 mercSlot; // selected merc slot
 	uint32                                                         m_buyer_id;
 	uint32                                                         m_barter_time;
-	bool                                                           m_barter_window_dirty;
 	int32                                                          m_parcel_platinum;
 	int32                                                          m_parcel_gold;
 	int32                                                          m_parcel_silver;

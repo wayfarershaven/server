@@ -1778,6 +1778,7 @@ void ZoneServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p) {
 					zoneserver_list.SendPacket(Zones::BAZAAR, pack);
 					break;
 				}
+				case Barter_FailedTransaction:
 				case Barter_BuyerTransactionComplete: {
 					zoneserver_list.SendPacket(in->zone_id, pack);
 					break;

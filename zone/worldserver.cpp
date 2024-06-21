@@ -4032,15 +4032,45 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 
 					break;
 				}
+				case Barter_FailedTransaction: {
+					auto seller = entity_list.GetClientByID(in->seller_entity_id);
+					if (!seller) {
+						return;
+					}
+
+					BuyerLineSellItem_Struct sell_line{};
+					sell_line.item_id         = in->buy_item_id;
+					sell_line.item_quantity   = in->buy_item_qty;
+					sell_line.item_cost       = in->buy_item_cost;
+					sell_line.seller_name     = in->seller_name;
+					sell_line.buyer_name      = in->buyer_name;
+					sell_line.seller_quantity = in->seller_quantity;
+					sell_line.slot            = in->slot;
+					strn0cpy(sell_line.item_name, in->item_name, sizeof(sell_line.item_name));
+
+					seller->Message(Chat::Red, "Unfortunately the Buyer is over the parcel limit.");
+					seller->SendBarterBuyerClientMessage(seller, sell_line, Barter_SellerTransactionComplete, Barter_Failure, Barter_Failure);
+					break;
+				}
 				case Barter_SellItem: {
 					auto buyer = entity_list.GetClientByID(in->buyer_entity_id);
 					if (!buyer) {
 						return;
 					}
 
+					if (buyer->GetParcelCount() >= RuleI(Parcel, ParcelMaxItems)) {
+						buyer->Message(Chat::Red, fmt::format("{} wanted to sell you {} {}.",in->seller_name, in->seller_quantity, in->item_name).c_str());
+						buyer->Message(Chat::Red, "Unfortunately you have too many parcels to receive the item.");
+						in->action        = Barter_FailedTransaction;
+						worldserver.SendPacket(pack);
+						break;
+					}
+
 					uint64 cost = in->buy_item_qty * in->seller_quantity;
 					if (cost > buyer->GetCarriedMoney()) {
-						return;
+						in->action        = Barter_FailedTransaction;
+						worldserver.SendPacket(pack);
+						break;
 					}
 
 					buyer->TakeMoneyFromPP(cost, true);
@@ -4068,34 +4098,44 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 					blis.seller_quantity = in->seller_quantity;
 					blis.buyer_entity_id = in->buyer_entity_id;
 					strn0cpy(blis.item_name, in->item_name, sizeof(blis.item_name));
-					//buyer->SendBuyLineUpdate(blis);
+
 					buyer->SendWindowUpdatesToSellerAndBuyer(blis);
 
 					in->action        = Barter_BuyerTransactionComplete;
-					in->buy_item_cost = cost;
-					in->buyer_id      = buyer->GetBuyerID();
-
 					worldserver.SendPacket(pack);
 					break;
 				}
 				case Barter_BuyerTransactionComplete: {
 					auto seller = entity_list.GetClientByID(in->seller_entity_id);
 					if (!seller) {
+						in->action        = Barter_FailedTransaction;
+						worldserver.SendPacket(pack);
 						return;
 					}
+
+					BuyerLineSellItem_Struct sell_line{};
+					sell_line.item_id         = in->buy_item_id;
+					sell_line.item_quantity   = in->buy_item_qty;
+					sell_line.item_cost       = in->buy_item_cost;
+					sell_line.seller_name     = in->seller_name;
+					sell_line.buyer_name      = in->buyer_name;
+					sell_line.seller_quantity = in->seller_quantity;
+					sell_line.slot            = in->slot;
+					strn0cpy(sell_line.item_name, in->item_name, sizeof(sell_line.item_name));
 
 					CharacterParcelsRepository::CharacterParcels parcel_out{};
 					auto next_slot = seller->FindNextFreeParcelSlot(in->buyer_id);
 					if (next_slot == INVALID_INDEX) {
+						seller->SendBarterBuyerClientMessage(seller, sell_line, Barter_SellerTransactionComplete, Barter_Failure, Barter_Failure);
 						return;
 					}
 
-					auto item = database.CreateItem(in->buy_item_id, in->buy_item_qty);
+					auto item = database.CreateItem(in->buy_item_id, in->seller_quantity);
 
 					parcel_out.from_name  = in->seller_name;
 					parcel_out.note       = "Delivered from a Barter Sell";
 					parcel_out.sent_date  = time(nullptr);
-					parcel_out.quantity   = item->IsStackable() ? in->buy_item_qty : item->GetCharges();
+					parcel_out.quantity   = item->IsStackable() ? in->seller_quantity : item->GetCharges();
 					parcel_out.item_id    = item->GetItem()->ID;
 					parcel_out.aug_slot_1 = 0;
 					parcel_out.aug_slot_2 = 0;
@@ -4115,7 +4155,8 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 
 					next_slot = seller->FindNextFreeParcelSlot(seller->CharacterID());
 					if (next_slot == INVALID_INDEX) {
-						return;
+						seller->SendBarterBuyerClientMessage(seller, sell_line, Barter_SellerTransactionComplete, Barter_Failure, Barter_Failure);
+						break;
 					}
 
 					parcel_out.from_name = in->buyer_name;
@@ -4132,14 +4173,17 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 
 					auto buy_item_slot_id = seller->GetInv().HasItem(
 						in->buy_item_id,
-						in->buy_item_qty,
+						in->seller_quantity,
 						invWherePersonal
 					);
 					auto buy_item = buy_item_slot_id == INVALID_INDEX ? nullptr : seller->GetInv().GetItem(buy_item_slot_id);
 					if (!buy_item) {
+						seller->SendBarterBuyerClientMessage(seller, sell_line, Barter_SellerTransactionComplete, Barter_Failure, Barter_Failure);
 						break;
 					}
-					seller->RemoveItem(in->buy_item_id, in->buy_item_qty);
+
+					seller->SendBarterBuyerClientMessage(seller, sell_line, Barter_SellerTransactionComplete, Barter_Success, Barter_Success);
+					seller->RemoveItem(in->buy_item_id, in->seller_quantity);
 
 					break;
 				}
