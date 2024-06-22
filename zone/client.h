@@ -400,7 +400,7 @@ public:
 	void CreateStartingBuyLines(const EQApplicationPacket *app);
 	void BuyerItemSearch(const EQApplicationPacket *app);
 	void SendWindowUpdatesToSellerAndBuyer(BuyerLineSellItem_Struct& blsi);
-	void SendBarterBuyerClientMessage(Client* c, BuyerLineSellItem_Struct& blsi, BarterBuyerActions action, BarterBuyerSubActions sub_action, BarterBuyerSubActions error_code);
+	void SendBarterBuyerClientMessage(BuyerLineSellItem_Struct& blsi, BarterBuyerActions action, BarterBuyerSubActions sub_action, BarterBuyerSubActions error_code);
 	bool BuildBuyLineMap(std::map<uint32, BuylineItemDetails_Struct>& item_map, BuyerBuyLines_Struct& bl);
 	bool BuildBuyLineMapFromVector(std::map<uint32, BuylineItemDetails_Struct>& item_map, std::vector<BuyerLineItems_Struct>& bl);
 	bool RemoveItemFromBuyLineMap(std::map<uint32, BuylineItemDetails_Struct>& item_map, const BuyerLineItems_Struct& bl);
@@ -1077,7 +1077,8 @@ public:
 	int32 GetItemIDAt(int16 slot_id);
 	int32 GetAugmentIDAt(int16 slot_id, uint8 augslot);
 	bool PutItemInInventory(int16 slot_id, const EQ::ItemInstance& inst, bool client_update = false);
-	bool PutItemInInventoryWithStacking(Client* c, EQ::ItemInstance* inst);
+	bool PutItemInInventoryWithStacking(EQ::ItemInstance* inst);
+	bool FindNumberOfFreeInventorySlotsWithSizeCheck(std::vector<BuyerLineTradeItems_Struct> items);
 	bool PushItemOnCursor(const EQ::ItemInstance& inst, bool client_update = false);
 	void SendCursorBuffer();
 	void DeleteItemInInventory(int16 slot_id, int16 quantity = 0, bool client_update = false, bool update_db = true);
