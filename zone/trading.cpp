@@ -2696,9 +2696,12 @@ void Client::SellToBuyer(const EQApplicationPacket *app)
 					e.item_quantity = sell_line.seller_quantity;
 					e.item_name     = sell_line.item_name;
 					e.trade_items   = sell_line.trade_items;
-					e.total_cost    = total_cost;
-					e.buyer_name    = buyer->GetCleanName();
-					e.seller_name   = GetCleanName();
+					for (auto &t: e.trade_items) {
+						t *= sell_line.seller_quantity;
+					}
+					e.total_cost  = total_cost;
+					e.buyer_name  = buyer->GetCleanName();
+					e.seller_name = GetCleanName();
 					RecordPlayerEventLog(PlayerEvent::BARTER_TRANSACTION, e);
 				}
 
@@ -2707,6 +2710,7 @@ void Client::SellToBuyer(const EQApplicationPacket *app)
 				buyer->SendBarterBuyerClientMessage(sell_line, Barter_BuyerTransactionComplete, Barter_Success, Barter_Success);
 				break;
 			}
+			case ByDirectToInventory:
 			case ByParcel: {
 				bool seller_error = false;
 				if (!RuleB(Parcel, EnableParcelMerchants) || !RuleB(Bazaar, EnableParcelDelivery)) {
@@ -2873,6 +2877,8 @@ void Client::ModifyBuyLine(const EQApplicationPacket *app)
 		}
 
 		int64 current_total_cost = 0;
+		bool  pass               = false;
+
 		auto   current_buy_lines  = BuyerBuyLinesRepository::GetBuyLines(database, CharacterID());
 
 		std::map<uint32, BuylineItemDetails_Struct> item_map;
@@ -2917,6 +2923,11 @@ void Client::ModifyBuyLine(const EQApplicationPacket *app)
 		}
 		else {
 			current_total_cost -= static_cast<int64>(buy_line.item_cost) * static_cast<int64>(buy_line.item_quantity);
+			std::map<uint32, BuylineItemDetails_Struct> item_map_tmp;
+			BuildBuyLineMapFromVector(item_map_tmp, bl.buy_lines);
+			if (ValidateBuyLineItems(item_map_tmp)) {
+				pass = true;
+			}
 		}
 
 		if (current_total_cost > static_cast<int64>(GetCarriedMoney())) {
@@ -2939,7 +2950,7 @@ void Client::ModifyBuyLine(const EQApplicationPacket *app)
 		}
 
 		buy_line.item_icon = database.GetItem(buy_line.item_id)->Icon;
-		if (buy_line.item_toggle && it != std::end(current_buy_lines)) {
+		if ((buy_line.item_toggle && it != std::end(current_buy_lines)) || pass) {
 			BuyerBuyLinesRepository::ModifyBuyLine(database, buy_line, GetBuyerID());
 			Message(Chat::Yellow, fmt::format("Buy line for {} modified.", buy_line.item_name).c_str());
 		}
@@ -2987,13 +2998,15 @@ void Client::ModifyBuyLine(const EQApplicationPacket *app)
 			blis.item_quantity = buy_line.item_quantity;
 			blis.item_toggle   = buy_line.item_toggle;
 			blis.slot          = buy_line.slot;
-			strn0cpy(blis.item_name, buy_line.item_name, sizeof(blis.item_name));
+			blis.item_name = buy_line.item_name;
+			//strn0cpy(blis.item_name, buy_line.item_name, sizeof(blis.item_name));
 			for (auto const &i: buy_line.trade_items) {
 				BuyerLineTradeItems_Struct bltis{};
 				bltis.item_icon     = i.item_icon;
 				bltis.item_id       = i.item_id;
 				bltis.item_quantity = i.item_quantity;
-				strn0cpy(bltis.item_name, i.item_name, sizeof(bltis.item_name));
+				bltis.item_name = i.item_name;
+				//strn0cpy(bltis.item_name, i.item_name, sizeof(bltis.item_name));
 				blis.trade_items.push_back(bltis);
 			}
 
@@ -4025,7 +4038,8 @@ void Client::SendWindowUpdatesToSellerAndBuyer(BuyerLineSellItem_Struct& blsi)
 		bl.item_icon     = blsi.item_icon;
 		bl.item_id       = blsi.item_id;
 		bl.item_quantity = blsi.item_quantity - blsi.seller_quantity;
-		strn0cpy(bl.item_name, blsi.item_name, sizeof(bl.item_name));
+		bl.item_name = blsi.item_name;
+		//strn0cpy(bl.item_name, blsi.item_name, sizeof(bl.item_name));
 		bl.item_toggle = 0;
 		bl.slot        = blsi.slot;
 
@@ -4034,7 +4048,8 @@ void Client::SendWindowUpdatesToSellerAndBuyer(BuyerLineSellItem_Struct& blsi)
 			blti.item_icon     = b.item_icon;
 			blti.item_id       = b.item_id;
 			blti.item_quantity = b.item_quantity;
-			strn0cpy(blti.item_name, b.item_name, sizeof(blti.item_name));
+			blti.item_name = b.item_name;
+			//strn0cpy(blti.item_name, b.item_name, sizeof(blti.item_name));
 			bl.trade_items.push_back(blti);
 		}
 
@@ -4065,13 +4080,15 @@ void Client::SendWindowUpdatesToSellerAndBuyer(BuyerLineSellItem_Struct& blsi)
 		bli.item_quantity        = blsi.item_quantity - blsi.seller_quantity;
 		bli.item_toggle          = 1;
 		bli.slot                 = blsi.slot;
-		strn0cpy(bli.item_name, blsi.item_name, sizeof(bli.item_name));
+		bli.item_name = blsi.item_name;
+		//strn0cpy(bli.item_name, blsi.item_name, sizeof(bli.item_name));
 		for (auto const &b : blsi.trade_items) {
 			BuyerLineTradeItems_Struct blti{};
 			blti.item_id       = b.item_id;
 			blti.item_icon     = b.item_icon;
 			blti.item_quantity = b.item_quantity;
-			strn0cpy(blti.item_name, b.item_name, sizeof(blti.item_name));
+			blti.item_name = b.item_name;
+			//strn0cpy(blti.item_name, b.item_name, sizeof(blti.item_name));
 			bli.trade_items.push_back(blti);
 		}
 		{ ar(bli); }
@@ -4260,12 +4277,8 @@ bool Client::BuildBuyLineMapFromVector(
 	return true;
 }
 
-bool
-Client::RemoveItemFromBuyLineMap(std::map<uint32, BuylineItemDetails_Struct> &item_map, const BuyerLineItems_Struct &bl)
+void Client::RemoveItemFromBuyLineMap(std::map<uint32, BuylineItemDetails_Struct> &item_map, const BuyerLineItems_Struct &bl)
 {
-
-	bool buyer_error = false;
-
 	if (item_map.contains(bl.item_id) && item_map[bl.item_id].item_cost > 0) {
 		item_map.erase(bl.item_id);
 	}
@@ -4274,12 +4287,10 @@ Client::RemoveItemFromBuyLineMap(std::map<uint32, BuylineItemDetails_Struct> &it
 		if (item_map.contains(i.item_id) && (item_map[i.item_id].item_quantity - (i.item_quantity * bl.item_quantity)) == 0) {
 			item_map.erase(i.item_id);
 		}
-		else {
-			item_map[i.item_id].item_quantity -= i.item_quantity;
+		else if (item_map.contains(i.item_id)) {
+			item_map[i.item_id].item_quantity -= i.item_quantity * bl.item_quantity;
 		}
 	}
-
-	return true;
 }
 
 bool Client::ValidateBuyLineItems(std::map<uint32, BuylineItemDetails_Struct> &item_map)

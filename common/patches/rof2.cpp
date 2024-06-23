@@ -796,9 +796,9 @@ namespace RoF2
 				ar(bl);
 
 				//packet size
-				auto packet_size = strlen(bl.item_name) + 1 + 34;
+				auto packet_size = bl.item_name.length() + 1 + 34;
 				for (auto const &b: bl.trade_items) {
-					packet_size += strlen(b.item_name) + 1;
+					packet_size += b.item_name.length() + 1;
 					packet_size += 12;
 				}
 
@@ -811,7 +811,7 @@ namespace RoF2
 				VARSTRUCT_ENCODE_TYPE(uint32, eq, bl.slot);
 				VARSTRUCT_ENCODE_TYPE(uint8, eq, bl.enabled ? 1 : 0);
 				VARSTRUCT_ENCODE_TYPE(uint32, eq, bl.item_id);
-				VARSTRUCT_ENCODE_STRING(eq, bl.item_name);
+				VARSTRUCT_ENCODE_STRING(eq, bl.item_name.c_str());
 				VARSTRUCT_ENCODE_TYPE(uint32, eq, bl.item_icon);
 				VARSTRUCT_ENCODE_TYPE(uint32, eq, bl.item_quantity);
 				VARSTRUCT_ENCODE_TYPE(uint8, eq, bl.item_toggle ? 1 : 0);
@@ -822,7 +822,7 @@ namespace RoF2
 					VARSTRUCT_ENCODE_TYPE(uint32, eq, bl.trade_items[i].item_id);
 					VARSTRUCT_ENCODE_TYPE(uint32, eq, bl.trade_items[i].item_quantity);
 					VARSTRUCT_ENCODE_TYPE(uint32, eq, bl.trade_items[i].item_icon);
-					VARSTRUCT_ENCODE_STRING(eq, bl.trade_items[i].item_name);
+					VARSTRUCT_ENCODE_STRING(eq, bl.trade_items[i].item_name.c_str());
 				}
 				dest->QueuePacket(outapp.get());
 				safe_delete(inapp);
@@ -841,9 +841,9 @@ namespace RoF2
 				ar(bli);
 
 				//packet size
-				auto packet_size = strlen(bli.item_name) + 1 + 34;
+				auto packet_size = bli.item_name.length() + 1 + 34;
 				for (auto const &b: bli.trade_items) {
-					packet_size += strlen(b.item_name) + 1;
+					packet_size += b.item_name.length() + 1;
 					packet_size += 12;
 				}
 
@@ -856,7 +856,7 @@ namespace RoF2
 				VARSTRUCT_ENCODE_TYPE(uint32, eq, bli.slot);
 				VARSTRUCT_ENCODE_TYPE(uint8, eq, bli.enabled ? 1 : 0);
 				VARSTRUCT_ENCODE_TYPE(uint32, eq, bli.item_id);
-				VARSTRUCT_ENCODE_STRING(eq, bli.item_name);
+				VARSTRUCT_ENCODE_STRING(eq, bli.item_name.c_str());
 				VARSTRUCT_ENCODE_TYPE(uint32, eq, bli.item_icon);
 				VARSTRUCT_ENCODE_TYPE(uint32, eq, bli.item_quantity);
 				VARSTRUCT_ENCODE_TYPE(uint8, eq, bli.item_toggle ? 1 : 0);
@@ -867,7 +867,7 @@ namespace RoF2
 					VARSTRUCT_ENCODE_TYPE(uint32, eq, i.item_id);
 					VARSTRUCT_ENCODE_TYPE(uint32, eq, i.item_quantity);
 					VARSTRUCT_ENCODE_TYPE(uint32, eq, i.item_icon);
-					VARSTRUCT_ENCODE_STRING(eq, i.item_name);
+					VARSTRUCT_ENCODE_STRING(eq, i.item_name.c_str());
 				}
 				dest->QueuePacket(packet.get());
 				safe_delete(inapp);
@@ -904,7 +904,7 @@ namespace RoF2
 //					}
 					for (auto const& d : b.trade_items) {
 						if (d.item_id != 0) {
-							p_size += strlen(d.item_name) + 1;
+							p_size += d.item_name.length() + 1;
 							p_size += 3 * sizeof(uint32);
 						}
 					}
@@ -950,7 +950,7 @@ namespace RoF2
 						VARSTRUCT_ENCODE_TYPE(uint32, eq, i.item_id);
 						VARSTRUCT_ENCODE_TYPE(uint32, eq, i.item_quantity);
 						VARSTRUCT_ENCODE_TYPE(uint32, eq, i.item_icon);
-						VARSTRUCT_ENCODE_STRING(eq, i.item_name);
+						VARSTRUCT_ENCODE_STRING(eq, i.item_name.c_str());
 					}
 					//if (buyer) {
 					VARSTRUCT_ENCODE_TYPE(uint32, eq, b.buyer_entity_id);
@@ -992,7 +992,7 @@ namespace RoF2
 				auto packet_size = strlen(blsi.item_name) * 2 + 2 + 48 + 30 + blsi.seller_name.length() + 1 +
 								   blsi.buyer_name.length() + 1;
 				for (auto const &b: blsi.trade_items) {
-					packet_size += strlen(b.item_name) + 1;
+					packet_size += b.item_name.length() + 1;
 					packet_size += 12;
 				}
 
@@ -1027,7 +1027,7 @@ namespace RoF2
 					VARSTRUCT_ENCODE_TYPE(uint32, eq, 0);
 					VARSTRUCT_ENCODE_TYPE(uint32, eq, i.item_quantity);
 					VARSTRUCT_ENCODE_TYPE(uint32, eq, 0);
-					VARSTRUCT_ENCODE_STRING(eq, i.item_name);
+					VARSTRUCT_ENCODE_STRING(eq, i.item_name.c_str());
 				}
 
 				VARSTRUCT_ENCODE_TYPE(uint32, eq, 0);
@@ -5196,7 +5196,9 @@ namespace RoF2
 					b.slot    = VARSTRUCT_DECODE_TYPE(uint32, buffer);
 					b.enabled = VARSTRUCT_DECODE_TYPE(uint8, buffer);
 					b.item_id = VARSTRUCT_DECODE_TYPE(uint32, buffer);
-					VARSTRUCT_DECODE_STRING(b.item_name, buffer);
+					b.item_name = std::string(buffer, strlen(buffer));
+					buffer += strlen(buffer) + 1;
+					//VARSTRUCT_DECODE_STRING(b.item_name, buffer);
 					b.item_icon      = VARSTRUCT_DECODE_TYPE(uint32, buffer);
 					b.item_quantity  = VARSTRUCT_DECODE_TYPE(uint32, buffer);
 					b.item_toggle    = VARSTRUCT_DECODE_TYPE(uint8, buffer);
@@ -5211,7 +5213,9 @@ namespace RoF2
 							blti.item_id       = VARSTRUCT_DECODE_TYPE(uint32, buffer);
 							blti.item_quantity = VARSTRUCT_DECODE_TYPE(uint32, buffer);
 							blti.item_icon     = VARSTRUCT_DECODE_TYPE(uint32, buffer);
-							VARSTRUCT_DECODE_STRING(blti.item_name, buffer);
+							blti.item_name = std::string(buffer, strlen(buffer));
+							buffer += strlen(buffer) + 1;
+							//VARSTRUCT_DECODE_STRING(blti.item_name, buffer);
 							buyer_buy_lines.buy_lines[i].trade_items.push_back(blti);
 						}
 					}
@@ -5271,7 +5275,9 @@ namespace RoF2
 						blti.item_id       = VARSTRUCT_DECODE_TYPE(uint32, buffer);
 						blti.item_quantity = VARSTRUCT_DECODE_TYPE(uint32, buffer);
 						blti.item_icon     = VARSTRUCT_DECODE_TYPE(uint32, buffer);
-						VARSTRUCT_DECODE_STRING(blti.item_name, buffer);
+						blti.item_name = std::string(buffer, strlen(buffer));
+						buffer += strlen(buffer) + 1;
+						//VARSTRUCT_DECODE_STRING(blti.item_name, buffer);
 						sell_item.trade_items.push_back(blti);
 					}
 				}

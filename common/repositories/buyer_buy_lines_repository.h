@@ -169,7 +169,8 @@ public:
 			bli.item_cost     = l.item_price;
 			bli.item_quantity = l.item_qty;
 			bli.slot          = l.buy_slot_id;
-			strn0cpy(bli.item_name, l.item_name.c_str(), sizeof(bli.item_name));
+			bli.item_name = l.item_name;
+			//strn0cpy(bli.item_name, l.item_name.c_str(), sizeof(bli.item_name));
 
 			for (auto const &i: GetSubIDs(buy_line_trade_items, l.id)) {
 				BuyerLineTradeItems_Struct blti{};
@@ -177,11 +178,12 @@ public:
 				blti.item_icon     = i.item_icon;
 				blti.item_quantity = i.item_qty;
 				blti.item_id       = i.item_id;
-				strn0cpy(
-					blti.item_name,
-					i.item_name.c_str(),
-					sizeof(blti.item_name)
-				);
+//				strn0cpy(
+//					blti.item_name,
+//					i.item_name.c_str(),
+//					sizeof(blti.item_name)
+//				);
+				blti.item_name = i.item_name;
 				bli.trade_items.push_back(blti);
 			}
 			all_entries.push_back(bli);
@@ -258,7 +260,8 @@ public:
 				e.item_icon     = i.item_icon;
 				e.item_quantity = i.item_qty;
 				e.item_id       = i.item_id;
-				strn0cpy(e.item_name, i.item_name.c_str(), sizeof(e.item_name));
+				e.item_name = i.item_name;
+				//strn0cpy(e.item_name, i.item_name.c_str(), sizeof(e.item_name));
 
 				blis.trade_items.push_back(e);
 			}

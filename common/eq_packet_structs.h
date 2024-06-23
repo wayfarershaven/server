@@ -3221,10 +3221,15 @@ struct BuyerWelcomeMessageUpdate_Struct {
 };
 
 struct BuyerLineTradeItems_Struct {
-	uint32 item_id;
-	uint32 item_quantity;
-	uint32 item_icon;
-	char   item_name[64];
+	uint32      item_id;
+	uint32      item_quantity;
+	uint32      item_icon;
+	std::string item_name;
+
+	void operator*=(uint32 multiplier)
+	{
+		this->item_quantity *= multiplier;
+	}
 
 	template<class Archive>
 	void serialize(Archive &archive)
@@ -3242,7 +3247,7 @@ struct BuyerLineItems_Struct {
 	uint32                                  slot;
 	uint8                                   enabled;
 	uint32                                  item_id;
-	char                                    item_name[64];
+	std::string                             item_name;
 	uint32                                  item_icon;
 	uint32                                  item_quantity;
 	uint8                                   item_toggle;

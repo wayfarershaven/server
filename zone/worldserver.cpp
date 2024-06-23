@@ -4133,7 +4133,7 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 					auto item = std::unique_ptr<EQ::ItemInstance>(database.CreateItem(in->buy_item_id, in->seller_quantity));
 
 					p.from_name  = in->seller_name;
-					p.note       = "Delivered from a Barter Sell";
+					p.note       = fmt::format("Delivered from your purchase of {} {} at {} each.", in->seller_quantity, in->item_name, seller->DetermineMoneyString(in->buy_item_cost));
 					p.sent_date  = time(nullptr);
 					p.quantity   = item->IsStackable() ? in->seller_quantity : item->GetCharges();
 					p.item_id    = item->GetItem()->ID;
@@ -4160,7 +4160,8 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 					}
 
 					p.from_name = in->buyer_name;
-					p.quantity  = in->buy_item_cost;
+					p.note      = fmt::format("Delivered from your sale of {} {} at {} each.", in->seller_quantity, in->item_name, seller->DetermineMoneyString(in->buy_item_cost));
+					p.quantity  = in->seller_quantity * in->buy_item_cost;
 					p.item_id   = PARCEL_MONEY_ITEM_ID;
 					p.char_id   = seller->CharacterID();
 					p.slot_id   = next_slot;
