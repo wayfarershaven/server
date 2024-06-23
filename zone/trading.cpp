@@ -2652,13 +2652,22 @@ void Client::SellToBuyer(const EQApplicationPacket *app)
 				}
 
 				for (auto const &ti: sell_line.trade_items) {
-					std::unique_ptr<EQ::ItemInstance> inst(database.CreateItem(ti.item_id, ti.item_quantity * sell_line.seller_quantity));
+					std::unique_ptr<EQ::ItemInstance> inst(database.CreateItem(ti.item_id,
+																			   ti.item_quantity *
+																			   sell_line.seller_quantity)
+					);
+
 					if (inst.get()->GetItem()) {
 						buyer->RemoveItem(ti.item_id, ti.item_quantity * sell_line.seller_quantity);
 						if (!PutItemInInventoryWithStacking(inst.get())) {
 							Message(Chat::Red, "Error putting item in your inventory.");
 							buyer->PutItemInInventoryWithStacking(inst.get());
-							SendBarterBuyerClientMessage(sell_line, Barter_SellerTransactionComplete, Barter_Failure, Barter_Failure);
+							SendBarterBuyerClientMessage(
+								sell_line,
+								Barter_SellerTransactionComplete,
+								Barter_Failure,
+								Barter_Failure
+							);
 							return;
 						}
 					}
@@ -2681,6 +2690,18 @@ void Client::SellToBuyer(const EQApplicationPacket *app)
 				AddMoneyToPP(total_cost, true);
 				buyer->TakeMoneyFromPP(total_cost, true);
 
+				if (player_event_logs.IsEventEnabled(PlayerEvent::BARTER_TRANSACTION)) {
+					PlayerEvent::BarterTransaction e{};
+					e.item_id       = sell_line.item_id;
+					e.item_quantity = sell_line.seller_quantity;
+					e.item_name     = sell_line.item_name;
+					e.trade_items   = sell_line.trade_items;
+					e.total_cost    = total_cost;
+					e.buyer_name    = buyer->GetCleanName();
+					e.seller_name   = GetCleanName();
+					RecordPlayerEventLog(PlayerEvent::BARTER_TRANSACTION, e);
+				}
+
 				SendWindowUpdatesToSellerAndBuyer(sell_line);
 				SendBarterBuyerClientMessage(sell_line, Barter_SellerTransactionComplete, Barter_Success, Barter_Success);
 				buyer->SendBarterBuyerClientMessage(sell_line, Barter_BuyerTransactionComplete, Barter_Success, Barter_Success);
@@ -2699,14 +2720,12 @@ void Client::SellToBuyer(const EQApplicationPacket *app)
 					);
 //					SendBarterBuyerClientMessage(sell_line, Barter_SellerTransactionComplete, Barter_Failure, Barter_Failure);
 					seller_error = true;
-					break;
 				}
 
 				if (GetParcelCount() >= RuleI(Parcel, ParcelMaxItems)) {
 					Message(Chat::Red, "You have too many parcels to receive the coin for this buy line.");
 					//SendBarterBuyerClientMessage(sell_line, Barter_SellerTransactionComplete, Barter_Failure, Barter_Failure);
 					seller_error = true;
-					break;
 				}
 
 				auto buyer_time = BuyerRepository::GetTransactionDate(database, sell_line.buyer_id);
@@ -2718,7 +2737,6 @@ void Client::SellToBuyer(const EQApplicationPacket *app)
 				if (sell_line.trade_items.size() > 0) {
 					Message(Chat::Red, "You must visit the buyer directly when receiving compensation items.");
 					seller_error = true;
-					break;
 				}
 
 				auto buy_item_slot_id = GetInv().HasItem(
@@ -2854,7 +2872,7 @@ void Client::ModifyBuyLine(const EQApplicationPacket *app)
 			return;
 		}
 
-		uint64 current_total_cost = 0;
+		int64 current_total_cost = 0;
 		auto   current_buy_lines  = BuyerBuyLinesRepository::GetBuyLines(database, CharacterID());
 
 		std::map<uint32, BuylineItemDetails_Struct> item_map;
@@ -2898,10 +2916,10 @@ void Client::ModifyBuyLine(const EQApplicationPacket *app)
 			}
 		}
 		else {
-			current_total_cost -= buy_line.item_cost * buy_line.item_quantity;
+			current_total_cost -= static_cast<int64>(buy_line.item_cost) * static_cast<int64>(buy_line.item_quantity);
 		}
 
-		if (current_total_cost > GetCarriedMoney()) {
+		if (current_total_cost > static_cast<int64>(GetCarriedMoney())) {
 			Message(
 				Chat::Red,
 				fmt::format(
@@ -4253,7 +4271,7 @@ Client::RemoveItemFromBuyLineMap(std::map<uint32, BuylineItemDetails_Struct> &it
 	}
 
 	for (auto const &i: bl.trade_items) {
-		if (item_map.contains(i.item_id) && item_map[i.item_id].item_quantity - i.item_quantity == 0) {
+		if (item_map.contains(i.item_id) && (item_map[i.item_id].item_quantity - (i.item_quantity * bl.item_quantity)) == 0) {
 			item_map.erase(i.item_id);
 		}
 		else {
@@ -4358,9 +4376,9 @@ bool Client::ValidateBuyLineItems(std::map<uint32, BuylineItemDetails_Struct> &i
 	return !buyer_error;
 }
 
-uint64 Client::ValidateBuyLineCost(std::map<uint32, BuylineItemDetails_Struct> &item_map)
+int64 Client::ValidateBuyLineCost(std::map<uint32, BuylineItemDetails_Struct> &item_map)
 {
-	uint64 proposed_total_cost = std::accumulate(
+	int64 proposed_total_cost = std::accumulate(
 		item_map.cbegin(),
 		item_map.cend(),
 		0,

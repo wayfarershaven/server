@@ -405,7 +405,7 @@ public:
 	bool BuildBuyLineMapFromVector(std::map<uint32, BuylineItemDetails_Struct>& item_map, std::vector<BuyerLineItems_Struct>& bl);
 	bool RemoveItemFromBuyLineMap(std::map<uint32, BuylineItemDetails_Struct>& item_map, const BuyerLineItems_Struct& bl);
 	bool ValidateBuyLineItems(std::map<uint32, BuylineItemDetails_Struct>& item_map);
-	uint64 ValidateBuyLineCost(std::map<uint32, BuylineItemDetails_Struct>& item_map);
+	int64 ValidateBuyLineCost(std::map<uint32, BuylineItemDetails_Struct>& item_map);
 
 	void FillSpawnStruct(NewSpawn_Struct* ns, Mob* ForWho);
 	bool ShouldISpawnFor(Client *c) { return !GMHideMe(c) && !IsHoveringForRespawn(); }

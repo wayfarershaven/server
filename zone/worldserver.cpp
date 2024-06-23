@@ -4066,14 +4066,14 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 						break;
 					}
 
-					uint64 cost = in->buy_item_qty * in->seller_quantity;
-					if (cost > buyer->GetCarriedMoney()) {
+					uint64 total_cost = (uint64)in->buy_item_qty * (uint64)in->seller_quantity;
+					if (total_cost > buyer->GetCarriedMoney()) {
 						in->action        = Barter_FailedTransaction;
 						worldserver.SendPacket(pack);
 						break;
 					}
 
-					buyer->TakeMoneyFromPP(cost, true);
+					buyer->TakeMoneyFromPP(total_cost, true);
 
 					BuyerLineSellItem_Struct sell_line{};
 					sell_line.item_id         = in->buy_item_id;
@@ -4123,33 +4123,33 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 					sell_line.slot            = in->slot;
 					strn0cpy(sell_line.item_name, in->item_name, sizeof(sell_line.item_name));
 
-					CharacterParcelsRepository::CharacterParcels parcel_out{};
+					CharacterParcelsRepository::CharacterParcels p{};
 					auto next_slot = seller->FindNextFreeParcelSlot(in->buyer_id);
 					if (next_slot == INVALID_INDEX) {
 						seller->SendBarterBuyerClientMessage(sell_line, Barter_SellerTransactionComplete, Barter_Failure, Barter_Failure);
 						return;
 					}
 
-					auto item = database.CreateItem(in->buy_item_id, in->seller_quantity);
+					auto item = std::unique_ptr<EQ::ItemInstance>(database.CreateItem(in->buy_item_id, in->seller_quantity));
 
-					parcel_out.from_name  = in->seller_name;
-					parcel_out.note       = "Delivered from a Barter Sell";
-					parcel_out.sent_date  = time(nullptr);
-					parcel_out.quantity   = item->IsStackable() ? in->seller_quantity : item->GetCharges();
-					parcel_out.item_id    = item->GetItem()->ID;
-					parcel_out.aug_slot_1 = 0;
-					parcel_out.aug_slot_2 = 0;
-					parcel_out.aug_slot_3 = 0;
-					parcel_out.aug_slot_4 = 0;
-					parcel_out.aug_slot_5 = 0;
-					parcel_out.aug_slot_6 = 0;
-					parcel_out.char_id    = in->buyer_id;
-					parcel_out.slot_id    = next_slot;
-					parcel_out.id         = 0;
-					auto result = CharacterParcelsRepository::InsertOne(database, parcel_out);
+					p.from_name  = in->seller_name;
+					p.note       = "Delivered from a Barter Sell";
+					p.sent_date  = time(nullptr);
+					p.quantity   = item->IsStackable() ? in->seller_quantity : item->GetCharges();
+					p.item_id    = item->GetItem()->ID;
+					p.aug_slot_1 = 0;
+					p.aug_slot_2 = 0;
+					p.aug_slot_3 = 0;
+					p.aug_slot_4 = 0;
+					p.aug_slot_5 = 0;
+					p.aug_slot_6 = 0;
+					p.char_id    = in->buyer_id;
+					p.slot_id    = next_slot;
+					p.id         = 0;
+					auto result = CharacterParcelsRepository::InsertOne(database, p);
 
 					Parcel_Struct ps{};
-					ps.item_slot = parcel_out.slot_id;
+					ps.item_slot = p.slot_id;
 					strn0cpy(ps.send_to, in->buyer_name, sizeof(ps.send_to));
 					seller->SendParcelDeliveryToWorld(ps);
 
@@ -4159,27 +4159,38 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 						break;
 					}
 
-					parcel_out.from_name = in->buyer_name;
-					parcel_out.quantity  = in->buy_item_cost;
-					parcel_out.item_id   = PARCEL_MONEY_ITEM_ID;
-					parcel_out.char_id   = seller->CharacterID();
-					parcel_out.slot_id   = next_slot;
-					parcel_out.id        = 0;
-					result = CharacterParcelsRepository::InsertOne(database, parcel_out);
+					p.from_name = in->buyer_name;
+					p.quantity  = in->buy_item_cost;
+					p.item_id   = PARCEL_MONEY_ITEM_ID;
+					p.char_id   = seller->CharacterID();
+					p.slot_id   = next_slot;
+					p.id        = 0;
+					result = CharacterParcelsRepository::InsertOne(database, p);
 
-					ps.item_slot = parcel_out.slot_id;
+					ps.item_slot = p.slot_id;
 					strn0cpy(ps.send_to, in->seller_name, sizeof(ps.send_to));
 					seller->SendParcelDeliveryToWorld(ps);
 
-					auto buy_item_slot_id = seller->GetInv().HasItem(
-						in->buy_item_id,
-						in->seller_quantity,
-						invWherePersonal
-					);
-					auto buy_item = buy_item_slot_id == INVALID_INDEX ? nullptr : seller->GetInv().GetItem(buy_item_slot_id);
-					if (!buy_item) {
-						seller->SendBarterBuyerClientMessage(sell_line, Barter_SellerTransactionComplete, Barter_Failure, Barter_Failure);
-						break;
+//					auto buy_item_slot_id = seller->GetInv().HasItem(
+//						in->buy_item_id,
+//						in->seller_quantity,
+//						invWherePersonal
+//					);
+//					auto buy_item = buy_item_slot_id == INVALID_INDEX ? nullptr : seller->GetInv().GetItem(buy_item_slot_id);
+//					if (!buy_item) {
+//						seller->SendBarterBuyerClientMessage(sell_line, Barter_SellerTransactionComplete, Barter_Failure, Barter_Failure);
+//						break;
+//					}
+					if (player_event_logs.IsEventEnabled(PlayerEvent::BARTER_TRANSACTION)) {
+						PlayerEvent::BarterTransaction e{};
+						e.item_id       = sell_line.item_id;
+						e.item_quantity = sell_line.seller_quantity;
+						e.item_name     = sell_line.item_name;
+						e.trade_items   = sell_line.trade_items;
+						e.total_cost    = (uint64)sell_line.item_cost * (uint64)in->seller_quantity;
+						e.buyer_name    = sell_line.buyer_name;
+						e.seller_name   = sell_line.seller_name;
+						RecordPlayerEventLogWithClient(seller, PlayerEvent::BARTER_TRANSACTION, e);
 					}
 
 					seller->SendBarterBuyerClientMessage(sell_line, Barter_SellerTransactionComplete, Barter_Success, Barter_Success);
