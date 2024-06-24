@@ -15567,7 +15567,7 @@ void Client::Handle_OP_TraderBuy(const EQApplicationPacket *app)
 	auto trader = entity_list.GetClientByID(in->trader_id);
 
 	switch (in->method) {
-		case ByVendor: {
+		case BazaarByVendor: {
 			if (trader) {
 				LogTrading("Buy item directly from vendor id <green>[{}] item_id <green>[{}] quantity <green>[{}] "
 						   "serial_number <green>[{}]",
@@ -15580,7 +15580,7 @@ void Client::Handle_OP_TraderBuy(const EQApplicationPacket *app)
 			}
 			break;
 		}
-		case ByParcel: {
+		case BazaarByParcel: {
 			if (!RuleB(Parcel, EnableParcelMerchants) || !RuleB(Bazaar, EnableParcelDelivery)) {
 				LogTrading(
 					"Bazaar purchase attempt by parcel delivery though 'Parcel:EnableParcelMerchants' or "
@@ -15590,7 +15590,7 @@ void Client::Handle_OP_TraderBuy(const EQApplicationPacket *app)
 					Chat::Yellow,
 					"The bazaar parcel delivey system is not enabled on this server.  Please visit the vendor directly in the Bazaar."
 				);
-				in->method     = ByParcel;
+				in->method     = BazaarByParcel;
 				in->sub_action = Failed;
 				TradeRequestFailed(app);
 				return;
@@ -15605,7 +15605,7 @@ void Client::Handle_OP_TraderBuy(const EQApplicationPacket *app)
 			BuyTraderItemOutsideBazaar(in, app);
 			break;
 		}
-		case ByDirectToInventory: {
+		case BazaarByDirectToInventory: {
 			if (!RuleB(Parcel, EnableDirectToInventoryDelivery)) {
 				LogTrading("Bazaar purchase attempt by direct inventory delivery though "
 						   "'Parcel:EnableDirectToInventoryDelivery' not enabled."
@@ -15614,7 +15614,7 @@ void Client::Handle_OP_TraderBuy(const EQApplicationPacket *app)
 					Chat::Yellow,
 					"Direct inventory delivey is not enabled on this server.  Please visit the vendor directly."
 				);
-				in->method     = ByDirectToInventory;
+				in->method     = BazaarByDirectToInventory;
 				in->sub_action = Failed;
 				TradeRequestFailed(app);
 				return;
@@ -15631,7 +15631,7 @@ void Client::Handle_OP_TraderBuy(const EQApplicationPacket *app)
 				Chat::Yellow,
 				"Direct inventory delivey is not yet implemented.  Please visit the vendor directly or purchase via parcel delivery."
 			);
-			in->method     = ByDirectToInventory;
+			in->method     = BazaarByDirectToInventory;
 			in->sub_action = Failed;
 			TradeRequestFailed(app);
 			break;

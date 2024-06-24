@@ -4034,9 +4034,7 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 				}
 				case Barter_FailedTransaction: {
 					auto seller = entity_list.GetClientByID(in->seller_entity_id);
-					if (!seller) {
-						return;
-					}
+					auto buyer  = entity_list.GetClientByID(in->buyer_entity_id);
 
 					BuyerLineSellItem_Struct sell_line{};
 					sell_line.item_id         = in->buy_item_id;
@@ -4048,32 +4046,110 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 					sell_line.slot            = in->slot;
 					strn0cpy(sell_line.item_name, in->item_name, sizeof(sell_line.item_name));
 
-					seller->Message(Chat::Red, "Unfortunately the Buyer is over the parcel limit.");
-					seller->SendBarterBuyerClientMessage(sell_line, Barter_SellerTransactionComplete, Barter_Failure, Barter_Failure);
+					uint64 total_cost = (uint64) sell_line.item_cost * (uint64) sell_line.seller_quantity;
+					std::unique_ptr<EQ::ItemInstance> inst(database.CreateItem(in->buy_item_id, in->seller_quantity));
+
+					switch (in->sub_action) {
+						case Barter_FailedBuyerChecks:
+						case Barter_FailedSellerChecks: {
+							if (seller) {
+								LogTradingDetail("Significant barter transaction failure.");
+								seller->Message(
+									Chat::Red,
+									"Significant barter transaction error.  Transaction rolled back."
+								);
+								seller->SendBarterBuyerClientMessage(
+									sell_line,
+									Barter_SellerTransactionComplete,
+									Barter_Failure,
+									Barter_Failure
+								);
+
+								if (player_event_logs.IsEventEnabled(PlayerEvent::BARTER_TRANSACTION)) {
+									PlayerEvent::BarterTransaction e{};
+									e.status        = "Failed Barter Transaction";
+									e.item_id       = sell_line.item_id;
+									e.item_quantity = sell_line.seller_quantity;
+									e.item_name     = sell_line.item_name;
+									e.trade_items   = sell_line.trade_items;
+									for (auto &i: e.trade_items) {
+										i *= sell_line.seller_quantity;
+									}
+									e.total_cost  = (uint64) sell_line.item_cost * (uint64) in->seller_quantity;
+									e.buyer_name  = sell_line.buyer_name;
+									e.seller_name = sell_line.seller_name;
+									RecordPlayerEventLogWithClient(seller, PlayerEvent::BARTER_TRANSACTION, e);
+								}
+							}
+
+							if (buyer) {
+								LogError("Significant barter transaction failure.  Replacing {} and {} {} to {}",
+										 buyer->DetermineMoneyString(total_cost),
+										 sell_line.seller_quantity,
+										 sell_line.item_name,
+										 buyer->GetCleanName());
+								buyer->AddMoneyToPPWithOverflow(total_cost, true);
+								buyer->RemoveItem(sell_line.item_id, sell_line.seller_quantity);
+
+								buyer->Message(
+									Chat::Red,
+									"Significant barter transaction error.  Transaction rolled back."
+								);
+								buyer->SendBarterBuyerClientMessage(
+									sell_line,
+									Barter_BuyerTransactionComplete,
+									Barter_Failure,
+									Barter_Failure
+								);
+
+								if (player_event_logs.IsEventEnabled(PlayerEvent::BARTER_TRANSACTION)) {
+									PlayerEvent::BarterTransaction e{};
+									e.status        = "Failed Barter Transaction";
+									e.item_id       = sell_line.item_id;
+									e.item_quantity = sell_line.seller_quantity;
+									e.item_name     = sell_line.item_name;
+									e.trade_items   = sell_line.trade_items;
+									for (auto &i: e.trade_items) {
+										i *= sell_line.seller_quantity;
+									}
+									e.total_cost  = (uint64) sell_line.item_cost * (uint64) in->seller_quantity;
+									e.buyer_name  = sell_line.buyer_name;
+									e.seller_name = sell_line.seller_name;
+									RecordPlayerEventLogWithClient(buyer, PlayerEvent::BARTER_TRANSACTION, e);
+								}
+							}
+							break;
+						}
+						default: {
+							if (seller) {
+								seller->SendBarterBuyerClientMessage(
+									sell_line,
+									Barter_SellerTransactionComplete,
+									Barter_Failure,
+									Barter_Failure
+								);
+							}
+
+							if (buyer) {
+								buyer->SendBarterBuyerClientMessage(
+									sell_line,
+									Barter_BuyerTransactionComplete,
+									Barter_Failure,
+									Barter_Failure
+								);
+							}
+						}
+					}
 					break;
 				}
 				case Barter_SellItem: {
 					auto buyer = entity_list.GetClientByID(in->buyer_entity_id);
 					if (!buyer) {
+						in->action     = Barter_FailedTransaction;
+						in->sub_action = Barter_BuyerCouldNotBeFound;
+						worldserver.SendPacket(pack);
 						return;
 					}
-
-					if (buyer->GetParcelCount() >= RuleI(Parcel, ParcelMaxItems)) {
-						buyer->Message(Chat::Red, fmt::format("{} wanted to sell you {} {}.",in->seller_name, in->seller_quantity, in->item_name).c_str());
-						buyer->Message(Chat::Red, "Unfortunately you have too many parcels to receive the item.");
-						in->action        = Barter_FailedTransaction;
-						worldserver.SendPacket(pack);
-						break;
-					}
-
-					uint64 total_cost = (uint64)in->buy_item_qty * (uint64)in->seller_quantity;
-					if (total_cost > buyer->GetCarriedMoney()) {
-						in->action        = Barter_FailedTransaction;
-						worldserver.SendPacket(pack);
-						break;
-					}
-
-					buyer->TakeMoneyFromPP(total_cost, true);
 
 					BuyerLineSellItem_Struct sell_line{};
 					sell_line.item_id         = in->buy_item_id;
@@ -4081,11 +4157,17 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 					sell_line.item_cost       = in->buy_item_cost;
 					sell_line.seller_name     = in->seller_name;
 					sell_line.buyer_name      = in->buyer_name;
+					sell_line.buyer_entity_id = in->buyer_entity_id;
 					sell_line.seller_quantity = in->seller_quantity;
 					sell_line.slot            = in->slot;
 					strn0cpy(sell_line.item_name, in->item_name, sizeof(sell_line.item_name));
 
-					buyer->SendBarterBuyerClientMessage(sell_line, Barter_BuyerTransactionComplete, Barter_Success, Barter_Success);
+					if (!buyer->DoBarterBuyerChecks(sell_line)) {
+						in->action     = Barter_FailedTransaction;
+						in->sub_action = Barter_FailedBuyerChecks;
+						worldserver.SendPacket(pack);
+						break;
+					}
 
 					BuyerLineSellItem_Struct blis{};
 					blis.enabled         = 1;
@@ -4099,16 +4181,57 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 					blis.buyer_entity_id = in->buyer_entity_id;
 					strn0cpy(blis.item_name, in->item_name, sizeof(blis.item_name));
 
-					buyer->SendWindowUpdatesToSellerAndBuyer(blis);
+					uint64 total_cost = (uint64) sell_line.item_cost * (uint64) sell_line.seller_quantity;
+					std::unique_ptr<EQ::ItemInstance> inst(database.CreateItem(in->buy_item_id, in->seller_quantity));
 
-					in->action        = Barter_BuyerTransactionComplete;
+					if (!buyer->TakeMoneyFromPPWithOverFlow(total_cost, false)) {
+						in->action     = Barter_FailedTransaction;
+						in->sub_action = Barter_FailedBuyerChecks;
+						worldserver.SendPacket(pack);
+						break;
+					}
+
+					if (!buyer->PutItemInInventoryWithStacking(inst.get())) {
+						buyer->AddMoneyToPPWithOverflow(total_cost, true);
+						in->action     = Barter_FailedTransaction;
+						in->sub_action = Barter_FailedBuyerChecks;
+						worldserver.SendPacket(pack);
+						break;
+					}
+
+					buyer->SendWindowUpdatesToSellerAndBuyer(blis);
+					buyer->SendBarterBuyerClientMessage(
+						sell_line,
+						Barter_BuyerTransactionComplete,
+						Barter_Success,
+						Barter_Success
+					);
+
+					if (player_event_logs.IsEventEnabled(PlayerEvent::BARTER_TRANSACTION)) {
+						PlayerEvent::BarterTransaction e{};
+						e.status        = "Successful Barter Transaction";
+						e.item_id       = sell_line.item_id;
+						e.item_quantity = sell_line.seller_quantity;
+						e.item_name     = sell_line.item_name;
+						e.trade_items   = sell_line.trade_items;
+						for (auto &i: e.trade_items) {
+							i *= sell_line.seller_quantity;
+						}
+						e.total_cost  = (uint64) sell_line.item_cost * (uint64) in->seller_quantity;
+						e.buyer_name  = sell_line.buyer_name;
+						e.seller_name = sell_line.seller_name;
+						RecordPlayerEventLogWithClient(buyer, PlayerEvent::BARTER_TRANSACTION, e);
+					}
+
+					in->action = Barter_BuyerTransactionComplete;
 					worldserver.SendPacket(pack);
 					break;
 				}
 				case Barter_BuyerTransactionComplete: {
 					auto seller = entity_list.GetClientByID(in->seller_entity_id);
 					if (!seller) {
-						in->action        = Barter_FailedTransaction;
+						in->action     = Barter_FailedTransaction;
+						in->sub_action = Barter_SellerCouldNotBeFound;
 						worldserver.SendPacket(pack);
 						return;
 					}
@@ -4123,79 +4246,38 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 					sell_line.slot            = in->slot;
 					strn0cpy(sell_line.item_name, in->item_name, sizeof(sell_line.item_name));
 
-					CharacterParcelsRepository::CharacterParcels p{};
-					auto next_slot = seller->FindNextFreeParcelSlot(in->buyer_id);
-					if (next_slot == INVALID_INDEX) {
-						seller->SendBarterBuyerClientMessage(sell_line, Barter_SellerTransactionComplete, Barter_Failure, Barter_Failure);
+					if (!seller->DoBarterSellerChecks(sell_line)) {
+						in->action = Barter_FailedTransaction;
+						in->action = Barter_FailedSellerChecks;
+						worldserver.SendPacket(pack);
 						return;
 					}
 
-					auto item = std::unique_ptr<EQ::ItemInstance>(database.CreateItem(in->buy_item_id, in->seller_quantity));
+					uint64 total_cost = (uint64) sell_line.item_cost * (uint64) sell_line.seller_quantity;
+					seller->RemoveItem(in->buy_item_id, in->seller_quantity);
+					seller->AddMoneyToPPWithOverflow(total_cost, false);
+					seller->SendBarterBuyerClientMessage(
+						sell_line,
+						Barter_SellerTransactionComplete,
+						Barter_Success,
+						Barter_Success
+					);
 
-					p.from_name  = in->seller_name;
-					p.note       = fmt::format("Delivered from your purchase of {} {} at {} each.", in->seller_quantity, in->item_name, seller->DetermineMoneyString(in->buy_item_cost));
-					p.sent_date  = time(nullptr);
-					p.quantity   = item->IsStackable() ? in->seller_quantity : item->GetCharges();
-					p.item_id    = item->GetItem()->ID;
-					p.aug_slot_1 = 0;
-					p.aug_slot_2 = 0;
-					p.aug_slot_3 = 0;
-					p.aug_slot_4 = 0;
-					p.aug_slot_5 = 0;
-					p.aug_slot_6 = 0;
-					p.char_id    = in->buyer_id;
-					p.slot_id    = next_slot;
-					p.id         = 0;
-					auto result = CharacterParcelsRepository::InsertOne(database, p);
-
-					Parcel_Struct ps{};
-					ps.item_slot = p.slot_id;
-					strn0cpy(ps.send_to, in->buyer_name, sizeof(ps.send_to));
-					seller->SendParcelDeliveryToWorld(ps);
-
-					next_slot = seller->FindNextFreeParcelSlot(seller->CharacterID());
-					if (next_slot == INVALID_INDEX) {
-						seller->SendBarterBuyerClientMessage(sell_line, Barter_SellerTransactionComplete, Barter_Failure, Barter_Failure);
-						break;
-					}
-
-					p.from_name = in->buyer_name;
-					p.note      = fmt::format("Delivered from your sale of {} {} at {} each.", in->seller_quantity, in->item_name, seller->DetermineMoneyString(in->buy_item_cost));
-					p.quantity  = in->seller_quantity * in->buy_item_cost;
-					p.item_id   = PARCEL_MONEY_ITEM_ID;
-					p.char_id   = seller->CharacterID();
-					p.slot_id   = next_slot;
-					p.id        = 0;
-					result = CharacterParcelsRepository::InsertOne(database, p);
-
-					ps.item_slot = p.slot_id;
-					strn0cpy(ps.send_to, in->seller_name, sizeof(ps.send_to));
-					seller->SendParcelDeliveryToWorld(ps);
-
-//					auto buy_item_slot_id = seller->GetInv().HasItem(
-//						in->buy_item_id,
-//						in->seller_quantity,
-//						invWherePersonal
-//					);
-//					auto buy_item = buy_item_slot_id == INVALID_INDEX ? nullptr : seller->GetInv().GetItem(buy_item_slot_id);
-//					if (!buy_item) {
-//						seller->SendBarterBuyerClientMessage(sell_line, Barter_SellerTransactionComplete, Barter_Failure, Barter_Failure);
-//						break;
-//					}
 					if (player_event_logs.IsEventEnabled(PlayerEvent::BARTER_TRANSACTION)) {
 						PlayerEvent::BarterTransaction e{};
+						e.status        = "Successful Barter Transaction";
 						e.item_id       = sell_line.item_id;
 						e.item_quantity = sell_line.seller_quantity;
 						e.item_name     = sell_line.item_name;
 						e.trade_items   = sell_line.trade_items;
-						e.total_cost    = (uint64)sell_line.item_cost * (uint64)in->seller_quantity;
-						e.buyer_name    = sell_line.buyer_name;
-						e.seller_name   = sell_line.seller_name;
+						for (auto &i: e.trade_items) {
+							i *= sell_line.seller_quantity;
+						}
+						e.total_cost  = (uint64) sell_line.item_cost * (uint64) in->seller_quantity;
+						e.buyer_name  = sell_line.buyer_name;
+						e.seller_name = sell_line.seller_name;
 						RecordPlayerEventLogWithClient(seller, PlayerEvent::BARTER_TRANSACTION, e);
 					}
-
-					seller->SendBarterBuyerClientMessage(sell_line, Barter_SellerTransactionComplete, Barter_Success, Barter_Success);
-					seller->RemoveItem(in->buy_item_id, in->seller_quantity);
 
 					break;
 				}

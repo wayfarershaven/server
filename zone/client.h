@@ -406,6 +406,8 @@ public:
 	void RemoveItemFromBuyLineMap(std::map<uint32, BuylineItemDetails_Struct>& item_map, const BuyerLineItems_Struct& bl);
 	bool ValidateBuyLineItems(std::map<uint32, BuylineItemDetails_Struct>& item_map);
 	int64 ValidateBuyLineCost(std::map<uint32, BuylineItemDetails_Struct>& item_map);
+	bool DoBarterBuyerChecks(BuyerLineSellItem_Struct& sell_line);
+	bool DoBarterSellerChecks(BuyerLineSellItem_Struct& sell_line);
 
 	void FillSpawnStruct(NewSpawn_Struct* ns, Mob* ForWho);
 	bool ShouldISpawnFor(Client *c) { return !GMHideMe(c) && !IsHoveringForRespawn(); }
@@ -848,9 +850,11 @@ public:
 	void QuestReadBook(const char* text, uint8 type);
 	void SendMoneyUpdate();
 	bool TakeMoneyFromPP(uint64 copper, bool update_client = false);
+	bool TakeMoneyFromPPWithOverFlow(uint64 copper, bool update_client);
 	bool TakePlatinum(uint32 platinum, bool update_client = false);
 	void AddMoneyToPP(uint64 copper, bool update_client = false);
 	void AddMoneyToPP(uint32 copper, uint32 silver, uint32 gold, uint32 platinum, bool update_client = false);
+	void AddMoneyToPPWithOverflow(uint64 copper, bool update_client);
 	void AddPlatinum(uint32 platinu, bool update_client = false);
 	bool HasMoney(uint64 copper);
 	uint64 GetCarriedMoney();

@@ -3142,7 +3142,11 @@ enum BarterBuyerActions {
 	Barter_AddToBarterWindow         = 26,
 	Barter_RemoveFromBarterWindow    = 27,
 	Barter_RemoveFromMerchantWindow  = 50,   //Not a client item.  Used for internal communications.
-	Barter_FailedTransaction         = 51
+	Barter_FailedTransaction         = 51,
+	Barter_BuyerCouldNotBeFound      = 52,
+	Barter_FailedBuyerChecks         = 53,
+	Barter_SellerCouldNotBeFound     = 54,
+	Barter_FailedSellerChecks        = 55
 };
 
 enum BarterBuyerSubActions {
@@ -3177,6 +3181,7 @@ struct BuyerGeneric_Struct {
 
 struct BuyerMessaging_Struct {
 	uint32 action;
+	uint32 sub_action;
 	uint32 zone_id;
 	uint32 buyer_id;
 	uint32 buyer_entity_id;
@@ -6327,9 +6332,12 @@ enum BazaarTraderBarterActions {
 };
 
 enum BazaarPurchaseActions {
-	ByVendor            = 0,
-	ByParcel            = 1,
-	ByDirectToInventory = 2
+	BazaarByVendor            = 0,
+	BazaarByParcel            = 1,
+	BazaarByDirectToInventory = 2,
+	BarterByVendor            = 0,
+	BarterInBazaar            = 1,
+	BarterOutsideBazaar       = 2
 };
 
 enum BazaarPurchaseSubActions {

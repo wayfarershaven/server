@@ -1085,6 +1085,7 @@ namespace PlayerEvent {
 	};
 
 	struct BarterTransaction {
+		std::string                             status;
 		uint32                                  item_id;
 		uint32                                  item_quantity;
 		std::string                             item_name;
@@ -1097,6 +1098,7 @@ namespace PlayerEvent {
 		void serialize(Archive &ar)
 		{
 			ar(
+				CEREAL_NVP(status),
 				CEREAL_NVP(item_id),
 				CEREAL_NVP(item_quantity),
 				CEREAL_NVP(item_name),
