@@ -169,7 +169,7 @@ public:
 			bli.item_cost     = l.item_price;
 			bli.item_quantity = l.item_qty;
 			bli.slot          = l.buy_slot_id;
-			bli.item_name = l.item_name;
+			bli.item_name     = l.item_name;
 
 			for (auto const &i: GetSubIDs(buy_line_trade_items, l.id)) {
 				BuyerLineTradeItems_Struct blti{};

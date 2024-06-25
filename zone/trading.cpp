@@ -2281,35 +2281,8 @@ static void UpdateTraderCustomerPriceChanged(
 //	safe_delete(inst);
 }
 
-void Client::SendBuyerResults(BarterSearchRequest_Struct& bsr) {
-
-	// This method is called when a potential seller in the /barter window searches for matching buyers
-	//
-//	LogDebug("[CLIENT] Client::SendBuyerResults [{}]\n", searchString);
-//
-//	auto escSearchString = new char[strlen(searchString) * 2 + 1];
-//	database.DoEscapeString(escSearchString, searchString, strlen(searchString));
-//
-//	std::string query = StringFormat("SELECT * FROM buyer WHERE item_name LIKE '%%%s%%' ORDER BY char_id LIMIT %i",
-//							escSearchString, RuleI(Bazaar, MaxBarterSearchResults));
-//	safe_delete_array(escSearchString);
-//	auto results = database.QueryDatabase(query);
-//    if (!results.Success()) {
-//        return;
-//    }
-//
-//    int numberOfRows = results.RowCount();
-//
-//    if(numberOfRows == RuleI(Bazaar, MaxBarterSearchResults))
-//        Message(Chat::Yellow, "Your search found too many results; some are not displayed.");
-//    else if(strlen(searchString) == 0)
-//        Message(Chat::NPCQuestSay, "There are %i Buy Lines.", numberOfRows);
-//    else
-//        Message(Chat::NPCQuestSay, "There are %i Buy Lines that match the search string '%s'.", numberOfRows, searchString);
-//
-//    if(numberOfRows == 0)
-//        return;
-
+void Client::SendBuyerResults(BarterSearchRequest_Struct& bsr)
+{
 	if (ClientVersion() >= EQ::versions::ClientVersion::RoF) {
 		std::string search_string(bsr.search_string);
 		BuyerLineSearch_Struct results{};
@@ -2357,66 +2330,6 @@ void Client::SendBuyerResults(BarterSearchRequest_Struct& bsr) {
 		ss.clear();
 
 	}
-
-//	uint32 lastCharID = 0;
-//	Client *buyer = nullptr;
-//
-//	for (auto row = results.begin(); row != results.end(); ++row) {
-//        char itemName[64];
-//
-//        uint32 charID = Strings::ToInt(row[0]);
-//		uint32 buySlot = Strings::ToInt(row[1]);
-//		uint32 itemID = Strings::ToInt(row[2]);
-//		strcpy(itemName, row[3]);
-//		uint32 quantity = Strings::ToInt(row[4]);
-//		uint32 price = Strings::ToInt(row[5]);
-//
-//        // Each item in the search results is sent as a single fixed length packet, although the position of
-//		// the fields varies due to the use of variable length strings. The reason the packet is so big, is
-//		// to allow item compensation, e.g. a buyer could offer to buy a Blade Of Carnage for 10000pp plus
-//		// other items in exchange. Item compensation is not currently supported in EQEmu.
-//		//
-//		auto outapp = new EQApplicationPacket(OP_Barter, 940);
-//
-//		char *buf = (char *)outapp->pBuffer;
-//
-//		const EQ::ItemData* item = database.GetItem(itemID);
-//
-//		if(!item) {
-//			safe_delete(outapp);
-//            continue;
-//		}
-//
-//        // Save having to scan the client list when dealing with multiple buylines for the same Character.
-//		if(charID != lastCharID) {
-//			buyer = entity_list.GetClientByCharID(charID);
-//			lastCharID = charID;
-//		}
-//
-//		if(!buyer) {
-//			safe_delete(outapp);
-//            continue;
-//		}
-//
-//        VARSTRUCT_ENCODE_TYPE(uint32, buf, Barter_BuyerSearchResults);	// Command
-//		VARSTRUCT_ENCODE_TYPE(uint32, buf, searchID);			// Match up results with the request
-//		VARSTRUCT_ENCODE_TYPE(uint32, buf, buySlot);			// Slot in this Buyer's list
-//		VARSTRUCT_ENCODE_TYPE(uint8, buf, 0x01);				// Unknown - probably a flag field
-//		VARSTRUCT_ENCODE_TYPE(uint32, buf, itemID);			// ItemID
-//		VARSTRUCT_ENCODE_STRING(buf, itemName);			// Itemname
-//		VARSTRUCT_ENCODE_TYPE(uint32, buf, item->Icon);			// Icon
-//		VARSTRUCT_ENCODE_TYPE(uint32, buf, quantity);			// Quantity
-//		VARSTRUCT_ENCODE_TYPE(uint8, buf, 0x01);				// Unknown - probably a flag field
-//		VARSTRUCT_ENCODE_TYPE(uint32, buf, price);				// Price
-//		VARSTRUCT_ENCODE_TYPE(uint32, buf, buyer->GetID());		// Entity ID
-//		VARSTRUCT_ENCODE_TYPE(uint32, buf, 0);				// Flag for + Items , probably ItemCount
-//		VARSTRUCT_ENCODE_STRING(buf, buyer->GetName());		// Seller Name
-//
-//
-//		QueuePacket(outapp);
-//		safe_delete(outapp);
-//    }
-
 }
 
 void Client::ShowBuyLines(const EQApplicationPacket *app)
@@ -2472,73 +2385,6 @@ void Client::ShowBuyLines(const EQApplicationPacket *app)
 		
 		return;
 	}
-
-//	bir->approval = buyer->WithCustomer(GetID());
-//	QueuePacket(app);
-//
-//	if(bir->approval == 0) {
-//		MessageString(Chat::Yellow, TRADER_BUSY);
-//		return;
-//	}
-//
-//	auto WelcomeMessagePointer = BuyerRepository::GetWelcomeMessage(database, buyer->GetBuyerID());
-//
-//	if(WelcomeMessagePointer.length() > 0)
-//		Message(Chat::NPCQuestSay, "%s greets you, '%s'.", buyer->GetName(), WelcomeMessagePointer.c_str());
-//
-//	auto outapp = new EQApplicationPacket(OP_Barter, sizeof(BuyerBrowsing_Struct));
-//
-//	BuyerBrowsing_Struct* bb = (BuyerBrowsing_Struct*)outapp->pBuffer;
-//
-//	// This packet produces the SoandSo is browsing your Buy Lines message
-//	bb->action = Barter_SellerBrowsing;
-//
-//	sprintf(bb->char_name, "%s", GetName());
-//
-//	buyer->QueuePacket(outapp);
-//
-//	safe_delete(outapp);
-//
-//    std::string query = StringFormat("SELECT * FROM buyer WHERE char_id = %i", buyer->CharacterID());
-//    auto results = database.QueryDatabase(query);
-//    if (!results.Success() || results.RowCount() == 0)
-//        return;
-//
-//    for (auto row = results.begin(); row != results.end(); ++row) {
-//        char ItemName[64];
-//        uint32 BuySlot = Strings::ToInt(row[1]);
-//        uint32 ItemID = Strings::ToInt(row[2]);
-//		strcpy(ItemName, row[3]);
-//		uint32 Quantity = Strings::ToInt(row[4]);
-//		uint32 Price = Strings::ToInt(row[5]);
-//
-//		auto outapp = new EQApplicationPacket(OP_Barter, 936);
-//
-//		char *Buf = (char *)outapp->pBuffer;
-//
-//		const EQ::ItemData* item = database.GetItem(ItemID);
-//
-//		if(!item) {
-//			safe_delete(outapp);
-//            continue;
-//		}
-//
-//        VARSTRUCT_ENCODE_TYPE(uint32, Buf, Barter_BuyerInspectWindow);
-//		VARSTRUCT_ENCODE_TYPE(uint32, Buf, BuySlot);
-//		VARSTRUCT_ENCODE_TYPE(uint8, Buf, 1);				// Flag
-//		VARSTRUCT_ENCODE_TYPE(uint32, Buf, ItemID);
-//		VARSTRUCT_ENCODE_STRING(Buf, ItemName);
-//		VARSTRUCT_ENCODE_TYPE(uint32, Buf, item->Icon);
-//		VARSTRUCT_ENCODE_TYPE(uint32, Buf, Quantity);
-//		VARSTRUCT_ENCODE_TYPE(uint8, Buf, 1);				// Flag
-//		VARSTRUCT_ENCODE_TYPE(uint32, Buf, Price);
-//		VARSTRUCT_ENCODE_TYPE(uint32, Buf, buyer->GetID());
-//		VARSTRUCT_ENCODE_TYPE(uint32, Buf, 0);
-//		VARSTRUCT_ENCODE_STRING(Buf, buyer->GetName());
-//
-//		QueuePacket(outapp);
-//		safe_delete(outapp);
-//    }
 }
 
 void Client::SellToBuyer(const EQApplicationPacket *app)
@@ -2981,76 +2827,6 @@ void Client::ModifyBuyLine(const EQApplicationPacket *app)
 	return;
 }
 
-//	char* Buf = (char*)app->pBuffer;
-//
-//	char ItemName[64];
-//
-//	/*uint32 Action		=*/ VARSTRUCT_SKIP_TYPE(uint32, Buf);	//unused
-//	uint32 BuySlot		= VARSTRUCT_DECODE_TYPE(uint32, Buf);
-//	uint8 Unknown009	= VARSTRUCT_DECODE_TYPE(uint8, Buf);
-//	uint32 ItemID		= VARSTRUCT_DECODE_TYPE(uint32, Buf);
-//	/* ItemName */		VARSTRUCT_DECODE_STRING(ItemName, Buf);
-//	uint32 Icon		= VARSTRUCT_DECODE_TYPE(uint32, Buf);
-//	uint32 Quantity		= VARSTRUCT_DECODE_TYPE(uint32, Buf);
-//	uint8 ToggleOnOff	= VARSTRUCT_DECODE_TYPE(uint8, Buf);
-//	uint32 Price		= VARSTRUCT_DECODE_TYPE(uint32, Buf);
-//	/*uint32 UnknownZ		=*/ VARSTRUCT_SKIP_TYPE(uint32, Buf);	//unused
-//	uint32 ItemCount	= VARSTRUCT_DECODE_TYPE(uint32, Buf);
-//
-//	const EQ::ItemData *item = database.GetItem(ItemID);
-//
-//	if(!item) return;
-//
-//	bool LoreConflict = CheckLoreConflict(item);
-//
-//	LogTrading("UpdateBuyLine: Char: [{}] BuySlot: [{}] ItemID [{}] [{}] Quantity [{}] Toggle: [{}] Price [{}] ItemCount [{}] LoreConflict [{}]",
-//					GetName(), BuySlot, ItemID, item->Name, Quantity, ToggleOnOff, Price, ItemCount, LoreConflict);
-//
-//	if((item->NoDrop != 0) && (!item->IsClassBag())&& !LoreConflict && (Quantity > 0) && HasMoney(Quantity * Price) && ToggleOnOff && (ItemCount == 0)) {
-//		LogTrading("Adding to database");
-//		database.AddBuyLine(CharacterID(), BuySlot, ItemID, ItemName, Quantity, Price);
-//		QueuePacket(app);
-//	}
-//	else {
-//		if(ItemCount > 0) {
-//			Message(Chat::Red, "Buy line %s disabled as Item Compensation is not currently supported.", ItemName);
-//		} else if(Quantity <= 0) {
-//			Message(Chat::Red, "Buy line %s disabled as the quantity is invalid.", ItemName);
-//		} else if(LoreConflict) {
-//			Message(Chat::Red, "Buy line %s disabled as the item is LORE and you have one already.", ItemName);
-//		} else if(item->NoDrop == 0) {
-//			Message(Chat::Red, "Buy line %s disabled as the item is NODROP.", ItemName);
-//		} else if(item->IsClassBag()) {
-//			Message(Chat::Red, "Buy line %s disabled as the item is a Bag.", ItemName);
-//		} else if(ToggleOnOff) {
-//			Message(Chat::Red, "Buy line %s disabled due to insufficient funds.", ItemName);
-//		} else {
-//			database.RemoveBuyLine(CharacterID(), BuySlot);
-//		}
-//
-//		auto outapp = new EQApplicationPacket(OP_Barter, 936);
-//
-//		Buf = (char*)outapp->pBuffer;
-//
-//		VARSTRUCT_ENCODE_TYPE(uint32, Buf, Barter_BuyerItemUpdate);
-//		VARSTRUCT_ENCODE_TYPE(uint32, Buf, BuySlot);
-//		VARSTRUCT_ENCODE_TYPE(uint8, Buf, Unknown009);
-//		VARSTRUCT_ENCODE_TYPE(uint32, Buf, ItemID);
-//		VARSTRUCT_ENCODE_STRING(Buf, ItemName);
-//		VARSTRUCT_ENCODE_TYPE(uint32, Buf, Icon);
-//		VARSTRUCT_ENCODE_TYPE(uint32, Buf, Quantity);
-//		VARSTRUCT_ENCODE_TYPE(uint8, Buf, 0);				// Toggle the Buy Line off in the client
-//		VARSTRUCT_ENCODE_TYPE(uint32, Buf, Price);
-//		VARSTRUCT_ENCODE_TYPE(uint32, Buf, 0x08f4);			// Unknown
-//		VARSTRUCT_ENCODE_TYPE(uint32, Buf, 0);
-//		VARSTRUCT_ENCODE_STRING(Buf, GetName());
-//
-//		QueuePacket(outapp);
-//		safe_delete(outapp);
-//	}
-//
-//}
-
 void Client::BuyerItemSearch(const EQApplicationPacket *app)
 {
 	auto               bis   = (BuyerItemSearch_Struct *) app->pBuffer;
@@ -3096,33 +2872,6 @@ void Client::BuyerItemSearch(const EQApplicationPacket *app)
 
 	ss.str("");
 	ss.clear();
-
-//
-//		strn0cpy(Name, item->Name, sizeof(Name));
-//
-//		strupr(Name);
-//
-//		pdest = strstr(Name, Criteria);
-//
-//		if (pdest != nullptr) {
-//			sprintf(bisr->Results[Count].ItemName, "%s", item->Name);
-//			bisr->Results[Count].ItemID = item->ID;
-//			bisr->Results[Count].Unknown068 = item->Icon;
-//			bisr->Results[Count].Unknown072 = 0x00000000;
-//			Count++;
-//		}
-//		if (Count == MAX_BUYER_ITEMSEARCH_RESULTS)
-//			break;
-//	}
-//	if (Count == MAX_BUYER_ITEMSEARCH_RESULTS)
-//		Message(Chat::Yellow, "Your search returned more than %i results. Only the first %i are displayed.",
-//				MAX_BUYER_ITEMSEARCH_RESULTS, MAX_BUYER_ITEMSEARCH_RESULTS);
-//
-//	bisr->Action = Barter_BuyerSearch;
-//	bisr->ResultCount = Count;
-//
-//	QueuePacket(outapp);
-//	safe_delete(outapp);
 }
 
 const std::string &Client::GetMailKeyFull() const

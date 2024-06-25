@@ -3150,11 +3150,11 @@ enum BarterBuyerActions {
 };
 
 enum BarterBuyerSubActions {
-	Barter_Success  = 0,
-	Barter_Failure  = 1,
-	Barter_DataOutOfDate = 4,
+	Barter_Success               = 0,
+	Barter_Failure               = 1,
+	Barter_DataOutOfDate         = 4,
 	Barter_SellerDoesNotHaveItem = 6,
-	Barter_SameZone = 8
+	Barter_SameZone              = 8
 };
 
 enum BuyerBarter {
@@ -3426,8 +3426,8 @@ struct BuyerInspectRequest_Struct {
 };
 
 struct BarterSearchRequest_Struct {
-	uint32	action;
-	char	search_string[64];
+	uint32 action;
+	char   search_string[64];
 	uint32 transaction_id;
 	uint32 unknown_072;
 	uint32 buyer_id;
@@ -3474,22 +3474,13 @@ struct BuyerItemSearchResults_Struct {
 	}
 };
 
-
-
-
-
 //old below here
-
-
-
 struct BuyerItemSearchLinkRequest_Struct {
 /*000*/	uint32	Action;	// 0x00000015
 /*004*/	uint32	ItemID;
 /*008*/	uint32	Unknown008;
 /*012*/	uint32	Unknown012;
 };
-
-
 
 struct ServerSideFilters_Struct {
 uint8	clientattackfilters;	// 0) No, 1) All (players) but self, 2) All (players) but group

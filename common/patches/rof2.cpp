@@ -376,7 +376,6 @@ namespace RoF2
 				dest->FastQueuePacket(&outapp);
 				safe_delete(in);
 
-				return;
 				break;
 			}
 			case Barter_BuyerItemRemove: {
@@ -392,25 +391,21 @@ namespace RoF2
 				dest->FastQueuePacket(&outapp);
 				safe_delete(in);
 
-				return;
 				break;
 			}
 			case Barter_BuyerInspectBegin: {
 				*(uint32 *) in->pBuffer = structs::RoF2BuyerActions::BuyerInspectBegin;
 				dest->FastQueuePacket(&in);
-				return;
 				break;
 			}
 			case Barter_BuyerInspectEnd: {
 				*(uint32 *) in->pBuffer = structs::RoF2BuyerActions::BuyerInspectEnd;
 				dest->FastQueuePacket(&in);
-				return;
 				break;
 			}
 			case Barter_SellerBrowsing: {
 				*(uint32 *) in->pBuffer = structs::RoF2BuyerActions::BuyerBrowsingBuyLine;
 				dest->FastQueuePacket(&in);
-				return;
 				break;
 			}
 			case Barter_BuyerSearchResults: {
@@ -446,35 +441,6 @@ namespace RoF2
 				dest->FastQueuePacket(&in);
 			}
 		}
-
-//		if (SubAction != Barter_BuyerAppearance)
-//		{
-//			dest->FastQueuePacket(&in, ack_req);
-//
-//			return;
-//		}
-//
-//		unsigned char *__emu_buffer = in->pBuffer;
-//
-//		in->size = 80;
-//
-//		in->pBuffer = new unsigned char[in->size];
-//
-//		char *OutBuffer = (char *)in->pBuffer;
-//
-//		char Name[64];
-//
-//		VARSTRUCT_ENCODE_TYPE(uint32, OutBuffer, SubAction);
-//		uint32 EntityID = VARSTRUCT_DECODE_TYPE(uint32, Buffer);
-//		VARSTRUCT_ENCODE_TYPE(uint32, OutBuffer, EntityID);
-//		uint8 Toggle = VARSTRUCT_DECODE_TYPE(uint8, Buffer);
-//		VARSTRUCT_DECODE_STRING(Name, Buffer);
-//		VARSTRUCT_ENCODE_STRING(OutBuffer, Name);
-//		OutBuffer = (char *)in->pBuffer + 72;
-//		VARSTRUCT_ENCODE_TYPE(uint8, OutBuffer, Toggle);
-//
-//		delete[] __emu_buffer;
-//		dest->FastQueuePacket(&in, ack_req);
 	}
 
 	ENCODE(OP_BazaarSearch)
@@ -5145,15 +5111,15 @@ namespace RoF2
 				buyer_buy_lines.buy_lines.reserve(buyer_buy_lines.no_items);
 				for (int i = 0; i < buyer_buy_lines.no_items; i++) {
 					BuyerLineItems_Struct b{};
-					b.slot = VARSTRUCT_DECODE_TYPE(uint32, buffer);
-					b.enabled = VARSTRUCT_DECODE_TYPE(uint8, buffer);
-					b.item_id = VARSTRUCT_DECODE_TYPE(uint32, buffer);
-					b.item_name = std::string(buffer, strlen(buffer));
-					buffer += strlen(buffer) + 1;
-					b.item_icon = VARSTRUCT_DECODE_TYPE(uint32, buffer);
-					b.item_quantity = VARSTRUCT_DECODE_TYPE(uint32, buffer);
-					b.item_toggle = VARSTRUCT_DECODE_TYPE(uint8, buffer);
-					b.item_cost = VARSTRUCT_DECODE_TYPE(uint32, buffer);
+					b.slot           = VARSTRUCT_DECODE_TYPE(uint32, buffer);
+					b.enabled        = VARSTRUCT_DECODE_TYPE(uint8, buffer);
+					b.item_id        = VARSTRUCT_DECODE_TYPE(uint32, buffer);
+					b.item_name      = std::string(buffer, strlen(buffer));
+					buffer          += strlen(buffer) + 1;
+					b.item_icon      = VARSTRUCT_DECODE_TYPE(uint32, buffer);
+					b.item_quantity  = VARSTRUCT_DECODE_TYPE(uint32, buffer);
+					b.item_toggle    = VARSTRUCT_DECODE_TYPE(uint8, buffer);
+					b.item_cost      = VARSTRUCT_DECODE_TYPE(uint32, buffer);
 					auto trade_items = VARSTRUCT_DECODE_TYPE(uint32, buffer);
 					buyer_buy_lines.buy_lines.push_back(b);
 
@@ -5161,11 +5127,11 @@ namespace RoF2
 						buyer_buy_lines.buy_lines[i].trade_items.reserve(trade_items);
 						for (int x = 0; x < trade_items; x++) {
 							BuyerLineTradeItems_Struct blti{};
-							blti.item_id = VARSTRUCT_DECODE_TYPE(uint32, buffer);
+							blti.item_id       = VARSTRUCT_DECODE_TYPE(uint32, buffer);
 							blti.item_quantity = VARSTRUCT_DECODE_TYPE(uint32, buffer);
-							blti.item_icon = VARSTRUCT_DECODE_TYPE(uint32, buffer);
-							blti.item_name = std::string(buffer, strlen(buffer));
-							buffer += strlen(buffer) + 1;
+							blti.item_icon     = VARSTRUCT_DECODE_TYPE(uint32, buffer);
+							blti.item_name     = std::string(buffer, strlen(buffer));
+							buffer            += strlen(buffer) + 1;
 							buyer_buy_lines.buy_lines[i].trade_items.push_back(blti);
 						}
 					}
@@ -5200,41 +5166,41 @@ namespace RoF2
 
 				char *buffer = (char *) __packet->pBuffer;
 
-				sell_item.action = VARSTRUCT_DECODE_TYPE(uint32, buffer);
+				sell_item.action          = VARSTRUCT_DECODE_TYPE(uint32, buffer);
 				sell_item.purchase_method = VARSTRUCT_DECODE_TYPE(uint32, buffer);
 				buffer += 4;
 				sell_item.buyer_entity_id = VARSTRUCT_DECODE_TYPE(uint32, buffer);
-				sell_item.buyer_id = VARSTRUCT_DECODE_TYPE(uint32, buffer);
+				sell_item.buyer_id        = VARSTRUCT_DECODE_TYPE(uint32, buffer);
 				buffer += 11;
-				sell_item.slot = VARSTRUCT_DECODE_TYPE(uint32, buffer);
+				sell_item.slot    = VARSTRUCT_DECODE_TYPE(uint32, buffer);
 				sell_item.enabled = VARSTRUCT_DECODE_TYPE(uint8, buffer);
 				sell_item.item_id = VARSTRUCT_DECODE_TYPE(uint32, buffer);
 				VARSTRUCT_DECODE_STRING(sell_item.item_name, buffer);
-				sell_item.item_icon = VARSTRUCT_DECODE_TYPE(uint32, buffer);
-				sell_item.item_quantity = VARSTRUCT_DECODE_TYPE(uint32, buffer);
-				sell_item.item_toggle = VARSTRUCT_DECODE_TYPE(uint8, buffer);
-				sell_item.item_cost = VARSTRUCT_DECODE_TYPE(uint32, buffer);
+				sell_item.item_icon      = VARSTRUCT_DECODE_TYPE(uint32, buffer);
+				sell_item.item_quantity  = VARSTRUCT_DECODE_TYPE(uint32, buffer);
+				sell_item.item_toggle    = VARSTRUCT_DECODE_TYPE(uint8, buffer);
+				sell_item.item_cost      = VARSTRUCT_DECODE_TYPE(uint32, buffer);
 				sell_item.no_trade_items = VARSTRUCT_DECODE_TYPE(uint32, buffer);
 
 				if (sell_item.no_trade_items > 0) {
 					sell_item.trade_items.reserve(sell_item.no_trade_items);
 					for (int x = 0; x < sell_item.no_trade_items; x++) {
 						BuyerLineTradeItems_Struct blti{};
-						blti.item_id = VARSTRUCT_DECODE_TYPE(uint32, buffer);
+						blti.item_id       = VARSTRUCT_DECODE_TYPE(uint32, buffer);
 						blti.item_quantity = VARSTRUCT_DECODE_TYPE(uint32, buffer);
-						blti.item_icon = VARSTRUCT_DECODE_TYPE(uint32, buffer);
-						blti.item_name = std::string(buffer, strlen(buffer));
-						buffer += strlen(buffer) + 1;
+						blti.item_icon     = VARSTRUCT_DECODE_TYPE(uint32, buffer);
+						blti.item_name     = std::string(buffer, strlen(buffer));
+						buffer            += strlen(buffer) + 1;
 						sell_item.trade_items.push_back(blti);
 					}
 				}
 
 				if (sell_item.purchase_method) {
 					sell_item.buyer_entity_id = VARSTRUCT_DECODE_TYPE(uint32, buffer);
-					sell_item.buyer_id = VARSTRUCT_DECODE_TYPE(uint32, buffer);
-					sell_item.zone_id = VARSTRUCT_DECODE_TYPE(uint32, buffer);
-					sell_item.buyer_name = std::string(buffer, strlen(buffer));
-					buffer += sell_item.buyer_name.length() + 1;
+					sell_item.buyer_id        = VARSTRUCT_DECODE_TYPE(uint32, buffer);
+					sell_item.zone_id         = VARSTRUCT_DECODE_TYPE(uint32, buffer);
+					sell_item.buyer_name      = std::string(buffer, strlen(buffer));
+					buffer                   += sell_item.buyer_name.length() + 1;
 				}
 				else {
 					buffer += 13;

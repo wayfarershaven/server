@@ -2161,12 +2161,12 @@ void Client::FillSpawnStruct(NewSpawn_Struct* ns, Mob* ForWho)
 	Mob::FillSpawnStruct(ns, ForWho);
 
 	// Populate client-specific spawn information
-	ns->spawn.afk		= AFK;
-	ns->spawn.lfg		= LFG; // afk and lfg are cleared on zoning on live
-	ns->spawn.anon		= m_pp.anon;
-	ns->spawn.gm		= GetGM() ? 1 : 0;
-	ns->spawn.guildID	= GuildID();
-	ns->spawn.trader	= IsTrader();
+	ns->spawn.afk       = AFK;
+	ns->spawn.lfg       = LFG; // afk and lfg are cleared on zoning on live
+	ns->spawn.anon      = m_pp.anon;
+	ns->spawn.gm        = GetGM() ? 1 : 0;
+	ns->spawn.guildID   = GuildID();
+	ns->spawn.trader    = IsTrader();
 	ns->spawn.buyer     = IsBuyer();
 //	ns->spawn.linkdead	= IsLD() ? 1 : 0;
 //	ns->spawn.pvp		= GetPVP(false) ? 1 : 0;

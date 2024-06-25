@@ -765,8 +765,6 @@ void Client::CompleteConnect()
 
 	entity_list.SendIllusionWearChange(this);
 
-//	entity_list.SendTraders(this);
-
 	SendWearChangeAndLighting(EQ::textures::LastTexture);
 	Mob* pet = GetPet();
 	if (pet) {
@@ -921,7 +919,6 @@ void Client::CompleteConnect()
 
 	if (ClientVersion() >= EQ::versions::ClientVersion::RoF) {
 		SendBulkBazaarTraders();
-		//SendBulkBazaarBuyers();
 	}
 
 	// TODO: load these states
