@@ -170,7 +170,6 @@ public:
 			bli.item_quantity = l.item_qty;
 			bli.slot          = l.buy_slot_id;
 			bli.item_name = l.item_name;
-			//strn0cpy(bli.item_name, l.item_name.c_str(), sizeof(bli.item_name));
 
 			for (auto const &i: GetSubIDs(buy_line_trade_items, l.id)) {
 				BuyerLineTradeItems_Struct blti{};
@@ -178,12 +177,7 @@ public:
 				blti.item_icon     = i.item_icon;
 				blti.item_quantity = i.item_qty;
 				blti.item_id       = i.item_id;
-//				strn0cpy(
-//					blti.item_name,
-//					i.item_name.c_str(),
-//					sizeof(blti.item_name)
-//				);
-				blti.item_name = i.item_name;
+				blti.item_name     = i.item_name;
 				bli.trade_items.push_back(blti);
 			}
 			all_entries.push_back(bli);
@@ -203,10 +197,12 @@ public:
 
 		if (zone_id) {
 			auto buyers = BuyerRepository::GetWhere(db, fmt::format("`char_zone_id` = '{}'", zone_id));
+
 			std::vector<std::string> char_ids{};
 			for (auto const &bl : buyers) {
 				char_ids.push_back((std::to_string(bl.char_id)));
 			}
+
 			where_clause += fmt::format("AND `char_id` IN ({}) ", Strings::Implode(", ", char_ids));
 		}
 
@@ -215,8 +211,12 @@ public:
 		std::vector<std::string> ids{};
 		std::vector<std::string> char_ids{};
 		for (auto const &bl : buy_line) {
-			ids.push_back(std::to_string(bl.id));
-			char_ids.push_back((std::to_string(bl.char_id)));
+			if (std::find(ids.begin(), ids.end(), std::to_string(bl.id)) == std::end(ids)) {
+				ids.push_back(std::to_string(bl.id));
+			}
+			if (std::find(char_ids.begin(), char_ids.end(), std::to_string(bl.char_id)) == std::end(char_ids)) {
+				char_ids.push_back((std::to_string(bl.char_id)));
+			}
 		}
 
 		auto buy_line_trade_items = BuyerTradeItemsRepository::GetWhere(
@@ -247,11 +247,11 @@ public:
 			auto it = std::find_if(
 				char_names.cbegin(),
 				char_names.cend(),
-				[&](BuyerRepository::Buyer e) { return e.char_id = l.char_id; }
+				[&](BuyerRepository::Buyer e) { return e.char_id == l.char_id; }
 			);
 			blis.buyer_name      = it != char_names.end() ? it->char_name : std::string("");
 			blis.buyer_entity_id = it != char_names.end() ? it->char_entity_id : 0;
-			blis.buyer_zone_id = it != char_names.end() ? it->char_zone_id : 0;
+			blis.buyer_zone_id   = it != char_names.end() ? it->char_zone_id : 0;
 			strn0cpy(blis.item_name, l.item_name.c_str(), sizeof(blis.item_name));
 
 			for (auto const &i: GetSubIDs(buy_line_trade_items, l.id)) {
@@ -260,8 +260,7 @@ public:
 				e.item_icon     = i.item_icon;
 				e.item_quantity = i.item_qty;
 				e.item_id       = i.item_id;
-				e.item_name = i.item_name;
-				//strn0cpy(e.item_name, i.item_name.c_str(), sizeof(e.item_name));
+				e.item_name     = i.item_name;
 
 				blis.trade_items.push_back(e);
 			}

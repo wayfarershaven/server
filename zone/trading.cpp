@@ -3769,9 +3769,9 @@ void Client::SendBuyerGreeting(uint32 buyer_id)
 {
 	auto buyer = BuyerRepository::GetWhere(database, fmt::format("`char_id` = '{}'", buyer_id));
 	if (buyer.empty()) {
+		Message(Chat::White, "Welcome!");
 		return;
 	}
-
 	Message(Chat::White, buyer.front().welcome_message.c_str());
 }
 
@@ -4274,7 +4274,7 @@ bool Client::ValidateBuyLineItems(std::map<uint32, BuylineItemDetails_Struct> &i
 				Message(
 					Chat::Red,
 					fmt::format(
-						"The buy line requires {} {}{} which could not be found. Buy line not possible.",
+						"Your buy line(s) require a total of {} {}{} which could not be found. Buy line not possible.",
 						i.second.item_quantity,
 						item->Name,
 						i.second.item_quantity > 1 ? "s" : ""

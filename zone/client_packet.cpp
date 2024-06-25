@@ -3792,16 +3792,12 @@ void Client::Handle_OP_Barter(const EQApplicationPacket *app)
 			}
 			else {
 				ToggleBuyerMode(false);
-//				Buf = (char *) app->pBuffer;
-//				VARSTRUCT_ENCODE_TYPE(uint32, Buf, Barter_BuyerModeOff);
 				Message(Chat::Red, "You cannot be a Trader and Buyer at the same time.");
 			}
-			//QueuePacket(app);
 			break;
 		}
 
 		case Barter_BuyerModeOff: {
-			//QueuePacket(app);
 			ToggleBuyerMode(false);
 			break;
 		}
