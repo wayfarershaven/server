@@ -85,7 +85,9 @@ public:
 			bti.item_icon          = r.item_icon;
 			bti.item_name          = r.item_name;
 
-			bti.item_id ? queue.push_back(bti) : __nop() ;
+			if (bti.item_id) {
+				queue.push_back(bti);
+			}
 		}
 
 		if (!queue.empty()) {
@@ -121,7 +123,9 @@ public:
 			bti.item_icon          = r.item_icon;
 			bti.item_name          = r.item_name;
 
-			bti.item_id ? queue.push_back(bti) : __nop() ;
+			if (bti.item_id) {
+				queue.push_back(bti);
+			}
 		}
 
 		if (!queue.empty()) {

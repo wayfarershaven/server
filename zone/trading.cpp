@@ -2649,7 +2649,9 @@ void Client::ToggleBuyerMode(bool status)
 		SendBuyerToBarterWindow(this, Barter_RemoveFromBarterWindow);
 		SendBuyerMode(false);
 		SetBuyerID(0);
-		IsInBuyerSpace() ? __nop() : Message(Chat::Red, "You must be in a Barter Stall to start Barter Mode.");
+		if (!IsInBuyerSpace()) {
+			Message(Chat::Red, "You must be in a Barter Stall to start Barter Mode.");
+		}
 		Message(Chat::Yellow, fmt::format("Barter Mode OFF. Buy lines deactivated.", results).c_str());
 	}
 
