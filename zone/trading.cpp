@@ -2623,7 +2623,7 @@ void Client::ToggleBuyerMode(bool status)
 	data->action    = Barter_BuyerAppearance;
 	data->entity_id = GetID();
 
-	if (status && ((RuleB(Bazaar, BarterUseCenterStallClassicBazaar) && !zone->IsBuyerAllowed(GetPosition())) || IsInBuyerSpace())) {
+	if (status && ((RuleB(Bazaar, BarterUseCenterStallClassicBazaar) && zone->IsBuyerAllowed(GetPosition())) || IsInBuyerSpace())) {
 		SetBuyerID(CharacterID());
 
 		BuyerRepository::Buyer b{};
