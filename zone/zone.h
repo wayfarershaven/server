@@ -151,6 +151,7 @@ public:
 	bool LoadZoneCFG(const char *filename, uint16 instance_version);
 	bool LoadZoneObjects();
 	bool IsSpecialBindLocation(const glm::vec4& location);
+	bool IsBuyerAllowed(const glm::vec4& location);
 	bool Process();
 	bool SaveZoneCFG();
 	bool DoesAlternateCurrencyExist(uint32 currency_id);
