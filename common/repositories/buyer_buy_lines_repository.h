@@ -157,6 +157,10 @@ public:
 		std::vector<BuyerLineItems_Struct> all_entries{};
 
 		auto  buy_line             = GetWhere(db, fmt::format("`char_id` = '{}';", char_id));
+		if (buy_line.empty()){
+			return all_entries;
+		}
+
 		auto  buy_line_trade_items = BuyerTradeItemsRepository::GetWhere(
 			db,
 			fmt::format(
@@ -211,6 +215,9 @@ public:
 		}
 
 		auto buy_line = GetWhere(db, where_clause);
+		if (buy_line.empty()){
+			return all_entries;
+		}
 
 		std::vector<std::string> ids{};
 		std::vector<std::string> char_ids{};
