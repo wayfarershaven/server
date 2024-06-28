@@ -283,7 +283,7 @@ float CalculateHeadingAngleBetweenPositions(float x1, float y1, float x2, float 
 		return (90.0f - angle + 270.0f) * 511.5f * 0.0027777778f;
 	}
 }
-bool IsWithinCircularArc(glm::vec4 arc_center, glm::vec4 point, uint32 arc_offset, uint32 arc_radius, uint32 arc_radius_limit)
+bool IsWithinCircularArc(glm::vec4 arc_center, glm::vec4 point, int arc_offset, int arc_radius, int arc_radius_limit)
 {
 	auto CheckClockwise = [](double v_x, double v_y, double check_x, double check_y) -> bool {
 		return -v_y * check_x + v_x * check_y >= 0;
