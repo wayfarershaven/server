@@ -317,3 +317,20 @@ bool IsWithinCircularArc(glm::vec4 arc_center, glm::vec4 point, int arc_offset, 
 
 	return CheckClockwise(vs_x, vs_y, check_x, check_y) && CheckRadiusLimit(check_x, check_y, arc_radius, arc_radius_limit) && !CheckClockwise(ve_x, ve_y, check_x, check_y);
 }
+
+bool IsWithinSquare(glm::vec4 center, int area, glm::vec4 position) {
+	auto l = std::abs(std::sqrt(area));
+	if (l <= 0) {
+		return false;
+	}
+
+	auto x_min = center.x - l;
+	auto x_max = center.x + l;
+	auto y_min = center.y - l;
+	auto y_max = center.y + l;
+
+	auto x = position.x;
+	auto y = position.y;
+
+	return x > x_min && x < x_max && y > y_min && y < y_max;
+}

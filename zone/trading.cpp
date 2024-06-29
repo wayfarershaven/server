@@ -3596,6 +3596,15 @@ bool Client::IsInBuyerSpace()
 			return true;
 		}
 	}
+
+	for (auto const& d:entity_list.GetDoorsList()) {
+		if (d.second->GetOpenType() == 155) {
+			if (IsWithinSquare(d.second->GetPosition(), d.second->GetSize(), GetPosition())) {
+				return true;
+			}
+		}
+	}
+
 	return false;
 }
 
