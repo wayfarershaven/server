@@ -10907,7 +10907,7 @@ void Client::Handle_OP_MoveMultipleItems(const EQApplicationPacket *app)
 {
 	// This packet is only sent from the client if we ctrl click items in inventory
 	if (m_ClientVersionBit & EQ::versions::maskRoF2AndLater) {
-		
+
 		if (!CharacterID()) {
 			LinkDead();
 			return;
@@ -10923,7 +10923,7 @@ void Client::Handle_OP_MoveMultipleItems(const EQApplicationPacket *app)
 			LinkDead();
 			return; // Packet size does not match expected size
 		}
-			
+
 		const auto from_parent = multi_move->moves[0].from_slot.Slot;
 		const auto to_parent   = multi_move->moves[0].to_slot.Slot;
 
@@ -10944,14 +10944,14 @@ void Client::Handle_OP_MoveMultipleItems(const EQApplicationPacket *app)
 		if (left_click) {
 			for (int i = 0; i < multi_move->count; i++) {
 				MoveItem_Struct* mi = new MoveItem_Struct();
-				mi->from_slot 	= multi_move->moves[i].from_slot.SubIndex == -1 ? multi_move->moves[i].from_slot.Slot : m_inv.CalcSlotId(multi_move->moves[i].from_slot.Slot, multi_move->moves[i].from_slot.SubIndex);									
+				mi->from_slot 	= multi_move->moves[i].from_slot.SubIndex == -1 ? multi_move->moves[i].from_slot.Slot : m_inv.CalcSlotId(multi_move->moves[i].from_slot.Slot, multi_move->moves[i].from_slot.SubIndex);
 				mi->to_slot = m_inv.CalcSlotId(multi_move->moves[i].to_slot.Slot, multi_move->moves[i].to_slot.SubIndex);
-				
+
 				if (multi_move->moves[i].to_slot.Type == EQ::invtype::inventoryBank) { // Target is bank inventory
 					mi->to_slot = m_inv.CalcSlotId(multi_move->moves[i].to_slot.Slot + EQ::invslot::BANK_BEGIN, multi_move->moves[i].to_slot.SubIndex);
 				} else if (multi_move->moves[i].to_slot.Type == EQ::invtype::inventorySharedBank) { // Target is shared bank inventory
 					mi->to_slot = m_inv.CalcSlotId(multi_move->moves[i].to_slot.Slot + EQ::invslot::SHARED_BANK_BEGIN, multi_move->moves[i].to_slot.SubIndex);
-				}				
+				}
 
 				// This sends '1' as the stack count for unstackable items, which our titanium-era SwapItem blows up
 				if (m_inv.GetItem(mi->from_slot)->IsStackable()) {
@@ -10962,7 +10962,7 @@ void Client::Handle_OP_MoveMultipleItems(const EQApplicationPacket *app)
 
 				if (!SwapItem(mi) && IsValidSlot(mi->from_slot) && IsValidSlot(mi->to_slot)) {
 					bool error = false;
-					SwapItemResync(mi);					
+					SwapItemResync(mi);
 					InterrogateInventory(this, false, true, false, error, false);
 					if (error)
 						InterrogateInventory(this, true, false, true, error);
@@ -10970,7 +10970,7 @@ void Client::Handle_OP_MoveMultipleItems(const EQApplicationPacket *app)
 			}
 		// This is the swap.
 		// Client behavior is just to move stacks without combining them
-		} else {			
+		} else {
 			struct MoveInfo {
 				EQ::ItemInstance* item;
 				uint16 to_slot;
@@ -10995,11 +10995,11 @@ void Client::Handle_OP_MoveMultipleItems(const EQApplicationPacket *app)
 					to_slot = m_inv.CalcSlotId(multi_move->moves[i].to_slot.Slot + EQ::invslot::SHARED_BANK_BEGIN, multi_move->moves[i].to_slot.SubIndex);
 				}
 
-				// Probably need some error checking here, but I wasn't able to produce any error states on purpose.				
+				// Probably need some error checking here, but I wasn't able to produce any error states on purpose.
 				MoveInfo move;
 				move.item = m_inv.PopItem(from_slot); // Don't delete the instance here
 				move.to_slot = to_slot;
-				if (move.item) {				
+				if (move.item) {
 					items.push_back(move);
 				}
 			}
@@ -11008,7 +11008,7 @@ void Client::Handle_OP_MoveMultipleItems(const EQApplicationPacket *app)
 				PutItemInInventory(move.to_slot, *move.item); // This saves inventory too
 			}
 		}
-		
+
 	} else {
 		LinkDead(); // This packet should not be sent by an older client
 		return;
