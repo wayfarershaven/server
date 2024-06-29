@@ -2382,7 +2382,7 @@ void Client::ShowBuyLines(const EQApplicationPacket *app)
 			ss.str("");
 			ss.clear();
 		}
-
+		
 		return;
 	}
 }
@@ -2623,7 +2623,7 @@ void Client::ToggleBuyerMode(bool status)
 	data->action    = Barter_BuyerAppearance;
 	data->entity_id = GetID();
 
-	if (status && ((RuleB(Bazaar, BarterUseCenterStallClassicBazaar) && !zone->IsBuyerAllowed(GetPosition())) || IsInBuyerSpace())) {
+	if (status && IsInBuyerSpace()) {
 		SetBuyerID(CharacterID());
 
 		BuyerRepository::Buyer b{};
@@ -2649,10 +2649,7 @@ void Client::ToggleBuyerMode(bool status)
 		SendBuyerToBarterWindow(this, Barter_RemoveFromBarterWindow);
 		SendBuyerMode(false);
 		SetBuyerID(0);
-
-		if (RuleB(Bazaar, BarterUseCenterStallClassicBazaar) && !zone->IsBuyerAllowed(GetPosition())) {
-			Message(Chat::Red, "You must be in a Barter Stall to start Barter Mode.");
-		} else if (!IsInBuyerSpace()) {
+		if (!IsInBuyerSpace()) {
 			Message(Chat::Red, "You must be in a Barter Stall to start Barter Mode.");
 		}
 		Message(Chat::Yellow, fmt::format("Barter Mode OFF. Buy lines deactivated.", results).c_str());
