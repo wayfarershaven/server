@@ -10970,6 +10970,7 @@ void Client::Handle_OP_MoveMultipleItems(const EQApplicationPacket *app)
 			}
 		// This is the swap.
 		// Client behavior is just to move stacks without combining them
+		// Items get rearranged to fill the 'top' of the bag first
 		} else {
 			struct MoveInfo {
 				EQ::ItemInstance* item;
@@ -10995,7 +10996,7 @@ void Client::Handle_OP_MoveMultipleItems(const EQApplicationPacket *app)
 					to_slot = m_inv.CalcSlotId(multi_move->moves[i].to_slot.Slot + EQ::invslot::SHARED_BANK_BEGIN, multi_move->moves[i].to_slot.SubIndex);
 				}
 
-				// Probably need some error checking here, but I wasn't able to produce any error states on purpose.
+				// I wasn't able to produce any error states on purpose.
 				MoveInfo move{
 					.item = m_inv.PopItem(from_slot), // Don't delete the instance here
 					.to_slot = to_slot
@@ -11003,6 +11004,10 @@ void Client::Handle_OP_MoveMultipleItems(const EQApplicationPacket *app)
 
 				if (move.item) {
 					items.push_back(move);
+					database.SaveInventory(CharacterID(), NULL, from_slot); // We have to manually save inventory here.
+				} else {
+					LinkDead();
+					return; // Prevent inventory desync here. Forcing a resync would be better, but we don't have a MoveItem struct to work with.
 				}
 			}
 
@@ -11010,6 +11015,7 @@ void Client::Handle_OP_MoveMultipleItems(const EQApplicationPacket *app)
 				PutItemInInventory(move.to_slot, *move.item); // This saves inventory too
 			}
 		}
+
 	} else {
 		LinkDead(); // This packet should not be sent by an older client
 		return;
