@@ -1544,7 +1544,7 @@ void EntityList::RemoveFromTargetsFadingMemories(Mob *spell_target, bool RemoveF
 			continue;
 		}
 
-		if (mob->GetSpecialAbility(IMMUNE_FADING_MEMORIES)) {
+		if (mob->GetSpecialAbility(SpecialAbility::MemoryFadeImmunity)) {
 			continue;
 		}
 
@@ -1655,7 +1655,10 @@ void EntityList::QueueClientsByTarget(Mob *sender, const EQApplicationPacket *ap
 					Send = clear_target_window;
 					if (c->GetGM() || RuleB(Spells, AlwaysSendTargetsBuffs)) {
 						if (c->GetGM()) {
-							c->Message(Chat::White, "Your GM flag allows you to always see your targets' buffs.");
+							if (!c->EntityVariableExists(SEE_BUFFS_FLAG)) {
+								c->Message(Chat::White, "Your GM flag allows you to always see your targets' buffs.");
+								c->SetEntityVariable(SEE_BUFFS_FLAG, "1");
+							}
 						}
 
 						Send = !clear_target_window;
@@ -3638,7 +3641,7 @@ void EntityList::ClearFeignAggro(Mob *targ)
 	while (it != npc_list.end()) {
 		// add Feign Memory check because sometimes weird stuff happens
 		if (it->second->CheckAggro(targ) || (targ->IsClient() && it->second->IsOnFeignMemory(targ))) {
-			if (it->second->GetSpecialAbility(IMMUNE_FEIGN_DEATH)) {
+			if (it->second->GetSpecialAbility(SpecialAbility::FeignDeathImmunity)) {
 				++it;
 				continue;
 			}
@@ -3667,7 +3670,7 @@ void EntityList::ClearFeignAggro(Mob *targ)
 
 			it->second->RemoveFromHateList(targ);
 
-			if (it->second->GetSpecialAbility(SPECATK_RAMPAGE)) {
+			if (it->second->GetSpecialAbility(SpecialAbility::Rampage)) {
 				it->second->RemoveFromRampageList(targ, true);
 			}
 
@@ -4384,10 +4387,10 @@ void EntityList::AddTempPetsToHateList(Mob *owner, Mob* other, bool bFrenzy)
 		if (n && n->GetSwarmInfo()) {
 			if (n->GetSwarmInfo()->owner_id == owner->GetID()) {
 				if (
-					!n->GetSpecialAbility(IMMUNE_AGGRO) &&
-					!(other->IsBot() && n->GetSpecialAbility(IMMUNE_AGGRO_BOT)) &&
-					!(other->IsClient() && n->GetSpecialAbility(IMMUNE_AGGRO_CLIENT)) &&
-					!(other->IsNPC() && n->GetSpecialAbility(IMMUNE_AGGRO_NPC))
+					!n->GetSpecialAbility(SpecialAbility::AggroImmunity) &&
+					!(other->IsBot() && n->GetSpecialAbility(SpecialAbility::BotAggroImmunity)) &&
+					!(other->IsClient() && n->GetSpecialAbility(SpecialAbility::ClientAggroImmunity)) &&
+					!(other->IsNPC() && n->GetSpecialAbility(SpecialAbility::NPCAggroImmunity))
 				) {
 					n->hate_list.AddEntToHateList(other, 0, 0, bFrenzy);
 				}
@@ -4411,10 +4414,10 @@ void EntityList::AddTempPetsToHateListOnOwnerDamage(Mob *owner, Mob* attacker, i
 					attacker &&
 					attacker != n &&
 					!n->IsEngaged() &&
-					!n->GetSpecialAbility(IMMUNE_AGGRO) &&
-					!(attacker->IsBot() && n->GetSpecialAbility(IMMUNE_AGGRO_BOT)) &&
-					!(attacker->IsClient() && n->GetSpecialAbility(IMMUNE_AGGRO_CLIENT)) &&
-					!(attacker->IsNPC() && n->GetSpecialAbility(IMMUNE_AGGRO_NPC)) &&
+					!n->GetSpecialAbility(SpecialAbility::AggroImmunity) &&
+					!(attacker->IsBot() && n->GetSpecialAbility(SpecialAbility::BotAggroImmunity)) &&
+					!(attacker->IsClient() && n->GetSpecialAbility(SpecialAbility::ClientAggroImmunity)) &&
+					!(attacker->IsNPC() && n->GetSpecialAbility(SpecialAbility::NPCAggroImmunity)) &&
 					!attacker->IsTrap() &&
 					!attacker->IsCorpse()
 					) {
@@ -5059,7 +5062,7 @@ uint32 EntityList::CheckNPCsClose(Mob *center)
 	while (it != npc_list.end()) {
 		NPC *cur = it->second;
 		if (!cur || cur == center || cur->IsPet() || cur->GetClass() == Class::LDoNTreasure ||
-				cur->GetBodyType() == BT_NoTarget || cur->GetBodyType() == BT_Special) {
+				cur->GetBodyType() == BodyType::NoTarget || cur->GetBodyType() == BodyType::Special) {
 			++it;
 			continue;
 		}
@@ -5419,9 +5422,9 @@ void EntityList::AddLootToNPCS(uint32 item_id, uint32 count)
 	while (it != npc_list.end()) {
 		if (!it->second->IsPet()
 				&& it->second->GetClass() != Class::LDoNTreasure
-				&& it->second->GetBodyType() != BT_NoTarget
-				&& it->second->GetBodyType() != BT_NoTarget2
-				&& it->second->GetBodyType() != BT_Special)
+				&& it->second->GetBodyType() != BodyType::NoTarget
+				&& it->second->GetBodyType() != BodyType::NoTarget2
+				&& it->second->GetBodyType() != BodyType::Special)
 			npc_count++;
 		++it;
 	}
@@ -5440,9 +5443,9 @@ void EntityList::AddLootToNPCS(uint32 item_id, uint32 count)
 	while (it != npc_list.end()) {
 		if (!it->second->IsPet()
 				&& it->second->GetClass() != Class::LDoNTreasure
-				&& it->second->GetBodyType() != BT_NoTarget
-				&& it->second->GetBodyType() != BT_NoTarget2
-				&& it->second->GetBodyType() != BT_Special)
+				&& it->second->GetBodyType() != BodyType::NoTarget
+				&& it->second->GetBodyType() != BodyType::NoTarget2
+				&& it->second->GetBodyType() != BodyType::Special)
 			npcs[i++] = it->second;
 		++it;
 	}
@@ -5520,7 +5523,7 @@ void EntityList::ExpeditionWarning(uint32 minutes_left)
 	safe_delete(outapp);
 }
 
-Mob *EntityList::GetClosestMobByBodyType(Mob *sender, bodyType BodyType, bool skip_client_pets)
+Mob *EntityList::GetClosestMobByBodyType(Mob *sender, uint8 BodyType, bool skip_client_pets)
 {
 
 	if (!sender)

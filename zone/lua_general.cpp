@@ -26,6 +26,8 @@
 #include "data_bucket.h"
 #include "expedition.h"
 #include "dialogue_window.h"
+#include "../common/events/player_event_logs.h"
+#include "worldserver.h"
 
 struct Events { };
 struct Factions { };
@@ -56,6 +58,8 @@ extern std::map<std::string, Encounter *> lua_encounters;
 
 extern void MapOpcodes();
 extern void ClearMappedOpcode(EmuOpcode op);
+
+extern WorldServer worldserver;
 
 void unregister_event(std::string package_name, std::string name, int evt);
 
@@ -3790,8 +3794,8 @@ std::string lua_get_language_name(uint8 language_id) {
 	return quest_manager.getlanguagename(language_id);
 }
 
-std::string lua_get_body_type_name(uint32 bodytype_id) {
-	return quest_manager.getbodytypename(bodytype_id);
+std::string lua_get_body_type_name(uint8 body_type_id) {
+	return quest_manager.getbodytypename(body_type_id);
 }
 
 std::string lua_get_consider_level_name(uint8 consider_level) {
@@ -3989,6 +3993,10 @@ void lua_do_anim(int animation_id, int animation_speed, bool ackreq)
 void lua_do_anim(int animation_id, int animation_speed, bool ackreq, int filter)
 {
 	quest_manager.doanim(animation_id, animation_speed, ackreq, static_cast<eqFilterType>(filter));
+}
+
+std::string lua_item_link(Lua_ItemInst inst) {
+	return quest_manager.varlink(inst);
 }
 
 std::string lua_item_link(uint32 item_id) {
@@ -5480,8 +5488,8 @@ uint16 lua_get_class_bitmask(uint8 class_id) {
 	return GetPlayerClassBit(class_id);
 }
 
-uint32 lua_get_deity_bitmask(uint16 deity_id) {
-	return static_cast<uint32>(EQ::deity::GetDeityBitmask(static_cast<EQ::deity::DeityType>(deity_id)));
+uint32 lua_get_deity_bitmask(uint32 deity_id) {
+	return Deity::GetBitmask(deity_id);
 }
 
 uint16 lua_get_race_bitmask(uint16 race_id) {
@@ -5573,7 +5581,22 @@ bool lua_send_parcel(luabind::object lua_table)
 	e.note       = note;
 	e.sent_date  = std::time(nullptr);
 
-	return CharacterParcelsRepository::InsertOne(database, e).id;
+	auto out = CharacterParcelsRepository::InsertOne(database, e).id;
+	if (out) {
+		Parcel_Struct ps{};
+		ps.item_slot = e.slot_id;
+		strn0cpy(ps.send_to, name.c_str(), sizeof(ps.send_to));
+
+		std::unique_ptr<ServerPacket> server_packet(new ServerPacket(ServerOP_ParcelDelivery, sizeof(Parcel_Struct)));
+		auto                          data = (Parcel_Struct *) server_packet->pBuffer;
+
+		data->item_slot = ps.item_slot;
+		strn0cpy(data->send_to, ps.send_to, sizeof(data->send_to));
+
+		worldserver.SendPacket(server_packet.get());
+	}
+
+	return out;
 }
 
 uint32 lua_get_zone_uptime()
@@ -5922,6 +5945,7 @@ luabind::scope lua_register_general() {
 		luabind::def("merchant_set_item", (void(*)(uint32,uint32))&lua_merchant_set_item),
 		luabind::def("merchant_set_item", (void(*)(uint32,uint32,uint32))&lua_merchant_set_item),
 		luabind::def("merchant_count_item", &lua_merchant_count_item),
+		luabind::def("item_link", (std::string(*)(Lua_ItemInst))&lua_item_link),
 		luabind::def("item_link", (std::string(*)(uint32))&lua_item_link),
 		luabind::def("item_link", (std::string(*)(uint32,int16))&lua_item_link),
 		luabind::def("item_link", (std::string(*)(uint32,int16,uint32))&lua_item_link),

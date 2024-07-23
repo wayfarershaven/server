@@ -368,13 +368,7 @@ void MapOpcodes()
 	ConnectedOpcodes[OP_Save] = &Client::Handle_OP_Save;
 	ConnectedOpcodes[OP_SaveOnZoneReq] = &Client::Handle_OP_SaveOnZoneReq;
 	ConnectedOpcodes[OP_SelectTribute] = &Client::Handle_OP_SelectTribute;
-
-	// Use or Ignore sense heading based on rule.
-	bool train = RuleB(Skills, TrainSenseHeading);
-
-	ConnectedOpcodes[OP_SenseHeading] =
-		(train) ? &Client::Handle_OP_SenseHeading : &Client::Handle_OP_Ignore;
-
+	ConnectedOpcodes[OP_SenseHeading] = &Client::Handle_OP_SenseHeading;
 	ConnectedOpcodes[OP_SenseTraps] = &Client::Handle_OP_SenseTraps;
 	ConnectedOpcodes[OP_SetGuildMOTD] = &Client::Handle_OP_SetGuildMOTD;
 	ConnectedOpcodes[OP_SetRunMode] = &Client::Handle_OP_SetRunMode;
@@ -792,6 +786,8 @@ void Client::CompleteConnect()
 	if (parse->PlayerHasQuestSub(EVENT_ENTER_ZONE)) {
 		parse->EventPlayer(EVENT_ENTER_ZONE, this, "", 0);
 	}
+
+	DeleteEntityVariable(SEE_BUFFS_FLAG);
 
 	// the way that the client deals with positions during the initial spawn struct
 	// is subtly different from how it deals with getting a position update
@@ -5807,7 +5803,7 @@ void Client::Handle_OP_DeleteItem(const EQApplicationPacket *app)
 			RecordPlayerEventLog(PlayerEvent::ITEM_DESTROY, e);
 		}
 	}
-	
+
 	DeleteItemInInventory(alc->from_slot, 1);
 }
 
@@ -10434,7 +10430,7 @@ void Client::Handle_OP_Mend(const EQApplicationPacket *app)
 
 	int mendhp = GetMaxHP() / 4;
 	int currenthp = GetHP();
-	if (zone->random.Int(0, 199) < (int)GetSkill(EQ::skills::SkillMend)) {
+	if (zone->random.Int(0, RuleI(Character, MendAlwaysSucceedValue)) < (int)GetSkill(EQ::skills::SkillMend)) {
 
 		int criticalchance = spellbonuses.CriticalMend + itembonuses.CriticalMend + aabonuses.CriticalMend;
 
@@ -10514,7 +10510,7 @@ void Client::Handle_OP_MercenaryCommand(const EQApplicationPacket *app)
 				//check to see if selected option is a valid stance slot (option is the slot the stance is in, not the actual stance)
 				if (option >= 0 && option < numStances)
 				{
-					merc->SetStance((EQ::constants::StanceType)mercTemplate->Stances[option]);
+					merc->SetStance(mercTemplate->Stances[option]);
 					GetMercInfo().Stance = mercTemplate->Stances[option];
 
 					Log(Logs::General, Logs::Mercenaries, "Set Stance: %u for %s (%s)", merc->GetStance(), merc->GetName(), GetName());
@@ -11536,8 +11532,8 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
 				entity_list.MessageCloseString(this, false, 200, 10, STRING_FEIGNFAILED, mypet->GetCleanName());
 			}
 			else {
-				bool immune_aggro = GetSpecialAbility(IMMUNE_AGGRO);
-				mypet->SetSpecialAbility(IMMUNE_AGGRO, 1);
+				bool has_aggro_immunity = GetSpecialAbility(SpecialAbility::AggroImmunity);
+				mypet->SetSpecialAbility(SpecialAbility::AggroImmunity, 1);
 				mypet->WipeHateList();
 				mypet->SetPetOrder(SPO_FeignDeath);
 				mypet->SetRunAnimSpeed(0);
@@ -11549,8 +11545,8 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
 					mypet->InterruptSpell();
 				}
 
-				if (!immune_aggro) {
-					mypet->SetSpecialAbility(IMMUNE_AGGRO, 0);
+				if (!has_aggro_immunity) {
+					mypet->SetSpecialAbility(SpecialAbility::AggroImmunity, 0);
 				}
 			}
 		}
@@ -11882,8 +11878,8 @@ void Client::Handle_OP_PickPocket(const EQApplicationPacket *app)
 	}
 	else if (victim->IsNPC()) {
 		auto body = victim->GetBodyType();
-		if (body == BT_Humanoid || body == BT_Monster || body == BT_Giant ||
-			body == BT_Lycanthrope) {
+		if (body == BodyType::Humanoid || body == BodyType::Monster || body == BodyType::Giant ||
+			body == BodyType::Lycanthrope) {
 			victim->CastToNPC()->PickPocket(this);
 			return;
 		}
@@ -13608,14 +13604,24 @@ void Client::Handle_OP_SelectTribute(const EQApplicationPacket *app)
 
 void Client::Handle_OP_SenseHeading(const EQApplicationPacket *app)
 {
-	if (!HasSkill(EQ::skills::SkillSenseHeading))
+	if (!HasSkill(EQ::skills::SkillSenseHeading)) {
 		return;
+	}
 
-	int chancemod = 0;
+	if (RuleB(Skills, TrainSenseHeading)) {
+		CheckIncreaseSkill(EQ::skills::SkillSenseHeading, nullptr, 0);
+		return;
+	}
 
-	CheckIncreaseSkill(EQ::skills::SkillSenseHeading, nullptr, chancemod);
+	if (parse->PlayerHasQuestSub(EVENT_USE_SKILL)) {
+		const auto& export_string = fmt::format(
+			"{} {}",
+			EQ::skills::SkillSenseHeading,
+			GetRawSkill(EQ::skills::SkillSenseHeading)
+		);
 
-	return;
+		parse->EventPlayer(EVENT_USE_SKILL, this, export_string, 0);
+	}
 }
 
 void Client::Handle_OP_SenseTraps(const EQApplicationPacket *app)
@@ -14644,12 +14650,18 @@ void Client::Handle_OP_Sneak(const EQApplicationPacket *app)
 		sa_out->parameter = 0;
 		entity_list.QueueClients(this, outapp, true);
 		safe_delete(outapp);
-	}
-	else {
+	} else {
 		CheckIncreaseSkill(EQ::skills::SkillSneak, nullptr, 5);
 	}
+
 	float hidechance = ((GetSkill(EQ::skills::SkillSneak) / 300.0f) + .25) * 100;
+
+	if (RuleB(Character, SneakAlwaysSucceedOver100)) {
+		hidechance = std::max(10, (int)GetSkill(EQ::skills::SkillSneak));
+	}
+
 	float random = zone->random.Real(0, 99);
+
 	if (!was && random < hidechance) {
 		sneaking = true;
 	}
@@ -14862,14 +14874,15 @@ void Client::Handle_OP_Split(const EQApplicationPacket *app)
 	Group *group = nullptr;
 	Raid *raid = nullptr;
 
-	if (IsRaidGrouped())
+	if (IsRaidGrouped()) {
 		raid = GetRaid();
-	else if (IsGrouped())
+	} else if (IsGrouped()) {
 		group = GetGroup();
+	}
 
 	// is there an actual error message for this?
 	if (raid == nullptr && group == nullptr) {
-		Message(Chat::Red, "You can not split money if you're not in a group.");
+		MessageString(Chat::Red, SPLIT_NO_GROUP);
 		return;
 	}
 
@@ -14877,14 +14890,15 @@ void Client::Handle_OP_Split(const EQApplicationPacket *app)
 		10 * static_cast<uint64>(split->silver) +
 		100 * static_cast<uint64>(split->gold) +
 		1000 * static_cast<uint64>(split->platinum))) {
-		Message(Chat::Red, "You do not have enough money to do that split.");
+		MessageString(Chat::Red, SPLIT_FAIL);
 		return;
 	}
 
-	if (raid)
+	if (raid) {
 		raid->SplitMoney(raid->GetGroup(this), split->copper, split->silver, split->gold, split->platinum);
-	else if (group)
-		group->SplitMoney(split->copper, split->silver, split->gold, split->platinum, this);
+	} else if (group) {
+		group->SplitMoney(split->copper, split->silver, split->gold, split->platinum, this, true);
+	}
 
 	return;
 
@@ -14999,9 +15013,9 @@ void Client::Handle_OP_TargetCommand(const EQApplicationPacket *app)
 
 	if (nt) {
 		if (GetGM() || (!nt->IsInvisible(this) && (DistanceSquared(m_Position, nt->GetPosition()) <= TARGETING_RANGE*TARGETING_RANGE))) {
-			if (nt->GetBodyType() == BT_NoTarget2 ||
-				nt->GetBodyType() == BT_Special ||
-				nt->GetBodyType() == BT_NoTarget) {
+			if (nt->GetBodyType() == BodyType::NoTarget2 ||
+				nt->GetBodyType() == BodyType::Special ||
+				nt->GetBodyType() == BodyType::NoTarget) {
 				can_target = false;
 			}
 			else {
@@ -15144,8 +15158,8 @@ void Client::Handle_OP_TargetMouse(const EQApplicationPacket *app)
 			GetTarget()->IsTargeted(1);
 			return;
 		}
-		else if (GetTarget()->GetBodyType() == BT_NoTarget2 || GetTarget()->GetBodyType() == BT_Special
-			|| GetTarget()->GetBodyType() == BT_NoTarget)
+		else if (GetTarget()->GetBodyType() == BodyType::NoTarget2 || GetTarget()->GetBodyType() == BodyType::Special
+			|| GetTarget()->GetBodyType() == BodyType::NoTarget)
 		{
 			auto message = fmt::format(
 				"[{}] attempting to target something untargetable [{}] bodytype [{}]",

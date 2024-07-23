@@ -182,14 +182,20 @@ void Mob::CalcItemBonuses(StatBonuses* b) {
 		SetDualWeaponsEquipped(true);
 	}
 
-	if (IsOfClientBot()) {
-		for (i = EQ::invslot::TRIBUTE_BEGIN; i <= EQ::invslot::TRIBUTE_END; i++) {
-			const EQ::ItemInstance* inst = m_inv[i];
-			if (!inst) {
-				continue;
-			}
+	if (IsClient()) {
+		if (CastToClient()->GetPP().tribute_active) {
+			for (auto const &t: CastToClient()->GetPP().tributes) {
+				auto item_id = CastToClient()->LookupTributeItemID(t.tribute, t.tier);
+				if (item_id) {
+					const EQ::ItemInstance *inst = database.CreateItem(item_id);
+					if (!inst) {
+						continue;
+					}
 
-			AddItemBonuses(inst, b, false, true);
+					AddItemBonuses(inst, b, false, true);
+					safe_delete(inst);
+				}
+			}
 		}
 	}
 
@@ -1439,8 +1445,8 @@ void Mob::ApplyAABonuses(const AA::Rank &rank, StatBonuses *newbon)
 
 		case SE_SlayUndead: {
 			if (newbon->SlayUndead[SBIndex::SLAYUNDEAD_DMG_MOD] < base_value) {
-				newbon->SlayUndead[SBIndex::SLAYUNDEAD_RATE_MOD] = base_value; // Rate
-				newbon->SlayUndead[SBIndex::SLAYUNDEAD_DMG_MOD] = limit_value; // Damage Modifier
+				newbon->SlayUndead[SBIndex::SLAYUNDEAD_DMG_MOD] = base_value; // Rate
+				newbon->SlayUndead[SBIndex::SLAYUNDEAD_RATE_MOD] = limit_value; // Damage Modifier
 			}
 			break;
 		}
@@ -2220,7 +2226,7 @@ void Mob::ApplySpellsBonuses(uint16 spell_id, uint8 casterlevel, StatBonuses *ne
 			{
 				// These don't generate the IMMUNE_ATKSPEED message and the icon shows up
 				// but have no effect on the mobs attack speed
-				if (GetSpecialAbility(UNSLOWABLE))
+				if (GetSpecialAbility(SpecialAbility::SlowImmunity))
 					break;
 
 				if (effect_value < 0) //A few spells use negative values(Descriptions all indicate it should be a slow)
@@ -2438,6 +2444,10 @@ void Mob::ApplySpellsBonuses(uint16 spell_id, uint8 casterlevel, StatBonuses *ne
 			case SE_CastingLevel2:
 			{
 				new_bonus->effective_casting_level += effect_value;
+
+				if (RuleB(Spells, SnareOverridesSpeedBonuses) && effect_value < 0) {
+					new_bonus->movementspeed = effect_value;
+				}
 				break;
 			}
 
@@ -3356,7 +3366,7 @@ void Mob::ApplySpellsBonuses(uint16 spell_id, uint8 casterlevel, StatBonuses *ne
 				break;
 
 			case SE_Blind:
-				if (RuleB(Combat, AllowRaidTargetBlind) && IsRaidTarget()) { // do not blind raid targets
+				if (!RuleB(Combat, AllowRaidTargetBlind) && IsRaidTarget()) { // do not blind raid targets
 					break;
 				}
 
@@ -3585,8 +3595,8 @@ void Mob::ApplySpellsBonuses(uint16 spell_id, uint8 casterlevel, StatBonuses *ne
 
 			case SE_SlayUndead: {
 				if (new_bonus->SlayUndead[SBIndex::SLAYUNDEAD_DMG_MOD] < effect_value) {
-					new_bonus->SlayUndead[SBIndex::SLAYUNDEAD_RATE_MOD] = effect_value; // Rate
-					new_bonus->SlayUndead[SBIndex::SLAYUNDEAD_DMG_MOD] = limit_value; // Damage Modifier
+					new_bonus->SlayUndead[SBIndex::SLAYUNDEAD_RATE_MOD] = limit_value; // Rate
+					new_bonus->SlayUndead[SBIndex::SLAYUNDEAD_DMG_MOD] = effect_value; // Damage Modifier
 				}
 				break;
 			}

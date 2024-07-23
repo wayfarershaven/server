@@ -1,3 +1,80 @@
+## [22.53.1] 6/16/2024
+
+### Fixes
+
+* Fix trader mode ([#4397](https://github.com/EQEmu/Server/pull/4397)) @joligario 2024-06-17
+
+## [22.53.0] 6/14/2024
+
+### Bug
+
+* Anon players should not show in /who all ([#4392](https://github.com/EQEmu/Server/pull/4392)) @fryguy503 2024-06-14
+* Escape should put player into SOS if owned. ([#4388](https://github.com/EQEmu/Server/pull/4388)) @fryguy503 2024-06-07
+* Prevent Resurrection Spells from being resisted ([#4393](https://github.com/EQEmu/Server/pull/4393)) @fryguy503 2024-06-14
+
+### Code
+
+* Cleanup Account Status Code ([#4376](https://github.com/EQEmu/Server/pull/4376)) @Kinglykrab 2024-06-02
+* Cleanup Body Type Code ([#4366](https://github.com/EQEmu/Server/pull/4366)) @Kinglykrab 2024-06-02
+* Cleanup Object Type Code ([#4375](https://github.com/EQEmu/Server/pull/4375)) @Kinglykrab 2024-06-14
+* Remove unused code in emu_constants.h ([#4384](https://github.com/EQEmu/Server/pull/4384)) @Kinglykrab 2024-06-14
+
+### Fixes
+
+* Fix #goto Target ([#4382](https://github.com/EQEmu/Server/pull/4382)) @Kinglykrab 2024-06-03
+* Fix Swarm Pet Damage Messages ([#4383](https://github.com/EQEmu/Server/pull/4383)) @Kinglykrab 2024-06-04
+* Fix for players having empty bazaar window dropdown list, even though trader is tagged as a trader. ([#4391](https://github.com/EQEmu/Server/pull/4391)) @neckkola 2024-06-14
+* Fix potential trader crash when serialized item not found ([#4386](https://github.com/EQEmu/Server/pull/4386)) @joligario 2024-06-14
+
+### Rules
+
+* Add Invisible Augment Rules ([#4385](https://github.com/EQEmu/Server/pull/4385)) @Kinglykrab 2024-06-14
+* Classic Harm Touch Formula ([#4394](https://github.com/EQEmu/Server/pull/4394)) @fryguy503 2024-06-14
+* Mend/Sneak allow success tuning ([#4390](https://github.com/EQEmu/Server/pull/4390)) @fryguy503 2024-06-14
+* Snare Override Movement Bonus ([#4381](https://github.com/EQEmu/Server/pull/4381)) @fryguy503 2024-06-02
+
+## [22.52.0] 6/1/2024
+
+### Code
+
+* Cleanup Bucket Comparison Code ([#4374](https://github.com/EQEmu/Server/pull/4374)) @Kinglykrab 2024-06-02
+* Cleanup Bug Category Code ([#4367](https://github.com/EQEmu/Server/pull/4367)) @Kinglykrab 2024-06-01
+* Cleanup Deity Code ([#4363](https://github.com/EQEmu/Server/pull/4363)) @Kinglykrab 2024-06-01
+* Cleanup Special Ability Code ([#4365](https://github.com/EQEmu/Server/pull/4365)) @Kinglykrab 2024-06-01
+* Remove unused code in common/eq_constants.h ([#4364](https://github.com/EQEmu/Server/pull/4364)) @Kinglykrab 2024-06-01
+
+### Combat
+
+* Adjustments to Crippling Blows/Slay Undead and Confirmed Critical Code ([#4354](https://github.com/EQEmu/Server/pull/4354)) @fryguy503 2024-05-27
+
+### Fixes
+
+* Add protection to ensure adventure points award are only attempted on players ([#4371](https://github.com/EQEmu/Server/pull/4371)) @joligario 2024-05-31
+* Adjust Kick/RoundKick Damage Lower levels ([#4355](https://github.com/EQEmu/Server/pull/4355)) @fryguy503 2024-05-28
+* Bazaar Search not working correctly for Iksar, Vashir, Drakkin and Froglok races ([#4379](https://github.com/EQEmu/Server/pull/4379)) @neckkola 2024-06-02
+* Fix Unescaped String in Client::GotoPlayer ([#4373](https://github.com/EQEmu/Server/pull/4373)) @Kinglykrab 2024-06-01
+
+### NPC Spells
+
+* Fixed an issue where the repository spell adj value was overriding the spell difficulty default value ([#4370](https://github.com/EQEmu/Server/pull/4370)) @regneq 2024-06-01
+
+### Quest API
+
+* Add Item Link Methods to Perl/Lua ([#4359](https://github.com/EQEmu/Server/pull/4359)) @Kinglykrab 2024-06-01
+
+### Quests
+
+* Fix Lua encounter double register ([#4369](https://github.com/EQEmu/Server/pull/4369)) @Akkadius 2024-05-31
+* Fix issue with Lua encounters loading in certain circumstances ([#4378](https://github.com/EQEmu/Server/pull/4378)) @Akkadius 2024-06-01
+
+### Rules
+
+* Add Skill Base Damage Rules ([#4360](https://github.com/EQEmu/Server/pull/4360)) @Kinglykrab 2024-06-01
+
+### Skills
+
+* Fix caps out of bounds issue ([#4377](https://github.com/EQEmu/Server/pull/4377)) @Akkadius 2024-06-01
+
 ## [22.51.1] 5/27/2024
 
 ### Fixes

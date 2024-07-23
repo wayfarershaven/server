@@ -41,7 +41,7 @@ extern QueryServ* QServ;
 
 // The maximum amount of a single bazaar/barter transaction expressed in copper.
 // Equivalent to 2 Million plat
-#define MAX_TRANSACTION_VALUE 2000000000
+constexpr auto MAX_TRANSACTION_VALUE = 2000000000;
 // ##########################################
 // Trade implementation
 // ##########################################
@@ -1048,8 +1048,12 @@ void Client::TraderStartTrader(const EQApplicationPacket *app)
 	std::vector<TraderRepository::Trader> trader_items{};
 
 	//Check inventory for no-trade items
-	for (auto const &i: inv->serial_number) {
-		auto inst = FindTraderItemBySerialNumber(i);
+	for (auto i = 0; i < max_items; i++) {
+		if (inv->items[i] == 0 || inv->serial_number[i] == 0) {
+			continue;
+		}
+
+		auto inst = FindTraderItemBySerialNumber(inv->serial_number[i]);
 		if (inst) {
 			if (inst->GetItem() && inst->GetItem()->NoDrop == 0) {
 				Message(
@@ -1067,7 +1071,16 @@ void Client::TraderStartTrader(const EQApplicationPacket *app)
 	}
 
 	for (uint32 i = 0; i < max_items; i++) {
+		if (inv->serial_number[i] <= 0) {
+			continue;
+		}
+
 		auto inst = FindTraderItemBySerialNumber(inv->serial_number[i]);
+		if (!inst) {
+			trade_items_valid = false;
+			break;
+		}
+
 		auto it   = std::find(std::begin(in->serial_number), std::end(in->serial_number), inv->serial_number[i]);
 		if (inst && it != std::end(in->serial_number)) {
 			inst->SetPrice(in->item_cost[i]);
@@ -1106,18 +1119,16 @@ void Client::TraderStartTrader(const EQApplicationPacket *app)
 			trade_items_valid = false;
 			continue;
 		}
-		else if (!in->serial_number[i]) {
-			break;
-		}
 	}
 
 	if (!trade_items_valid) {
-		Message(Chat::Red, "You are not able to become a trader at this time.");
+		Message(Chat::Red, "You are not able to become a trader at this time.  Invalid item found.");
 		TraderEndTrader();
 		safe_delete(inv);
 		return;
 	}
 
+	TraderRepository::DeleteWhere(database, fmt::format("`char_id` = '{}';", CharacterID()));
 	TraderRepository::ReplaceMany(database, trader_items);
 	safe_delete(inv);
 
@@ -1309,7 +1320,7 @@ GetItems_Struct *Client::GetTraderItems()
 {
 	const EQ::ItemInstance *item   = nullptr;
 	int16                  slot_id = INVALID_INDEX;
-	auto                   gis     = new GetItems_Struct;
+	auto                   gis     = new GetItems_Struct{0};
 	uint8                  ndx     = 0;
 
 	for (int16 i = EQ::invslot::GENERAL_BEGIN; i <= EQ::invslot::GENERAL_END; i++) {
@@ -1327,7 +1338,7 @@ GetItems_Struct *Client::GetTraderItems()
 				item    = GetInv().GetItem(slot_id);
 
 				if (item) {
-					gis->items[ndx]         = item->GetItem()->ID;
+					gis->items[ndx]         = item->GetID();
 					gis->serial_number[ndx] = item->GetSerialNumber();
 					gis->charges[ndx]       = item->GetCharges() == 0 ? 1 : item->GetCharges();
 					ndx++;
@@ -2033,7 +2044,7 @@ void Client::SendBazaarResults(
 	int    Count           = 0;
 	uint32 StatValue       = 0;
 
-	for (auto row = results.begin(); row != results.end(); ++row) {
+	for (auto &row = results.begin(); row != results.end(); ++row) {
 		VARSTRUCT_ENCODE_TYPE(uint32, bufptr, Action);
 		Count = Strings::ToInt(row[0]);
 		VARSTRUCT_ENCODE_TYPE(uint32, bufptr, Count);
@@ -2293,7 +2304,7 @@ void Client::SendBuyerResults(char* searchString, uint32 searchID) {
     uint32 lastCharID = 0;
 	Client *buyer = nullptr;
 
-	for (auto row = results.begin(); row != results.end(); ++row) {
+	for (auto &row = results.begin(); row != results.end(); ++row) {
         char itemName[64];
 
         uint32 charID = Strings::ToInt(row[0]);
@@ -2396,7 +2407,7 @@ void Client::ShowBuyLines(const EQApplicationPacket *app) {
     if (!results.Success() || results.RowCount() == 0)
         return;
 
-    for (auto row = results.begin(); row != results.end(); ++row) {
+    for (auto &row = results.begin(); row != results.end(); ++row) {
         char ItemName[64];
         uint32 BuySlot = Strings::ToInt(row[1]);
         uint32 ItemID = Strings::ToInt(row[2]);
@@ -3298,7 +3309,7 @@ void Client::DoBazaarInspect(const BazaarInspect_Struct &in)
 		return;
 	}
 
-	auto item = items.front();
+	auto &item = items.front();
 
 	std::unique_ptr<EQ::ItemInstance> inst(
 		database.CreateItem(

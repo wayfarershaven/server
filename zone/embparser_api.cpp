@@ -34,11 +34,14 @@
 #include "questmgr.h"
 #include "zone.h"
 #include "data_bucket.h"
+#include "../common/events/player_event_logs.h"
+#include "worldserver.h"
 
 #include <cctype>
 
 extern Zone      *zone;
 extern QueryServ *QServ;
+extern WorldServer worldserver;
 
 #ifdef EMBPERL_XS_CLASSES
 
@@ -513,7 +516,7 @@ void Perl__sfollow()
 	quest_manager.sfollow();
 }
 
-void Perl__changedeity(int deity_id)
+void Perl__changedeity(uint32 deity_id)
 {
 	quest_manager.changedeity(deity_id);
 }
@@ -4740,9 +4743,9 @@ std::string Perl__getlanguagename(uint8 language_id)
 	return quest_manager.getlanguagename(language_id);
 }
 
-std::string Perl__getbodytypename(uint32 bodytype_id)
+std::string Perl__getbodytypename(uint8 body_type_id)
 {
-	return quest_manager.getbodytypename(bodytype_id);
+	return quest_manager.getbodytypename(body_type_id);
 }
 
 std::string Perl__getconsiderlevelname(uint8 consider_level)
@@ -4938,6 +4941,11 @@ void Perl__set_proximity_range(float x_range, float y_range, float z_range)
 void Perl__set_proximity_range(float x_range, float y_range, float z_range, bool enable_say)
 {
 	quest_manager.set_proximity_range(x_range, y_range, z_range, enable_say);
+}
+
+std::string Perl__varlink(EQ::ItemInstance* inst)
+{
+	return quest_manager.varlink(inst);
 }
 
 std::string Perl__varlink(uint32 item_id)
@@ -5845,9 +5853,9 @@ uint16 Perl__get_class_bitmask(uint8 class_id)
 	return GetPlayerClassBit(class_id);
 }
 
-uint32 Perl__get_deity_bitmask(uint16 deity_id)
+uint32 Perl__get_deity_bitmask(uint32 deity_id)
 {
-	return static_cast<uint32>(EQ::deity::GetDeityBitmask(static_cast<EQ::deity::DeityType>(deity_id)));
+	return Deity::GetBitmask(deity_id);
 }
 
 uint16 Perl__get_race_bitmask(uint16 race_id)
@@ -5941,7 +5949,22 @@ bool Perl__send_parcel(perl::reference table_ref)
 	e.note       = note;
 	e.sent_date  = std::time(nullptr);
 
-	return CharacterParcelsRepository::InsertOne(database, e).id;
+	auto out = CharacterParcelsRepository::InsertOne(database, e).id;
+	if (out) {
+		Parcel_Struct ps{};
+		ps.item_slot = e.slot_id;
+		strn0cpy(ps.send_to, name.c_str(), sizeof(ps.send_to));
+
+		std::unique_ptr<ServerPacket> server_packet(new ServerPacket(ServerOP_ParcelDelivery, sizeof(Parcel_Struct)));
+		auto                          data = (Parcel_Struct *) server_packet->pBuffer;
+
+		data->item_slot = ps.item_slot;
+		strn0cpy(data->send_to, ps.send_to, sizeof(data->send_to));
+
+		worldserver.SendPacket(server_packet.get());
+	}
+
+	return out;
 }
 
 void perl_register_quest()
@@ -6856,6 +6879,7 @@ void perl_register_quest()
 	package.add("updatetaskactivity", (void(*)(int, int, int))&Perl__updatetaskactivity);
 	package.add("updatetaskactivity", (void(*)(int, int, int, bool))&Perl__updatetaskactivity);
 	package.add("UpdateZoneHeader", &Perl__UpdateZoneHeader);
+	package.add("varlink", (std::string(*)(EQ::ItemInstance*))&Perl__varlink);
 	package.add("varlink", (std::string(*)(uint32))&Perl__varlink);
 	package.add("varlink", (std::string(*)(uint32, int16))&Perl__varlink);
 	package.add("varlink", (std::string(*)(uint32, int16, uint32))&Perl__varlink);

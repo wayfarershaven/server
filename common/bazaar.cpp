@@ -47,7 +47,7 @@ Bazaar::GetSearchResults(
 		search_criteria_trader.append(fmt::format(" AND trader.char_id = {}", search.trader_id));
 	}
 	if (search.min_cost != 0) {
-		search_criteria_trader.append(fmt::format(" AND trader.item_cost >= {}", search.min_cost));
+		search_criteria_trader.append(fmt::format(" AND trader.item_cost >= {}", search.min_cost * 1000));
 	}
 	if (search.max_cost != 0) {
 		search_criteria_trader.append(fmt::format(" AND trader.item_cost <= {}", (uint64) search.max_cost * 1000));
@@ -314,7 +314,7 @@ Bazaar::GetSearchResults(
 			},
 			{
 				.should_check = search.race != 0xFFFFFFFF,
-				.condition = static_cast<bool>(item->Races & GetPlayerRaceBit(search.race))
+				.condition = static_cast<bool>(item->Races & GetPlayerRaceBit(GetRaceIDFromPlayerRaceValue(search.race)))
 			},
 			{
 				.should_check = search.augment != 0,
