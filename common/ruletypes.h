@@ -699,6 +699,7 @@ RULE_BOOL(Aggro, UndeadAlwaysAggro, true, "should undead always aggro?")
 RULE_INT(Aggro, BardAggroCap, 40, "per song bard aggro cap.")
 RULE_INT(Aggro, InitialAggroBonus, 100, "Initial Aggro Bonus, Default: 100")
 RULE_INT(Aggro, InitialPetAggroBonus, 100, "Initial Pet Aggro Bonus, Default 100")
+RULE_STRING(Aggro, ExcludedFleeAllyFactionIDs, "0|5013|5014|5023|5032", "Common Faction IDs that are excluded from faction checks in EntityList::FleeAllyCount")
 RULE_CATEGORY_END()
 
 RULE_CATEGORY(TaskSystem)
@@ -814,6 +815,7 @@ RULE_INT(Bazaar, MaxBarterSearchResults, 200, "The maximum results returned in t
 RULE_REAL(Bazaar, ParcelDeliveryCostMod, 0.20, "Cost of parcel delivery for a bazaar purchase as a percentage of item cost. Default is 20% of item cost. RoF+ Only.")
 RULE_INT(Bazaar, VoucherDeliveryCost, 200, "Number of vouchers for direct delivery for a bazaar purchase. Default is 200 vouchers. RoF+ Only.")
 RULE_BOOL(Bazaar, EnableParcelDelivery, true, "Enable bazaar purchases via parcel delivery.  Default is True.")
+RULE_INT(Bazaar, MaxBuyerInventorySearchResults, 200, "Maximum number of search results when a Buyer searches the global item list. Default is 200. RoF+ Only.")
 RULE_CATEGORY_END()
 
 RULE_CATEGORY(Mail)
