@@ -734,34 +734,34 @@ namespace AlternateCurrencyMode {
 
 typedef enum {
 	FilterNone = 0,
-	FilterGuildChat = 1,		//0=hide, 1=show
-	FilterSocials = 2,			//0=hide, 1=show
-	FilterGroupChat = 3,		//0=hide, 1=show
-	FilterShouts = 4,			//0=hide, 1=show
-	FilterAuctions = 5,			//0=hide, 1=show
-	FilterOOC = 6,				//0=hide, 1=show
-	FilterBadWords = 7,			//0=hide, 1=show
-	FilterPCSpells = 8,			//0=show, 1=hide, 2=group only
-	FilterNPCSpells = 9,		//0=show, 1=hide
-	FilterBardSongs = 10,		//0=show, 1=mine only, 2=group only, 3=hide
-	FilterSpellCrits = 11,		//0=show, 1=mine only, 2=hide
-	FilterMeleeCrits = 12,		//0=show, 1=hide
-	FilterSpellDamage = 13,		//0=show, 1=mine only, 2=hide
-	FilterMyMisses = 14,		//0=hide, 1=show
-	FilterOthersMiss = 15,		//0=hide, 1=show
-	FilterOthersHit = 16,		//0=hide, 1=show
-	FilterMissedMe = 17,		//0=hide, 1=show
-	FilterDamageShields = 18,	//0=show, 1=hide
-	FilterDOT = 19,				//0=show, 1=hide
-	FilterPetHits = 20,			//0=show, 1=hide
-	FilterPetMisses = 21,		//0=show, 1=hide
-	FilterFocusEffects = 22,	//0=show, 1=hide
-	FilterPetSpells = 23,		//0=show, 1=hide
-	FilterHealOverTime = 24,	//0=show, 1=mine only, 2=hide
-	FilterUnknown25 = 25,
-	FilterUnknown26 = 26,
-	FilterUnknown27 = 27,
-	FilterUnknown28 = 28,
+	FilterGuildChat = 1,		//0=hide, 1=show // RoF2 Confirmed
+	FilterSocials = 2,			//0=hide, 1=show // RoF2 Confirmed
+	FilterGroupChat = 3,		//0=hide, 1=show // RoF2 Confirmed
+	FilterShouts = 4,			//0=hide, 1=show // RoF2 Confirmed
+	FilterAuctions = 5,			//0=hide, 1=show // RoF2 Confirmed
+	FilterOOC = 6,				//0=hide, 1=show // RoF2 Confirmed
+	FilterBadWords = 7,			//0=hide, 1=show // RoF2 Confirmed
+	FilterPCSpells = 8,			//0=show, 1=hide, 2=group only // RoF2 Confirmed
+	FilterNPCSpells = 9,		//0=show, 1=hide // RoF2 Confirmed
+	FilterBardSongs = 10,		//0=show, 1=mine only, 2=group only, 3=hide // RoF2 Confirmed
+	FilterSpellCrits = 11,		//0=show, 1=mine only, 2=hide // RoF2 Confirmed
+	FilterMeleeCrits = 12,		//0=show, 1=mine only, 2=hide // RoF2 Confirmed
+	FilterSpellDamage = 13,		//0=show, 1=mine only, 2=hide // RoF2 Confirmed
+	FilterMyMisses = 14,		//0=hide, 1=show // RoF2 Confirmed
+	FilterOthersMiss = 15,		//0=hide, 1=show // RoF2 Confirmed
+	FilterOthersHit = 16,		//0=hide, 1=show // RoF2 Confirmed
+	FilterMissedMe = 17,		//0=hide, 1=show // RoF2 Confirmed
+	FilterDamageShields = 18,	//0=show, 1=hide // RoF2 Confirmed
+	FilterDOT = 19,				//0=show, 1=mine only, 2=group only, 3=hide // RoF2 Confirmed
+	FilterPetHits = 20,			//0=show, 1=hide // RoF2 Confirmed
+	FilterPetMisses = 21,		//0=show, 1=hide // RoF2 Confirmed
+	FilterFocusEffects = 22,	//0=show, 1=hide // RoF2 Confirmed
+	FilterPetSpells = 23,		//0=show, 1=hide // RoF2 Confirmed
+	FilterHealOverTime = 24,	//0=show, 1=mine only, 2=hide // RoF2 Confirmed
+	FilterItemSpeech = 25,		//0=show, 1=hide // RoF2 Confirmed
+	FilterStrikethrough = 26,	//0=show, 1=hide // RoF2 Confirmed
+	FilterStuns = 27,			//0=show, 1=hide // RoF2 Confirmed
+	FilterBardSongsOnPets = 28,	//0=show, 1=hide // RoF2 Confirmed
 	_FilterCount
 } eqFilterType;
 
