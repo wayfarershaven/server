@@ -454,7 +454,7 @@ bool Mob::DoCastSpell(uint16 spell_id, uint16 target_id, CastingSlot slot,
 	// If you're at full mana, let it cast even if you dont have enough mana
 
 	// we calculated this above, now enforce it
-	if (mana_cost > 0 && slot != CastingSlot::Item || (IsBot() && !CastToBot()->IsBotNonSpellFighter()) || HasSpellEffect(324)) {
+	if (mana_cost > 0 && slot != CastingSlot::Item || (IsBot() && !CastToBot()->IsBotNonSpellFighter()) || !HasSpellEffect(324)) {
 		int my_curmana = GetMana();
 		int my_maxmana = GetMaxMana();
 		if (my_curmana < mana_cost) {// not enough mana
