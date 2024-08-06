@@ -4101,22 +4101,32 @@ void Client::SendOPTranslocateConfirm(Mob *Caster, uint16 SpellID) {
 
 	return;
 }
-void Client::SendPickPocketResponse(Mob *from, uint32 amt, int type, const EQ::ItemData* item){
+
+void Client::SendPickPocketResponse(Mob *from, uint32 amt, int type, const EQ::ItemData* item, bool skip_skill)
+{
+	if(!skip_skill) {
+		CheckIncreaseSkill(EQ::skills::SkillPickPockets, nullptr, 5);
+	}
+
 	auto outapp = new EQApplicationPacket(OP_PickPocket, sizeof(sPickPocket_Struct));
 	sPickPocket_Struct *pick_out = (sPickPocket_Struct *)outapp->pBuffer;
 	pick_out->coin = amt;
 	pick_out->from = GetID();
 	pick_out->to = from->GetID();
-		pick_out->myskill = GetSkill(EQ::skills::SkillPickPockets);
+	pick_out->myskill = GetSkill(EQ::skills::SkillPickPockets);
 
-	if ((type >= PickPocketPlatinum) && (type <= PickPocketCopper) && (amt == 0))
+	if ((type >= PickPocketPlatinum) && (type <= PickPocketCopper) && (amt == 0)) {
 		type = PickPocketFailed;
+	}
 
 	pick_out->type = type;
-	if (item)
+
+	if (item) {
 		strcpy(pick_out->itemname, item->Name);
-	else
+	} else {
 		pick_out->itemname[0] = '\0';
+	}
+
 	// if we do not send this packet the client will lock up and require the player to relog.
 	QueuePacket(outapp);
 	safe_delete(outapp);

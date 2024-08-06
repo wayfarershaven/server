@@ -173,10 +173,6 @@ enum {	//some random constants
 //if group linking is enabled above
 #define MAX_GROUP_LINKS 8
 
-//this is the number of levels above the thief's level that
-//an npc can be and still let the theif PP them
-#define THIEF_PICKPOCKET_OVER 5
-
 //this is the % chance that an NPC will dual wield a 2nd weapon
 //in its loot table, if it is able to.
 //Aug 2007: was 5% chance.. changed to 100% by default since that seems more normal

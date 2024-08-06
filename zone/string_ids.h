@@ -120,6 +120,7 @@
 #define MEND_SUCCESS				350		//You mend your wounds and heal some damage.
 #define MEND_WORSEN					351		//You have worsened your wounds!
 #define MEND_FAIL					352		//You have failed to mend your wounds.
+#define STEAL_COOLDOWN				355		//You must wait longer before you can attempt to steal.
 #define LDON_SENSE_TRAP2			367		//You have not detected any traps.
 #define TRAP_TOO_FAR				368		//You are too far away from that trap to affect it.
 #define FAIL_DISARM_DETECTED_TRAP	370		//You fail to disarm the detected trap.
@@ -264,6 +265,7 @@
 #define WONT_SELL_DEEDS4			1169 	//Get out of here now!
 #define WONT_SELL_DEEDS5			1170 	//I am tolerant by nature..but infidels like you push me past my limit..get out!
 #define WONT_SELL_DEEDS6			1171 	//I cannot abide you or your actions against all that is right..BE GONE!
+#define STEAL_FAIL					1193	//Stop Thief! <%3>
 #define AA_POINT					1197	//point
 #define MERCHANT_CLOSED_ONE			1199	//I don't have time for that now.
 #define MERCHANT_CLOSED_TWO			1200	//Can't you see I'm doing something here?
@@ -539,6 +541,14 @@
 #define STOP_SNEAKING				12338	//You stop sneaking
 #define NOT_IN_CONTROL				12368	//You do not have control of yourself right now.
 #define NO_SKILL_WHILE_MOUNTED		12393	//You can not use this skill while on a mount.
+#define STEAL_TARGET				12405	//You must target a player to steal from first.
+#define STEAL_CORPSES				12406	//You must target a player to steal from first.  You may not steal from corpses.
+#define STEAL_STUNNED				12407	//You can't try to steal while STUNNED!
+#define STEAL_ATTACKING				12408	//You can't try to steal while attacking.
+#define STEAL_FROM_SELF				12409	//You can't seem to steal from yourself for some reason...
+#define STEAL_PLAYERS				12410	//You may not steal from a person who does not follow the ways of chaos....
+#define STEAL_OUTSIDE_LEVEL			12413	//You can only steal from others in your level range.
+#define STEAL_FAR_AWAY				12414	//You are too far away to steal. Get closer.
 #define STAND_TO_CAST				12441	//You must be standing to cast a spell.
 #define ALREADY_CASTING				12442	//You are already casting a spell!
 #define SHIMMERS_BRIEFLY			12444	//Your %1 shimmers briefly.
@@ -572,6 +582,7 @@
 #define DISARMED                    12889   //You have been disarmed!
 #define DISARM_SUCCESS              12890   //You disarmed %1!
 #define DISARM_FAILED               12891   //Your attempt to disarm failed.
+#define STEAL_UNSUCCESSFUL			12898	//Your attempt at stealing was unsuccessful.
 #define MORE_SKILLED_THAN_I			12931	//%1 tells you, 'You are more skilled than I! What could I possibly teach you?'
 #define SURNAME_EXISTS				12939	//You already have a surname. Operation failed.
 #define SURNAME_LEVEL				12940	//You can only submit a surname upon reaching the 20th level. Operation failed.
