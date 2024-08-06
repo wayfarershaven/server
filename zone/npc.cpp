@@ -1681,7 +1681,7 @@ void NPC::PickPocket(Client* thief)
 		}
 	);
 
-	const bool is_bodytype = f != bodytype_check.end();
+	const bool is_bodytype = f == bodytype_check.end();
 
 	LogSkillsDetail("BodyType = [{}] - is_bodytype = [{}]", GetBodyType(), is_bodytype);
 
