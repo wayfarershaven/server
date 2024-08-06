@@ -1671,28 +1671,57 @@ uint32 NPC::GetMaxDamage(uint8 tlevel)
 
 void NPC::PickPocket(Client* thief)
 {
-	thief->CheckIncreaseSkill(EQ::skills::SkillPickPockets, nullptr, 5);
+	const auto& bodytype_check = Strings::Split(RuleS(Character, PickPocketAllowedBodyTypes));
 
-	//make sure were allowed to target them:
-	int over_level = GetLevel();
-	if(over_level > (thief->GetLevel() + THIEF_PICKPOCKET_OVER)) {
-		thief->Message(Chat::Red, "You are too inexperienced to pick pocket this target");
-		thief->SendPickPocketResponse(this, 0, PickPocketFailed);
-		//should we check aggro
+	const auto& f = std::find_if(
+		bodytype_check.begin(),
+		bodytype_check.end(),
+		[&](std::string x) {
+			return Strings::ToUnsignedInt(x) == bodytype;
+		}
+	);
+
+	const bool is_bodytype = f != bodytype_check.end();
+
+	LogSkillsDetail("BodyType = [{}] - is_bodytype = [{}]", GetBodyType(), is_bodytype);
+
+	if (!is_bodytype || IsPet() || (thief->hidden || thief->invisible)) {
+		thief->SendPickPocketResponse(this, 0, PickPocketFailed, 0, true);
 		return;
 	}
 
-	if(zone->random.Roll(5)) {
-		if (zone->CanDoCombat())
-			AddToHateList(thief, 50);
-		Say("Stop thief!");
-		thief->Message(Chat::Red, "You are noticed trying to steal!");
-		thief->SendPickPocketResponse(this, 0, PickPocketFailed);
-		return;
+	//make sure were allowed to target them:
+	int over_level = GetLevel();
+
+	if (thief->GetLevel() < 50) {
+		if (over_level > 45) {
+			thief->MessageString(Chat::Skills, STEAL_OUTSIDE_LEVEL);
+			thief->SendPickPocketResponse(this, 0, PickPocketFailed, 0, true);
+		}
+	} else if (over_level > (thief->GetLevel() - RuleI(Character, PickPocketUnderLevel))) {
+		thief->MessageString(Chat::Skills, STEAL_OUTSIDE_LEVEL);
+		thief->SendPickPocketResponse(this, 0, PickPocketFailed, 0, true);
 	}
 
 	int steal_skill = thief->GetSkill(EQ::skills::SkillPickPockets);
 	int steal_chance = steal_skill * 100 / (5 * over_level + 5);
+
+	if (zone->random.Roll(5)) {
+		if (zone->CanDoCombat()) {
+			AddToHateList(thief, 50);
+		}
+
+		if (CanTalk()) {
+			SayString(STEAL_FAIL, thief->GetName());
+		}
+		thief->MessageString(Chat::Skills, STEAL_UNSUCCESSFUL);
+		thief->SendPickPocketResponse(this, 0, PickPocketFailed);
+		return;
+	}
+
+
+
+
 
 	// Determine whether to steal money or an item.
 	uint32 money[6] = {0, ((steal_skill >= 125) ? (GetPlatinum()) : (0)), ((steal_skill >= 60) ? (GetGold()) : (0)), GetSilver(),
@@ -1704,15 +1733,18 @@ void NPC::PickPocket(Client* thief)
 	while (steal_item) {
 		std::vector<std::pair<const EQ::ItemData*, uint16>> loot_selection; // <const ItemData*, charges>
 		for (auto item_iter : m_loot_items) {
-			if (!item_iter || !item_iter->item_id)
+			if (!item_iter || !item_iter->item_id) {
 				continue;
+			}
 
 			auto item_test = database.GetItem(item_iter->item_id);
-			if (item_test->Magic || !item_test->NoDrop || item_test->IsClassBag() || thief->CheckLoreConflict(item_test) || item_iter->equip_slot != EQ::invslot::SLOT_INVALID)
+			if (item_test->Magic || !item_test->NoDrop || item_test->IsClassBag() || thief->CheckLoreConflict(item_test) || item_iter->equip_slot != EQ::invslot::SLOT_INVALID) {
 				continue;
+			}
 
 			loot_selection.emplace_back(std::make_pair(item_test, ((item_test->Stackable) ? (1) : (item_iter->charges))));
 		}
+
 		if (loot_selection.empty()) {
 			steal_item = false;
 			break;
@@ -1720,12 +1752,14 @@ void NPC::PickPocket(Client* thief)
 
 		int random = zone->random.Int(0, (loot_selection.size() - 1));
 		uint16 slot_id = thief->GetInv().FindFreeSlot(false, true, (loot_selection[random].first->Size), (loot_selection[random].first->ItemType == EQ::item::ItemTypeArrow));
+
 		if (slot_id == INVALID_INDEX) {
 			steal_item = false;
 			break;
 		}
 
 		auto item_inst = database.CreateItem(loot_selection[random].first, loot_selection[random].second);
+
 		if (item_inst == nullptr) {
 			steal_item = false;
 			break;
@@ -1737,11 +1771,11 @@ void NPC::PickPocket(Client* thief)
 				thief->PutItemInInventory(slot_id, *item_inst);
 				thief->SendItemPacket(slot_id, item_inst, ItemPacketTrade);
 			}
-		}
-		else {
+		} else {
 			thief->PutItemInInventory(slot_id, *item_inst);
 			thief->SendItemPacket(slot_id, item_inst, ItemPacketTrade);
 		}
+
 		RemoveItem(item_inst->GetID());
 		thief->SendPickPocketResponse(this, 0, PickPocketItem, item_inst->GetItem());
 		safe_delete(item_inst);
@@ -1755,14 +1789,17 @@ void NPC::PickPocket(Client* thief)
 		int coin_type = PickPocketPlatinum;
 		while (coin_type <= PickPocketCopper) {
 			if (money[coin_type]) {
-				if (coin_amount > money[coin_type])
+				if (coin_amount > money[coin_type]) {
 					coin_amount = money[coin_type];
+				}
 				break;
 			}
 			++coin_type;
 		}
-		if (coin_type > PickPocketCopper)
+
+		if (coin_type > PickPocketCopper) {
 			break;
+		}
 
 		memset(money, 0, (sizeof(int) * 6));
 		money[coin_type] = coin_amount;

@@ -229,6 +229,8 @@ RULE_BOOL(Character, GroupInvitesRequireTarget, false, "Enable to require player
 RULE_BOOL(Character, PlayerTradingLoreFeedback, true, "If enabled, during a player to player trade, if lore items exist, it will output which items.")
 RULE_INT(Character, MendAlwaysSucceedValue, 199, "Value at which mend will always succeed its skill check. Default: 199")
 RULE_BOOL(Character, SneakAlwaysSucceedOver100, false, "When sneak skill is over 100, always succeed sneak/hide. Default: false")
+RULE_STRING(Character, PickPocketAllowedBodyTypes, 1|2|4|7, "BodyTypes to allow PickPocketing on. Default: 1|2|4|7")
+RULE_INT(Character, PickPocketUnderLevel, 5, "Number of levels under that can be pick pocketed. Default: 5")
 RULE_CATEGORY_END()
 
 RULE_CATEGORY(Mercs)

@@ -49,7 +49,7 @@ void bot_command_pickpocket(Client *c, const Seperator *sep)
 	// Adapted from pickpock skill in npc.cpp
 	// Make sure we are allowed to target them
 	uint8 over_level = target_mob->GetLevel();
-	if (over_level > (my_bot->GetLevel() + THIEF_PICKPOCKET_OVER)) {
+	if (over_level > (my_bot->GetLevel() - RuleI(Character, PickPocketUnderLevel))) {
 		c->Message(Chat::Red, "You are too inexperienced to pick pocket this target");
 		return;
 	}

@@ -11978,54 +11978,53 @@ void Client::Handle_OP_PlayerStateRemove(const EQApplicationPacket *app)
 
 void Client::Handle_OP_PickPocket(const EQApplicationPacket *app)
 {
-	if (app->size != sizeof(PickPocket_Struct))
-	{
+	if (app->size != sizeof(PickPocket_Struct)) {
 		LogError("Size mismatch for Pick Pocket packet");
 		DumpPacket(app);
 	}
 
-	if (!HasSkill(EQ::skills::SkillPickPockets))
-	{
+	if (!HasSkill(EQ::skills::SkillPickPockets)) {
 		return;
 	}
 
-	if (!p_timers.Expired(&database, pTimerBeggingPickPocket, false))
-	{
-		Message(Chat::Red, "Ability recovery time not yet met.");
+	if (!p_timers.Expired(&database, pTimerBeggingPickPocket, false)) {
+		MessageString(Chat::Skills, STEAL_COOLDOWN);
 		RecordPlayerEventLog(PlayerEvent::POSSIBLE_HACK, PlayerEvent::PossibleHackEvent{.message = "OP_PickPocket was sent again too quickly."});
 		return;
 	}
+
 	PickPocket_Struct* pick_in = (PickPocket_Struct*)app->pBuffer;
 
 	Mob* victim = entity_list.GetMob(pick_in->to);
-	if (!victim)
+
+	if (!victim) {
+		MessageString(Chat::Skills, STEAL_TARGET);
 		return;
+	}
 
 	p_timers.Start(pTimerBeggingPickPocket, 8);
 
 	if (victim == this) {
-		Message(Chat::White, "You catch yourself red-handed.");
-	}
-	else if (victim->GetOwnerID()) {
-		Message(Chat::White, "You cannot steal from pets!");
-	}
-	else if (victim->IsClient()) {
-		Message(Chat::White, "Stealing from clients not yet supported.");
-	}
-	else if (Distance(GetPosition(), victim->GetPosition()) > 20) {
-		Message(Chat::Red, "Attempt to pickpocket out of range detected.");
+		MessageString(Chat::Skills, STEAL_FROM_SELF);
+	} else if(victim->IsClient() || (victim->GetOwner() && victim->GetOwner()->IsClient())) {
+		MessageString(Chat::Skills, STEAL_PLAYERS);
+	} else if (victim->IsCorpse()) {
+		MessageString(Chat::Skills, STEAL_CORPSES);
+	} else if (Distance(GetPosition(), victim->GetPosition()) > 20) {
+		MessageString(Chat::Skills, STEAL_FAR_AWAY);
 		RecordPlayerEventLog(PlayerEvent::POSSIBLE_HACK, PlayerEvent::PossibleHackEvent{.message = "OP_PickPocket was sent from outside combat range"});
-	}
-	else if (victim->IsNPC()) {
-		auto body = victim->GetBodyType();
-		if (body == BodyType::Humanoid || body == BodyType::Monster || body == BodyType::Giant ||
-			body == BodyType::Lycanthrope) {
+	} else if (victim->IsNPC()) {
+		if (IsStunned()) {
+			MessageString(Chat::Skills, STEAL_STUNNED);
+		} else if (auto_attack) {
+			MessageString(Chat::Skills, STEAL_ATTACKING);
+		} else {
 			victim->CastToNPC()->PickPocket(this);
 			return;
 		}
 	}
 
-	SendPickPocketResponse(victim, 0, PickPocketFailed);
+	SendPickPocketResponse(victim, 0, PickPocketFailed, 0, true);
 }
 
 void Client::Handle_OP_PopupResponse(const EQApplicationPacket *app)
