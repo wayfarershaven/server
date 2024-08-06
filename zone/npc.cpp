@@ -1697,10 +1697,12 @@ void NPC::PickPocket(Client* thief)
 		if (over_level > 45) {
 			thief->MessageString(Chat::Skills, STEAL_OUTSIDE_LEVEL);
 			thief->SendPickPocketResponse(this, 0, PickPocketFailed, 0, true);
+			return;
 		}
 	} else if (over_level > (thief->GetLevel() - RuleI(Character, PickPocketUnderLevel))) {
 		thief->MessageString(Chat::Skills, STEAL_OUTSIDE_LEVEL);
 		thief->SendPickPocketResponse(this, 0, PickPocketFailed, 0, true);
+		return;
 	}
 
 	int steal_skill = thief->GetSkill(EQ::skills::SkillPickPockets);
