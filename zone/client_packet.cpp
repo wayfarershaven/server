@@ -3285,7 +3285,10 @@ void Client::Handle_OP_AugmentItem(const EQApplicationPacket *app)
 							}
 						}
 
+						LogDebug("Trying to Augment");
+
 						if (tobe_auged->GetItem()->Attuneable) {
+							LogDebug("Trying to Attune");
 							tobe_auged->SetAttuned(true);
 						}
 
