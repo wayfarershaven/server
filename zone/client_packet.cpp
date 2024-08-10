@@ -3285,6 +3285,10 @@ void Client::Handle_OP_AugmentItem(const EQApplicationPacket *app)
 							}
 						}
 
+						if (tobe_auged->GetItem()->Attuneable) {
+							tobe_auged->SetAttuned(true);
+						}
+
 						tobe_auged->PutAugment(in_augment->augment_index, *new_aug);
 						tobe_auged->UpdateOrnamentationInfo();
 
