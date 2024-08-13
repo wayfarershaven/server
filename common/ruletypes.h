@@ -1037,6 +1037,16 @@ RULE_REAL(EvolvingItems, PercentOfRaidExperience, 0.1, "Percentage of solo exper
 RULE_INT(EvolvingItems, DelayUponEquipping, 30000, "Delay in ms before an evolving item will earn rewards after equipping.  Default is 30000ms or 30s.")
 RULE_CATEGORY_END()
 
+RULE_CATEGORY(Custom)
+
+// Needed to support 200-slot bags
+RULE_BOOL(Custom,   BlockBankItemsOnZone, 					true, "Don't send bank contents on zoning or initial login")
+RULE_BOOL(Custom, 	SendGeneralInventoryAtOnce, 			true, "Send all of the general inventory in first ClientUpdate")
+
+// Seasonal
+RULE_INT(Custom,  	EnableSeasonalCharacters, 				0, "Set to Seasonal ID to track for current Seasonal characters, 0 to disable.")
+RULE_CATEGORY_END()
+
 #undef RULE_CATEGORY
 #undef RULE_INT
 #undef RULE_REAL
