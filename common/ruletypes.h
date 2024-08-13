@@ -1025,6 +1025,16 @@ RULE_INT(Parcel, ParcelMaxItems, 50, "The maximum number of parcels a player is 
 RULE_INT(Parcel, ParcelPruneDelay, 30, "The number of days after which a parcel is deleted. Items are lost!")
 RULE_CATEGORY_END()
 
+RULE_CATEGORY(Custom)
+
+// Needed to support 200-slot bags
+RULE_BOOL(Custom,   BlockBankItemsOnZone, 					true, "Don't send bank contents on zoning or initial login")
+RULE_BOOL(Custom, 	SendGeneralInventoryAtOnce, 			true, "Send all of the general inventory in first ClientUpdate")
+
+// Seasonal
+RULE_INT(Custom,  	EnableSeasonalCharacters, 				0, "Set to Seasonal ID to track for current Seasonal characters, 0 to disable.")
+RULE_CATEGORY_END()
+
 #undef RULE_CATEGORY
 #undef RULE_INT
 #undef RULE_REAL

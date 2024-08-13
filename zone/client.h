@@ -1075,6 +1075,42 @@ public:
 	int GetAAEXPPercentage();
 	int GetEXPPercentage();
 
+	// Seasonal Helper Methods
+	bool IsSeasonal() {
+		if (RuleI(Custom, EnableSeasonalCharacters) <= 0) {
+			return false;
+		} else {
+			return (Strings::ToInt(GetBucket("SeasonalCharacter")) == RuleI(Custom, EnableSeasonalCharacters));
+		}
+	}
+
+	void DisableSeasonal() {
+		if (RuleI(Custom, EnableSeasonalCharacters) > 0) {
+			SetBucket("SeasonalCharacter", "0");
+			Message(Chat::Yellow, "You are no longer participating in this Seasonal Event.");
+			SendAppearancePacket(AppearanceType::PVP, false, true, false);
+		}
+	}
+
+	void EnableSeasonal() {
+		if (RuleI(Custom, EnableSeasonalCharacters) > 0) {
+			SetBucket("SeasonalCharacter", fmt::to_string(RuleI(Custom, EnableSeasonalCharacters)));
+			Message(Chat::Yellow, "You are participating in this Seasonal Event.");
+			SendAppearancePacket(AppearanceType::PVP, true, true, false);
+		}
+	}
+
+	int  GetSeason() {
+		if (IsSeasonal()) {
+			return Strings::ToInt(GetBucket("SeasonalCharacter"), 0);
+		} else {
+			return 0;
+		}
+	}
+
+	// Hardcore Helper Methods
+	bool IsHardcore() { return Strings::ToBool(GetBucket("DiscordantCharacter")); }
+
 	// Item methods
 	void UseAugmentContainer(int container_slot);
 	void EVENT_ITEM_ScriptStopReturn();

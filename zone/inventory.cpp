@@ -681,6 +681,12 @@ void Client::DropItem(int16 slot_id, bool recurse)
 		slot_id
 	);
 
+	if (IsSeasonal()) {
+		Message(Chat::Red, "Seasonal Characters may not drop items.");
+		SendCursorBuffer();
+		return;
+	}
+
 	if (GetInv().CheckNoDrop(slot_id, recurse) && !CanTradeFVNoDropItem()) {
 		auto invalid_drop = m_inv.GetItem(slot_id);
 		if (!invalid_drop) {
@@ -903,6 +909,11 @@ void Client::DropInst(const EQ::ItemInstance* inst)
 		return;
 	}
 
+	if (RuleI(Custom, EnableSeasonalCharacters) == Strings::ToInt(GetBucket("SeasonalCharacter"), 0)) {
+		Message(Chat::Red, "Seasonal Characters may not drop items.");
+		SendCursorBuffer();
+		return;
+	}
 
 	if (inst->GetItem()->NoDrop == 0)
 	{
@@ -1706,6 +1717,17 @@ bool Client::SwapItem(MoveItem_Struct* move_in) {
 	uint32 src_slot_check = move_in->from_slot;
 	uint32 dst_slot_check = move_in->to_slot;
 	uint32 stack_count_check = move_in->number_in_stack;
+
+	if (IsSeasonal()) {
+		if ((src_slot_check >= EQ::invslot::SHARED_BANK_BEGIN && src_slot_check <= EQ::invslot::SHARED_BANK_END) ||
+			(src_slot_check >= EQ::invbag::SHARED_BANK_BAGS_BEGIN && src_slot_check <= EQ::invbag::SHARED_BANK_BAGS_END) ||
+			(dst_slot_check >= EQ::invslot::SHARED_BANK_BEGIN && dst_slot_check <= EQ::invslot::SHARED_BANK_END) ||
+			(dst_slot_check >= EQ::invbag::SHARED_BANK_BAGS_BEGIN && dst_slot_check <= EQ::invbag::SHARED_BANK_BAGS_END))
+		{
+			Message(Chat::Red, "Seasonal characters may not access the shared bank.");
+			return false;
+		}
+	}
 
 	if(!IsValidSlot(src_slot_check)){
 		// SoF+ sends a Unix timestamp (should be int32) for src and dst slots every 10 minutes for some reason.
