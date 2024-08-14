@@ -111,6 +111,36 @@ bool Client::Process() {
 				HandleRespawnFromHover(0);
 		}
 
+		if (RuleB(Custom, BlockBankItemsOnZone) && Connected() && sent_inventory < (EQ::invslot::SHARED_BANK_END+1)) {
+			LogInventoryDetail("Filling character [{}] inventory slot: [{}] ", GetCleanName(), sent_inventory);
+			const EQ::ItemInstance* inst = nullptr;
+			// Jump the gaps
+			if (sent_inventory < EQ::invslot::GENERAL_BEGIN) {
+				sent_inventory = EQ::invslot::GENERAL_BEGIN;
+			} else if (sent_inventory > EQ::invslot::GENERAL_END && sent_inventory < EQ::invslot::BANK_BEGIN) {
+				sent_inventory = EQ::invslot::BANK_BEGIN;
+			} else if (sent_inventory > EQ::invslot::BANK_END && sent_inventory < EQ::invslot::SHARED_BANK_BEGIN) {
+				sent_inventory = EQ::invslot::SHARED_BANK_BEGIN;
+			} else {
+				sent_inventory++;
+			}
+
+			if (RuleB(Custom, SendGeneralInventoryAtOnce) && sent_inventory == EQ::invslot::GENERAL_BEGIN) {
+				for (int16 slot_id = EQ::invslot::GENERAL_BEGIN; slot_id <= EQ::invslot::GENERAL_END; slot_id++) {
+					inst = m_inv[slot_id];
+					if (inst) {
+						SendItemPacket(slot_id, inst, ItemPacketType::ItemPacketTrade);
+					}
+				}
+				sent_inventory = EQ::invslot::GENERAL_END;
+			} else {
+				inst = m_inv[sent_inventory];
+				if (inst) {
+					SendItemPacket(sent_inventory, inst, ItemPacketType::ItemPacketTrade);
+				}
+			}
+		}
+
 		if (IsTracking() && (ClientVersion() >= EQ::versions::ClientVersion::SoD) && TrackingTimer.Check())
 			DoTracking();
 
@@ -766,8 +796,8 @@ void Client::BulkSendInventoryItems()
 	EQ::OutBuffer ob;
 	EQ::OutBuffer::pos_type last_pos = ob.tellp();
 
-	// Possessions items
-	for (int16 slot_id = EQ::invslot::POSSESSIONS_BEGIN; slot_id <= EQ::invslot::POSSESSIONS_END; slot_id++) {
+	// Equipment items
+	for (int16 slot_id = EQ::invslot::EQUIPMENT_BEGIN; slot_id <= EQ::invslot::EQUIPMENT_END; slot_id++) {
 		const EQ::ItemInstance* inst = m_inv[slot_id];
 		if (!inst)
 			continue;
@@ -780,32 +810,48 @@ void Client::BulkSendInventoryItems()
 		last_pos = ob.tellp();
 	}
 
-	// Bank items
-	for (int16 slot_id = EQ::invslot::BANK_BEGIN; slot_id <= EQ::invslot::BANK_END; slot_id++) {
-		const EQ::ItemInstance* inst = m_inv[slot_id];
-		if (!inst)
-			continue;
+	if (!RuleB(Custom, BlockBankItemsOnZone)) {
+		// General Items
+		for (int16 slot_id = EQ::invslot::GENERAL_BEGIN; slot_id <= EQ::invslot::GENERAL_END; slot_id++) {
+			const EQ::ItemInstance* inst = m_inv[slot_id];
+			if (!inst)
+				continue;
 
-		inst->Serialize(ob, slot_id);
+			inst->Serialize(ob, slot_id);
 
-		if (ob.tellp() == last_pos)
-			LogInventory("Serialization failed on item slot [{}] during BulkSendInventoryItems. Item skipped", slot_id);
+			if (ob.tellp() == last_pos)
+				LogInventory("Serialization failed on item slot [{}] during BulkSendInventoryItems. Item skipped", slot_id);
 
-		last_pos = ob.tellp();
-	}
+			last_pos = ob.tellp();
+		}
 
-	// SharedBank items
-	for (int16 slot_id = EQ::invslot::SHARED_BANK_BEGIN; slot_id <= EQ::invslot::SHARED_BANK_END; slot_id++) {
-		const EQ::ItemInstance* inst = m_inv[slot_id];
-		if (!inst)
-			continue;
+		// Bank items
+		for (int16 slot_id = EQ::invslot::BANK_BEGIN; slot_id <= EQ::invslot::BANK_END; slot_id++) {
+			const EQ::ItemInstance* inst = m_inv[slot_id];
+			if (!inst)
+				continue;
 
-		inst->Serialize(ob, slot_id);
+			inst->Serialize(ob, slot_id);
 
-		if (ob.tellp() == last_pos)
-			LogInventory("Serialization failed on item slot [{}] during BulkSendInventoryItems. Item skipped", slot_id);
+			if (ob.tellp() == last_pos)
+				LogInventory("Serialization failed on item slot [{}] during BulkSendInventoryItems. Item skipped", slot_id);
 
-		last_pos = ob.tellp();
+			last_pos = ob.tellp();
+		}
+
+		// SharedBank items
+		for (int16 slot_id = EQ::invslot::SHARED_BANK_BEGIN; slot_id <= EQ::invslot::SHARED_BANK_END; slot_id++) {
+			const EQ::ItemInstance* inst = m_inv[slot_id];
+			if (!inst)
+				continue;
+
+			inst->Serialize(ob, slot_id);
+
+			if (ob.tellp() == last_pos)
+				LogInventory("Serialization failed on item slot [{}] during BulkSendInventoryItems. Item skipped", slot_id);
+
+			last_pos = ob.tellp();
+		}
 	}
 
 	auto outapp = new EQApplicationPacket(OP_CharInventory);
