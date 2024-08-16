@@ -612,8 +612,8 @@ public:
 	void            Fling(float value, float target_x, float target_y, float target_z, bool ignore_los);
 	void            Fling(float value, float target_x, float target_y, float target_z, bool ignore_los, bool clip_through_walls);
 
-	int				IsSeasonal();
-	int				IsHardcore();
+	bool			IsSeasonal();
+	bool			IsHardcore();
 };
 
 #endif

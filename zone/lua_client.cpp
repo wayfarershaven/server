@@ -3379,16 +3379,16 @@ uint8 Lua_Client::GetSkillTrainLevel(int skill_id)
 	return self->GetSkillTrainLevel(static_cast<EQ::skills::SkillType>(skill_id), self->GetClass());
 }
 
-int Lua_Client::IsSeasonal()
+bool Lua_Client::IsSeasonal()
 {
-	Lua_Safe_Call_Int();
-	return self->IsSeasonal() ? 1 : 0;
+	Lua_Safe_Call_Bool();
+	return self->IsSeasonal();
 }
 
-int Lua_Client::IsHardcore()
+bool Lua_Client::IsHardcore()
 {
-	Lua_Safe_Call_Int();
-	return self->IsHardcore() ? 1 : 0;
+	Lua_Safe_Call_Bool();
+	return self->IsHardcore();
 }
 
 luabind::scope lua_register_client() {
@@ -3961,8 +3961,8 @@ luabind::scope lua_register_client() {
 	.def("UseDiscipline", (bool(Lua_Client::*)(int,int))&Lua_Client::UseDiscipline)
 	.def("UseAugmentContainer", (void(Lua_Client::*)(int))&Lua_Client::UseAugmentContainer)
 	.def("WorldKick", (void(Lua_Client::*)(void))&Lua_Client::WorldKick)
-	.def("IsSeaonal", (int(Lua_Client::*)(void))&Lua_Client::IsSeasonal)
-	.def("IsHardcore", (int(Lua_Client::*)(void))&Lua_Client::IsHardcore);
+	.def("IsSeaonal", (bool(Lua_Client::*)(void))&Lua_Client::IsSeasonal)
+	.def("IsHardcore", (bool(Lua_Client::*)(void))&Lua_Client::IsHardcore);
 }
 
 luabind::scope lua_register_inventory_where() {
