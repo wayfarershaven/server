@@ -3961,7 +3961,7 @@ luabind::scope lua_register_client() {
 	.def("UseDiscipline", (bool(Lua_Client::*)(int,int))&Lua_Client::UseDiscipline)
 	.def("UseAugmentContainer", (void(Lua_Client::*)(int))&Lua_Client::UseAugmentContainer)
 	.def("WorldKick", (void(Lua_Client::*)(void))&Lua_Client::WorldKick)
-	.def("IsSeaonal", (bool(Lua_Client::*)(void))&Lua_Client::IsSeasonal)
+	.def("IsSeasonal", (bool(Lua_Client::*)(void))&Lua_Client::IsSeasonal)
 	.def("IsHardcore", (bool(Lua_Client::*)(void))&Lua_Client::IsHardcore);
 }
 
