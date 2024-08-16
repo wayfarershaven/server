@@ -1078,15 +1078,15 @@ public:
 	int GetEXPPercentage();
 
 	// Seasonal Helper Methods
-	bool IsSeasonal() {
+	inline bool IsSeasonal() {
 		if (RuleI(Custom, EnableSeasonalCharacters) <= 0) {
 			return false;
-		} else {
-			return (Strings::ToInt(GetBucket("SeasonalCharacter")) == RuleI(Custom, EnableSeasonalCharacters));
 		}
+
+		return (Strings::ToInt(GetBucket("SeasonalCharacter")) == RuleI(Custom, EnableSeasonalCharacters));
 	}
 
-	void DisableSeasonal() {
+	inline void DisableSeasonal() {
 		if (RuleI(Custom, EnableSeasonalCharacters) > 0) {
 			SetBucket("SeasonalCharacter", "0");
 			Message(Chat::Yellow, "You are no longer participating in this Seasonal Event.");
@@ -1094,7 +1094,7 @@ public:
 		}
 	}
 
-	void EnableSeasonal() {
+	inline void EnableSeasonal() {
 		if (RuleI(Custom, EnableSeasonalCharacters) > 0) {
 			SetBucket("SeasonalCharacter", fmt::to_string(RuleI(Custom, EnableSeasonalCharacters)));
 			Message(Chat::Yellow, "You are participating in this Seasonal Event.");
@@ -1102,16 +1102,18 @@ public:
 		}
 	}
 
-	int  GetSeason() {
+	inline int GetSeason() {
 		if (IsSeasonal()) {
 			return Strings::ToInt(GetBucket("SeasonalCharacter"), 0);
-		} else {
-			return 0;
 		}
+
+		return 0;
 	}
 
 	// Hardcore Helper Methods
-	bool IsHardcore() { return Strings::ToBool(GetBucket("DiscordantCharacter")); }
+	inline bool IsHardcore() {
+		return Strings::ToBool(GetBucket("DiscordantCharacter"));
+	}
 
 	// Item methods
 	void UseAugmentContainer(int container_slot);
