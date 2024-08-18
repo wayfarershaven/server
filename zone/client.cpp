@@ -4420,31 +4420,33 @@ bool Client::IsDiscovered(uint32 item_id) {
 }
 
 void Client::DiscoverItem(uint32 item_id) {
-	auto e = DiscoveredItemsRepository::NewEntity();
+	if ((RuleB(Custom, SeasonsOnlyItemDiscovery) && IsSeasonal()) || !RuleB(Custom, SeasonsOnlyItemDiscovery)) {
+		auto e = DiscoveredItemsRepository::NewEntity();
 
-	e.account_status = Admin();
-	e.char_name = GetCleanName();
-	e.discovered_date = std::time(nullptr);
-	e.item_id = item_id;
+		e.account_status = Admin();
+		e.char_name = GetCleanName();
+		e.discovered_date = std::time(nullptr);
+		e.item_id = item_id;
 
-	auto d = DiscoveredItemsRepository::InsertOne(database, e);
+		auto d = DiscoveredItemsRepository::InsertOne(database, e);
 
-	if (player_event_logs.IsEventEnabled(PlayerEvent::DISCOVER_ITEM)) {
-		const auto* item = database.GetItem(item_id);
+		if (player_event_logs.IsEventEnabled(PlayerEvent::DISCOVER_ITEM)) {
+			const auto* item = database.GetItem(item_id);
 
-		auto e = PlayerEvent::DiscoverItemEvent{
-			.item_id = item_id,
-			.item_name = item->Name,
-		};
-		RecordPlayerEventLog(PlayerEvent::DISCOVER_ITEM, e);
+			auto e = PlayerEvent::DiscoverItemEvent{
+				.item_id = item_id,
+				.item_name = item->Name,
+			};
+			RecordPlayerEventLog(PlayerEvent::DISCOVER_ITEM, e);
 
-	}
+		}
 
-	if (parse->PlayerHasQuestSub(EVENT_DISCOVER_ITEM)) {
-		auto* item = database.CreateItem(item_id);
-		std::vector<std::any> args = { item };
+		if (parse->PlayerHasQuestSub(EVENT_DISCOVER_ITEM)) {
+			auto* item = database.CreateItem(item_id);
+			std::vector<std::any> args = { item };
 
-		parse->EventPlayer(EVENT_DISCOVER_ITEM, this, "", item_id, &args);
+			parse->EventPlayer(EVENT_DISCOVER_ITEM, this, "", item_id, &args);
+		}
 	}
 }
 
