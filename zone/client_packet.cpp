@@ -7848,6 +7848,11 @@ void Client::Handle_OP_GuildBank(const EQApplicationPacket *app)
 
 		bool Allowed = true;
 
+		if (IsSeasonal()) {
+			Message(Chat::Red, "Seasonal Characters are not allowed to use the Guild Bank.");
+			return;
+		}
+
 		if (!CursorItemInst)
 		{
 			Message(Chat::Red, "No Item on the cursor.");
@@ -7929,6 +7934,12 @@ void Client::Handle_OP_GuildBank(const EQApplicationPacket *app)
 
 	case GuildBankWithdraw:
 	{
+		if (IsSeasonal()) {
+			Message(Chat::Red, "Seasonal Characters are not allowed to use the Guild Bank.");
+			GuildBankAck();
+			break;
+		}
+
 		if (GetInv()[EQ::invslot::slotCursor])
 		{
 			MessageString(Chat::Red, GUILD_BANK_EMPTY_HANDS);
@@ -13577,6 +13588,11 @@ void Client::Handle_OP_RequestDuel(const EQApplicationPacket *app)
 	ds->duel_initiator = ds->duel_target;
 	ds->duel_target = duel;
 	Entity* entity = entity_list.GetID(ds->duel_target);
+
+	if (IsSeasonal() != entity->CastToClient()->IsSeasonal()) {
+		Message(Chat::Red, "Seasonal characters may only dual with other Seasonal characters.");
+		return;
+	}
 
 	if (
 		GetID() != ds->duel_target &&
