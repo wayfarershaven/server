@@ -1042,6 +1042,7 @@ RULE_CATEGORY(Custom)
 // Needed to support 200-slot bags
 RULE_BOOL(Custom,   BlockBankItemsOnZone, 					true, "Don't send bank contents on zoning or initial login")
 RULE_BOOL(Custom, 	SendGeneralInventoryAtOnce, 			true, "Send all of the general inventory in first ClientUpdate")
+RULE_BOOL(Custom,	SeasonsOnlyItemDiscovery,				true, "Only Seasons Characters can discover items.")
 
 // Seasonal
 RULE_INT(Custom,  	EnableSeasonalCharacters, 				0, "Set to Seasonal ID to track for current Seasonal characters, 0 to disable.")
