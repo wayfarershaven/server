@@ -793,11 +793,9 @@ void Client::SetEXP(ExpSource exp_source, uint64 set_exp, uint64 set_aaxp, bool 
 	auto client_max_level = GetClientMaxLevel();
 	if (client_max_level) {
 		if (GetLevel() >= client_max_level) {
-			auto level_above_exp_needed = GetEXPForLevel(client_max_level + 1);
-			auto max_level_exp_needed = GetEXPForLevel(client_max_level);
-			auto exp_needed = max_level_exp_needed + (level_above_exp_needed - max_level_exp_needed - 1000);
+			uint32 exp_needed = GetEXPForLevel(client_max_level);
 
-			LogDebug("max_level_exp_needed = [{}] - level_above_exp_needed [{}] - exp_needed = [{}] - set_exp = [{}]", max_level_exp_needed, level_above_exp_needed, exp_needed, set_exp);
+			LogDebug("set_exp = [{}] - exp_needed = [{}]", set_exp, exp_needed);
 
 			if (set_exp > exp_needed) {
 				set_exp = exp_needed;
