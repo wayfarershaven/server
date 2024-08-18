@@ -7850,6 +7850,7 @@ void Client::Handle_OP_GuildBank(const EQApplicationPacket *app)
 
 		if (IsSeasonal()) {
 			Message(Chat::Red, "Seasonal Characters are not allowed to use the Guild Bank.");
+			GuildBankDepositAck(true, sentAction);
 			return;
 		}
 
