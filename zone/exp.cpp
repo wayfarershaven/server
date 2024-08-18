@@ -776,8 +776,14 @@ void Client::SetEXP(ExpSource exp_source, uint64 set_exp, uint64 set_aaxp, bool 
 
 	uint8 maxlevel = RuleI(Character, MaxExpLevel) + 1;
 
-	if(maxlevel <= 1)
+	if(maxlevel <= 1) {
 		maxlevel = RuleI(Character, MaxLevel) + 1;
+	}
+
+	auto client_max_level = GetClientMaxLevel();
+	if (client_max_level) {
+		maxlevel = client_max_level + 1;
+	}
 
 	if(check_level > maxlevel) {
 		check_level = maxlevel;
@@ -787,19 +793,6 @@ void Client::SetEXP(ExpSource exp_source, uint64 set_exp, uint64 set_aaxp, bool 
 		}
 		else {
 			set_exp = GetEXPForLevel(maxlevel);
-		}
-	}
-
-	auto client_max_level = GetClientMaxLevel();
-	if (client_max_level) {
-		if (GetLevel() >= client_max_level) {
-			uint32 exp_needed = GetEXPForLevel(client_max_level);
-
-			LogDebug("set_exp = [{}] - exp_needed = [{}]", set_exp, exp_needed);
-
-			if (set_exp > exp_needed) {
-				set_exp = exp_needed;
-			}
 		}
 	}
 
