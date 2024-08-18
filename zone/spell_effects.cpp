@@ -790,6 +790,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 				if (IsNPC()) {
 					CastToNPC()->SaveGuardSpotCharm();
 				}
+
 				InterruptSpell();
 				entity_list.RemoveDebuffs(this);
 				entity_list.RemoveFromHateLists(this);
@@ -833,6 +834,14 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 					safe_delete(app);
 					SendPetBuffsToClient();
 					SendAppearancePacket(AppearanceType::Pet, caster->GetID(), true, true);
+
+					if (caster->CastToClient()->IsSeasonal()) {
+						if (!CastToNPC()->EntityVariableExists("Seasonal_Charm")) {
+							CastToNPC()->SetEntityVariable("Seasonal_Charm", "true");
+						}
+					} else {
+						CastToNPC()->SetEntityVariable("Seasonal_Charm", "false");
+					}
 				}
 
 				if (IsClient())
@@ -1685,8 +1694,15 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 #endif
 				// This is handled by the client prior to SoD.
 				//
-				if (IsClient() && (CastToClient()->ClientVersionBit() & EQ::versions::maskSoDAndLater))
+
+				if (CastToCorpse()->IsSeasonal() != caster->CastToClient()->IsSeasonal()) {
+					caster->Message(Chat::Red, "Seasonal and non-Seasonal Characters may not affect each other with spells, including corpses.");
+					break;
+				}
+
+				if (IsClient() && (CastToClient()->ClientVersionBit() & EQ::versions::maskSoDAndLater)) {
 					CastToClient()->LocateCorpse();
+				}
 
 				break;
 			}
@@ -1699,9 +1715,15 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 #endif
 				if (IsCorpse() && CastToCorpse()->IsPlayerCorpse()) {
 
-					if(caster)
+					if(caster) {
 						LogSpells("corpse being rezzed using spell [{}] by [{}]",
 							spell_id, caster->GetName());
+					}
+
+					if (CastToCorpse()->IsSeasonal() != caster->CastToClient()->IsSeasonal()) {
+						caster->Message(Chat::Red, "Seasonal and non-Seasonal Characters may not affect each other with spells, including corpses.");
+						break;
+					}
 
 					CastToCorpse()->CastRezz(spell_id, caster);
 				}
