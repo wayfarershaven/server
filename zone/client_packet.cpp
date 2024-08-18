@@ -7698,12 +7698,6 @@ void Client::Handle_OP_GuildBank(const EQApplicationPacket *app)
 			const auto cursor_item_inst = GetInv().GetItem(EQ::invslot::slotCursor);
 			bool       allowed          = true;
 
-			if (IsSeasonal()) {
-				Message(Chat::Red, "Seasonal Characters are not allowed to use the Guild Bank.");
-				GuildBankDepositAck(true, sentAction);
-				return;
-			}
-
 			if (!cursor_item_inst) {
 				Message(Chat::Red, "No Item on the cursor.");
 				GuildBankDepositAck(true, sentAction);
@@ -7711,6 +7705,17 @@ void Client::Handle_OP_GuildBank(const EQApplicationPacket *app)
 			}
 
 			const auto cursor_item = cursor_item_inst->GetItem();
+
+			if (IsSeasonal()) {
+				Message(Chat::Red, "Seasonal Characters are not allowed to use the Guild Bank.");
+				GuildBankDepositAck(true, sentAction);
+				if (ClientVersion() >= EQ::versions::ClientVersion::RoF) {
+					GetInv().PopItem(EQ::invslot::slotCursor);
+					PushItemOnCursor(CursorItem, true);
+				}
+				return;
+			}
+
 			if (GuildBanks->IsAreaFull(GuildID(), GuildBankDepositArea)) {
 				MessageString(Chat::Red, GUILD_BANK_FULL);
 				GuildBankDepositAck(true, sentAction);
