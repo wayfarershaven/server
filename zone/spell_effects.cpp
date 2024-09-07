@@ -3509,11 +3509,6 @@ int64 Mob::CalcSpellEffectValue_formula(uint32 formula, int64 base_value, int64 
 	}
 #endif
 
-// If Cleric Balance Heal return a value of 0 for hate
-if (IsClericBalanceHeal(spell_id)) {
-	return 0;
-}
-
 /*
 i need those formulas checked!!!!
 

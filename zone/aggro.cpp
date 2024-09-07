@@ -1306,7 +1306,13 @@ int32 Mob::CheckAggroAmount(uint16 spell_id, Mob *target, bool is_proc)
 			case SE_CurrentHPOnce:
 			case SE_CurrentHP: {
 				int64 val = CalcSpellEffectValue_formula(spells[spell_id].formula[o], spells[spell_id].base_value[o], spells[spell_id].max_value[o], mob_level, spell_id);
-				if(val < 0) {
+
+				// If Cleric Balance Heal return a value of 0 for hate
+				if (IsClericBalanceHeal(spell_id)) {
+					val = 0;
+				}
+
+				if (val < 0) {
 					aggro_amount -= val;
 				}
 				break;
