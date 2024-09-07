@@ -1469,6 +1469,11 @@ int32 Mob::CheckAggroAmount(uint16 spell_id, Mob *target, bool is_proc)
 //healing and buffing aggro
 int32 Mob::CheckHealAggroAmount(uint16 spell_id, Mob *target, uint32 heal_possible)
 {
+	// If Cleric Balance Heal return a value of 0 for hate
+	if (IsClericBalanceHeal(spell_id)) {
+		return 0;
+	}
+
 	int32 AggroAmount = 0;
 	auto target_level = target ? target->GetLevel() : 1;
 	bool ignore_default_buff = false; // rune/hot don't use the default 9, HP buffs that heal (virtue) do use the default
