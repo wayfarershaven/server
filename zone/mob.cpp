@@ -128,8 +128,9 @@ Mob::Mob(
 	attack_anim_timer(500),
 	position_update_melee_push_timer(500),
 	hate_list_cleanup_timer(6000),
-	mob_close_scan_timer(6000),
-	mob_check_moving_timer(1000)
+	m_scan_close_mobs_timer(6000),
+	m_mob_check_moving_timer(1000),
+	bot_attack_flag_timer(10000)
 {
 	mMovementManager = &MobMovementManager::Get();
 	mMovementManager->AddMob(this);
@@ -400,6 +401,10 @@ Mob::Mob(
 	pet_owner_npc     = false;
 	pet_targetlock_id = 0;
 
+	//bot attack flag
+	bot_attack_flags.clear();
+	bot_attack_flag_timer.Disable();
+
 	attacked_count = 0;
 	mezzed         = false;
 	stunned        = false;
@@ -512,7 +517,7 @@ Mob::Mob(
 
 	m_manual_follow = false;
 
-	mob_close_scan_timer.Trigger();
+	m_scan_close_mobs_timer.Trigger();
 
 	SetCanOpenDoors(true);
 
@@ -565,7 +570,7 @@ Mob::~Mob()
 	entity_list.RemoveMobFromCloseLists(this);
 	entity_list.RemoveAuraFromMobs(this);
 
-	close_mobs.clear();
+	m_close_mobs.clear();
 
 	LeaveHealRotationTargetPool();
 }
@@ -5012,7 +5017,7 @@ void Mob::Say(const char *format, ...)
 	int16 distance = 200;
 
 	if (RuleB(Chat, QuestDialogueUsesDialogueWindow)) {
-		for (auto &e : entity_list.GetCloseMobList(talker, (distance * distance))) {
+		for (auto &e : talker->GetCloseMobList(distance)) {
 			Mob *mob = e.second;
 			if (!mob) {
 				continue;
@@ -6171,9 +6176,7 @@ int32 Mob::GetPositionalDmgTakenAmt(Mob *attacker)
 
 void Mob::SetBottomRampageList()
 {
-	auto &mob_list = entity_list.GetCloseMobList(this);
-
-	for (auto &e : mob_list) {
+	for (auto &e : GetCloseMobList()) {
 		auto mob = e.second;
 		if (!mob) {
 			continue;
@@ -6198,9 +6201,7 @@ void Mob::SetBottomRampageList()
 
 void Mob::SetTopRampageList()
 {
-	auto &mob_list = entity_list.GetCloseMobList(this);
-
-	for (auto &e : mob_list) {
+	for (auto &e : GetCloseMobList()) {
 		auto mob = e.second;
 		if (!mob) {
 			continue;
@@ -8614,7 +8615,7 @@ void Mob::SetExtraHaste(int haste, bool need_to_save)
 
 bool Mob::IsCloseToBanker()
 {
-	for (auto &e: entity_list.GetCloseMobList(this)) {
+	for (auto &e: GetCloseMobList()) {
 		auto mob = e.second;
 		if (mob && mob->IsNPC() && mob->GetClass() == Class::Banker) {
 			return true;
@@ -8622,4 +8623,69 @@ bool Mob::IsCloseToBanker()
 	}
 
 	return false;
+}
+
+bool Mob::HasBotAttackFlag(Mob* tar) {
+	if (!tar) {
+		return false;
+	}
+
+	std::vector<uint32> l = tar->GetBotAttackFlags();
+
+	for (uint32 e : l) {
+		if (IsBot() && e == CastToBot()->GetBotOwnerCharacterID()) {
+			return true;
+		}
+
+		if (IsClient() && e == CastToClient()->CharacterID()) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+const uint16 scan_close_mobs_timer_moving = 6000; // 6 seconds
+const uint16 scan_close_mobs_timer_idle   = 60000; // 60 seconds
+
+void Mob::CheckScanCloseMobsMovingTimer()
+{
+	LogAIScanCloseDetail(
+		"Mob [{}] {}moving, scan timer [{}]",
+		GetCleanName(),
+		IsMoving() ? "" : "NOT ",
+		m_scan_close_mobs_timer.GetRemainingTime()
+	);
+
+	// If the moving timer triggers, lets see if we are moving or idle to restart the appropriate
+	// dynamic timer
+	if (m_mob_check_moving_timer.Check()) {
+		// If the mob is still moving, restart the moving timer
+		if (moving) {
+			if (m_scan_close_mobs_timer.GetRemainingTime() > scan_close_mobs_timer_moving) {
+				LogAIScanCloseDetail("Mob [{}] Restarting with moving timer", GetCleanName());
+				m_scan_close_mobs_timer.Disable();
+				m_scan_close_mobs_timer.Start(scan_close_mobs_timer_moving);
+				m_scan_close_mobs_timer.Trigger();
+			}
+		}
+		// If the mob is not moving, restart the idle timer
+		else if (m_scan_close_mobs_timer.GetDuration() == scan_close_mobs_timer_moving) {
+			LogAIScanCloseDetail("Mob [{}] Restarting with idle timer", GetCleanName());
+			m_scan_close_mobs_timer.Disable();
+			m_scan_close_mobs_timer.Start(scan_close_mobs_timer_idle);
+		}
+	}
+}
+
+void Mob::ScanCloseMobProcess()
+{
+	if (m_scan_close_mobs_timer.Check()) {
+		entity_list.ScanCloseMobs(this);
+	}
+}
+
+std::unordered_map<uint16, Mob *> &Mob::GetCloseMobList(float distance)
+{
+	return entity_list.GetCloseMobList(this, distance);
 }
