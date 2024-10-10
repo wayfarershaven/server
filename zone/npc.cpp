@@ -3864,13 +3864,14 @@ void NPC::HandleRoambox()
 			auto requested_z = GetGroundZ(requested_x, requested_y);
 
 			LogNPCRoamBoxDetail(
-				"[{}] | Roambox Move - move_x [{}] - move_y [{}] - requested_x [{}] - requested_y [{}] - requested_z [{}] - Attempt [{}]",
+				"[{}] | Roambox Move - move_x [{}] - move_y [{}] - requested_x [{}] - requested_y [{}] - requested_z [{}] - current_z [{}] - Attempt [{}]",
 				GetCleanName(),
 				move_x,
 				move_y,
 				requested_x,
 				requested_y,
 				requested_z,
+				GetZ(),
 				i
 			);
 
