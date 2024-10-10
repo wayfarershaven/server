@@ -3863,6 +3863,16 @@ void NPC::HandleRoambox()
 			auto requested_y = EQ::Clamp((GetY() + move_y), m_roambox.min_y, m_roambox.max_y);
 			auto requested_z = GetGroundZ(requested_x, requested_y);
 
+			LogNPCRoamBoxDetail(
+				"move_x [{}] - move_y [{}] - requested_x [{}] - requested_y [{}] - requested_z [{}] - Attempt [{}]",
+				move_x,
+				move_y,
+				requested_x,
+				requested_y,
+				requested_z,
+				i
+			);
+
 			if (std::abs(requested_z - GetZ()) > 100) {
 				LogNPCRoamBox("[{}] | Failed to find reasonable ground [{}]", GetCleanName(), i);
 				continue;
