@@ -1243,28 +1243,45 @@ void Client::ChannelMessageReceived(uint8 chan_num, uint8 language, uint8 lang_s
 			entity_list.ProcessProximitySay(message, this, language);
 		}
 
-		Mob* t = GetTarget();
-
 		if (
-			t &&
-			!IsInvisible(t) &&
-			DistanceNoZ(m_Position, t->GetPosition()) <= RuleI(Range, Say)
+			GetTarget() &&
+			GetTarget()->IsNPC() &&
+			!IsInvisible(GetTarget())
 		) {
-			const bool is_engaged = t->IsEngaged();
+			auto* t = GetTarget()->CastToNPC();
+			if (!t->IsEngaged()) {
+				CheckLDoNHail(t);
+				CheckEmoteHail(t, message);
 
-			if (is_engaged) {
-				parse->EventBotMercNPC(EVENT_AGGRO_SAY, t, this, [&]() { return message; }, language);
+				if (DistanceNoZ(m_Position, t->GetPosition()) <= RuleI(Range, Say)) {
+					if (parse->HasQuestSub(t->GetNPCTypeID(), EVENT_SAY)) {
+						parse->EventNPC(EVENT_SAY, t, this, message, language);
+					}
+
+					if (RuleB(TaskSystem, EnableTaskSystem)) {
+						if (UpdateTasksOnSpeakWith(t)) {
+							t->DoQuestPause(this);
+						}
+					}
+				}
 			} else {
-				parse->EventBotMercNPC(EVENT_SAY, t, this, [&]() { return message; }, language);
+				if (parse->HasQuestSub(t->GetNPCTypeID(), EVENT_AGGRO_SAY)) {
+					if (DistanceSquaredNoZ(m_Position, t->GetPosition()) <= RuleI(Range, Say)) {
+						parse->EventNPC(EVENT_AGGRO_SAY, t, this, message, language);
+					}
+				}
 			}
 
-			if (t->IsNPC() && !is_engaged) {
-				CheckLDoNHail(t->CastToNPC());
-				CheckEmoteHail(t->CastToNPC(), message);
-
-				if (RuleB(TaskSystem, EnableTaskSystem)) {
-					if (UpdateTasksOnSpeakWith(t->CastToNPC())) {
-						t->CastToNPC()->DoQuestPause(this);
+		}
+		else if (GetTarget() && GetTarget()->IsBot() && !IsInvisible(GetTarget())) {
+			if (DistanceNoZ(m_Position, GetTarget()->GetPosition()) <= RuleI(Range, Say)) {
+				if (GetTarget()->IsEngaged()) {
+					if (parse->BotHasQuestSub(EVENT_AGGRO_SAY)) {
+						parse->EventBot(EVENT_AGGRO_SAY, GetTarget()->CastToBot(), this, message, language);
+					}
+				} else {
+					if (parse->BotHasQuestSub(EVENT_SAY)) {
+						parse->EventBot(EVENT_SAY, GetTarget()->CastToBot(), this, message, language);
 					}
 				}
 			}

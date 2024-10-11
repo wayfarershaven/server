@@ -7,7 +7,6 @@
 class Entity;
 class Lua_Client;
 class Lua_Bot;
-class Lua_Merc;
 class Lua_NPC;
 class Lua_Mob;
 struct Lua_HateList;
@@ -60,7 +59,6 @@ public:
 	Lua_Object CastToObject();
 	Lua_Door CastToDoor();
 	Lua_Bot CastToBot();
-	Lua_Merc CastToMerc();
 };
 
 #endif

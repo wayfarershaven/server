@@ -16,7 +16,6 @@
 #include "lua_spawn.h"
 
 #include "lua_bot.h"
-#include "lua_merc.h"
 
 struct Lua_Mob_List {
 	std::vector<Lua_Mob> entries;
