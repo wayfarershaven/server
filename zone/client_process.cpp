@@ -520,6 +520,10 @@ bool Client::Process() {
 			DoEnduranceRegen();
 			BuffProcess();
 
+			if (!IsCasting()) {
+                SendSpellBarEnable(SPELL_UNKNOWN);
+            }
+
 			if (tribute_timer.Check()) {
 				ToggleTribute(true);	//re-activate the tribute.
 			}
