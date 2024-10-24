@@ -787,7 +787,7 @@ bool SharedDatabase::GetInventory(uint32 char_id, EQ::InventoryProfile *inv)
 
 		int16 put_slot_id;
 		if (slot_id >= EQ::invbag::CURSOR_BAG_BEGIN && slot_id <= EQ::invbag::CURSOR_BAG_END) {
-			put_slot_id = inv.PushCursor(*inst);
+			put_slot_id = inv->PushCursor(*inst);
 		}
 
 		/* COMMENTING THIS OUT FOR NOW.. THIS IS CAUSING ISSUES
