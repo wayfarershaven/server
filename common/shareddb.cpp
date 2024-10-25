@@ -901,8 +901,9 @@ bool SharedDatabase::GetInventory(uint32 account_id, char *name, EQ::InventoryPr
 		inst->SetOrnamentationIDFile(ornament_idfile);
 		inst->SetOrnamentHeroModel(item->HerosForgeModel);
 
-		if (color > 0)
+		if (color > 0) {
 			inst->SetColor(color);
+		}
 
 		inst->SetCharges(charges);
 
@@ -914,17 +915,17 @@ bool SharedDatabase::GetInventory(uint32 account_id, char *name, EQ::InventoryPr
 		}
 
 		int16 put_slot_id;
-		if (slot_id >= 14000 && slot_id <= 14999)
-			put_slot_id = inv->PushCursor(*inst);
-		else
-			put_slot_id = inv->PutItem(slot_id, *inst);
+        if (slot_id > (EQ::invbag::TRADE_BAGS_END)) {
+            put_slot_id = inv->PushCursor(*inst);
+        }
 
 		safe_delete(inst);
 
 		// Save ptr to item in inventory
-		if (put_slot_id == INVALID_INDEX)
+		if (put_slot_id == INVALID_INDEX) {
 			LogError("Warning: Invalid slot_id for item in inventory: name={}, acctid={}, item_id={}, slot_id={}",
 				name, account_id, item_id, slot_id);
+		}
 	}
 
 	// Retrieve shared inventory
