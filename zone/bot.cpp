@@ -1578,15 +1578,8 @@ bool Bot::Process()
 		return false;
 	}
 
-	if (mob_close_scan_timer.Check()) {
-		LogAIScanCloseDetail(
-			"is_moving [{}] bot [{}] timer [{}]",
-			moving ? "true" : "false",
-			GetCleanName(),
-			mob_close_scan_timer.GetDuration()
-		);
-
-		entity_list.ScanCloseMobs(close_mobs, this, IsMoving());
+	if (m_scan_close_mobs_timer.Check()) {
+		entity_list.ScanCloseMobs(this);
 	}
 
 	SpellProcess();
@@ -2978,7 +2971,7 @@ void Bot::SetOwnerTarget(Client* bot_owner) {
 	if (NOT_HOLDING && NOT_PASSIVE) {
 
 		auto attack_target = bot_owner->GetTarget();
-		if (attack_target) {
+		if (attack_target && HasBotAttackFlag(attack_target)) {
 
 			InterruptSpell();
 			WipeHateList();

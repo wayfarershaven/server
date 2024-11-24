@@ -54,6 +54,7 @@ SET(zone_sources
     lua_buff.cpp
     lua_corpse.cpp
     lua_client.cpp
+    lua_database.cpp
     lua_door.cpp
     lua_encounter.cpp
     lua_entity.cpp
@@ -65,6 +66,7 @@ SET(zone_sources
     lua_inventory.cpp
     lua_item.cpp
     lua_iteminst.cpp
+    lua_merc.cpp
     lua_mob.cpp
     lua_mod.cpp
     lua_npc.cpp
@@ -109,12 +111,14 @@ SET(zone_sources
     perl_bot.cpp
     perl_buff.cpp
     perl_client.cpp
+    perl_database.cpp
     perl_doors.cpp
     perl_entity.cpp
     perl_expedition.cpp
     perl_groups.cpp
     perl_hateentry.cpp
     perl_inventory.cpp
+    perl_merc.cpp
     perl_mob.cpp
     perl_npc.cpp
     perl_object.cpp
@@ -133,6 +137,7 @@ SET(zone_sources
     qglobals.cpp
     queryserv.cpp
     questmgr.cpp
+    quest_db.cpp
     quest_parser_collection.cpp
     raids.cpp
     raycast_mesh.cpp
@@ -213,6 +218,7 @@ SET(zone_headers
     lua_buff.h
     lua_client.h
     lua_corpse.h
+    lua_database.h
     lua_door.h
     lua_encounter.h
     lua_entity.h
@@ -224,6 +230,7 @@ SET(zone_headers
     lua_inventory.h
     lua_item.h
     lua_iteminst.h
+    lua_merc.h
     lua_mob.h
     lua_mod.h
     lua_npc.h
@@ -248,6 +255,7 @@ SET(zone_headers
     pathfinder_interface.h
     pathfinder_nav_mesh.h
     pathfinder_null.h
+    perl_database.h
     perlpacket.h
     petitions.h
     pets.h
@@ -257,6 +265,7 @@ SET(zone_headers
     queryserv.h
     quest_interface.h
     questmgr.h
+    quest_db.h
     quest_parser_collection.h
     raids.h
     raycast_mesh.h

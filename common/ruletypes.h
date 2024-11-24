@@ -338,6 +338,8 @@ RULE_STRING(World, IPExemptionZones, "", "Comma-delimited list of zones to exclu
 RULE_STRING(World, MOTD, "", "Server MOTD sent on login, change from empty to have this be used instead of variables table 'motd' value")
 RULE_STRING(World, Rules, "", "Server Rules, change from empty to have this be used instead of variables table 'rules' value, lines are pipe (|) separated, example: A|B|C")
 RULE_BOOL(World, EnableAutoLogin, false, "Enables or disables auto login of characters, allowing people to log characters in directly from loginserver to ingame")
+RULE_BOOL(World, EnablePVPRegions, true, "Enables or disables PVP Regions automatically setting your PVP flag")
+RULE_STRING(World, SupportedClients, "", "Comma-delimited list of clients to restrict to. Supported values are Titanium | SoF | SoD | UF | RoF | RoF2. Example: Titanium,RoF2")
 RULE_CATEGORY_END()
 
 RULE_CATEGORY(Zone)
@@ -475,7 +477,6 @@ RULE_BOOL(Spells, OldRainTargets, false, "Use old incorrectly implemented maximu
 RULE_REAL(Spells, CallOfTheHeroAggroClearDist, 250.0, "Distance at which CoTH will wipe aggro. To disable and always enable aggro wipe on any distance of CoTH, set to 0.")
 RULE_BOOL(Spells, NPCSpellPush, false, "Enable spell push on NPCs")
 RULE_BOOL(Spells, July242002PetResists, true, "Enable Pets using PCs resist change from July 24 2002")
-RULE_INT(Spells, AOEMaxTargets, 0, "Max number of targets a Targeted AOE spell can cast on. Set to 0 for no limit.")
 RULE_BOOL(Spells, CazicTouchTargetsPetOwner, true, "If True, causes Cazic Touch to swap targets from pet to pet owner if a pet is tanking.")
 RULE_BOOL(Spells, PreventFactionWarOnCharmBreak, false, "Enable spell interupts and dot removal on charm break to prevent faction wars.")
 RULE_BOOL(Spells, AllowDoubleInvis, true, "Allows you to cast invisibility spells on a player that is already invisible, live like behavior.")
@@ -515,6 +516,10 @@ RULE_BOOL(Spells, UseClassicSpellFocus, false, "Enabling will tell the server to
 RULE_BOOL(Spells, ManaTapsOnAnyClass, false, "Enabling this will allow you to cast mana taps on any class, this will bypass ManaTapsRequireNPCMana rule.")
 RULE_INT(Spells, HealAmountMessageFilterThreshold, 100, "Lifetaps below this threshold will not have a message sent to the client (Heal will still process) 0 to Disable.")
 RULE_BOOL(Spells, SnareOverridesSpeedBonuses, false, "Enabling will allow snares to override any speed bonuses the entity may have. Default: False")
+RULE_INT(Spells, TargetedAOEMaxTargets, 4, "Max number of targets a Targeted AOE spell can cast on. Set to 0 for no limit.")
+RULE_INT(Spells, PointBlankAOEMaxTargets, 0, "Max number of targets a Point-Blank AOE spell can cast on. Set to 0 for no limit.")
+RULE_INT(Spells, DefaultAOEMaxTargets, 0, "Max number of targets that an AOE spell which does not meet other descriptions can cast on. Set to 0 for no limit.")
+RULE_BOOL(Spells, AllowFocusOnSkillDamageSpells, false, "Allow focus effects 185, 459, and 482 to enhance SkillAttack spell effect 193")
 RULE_CATEGORY_END()
 
 RULE_CATEGORY(Combat)
