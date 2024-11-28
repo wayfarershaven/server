@@ -777,6 +777,8 @@ void Client::FinishTrade(Mob* tradingWith, bool finalizer, void* event_entry, st
 				tradingWith->SayString(TRADE_BACK, GetCleanName());
 				PushItemOnCursor(*inst, true);
 			}
+
+			items.clear();
 		}
 		// Only enforce trade rules if the NPC doesn't have an EVENT_TRADE
 		// subroutine.  That overrides all.
@@ -2913,10 +2915,11 @@ void Client::SendBecomeTraderToWorld(Client *trader, BazaarTraderBarterActions a
 	auto outapp = new ServerPacket(ServerOP_TraderMessaging, sizeof(TraderMessaging_Struct));
 	auto data   = (TraderMessaging_Struct *) outapp->pBuffer;
 
-	data->action    = action;
-	data->entity_id = trader->GetID();
-	data->trader_id = trader->CharacterID();
-	data->zone_id   = trader->GetZoneID();
+	data->action      = action;
+	data->entity_id   = trader->GetID();
+	data->trader_id   = trader->CharacterID();
+	data->zone_id     = trader->GetZoneID();
+	data->instance_id = trader->GetInstanceID();
 	strn0cpy(data->trader_name, trader->GetName(), sizeof(data->trader_name));
 
 	worldserver.SendPacket(outapp);
