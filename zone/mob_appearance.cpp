@@ -196,36 +196,51 @@ uint32 Mob::GetEquipmentMaterial(uint8 material_slot) const
 	if (item) {
 		const auto is_equipped_weapon = EQ::ValueWithin(material_slot, EQ::textures::weaponPrimary, EQ::textures::weaponSecondary);
 
+		const auto inventory_slot = EQ::InventoryProfile::CalcSlotFromMaterial(material_slot);
+		if (inventory_slot == INVALID_INDEX) {
+			return 0;
+		}
+		const auto inst = IsClient() ? CastToClient()->m_inv[inventory_slot] : m_inv[inventory_slot];
+
 		if (is_equipped_weapon) {
-			if (IsClient()) {
-				const auto inventory_slot = EQ::InventoryProfile::CalcSlotFromMaterial(material_slot);
-				if (inventory_slot == INVALID_INDEX) {
-					return 0;
-				}
-
-				const auto inst = CastToClient()->m_inv[inventory_slot];
-
-				if (inst) {
-					const auto augment = inst->GetOrnamentationAugment();
-
-					if (augment) {
-						item = augment->GetItem();
-						if (item && strlen(item->IDFile) > 2 && Strings::IsNumber(&item->IDFile[2])) {
-							equipment_material = Strings::ToUnsignedInt(&item->IDFile[2]);
-						}
-					} else if (inst->GetOrnamentationIDFile()) {
-						equipment_material = inst->GetOrnamentationIDFile();
+			if (inst) {
+				const auto augment = inst->GetOrnamentationAugment();
+				if (augment) {
+					item = augment->GetItem();
+					if (item && strlen(item->IDFile) > 2 && Strings::IsNumber(&item->IDFile[2])) {
+						equipment_material = Strings::ToUnsignedInt(&item->IDFile[2]);
 					}
+				} else if (inst->GetOrnamentationIDFile()) {
+					equipment_material = inst->GetOrnamentationIDFile();
 				}
 			}
 
 			if (!equipment_material && strlen(item->IDFile) > 2 && Strings::IsNumber(&item->IDFile[2])) {
 				equipment_material = Strings::ToUnsignedInt(&item->IDFile[2]);
 			}
+
 		} else {
 			equipment_material = item->Material;
+			if (inst) {
+				const auto augment = inst->GetOrnamentationAugment();
+				if (augment) {
+					item = augment->GetItem();
+					if (item) {
+						equipment_material = item->Material;
+					}
+				}
+			}
+			const auto inst = IsClient() ? CastToClient()->m_inv[inventory_slot] : m_inv[inventory_slot];
+			equipment_material = (IsClient() && GetClass() == Class::Monk && equipment_material == 1) ? 4 : equipment_material;
 		}
 	}
+
+	LogMobAppearance(
+		"[{}] material_slot [{}] equipment_material [{}]",
+		clean_name,
+		material_slot,
+		equipment_material
+	);
 
 	return equipment_material;
 }
@@ -370,7 +385,7 @@ void Mob::SendArmorAppearance(Client *one_client)
 	}
 
 	for (uint8 slot_id = 0; slot_id <= EQ::textures::materialCount; ++slot_id) {
-		if (GetTextureProfileMaterial(slot_id)) {
+		if (GetTextureProfileMaterial(slot_id) || IsClient()) {
 			SendWearChange(slot_id, one_client);
 		}
 	}
