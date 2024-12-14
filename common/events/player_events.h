@@ -62,6 +62,9 @@ namespace PlayerEvent {
 		PARCEL_RETRIEVE,
 		PARCEL_DELETE,
 		BARTER_TRANSACTION,
+		GUILD_BANK_DEPOSIT,
+		GUILD_BANK_WITHDRAWAL,
+		GUILD_BANK_MOVE_TO_BANK_AREA,
 		MAX // dont remove
 	};
 
@@ -124,7 +127,10 @@ namespace PlayerEvent {
 		"Parcel Item Sent",
 		"Parcel Item Retrieved",
 		"Parcel Prune Routine",
-		"Barter Transaction"
+		"Barter Transaction",
+		"Guild Bank Item Deposit",
+		"Guild Bank Item Withdrawal",
+		"Guild Bank Move From Deposit Area to Bank Area"
 	};
 
 	// Generic struct used by all events
@@ -1113,6 +1119,38 @@ namespace PlayerEvent {
 				CEREAL_NVP(seller_name),
 				CEREAL_NVP(total_cost)
 			);
+		}
+	};
+
+	struct GuildBankTransaction {
+		uint32 char_id;
+		uint32 guild_id;
+		uint32 item_id;
+		uint32 aug_slot_1;
+		uint32 aug_slot_2;
+		uint32 aug_slot_3;
+		uint32 aug_slot_4;
+		uint32 aug_slot_5;
+		uint32 aug_slot_6;
+		uint32 quantity;
+		uint32 permission;
+
+		// cereal
+		template<class Archive>
+		void serialize(Archive &ar)
+		{
+			ar(
+				CEREAL_NVP(char_id),
+				CEREAL_NVP(guild_id),
+				CEREAL_NVP(item_id),
+				CEREAL_NVP(aug_slot_1),
+				CEREAL_NVP(aug_slot_2),
+				CEREAL_NVP(aug_slot_3),
+				CEREAL_NVP(aug_slot_4),
+				CEREAL_NVP(aug_slot_5),
+				CEREAL_NVP(aug_slot_6),
+				CEREAL_NVP(quantity)
+				);
 		}
 	};
 }
