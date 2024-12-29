@@ -7711,7 +7711,7 @@ void Client::Handle_OP_GuildBank(const EQApplicationPacket *app)
 				GuildBankDepositAck(true, sentAction);
 				if (ClientVersion() >= EQ::versions::ClientVersion::RoF) {
 					GetInv().PopItem(EQ::invslot::slotCursor);
-					PushItemOnCursor(CursorItem, true);
+					PushItemOnCursor(cursor_item, true);
 				}
 				return;
 			}
