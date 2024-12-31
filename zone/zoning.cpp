@@ -1026,6 +1026,7 @@ void Mob::Gate(uint8 bind_number) {
 }
 
 void Client::Gate(uint8 bind_number) {
+	entity_list.RemoveFromTargets(this, true);
 	Mob::Gate(bind_number);
 }
 
