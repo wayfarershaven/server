@@ -2953,6 +2953,13 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 			)
 		);
 
+		// hard set mobs that were charmed to seasonal/non-seasonal.
+		if (EntityVariableExists("Seasonal_Charm") && GetEntityVariable("Seasonal_Charm") == "true") {
+			seasonal_killer = true;
+		} else if (EntityVariableExists("Seasonal_Charm") && GetEntityVariable("Seasonal_Charm") == "false") {
+			seasonal_killer = false;
+		}
+
 		corpse->SetSeasonal(seasonal_killer);
 		corpse->SetHardcore(hardcore_killer);
 
