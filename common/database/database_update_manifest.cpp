@@ -5828,6 +5828,19 @@ ALTER TABLE `guild_bank`
 ALTER TABLE `guild_bank`
 	ADD INDEX `guild_id` (`guild_id`);
 )"
+	},
+	ManifestEntry{
+		.version = 9290,
+		.description = "2025_01_10_create_pet_names_table.sql",
+		.check = "SHOW TABLES LIKE 'character_pet_name'",
+		.condition = "empty",
+		.match = "",
+		.sql = R"(
+CREATE TABLE `character_pet_name` (
+    `char_id` INT(11) NOT NULL PRIMARY KEY,
+    `name` VARCHAR(64) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+)"
 	}
 // -- template; copy/paste this when you need to create a new entry
 //	ManifestEntry{
