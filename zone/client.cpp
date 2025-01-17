@@ -291,18 +291,19 @@ Client::Client(EQStreamInterface *ieqs) : Mob(
 	controlled_mob_id = 0;
 	qGlobals = nullptr;
 
-	if (!RuleB(Character, PerCharacterQglobalMaxLevel) && !RuleB(Character, PerCharacterBucketMaxLevel)) {
-		SetClientMaxLevel(0);
-	} else if (RuleB(Character, PerCharacterQglobalMaxLevel)) {
-		SetClientMaxLevel(GetCharMaxLevelFromQGlobal());
-	} else if (RuleB(Character, PerCharacterBucketMaxLevel)) {
-		SetClientMaxLevel(GetCharMaxLevelFromBucket());
-	} else if (
+	if (
 		RuleB(World, UseAccountBasedExpansionSettings) ||
 		RuleB(World, UseCharacterBasedExpansionSettings)
 	) {
 		const uint8 expansion_max_level = Expansion::GetExpansionMaxLevel(Expansion::GetHighestExpansion(m_pp.expansions));
 		SetClientMaxLevel(expansion_max_level);
+		LogDebug("SetClientMaxLevel: [{}]", expansion_max_level);
+	} else if (!RuleB(Character, PerCharacterQglobalMaxLevel) && !RuleB(Character, PerCharacterBucketMaxLevel)) {
+		SetClientMaxLevel(0);
+	} else if (RuleB(Character, PerCharacterQglobalMaxLevel)) {
+		SetClientMaxLevel(GetCharMaxLevelFromQGlobal());
+	} else if (RuleB(Character, PerCharacterBucketMaxLevel)) {
+		SetClientMaxLevel(GetCharMaxLevelFromBucket());
 	}
 
 	KarmaUpdateTimer = new Timer(RuleI(Chat, KarmaUpdateIntervalMS));
