@@ -433,7 +433,9 @@ namespace RoF2
 					VARSTRUCT_ENCODE_TYPE(uint32, eq, i.item_icon);
 					VARSTRUCT_SKIP_TYPE(uint32, eq);
 				}
+
 				dest->QueuePacket(outapp.get());
+				safe_delete(in);
 				break;
 			}
 			default: {
@@ -468,8 +470,8 @@ namespace RoF2
 				}
 
 				auto p_size = 41 * results.size() + name_size + 14;
-				auto buffer = std::make_unique<char[]>(p_size);
-				auto bufptr = buffer.get();
+				auto buffer = new char[p_size];
+				auto bufptr = buffer;
 
 				VARSTRUCT_ENCODE_TYPE(uint32, bufptr, 0);
 				VARSTRUCT_ENCODE_TYPE(uint16, bufptr, results[0].trader_zone_id);
@@ -487,10 +489,11 @@ namespace RoF2
 					VARSTRUCT_ENCODE_TYPE(uint32, bufptr, i.item_stat);                          //itemstat
 				}
 
-				safe_delete(in->pBuffer);
+				safe_delete_array(in->pBuffer);
 				in->size    = p_size;
-				in->pBuffer = (uchar *) buffer.get();
+				in->pBuffer = (uchar*)buffer;
 				dest->QueuePacket(in);
+				safe_delete(in);
 
 				break;
 			}
@@ -500,21 +503,22 @@ namespace RoF2
 				break;
 			}
 			case WelcomeMessage: {
-				auto buffer = std::make_unique<char[]>(sizeof(structs::BazaarWelcome_Struct));
+				auto buffer = new char[sizeof(structs::BazaarWelcome_Struct)];
 				auto emu    = (BazaarWelcome_Struct *) in->pBuffer;
-				auto eq     = (structs::BazaarWelcome_Struct *) buffer.get();
+				auto eq     = (structs::BazaarWelcome_Struct *) buffer;
 
 				eq->action         = structs::RoF2BazaarTraderBuyerActions::WelcomeMessage;
 				eq->num_of_traders = emu->traders;
 				eq->num_of_items   = emu->items;
 
-				safe_delete(in->pBuffer);
+				safe_delete_array(in->pBuffer);
 				in->SetOpcode(OP_TraderShop);
 				in->size    = sizeof(structs::BazaarWelcome_Struct);
-				in->pBuffer = (uchar *) buffer.get();
+				in->pBuffer = (uchar *)buffer;
 
 				LogTrading("(RoF2) WelcomeMessage action <green>[{}]", action);
 				dest->QueuePacket(in);
+				safe_delete(in);
 
 				break;
 			}
@@ -892,7 +896,9 @@ namespace RoF2
 					VARSTRUCT_ENCODE_TYPE(uint16, eq, b.buyer_zone_instance_id);
 					VARSTRUCT_ENCODE_STRING(eq, b.buyer_name.c_str());
 				}
+
 				dest->QueuePacket(outapp.get());
+				safe_delete(inapp);
 				break;
 			}
 			case Barter_RemoveFromMerchantWindow: {
@@ -963,6 +969,7 @@ namespace RoF2
 				VARSTRUCT_ENCODE_TYPE(uint32, eq, blsi.seller_quantity);
 
 				dest->QueuePacket(outapp.get());
+				safe_delete(inapp);
 				break;
 			}
 			default: {
@@ -1845,11 +1852,11 @@ namespace RoF2
 			}
 		}
 
-		auto outapp     = new EQApplicationPacket(OP_GuildsList);
-		outapp->size    = packet_size;
-		outapp->pBuffer = buffer;
+		safe_delete_array(in->pBuffer);
 
-		dest->FastQueuePacket(&outapp);
+		in->pBuffer = buffer;
+		in->size    = packet_size;
+		dest->FastQueuePacket(&in);
 	}
 
 	ENCODE(OP_GuildTributeDonateItem)

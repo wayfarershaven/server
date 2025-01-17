@@ -339,6 +339,7 @@ void MapOpcodes()
 	ConnectedOpcodes[OP_PlayerStateAdd] = &Client::Handle_OP_PlayerStateAdd;
 	ConnectedOpcodes[OP_PlayerStateRemove] = &Client::Handle_OP_PlayerStateRemove;
 	ConnectedOpcodes[OP_PickPocket] = &Client::Handle_OP_PickPocket;
+	ConnectedOpcodes[OP_PickZone] = &Client::Handle_OP_PickZone;
 	ConnectedOpcodes[OP_PopupResponse] = &Client::Handle_OP_PopupResponse;
 	ConnectedOpcodes[OP_PotionBelt] = &Client::Handle_OP_PotionBelt;
 	ConnectedOpcodes[OP_PurchaseLeadershipAA] = &Client::Handle_OP_PurchaseLeadershipAA;
@@ -860,7 +861,7 @@ void Client::CompleteConnect()
 	if (IsInAGuild()) {
 		if (firstlogon == 1) {
 			guild_mgr.UpdateDbMemberOnline(CharacterID(), true);
-			guild_mgr.SendToWorldSendGuildMembersList(GuildID());
+			SendGuildMembersList();
 		}
 
 		guild_mgr.SendGuildMemberUpdateToWorld(GetName(), GuildID(), zone->GetZoneID(), time(nullptr));
@@ -939,6 +940,11 @@ void Client::CompleteConnect()
 
 	if (GetGM() && IsDevToolsEnabled()) {
 		ShowDevToolsMenu();
+	}
+
+	auto z = GetZone(GetZoneID(), GetInstanceVersion());
+	if (z && z->shard_at_player_count > 0 && !RuleB(Zone, ZoneShardQuestMenuOnly)) {
+		ShowZoneShardMenu();
 	}
 
 	// shared tasks memberlist
@@ -7937,6 +7943,7 @@ void Client::Handle_OP_GuildCreate(const EQApplicationPacket *app)
 	SetGuildID(new_guild_id);
 	SendGuildList();
 	guild_mgr.MemberAdd(new_guild_id, CharacterID(), GetLevel(), GetClass(), GUILD_LEADER, GetZoneID(), GetName());
+	guild_mgr.SendGuildRefresh(new_guild_id, true, true, true, true);
 	guild_mgr.SendToWorldSendGuildList();
 	SendGuildSpawnAppearance();
 
@@ -11836,6 +11843,17 @@ void Client::Handle_OP_PickPocket(const EQApplicationPacket *app)
 	}
 
 	SendPickPocketResponse(victim, 0, PickPocketFailed);
+}
+
+void Client::Handle_OP_PickZone(const EQApplicationPacket *app)
+{
+	if (app->size != sizeof(PickZone_Struct)) {
+		LogDebug("Size mismatch in OP_PickZone expected [{}] got [{}]", sizeof(PickZone_Struct), app->size);
+		DumpPacket(app);
+		return;
+	}
+
+	// handle
 }
 
 void Client::Handle_OP_PopupResponse(const EQApplicationPacket *app)
