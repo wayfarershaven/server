@@ -9344,6 +9344,7 @@ void Client::Handle_OP_ItemPreviewRequest(const EQApplicationPacket* app)
 
 			QueuePacket(outapp);
 			safe_delete(outapp);
+			safe_delete(inst);
 		}
 	}
 }
