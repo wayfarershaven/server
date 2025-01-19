@@ -4723,6 +4723,9 @@ namespace RoF2
 			if (emu->buyer) {
 				OtherData = OtherData | 0x01;
 			}
+			if (emu->offline) {
+				OtherData = OtherData | 0x02;
+			}
 
 			VARSTRUCT_ENCODE_TYPE(uint8, Buffer, OtherData);
 			// float EmitterScalingRadius

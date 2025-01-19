@@ -51,6 +51,11 @@ WorldServer::WorldServer(std::shared_ptr<EQ::Net::ServertalkServerConnection> wo
 		ServerOP_LSAccountUpdate,
 		std::bind(&WorldServer::ProcessLSAccountUpdate, this, std::placeholders::_1, std::placeholders::_2)
 	);
+
+	worldserver_connection->OnMessage(
+		ServerOP_UsertoWorldCancelOfflineResponse,
+		std::bind(&WorldServer::ProcessUserToWorldCancelOfflineResponse, this, std::placeholders::_1, std::placeholders::_2)
+	);
 }
 
 WorldServer::~WorldServer() = default;
@@ -293,6 +298,117 @@ void WorldServer::ProcessUserToWorldResponse(uint16_t opcode, const EQ::Net::Pac
 				break;
 			case UserToWorldStatusAlreadyOnline:
 				r->base_reply.error_str_id = LS::ErrStr::ERROR_ACTIVE_CHARACTER;
+				break;
+			case UserToWorldStatusOffilineTraderBuyer:
+				r->base_reply.success = false;
+				r->base_reply.error_str_id = LS::ErrStr::ERROR_OFFLINE_TRADER;
+				break;
+			default:
+				r->base_reply.error_str_id = LS::ErrStr::ERROR_UNKNOWN;
+				break;
+		}
+
+		LogDebug(
+			"Sending play response with following data, allowed [{0}], sequence {1}, server number {2}, message {3}",
+			r->base_reply.success,
+			r->base_header.sequence,
+			r->server_number,
+			r->base_reply.error_str_id
+		);
+
+		c->SendPlayResponse(outapp);
+		delete outapp;
+	}
+	else {
+		LogError(
+			"Received User-To-World Response for [{0}] but could not find the client referenced!.",
+			user_to_world_response->lsaccountid
+		);
+	}
+}
+
+void WorldServer::ProcessUserToWorldCancelOfflineResponse(uint16_t opcode, const EQ::Net::Packet &packet)
+{
+	LogNetcode(
+		"Application packet received from server [{:#04x}] [Size: {}]\n{}",
+		opcode,
+		packet.Length(),
+		packet.ToString()
+	);
+
+	if (packet.Length() < sizeof(UsertoWorldResponse_Struct)) {
+		LogError(
+			"Received application packet from server that had opcode ServerOP_UsertoWorldCancelOfflineResp, "
+			"but was too small. Discarded to avoid buffer overrun"
+		);
+		return;
+	}
+
+	auto user_to_world_response = (UsertoWorldResponse_Struct *) packet.Data();
+	LogDebug("Trying to find client with user id of [{0}]", user_to_world_response->lsaccountid);
+
+	auto const c = server.client_manager->GetClient(user_to_world_response->lsaccountid, user_to_world_response->login);
+
+	if (c) {
+		LogDebug("Found client with user id of [{0}] and account name of {1}",
+				 user_to_world_response->lsaccountid,
+				 c->GetAccountName().c_str()
+		);
+
+		auto client_packet         = EQApplicationPacket(OP_CancelOfflineTraderResponse, sizeof(PlayEverquestResponse_Struct));
+		auto client_packet_payload = reinterpret_cast<PlayEverquestResponse_Struct *>(client_packet.pBuffer);
+
+		client_packet_payload->base_header.sequence = c->GetPlaySequence();
+		client_packet_payload->server_number        = c->GetPlayServerID();
+
+		c->SendPlayResponse(&client_packet);
+
+		auto outapp = new EQApplicationPacket(OP_PlayEverquestResponse, sizeof(PlayEverquestResponse_Struct));
+		auto r      = reinterpret_cast<PlayEverquestResponse_Struct *>(outapp->pBuffer);
+		r->base_header.sequence = c->GetPlaySequence();
+		r->server_number        = c->GetPlayServerID();
+
+		LogDebug(
+			"Found sequence and play of [{0}] [{1}]",
+			c->GetPlaySequence(),
+			c->GetPlayServerID()
+		);
+
+		LogDebug("[Size: [{0}]] {1}", outapp->size, DumpPacketToString(outapp));
+
+		if (user_to_world_response->response > 0) {
+			r->base_reply.success = true;
+			SendClientAuth(
+				c->GetConnection()->GetRemoteAddr(),
+				c->GetAccountName(),
+				c->GetKey(),
+				c->GetAccountID(),
+				c->GetLoginServerName()
+			);
+		}
+
+		switch (user_to_world_response->response) {
+			case UserToWorldStatusSuccess:
+				r->base_reply.error_str_id = LS::ErrStr::ERROR_NONE;
+				break;
+			case UserToWorldStatusWorldUnavail:
+				r->base_reply.error_str_id = LS::ErrStr::ERROR_SERVER_UNAVAILABLE;
+				break;
+			case UserToWorldStatusSuspended:
+				r->base_reply.error_str_id = LS::ErrStr::ERROR_ACCOUNT_SUSPENDED;
+				break;
+			case UserToWorldStatusBanned:
+				r->base_reply.error_str_id = LS::ErrStr::ERROR_ACCOUNT_BANNED;
+				break;
+			case UserToWorldStatusWorldAtCapacity:
+				r->base_reply.error_str_id = LS::ErrStr::ERROR_WORLD_MAX_CAPACITY;
+				break;
+			case UserToWorldStatusAlreadyOnline:
+				r->base_reply.error_str_id = LS::ErrStr::ERROR_ACTIVE_CHARACTER;
+				break;
+			case UserToWorldStatusOffilineTraderBuyer:
+				r->base_reply.success      = false;
+				r->base_reply.error_str_id = LS::ErrStr::ERROR_OFFLINE_TRADER;
 				break;
 			default:
 				r->base_reply.error_str_id = LS::ErrStr::ERROR_UNKNOWN;

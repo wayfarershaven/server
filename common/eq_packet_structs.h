@@ -324,6 +324,7 @@ union
 	bool guild_show;
 	bool trader;
 	bool buyer;
+	bool offline;
 };
 
 struct PlayerState_Struct {

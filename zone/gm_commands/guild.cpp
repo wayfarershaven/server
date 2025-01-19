@@ -600,78 +600,45 @@ void command_guild(Client* c, const Seperator* sep)
 			c->Message(Chat::White, "Usage: #guild test [Guild ID]");
 		}
 		else {
-			auto guild_id = Strings::ToUnsignedInt(sep->arg[2]);
+//			auto guild_id = Strings::ToUnsignedInt(sep->arg[2]);
+//			auto guild    = guild_mgr.GetGuildByGuildID(guild_id);
+//			c->SendGuildMembersList();
 
-			auto guild    = guild_mgr.GetGuildByGuildID(guild_id);
 
-			PlayerEvent::LootItemEvent e{};
-			e.charges      = -1;
-			e.corpse_name  = "Test Corpse Name";
-			e.item_id      = 123456789;
-			e.item_name    = "Test Item Name";
-			e.npc_id       = 987654321;
-			e.augment_1_id = 11;
-			e.augment_2_id = 0;
-			e.augment_3_id = 0;
-			e.augment_4_id = 44;
-			e.augment_5_id = 55;
-			e.augment_6_id = 66;
+			NewSpawn_Struct     ns{};
+			PlayerProfile_Struct pp{};
+			ExtendedProfile_Struct m_epp{};
+			EQ::TintProfile re{};
+			//			database.LoadCharacterData(c->CharacterID(), &pp, &m_epp);
+			Client                 *spawn;
+			EQStreamInterface* eqsi{};
+			eqsi = nullptr;
 
-			RecordPlayerEventLogWithClient(c, PlayerEvent::LOOT_ITEM, e);
+			auto cl = new Client(eqsi);
 
-			PlayerEvent::DestroyItemEvent e2{};
-			e2.charges     = -1;
-			e2.attuned     = true;
-			e.augment_1_id = 11;
-			e.augment_2_id = 0;
-			e.augment_3_id = 0;
-			e.augment_4_id = 44;
-			e.augment_5_id = 55;
-			e.augment_6_id = 66;
-			e2.item_id     = 123456789;
-			e2.item_name   = "Test Item Destroy Name";
-			e2.reason      = "Test Item Destroy Reason";
+			database.LoadCharacterData(c->CharacterID(), &cl->GetPP(), &cl->GetEPP());
+			cl->Clone(*c);
 
-			RecordPlayerEventLogWithClient(c, PlayerEvent::ITEM_DESTROY, e2);
+			cl->GetInv().SetGMInventory(true);
+			database.GetInventory(cl);
 
-			auto id       = Strings::ToUnsignedInt(sep->arg[3]);
-			//auto guild    = guild_mgr.GetGuildByGuildID(guild_id);
-			// c->SendGuildMembersList();
-			auto bank = GuildBanks->GetGuildBank(guild_id);
-			if (id == 1) {
-				for (auto &[key, item]: bank->items.main_area) {
-					auto i = ItemsRepository::FindOne(content_db, item.item_id);
-					c->Message(Chat::Yellow, fmt::format("key:{:02} item:{:05} Name:{:40} Qty:{:40} Slot:{}",
-						key, item.item_id, i.Name, item.quantity, item.slot).c_str());
-				}
-				return;
-			}
-			if (id == 2) {
-				for (auto &[key, item]: bank->items.deposit_area) {
-					auto i = ItemsRepository::FindOne(content_db, item.item_id);
-					c->Message(Chat::Yellow, fmt::format("key:{:02} item:{:05} Name:{} Qty:{:40} Slot:{}",
-						key, item.item_id, i.Name, item.quantity, item.slot).c_str());
-				}
-				return;
-			}
-			if (id == 3) {
-				for (auto &[key, item]: bank->items.main_area) {
-					if (item.item_id == 30416) {
-						auto i = ItemsRepository::FindOne(content_db, item.item_id);
-						c->Message(Chat::Yellow, fmt::format("key:{:02} item:{:05} Name:{:40} Qty:{:40} Slot:{}",
-							key, item.item_id, i.Name, item.quantity, item.slot).c_str());
-					}
-				}
-				return;
-			}
-			if (id == 4) {
-				c->Message(Chat::Yellow, "Guild Test 4");
-				auto inst = database.CreateItem(30416, 30);
-				database.UpdateInventorySlot(c->CharacterID(), inst, -1);
-				safe_delete(inst);
+			cl->SetPosition(c->GetX(), c->GetY(), c->GetZ());
+			cl->SetSpawned();
+			//cl->SetBuyerID(cl->CharacterID());
+			cl->SetTraderID(cl->CharacterID());
+			cl->SetTrader(true);
+			cl->SetBecomeNPC(false);
+			cl->SetOffline(true);
+			entity_list.AddClient(cl);
+			//entity_list.SendZoneSpawns(c);
+			//cl->SendArmorAppearance(c);
 
-				return;
-			}
+			auto outapp = new EQApplicationPacket();
+			cl->CreateSpawnPacket(outapp);
+			outapp->priority = 6;
+			entity_list.QueueClients(nullptr, outapp, false);
+			safe_delete(outapp);
+
 		}
 	}
 }
