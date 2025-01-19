@@ -510,10 +510,10 @@ Client::Client(EQStreamInterface *ieqs) : Mob(
 	client_data_loaded = false;
 	berserk = false;
 	dead = false;
-	eqs = ieqs;
-	ip = eqs->GetRemoteIP();
-	port = ntohs(eqs->GetRemotePort());
-	client_state = CLIENT_CONNECTING;
+	eqs                = ieqs ? ieqs : nullptr;
+	ip                 = eqs ? eqs->GetRemoteIP() : 0;
+	port               = eqs ? ntohs(eqs->GetRemotePort()) : 0;
+	client_state       = eqs ? CLIENT_CONNECTING : CLIENT_CONNECTED;
 	SetTrader(false);
 	Haste = 0;
 	SetCustomerID(0);
@@ -700,6 +700,7 @@ Client::Client(EQStreamInterface *ieqs) : Mob(
 	m_parcels.clear();
 
 	m_buyer_id = 0;
+	m_offline  = false;
 
 	SetBotPulling(false);
 	SetBotPrecombat(false);
@@ -740,7 +741,7 @@ Client::~Client() {
 	if (merc)
 		merc->Depop();
 
-	if(IsTrader()) {
+	if(IsTrader() && !IsOffline()) {
 		TraderEndTrader();
 	}
 
@@ -2461,13 +2462,14 @@ void Client::FillSpawnStruct(NewSpawn_Struct* ns, Mob* ForWho)
 	Mob::FillSpawnStruct(ns, ForWho);
 
 	// Populate client-specific spawn information
-	ns->spawn.afk       = AFK;
-	ns->spawn.lfg       = LFG; // afk and lfg are cleared on zoning on live
-	ns->spawn.anon      = m_pp.anon;
-	ns->spawn.gm        = GetGM() ? 1 : 0;
-	ns->spawn.guildID   = GuildID();
-	ns->spawn.trader    = IsTrader();
-	ns->spawn.buyer     = IsBuyer();
+	ns->spawn.afk     = AFK;
+	ns->spawn.lfg     = LFG; // afk and lfg are cleared on zoning on live
+	ns->spawn.anon    = m_pp.anon;
+	ns->spawn.gm      = GetGM() ? 1 : 0;
+	ns->spawn.guildID = GuildID();
+	ns->spawn.trader  = IsTrader();
+	ns->spawn.buyer   = IsBuyer();
+	ns->spawn.offline = IsOffline();
 //	ns->spawn.linkdead	= IsLD() ? 1 : 0;
 //	ns->spawn.pvp		= GetPVP(false) ? 1 : 0;
 	ns->spawn.show_name = true;

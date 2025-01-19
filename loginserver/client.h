@@ -25,6 +25,7 @@ public:
 	// Live, as of July 2021 uses a similar but slightly different seperate data packet
 	void SendExpansionPacketData(PlayerLoginReply &plrs);
 	void SendPlayToWorld(const char *data);
+	void SendCancelOfflineStatusToWorld(const char *data);
 	void SendServerListPacket(uint32 seq);
 	void SendPlayResponse(EQApplicationPacket *outapp);
 	void GenerateRandomLoginKey();

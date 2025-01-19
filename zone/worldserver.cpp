@@ -62,6 +62,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include "../common/skill_caps.h"
 #include "../common/server_reload_types.h"
 #include "queryserv.h"
+#include "../common/repositories/account_repository.h"
 
 extern EntityList             entity_list;
 extern Zone                  *zone;
@@ -4129,7 +4130,41 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 
 					break;
 				}
+				break;
 			}
+			break;
+		}
+		case ServerOP_UsertoWorldCancelOfflineRequest: {
+			auto in     = reinterpret_cast<UsertoWorldResponse_Struct *>(pack->pBuffer);
+			auto client = entity_list.GetClientByLSID(in->lsaccountid);
+			if (!client) {
+				break;
+			}
+
+			AccountRepository::SetOfflineStatus(database, client->AccountID(), false);
+
+			client->TraderEndTrader();
+			auto outapp = new EQApplicationPacket();
+			client->CreateDespawnPacket(outapp, false);
+			entity_list.QueueClients(nullptr, outapp, false);
+			safe_delete(outapp);
+
+			entity_list.RemoveMob(client->CastToMob()->GetID());
+			// entity_list.RemoveClient(client->GetID());
+
+			auto sp          = new ServerPacket(ServerOP_UsertoWorldCancelOfflineResponse, pack->size);
+			auto out         = reinterpret_cast<UsertoWorldResponse_Struct *>(sp->pBuffer);
+			sp->opcode       = ServerOP_UsertoWorldCancelOfflineResponse;
+			out->FromID      = in->FromID;
+			out->lsaccountid = in->lsaccountid;
+			out->response    = in->response;
+			out->ToID        = in->ToID;
+			out->worldid     = in->worldid;
+			strn0cpy(out->login, in->login, 64);
+
+			worldserver.SendPacket(sp);
+			safe_delete(sp);
+			break;
 		}
 		default: {
 			LogInfo("Unknown ZS Opcode [{}] size [{}]", (int) pack->opcode, pack->size);

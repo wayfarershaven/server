@@ -238,6 +238,7 @@ namespace EQ
 		int16 _HasEvolvingItem(ItemInstQueue& iqueue, uint64 evolve_unique_id, uint8 quantity);
 
 
+	public:
 		// Player inventory
 		std::map<int16, ItemInstance*>	m_worn;		// Items worn by character
 		std::map<int16, ItemInstance*>	m_inv;		// Items in character personal inventory

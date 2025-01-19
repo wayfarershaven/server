@@ -222,6 +222,10 @@ int16 Database::GetAccountStatus(uint32 account_id)
 		AccountRepository::UpdateOne(*this, e);
 	}
 
+	if (e.offline) {
+		return UserToWorldStatusOffilineTraderBuyer;
+	}
+
 	return e.status;
 }
 
@@ -2196,6 +2200,7 @@ void Database::ClearGuildOnlineStatus()
 void Database::ClearTraderDetails()
 {
 	TraderRepository::Truncate(*this);
+	AccountRepository::ClearAllOfflineStatus(*this);
 }
 
 void Database::ClearBuyerDetails()

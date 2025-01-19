@@ -579,7 +579,7 @@ bool Client::Process() {
 		return false;
 	}
 
-	if (client_state != CLIENT_LINKDEAD && !eqs->CheckState(ESTABLISHED)) {
+	if (eqs && client_state != CLIENT_LINKDEAD && !eqs->CheckState(ESTABLISHED)) {
 		OnDisconnect(true);
 		LogInfo("Client linkdead: {}", name);
 
@@ -608,7 +608,7 @@ bool Client::Process() {
 
 	/************ Get all packets from packet manager out queue and process them ************/
 	EQApplicationPacket *app = nullptr;
-	if (!eqs->CheckState(CLOSING))
+	if (eqs && !eqs->CheckState(CLOSING))
 	{
 		while (app = eqs->PopPacket()) {
 			HandlePacket(app);
@@ -618,7 +618,7 @@ bool Client::Process() {
 
 	ClientToNpcAggroProcess();
 
-	if (client_state != CLIENT_LINKDEAD && (client_state == CLIENT_ERROR || client_state == DISCONNECTED || client_state == CLIENT_KICKED || !eqs->CheckState(ESTABLISHED)))
+	if (eqs && client_state != CLIENT_LINKDEAD && (client_state == CLIENT_ERROR || client_state == DISCONNECTED || client_state == CLIENT_KICKED || !eqs->CheckState(ESTABLISHED)))
 	{
 		//client logged out or errored out
 		//ResetTrade();

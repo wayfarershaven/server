@@ -42,6 +42,7 @@ public:
 
 private:
 	void ProcessUsertoWorldReqLeg(uint16_t opcode, EQ::Net::Packet &p);
+	void ProcessUserToWorldCancelOfflineRequest(uint16_t opcode, EQ::Net::Packet &p);
 	void ProcessUsertoWorldReq(uint16_t opcode, EQ::Net::Packet &p);
 	void ProcessLSClientAuth(uint16_t opcode, EQ::Net::Packet &p);
 	void ProcessLSClientAuthLegacy(uint16_t opcode, EQ::Net::Packet &p);

@@ -3062,6 +3062,9 @@ void Client::BuyTraderItemOutsideBazaar(TraderBuy_Struct *tbs, const EQApplicati
 	out_data->item_aug_6              = buy_item->GetAugmentItemID(5);
 	out_data->item_quantity_available = trader_item.item_charges;
 	out_data->id                      = trader_item.id;
+	out_data->trader_zone_id          = trader_item.char_zone_id;
+	out_data->trader_zone_instance_id = trader_item.char_zone_instance_id;
+
 	strn0cpy(out_data->trader_buy_struct.buyer_name, GetCleanName(), sizeof(out_data->trader_buy_struct.buyer_name));
 
 	worldserver.SendPacket(out_server.get());

@@ -414,6 +414,8 @@ public:
 	void   SetBuyerID(uint32 id) { m_buyer_id = id; }
 	uint32 GetBuyerID() { return m_buyer_id; }
 	bool   IsBuyer() { return m_buyer_id != 0 ? true : false; }
+	bool   IsOffline() { return m_offline; }
+	void   SetOffline(bool status) { m_offline = status; }
 	void   SetBarterTime() { m_barter_time = time(nullptr); }
 	uint32 GetBarterTime() { return m_barter_time; }
 	void   SetBuyerWelcomeMessage(const char* welcome_message);
@@ -2047,6 +2049,7 @@ private:
 	time_t                                                         m_trader_transaction_date;
 	uint32                                                         m_trader_count{};
 	uint32                                                         m_buyer_id;
+	bool                                                           m_offline;
 	uint32                                                         m_barter_time;
 	int32                                                          m_parcel_platinum;
 	int32                                                          m_parcel_gold;
@@ -2365,6 +2368,50 @@ public:
 	const std::string &GetMailKey() const;
 	void ShowZoneShardMenu();
 	void Handle_OP_ChangePetName(const EQApplicationPacket *app);
+
+	Mob* GetMob() {
+		return Mob::GetMob();
+	}
+
+	void Clone(Client& in)
+	{
+		this->guild_id           = in.guild_id;
+		this->guildrank          = in.guildrank;
+		this->LFG                = in.LFG;
+		this->AFK                = in.AFK;
+		this->trader_id          = in.trader_id;
+		this->m_buyer_id         = in.m_buyer_id;
+		this->race               = in.race;
+		this->class_             = in.class_;
+		this->size               = in.size;
+		this->deity              = in.deity;
+		this->texture            = in.texture;
+		this->m_ClientVersion    = in.m_ClientVersion;
+		this->m_ClientVersionBit = in.m_ClientVersionBit;
+		this->character_id       = in.character_id;
+		this->account_id         = in.account_id;
+		lsaccountid              = in.lsaccountid;
+		m_pp.platinum            = in.m_pp.platinum;
+		m_pp.gold                = in.m_pp.gold;
+		m_pp.silver              = in.m_pp.silver;
+		m_pp.copper              = in.m_pp.copper;
+
+		m_inv.SetInventoryVersion(in.m_ClientVersion);
+		this->SetBodyType(in.GetBodyType(), false);
+
+		auto out_inv = GetInv().GetPersonal();
+		auto in_inv = in.GetInv().GetPersonal();
+
+		for (auto [slot, item] : in.m_inv.m_inv) {
+			m_inv.m_inv[slot] = item->Clone();
+		}
+
+		for (auto [slot, item] : in.m_inv.m_worn) {
+			m_inv.m_worn[slot] = item->Clone();
+		}
+
+		CloneMob(*in.GetMob());
+	}
 };
 
 #endif

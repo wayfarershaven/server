@@ -600,8 +600,9 @@ void command_guild(Client* c, const Seperator* sep)
 			c->Message(Chat::White, "Usage: #guild test [Guild ID]");
 		}
 		else {
-			auto guild_id = Strings::ToUnsignedInt(sep->arg[2]);
-			auto guild    = guild_mgr.GetGuildByGuildID(guild_id);
+//			auto guild_id = Strings::ToUnsignedInt(sep->arg[2]);
+//			auto guild    = guild_mgr.GetGuildByGuildID(guild_id);
+//			c->SendGuildMembersList();
 
 			// PlayerEvent::LootItemEvent e{};
 			// e.charges      = -1;

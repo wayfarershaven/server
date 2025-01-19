@@ -323,6 +323,7 @@ void MapOpcodes()
 	ConnectedOpcodes[OP_MoveCoin] = &Client::Handle_OP_MoveCoin;
 	ConnectedOpcodes[OP_MoveItem] = &Client::Handle_OP_MoveItem;
 	ConnectedOpcodes[OP_MoveMultipleItems] = &Client::Handle_OP_MoveMultipleItems;
+	ConnectedOpcodes[OP_Offline] = &Client::Handle_OP_Offline;
 	ConnectedOpcodes[OP_OpenContainer] = &Client::Handle_OP_OpenContainer;
 	ConnectedOpcodes[OP_OpenGuildTributeMaster] = &Client::Handle_OP_OpenGuildTributeMaster;
 	ConnectedOpcodes[OP_OpenInventory] = &Client::Handle_OP_OpenInventory;
@@ -17103,4 +17104,37 @@ void Client::Handle_OP_EvolveItem(const EQApplicationPacket *app)
 		default: {
 		}
 	}
+}
+
+void Client::Handle_OP_Offline(const EQApplicationPacket *app)
+{
+	if (IsBuyer()) {
+		Message(Chat::Red, "Offline Buyer mode not yet supported.");
+		return;
+	}
+
+	SetOffline(true);
+	AccountRepository::SetOfflineStatus(database, AccountID(), true);
+
+	EQStreamInterface *eqsi           = nullptr;
+	auto               offline_client = new Client(eqsi);
+
+	database.LoadCharacterData(CharacterID(), &offline_client->GetPP(), &offline_client->GetEPP());
+	offline_client->Clone(*this);
+	offline_client->GetInv().SetGMInventory(true);
+	offline_client->SetPosition(GetX(), GetY(), GetZ());
+	offline_client->SetHeading(GetHeading());
+	offline_client->SetSpawned();
+	offline_client->SetTrader(true);
+	offline_client->SetBecomeNPC(false);
+	offline_client->SetOffline(true);
+
+	entity_list.AddClient(offline_client);
+
+	OnDisconnect(true);
+
+	auto outapp = new EQApplicationPacket();
+	offline_client->CreateSpawnPacket(outapp);
+	entity_list.QueueClients(nullptr, outapp, false);
+	safe_delete(outapp);
 }
