@@ -142,6 +142,9 @@ namespace Logs {
 		EqTime,
 		Corpses,
 		XTargets,
+		EvolveItem,
+		PositionUpdate,
+		KSM,
 		MaxCategoryID /* Don't Remove this */
 	};
 
@@ -242,7 +245,10 @@ namespace Logs {
 		"Zoning",
 		"EqTime",
 		"Corpses",
-		"XTargets"
+		"XTargets",
+		"EvolveItem",
+		"PositionUpdate",
+		"KSM" // Kernel Samepage Merging
 	};
 }
 

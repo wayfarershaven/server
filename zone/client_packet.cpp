@@ -66,6 +66,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include "../common/repositories/character_corpses_repository.h"
 #include "../common/repositories/guild_tributes_repository.h"
 #include "../common/repositories/buyer_buy_lines_repository.h"
+#include "../common/repositories/character_pet_name_repository.h"
 
 #include "../common/events/player_event_logs.h"
 #include "../common/repositories/character_stats_record_repository.h"
@@ -79,7 +80,6 @@ extern WorldServer worldserver;
 extern PetitionList petition_list;
 extern EntityList entity_list;
 typedef void (Client::*ClientPacketProc)(const EQApplicationPacket *app);
-
 
 //Use a map for connecting opcodes since it dosent get used a lot and is sparse
 std::map<uint32, ClientPacketProc> ConnectingOpcodes;
@@ -161,6 +161,7 @@ void MapOpcodes()
 	ConnectedOpcodes[OP_CancelTrade] = &Client::Handle_OP_CancelTrade;
 	ConnectedOpcodes[OP_CastSpell] = &Client::Handle_OP_CastSpell;
 	ConnectedOpcodes[OP_ChannelMessage] = &Client::Handle_OP_ChannelMessage;
+	ConnectedOpcodes[OP_ChangePetName] = &Client::Handle_OP_ChangePetName;
 	ConnectedOpcodes[OP_ClearBlockedBuffs] = &Client::Handle_OP_ClearBlockedBuffs;
 	ConnectedOpcodes[OP_ClearNPCMarks] = &Client::Handle_OP_ClearNPCMarks;
 	ConnectedOpcodes[OP_ClearSurname] = &Client::Handle_OP_ClearSurname;
@@ -208,6 +209,7 @@ void MapOpcodes()
 	ConnectedOpcodes[OP_Emote] = &Client::Handle_OP_Emote;
 	ConnectedOpcodes[OP_EndLootRequest] = &Client::Handle_OP_EndLootRequest;
 	ConnectedOpcodes[OP_EnvDamage] = &Client::Handle_OP_EnvDamage;
+	ConnectedOpcodes[OP_EvolveItem] = &Client::Handle_OP_EvolveItem;
 	ConnectedOpcodes[OP_FaceChange] = &Client::Handle_OP_FaceChange;
 	ConnectedOpcodes[OP_FeignDeath] = &Client::Handle_OP_FeignDeath;
 	ConnectedOpcodes[OP_FindPersonRequest] = &Client::Handle_OP_FindPersonRequest;
@@ -283,6 +285,7 @@ void MapOpcodes()
 	ConnectedOpcodes[OP_ItemLinkResponse] = &Client::Handle_OP_ItemLinkResponse;
 	ConnectedOpcodes[OP_ItemName] = &Client::Handle_OP_ItemName;
 	ConnectedOpcodes[OP_ItemPreview] = &Client::Handle_OP_ItemPreview;
+	ConnectedOpcodes[OP_ItemPreviewRequest] = &Client::Handle_OP_ItemPreviewRequest;
 	ConnectedOpcodes[OP_ItemVerifyRequest] = &Client::Handle_OP_ItemVerifyRequest;
 	ConnectedOpcodes[OP_ItemViewUnknown] = &Client::Handle_OP_Ignore;
 	ConnectedOpcodes[OP_Jump] = &Client::Handle_OP_Jump;
@@ -819,6 +822,10 @@ void Client::CompleteConnect()
 				CharacterID()
 			)
 		);
+
+		if (IsPetNameChangeAllowed()) {
+			InvokeChangePetName(false);
+		}
 	}
 
 	if(ClientVersion() == EQ::versions::ClientVersion::RoF2 && RuleB(Parcel, EnableParcelMerchants)) {
@@ -969,6 +976,16 @@ void Client::CompleteConnect()
 
 	RecordStats();
 	AutoGrantAAPoints();
+
+	// set initial position for mob tracking
+	m_last_seen_mob_position.reserve(entity_list.GetMobList().size());
+	for (auto& mob : entity_list.GetMobList()) {
+		if (!mob.second->IsNPC()) {
+			continue;
+		}
+
+		m_last_seen_mob_position[mob.second->GetID()] = mob.second->GetPosition();
+	}
 
 	// enforce some rules..
 	if (!CanEnterZone()) {
@@ -1309,7 +1326,7 @@ void Client::Handle_Connect_OP_ZoneEntry(const EQApplicationPacket *app)
 	// set to full support in case they're a gm with items in disabled expansion slots...but, have their gm flag off...
 	// item loss will occur when they use the 'empty' slots, if this is not done
 	m_inv.SetGMInventory(true);
-	loaditems = database.GetInventory(cid, &m_inv); /* Load Character Inventory */
+	loaditems = database.GetInventory(this); /* Load Character Inventory */
 	database.LoadCharacterBandolier(cid, &m_pp); /* Load Character Bandolier */
 	database.LoadCharacterBindPoint(cid, &m_pp); /* Load Character Bind */
 	database.LoadCharacterMaterialColor(cid, &m_pp); /* Load Character Material */
@@ -1864,8 +1881,9 @@ void Client::Handle_OP_AAAction(const EQApplicationPacket *app)
 		PurchaseAlternateAdvancementRank(action->ability);
 	}
 	else if (action->action == aaActionDisableEXP) { //Turn Off AA Exp
-		if (m_epp.perAA > 0)
+		if (m_epp.perAA > 0) {
 			MessageString(Chat::White, AA_OFF);
+		}
 
 		m_epp.perAA = 0;
 		SendAlternateAdvancementStats();
@@ -3234,11 +3252,11 @@ void Client::Handle_OP_AugmentItem(const EQApplicationPacket *app)
 				if (!new_aug) { // Shouldn't get the OP code without the augment on the user's cursor, but maybe it's h4x.
 					LogError("AugmentItem OpCode with 'Insert' or 'Swap' action received, but no augment on client's cursor");
 					Message(Chat::Red, "Error: No augment found on cursor for inserting.");
-					return;
+					break;
 				} else {
 					if (!RuleB(Inventory, AllowMultipleOfSameAugment) && tobe_auged->ContainsAugmentByID(new_aug->GetID())) {
 						Message(Chat::Red, "Error: Cannot put multiple of the same augment in an item.");
-						return;
+						break;
 					}
 
 					if (
@@ -3322,7 +3340,7 @@ void Client::Handle_OP_AugmentItem(const EQApplicationPacket *app)
 									in_augment->augment_index
 								).c_str()
 							);
-							return;
+							break;
 						}
 
 						item_one_to_push = tobe_auged->Clone();
@@ -3394,7 +3412,7 @@ void Client::Handle_OP_AugmentItem(const EQApplicationPacket *app)
 					}
 				} else {
 					Message(Chat::Red, "Error: Could not find augmentation to remove at index %i. Aborting.", in_augment->augment_index);
-					return;
+					break;
 				}
 
 				old_aug = tobe_auged->RemoveAugment(in_augment->augment_index);
@@ -3427,7 +3445,7 @@ void Client::Handle_OP_AugmentItem(const EQApplicationPacket *app)
 					if (!PutItemInInventory(EQ::invslot::slotCursor, *item_two_to_push, true)) {
 						LogError("Problem returning augment to player's cursor after safe removal");
 						Message(Chat::Yellow, "Error: Failed to return augment after removal from item!");
-						return;
+						break;
 					}
 				}
 				break;
@@ -3472,7 +3490,7 @@ void Client::Handle_OP_AugmentItem(const EQApplicationPacket *app)
 							in_augment->augment_index
 						).c_str()
 					);
-					return;
+					break;
 				}
 
 				tobe_auged->DeleteAugment(in_augment->augment_index);
@@ -3493,6 +3511,7 @@ void Client::Handle_OP_AugmentItem(const EQApplicationPacket *app)
 				if (material != EQ::textures::materialInvalid) {
 					SendWearChange(material);
 				}
+
 				break;
 			default: // Unknown
 				LogInventory(
@@ -3506,9 +3525,12 @@ void Client::Handle_OP_AugmentItem(const EQApplicationPacket *app)
 				);
 				break;
 		}
+		safe_delete(item_one_to_push);
+		safe_delete(item_two_to_push);
 	} else {
 		Object::HandleAugmentation(this, in_augment, m_tradeskill_object); // Delegate to tradeskill object to perform combine
 	}
+
 	return;
 }
 
@@ -4556,6 +4578,27 @@ void Client::Handle_OP_ChannelMessage(const EQApplicationPacket *app)
 	return;
 }
 
+void Client::Handle_OP_ChangePetName(const EQApplicationPacket *app) {
+	if (app->size != sizeof(ChangePetName_Struct)) {
+		LogError("Got OP_ChangePetName of incorrect size. Expected [{}], got [{}].", sizeof(ChangePetName_Struct), app->size);
+		return;
+	}
+
+	auto p = (ChangePetName_Struct *) app->pBuffer;
+	if (!IsPetNameChangeAllowed()) {
+		p->response_code = ChangePetNameResponse::NotEligible;
+		QueuePacket(app);
+		return;
+	}
+
+	p->response_code = ChangePetNameResponse::Denied;
+	if (ChangePetName(p->new_pet_name)) {
+		p->response_code = ChangePetNameResponse::Accepted;
+	}
+
+	QueuePacket(app);
+}
+
 void Client::Handle_OP_ClearBlockedBuffs(const EQApplicationPacket *app)
 {
 	if (!RuleB(Spells, EnableBlockedBuffs))
@@ -4954,7 +4997,7 @@ void Client::Handle_OP_ClientUpdate(const EQApplicationPacket *app) {
 		CheckScanCloseMobsMovingTimer();
 	}
 
-	CheckSendBulkClientPositionUpdate();
+	CheckSendBulkNpcPositions();
 
 	int32 new_animation = ppu->animation;
 
@@ -9299,6 +9342,30 @@ void Client::Handle_OP_ItemPreview(const EQApplicationPacket *app)
 		return;
 }
 
+void Client::Handle_OP_ItemPreviewRequest(const EQApplicationPacket* app)
+{
+	VERIFY_PACKET_LENGTH(OP_ItemPreviewRequest, app, ItemPreview_Struct);
+	auto ips  = (ItemPreview_Struct*) app->pBuffer;
+	const EQ::ItemData* item = database.GetItem(ips->itemid);
+
+	if (item) {
+		EQ::ItemInstance* inst = database.CreateItem(item);
+		if (inst) {
+			std::string packet = inst->Serialize(-1);
+			auto        outapp = new EQApplicationPacket(OP_ItemPreviewRequest, packet.length());
+			memcpy(outapp->pBuffer, packet.c_str(), packet.length());
+
+#if EQDEBUG >= 9
+			DumpPacket(outapp);
+#endif
+
+			QueuePacket(outapp);
+			safe_delete(outapp);
+			safe_delete(inst);
+		}
+	}
+}
+
 void Client::Handle_OP_ItemVerifyRequest(const EQApplicationPacket *app)
 {
 	using EQ::spells::CastingSlot;
@@ -10747,7 +10814,12 @@ void Client::Handle_OP_MoveItem(const EQApplicationPacket *app)
 			InterrogateInventory(this, true, false, true, error);
 	}
 
-	return;
+	for (int slot : {mi->to_slot, mi->from_slot}) {
+		auto item = GetInv().GetItem(slot);
+		if (item && item->IsEvolving()) {
+			CharacterEvolvingItemsRepository::UpdateOne(database, item->GetEvolvingDetails());
+		}
+	}
 }
 
 void Client::Handle_OP_MoveMultipleItems(const EQApplicationPacket *app)
@@ -10814,6 +10886,7 @@ void Client::Handle_OP_MoveMultipleItems(const EQApplicationPacket *app)
 						InterrogateInventory(this, true, false, true, error);
 					}
 				}
+				safe_delete(mi);
 			}
 		// This is the swap.
 		// Client behavior is just to move stacks without combining them
@@ -15529,6 +15602,26 @@ void Client::Handle_OP_TraderBuy(const EQApplicationPacket *app)
 	// Client has elected to buy an item from a Trader
 	//
 	auto in     = (TraderBuy_Struct *) app->pBuffer;
+
+	if (RuleB(Bazaar, UseAlternateBazaarSearch) && in->trader_id >= TraderRepository::TRADER_CONVERT_ID) {
+		auto trader = TraderRepository::GetTraderByInstanceAndSerialnumber(
+			database,
+			in->trader_id - TraderRepository::TRADER_CONVERT_ID,
+			in->serial_number
+		);
+
+		if (!trader.trader_id) {
+			LogTrading("Unable to convert trader id for {} and serial number {}.  Trader Buy aborted.",
+				in->trader_id - TraderRepository::TRADER_CONVERT_ID,
+				in->serial_number
+			);
+			return;
+		}
+
+		in->trader_id = trader.trader_id;
+		strn0cpy(in->seller_name, trader.trader_name.c_str(), sizeof(in->seller_name));
+	}
+
 	auto trader = entity_list.GetClientByID(in->trader_id);
 
 	switch (in->method) {
@@ -17163,4 +17256,38 @@ void Client::Handle_OP_ShopRetrieveParcel(const EQApplicationPacket *app)
 
     auto parcel_in = (ParcelRetrieve_Struct *)app->pBuffer;
     DoParcelRetrieve(*parcel_in);
+}
+
+void Client::Handle_OP_EvolveItem(const EQApplicationPacket *app)
+{
+	if (app->size != sizeof(EvolveItemToggle)) {
+		LogError(
+			"Received Handle_OP_EvolveItem packet. Expected size {}, received size {}.",
+			sizeof(EvolveItemToggle),
+			app->size
+		);
+		return;
+	}
+
+	auto in = reinterpret_cast<EvolveItemToggle *>(app->pBuffer);
+
+	switch (in->action) {
+		case EvolvingItems::Actions::UPDATE_ITEMS: {
+			DoEvolveItemToggle(app);
+			break;
+		}
+		case EvolvingItems::Actions::FINAL_RESULT: {
+			DoEvolveItemDisplayFinalResult(app);
+			break;
+		}
+		case EvolvingItems::Actions::TRANSFER_XP: {
+			DoEvolveTransferXP(app);
+			break;
+		}
+		case EvolvingItems::Actions::TRANSFER_WINDOW_DETAILS: {
+			SendEvolveXPWindowDetails(app);
+		}
+		default: {
+		}
+	}
 }

@@ -72,6 +72,7 @@ namespace EQ
 #include "../common/repositories/trader_repository.h"
 #include "../common/guild_base.h"
 #include "../common/repositories/buyer_buy_lines_repository.h"
+#include "../common/repositories/character_evolving_items_repository.h"
 
 #ifdef _WINDOWS
 	// since windows defines these within windef.h (which windows.h include)
@@ -294,7 +295,7 @@ public:
 	void SendBazaarDone(uint32 trader_id);
 	void SendBulkBazaarTraders();
 	void SendBulkBazaarBuyers();
-	void DoBazaarInspect(const BazaarInspect_Struct &in);
+	void DoBazaarInspect(BazaarInspect_Struct &in);
 	void SendBazaarDeliveryCosts();
 	static std::string DetermineMoneyString(uint64 copper);
 
@@ -306,6 +307,11 @@ public:
 	void KeyRingAdd(uint32 item_id);
 	bool KeyRingCheck(uint32 item_id);
 	void KeyRingList();
+	bool IsPetNameChangeAllowed();
+	void GrantPetNameChange();
+	void ClearPetNameChange();
+	void InvokeChangePetName(bool immediate = true);
+	bool ChangePetName(std::string new_name);
 	bool IsClient() const override { return true; }
 	bool IsOfClientBot() const override { return true; }
 	bool IsOfClientBotMerc() const override { return true; }
@@ -692,6 +698,8 @@ public:
 	void SetAAEXPModifier(uint32 zone_id, float aa_modifier, int16 instance_version = -1);
 	void SetEXPModifier(uint32 zone_id, float exp_modifier, int16 instance_version = -1);
 
+	void SetAAEXPPercentage(uint8 percentage);
+
 	bool UpdateLDoNPoints(uint32 theme_id, int points);
 	void SetLDoNPoints(uint32 theme_id, uint32 points);
 	void SetPVPPoints(uint32 Points) { m_pp.PVPCurrentPoints = Points; }
@@ -708,13 +716,13 @@ public:
 	void SendCrystalCounts();
 
 	uint64 GetExperienceForKill(Mob *against);
-	void AddEXP(ExpSource exp_source, uint64 in_add_exp, uint8 conlevel = 0xFF, bool resexp = false);
+	void AddEXP(ExpSource exp_source, uint64 in_add_exp, uint8 conlevel = 0xFF, bool resexp = false, NPC* npc = nullptr);
 	uint64 CalcEXP(uint8 conlevel = 0xFF, bool ignore_mods = false);
 	void CalculateNormalizedAAExp(uint64 &add_aaxp, uint8 conlevel, bool resexp);
 	void CalculateStandardAAExp(uint64 &add_aaxp, uint8 conlevel, bool resexp);
 	void CalculateLeadershipExp(uint64 &add_exp, uint8 conlevel);
 	void CalculateExp(uint64 in_add_exp, uint64 &add_exp, uint64 &add_aaxp, uint8 conlevel, bool resexp);
-	void SetEXP(ExpSource exp_source, uint64 set_exp, uint64 set_aaxp, bool resexp = false);
+	void SetEXP(ExpSource exp_source, uint64 set_exp, uint64 set_aaxp, bool resexp = false, NPC* npc = nullptr);
 	void AddLevelBasedExp(ExpSource exp_source, uint8 exp_percentage, uint8 max_level = 0, bool ignore_mods = false);
 	void SetLeadershipEXP(uint64 group_exp, uint64 raid_exp);
 	void AddLeadershipEXP(uint64 group_exp, uint64 raid_exp);
@@ -1128,6 +1136,10 @@ public:
 	void SetTrader(bool status) { trader = status; }
 	uint16 GetTraderID() { return trader_id; }
 	void SetTraderID(uint16 id) { trader_id = id; }
+	void SetTraderCount(uint32 no) { m_trader_count = no; }
+	uint32 GetTraderCount() { return m_trader_count; }
+	void IncrementTraderCount() { m_trader_count += 1; }
+	void DecrementTraderCount() { m_trader_count > 0 ? m_trader_count -= 1 : m_trader_count = 0; }
 
 	eqFilterMode GetFilter(eqFilterType filter_id) const { return ClientFilters[filter_id]; }
 	void SetFilter(eqFilterType filter_id, eqFilterMode filter_mode) { ClientFilters[filter_id] = filter_mode; }
@@ -1163,7 +1175,7 @@ public:
 	void Escape(); //keep or quest function
 	void DisenchantSummonedBags(bool client_update = true);
 	void RemoveNoRent(bool client_update = true);
-	void RemoveDuplicateLore(bool client_update = true);
+	void RemoveDuplicateLore();
 	void MoveSlotNotAllowed(bool client_update = true);
 	virtual bool RangedAttack(Mob* other, bool CanDoubleAttack = false);
 	virtual void ThrowingAttack(Mob* other, bool CanDoubleAttack = false);
@@ -1810,6 +1822,25 @@ public:
 	void RecordKilledNPCEvent(NPC *n);
 
 	uint32 GetEXPForLevel(uint16 check_level);
+
+	// Evolving Item Info
+	void ProcessEvolvingItem(const uint64 exp, const Mob* mob);
+	void SendEvolvingPacket(int8 action, const CharacterEvolvingItemsRepository::CharacterEvolvingItems &item);
+	void DoEvolveItemToggle(const EQApplicationPacket* app);
+	void DoEvolveItemDisplayFinalResult(const EQApplicationPacket* app);
+	bool DoEvolveCheckProgression(const EQ::ItemInstance &inst);
+	void SendEvolveXPWindowDetails(const EQApplicationPacket* app);
+	void DoEvolveTransferXP(const EQApplicationPacket* app);
+	void SendEvolveXPTransferWindow();
+	void SendEvolveTransferResults(const EQ::ItemInstance &inst_from, const EQ::ItemInstance &inst_to, const EQ::ItemInstance &inst_from_new, const EQ::ItemInstance &inst_to_new, const uint32 compatibility, const uint32 max_transfer_level);
+
+	// Account buckets
+	std::string GetAccountBucket(std::string bucket_name);
+	void SetAccountBucket(std::string bucket_name, std::string bucket_value, std::string expiration = "");
+	void DeleteAccountBucket(std::string bucket_name);
+	std::string GetAccountBucketExpires(std::string bucket_name);
+	std::string GetAccountBucketRemaining(std::string bucket_name);
+
 protected:
 	friend class Mob;
 	void CalcEdibleBonuses(StatBonuses* newbon);
@@ -1946,6 +1977,7 @@ private:
 	uint8 firstlogon;
 	uint32 mercid; // current merc
 	uint8 mercSlot; // selected merc slot
+	uint32                                                         m_trader_count{};
 	uint32                                                         m_buyer_id;
 	uint32                                                         m_barter_time;
 	int32                                                          m_parcel_platinum;
@@ -1968,6 +2000,8 @@ private:
 
 	uint16 m_door_tool_entity_id;
 	uint16 m_object_tool_entity_id;
+
+
 public:
 	uint16 GetDoorToolEntityId() const;
 	void SetDoorToolEntityId(uint16 door_tool_entity_id);
@@ -2065,12 +2099,13 @@ private:
 	Timer m_client_npc_aggro_scan_timer;
 	void CheckClientToNpcAggroTimer();
 	void ClientToNpcAggroProcess();
+	void BroadcastPositionUpdate();
 
 	// bulk position updates
 	glm::vec4 m_last_position_before_bulk_update;
-	Timer     m_client_zone_wide_full_position_update_timer;
+	Timer     m_client_bulk_npc_pos_update_timer;
 	Timer     m_position_update_timer;
-	void CheckSendBulkClientPositionUpdate();
+	void      CheckSendBulkNpcPositions();
 
 	void BulkSendInventoryItems();
 
@@ -2237,6 +2272,7 @@ public:
 	const std::string &GetMailKeyFull() const;
 	const std::string &GetMailKey() const;
 	void ShowZoneShardMenu();
+	void Handle_OP_ChangePetName(const EQApplicationPacket *app);
 };
 
 #endif
