@@ -11,7 +11,7 @@ void WorldserverCLI::CopyCharacter(int argc, char **argv, argh::parser &cmd, std
 		"destination_account_name"
 	};
 	std::vector<std::string> options   = {};
-
+	
 	if (cmd[{"-h", "--help"}]) {
 		return;
 	}

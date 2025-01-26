@@ -433,7 +433,9 @@ namespace RoF2
 					VARSTRUCT_ENCODE_TYPE(uint32, eq, i.item_icon);
 					VARSTRUCT_SKIP_TYPE(uint32, eq);
 				}
+
 				dest->QueuePacket(outapp.get());
+				safe_delete(in);
 				break;
 			}
 			default: {
@@ -468,8 +470,8 @@ namespace RoF2
 				}
 
 				auto p_size = 41 * results.size() + name_size + 14;
-				auto buffer = std::make_unique<char[]>(p_size);
-				auto bufptr = buffer.get();
+				auto buffer = new char[p_size];
+				auto bufptr = buffer;
 
 				VARSTRUCT_ENCODE_TYPE(uint32, bufptr, 0);
 				VARSTRUCT_ENCODE_TYPE(uint16, bufptr, results[0].trader_zone_id);
@@ -487,10 +489,11 @@ namespace RoF2
 					VARSTRUCT_ENCODE_TYPE(uint32, bufptr, i.item_stat);                          //itemstat
 				}
 
-				safe_delete(in->pBuffer);
+				safe_delete_array(in->pBuffer);
 				in->size    = p_size;
-				in->pBuffer = (uchar *) buffer.get();
+				in->pBuffer = (uchar*)buffer;
 				dest->QueuePacket(in);
+				safe_delete(in);
 
 				break;
 			}
@@ -500,21 +503,22 @@ namespace RoF2
 				break;
 			}
 			case WelcomeMessage: {
-				auto buffer = std::make_unique<char[]>(sizeof(structs::BazaarWelcome_Struct));
+				auto buffer = new char[sizeof(structs::BazaarWelcome_Struct)];
 				auto emu    = (BazaarWelcome_Struct *) in->pBuffer;
-				auto eq     = (structs::BazaarWelcome_Struct *) buffer.get();
+				auto eq     = (structs::BazaarWelcome_Struct *) buffer;
 
 				eq->action         = structs::RoF2BazaarTraderBuyerActions::WelcomeMessage;
 				eq->num_of_traders = emu->traders;
 				eq->num_of_items   = emu->items;
 
-				safe_delete(in->pBuffer);
+				safe_delete_array(in->pBuffer);
 				in->SetOpcode(OP_TraderShop);
 				in->size    = sizeof(structs::BazaarWelcome_Struct);
-				in->pBuffer = (uchar *) buffer.get();
+				in->pBuffer = (uchar *)buffer;
 
 				LogTrading("(RoF2) WelcomeMessage action <green>[{}]", action);
 				dest->QueuePacket(in);
+				safe_delete(in);
 
 				break;
 			}
@@ -892,7 +896,9 @@ namespace RoF2
 					VARSTRUCT_ENCODE_TYPE(uint16, eq, b.buyer_zone_instance_id);
 					VARSTRUCT_ENCODE_STRING(eq, b.buyer_name.c_str());
 				}
+
 				dest->QueuePacket(outapp.get());
+				safe_delete(inapp);
 				break;
 			}
 			case Barter_RemoveFromMerchantWindow: {
@@ -963,6 +969,7 @@ namespace RoF2
 				VARSTRUCT_ENCODE_TYPE(uint32, eq, blsi.seller_quantity);
 
 				dest->QueuePacket(outapp.get());
+				safe_delete(inapp);
 				break;
 			}
 			default: {
@@ -1341,6 +1348,58 @@ namespace RoF2
 
 		delete[] __emu_buffer;
 		dest->FastQueuePacket(&in, ack_req);
+	}
+
+	ENCODE(OP_EvolveItem)
+	{
+		EQApplicationPacket *in = *p;
+		*p                      = nullptr;
+
+		auto action = *reinterpret_cast<uint32 *>(in->pBuffer);
+
+		switch (action) {
+			case EvolvingItems::Actions::TRANSFER_WINDOW_DETAILS: {
+				auto emu = reinterpret_cast<EvolveItemMessaging *>(in->pBuffer);
+
+				EvolveXPWindowSend           e{};
+				EQ::Util::MemoryStreamReader ss(emu->serialized_data, in->size - sizeof(emu->action));
+				cereal::BinaryInputArchive ar(ss);
+				ar(e);
+
+				auto item_1 = static_cast<const EQ::ItemInstance *>(reinterpret_cast<EQ::InternalSerializedItem_Struct
+					*>(e.serialize_item_1.data())->inst);
+				auto item_2 = static_cast<const EQ::ItemInstance *>(reinterpret_cast<EQ::InternalSerializedItem_Struct
+					*>(e.serialize_item_2.data())->inst);
+
+				EQ::OutBuffer ob;
+
+				SerializeItem(ob, item_1, 0, 0, ItemPacketMerchant);
+				SerializeItem(ob, item_2, 0, 0, ItemPacketMerchant);
+
+				auto out = std::make_unique<EQApplicationPacket>(
+					OP_EvolveItem,
+					sizeof(EvolveXPWindowSendDetails_Struct) + ob.size()
+				);
+				auto data = reinterpret_cast<EvolveXPWindowSendDetails_Struct *>(out->pBuffer);
+
+				data->action             = e.action;
+				data->compatibility      = e.compatibility;
+				data->max_transfer_level = e.max_transfer_level;
+				data->item1_unique_id    = e.item1_unique_id;
+				data->item2_unique_id    = e.item2_unique_id;
+				data->item1_present      = e.item1_present;
+				data->item2_present      = e.item2_present;
+
+				memcpy(data->serialize_data, ob.str().data(), ob.size());
+				dest->QueuePacket(out.get());
+				safe_delete(in);
+				break;
+			}
+			default: {
+				dest->FastQueuePacket(&in);
+				break;
+			}
+		}
 	}
 
 	ENCODE(OP_ExpansionInfo)
@@ -1842,11 +1901,11 @@ namespace RoF2
 			}
 		}
 
-		auto outapp     = new EQApplicationPacket(OP_GuildsList);
-		outapp->size    = packet_size;
-		outapp->pBuffer = buffer;
+		safe_delete_array(in->pBuffer);
 
-		dest->FastQueuePacket(&outapp);
+		in->pBuffer = buffer;
+		in->size    = packet_size;
+		dest->FastQueuePacket(&in);
 	}
 
 	ENCODE(OP_GuildTributeDonateItem)
@@ -2042,6 +2101,33 @@ namespace RoF2
             }
         }
     }
+
+	ENCODE(OP_ItemPreviewRequest)
+	{
+		EQApplicationPacket* in = *p;
+		*p = nullptr;
+
+		uchar* in_buf = in->pBuffer;
+
+		auto int_item = (EQ::InternalSerializedItem_Struct*) in_buf;
+
+		EQ::OutBuffer           buf;
+		EQ::OutBuffer::pos_type last_pos = buf.tellp();
+
+		SerializeItem(buf, (const EQ::ItemInstance*) int_item->inst, int_item->slot_id, 0, ItemPacketInvalid);
+		if (buf.tellp() == last_pos) {
+			LogNetcode("RoF2::ENCODE(OP_ItemPreviewRequest) Serialization failed");
+			safe_delete_array(in_buf);
+			safe_delete(in);
+			return;
+		}
+
+		in->size    = buf.size();
+		in->pBuffer = buf.detach();
+
+		safe_delete_array(in_buf);
+		dest->FastQueuePacket(&in, ack_req);
+	}
 
 	ENCODE(OP_ItemVerifyReply)
 	{
@@ -6395,6 +6481,11 @@ namespace RoF2
 		hdr.scaled_value   = (inst->IsScaling() ? (inst->GetExp() / 100) : 0);
 		hdr.instance_id    = (inst->GetMerchantSlot() ? inst->GetMerchantSlot() : inst->GetSerialNumber());
 		hdr.parcel_item_id = packet_type == ItemPacketParcel ? inst->GetID() : 0;
+		if (item->EvolvingItem) {
+			hdr.instance_id    = inst->GetEvolveUniqueID() & 0xFFFFFFFF; //lower dword
+			hdr.parcel_item_id = inst->GetEvolveUniqueID() >> 32;        //upper dword
+		}
+
 		hdr.last_cast_time = inst->GetRecastTimestamp();
 		hdr.charges        = (inst->IsStackable() ? (item->MaxCharges ? 1 : 0) : ((inst->GetCharges() > 254)
 			? 0xFFFFFFFF
@@ -6408,18 +6499,15 @@ namespace RoF2
 		ob.write((const char*)&hdr, sizeof(RoF2::structs::ItemSerializationHeader));
 
 		if (item->EvolvingItem > 0) {
-			RoF2::structs::EvolvingItem evotop;
+			RoF2::structs::EvolvingItem_Struct evotop;
 
-			evotop.unknown001 = 0;
-			evotop.unknown002 = 0;
-			evotop.unknown003 = 0;
-			evotop.unknown004 = 0;
-			evotop.evoLevel = item->EvolvingLevel;
-			evotop.progress = 0;
-			evotop.Activated = 1;
-			evotop.evomaxlevel = item->EvolvingMax;
+			evotop.final_item_id    = inst->GetEvolveFinalItemID();
+			evotop.evolve_level     = item->EvolvingLevel;
+			evotop.progress         = inst->GetEvolveProgression();
+			evotop.activated        = inst->GetEvolveActivated();
+			evotop.evolve_max_level = item->EvolvingMax;
 
-			ob.write((const char*)&evotop, sizeof(RoF2::structs::EvolvingItem));
+			ob.write((const char*)&evotop, sizeof(RoF2::structs::EvolvingItem_Struct));
 		}
 
 		/**
@@ -6793,12 +6881,13 @@ namespace RoF2
 		iqbs.Heirloom = 0;
 		iqbs.Placeable = 0;
 		iqbs.unknown28 = -1;
+		iqbs.unknown29 = packet_type == ItemPacketInvalid ? 0xFF : 0;
 		iqbs.unknown30 = -1;
 		iqbs.NoZone = 0;
 		iqbs.NoGround = 0;
 		iqbs.unknown37a = 0;	// (guessed position) New to RoF2
 		iqbs.unknown38 = 0;
-		iqbs.unknown39 = 1;
+		iqbs.unknown39 = packet_type == ItemPacketInvalid ? 0 : 1;;
 
 		ob.write((const char*)&iqbs, sizeof(RoF2::structs::ItemQuaternaryBodyStruct));
 

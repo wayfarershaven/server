@@ -38,6 +38,7 @@ void SendShowInventorySubCommands(Client *c);
 void SendFixMobSubCommands(Client *c);
 void SendDataBucketsSubCommands(Client *c);
 void SendParcelsSubCommands(Client *c);
+void SendEvolvingItemsSubCommands(Client *c);
 
 // Commands
 void command_acceptrules(Client *c, const Seperator *sep);
@@ -80,6 +81,7 @@ void command_emptyinventory(Client *c, const Seperator *sep);
 void command_enablerecipe(Client *c, const Seperator *sep);
 void command_entityvariable(Client *c, const Seperator *sep);
 void command_exptoggle(Client *c, const Seperator *sep);
+void command_evolvingitems(Client *c, const Seperator *sep);
 void command_faction(Client *c, const Seperator *sep);
 void command_faction_association(Client *c, const Seperator *sep);
 void command_feature(Client *c, const Seperator *sep);
@@ -195,6 +197,7 @@ void command_wpadd(Client *c, const Seperator *sep);
 void command_worldwide(Client *c, const Seperator *sep);
 void command_zone(Client *c, const Seperator *sep);
 void command_zone_instance(Client *c, const Seperator *sep);
+void command_zone_shard(Client *c, const Seperator *sep);
 void command_zonebootup(Client *c, const Seperator *sep);
 void command_zoneshutdown(Client *c, const Seperator *sep);
 void command_zopp(Client *c, const Seperator *sep);

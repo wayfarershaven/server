@@ -65,6 +65,7 @@ namespace PlayerEvent {
 		GUILD_BANK_DEPOSIT,
 		GUILD_BANK_WITHDRAWAL,
 		GUILD_BANK_MOVE_TO_BANK_AREA,
+		EVOLVE_ITEM,
 		MAX // dont remove
 	};
 
@@ -130,7 +131,8 @@ namespace PlayerEvent {
 		"Barter Transaction",
 		"Guild Bank Item Deposit",
 		"Guild Bank Item Withdrawal",
-		"Guild Bank Move From Deposit Area to Bank Area"
+		"Guild Bank Move From Deposit Area to Bank Area",
+		"Evolve Item Update"
 	};
 
 	// Generic struct used by all events
@@ -1151,6 +1153,29 @@ namespace PlayerEvent {
 				CEREAL_NVP(aug_slot_6),
 				CEREAL_NVP(quantity)
 				);
+		}
+	};
+
+	struct EvolveItem {
+		std::string status;
+		uint32      item_id;
+		uint64      unique_id;
+		std::string item_name;
+		uint32      level;
+		double      progression;
+
+		// cereal
+		template<class Archive>
+		void serialize(Archive &ar)
+		{
+			ar(
+				CEREAL_NVP(status),
+				CEREAL_NVP(item_id),
+				CEREAL_NVP(unique_id),
+				CEREAL_NVP(item_name),
+				CEREAL_NVP(level),
+				CEREAL_NVP(progression)
+			);
 		}
 	};
 }

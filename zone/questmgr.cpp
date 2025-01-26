@@ -3304,7 +3304,7 @@ int QuestManager::collectitems(uint32 item_id, bool remove)
 	return quantity;
 }
 
-int QuestManager::countitem(uint32 item_id) {
+uint32 QuestManager::countitem(uint32 item_id) {
 	QuestManagerCurrentQuestVars();
 
 	if (!initiator) {
@@ -3449,7 +3449,9 @@ std::string QuestManager::varlink(
 	linker.SetLinkType(EQ::saylink::SayLinkItemInst);
 	linker.SetItemInst(item);
 
-	return linker.GenerateLink();
+	auto link = linker.GenerateLink();
+	safe_delete(item);
+	return link;
 }
 
 std::string QuestManager::getitemcomment(uint32 item_id) {

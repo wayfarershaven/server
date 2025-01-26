@@ -687,6 +687,7 @@ void NPC::RemoveItem(uint32 item_id, uint16 quantity, uint16 slot)
 		LootItem *item = *cur;
 		if (item->item_id == item_id && slot <= 0 && quantity <= 0) {
 			m_loot_items.erase(cur);
+			safe_delete(item);
 			UpdateEquipmentLight();
 			if (UpdateActiveLight()) { SendAppearancePacket(AppearanceType::Light, GetActiveLightType()); }
 			return;
@@ -695,7 +696,10 @@ void NPC::RemoveItem(uint32 item_id, uint16 quantity, uint16 slot)
 			if (item->charges <= quantity) {
 				m_loot_items.erase(cur);
 				UpdateEquipmentLight();
-				if (UpdateActiveLight()) { SendAppearancePacket(AppearanceType::Light, GetActiveLightType()); }
+				if (UpdateActiveLight()) {
+					SendAppearancePacket(AppearanceType::Light, GetActiveLightType());
+				}
+				safe_delete(item);
 			}
 			else {
 				item->charges -= quantity;
@@ -859,9 +863,9 @@ bool NPC::HasItem(uint32 item_id)
 	return false;
 }
 
-uint16 NPC::CountItem(uint32 item_id)
+uint32 NPC::CountItem(uint32 item_id)
 {
-	uint16 item_count = 0;
+	uint32 item_count = 0;
 	if (!database.GetItem(item_id)) {
 		return item_count;
 	}

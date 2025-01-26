@@ -896,6 +896,7 @@ luabind::scope lua_register_packet_opcodes() {
 		luabind::value("Weblink", static_cast<int>(OP_Weblink)),
 		luabind::value("InspectMessageUpdate", static_cast<int>(OP_InspectMessageUpdate)),
 		luabind::value("ItemPreview", static_cast<int>(OP_ItemPreview)),
+		luabind::value("ItemPreviewRequest", static_cast<int>(OP_ItemPreviewRequest)),
 		luabind::value("MercenaryDataRequest", static_cast<int>(OP_MercenaryDataRequest)),
 		luabind::value("MercenaryDataResponse", static_cast<int>(OP_MercenaryDataResponse)),
 		luabind::value("MercenaryHire", static_cast<int>(OP_MercenaryHire)),
@@ -915,7 +916,8 @@ luabind::scope lua_register_packet_opcodes() {
 		luabind::value("Marquee", static_cast<int>(OP_Marquee)),
 		luabind::value("ClientTimeStamp", static_cast<int>(OP_ClientTimeStamp)),
 		luabind::value("GuildPromote", static_cast<int>(OP_GuildPromote)),
-		luabind::value("Fling", static_cast<int>(OP_Fling))
+		luabind::value("Fling", static_cast<int>(OP_Fling)),
+		luabind::value("PickZoneWindow", static_cast<int>(OP_PickZoneWindow))
 	)];
 }
 

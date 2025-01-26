@@ -57,6 +57,8 @@ public:
 
 	inline std::list<EQ::ItemInstance*>::const_iterator cbegin() { return m_list.cbegin(); }
 	inline std::list<EQ::ItemInstance*>::const_iterator cend() { return m_list.cend(); }
+	inline std::list<EQ::ItemInstance*>::iterator begin() { return m_list.begin(); }
+	inline std::list<EQ::ItemInstance*>::iterator end() { return m_list.end(); }
 
 	inline int size() { return static_cast<int>(m_list.size()); } // TODO: change to size_t
 	inline bool empty() { return m_list.empty(); }
@@ -147,13 +149,13 @@ namespace EQ
 		bool HasItemEquippedByID(uint32 item_id);
 
 		// Check how many of a specific item the player has equipped by Item ID
-		int CountItemEquippedByID(uint32 item_id);
+		uint32 CountItemEquippedByID(uint32 item_id);
 
 		// Check if player has a specific augment equipped by Item ID
 		bool HasAugmentEquippedByID(uint32 item_id);
 
 		// Check how many of a specific augment the player has equipped by Item ID
-		int CountAugmentEquippedByID(uint32 item_id);
+		uint32 CountAugmentEquippedByID(uint32 item_id);
 
 		// Get a list of augments from a specific slot ID
 		std::vector<uint32> GetAugmentIDsBySlotID(int16 slot_id);
@@ -212,6 +214,13 @@ namespace EQ
 		void SetCustomItemData(uint32 character_id, int16 slot_id, const std::string &identifier, bool value);
 		std::string GetCustomItemData(int16 slot_id, const std::string& identifier);
 		static const int GetItemStatValue(uint32 item_id, const std::string& identifier);
+
+		std::map<int16, ItemInstance*>& GetWorn() { return m_worn; }
+		std::map<int16, ItemInstance*>& GetPersonal() { return m_inv; }
+		int16 HasEvolvingItem(uint64 evolve_unique_id, uint8 quantity, uint8 where);
+
+		inline int16 PushItem(int16 slot_id, ItemInstance* inst) { return _PutItem(slot_id, inst); }
+
 	protected:
 		///////////////////////////////
 		// Protected Methods
@@ -234,6 +243,8 @@ namespace EQ
 		int16 _HasItemByUse(ItemInstQueue& iqueue, uint8 use, uint8 quantity);
 		int16 _HasItemByLoreGroup(std::map<int16, ItemInstance*>& bucket, uint32 loregroup);
 		int16 _HasItemByLoreGroup(ItemInstQueue& iqueue, uint32 loregroup);
+		int16 _HasEvolvingItem(std::map<int16, ItemInstance*>& bucket, uint64 evolve_unique_id, uint8 quantity);
+		int16 _HasEvolvingItem(ItemInstQueue& iqueue, uint64 evolve_unique_id, uint8 quantity);
 
 
 		// Player inventory

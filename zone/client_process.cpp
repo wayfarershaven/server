@@ -122,7 +122,7 @@ bool Client::Process() {
 
 		/* I haven't naturally updated my position in 10 seconds, updating manually */
 		if (!IsMoving() && m_position_update_timer.Check()) {
-			SentPositionPacket(0.0f, 0.0f, 0.0f, 0.0f, 0);
+			BroadcastPositionUpdate();
 		}
 
 		if (mana_timer.Check())
@@ -764,7 +764,7 @@ void Client::BulkSendInventoryItems()
 		RemoveNoRent(false);
 	}
 
-	RemoveDuplicateLore(false);
+	RemoveDuplicateLore();
 	MoveSlotNotAllowed(false);
 
 	EQ::OutBuffer ob;

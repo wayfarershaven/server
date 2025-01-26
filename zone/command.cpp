@@ -126,6 +126,7 @@ int command_init(void)
 		command_add("enablerecipe", "[Recipe ID] - Enables a Recipe", AccountStatus::QuestTroupe, command_enablerecipe) ||
 		command_add("entityvariable", "[clear|delete|set|view] - Modify entity variables for yourself or your target", AccountStatus::GMAdmin, command_entityvariable) ||
 		command_add("exptoggle", "[Toggle] - Toggle your or your target's experience gain.", AccountStatus::QuestTroupe, command_exptoggle) ||
+		command_add("evolve", "Evolving Item manipulation commands. Use argument help for more info.", AccountStatus::Steward, command_evolvingitems) ||
 		command_add("faction", "[Find (criteria | all ) | Review (criteria | all) | Reset (id)] - Resets Player's Faction", AccountStatus::QuestTroupe, command_faction) ||
 		command_add("factionassociation", "[factionid] [amount] - triggers a faction hits via association", AccountStatus::GMLeadAdmin, command_faction_association) ||
 		command_add("feature", "Change your or your target's feature's temporarily", AccountStatus::QuestTroupe, command_feature) ||
@@ -243,6 +244,7 @@ int command_init(void)
 		command_add("zone", "[Zone ID|Zone Short Name] [X] [Y] [Z] - Teleport to specified Zone by ID or Short Name (coordinates are optional)", AccountStatus::Guide, command_zone) ||
 		command_add("zonebootup", "[ZoneServerID] [shortname] - Make a zone server boot a specific zone", AccountStatus::GMLeadAdmin, command_zonebootup) ||
 		command_add("zoneinstance", "[Instance ID] [X] [Y] [Z] - Teleport to specified Instance by ID (coordinates are optional)", AccountStatus::Guide, command_zone_instance) ||
+		command_add("zoneshard", "[zone] [instance_id] - Teleport explicitly to a zone shard", AccountStatus::Player, command_zone_shard) ||
 		command_add("zoneshutdown", "[shortname] - Shut down a zone server", AccountStatus::GMLeadAdmin, command_zoneshutdown) ||
 		command_add("zsave", " Saves zheader to the database", AccountStatus::QuestTroupe, command_zsave) ||
 		command_add("disable_seasonal", "Remove a character from seasonal event.", AccountStatus::Player, command_disable_seasonal) ||
@@ -827,6 +829,7 @@ void command_bot(Client *c, const Seperator *sep)
 #include "gm_commands/entityvariable.cpp"
 #include "gm_commands/exptoggle.cpp"
 #include "gm_commands/faction.cpp"
+#include "gm_commands/evolving_items.cpp"
 #include "gm_commands/feature.cpp"
 #include "gm_commands/find.cpp"
 #include "gm_commands/fish.cpp"
@@ -938,5 +941,6 @@ void command_bot(Client *c, const Seperator *sep)
 #include "gm_commands/zonebootup.cpp"
 #include "gm_commands/zoneshutdown.cpp"
 #include "gm_commands/zone_instance.cpp"
+#include "gm_commands/zone_shard.cpp"
 #include "gm_commands/zsave.cpp"
 #include "gm_commands/seasonal.cpp"

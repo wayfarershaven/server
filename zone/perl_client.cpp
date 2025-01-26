@@ -1756,6 +1756,11 @@ int Perl_Client_GetClientMaxLevel(Client* self)
 	return self->GetClientMaxLevel();
 }
 
+void Perl_Client_ShowZoneShardMenu(Client* self) // @categories Script Utility
+{
+	self->ShowZoneShardMenu();
+}
+
 DynamicZoneLocation GetDynamicZoneLocationFromHash(perl::hash table)
 {
 	// dynamic zone helper method, defaults invalid/missing keys to 0
@@ -2209,7 +2214,7 @@ void Perl_Client_SendToInstance(Client* self, std::string instance_type, std::st
 	self->SendToInstance(instance_type, zone_short_name, instance_version, x, y, z, heading, instance_identifier, duration);
 }
 
-int Perl_Client_CountItem(Client* self, uint32 item_id)
+uint32 Perl_Client_CountItem(Client* self, uint32 item_id)
 {
 	return self->CountItem(item_id);
 }
@@ -2388,7 +2393,7 @@ void Perl_Client_AddItem(Client* self, perl::reference table_ref)
 		augment_four, augment_five, augment_six, attuned, slot_id);
 }
 
-int Perl_Client_CountAugmentEquippedByID(Client* self, uint32 item_id)
+uint32 Perl_Client_CountAugmentEquippedByID(Client* self, uint32 item_id)
 {
 	return self->GetInv().CountAugmentEquippedByID(item_id);
 }
@@ -2398,7 +2403,7 @@ bool Perl_Client_HasAugmentEquippedByID(Client* self, uint32 item_id)
 	return self->GetInv().HasAugmentEquippedByID(item_id);
 }
 
-int Perl_Client_CountItemEquippedByID(Client* self, uint32 item_id)
+uint32 Perl_Client_CountItemEquippedByID(Client* self, uint32 item_id)
 {
 	return self->GetInv().CountItemEquippedByID(item_id);
 }
@@ -3220,6 +3225,58 @@ Merc* Perl_Client_GetMerc(Client* self)
 	return self->GetMerc();
 }
 
+perl::array Perl_Client_GetInventorySlots(Client* self)
+{
+	perl::array result;
+	const auto& v = self->GetInventorySlots();
+
+	for (int i = 0; i < v.size(); ++i) {
+		result.push_back(v[i]);
+	}
+
+	return result;
+}
+
+void Perl_Client_GrantPetNameChange(Client* self)
+{
+	self->GrantPetNameChange();
+}
+
+void Perl_Client_SetAAEXPPercentage(Client* self, uint8 percentage)
+{
+	self->SetAAEXPPercentage(percentage);
+}
+
+void Perl_Client_SetAccountBucket(Client* self, std::string bucket_name, std::string bucket_value)
+{
+	self->SetAccountBucket(bucket_name, bucket_value);
+}
+
+void Perl_Client_SetAccountBucket(Client* self, std::string bucket_name, std::string bucket_value, std::string expiration = "")
+{
+	self->SetAccountBucket(bucket_name, bucket_value, expiration);
+}
+
+void Perl_Client_DeleteAccountBucket(Client* self, std::string bucket_name)
+{
+	self->DeleteAccountBucket(bucket_name);
+}
+
+std::string Perl_Client_GetAccountBucket(Client* self, std::string bucket_name)
+{
+	return self->GetAccountBucket(bucket_name);
+}
+
+std::string Perl_Client_GetAccountBucketExpires(Client* self, std::string bucket_name)
+{
+	return self->GetAccountBucketExpires(bucket_name);
+}
+
+std::string Perl_Client_GetAccountBucketRemaining(Client* self, std::string bucket_name)
+{
+	return self->GetAccountBucketRemaining(bucket_name);
+}
+
 void perl_register_client()
 {
 	perl::interpreter perl(PERL_GET_THX);
@@ -3291,6 +3348,7 @@ void perl_register_client()
 	package.add("CanHaveSkill", &Perl_Client_CanHaveSkill);
 	package.add("CashReward", &Perl_Client_CashReward);
 	package.add("ChangeLastName", &Perl_Client_ChangeLastName);
+	package.add("GrantPetNameChange", &Perl_Client_GrantPetNameChange);
 	package.add("CharacterID", &Perl_Client_CharacterID);
 	package.add("CheckIncreaseSkill", (bool(*)(Client*, int))&Perl_Client_CheckIncreaseSkill);
 	package.add("CheckIncreaseSkill", (bool(*)(Client*, int, int))&Perl_Client_CheckIncreaseSkill);
@@ -3311,6 +3369,7 @@ void perl_register_client()
 	package.add("CreateTaskDynamicZone", &Perl_Client_CreateTaskDynamicZone);
 	package.add("DecreaseByID", &Perl_Client_DecreaseByID);
 	package.add("DescribeSpecialAbilities", &Perl_Client_DescribeSpecialAbilities);
+	package.add("DeleteAccountBucket", &Perl_Client_DeleteAccountBucket);
 	package.add("DeleteItemInInventory", (void(*)(Client*, int16))&Perl_Client_DeleteItemInInventory);
 	package.add("DeleteItemInInventory", (void(*)(Client*, int16, int16))&Perl_Client_DeleteItemInInventory);
 	package.add("DeleteItemInInventory", (void(*)(Client*, int16, int16, bool))&Perl_Client_DeleteItemInInventory);
@@ -3348,6 +3407,9 @@ void perl_register_client()
 	package.add("GetAAPoints", &Perl_Client_GetAAPoints);
 	package.add("GetAFK", &Perl_Client_GetAFK);
 	package.add("GetAccountAge", &Perl_Client_GetAccountAge);
+	package.add("GetAccountBucket", &Perl_Client_GetAccountBucket);
+	package.add("GetAccountBucketExpires", &Perl_Client_GetAccountBucketExpires);
+	package.add("GetGetAccountBucketRemaining", &Perl_Client_GetAccountBucketRemaining);
 	package.add("GetAccountFlag", &Perl_Client_GetAccountFlag);
 	package.add("GetAccountFlags", &Perl_Client_GetAccountFlags);
 	package.add("GetAggroCount", &Perl_Client_GetAggroCount);
@@ -3434,6 +3496,7 @@ void perl_register_client()
 	package.add("GetInstanceID", &Perl_Client_GetInstanceID);
 	package.add("GetInstrumentMod", &Perl_Client_GetInstrumentMod);
 	package.add("GetInventory", &Perl_Client_GetInventory);
+	package.add("GetInventorySlots", &Perl_Client_GetInventorySlots);
 	package.add("GetInvulnerableEnvironmentDamage", &Perl_Client_GetInvulnerableEnvironmentDamage);
 	package.add("GetItemAt", &Perl_Client_GetItemAt);
 	package.add("GetItemCooldown", &Perl_Client_GetItemCooldown);
@@ -3647,11 +3710,14 @@ void perl_register_client()
 	package.add("SetAAEXPModifier", (void(*)(Client*, float))&Perl_Client_SetAAEXPModifier);
 	package.add("SetAAEXPModifier", (void(*)(Client*, uint32, float))&Perl_Client_SetAAEXPModifier);
 	package.add("SetAAEXPModifier", (void(*)(Client*, uint32, float, int16))&Perl_Client_SetAAEXPModifier);
+	package.add("SetAAEXPPercentage", &Perl_Client_SetAAEXPPercentage);
 	package.add("SetAAPoints", &Perl_Client_SetAAPoints);
 	package.add("SetAATitle", (void(*)(Client*, std::string))&Perl_Client_SetAATitle);
 	package.add("SetAATitle", (void(*)(Client*, std::string, bool))&Perl_Client_SetAATitle);
 	package.add("SetAFK", &Perl_Client_SetAFK);
 	package.add("SetAccountFlag", &Perl_Client_SetAccountFlag);
+	package.add("SetAccountBucket", (void(*)(Client*, std::string, std::string))&Perl_Client_SetAccountBucket);
+	package.add("SetAccountBucket", (void(*)(Client*, std::string, std::string, std::string))&Perl_Client_SetAccountBucket);
 	package.add("SetAlternateCurrencyValue", &Perl_Client_SetAlternateCurrencyValue);
 	package.add("SetAnon", &Perl_Client_SetAnon);
 	package.add("SetAutoLoginCharacterName", (bool(*)(Client*))&Perl_Client_SetAutoLoginCharacterName);
@@ -3737,6 +3803,7 @@ void perl_register_client()
 	package.add("SetTitleSuffix", (void(*)(Client*, std::string))&Perl_Client_SetTitleSuffix);
 	package.add("SetTitleSuffix", (void(*)(Client*, std::string, bool))&Perl_Client_SetTitleSuffix);
 	package.add("SetZoneFlag", &Perl_Client_SetZoneFlag);
+	package.add("ShowZoneShardMenu", &Perl_Client_ShowZoneShardMenu);
 	package.add("Signal", &Perl_Client_Signal);
 	package.add("SignalClient", &Perl_Client_SignalClient);
 	package.add("SilentMessage", &Perl_Client_SilentMessage);
