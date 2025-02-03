@@ -20,6 +20,7 @@
 
 #include "classes.h"
 #include "skills.h"
+#include "item_data.h"
 
 #define SPELL_UNKNOWN 0xFFFF
 #define POISON_PROC 0xFFFE
@@ -1916,5 +1917,6 @@ bool IsResistanceOnlySpell(uint16 spell_id);
 bool IsDamageShieldOnlySpell(uint16 spell_id);
 bool IsDamageShieldAndResistSpell(uint16 spell_id);
 bool IsHateSpell(uint16 spell_id);
+bool IsDisciplineTome(const EQ::ItemData* item);
 
 #endif
