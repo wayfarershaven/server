@@ -1144,7 +1144,7 @@ namespace PlayerEvent {
 				CEREAL_NVP(progression)
 			);
 		}
-	}
+	};
 
 	struct GuildBankTransaction {
 		uint32 char_id;
