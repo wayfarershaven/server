@@ -416,7 +416,7 @@ void MapOpcodes()
 	ConnectedOpcodes[OP_TributeUpdate] = &Client::Handle_OP_TributeUpdate;
 	ConnectedOpcodes[OP_VetClaimRequest] = &Client::Handle_OP_VetClaimRequest;
 	ConnectedOpcodes[OP_VoiceMacroIn] = &Client::Handle_OP_VoiceMacroIn;
-	ConnectedOpcodes[OP_UpdateAura] = &Client::Handle_OP_UpdateAura;;
+	ConnectedOpcodes[OP_UpdateAura] = &Client::Handle_OP_UpdateAura;
 	ConnectedOpcodes[OP_WearChange] = &Client::Handle_OP_WearChange;
 	ConnectedOpcodes[OP_WhoAllRequest] = &Client::Handle_OP_WhoAllRequest;
 	ConnectedOpcodes[OP_WorldUnknown001] = &Client::Handle_OP_Ignore;
@@ -670,6 +670,10 @@ void Client::CompleteConnect()
 		for (int x1 = 0; x1 < EFFECT_COUNT; x1++) {
 			switch (spell.effect_id[x1]) {
 			case SE_Illusion: {
+				if (GetIllusionBlock()) {
+					break;
+				}
+
 				if (buffs[j1].persistant_buff) {
 					Mob *caster = entity_list.GetMobID(buffs[j1].casterid);
 					ApplySpellEffectIllusion(spell.id, caster, j1, spell.base_value[x1], spell.limit_value[x1], spell.max_value[x1]);
@@ -1506,6 +1510,11 @@ void Client::Handle_Connect_OP_ZoneEntry(const EQApplicationPacket *app)
 		LogError("Error loading AA points for [{}]", GetName());
 	}
 
+	if (RuleB(Bots, Enabled)) {
+		LoadDefaultBotSettings();
+		database.botdb.LoadBotSettings(this);
+	}
+
 	if (SPDAT_RECORDS > 0) {
 		for (uint32 z = 0; z < EQ::spells::SPELL_GEM_COUNT; z++) {
 			if (m_pp.mem_spells[z] >= (uint32)SPDAT_RECORDS)
@@ -1602,7 +1611,6 @@ void Client::Handle_Connect_OP_ZoneEntry(const EQApplicationPacket *app)
 		LFG = false;
 	}
 
-	/* Load Bots */
 	if (RuleB(Bots, Enabled)) {
 		database.botdb.LoadOwnerOptions(this);
 		// TODO: mod below function for loading spawned botgroups
@@ -1657,11 +1665,6 @@ void Client::Handle_Connect_OP_ZoneEntry(const EQApplicationPacket *app)
 		else
 			m_pp.abilitySlotRefresh = 0;
 	}
-
-#ifdef _EQDEBUG
-	printf("Dumping inventory on load:\n");
-	m_inv.dumpEntireInventory();
-#endif
 
 	/* Reset to max so they dont drown on zone in if its underwater */
 	m_pp.air_remaining = 60;
@@ -4303,7 +4306,13 @@ void Client::Handle_OP_Camp(const EQApplicationPacket *app)
 		OnDisconnect(true);
 		return;
 	}
+
 	camp_timer.Start(29000, true);
+
+	if (RuleB(Bots, Enabled)) {
+		bot_camp_timer.Start((RuleI(Bots, CampTimer) * 1000), true);
+	}
+
 	return;
 }
 
@@ -10748,8 +10757,7 @@ void Client::Handle_OP_MoveCoin(const EQApplicationPacket *app)
 
 void Client::Handle_OP_MoveItem(const EQApplicationPacket *app)
 {
-	if (!CharacterID())
-	{
+	if (!CharacterID()) {
 		return;
 	}
 
@@ -10758,57 +10766,38 @@ void Client::Handle_OP_MoveItem(const EQApplicationPacket *app)
 		return;
 	}
 
-	MoveItem_Struct* mi = (MoveItem_Struct*)app->pBuffer;
-	if (spellend_timer.Enabled() && casting_spell_id && !IsBardSong(casting_spell_id))
-	{
-		if (mi->from_slot != mi->to_slot && (mi->from_slot <= EQ::invslot::GENERAL_END || mi->from_slot > 39) && IsValidSlot(mi->from_slot) && IsValidSlot(mi->to_slot))
-		{
-			const EQ::ItemInstance *itm_from = GetInv().GetItem(mi->from_slot);
-			const EQ::ItemInstance *itm_to = GetInv().GetItem(mi->to_slot);
-			auto message = fmt::format("Player issued a move item from {}(item id {}) to {}(item id {}) while casting {}.",
+	BenchTimer bench;
+
+	MoveItem_Struct* mi = (MoveItem_Struct*) app->pBuffer;
+	if (spellend_timer.Enabled() && casting_spell_id && !IsBardSong(casting_spell_id)) {
+		if (mi->from_slot != mi->to_slot && (mi->from_slot <= EQ::invslot::GENERAL_END || mi->from_slot > 39) &&
+			IsValidSlot(mi->from_slot) && IsValidSlot(mi->to_slot)) {
+			const EQ::ItemInstance* itm_from = GetInv().GetItem(mi->from_slot);
+			const EQ::ItemInstance* itm_to   = GetInv().GetItem(mi->to_slot);
+			auto message = fmt::format(
+				"Player issued a move item from {}(item id {}) to {}(item id {}) while casting {}.",
 				mi->from_slot,
 				itm_from ? itm_from->GetID() : 0,
 				mi->to_slot,
 				itm_to ? itm_to->GetID() : 0,
-				casting_spell_id);
-			RecordPlayerEventLog(PlayerEvent::POSSIBLE_HACK, PlayerEvent::PossibleHackEvent{.message = message});
+				casting_spell_id
+			);
+			RecordPlayerEventLog(PlayerEvent::POSSIBLE_HACK, PlayerEvent::PossibleHackEvent{ .message = message });
 			Kick("Inventory desync"); // Kick client to prevent client and server from getting out-of-sync inventory slots
 			return;
 		}
 	}
 
-	// Illegal bagslot usage checks. Currently, user only receives a message if this check is triggered.
-	bool mi_hack = false;
-
-	if (mi->from_slot >= EQ::invbag::GENERAL_BAGS_BEGIN && mi->from_slot <= EQ::invbag::CURSOR_BAG_END) {
-		if (mi->from_slot >= EQ::invbag::CURSOR_BAG_BEGIN) { mi_hack = true; }
-		else {
-			int16 from_parent = m_inv.CalcSlotId(mi->from_slot);
-			if (!m_inv[from_parent]) { mi_hack = true; }
-			else if (!m_inv[from_parent]->IsClassBag()) { mi_hack = true; }
-			else if (m_inv.CalcBagIdx(mi->from_slot) >= m_inv[from_parent]->GetItem()->BagSlots) { mi_hack = true; }
-		}
-	}
-
-	if (mi->to_slot >= EQ::invbag::GENERAL_BAGS_BEGIN && mi->to_slot <= EQ::invbag::CURSOR_BAG_END) {
-		if (mi->to_slot >= EQ::invbag::CURSOR_BAG_BEGIN) { mi_hack = true; }
-		else {
-			int16 to_parent = m_inv.CalcSlotId(mi->to_slot);
-			if (!m_inv[to_parent]) { mi_hack = true; }
-			else if (!m_inv[to_parent]->IsClassBag()) { mi_hack = true; }
-			else if (m_inv.CalcBagIdx(mi->to_slot) >= m_inv[to_parent]->GetItem()->BagSlots) { mi_hack = true; }
-		}
-	}
-
-	if (mi_hack) { Message(Chat::Yellow, "Caution: Illegal use of inaccessible bag slots!"); }
+	database.TransactionBegin();
 
 	if (!SwapItem(mi) && IsValidSlot(mi->from_slot) && IsValidSlot(mi->to_slot)) {
 		SwapItemResync(mi);
 
 		bool error = false;
 		InterrogateInventory(this, false, true, false, error, false);
-		if (error)
+		if (error) {
 			InterrogateInventory(this, true, false, true, error);
+		}
 	}
 
 	for (int slot : {mi->to_slot, mi->from_slot}) {
@@ -10817,6 +10806,10 @@ void Client::Handle_OP_MoveItem(const EQApplicationPacket *app)
 			CharacterEvolvingItemsRepository::UpdateOne(database, item->GetEvolvingDetails());
 		}
 	}
+
+	database.TransactionCommit();
+
+	LogInventory("OP_MoveItem took [{}] ms", bench.elapsedMilliseconds());
 }
 
 void Client::Handle_OP_MoveMultipleItems(const EQApplicationPacket *app)
@@ -11078,10 +11071,17 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
 	case PET_ATTACK: {
 		if (!target)
 			break;
+
+		if (RuleB(Map, CheckForLoSCheat) && (!DoLosChecks(target) || !CheckLosCheat(target))) {
+			mypet->SayString(this, NOT_LEGAL_TARGET);
+			break;
+		}
+
 		if (target->IsMezzed()) {
 			MessageString(Chat::NPCQuestSay, CANNOT_WAKE, mypet->GetCleanName(), target->GetCleanName());
 			break;
 		}
+
 		if (mypet->IsFeared())
 			break; //prevent pet from attacking stuff while feared
 
@@ -11136,8 +11136,15 @@ void Client::Handle_OP_PetCommands(const EQApplicationPacket *app)
 		if (mypet->IsFeared())
 			break; //prevent pet from attacking stuff while feared
 
-		if (!GetTarget())
+		if (!GetTarget()) {
 			break;
+		}
+
+		if (RuleB(Map, CheckForLoSCheat) && (!DoLosChecks(GetTarget()) || !CheckLosCheat(GetTarget()))) {
+			mypet->SayString(this, NOT_LEGAL_TARGET);
+			break;
+		}
+
 		if (GetTarget()->IsMezzed()) {
 			MessageString(Chat::NPCQuestSay, CANNOT_WAKE, mypet->GetCleanName(), GetTarget()->GetCleanName());
 			break;
@@ -14759,6 +14766,7 @@ void Client::Handle_OP_SpawnAppearance(const EQApplicationPacket *app)
 			SetFeigned(false);
 			BindWound(this, false, true);
 			camp_timer.Disable();
+			bot_camp_timer.Disable();
 		}
 		else if (sa->parameter == Animation::Sitting) {
 			SetAppearance(eaSitting);
@@ -15216,7 +15224,7 @@ void Client::Handle_OP_TargetMouse(const EQApplicationPacket *app)
 			GetTarget()->IsTargeted(1);
 			return;
 		}
-		else if (GetTarget()->IsPetOwnerClient())
+		else if (GetTarget()->IsPetOwnerOfClientBot())
 		{
 			GetTarget()->IsTargeted(1);
 			return;

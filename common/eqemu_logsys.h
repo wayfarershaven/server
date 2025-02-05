@@ -145,6 +145,10 @@ namespace Logs {
 		EvolveItem,
 		PositionUpdate,
 		KSM,
+		BotSettings,
+		BotSpellChecks,
+		BotSpellTypeChecks,
+		NpcHandin,
 		MaxCategoryID /* Don't Remove this */
 	};
 
@@ -248,7 +252,11 @@ namespace Logs {
 		"XTargets",
 		"EvolveItem",
 		"PositionUpdate",
-		"KSM" // Kernel Samepage Merging
+		"KSM", // Kernel Samepage Merging
+		"Bot Settings",
+		"Bot Spell Checks",
+		"Bot Spell Type Checks",
+		"NpcHandin"
 	};
 }
 

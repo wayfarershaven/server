@@ -1144,7 +1144,7 @@ void Perl_Client_SetStartZone(Client* self, uint32 zone_id, float x, float y, fl
 
 void Perl_Client_KeyRingAdd(Client* self, uint32 item_id) // @categories Account and Character, Inventory and Items
 {
-	self->KeyRingAdd(item_id);;
+	self->KeyRingAdd(item_id);
 }
 
 bool Perl_Client_KeyRingCheck(Client* self, uint32 item_id) // @categories Account and Character, Inventory and Items
@@ -1154,7 +1154,7 @@ bool Perl_Client_KeyRingCheck(Client* self, uint32 item_id) // @categories Accou
 
 void Perl_Client_AddPVPPoints(Client* self, uint32 points) // @categories Currency and Points
 {
-	self->AddPVPPoints(points);;
+	self->AddPVPPoints(points);
 }
 
 void Perl_Client_AddCrystals(Client* self, uint32 radiant_count, uint32 ebon_count) // @categories Currency and Points
@@ -3269,6 +3269,41 @@ std::string Perl_Client_GetAccountBucketRemaining(Client* self, std::string buck
 	return self->GetAccountBucketRemaining(bucket_name);
 }
 
+std::string Perl_Client_GetBandolierName(Client* self, uint8 bandolier_slot)
+{
+	return self->GetBandolierName(bandolier_slot);
+}
+
+uint32 Perl_Client_GetBandolierItemIcon(Client* self, uint8 bandolier_slot, uint8 slot_id)
+{
+	return self->GetBandolierItemIcon(bandolier_slot, slot_id);
+}
+
+uint32 Perl_Client_GetBandolierItemID(Client* self, uint8 bandolier_slot, uint8 slot_id)
+{
+	return self->GetBandolierItemID(bandolier_slot, slot_id);
+}
+
+std::string Perl_Client_GetBandolierItemName(Client* self, uint8 bandolier_slot, uint8 slot_id)
+{
+	return self->GetBandolierItemName(bandolier_slot, slot_id);
+}
+
+uint32 Perl_Client_GetPotionBeltItemIcon(Client* self, uint8 slot_id)
+{
+	return self->GetPotionBeltItemIcon(slot_id);
+}
+
+uint32 Perl_Client_GetPotionBeltItemID(Client* self, uint8 slot_id)
+{
+	return self->GetPotionBeltItemID(slot_id);
+}
+
+std::string Perl_Client_GetPotionBeltItemName(Client* self, uint8 slot_id)
+{
+	return self->GetPotionBeltItemName(slot_id);
+}
+
 void perl_register_client()
 {
 	perl::interpreter perl(PERL_GET_THX);
@@ -3412,6 +3447,10 @@ void perl_register_client()
 	package.add("GetAugmentIDAt", &Perl_Client_GetAugmentIDAt);
 	package.add("GetAugmentIDsBySlotID", &Perl_Client_GetAugmentIDsBySlotID);
 	package.add("GetAutoLoginCharacterName", &Perl_Client_GetAutoLoginCharacterName);
+	package.add("GetBandolierItemIcon", &Perl_Client_GetBandolierItemIcon);
+	package.add("GetBandolierItemID", &Perl_Client_GetBandolierItemID);
+	package.add("GetBandolierItemName", &Perl_Client_GetBandolierItemName);
+	package.add("GetBandolierName", &Perl_Client_GetBandolierName);
 	package.add("GetBaseAGI", &Perl_Client_GetBaseAGI);
 	package.add("GetBaseCHA", &Perl_Client_GetBaseCHA);
 	package.add("GetBaseDEX", &Perl_Client_GetBaseDEX);
@@ -3510,6 +3549,9 @@ void perl_register_client()
 	package.add("GetMemmedSpells", &Perl_Client_GetMemmedSpells);
 	package.add("GetModCharacterFactionLevel", &Perl_Client_GetModCharacterFactionLevel);
 	package.add("GetMoney", &Perl_Client_GetMoney);
+	package.add("GetPotionBeltItemIcon", &Perl_Client_GetPotionBeltItemIcon);
+	package.add("GetPotionBeltItemID", &Perl_Client_GetPotionBeltItemID);
+	package.add("GetPotionBeltItemName", &Perl_Client_GetPotionBeltItemName);
 	package.add("GetPVP", &Perl_Client_GetPVP);
 	package.add("GetPVPPoints", &Perl_Client_GetPVPPoints);
 	package.add("GetRaceAbbreviation", &Perl_Client_GetRaceAbbreviation);
