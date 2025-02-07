@@ -6749,7 +6749,7 @@ ENGINE=InnoDB
 )"
 	},
 	ManifestEntry{
-		.version     = 9286,
+		.version     = 9302,
 		.description = "2024_12_01_2024_update_guild_bank",
 		.check       = "SHOW COLUMNS FROM `guild_bank` LIKE 'augment_1_id'",
 		.condition   = "empty",
