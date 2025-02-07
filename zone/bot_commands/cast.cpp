@@ -477,11 +477,7 @@ void bot_command_cast(Client* c, const Seperator* sep)
 	Bot* first_found = nullptr;
 
 	for (auto bot_iter : sbl) {
-		if (!bot_iter->IsInGroupOrRaid(c)) {
-			continue;
-		}
-
-		if (bot_iter->GetBotStance() == Stance::Passive || bot_iter->GetHoldFlag() || bot_iter->GetAppearance() == eaDead || bot_iter->IsFeared() || bot_iter->IsSilenced() || bot_iter->IsAmnesiad() || bot_iter->GetHP() < 0) {
+		if (!bot_iter->ValidStateCheck(c)) {
 			continue;
 		}
 
@@ -506,7 +502,6 @@ void bot_command_cast(Client* c, const Seperator* sep)
 
 			if (IsBotSpellTypeDetrimental(spell_type) && !bot_iter->IsAttackAllowed(new_tar)) {
 				bot_iter->RaidGroupSay(
-					bot_iter,
 					fmt::format(
 						"I cannot attack [{}].",
 						new_tar->GetCleanName()

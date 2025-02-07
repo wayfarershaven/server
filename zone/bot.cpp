@@ -79,7 +79,7 @@ Bot::Bot(NPCType *npcTypeData, Client* botOwner) : NPC(npcTypeData, nullptr, glm
 	SetBotID(0);
 	SetBotSpellID(0);
 	SetSpawnStatus(false);
-	SetBotCharmer(false);	
+	SetBotCharmer(false);
 	SetDefaultBotStance();
 	SetTaunting((GetClass() == Class::Warrior || GetClass() == Class::Paladin || GetClass() == Class::ShadowKnight) && (GetBotStance() == Stance::Aggressive));
 
@@ -102,7 +102,7 @@ Bot::Bot(NPCType *npcTypeData, Client* botOwner) : NPC(npcTypeData, nullptr, glm
 	m_previous_pet_order = SPO_Guard;
 
 	rest_timer.Disable();
-	m_ping_timer.Disable();	
+	m_ping_timer.Disable();
 
 	LoadDefaultBotSettings();
 	SetCastedSpellType(UINT16_MAX);
@@ -579,7 +579,7 @@ uint32 Bot::GetBotRangedValue() {
 
 	const EQ::ItemData *range_item = range_inst->GetItem();
 	const EQ::ItemData *ammo_item = nullptr;
-	
+
 	if (ammo_inst) {
 		ammo_item = ammo_inst->GetItem();
 	}
@@ -592,7 +592,7 @@ uint32 Bot::GetBotRangedValue() {
 
 	// Bow requires arrows
 	if (
-		range_item->ItemType == EQ::item::ItemTypeBow && 
+		range_item->ItemType == EQ::item::ItemTypeBow &&
 		ammo_item->ItemType != EQ::item::ItemTypeArrow
 	) {
 		return 0;
@@ -612,12 +612,12 @@ uint32 Bot::GetBotRangedValue() {
 
 	// Bows and arrows
 	if (
-		range_item->ItemType == EQ::item::ItemTypeBow && 
+		range_item->ItemType == EQ::item::ItemTypeBow &&
 		ammo_item->ItemType == EQ::item::ItemTypeArrow
 	) {
 		return (range_item->Range + ammo_item->Range);
 	}
-	
+
 	return 0;
 }
 
@@ -626,14 +626,14 @@ void Bot::ChangeBotRangedWeapons(bool isRanged) {
 		BotAddEquipItem(EQ::invslot::slotPrimary, GetBotItemBySlot(EQ::invslot::slotPrimary));
 		BotAddEquipItem(EQ::invslot::slotSecondary, GetBotItemBySlot(EQ::invslot::slotSecondary));
 		SetAttackTimer();
-		RaidGroupSay(this, "My blade is ready");
+		RaidGroupSay("My blade is ready");
 	} else {
 		BotRemoveEquipItem(EQ::invslot::slotPrimary);
 		BotRemoveEquipItem(EQ::invslot::slotSecondary);
 		BotAddEquipItem(EQ::invslot::slotAmmo, GetBotItemBySlot(EQ::invslot::slotAmmo));
 		BotAddEquipItem(EQ::invslot::slotSecondary, GetBotItemBySlot(EQ::invslot::slotRange));
 		SetAttackTimer();
-		RaidGroupSay(this, "My blades are sheathed");
+		RaidGroupSay("My blades are sheathed");
 	}
 }
 
@@ -1843,12 +1843,12 @@ void Bot::BotMeditate(bool is_sitting) {
 
 bool Bot::BotRangedAttack(Mob* other, bool can_double_attack) {
 	if (
-		!other || 
-		!IsAttackAllowed(other) || 
-		IsCasting() || 
-		DivineAura() || 
-		IsStunned() || 
-		IsMezzed() || 
+		!other ||
+		!IsAttackAllowed(other) ||
+		IsCasting() ||
+		DivineAura() ||
+		IsStunned() ||
+		IsMezzed() ||
 		(GetAppearance() == eaDead)
 	) {
 		return false;
@@ -1858,8 +1858,8 @@ bool Bot::BotRangedAttack(Mob* other, bool can_double_attack) {
 		!GetPullingFlag() &&
 		(
 			(
-				GetBotStance() != Stance::Aggressive && 
-				GetBotStance() != Stance::Burn && 
+				GetBotStance() != Stance::Aggressive &&
+				GetBotStance() != Stance::Burn &&
 				GetBotStance() != Stance::AEBurn
 			) &&
 			other->GetHPRatio() > 99.0f
@@ -1869,14 +1869,14 @@ bool Bot::BotRangedAttack(Mob* other, bool can_double_attack) {
 	}
 
 	if (
-		!can_double_attack && 
+		!can_double_attack &&
 		(
 			(
-				attack_timer.Enabled() && 
+				attack_timer.Enabled() &&
 				!attack_timer.Check(false)
-			) || 
+			) ||
 			(
-				ranged_timer.Enabled() && 
+				ranged_timer.Enabled() &&
 				!ranged_timer.Check()
 			)
 		)
@@ -1915,7 +1915,7 @@ bool Bot::BotRangedAttack(Mob* other, bool can_double_attack) {
 
 	  // Check if bow has the wrong ammo
 	bool is_bow_with_invalid_ammo = ranged_weapon &&
-		(ranged_weapon->ItemType == EQ::item::ItemTypeBow && 
+		(ranged_weapon->ItemType == EQ::item::ItemTypeBow &&
 			(!ammo || ammo->ItemType != EQ::item::ItemTypeArrow));
 
 	// Check if throwing weapon has insufficient charges
@@ -1937,7 +1937,7 @@ bool Bot::BotRangedAttack(Mob* other, bool can_double_attack) {
 		if (!ammo || ammo_item->GetCharges() < 1) {
 			if (!GetCombatRoundForAlerts()) {
 				SetCombatRoundForAlerts();
-				RaidGroupSay(this, "I do not have any ammo!");
+				RaidGroupSay("I do not have any ammo!");
 			}
 		}
 		return false;
@@ -2185,7 +2185,7 @@ void Bot::AI_Process()
 	if (HOLDING || (raid && r_group == RAID_GROUPLESS)) {
 		glm::vec3 Goal(0, 0, 0);
 		TryNonCombatMovementChecks(bot_owner, follow_mob, Goal);
-		
+
 		return;
 	}
 
@@ -2318,9 +2318,9 @@ void Bot::AI_Process()
 
 			if (at_combat_range) {
 				if (
-					!tar->GetSpecialAbility(SpecialAbility::RangedAttackImmunity) && 
-					RuleB(Bots, AllowRangedPulling) && 
-					IsBotRanged() && 
+					!tar->GetSpecialAbility(SpecialAbility::RangedAttackImmunity) &&
+					RuleB(Bots, AllowRangedPulling) &&
+					IsBotRanged() &&
 					ranged_timer.Check(false)
 				) {
 					StopMoving(CalculateHeadingToTarget(tar->GetX(), tar->GetY()));
@@ -2335,8 +2335,8 @@ void Bot::AI_Process()
 				}
 
 				if (
-					RuleB(Bots, AllowAISpellPulling) && 
-					!IsBotNonSpellFighter() && 
+					RuleB(Bots, AllowAISpellPulling) &&
+					!IsBotNonSpellFighter() &&
 					AI_HasSpells()
 				) {
 					SetPullingSpell(true);
@@ -2376,13 +2376,13 @@ void Bot::AI_Process()
 			}
 
 			if (
-				IsMoving() || 
-				GetCombatJitterFlag() || 
+				IsMoving() ||
+				GetCombatJitterFlag() ||
 				GetCombatOutOfRangeJitterFlag()
 			) {
 				if (
-					!GetCombatJitterFlag() || 
-					!IsMoving() || 
+					!GetCombatJitterFlag() ||
+					!IsMoving() ||
 					GetCombatOutOfRangeJitterFlag()
 				) {
 					StopMoving(CalculateHeadingToTarget(tar->GetX(), tar->GetY()));
@@ -2392,8 +2392,8 @@ void Bot::AI_Process()
 			}
 
 			if (
-				!jitter_cooldown && 
-				AI_movement_timer->Check() && 
+				!jitter_cooldown &&
+				AI_movement_timer->Check() &&
 				(!spellend_timer.Enabled() || GetClass() == Class::Bard)
 			) {
 				DoCombatPositioning(tar, Goal, stop_melee_level, tar_distance, melee_distance_min, melee_distance, melee_distance_max, behind_mob, front_mob);
@@ -2416,8 +2416,8 @@ void Bot::AI_Process()
 			}
 
 			if (
-				!tar->GetSpecialAbility(SpecialAbility::RangedAttackImmunity) && 
-				IsBotRanged() && 
+				!tar->GetSpecialAbility(SpecialAbility::RangedAttackImmunity) &&
+				IsBotRanged() &&
 				ranged_timer.Check(false)
 			) {
 				if (BotRangedAttack(tar) && CheckDoubleRangedAttack()) {
@@ -2435,7 +2435,7 @@ void Bot::AI_Process()
 
 				if (attack_timer.Check()) {
 					TryCombatProcs(p_item, tar, EQ::invslot::slotPrimary);
-					TriggerDefensiveProcs(tar, EQ::invslot::slotPrimary, false);					
+					TriggerDefensiveProcs(tar, EQ::invslot::slotPrimary, false);
 					DoAttackRounds(tar, EQ::invslot::slotPrimary);
 
 					if (TryDoubleMeleeRoundEffect()) {
@@ -2486,10 +2486,10 @@ void Bot::AI_Process()
 		SetTarget(nullptr);
 
 		if (
-			HasPet() && 
+			HasPet() &&
 			(
-				GetClass() != Class::Enchanter || 
-				GetPet()->GetPetType() != petAnimation || 
+				GetClass() != Class::Enchanter ||
+				GetPet()->GetPetType() != petAnimation ||
 				GetAA(aaAnimationEmpathy) >= 1
 			)
 		) {
@@ -2623,10 +2623,10 @@ bool Bot::TryAutoDefend(Client* bot_owner, float leash_distance) {
 
 				if (IsRaidGrouped()) {
 					Raid* raid = GetStoredRaid();
-					if (raid) {						
+					if (raid) {
 						for (const auto& m : raid->members) {
 							if (
-								m.member && 
+								m.member &&
 								m.member->IsClient() &&
 								m.member->GetAggroCount() &&
 								raid->IsAssister(m.member_name)
@@ -2648,10 +2648,10 @@ bool Bot::TryAutoDefend(Client* bot_owner, float leash_distance) {
 					if (g) {
 						for (auto& m : g->members) {
 							if (
-								m && 
+								m &&
 								m->IsClient() &&
 								m->CastToClient()->GetAggroCount() &&
-								g->AmIMainAssist(m->GetName())			
+								g->AmIMainAssist(m->GetName())
 							) {
 								temp_xhaters = m->CastToClient()->GetXTargetAutoMgr();
 
@@ -2691,7 +2691,7 @@ bool Bot::TryAutoDefend(Client* bot_owner, float leash_distance) {
 							if (!hater_iter.spawn_id) {
 								continue;
 							}
-							
+
 							Mob* hater = nullptr;
 
 							for (Client* x_member : assistee_members) {
@@ -2707,7 +2707,7 @@ bool Bot::TryAutoDefend(Client* bot_owner, float leash_distance) {
 								hater = entity_list.GetMob(hater_iter.spawn_id);
 
 								if (
-									hater && 
+									hater &&
 									!hater->IsMezzed() &&
 									(DistanceSquared(hater->GetPosition(), bot_owner->GetPosition()) <= leash_distance) &&
 									hater->CastToNPC()->IsOnHatelist(x_member)
@@ -2717,7 +2717,7 @@ bool Bot::TryAutoDefend(Client* bot_owner, float leash_distance) {
 
 								hater = nullptr;
 							}
-							
+
 							if (hater) {
 								AddToHateList(hater, 1);
 								SetTarget(hater);
@@ -2779,10 +2779,10 @@ bool Bot::TryPursueTarget(float leash_distance, glm::vec3& Goal) {
 				SetTarget(nullptr);
 
 				if (
-					HasPet() && 
+					HasPet() &&
 					(
-						GetClass() != Class::Enchanter || 
-						GetPet()->GetPetType() != petAnimation || 
+						GetClass() != Class::Enchanter ||
+						GetPet()->GetPetType() != petAnimation ||
 						GetAA(aaAnimationEmpathy) >= 2
 					)
 				) {
@@ -2900,7 +2900,7 @@ void Bot::DoAttackRounds(Mob* target, int hand) {
 						if (zone->random.Roll(flurry_chance)) {
 							Attack(target, hand, false, false);
 						}
-						
+
 						if (GetOwner()) {
 							GetOwner()->MessageString(
 								Chat::NPCFlurry,
@@ -2946,7 +2946,7 @@ bool Bot::TryEvade(Mob* tar) {
 				m_rogue_evade_timer.Start(timer_duration);
 
 				if (zone->random.Int(0, 260) < (int)GetSkill(EQ::skills::SkillHide)) {
-					
+
 				}
 
 				float hidechance = ((GetSkill(EQ::skills::SkillHide) / 250.0f) + .25) * 100;
@@ -2965,11 +2965,11 @@ bool Bot::TryEvade(Mob* tar) {
 				}
 
 				if (zone->random.Int(0, 260) < (int)GetSkill(EQ::skills::SkillHide)) {
-					RaidGroupSay(this, "I have momentarily ducked away from the main combat.");
+					RaidGroupSay("I have momentarily ducked away from the main combat.");
 					RogueEvade(tar);
 				}
 				else {
-					RaidGroupSay(this, "My attempts at ducking clear of combat fail.");
+					RaidGroupSay("My attempts at ducking clear of combat fail.");
 				}
 
 				//SendAppearancePacket(AT_Invis, Invisibility::Visible);
@@ -3008,11 +3008,11 @@ bool Bot::TryEvade(Mob* tar) {
 
 				if (zone->random.Real(0, 160) > totalfeign) {
 					//SendAppearancePacket(AT_Anim, ANIM_DEATH);
-					RaidGroupSay(this, "I have fallen to the ground.");
+					RaidGroupSay("I have fallen to the ground.");
 					SetFeigned(false);
 				}
 				else {
-					RaidGroupSay(this, "I have successfully feigned my death.");
+					RaidGroupSay("I have successfully feigned my death.");
 					SetFeigned(true);
 					//SendAppearancePacket(AT_Anim, ANIM_DEATH);
 				}
@@ -3543,7 +3543,6 @@ void Bot::BotPullerProcess(Client* bot_owner, Raid* raid) {
 				raid->RaidSay(msg.c_str(), GetCleanName(), 0, 100);
 			} else {
 				RaidGroupSay(
-					this,
 					fmt::format(
 						"Pulling {}.",
 						pull_target->GetCleanName()
@@ -3560,7 +3559,7 @@ void Bot::BotPullerProcess(Client* bot_owner, Raid* raid) {
 
 			if (HasPet() && (GetClass() != Class::Enchanter || GetPet()->GetPetType() != petAnimation || GetAA(aaAnimationEmpathy) >= 1)) {
 				GetPet()->WipeHateList();
-				GetPet()->SetTarget(nullptr);				
+				GetPet()->SetTarget(nullptr);
 				m_previous_pet_order = GetPet()->GetPetOrder();
 				GetPet()->CastToNPC()->SaveGuardSpot(GetPosition());
 				GetPet()->SetPetOrder(SPO_Guard);
@@ -3656,7 +3655,7 @@ bool Bot::Spawn(Client* botCharacterOwner) {
 		m_dont_root_me_before                = 0;
 		m_dont_snare_me_before               = 0;
 		m_dont_cure_me_before                = 0;
-		
+
 
 		// there is something askew with spawn struct appearance fields...
 		// I re-enabled this until I can sort it out
@@ -4390,7 +4389,7 @@ void Bot::PerformTradeWithClient(int16 begin_slot_id, int16 end_slot_id, Client*
 
 		if (RuleI(Bots, StackSizeMin) != -1) {
 			if (
-				trade_instance->IsStackable() && 
+				trade_instance->IsStackable() &&
 				trade_instance->GetCharges() < RuleI(Bots, StackSizeMin)
 			) { // temp until partial stacks are implemented
 				if (trade_event_exists) {
@@ -4413,7 +4412,7 @@ void Bot::PerformTradeWithClient(int16 begin_slot_id, int16 end_slot_id, Client*
 			}
 		}
 		else if (
-			trade_instance->IsStackable() && 
+			trade_instance->IsStackable() &&
 			trade_instance->GetCharges() < trade_instance->GetItem()->StackSize
 		) {
 			client->Message(
@@ -4485,12 +4484,12 @@ void Bot::PerformTradeWithClient(int16 begin_slot_id, int16 end_slot_id, Client*
 
 		if (
 			(
-				!trade_instance->IsClassEquipable(GetClass()) && 
+				!trade_instance->IsClassEquipable(GetClass()) &&
 				!RuleB(Bots, AllowBotEquipAnyClassGear)
 			) ||
 			GetLevel() < trade_instance->GetItem()->ReqLevel ||
 			(
-				!trade_instance->IsRaceEquipable(GetBaseRace()) && 
+				!trade_instance->IsRaceEquipable(GetBaseRace()) &&
 				!RuleB(Bots, AllowBotEquipAnyRaceGear)
 			)
 		) {
@@ -5280,14 +5279,14 @@ void Bot::DoSpecialAttackDamage(Mob *who, EQ::skills::SkillType skill, int32 max
 
 void Bot::DoClassAttacks(Mob *target, bool IsRiposte) {
 	if (
-		!target || 
-		GetAppearance() == eaDead || 
-		spellend_timer.Enabled() || 
-		IsFeared() || 
-		IsStunned() || 
-		IsMezzed() || 
-		DivineAura() || 
-		GetHP() < 0 || 
+		!target ||
+		GetAppearance() == eaDead ||
+		spellend_timer.Enabled() ||
+		IsFeared() ||
+		IsStunned() ||
+		IsMezzed() ||
+		DivineAura() ||
+		GetHP() < 0 ||
 		!IsAttackAllowed(target)
 	) {
 		return;
@@ -5318,7 +5317,6 @@ void Bot::DoClassAttacks(Mob *target, bool IsRiposte) {
 	if (IsTaunting() && target->IsNPC() && taunt_time) {
 		if (GetTarget() && GetTarget()->GetHateTop() && GetTarget()->GetHateTop() != this) {
 			RaidGroupSay(
-				this,
 				fmt::format(
 					"Taunting {}.",
 					target->GetCleanName()
@@ -6171,16 +6169,16 @@ bool Bot::DoFinishedSpellSingleTarget(uint16 spell_id, Mob* spellTarget, EQ::spe
 			int spelltype = BotGetSpellType(i);
 			bool spellequal = (j == thespell);
 			bool spelltypeequal = (
-				(spelltype == BotSpellTypes::RegularHeal) || 
-				(spelltype == BotSpellTypes::Escape) || 
+				(spelltype == BotSpellTypes::RegularHeal) ||
+				(spelltype == BotSpellTypes::Escape) ||
 				(spelltype == BotSpellTypes::Pet)
 			);
 			bool spelltypetargetequal = (
-				(spelltype == BotSpellTypes::Buff) && 
+				(spelltype == BotSpellTypes::Buff) &&
 				(spells[thespell].target_type == ST_Self)
 			);
 			bool spelltypeclassequal = (
-				(spelltype == BotSpellTypes::InCombatBuff) && 
+				(spelltype == BotSpellTypes::InCombatBuff) &&
 				(GetClass() == Class::Shaman)
 			);
 			bool slotequal = (slot == EQ::spells::CastingSlot::Item);
@@ -6189,13 +6187,13 @@ bool Bot::DoFinishedSpellSingleTarget(uint16 spell_id, Mob* spellTarget, EQ::spe
 				if (
 					(
 						spelltypeequal || spelltypetargetequal
-					) || 
-					spelltypeclassequal || 
+					) ||
+					spelltypeclassequal ||
 					slotequal
 				) {
 					if (
 						(
-							(spells[thespell].effect_id[0] == 0) && 
+							(spells[thespell].effect_id[0] == 0) &&
 							(spells[thespell].base_value[0] < 0)
 						) &&
 						(spellTarget->GetHP() < ((spells[thespell].base_value[0] * (-1)) + 100))
@@ -6226,7 +6224,7 @@ bool Bot::DoFinishedSpellSingleTarget(uint16 spell_id, Mob* spellTarget, EQ::spe
 						}
 					}
 				}
-				
+
 				SpellOnTarget(thespell, m);
 
 				if (
@@ -6254,7 +6252,6 @@ bool Bot::DoFinishedSpellGroupTarget(uint16 spell_id, Mob* spellTarget, EQ::spel
 
 	if (isMainGroupMGB && (GetClass() != Class::Bard)) {
 		RaidGroupSay(
-			this,
 			fmt::format(
 				"Casting {} as a Mass Group Buff.",
 				spells[spell_id].name
@@ -6285,7 +6282,7 @@ bool Bot::DoFinishedSpellGroupTarget(uint16 spell_id, Mob* spellTarget, EQ::spel
 			SpellOnTarget(spell_id, spellTarget);
 		}
 	}
-	
+
 	stopLogic = true;
 	return true;
 }
@@ -7446,7 +7443,7 @@ bool Bot::AttemptCloseBeneficialSpells(uint16 spell_type) {
 				}
 			}
 		}
-		
+
 		if (result) {
 			break;
 		}
@@ -7687,15 +7684,15 @@ void EntityList::ShowSpawnWindow(Client* client, int Distance, bool NamedOnly) {
 }
 
 uint8 Bot::GetNumberNeedingHealedInGroup(Mob* tar, uint16 spell_type, uint16 spell_id, float range) {
-	if (!tar->IsBot()) {
+	if (!tar) {
 		return 0;
 	}
 
 	uint8 count = 0;
-	auto target_list = tar->IsClient() ? tar->CastToBot()->GatherSpellTargets() : tar->CastToBot()->GetSpellTargetList();
+	auto target_list = tar->IsClient() ? GatherSpellTargets(false, tar) : tar->CastToBot()->GetSpellTargetList();
 
 	for (Mob* m : target_list) {
-		if (tar->CalculateDistance(m) < range && CastChecks(spell_id, m, spell_type, true, IsGroupBotSpellType(spell_type))) {
+		if (m && tar->CalculateDistance(m) < range && CastChecks(spell_id, m, spell_type, true, IsGroupBotSpellType(spell_type))) {
 			++count;
 		}
 	}
@@ -7865,7 +7862,7 @@ bool Bot::GetNeedsHateRedux(Mob *tar) {
 
 bool Bot::HasOrMayGetAggro(bool sit_aggro, uint32 spell_id) {
     if (
-        !GetTarget() || 
+        !GetTarget() ||
         !GetTarget()->GetHateTop()
     ) {
         return false;
@@ -7889,9 +7886,9 @@ bool Bot::HasOrMayGetAggro(bool sit_aggro, uint32 spell_id) {
     }
 
     if (
-        top_hate_amt < 1 || 
+        top_hate_amt < 1 ||
         (
-            my_hate > 0 && 
+            my_hate > 0 &&
             (my_hate * 100 / top_hate_amt) > RuleI(Bots, HasOrMayGetAggroThreshold)
         )
     ) {
@@ -7905,10 +7902,10 @@ void Bot::SetDefaultBotStance() {
 	_botStance = GetClass() == Class::Warrior ? Stance::Aggressive : Stance::Balanced;
 }
 
-void Bot::RaidGroupSay(Mob* speaker, const char* msg, ...) {
+void Bot::RaidGroupSay(const char* msg, ...) {
 	if (
-		speaker->CastToBot()->GetTempSpellType() != UINT16_MAX &&
-		!speaker->CastToBot()->GetSpellTypeAnnounceCast(speaker->CastToBot()->GetTempSpellType())
+		GetTempSpellType() != UINT16_MAX &&
+		!GetSpellTypeAnnounceCast(GetTempSpellType())
 	) {
 		return;
 	}
@@ -7919,57 +7916,32 @@ void Bot::RaidGroupSay(Mob* speaker, const char* msg, ...) {
 	vsnprintf(buf, 1000, msg, ap);
 	va_end(ap);
 
-	if (speaker->IsRaidGrouped()) {
-		Raid* r = speaker->CastToBot()->GetStoredRaid();
+	if (IsRaidGrouped()) {
+		Raid* r = GetStoredRaid() ? GetStoredRaid() : GetRaid();
 
 		if (r) {
 			for (const auto& m : r->members) {
-				if (m.member && !m.is_bot) {
-					m.member->FilteredMessageString(
-						speaker,
-						Chat::PetResponse,
-						FilterSocials,
-						GENERIC_SAY,
-						speaker->GetCleanName(),
-						buf
-					);
+				if (m.member && m.member->IsClient()) {
+					m.member->FilteredMessageString(this,Chat::PetResponse,FilterSocials,GENERIC_SAY,GetCleanName(),buf);
 				}
 			}
 		}
 	}
-	else if (speaker->HasGroup()) {
-		Group* g = speaker->GetGroup();
-
-		if (g) {
-			for (auto& m : g->members) {
-				if (m && !m->IsBot()) {
-					m->FilteredMessageString(
-						speaker,
-						Chat::PetResponse,
-						FilterSocials,
-						GENERIC_SAY,
-						speaker->GetCleanName(),
-						buf
-					);
+	else if (HasGroup()) {
+			for (auto& m : GetGroup()->members) {
+				if (m && m->IsClient()) {
+					m->FilteredMessageString(this,Chat::PetResponse,FilterSocials,GENERIC_SAY,GetCleanName(),buf);
 				}
 			}
-		}
 	}
-	else {
-		speaker->GetOwner()->FilteredMessageString(
-			speaker,
-			Chat::PetResponse,
-			FilterSocials,
-			GENERIC_SAY,
-			speaker->GetCleanName(),
-			buf
-		);
+	else if (GetOwner()) {
+		GetOwner()->FilteredMessageString(this,Chat::PetResponse,FilterSocials,GENERIC_SAY,GetCleanName(),buf);
 	}
 }
 
 bool Bot::UseDiscipline(uint32 spell_id, uint32 target) {
 	if (!IsValidSpell(spell_id)) {
-		RaidGroupSay(this, "Not a valid spell.");
+		RaidGroupSay("Not a valid spell.");
 		return false;
 	}
 
@@ -9398,7 +9370,6 @@ void Bot::DoItemClick(const EQ::ItemData *item, uint16 slot_id)
 	SetIsUsingItemClick(true);
 
 	RaidGroupSay(
-		this,
 		fmt::format(
 			"Attempting to cast [{}] on {}.",
 			spells[item->Click.Effect].name,
@@ -9448,14 +9419,14 @@ bool Bot::PrecastChecks(Mob* tar, uint16 spell_type) {
 	}
 
 	if (
-		IsPullingSpell() && 
+		IsPullingSpell() &&
 		IsPullingBotSpellType(spell_type)
 	) { //Skip remaining checks for commanded
 		return true;
 	}
 
 	if (
-		GetManaRatio() < GetSpellTypeMinManaLimit(spell_type) || 
+		GetManaRatio() < GetSpellTypeMinManaLimit(spell_type) ||
 		GetManaRatio() > GetSpellTypeMaxManaLimit(spell_type)
 	) {
 		LogBotSpellChecksDetail("{} says, 'Cancelling cast of [{}] on [{}] due to GetSpellTypeMinManaLimit or GetSpellTypeMaxManaLimit.'", GetCleanName(), GetSpellTypeNameByID(spell_type), tar->GetCleanName());
@@ -9463,7 +9434,7 @@ bool Bot::PrecastChecks(Mob* tar, uint16 spell_type) {
 	}
 
 	if (
-		GetHPRatio() < GetSpellTypeMinHPLimit(spell_type) || 
+		GetHPRatio() < GetSpellTypeMinHPLimit(spell_type) ||
 		GetHPRatio() > GetSpellTypeMaxHPLimit(spell_type)
 	) {
 		LogBotSpellChecksDetail("{} says, 'Cancelling cast of [{}] on [{}] due to GetSpellTypeMinHPLimit or GetSpellTypeMaxHPLimit.'", GetCleanName(), GetSpellTypeNameByID(spell_type), tar->GetCleanName());
@@ -9501,9 +9472,9 @@ bool Bot::CastChecks(uint16 spell_id, Mob* tar, uint16 spell_type, bool precheck
 
 		if (spells[spell_id].target_type == ST_Self && tar != this) {
 			if (
-				!IsEffectInSpell(spell_id, SE_SummonCorpse) || 
+				!IsEffectInSpell(spell_id, SE_SummonCorpse) ||
 				(
-					IsEffectInSpell(spell_id, SE_SummonCorpse) && 
+					IsEffectInSpell(spell_id, SE_SummonCorpse) &&
 					!RuleB(Bots, AllowCommandedSummonCorpse)
 				)
 			) {
@@ -9525,8 +9496,8 @@ bool Bot::CastChecks(uint16 spell_id, Mob* tar, uint16 spell_type, bool precheck
 	}
 
 	if (
-		IsFeared() || 
-		IsSilenced() || 
+		IsFeared() ||
+		IsSilenced() ||
 		IsAmnesiad()
 	) {
 		LogBotSpellChecksDetail("{} says, 'Cancelling cast of {} on {} due to Incapacitated.'", GetCleanName(), GetSpellName(spell_id), (tar ? tar->GetCleanName() : "nobody"));
@@ -9535,10 +9506,10 @@ bool Bot::CastChecks(uint16 spell_id, Mob* tar, uint16 spell_type, bool precheck
 
 	if (
 		(
-			IsStunned() || 
-			IsMezzed() || 
+			IsStunned() ||
+			IsMezzed() ||
 			DivineAura()
-		) && 
+		) &&
 		!IsCastNotStandingSpell(spell_id)
 	) {
 		LogBotSpellChecksDetail("{} says, 'Cancelling cast of {} on {} due to !IsCastNotStandingSpell.'", GetCleanName(), GetSpellName(spell_id), (tar ? tar->GetCleanName() : "nobody"));
@@ -9546,7 +9517,7 @@ bool Bot::CastChecks(uint16 spell_id, Mob* tar, uint16 spell_type, bool precheck
 	}
 
 	if (
-		IsDetrimentalSpell(spell_id) && 
+		IsDetrimentalSpell(spell_id) &&
 		!zone->CanDoCombat()
 	) {
 		LogBotSpellChecksDetail("{} says, 'Cancelling cast of {} on {} due to !CanDoCombat.'", GetCleanName(), GetSpellName(spell_id), (tar ? tar->GetCleanName() : "nobody"));
@@ -9569,7 +9540,7 @@ bool Bot::CastChecks(uint16 spell_id, Mob* tar, uint16 spell_type, bool precheck
 	}
 
 	if (
-		spells[spell_id].caster_requirement_id && 
+		spells[spell_id].caster_requirement_id &&
 		!PassCastRestriction(spells[spell_id].caster_requirement_id)
 	) {
 		LogBotSpellChecksDetail("{} says, 'Cancelling cast of {} due to !PassCastRestriction.'", GetCleanName(), GetSpellName(spell_id));
@@ -9577,7 +9548,7 @@ bool Bot::CastChecks(uint16 spell_id, Mob* tar, uint16 spell_type, bool precheck
 	}
 
 	if (
-		!spells[spell_id].can_cast_in_combat && 
+		!spells[spell_id].can_cast_in_combat &&
 		spells[spell_id].can_cast_out_of_combat
 	) {
 		if (IsBeneficialSpell(spell_id)) {
@@ -9588,7 +9559,7 @@ bool Bot::CastChecks(uint16 spell_id, Mob* tar, uint16 spell_type, bool precheck
 		}
 	}
 	else if (
-		spells[spell_id].can_cast_in_combat && 
+		spells[spell_id].can_cast_in_combat &&
 		!spells[spell_id].can_cast_out_of_combat
 	) {
 		if (IsBeneficialSpell(spell_id)) {
@@ -9598,12 +9569,12 @@ bool Bot::CastChecks(uint16 spell_id, Mob* tar, uint16 spell_type, bool precheck
 			}
 		}
 	}
-	
+
 	if (!IsDiscipline(spell_id)) {
 		int chance = GetFocusEffect(focusFcMute, spell_id);
 
 		if (
-			chance && 
+			chance &&
 			zone->random.Roll(chance)
 		) {
 			LogBotSpellChecksDetail("{} says, 'Cancelling cast of {} due to focusFcMute.'", GetCleanName(), GetSpellName(spell_id));
@@ -9612,7 +9583,7 @@ bool Bot::CastChecks(uint16 spell_id, Mob* tar, uint16 spell_type, bool precheck
 	}
 
 	if (
-		!zone->CanLevitate() && 
+		!zone->CanLevitate() &&
 		IsEffectInSpell(spell_id, SE_Levitate)
 	) {
 		LogBotSpellChecksDetail("{} says, 'Cancelling cast of {} due to !CanLevitate.'", GetCleanName(), GetSpellName(spell_id));
@@ -9620,7 +9591,7 @@ bool Bot::CastChecks(uint16 spell_id, Mob* tar, uint16 spell_type, bool precheck
 	}
 
 	if (
-		spells[spell_id].time_of_day == SpellTimeRestrictions::Day && 
+		spells[spell_id].time_of_day == SpellTimeRestrictions::Day &&
 		!zone->zone_time.IsDayTime()
 	) {
 		LogBotSpellChecksDetail("{} says, 'Cancelling cast of {} due to !IsDayTime.'", GetCleanName(), GetSpellName(spell_id));
@@ -9628,7 +9599,7 @@ bool Bot::CastChecks(uint16 spell_id, Mob* tar, uint16 spell_type, bool precheck
 	}
 
 	if (
-		spells[spell_id].time_of_day == SpellTimeRestrictions::Night && 
+		spells[spell_id].time_of_day == SpellTimeRestrictions::Night &&
 		!zone->zone_time.IsNightTime()
 	) {
 		LogBotSpellChecksDetail("{} says, 'Cancelling cast of {} due to !IsNightTime.'", GetCleanName(), GetSpellName(spell_id));
@@ -9636,7 +9607,7 @@ bool Bot::CastChecks(uint16 spell_id, Mob* tar, uint16 spell_type, bool precheck
 	}
 
 	if (
-		spells[spell_id].zone_type == 1 && 
+		spells[spell_id].zone_type == 1 &&
 		!zone->CanCastOutdoor()
 	) {
 		LogBotSpellChecksDetail("{} says, 'Cancelling cast of {} due to !CanCastOutdoor.'", GetCleanName(), GetSpellName(spell_id));
@@ -9644,7 +9615,7 @@ bool Bot::CastChecks(uint16 spell_id, Mob* tar, uint16 spell_type, bool precheck
 	}
 
 	if (
-		BotSpellTypeRequiresTarget(spell_type) && 
+		BotSpellTypeRequiresTarget(spell_type) &&
 		!tar
 	) {
 		LogBotSpellChecksDetail("{} says, 'Cancelling cast due to CastChecks !tar.'", GetCleanName());
@@ -9663,7 +9634,7 @@ bool Bot::CastChecks(uint16 spell_id, Mob* tar, uint16 spell_type, bool precheck
 	}
 
 	if (
-		this == tar && 
+		this == tar &&
 		IsSacrificeSpell(spell_id)
 	) {
 		LogBotSpellChecksDetail("{} says, 'Cancelling cast of {} due to IsSacrificeSpell.'", GetCleanName(), GetSpellName(spell_id));
@@ -9676,7 +9647,7 @@ bool Bot::CastChecks(uint16 spell_id, Mob* tar, uint16 spell_type, bool precheck
 	}
 
 	if (
-		tar->GetSpecialAbility(SpecialAbility::CastingFromRangeImmunity) && 
+		tar->GetSpecialAbility(SpecialAbility::CastingFromRangeImmunity) &&
 		!CombatRange(tar)
 	) {
 		LogBotSpellChecksDetail("{} says, 'Cancelling cast of {} on {} due to CastingFromRangeImmunity.'", GetCleanName(), GetSpellName(spell_id), tar->GetCleanName());
@@ -9697,11 +9668,11 @@ bool Bot::CastChecks(uint16 spell_id, Mob* tar, uint16 spell_type, bool precheck
 		IsBeneficialSpell(spell_id) &&
 		(
 			(
-				RuleB(Spells, EnableBlockedBuffs) && 
+				RuleB(Spells, EnableBlockedBuffs) &&
 				tar->IsClient()
 			) ||
 			(
-				RuleB(Bots, AllowBotBlockedBuffs) && 
+				RuleB(Bots, AllowBotBlockedBuffs) &&
 				tar->IsBot()
 			)
 		)
@@ -9713,17 +9684,17 @@ bool Bot::CastChecks(uint16 spell_id, Mob* tar, uint16 spell_type, bool precheck
 	}
 
 	if (
-		IsBeneficialSpell(spell_id) && 
+		IsBeneficialSpell(spell_id) &&
 		tar->IsPet() &&
 		(
 			(
-				RuleB(Spells, EnableBlockedBuffs) && 
-				tar->GetOwner() && 
+				RuleB(Spells, EnableBlockedBuffs) &&
+				tar->GetOwner() &&
 				tar->GetOwner()->IsClient()
 			) ||
 			(
-				RuleB(Bots, AllowBotBlockedBuffs) && 
-				tar->GetOwner() && 
+				RuleB(Bots, AllowBotBlockedBuffs) &&
+				tar->GetOwner() &&
 				tar->GetOwner()->IsBot()
 			)
 		)
@@ -9746,16 +9717,16 @@ bool Bot::CastChecks(uint16 spell_id, Mob* tar, uint16 spell_type, bool precheck
 		LogBotSpellChecksDetail("{} says, 'Cancelling cast of {} on {} due to IsValidTargetType.'", GetCleanName(), GetSpellName(spell_id), tar->GetCleanName());
 		return false;
 	}
-	
+
 	if (
 		(
-			RequiresStackCheck(spell_type) || 
+			RequiresStackCheck(spell_type) ||
 			(
-				!RequiresStackCheck(spell_type) && 
+				!RequiresStackCheck(spell_type) &&
 				CalcBuffDuration(this, tar, spell_id) != 0
 			)
 		)
-		&& 
+		&&
 		tar->CanBuffStack(spell_id, GetLevel(), true) < 0
 	) {
 		LogBotSpellChecksDetail("{} says, 'Cancelling cast of {} on {} due to !CanBuffStack.'", GetCleanName(), GetSpellName(spell_id), tar->GetCleanName());
@@ -9763,15 +9734,15 @@ bool Bot::CastChecks(uint16 spell_id, Mob* tar, uint16 spell_type, bool precheck
 	}
 
 	if (
-		IsBeneficialSpell(spell_id) && 
-		tar->BuffCount() >= tar->GetCurrentBuffSlots() && 
+		IsBeneficialSpell(spell_id) &&
+		tar->BuffCount() >= tar->GetCurrentBuffSlots() &&
 		CalcBuffDuration(this, tar, spell_id) != 0
 	) {
 		return false;
 	}
 
 	if (
-		!ae_check && 
+		!ae_check &&
 		!IsValidSpellRange(spell_id, tar)
 	) {
 		LogBotSpellChecksDetail("{} says, 'Cancelling cast of {} on {} due to IsValidSpellRange.'", GetCleanName(), GetSpellName(spell_id), tar->GetCleanName());
@@ -9783,9 +9754,9 @@ bool Bot::CastChecks(uint16 spell_id, Mob* tar, uint16 spell_type, bool precheck
 	}
 
 	if (
-		!IsTaunting() && 
-		GetSpellTypeAggroCheck(spell_type) && 
-		HasOrMayGetAggro(IsSitting(), spell_id) && 
+		!IsTaunting() &&
+		GetSpellTypeAggroCheck(spell_type) &&
+		HasOrMayGetAggro(IsSitting(), spell_id) &&
 		!tar->IsFleeing()
 	) {
 		LogBotSpellChecksDetail("{} says, 'Cancelling cast of {} on {} due to HasOrMayGetAggro.'", GetCleanName(), GetSpellName(spell_id), tar->GetCleanName());
@@ -9798,8 +9769,8 @@ bool Bot::CastChecks(uint16 spell_id, Mob* tar, uint16 spell_type, bool precheck
 	}
 
 	if (
-		spells[spell_id].target_type != ST_Self && 
-		IsBeneficialSpell(spell_id) && 
+		spells[spell_id].target_type != ST_Self &&
+		IsBeneficialSpell(spell_id) &&
 		!IsAnyHealSpell(spell_id) &&
 		!IsCureSpell(spell_id) &&
 		!IsHealOverTimeSpell(spell_id) &&
@@ -9828,7 +9799,7 @@ bool Bot::CanCastSpellType(uint16 spell_type, uint16 spell_id, Mob* tar) {
 		case BotSpellTypes::InCombatBuff:
 		case BotSpellTypes::DamageShields:
 		case BotSpellTypes::PetDamageShields:
-		case BotSpellTypes::ResistBuffs:		
+		case BotSpellTypes::ResistBuffs:
 		case BotSpellTypes::PetResistBuffs:
 		case BotSpellTypes::Teleport:
 		case BotSpellTypes::Succor:
@@ -9842,7 +9813,7 @@ bool Bot::CanCastSpellType(uint16 spell_type, uint16 spell_id, Mob* tar) {
 		case BotSpellTypes::MovementSpeed:
 		case BotSpellTypes::SendHome:
 			if (
-				tar == this && 
+				tar == this &&
 				spells[spell_id].target_type == ST_TargetsTarget
 			) {
 				LogBotSpellChecksDetail("{} says, 'Cancelling cast of {} on {} due to target_type checks. Using {}'", GetCleanName(), GetSpellName(spell_id), tar->GetCleanName(), GetSpellTargetType(spell_id));
@@ -9851,11 +9822,11 @@ bool Bot::CanCastSpellType(uint16 spell_type, uint16 spell_id, Mob* tar) {
 
 			if (
 				(
-					spell_type != BotSpellTypes::Teleport && 
+					spell_type != BotSpellTypes::Teleport &&
 					spell_type != BotSpellTypes::Succor
-				) && 
+				) &&
 				(
-					IsEffectInSpell(spell_id, SE_Teleport) || 
+					IsEffectInSpell(spell_id, SE_Teleport) ||
 					IsEffectInSpell(spell_id, SE_Succor)
 				)
 			) {
@@ -9864,8 +9835,8 @@ bool Bot::CanCastSpellType(uint16 spell_type, uint16 spell_id, Mob* tar) {
 			}
 
 			if (
-				tar->IsPet() && 
-				!RuleB(Bots, CanCastIllusionsOnPets) && 
+				tar->IsPet() &&
+				!RuleB(Bots, CanCastIllusionsOnPets) &&
 				IsEffectInSpell(spell_id, SE_Illusion)
 			) {
 				LogBotSpellChecksDetail("{} says, 'Cancelling cast of {} on {} due to PetSE_Illusion.'", GetCleanName(), GetSpellName(spell_id), tar->GetCleanName());
@@ -9873,11 +9844,11 @@ bool Bot::CanCastSpellType(uint16 spell_type, uint16 spell_id, Mob* tar) {
 			}
 
 			if (
-				spells[spell_id].target_type == ST_Pet && 
+				spells[spell_id].target_type == ST_Pet &&
 				(
-					!tar->IsPet() || 
+					!tar->IsPet() ||
 					(
-						tar->GetOwner() != this && 
+						tar->GetOwner() != this &&
 						!RuleB(Bots, CanCastPetOnlyOnOthersPets)
 					)
 				)
@@ -9888,13 +9859,13 @@ bool Bot::CanCastSpellType(uint16 spell_type, uint16 spell_id, Mob* tar) {
 
 			if (
 				(
-					IsGroupSpell(spell_id) && 
+					IsGroupSpell(spell_id) &&
 					tar->IsPet()
-				) && 
+				) &&
 				(
-					!tar->GetOwner() || 
+					!tar->GetOwner() ||
 					(
-						RuleB(Bots, RequirePetAffinity) && 
+						RuleB(Bots, RequirePetAffinity) &&
 						!tar->GetOwner()->HasPetAffinity()
 					)
 				)
@@ -9907,14 +9878,14 @@ bool Bot::CanCastSpellType(uint16 spell_type, uint16 spell_id, Mob* tar) {
 				switch (tar->GetArchetype()) {
 					case Archetype::Caster:
 						if (
-							tar->IsBot() && 
+							tar->IsBot() &&
 							(tar->GetLevel() >= tar->CastToBot()->GetStopMeleeLevel()) &&
 							(
-								IsEffectInSpell(spell_id, SE_AttackSpeed) || 
+								IsEffectInSpell(spell_id, SE_AttackSpeed) ||
 								IsEffectInSpell(spell_id, SE_ReverseDS)
 							) ||
 							(
-								SpellEffectsCount(spell_id) == 1 && 
+								SpellEffectsCount(spell_id) == 1 &&
 								(
 									IsEffectInSpell(spell_id, SE_ATK) || IsEffectInSpell(spell_id, SE_STR)
 								)
@@ -9926,9 +9897,9 @@ bool Bot::CanCastSpellType(uint16 spell_type, uint16 spell_id, Mob* tar) {
 						break;
 					case Archetype::Melee:
 						if (
-							IsEffectInSpell(spell_id, SE_IncreaseSpellHaste) || 
+							IsEffectInSpell(spell_id, SE_IncreaseSpellHaste) ||
 							IsEffectInSpell(spell_id, SE_ManaPool) ||
-							IsEffectInSpell(spell_id, SE_CastingLevel) || 
+							IsEffectInSpell(spell_id, SE_CastingLevel) ||
 							IsEffectInSpell(spell_id, SE_ManaRegen_v2) ||
 							IsEffectInSpell(spell_id, SE_CurrentMana)
 						) {
@@ -9945,7 +9916,7 @@ bool Bot::CanCastSpellType(uint16 spell_type, uint16 spell_id, Mob* tar) {
 			// Differences for each type
 			if (spell_type != BotSpellTypes::InCombatBuff) {
 				if (
-					IsEffectInSpell(spell_id, SE_AbsorbMagicAtt) || 
+					IsEffectInSpell(spell_id, SE_AbsorbMagicAtt) ||
 					IsEffectInSpell(spell_id, SE_Rune)
 				) {
 					for (int i = 0; i < tar->GetMaxTotalSlots(); i++) {
@@ -9971,16 +9942,16 @@ bool Bot::CanCastSpellType(uint16 spell_type, uint16 spell_id, Mob* tar) {
 				switch (tar->GetArchetype()) {
 					case Archetype::Caster:
 						if (
-							tar->IsBot() && 
+							tar->IsBot() &&
 							(tar->GetLevel() >= tar->CastToBot()->GetStopMeleeLevel()) &&
 							(
-								IsEffectInSpell(spell_id, SE_AttackSpeed) || 
+								IsEffectInSpell(spell_id, SE_AttackSpeed) ||
 								IsEffectInSpell(spell_id, SE_ReverseDS)
 							) ||
 							(
-								SpellEffectsCount(spell_id) == 1 && 
+								SpellEffectsCount(spell_id) == 1 &&
 								(
-									IsEffectInSpell(spell_id, SE_ATK) || 
+									IsEffectInSpell(spell_id, SE_ATK) ||
 									IsEffectInSpell(spell_id, SE_STR)
 								)
 							)
@@ -9991,9 +9962,9 @@ bool Bot::CanCastSpellType(uint16 spell_type, uint16 spell_id, Mob* tar) {
 						break;
 					case Archetype::Melee:
 						if (
-							IsEffectInSpell(spell_id, SE_IncreaseSpellHaste) || 
+							IsEffectInSpell(spell_id, SE_IncreaseSpellHaste) ||
 							IsEffectInSpell(spell_id, SE_ManaPool) ||
-							IsEffectInSpell(spell_id, SE_CastingLevel) || 
+							IsEffectInSpell(spell_id, SE_CastingLevel) ||
 							IsEffectInSpell(spell_id, SE_ManaRegen_v2) ||
 							IsEffectInSpell(spell_id, SE_CurrentMana)
 						) {
@@ -10011,7 +9982,7 @@ bool Bot::CanCastSpellType(uint16 spell_type, uint16 spell_id, Mob* tar) {
 		case BotSpellTypes::AELull:
 		case BotSpellTypes::Lull:
 			if (
-				IsHarmonySpell(spell_id) && 
+				IsHarmonySpell(spell_id) &&
 				!HarmonySpellLevelCheck(spell_id, tar)
 			) {
 				LogBotSpellChecksDetail("{} says, 'Cancelling cast of {} on {} due to HarmonySpellLevelCheck.'", GetCleanName(), GetSpellName(spell_id), tar->GetCleanName());
@@ -10022,7 +9993,7 @@ bool Bot::CanCastSpellType(uint16 spell_type, uint16 spell_id, Mob* tar) {
 		default:
 			break;
 	}
-	
+
 	//LogBotSpellChecksDetail("{} says, {} on {} passed CanCastSpellType.'", GetCleanName(), GetSpellName(spell_id), tar->GetCleanName());
 	return true;
 }
@@ -10050,9 +10021,9 @@ bool Bot::IsTargetAlreadyReceivingSpell(Mob* tar, uint16 spell_id) {
 
 	for (Mob* m : GetSpellTargetList(RuleB(Bots, CrossRaidBuffingAndHealing))) {
 		if (
-			m->IsBot() && 
-			m->IsCasting() && 
-			m->CastToBot()->casting_spell_targetid && 
+			m->IsBot() &&
+			m->IsCasting() &&
+			m->CastToBot()->casting_spell_targetid &&
 			m->CastingSpellID() == spell_id
 		) {
 			if (m->CastToBot()->casting_spell_targetid == target_id) {
@@ -10111,7 +10082,7 @@ bool Bot::DoResistCheck(Mob* tar, uint16 spell_id, int32 resist_limit) {
 		default:
 			return true;
 	}
-	
+
 	if ((target_resist + level_mod - resist_difficulty) > resist_limit) {
 		return false;
 	}
@@ -10139,8 +10110,8 @@ bool Bot::IsValidTargetType(uint16 spell_id, int target_type, uint8 body_type) {
 	switch (target_type) {
 		case ST_Undead:
 			if (
-				body_type == BodyType::Undead || 
-				body_type == BodyType::SummonedUndead || 
+				body_type == BodyType::Undead ||
+				body_type == BodyType::SummonedUndead ||
 				body_type == BodyType::Vampire
 			) {
 				return true;
@@ -10149,8 +10120,8 @@ bool Bot::IsValidTargetType(uint16 spell_id, int target_type, uint8 body_type) {
 			break;
 		case ST_Summoned:
 			if (
-				body_type == BodyType::Summoned || 
-				body_type == BodyType::Summoned2 || 
+				body_type == BodyType::Summoned ||
+				body_type == BodyType::Summoned2 ||
 				body_type == BodyType::Summoned3
 			) {
 				return true;
@@ -10171,7 +10142,7 @@ bool Bot::IsValidTargetType(uint16 spell_id, int target_type, uint8 body_type) {
 			break;
 		case ST_Giant:
 			if (
-				body_type == BodyType::Giant || 
+				body_type == BodyType::Giant ||
 				body_type == BodyType::RaidGiant
 			) {
 				return true;
@@ -10180,7 +10151,7 @@ bool Bot::IsValidTargetType(uint16 spell_id, int target_type, uint8 body_type) {
 			break;
 		case ST_Dragon:
 			if (
-				body_type == BodyType::Dragon || 
+				body_type == BodyType::Dragon ||
 				body_type == BodyType::VeliousDragon
 			) {
 				return true;
@@ -10205,12 +10176,12 @@ bool Bot::IsMobEngagedByAnyone(Mob* tar) {
         }
 
         bool bot_is_engaged = m->IsBot() && m->IsEngaged();
-        bool bot_melee_or_casting = 
-			bot_is_engaged && 
+        bool bot_melee_or_casting =
+			bot_is_engaged &&
             (
 				!m->CastToBot()->IsBotNonSpellFighter() ||
 				(
-					m->GetLevel() >= m->CastToBot()->GetStopMeleeLevel() && 
+					m->GetLevel() >= m->CastToBot()->GetStopMeleeLevel() &&
 					!m->IsCasting()
 				)
 			);
@@ -10220,16 +10191,16 @@ bool Bot::IsMobEngagedByAnyone(Mob* tar) {
         }
 
         if (
-			m->IsCasting() && 
+			m->IsCasting() &&
 			SpellBreaksMez(m->CastingSpellID())
 		) {
             return true;
         }
 
         if (
-			m->IsClient() && 
+			m->IsClient() &&
 			(
-				m->CastToClient()->AutoAttackEnabled() || 
+				m->CastToClient()->AutoAttackEnabled() ||
 				m->CastToClient()->AutoFireEnabled()
 			)
 		) {
@@ -10394,7 +10365,7 @@ int Bot::GetBotBaseSetting(uint16 bot_setting) {
 		case BotBaseSettings::ShowHelm:
 			return GetShowHelm();
 		case BotBaseSettings::FollowDistance:
-			return sqrt(GetFollowDistance());		
+			return sqrt(GetFollowDistance());
 		case BotBaseSettings::StopMeleeLevel:
 			return GetStopMeleeLevel();
 		case BotBaseSettings::EnforceSpellSettings:
@@ -10489,7 +10460,7 @@ void Bot::LoadDefaultBotSettings() {
 	for (uint16 i = BotBaseSettings::START_ALL; i <= BotBaseSettings::END; ++i) {
 		SetBotBaseSetting(i, GetDefaultSetting(BotSettingCategories::BaseSetting, i, bot_stance));
 		LogBotSettingsDetail("{} says, 'Setting default {} [{}] to [{}]'", GetCleanName(), GetBotSettingCategoryName(i), i, GetDefaultBotBaseSetting(i, bot_stance));
-	}	
+	}
 
 	for (uint16 i = BotSpellTypes::START; i <= BotSpellTypes::END; ++i) {
 		BotSpellSettings t;
@@ -11050,7 +11021,7 @@ uint16 Bot::GetDefaultSpellTypePursuePriority(uint16 spell_type, uint8 bot_class
 		case BotSpellTypes::PetCompleteHeals:
 			return 21;
 		case BotSpellTypes::PetHoTHeals:
-			return 22;	
+			return 22;
 		case BotSpellTypes::PetCures:
 			return 23;
 		default:
@@ -11158,7 +11129,7 @@ uint16 Bot::GetDefaultSpellTypeAnnounceCast(uint16 spell_type, uint8 stance) {
 				case BotSpellTypes::PetCures:
 				case BotSpellTypes::Charm:
 					return 1;
-				default: 
+				default:
 					return 0;
 			}
 
@@ -11167,7 +11138,7 @@ uint16 Bot::GetDefaultSpellTypeAnnounceCast(uint16 spell_type, uint8 stance) {
 			return 1;
 	}
 
-	return 1; 
+	return 1;
 }
 
 bool Bot::GetUltimateSpellTypeHold(uint16 spell_type, Mob* tar) {
@@ -11175,11 +11146,14 @@ bool Bot::GetUltimateSpellTypeHold(uint16 spell_type, Mob* tar) {
 		return GetSpellTypeHold(spell_type);
 	}
 
-	if (tar->IsPet() && tar->GetOwner() && tar->IsPetOwnerBot()) {
-		return tar->GetOwner()->CastToBot()->GetSpellTypeHold(GetPetBotSpellType(spell_type));
-	}
+	Mob* owner = tar->IsPet() ? tar->GetOwner() : nullptr;
+	Bot* bot_owner = (owner && owner->IsBot())
+		? owner->CastToBot()
+		: nullptr;
 
-	return GetSpellTypeHold(spell_type);
+	return bot_owner
+		? bot_owner->GetSpellTypeHold(GetPetBotSpellType(spell_type))
+		: GetSpellTypeHold(spell_type);
 }
 
 void Bot::SetSpellTypePriority(uint16 spell_type, uint8 priority_type, uint16 priority) {
@@ -11201,13 +11175,13 @@ void Bot::SetSpellTypePriority(uint16 spell_type, uint8 priority_type, uint16 pr
 std::list<BotSpellTypeOrder> Bot::GetSpellTypesPrioritized(uint8 priority_type) {
 	std::list<BotSpellTypeOrder> cast_order;
 	std::list<BotSpellTypeOrder> temp_cast_order;
-	
+
 	for (uint16 i = BotSpellTypes::START; i <= BotSpellTypes::END; i++) {
 		BotSpellTypeOrder typeSettings = {
 			.spellType = i,
 			.priority = GetSpellTypePriority(i, priority_type)
 		};
-		
+
 		cast_order.emplace_back(typeSettings);
 	}
 
@@ -11296,7 +11270,7 @@ bool Bot::AttemptAACastSpell(Mob* tar, uint16 spell_id, AA::Rank* rank) {
 				return false;
 			}
 		}
-		
+
 		if (IsDetrimentalSpell(spell_id) && !IsAttackAllowed(tar)) {
 			GetBotOwner()->Message(Chat::Yellow, "%s says, 'I cannot attack [%s]'.", GetCleanName(), tar->GetCleanName());
 
@@ -11304,7 +11278,13 @@ bool Bot::AttemptAACastSpell(Mob* tar, uint16 spell_id, AA::Rank* rank) {
 		}
 
 		if (!CastChecks(spell_id, tar, UINT16_MAX)) {
-			GetBotOwner()->Message(Chat::Red, "%s says, 'Ability failed to cast. This could be due to this to any number of things: range, mana, immune, target type, etc.'", GetCleanName());
+			GetBotOwner()->Message(
+				Chat::Red,
+				fmt::format(
+					"{} says, 'Ability failed to cast. This could be due to any number of things: range, mana, line of sight, immune, target type, etc.'",
+					GetCleanName()
+				).c_str()
+			);
 
 			return false;
 		}
@@ -11312,7 +11292,6 @@ bool Bot::AttemptAACastSpell(Mob* tar, uint16 spell_id, AA::Rank* rank) {
 
 		if (IsCasting()) {
 			RaidGroupSay(
-				this,
 				fmt::format(
 					"Interrupting {}. I have been commanded to try to cast an AA - {} on {}.",
 					CastingSpellID() ? spells[CastingSpellID()].name : "my spell",
@@ -11326,7 +11305,6 @@ bool Bot::AttemptAACastSpell(Mob* tar, uint16 spell_id, AA::Rank* rank) {
 
 		if (CastSpell(spell_id, tar->GetID())) {
 			RaidGroupSay(
-				this,
 				fmt::format(
 					"Casting an AA - {} on {}.",
 					GetSpellName(spell_id),
@@ -11343,7 +11321,13 @@ bool Bot::AttemptAACastSpell(Mob* tar, uint16 spell_id, AA::Rank* rank) {
 			SetSpellRecastTimer(spell_id, timer_duration);
 		}
 		else {
-			GetBotOwner()->Message(Chat::Red, "%s says, 'Ability failed to cast. This could be due to this to any number of things: range, mana, immune, target type, etc.'", GetCleanName());
+			GetBotOwner()->Message(
+				Chat::Red,
+				fmt::format(
+					"{} says, 'Ability failed to cast. This could be due to any number of things: range, mana, line of sight, immune, target type, etc.'",
+					GetCleanName()
+				).c_str()
+			);
 
 			return false;
 		}
@@ -11360,7 +11344,7 @@ bool Bot::AttemptAACastSpell(Mob* tar, uint16 spell_id, AA::Rank* rank) {
 
 		return false;
 	}
-	
+
 	return true;
 }
 
@@ -11422,14 +11406,17 @@ bool Bot::AttemptForcedCastSpell(Mob* tar, uint16 spell_id, bool is_disc) {
 	if (!CastChecks(spell_id, tar, UINT16_MAX)) {
 		GetBotOwner()->Message(
 			Chat::Red,
-			fmt::format("{} says, 'Ability failed to cast. This could be due to range, mana, immune, target type, etc.'", GetBotOwner()->GetCleanName()).c_str()
+			fmt::format(
+				"{} says, 'Ability failed to cast. This could be due to any number of things: range, mana, line of sight, immune, target type, etc.'",
+				GetCleanName()
+			).c_str()
 		);
+
 		return false;
 	}
 
 	if (IsCasting()) {
 		RaidGroupSay(
-			this,
 			fmt::format(
 				"Interrupting {}. I have been commanded to try to cast {} on {}.",
 				CastingSpellID() ? spells[CastingSpellID()].name : "my spell",
@@ -11445,7 +11432,6 @@ bool Bot::AttemptForcedCastSpell(Mob* tar, uint16 spell_id, bool is_disc) {
 	}
 
 	RaidGroupSay(
-		this,
 		fmt::format(
 			"Casting {} on {}.",
 			GetSpellName(spell_id),
@@ -11495,7 +11481,7 @@ uint16 Bot::GetParentSpellType(uint16 spell_type) {
 		case BotSpellTypes::PetBuffs:
 		case BotSpellTypes::DamageShields:
 		case BotSpellTypes::PetDamageShields:
-		case BotSpellTypes::ResistBuffs:		
+		case BotSpellTypes::ResistBuffs:
 		case BotSpellTypes::PetResistBuffs:
 		case BotSpellTypes::BindAffinity:
 		case BotSpellTypes::Identify:
@@ -11522,7 +11508,7 @@ uint16 Bot::GetParentSpellType(uint16 spell_type) {
 		case BotSpellTypes::Fear:
 			return BotSpellTypes::Fear;
 		case BotSpellTypes::GroupCures:
-		case BotSpellTypes::Cure:		
+		case BotSpellTypes::Cure:
 		case BotSpellTypes::PetCures:
 			return BotSpellTypes::Cure;
 		case BotSpellTypes::AERoot:
@@ -11540,18 +11526,18 @@ uint16 Bot::GetParentSpellType(uint16 spell_type) {
 		case BotSpellTypes::AELull:
 		case BotSpellTypes::Lull:
 			return BotSpellTypes::Lull;
-		case BotSpellTypes::Charm:		
+		case BotSpellTypes::Charm:
 		case BotSpellTypes::Escape:
 		case BotSpellTypes::HateRedux:
 		case BotSpellTypes::HateLine:
 		case BotSpellTypes::AEHateLine:
 		case BotSpellTypes::InCombatBuff:
-		case BotSpellTypes::InCombatBuffSong:		
+		case BotSpellTypes::InCombatBuffSong:
 		case BotSpellTypes::OutOfCombatBuffSong:
 		case BotSpellTypes::Pet:
 		case BotSpellTypes::PreCombatBuff:
 		case BotSpellTypes::PreCombatBuffSong:
-		case BotSpellTypes::Resurrect:		
+		case BotSpellTypes::Resurrect:
 		default:
 			return spell_type;
 	}
@@ -11579,7 +11565,7 @@ bool Bot::IsValidSpellTypeBySpellID(uint16 spell_type, uint16 spell_id) {
 		case BotSpellTypes::Buff:
 		case BotSpellTypes::PetBuffs:
 			if (
-				IsResistanceOnlySpell(spell_id) || 
+				IsResistanceOnlySpell(spell_id) ||
 				IsDamageShieldOnlySpell(spell_id) ||
 				IsDamageShieldAndResistSpell(spell_id)
 			) {
@@ -11592,7 +11578,7 @@ bool Bot::IsValidSpellTypeBySpellID(uint16 spell_type, uint16 spell_id) {
 			if (IsResistanceBuffSpell(spell_id)) {
 				return true;
 			}
-			
+
 			return false;
 		case BotSpellTypes::DamageShields:
 		case BotSpellTypes::PetDamageShields:
@@ -11603,7 +11589,7 @@ bool Bot::IsValidSpellTypeBySpellID(uint16 spell_type, uint16 spell_id) {
 			return false;
 		case BotSpellTypes::PBAENuke:
 			if (
-				IsPBAENukeSpell(spell_id) && 
+				IsPBAENukeSpell(spell_id) &&
 				!IsStunSpell(spell_id)
 			) {
 				return true;
@@ -11612,7 +11598,7 @@ bool Bot::IsValidSpellTypeBySpellID(uint16 spell_type, uint16 spell_id) {
 			return false;
 		case BotSpellTypes::AERains:
 			if (
-				IsAERainNukeSpell(spell_id) && 
+				IsAERainNukeSpell(spell_id) &&
 				!IsStunSpell(spell_id)
 			) {
 				return true;
@@ -11636,108 +11622,108 @@ bool Bot::IsValidSpellTypeBySpellID(uint16 spell_type, uint16 spell_id) {
 			if (IsHarmonySpell(spell_id)) {
 				return true;
 			}
-		
+
 			return false;
 		case BotSpellTypes::Teleport:
 			if (
-				IsBeneficialSpell(spell_id) && 
+				IsBeneficialSpell(spell_id) &&
 				(
 					IsEffectInSpell(spell_id, SE_Teleport) || IsEffectInSpell(spell_id, SE_Translocate)
 				)
 			) {
 				return true;
 			}
-		
+
 			return false;
 		case BotSpellTypes::Succor:
 			if (
-				IsBeneficialSpell(spell_id) && 
+				IsBeneficialSpell(spell_id) &&
 				IsEffectInSpell(spell_id, SE_Succor)
 			) {
 				return true;
 			}
-		
+
 			return false;
 		case BotSpellTypes::BindAffinity:
 			if (IsEffectInSpell(spell_id, SE_BindAffinity)) {
 				return true;
 			}
-		
+
 			return false;
 		case BotSpellTypes::Identify:
 			if (IsEffectInSpell(spell_id, SE_Identify)) {
 				return true;
 			}
-		
+
 			return false;
 		case BotSpellTypes::Levitate:
 			if (
-				IsBeneficialSpell(spell_id) && 
+				IsBeneficialSpell(spell_id) &&
 				IsEffectInSpell(spell_id, SE_Levitate)
 			) {
 				return true;
 			}
-		
+
 			return false;
 		case BotSpellTypes::Rune:
 			if (
-				IsEffectInSpell(spell_id, SE_AbsorbMagicAtt) || 
+				IsEffectInSpell(spell_id, SE_AbsorbMagicAtt) ||
 				IsEffectInSpell(spell_id, SE_Rune)
 			) {
 				return true;
 			}
-		
+
 			return false;
 		case BotSpellTypes::WaterBreathing:
 			if (IsEffectInSpell(spell_id, SE_WaterBreathing)) {
 				return true;
 			}
-		
+
 			return false;
 		case BotSpellTypes::Size:
 			if (
-				IsBeneficialSpell(spell_id) && 
+				IsBeneficialSpell(spell_id) &&
 				(
-					IsEffectInSpell(spell_id, SE_ModelSize) || 
+					IsEffectInSpell(spell_id, SE_ModelSize) ||
 					IsEffectInSpell(spell_id, SE_ChangeHeight)
 				)
 			) {
 				return true;
 			}
-		
+
 			return false;
 		case BotSpellTypes::Invisibility:
 			if (
-				IsEffectInSpell(spell_id, SE_SeeInvis) || 
+				IsEffectInSpell(spell_id, SE_SeeInvis) ||
 				IsInvisibleSpell(spell_id)
 			) {
 				return true;
 			}
-		
+
 			return false;
 		case BotSpellTypes::MovementSpeed:
 			if (
-				IsBeneficialSpell(spell_id) && 
+				IsBeneficialSpell(spell_id) &&
 				IsEffectInSpell(spell_id, SE_MovementSpeed)
 			) {
 				return true;
 			}
-		
+
 			return false;
 		case BotSpellTypes::SendHome:
 			if (
-				IsBeneficialSpell(spell_id) && 
+				IsBeneficialSpell(spell_id) &&
 				IsEffectInSpell(spell_id, SE_GateToHomeCity)
 			) {
 				return true;
 			}
-		
+
 			return false;
 		case BotSpellTypes::SummonCorpse:
 			if (IsEffectInSpell(spell_id, SE_SummonCorpse)) {
 				return true;
 			}
-		
+
 			return false;
 		default:
 			return true;
@@ -11971,7 +11957,7 @@ bool Bot::CheckDoubleRangedAttack() {
 	int32 chance = spellbonuses.DoubleRangedAttack + itembonuses.DoubleRangedAttack + aabonuses.DoubleRangedAttack;
 
 	return (
-		chance && 
+		chance &&
 		zone->random.Roll(chance)
 	);
 }
@@ -12050,9 +12036,9 @@ bool Bot::HasValidAETarget(Bot* caster, uint16 spell_id, uint16 spell_type, Mob*
 		}
 
 		if (
-			!m->IsNPC() || 
+			!m->IsNPC() ||
 			(
-				!IsCommandedSpell() && 
+				!IsCommandedSpell() &&
 				!m->CastToNPC()->IsOnHatelist(caster->GetOwner())
 			)
 		) {
@@ -12073,8 +12059,8 @@ bool Bot::HasValidAETarget(Bot* caster, uint16 spell_id, uint16 spell_type, Mob*
 		}
 		else {
 			if (
-				!tar || 
-				spell_range < Distance(caster->GetPosition(), tar->GetPosition()) || 
+				!tar ||
+				spell_range < Distance(caster->GetPosition(), tar->GetPosition()) ||
 				!DoLosChecks(m)
 			) {
 				continue;
@@ -12380,6 +12366,23 @@ bool Bot::BotPassiveCheck() {
 	return false;
 }
 
+bool Bot::ValidStateCheck(Mob* other, bool same_raid_group) {
+	if (
+		GetBotStance() == Stance::Passive ||
+		GetHoldFlag() ||
+		GetAppearance() == eaDead ||
+		IsFeared() ||
+		IsSilenced() ||
+		IsAmnesiad() ||
+		GetHP() < 0 ||
+		!IsInGroupOrRaid(other, same_raid_group)
+	) {
+		return false;
+	}
+
+	return true;
+}
+
 bool Bot::IsValidSpellTypeSubType(uint16 spell_type, uint16 sub_type, uint16 spell_id) {
 	if (sub_type == UINT16_MAX) {
 		return true;
@@ -12388,7 +12391,7 @@ bool Bot::IsValidSpellTypeSubType(uint16 spell_type, uint16 sub_type, uint16 spe
 	switch (sub_type) {
 		case CommandedSubTypes::SingleTarget:
 			if (
-				!IsAnyAESpell(spell_id) && 
+				!IsAnyAESpell(spell_id) &&
 				!IsGroupSpell(spell_id)
 			) {
 				return true;
@@ -12403,7 +12406,7 @@ bool Bot::IsValidSpellTypeSubType(uint16 spell_type, uint16 sub_type, uint16 spe
 			break;
 		case CommandedSubTypes::AETarget:
 			if (
-				IsAnyAESpell(spell_id) && 
+				IsAnyAESpell(spell_id) &&
 				!IsGroupSpell(spell_id)
 			) {
 				return true;
@@ -12418,7 +12421,7 @@ bool Bot::IsValidSpellTypeSubType(uint16 spell_type, uint16 sub_type, uint16 spe
 			break;
 		case CommandedSubTypes::Invis:
 			if (
-				IsEffectInSpell(spell_id, SE_Invisibility) || 
+				IsEffectInSpell(spell_id, SE_Invisibility) ||
 				IsEffectInSpell(spell_id, SE_Invisibility2)
 			) {
 				return true;
@@ -12427,16 +12430,16 @@ bool Bot::IsValidSpellTypeSubType(uint16 spell_type, uint16 sub_type, uint16 spe
 			break;
 		case CommandedSubTypes::InvisUndead:
 			if (
-				IsEffectInSpell(spell_id, SE_InvisVsUndead) || 
+				IsEffectInSpell(spell_id, SE_InvisVsUndead) ||
 				IsEffectInSpell(spell_id, SE_InvisVsUndead2)
 			) {
 				return true;
 			}
-			
+
 			break;
 		case CommandedSubTypes::InvisAnimals:
 			if (
-				IsEffectInSpell(spell_id, SE_InvisVsAnimals) || 
+				IsEffectInSpell(spell_id, SE_InvisVsAnimals) ||
 				IsEffectInSpell(spell_id, SE_ImprovedInvisAnimals)
 			) {
 				return true;
@@ -12446,12 +12449,12 @@ bool Bot::IsValidSpellTypeSubType(uint16 spell_type, uint16 sub_type, uint16 spe
 		case CommandedSubTypes::Shrink:
 			if (
 				(
-					IsEffectInSpell(spell_id, SE_ModelSize) && 
+					IsEffectInSpell(spell_id, SE_ModelSize) &&
 					CalcSpellEffectValue(spell_id, GetSpellEffectIndex(spell_id, SE_ModelSize), GetLevel()) < 100
-				) 
+				)
 				||
 				(
-					IsEffectInSpell(spell_id, SE_ChangeHeight) && 
+					IsEffectInSpell(spell_id, SE_ChangeHeight) &&
 					CalcSpellEffectValue(spell_id, GetSpellEffectIndex(spell_id, SE_ChangeHeight), GetLevel()) < 100
 				)
 			) {
@@ -12462,12 +12465,12 @@ bool Bot::IsValidSpellTypeSubType(uint16 spell_type, uint16 sub_type, uint16 spe
 		case CommandedSubTypes::Grow:
 			if (
 				(
-					IsEffectInSpell(spell_id, SE_ModelSize) && 
+					IsEffectInSpell(spell_id, SE_ModelSize) &&
 					CalcSpellEffectValue(spell_id, GetSpellEffectIndex(spell_id, SE_ModelSize), GetLevel()) > 100
-				) 
+				)
 				||
 				(
-					IsEffectInSpell(spell_id, SE_ChangeHeight) && 
+					IsEffectInSpell(spell_id, SE_ChangeHeight) &&
 					CalcSpellEffectValue(spell_id, GetSpellEffectIndex(spell_id, SE_ChangeHeight), GetLevel()) > 100
 				)
 			) {
@@ -12477,8 +12480,8 @@ bool Bot::IsValidSpellTypeSubType(uint16 spell_type, uint16 sub_type, uint16 spe
 			break;
 		case CommandedSubTypes::Selo:
 			if (
-				IsBeneficialSpell(spell_id) && 
-				IsEffectInSpell(spell_id, SE_MovementSpeed) && 
+				IsBeneficialSpell(spell_id) &&
+				IsEffectInSpell(spell_id, SE_MovementSpeed) &&
 				IsBardSong(spell_id)
 			) {
 				return true;
@@ -12631,12 +12634,20 @@ void Bot::CleanBotBlockedBuffs()
 	}
 }
 
-std::vector<BotSpells_wIndex> Bot::BotGetSpellsByType(uint16 spell_type) {
-	if (AIBot_spells_by_type[spell_type].empty()) {
-		spell_type = GetParentSpellType(spell_type);
+const std::vector<BotSpells_wIndex>& Bot::BotGetSpellsByType(uint16 spell_type) const {
+	auto it = AIBot_spells_by_type.find(spell_type);
+
+	if (it == AIBot_spells_by_type.end() || it->second.empty()) {
+		it = AIBot_spells_by_type.find(GetParentSpellType(spell_type));
+
+		if (it == AIBot_spells_by_type.end()) {
+			static const std::vector<BotSpells_wIndex> empty;
+
+			return empty;
+		}
 	}
 
-	return AIBot_spells_by_type[spell_type];
+	return it->second;
 }
 
 void Bot::AssignBotSpellsToTypes(std::vector<BotSpells>& AIBot_spells, std::unordered_map<uint16, std::vector<BotSpells_wIndex>>& AIBot_spells_by_type) {

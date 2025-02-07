@@ -305,7 +305,7 @@ public:
 	uint16 BotGetSpells(int spellslot) { return AIBot_spells[spellslot].spellid; }
 	uint32 BotGetSpellType(int spellslot) { return AIBot_spells[spellslot].type; }
 	uint16 BotGetSpellPriority(int spellslot) { return AIBot_spells[spellslot].priority; }
-	std::vector<BotSpells_wIndex> BotGetSpellsByType(uint16 spell_type);
+	const std::vector<BotSpells_wIndex>& BotGetSpellsByType(uint16 spell_type) const;
 	float GetProcChances(float ProcBonus, uint16 hand) override;
 	int GetHandToHandDamage(void) override;
 	bool TryFinishingBlow(Mob *defender, int64 &damage) override;
@@ -526,6 +526,7 @@ public:
 	void DoAttackRounds(Mob* target, int hand);
 
 	bool BotPassiveCheck();
+	bool ValidStateCheck(Mob* other, bool same_raid_group = false);
 	Raid* GetStoredRaid() { return _storedRaid; }
 	void SetStoredRaid(Raid* stored_raid) { _storedRaid = stored_raid; }
 	bool GetVerifiedRaid() { return _verifiedRaid; }
@@ -669,7 +670,7 @@ public:
 	void MapSpellTypeLevels();
 	const std::map<int32_t, std::map<int32_t, BotSpellTypesByClass>>& GetCommandedSpellTypesMinLevels() { return commanded_spells_min_level; }
 	std::list<BotSpellTypeOrder> GetSpellTypesPrioritized(uint8 priority_type);
-	uint16 GetParentSpellType(uint16 spell_type);
+	static uint16 GetParentSpellType(uint16 spell_type);
 	bool IsValidSpellTypeBySpellID(uint16 spell_type, uint16 spell_id);
 	inline uint16 GetCastedSpellType() const { return _castedSpellType; }
 	void SetCastedSpellType(uint16 spell_type);
@@ -777,7 +778,7 @@ public:
 	// Static Bot Group Methods
 	static bool AddBotToGroup(Bot* bot, Group* group);
 	static bool RemoveBotFromGroup(Bot* bot, Group* group);
-	static void RaidGroupSay(Mob *speaker, const char *msg, ...);
+	void RaidGroupSay(const char *msg, ...);
 
 	// "GET" Class Methods
 	uint32 GetBotID() const { return _botID; }

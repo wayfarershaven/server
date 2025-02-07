@@ -125,23 +125,12 @@ void bot_command_discipline(Client* c, const Seperator* sep)
 	Bot* first_found = nullptr;
 
 	for (auto bot_iter : sbl) {
-		if (!bot_iter->IsInGroupOrRaid(c)) {
-			continue;
-		}
-
-		if (bot_iter->GetBotStance() == Stance::Passive || bot_iter->GetHoldFlag() || bot_iter->GetAppearance() == eaDead || bot_iter->IsFeared() || bot_iter->IsSilenced() || bot_iter->IsAmnesiad() || bot_iter->GetHP() < 0) {
+		if (!bot_iter->ValidStateCheck(c)) {
 			continue;
 		}
 
 		if (spell_id == UINT16_MAX) { // Aggressive/Defensive type
-			std::vector<BotSpells_wIndex> bot_spell_list;
-
-			if (aggressive) {
-				bot_spell_list = bot_iter->BotGetSpellsByType(BotSpellTypes::DiscAggressive);
-			}
-			else if (defensive) {
-				bot_spell_list = bot_iter->BotGetSpellsByType(BotSpellTypes::DiscDefensive);
-			}
+			const std::vector<BotSpells_wIndex>& bot_spell_list = bot_iter->BotGetSpellsByType(aggressive ? BotSpellTypes::DiscAggressive : BotSpellTypes::DiscDefensive);
 
 			for (int i = bot_spell_list.size() - 1; i >= 0; i--) {
 				if (!IsValidSpell(bot_spell_list[i].spellid)) {

@@ -229,7 +229,6 @@ bool Bot::AICastSpell(Mob* tar, uint8 chance, uint16 spell_type, uint16 sub_targ
 
 		if (IsCommandedSpell() && IsCasting()) {
 			RaidGroupSay(
-				this,
 				fmt::format(
 					"Interrupting {}. I have been commanded to try to cast a [{}] spell, {} on {}.",
 					CastingSpellID() ? spells[CastingSpellID()].name : "my spell",
@@ -255,7 +254,6 @@ bool Bot::AICastSpell(Mob* tar, uint8 chance, uint16 spell_type, uint16 sub_targ
 			}
 
 			RaidGroupSay(
-				this,
 				fmt::format(
 					"Casting {} [{}] on {}.",
 					GetSpellName(s.SpellId),
@@ -302,7 +300,6 @@ bool Bot::BotCastMez(Mob* tar, uint8 bot_class, BotSpell& bot_spell, uint16 spel
 			}
 
 			RaidGroupSay(
-				this,
 				fmt::format(
 					"Casting {} [{}] on {}.",
 					GetSpellName(s.SpellId),
@@ -343,7 +340,6 @@ bool Bot::BotCastCure(Mob* tar, uint8 bot_class, BotSpell& bot_spell, uint16 spe
 			}
 
 			RaidGroupSay(
-				this,
 				fmt::format(
 					"Curing the group with {}.",
 					GetSpellName(bot_spell.SpellId)
@@ -356,7 +352,6 @@ bool Bot::BotCastCure(Mob* tar, uint8 bot_class, BotSpell& bot_spell, uint16 spe
 			}
 
 			RaidGroupSay(
-				this,
 				fmt::format(
 					"Curing {} with {}.",
 					(tar == this ? "myself" : tar->GetCleanName()),
@@ -410,7 +405,6 @@ bool Bot::BotCastPet(Mob* tar, uint8 bot_class, BotSpell& bot_spell, uint16 spel
 		SetCastedSpellType(spell_type);
 
 		RaidGroupSay(
-			this,
 			fmt::format(
 				"Summoning a pet [{}].",
 				GetSpellName(bot_spell.SpellId)
@@ -466,7 +460,6 @@ bool Bot::BotCastNuke(Mob* tar, uint8 bot_class, BotSpell& bot_spell, uint16 spe
 				SetCastedSpellType(spell_type);
 
 				RaidGroupSay(
-					this,
 					fmt::format(
 						"Casting {} [{}] on {}.",
 						GetSpellName(s.SpellId),
@@ -484,7 +477,6 @@ bool Bot::BotCastNuke(Mob* tar, uint8 bot_class, BotSpell& bot_spell, uint16 spe
 			SetCastedSpellType(spell_type);
 
 			RaidGroupSay(
-				this,
 				fmt::format(
 					"Casting {} [{}] on {}.",
 					GetSpellName(bot_spell.SpellId),
@@ -518,7 +510,6 @@ bool Bot::BotCastHeal(Mob* tar, uint8 bot_class, BotSpell& bot_spell, uint16 spe
 			}
 
 			RaidGroupSay(
-				this,
 				fmt::format(
 					"Healing the group with {} [{}].",
 					GetSpellName(bot_spell.SpellId),
@@ -535,7 +526,6 @@ bool Bot::BotCastHeal(Mob* tar, uint8 bot_class, BotSpell& bot_spell, uint16 spe
 			}
 
 			RaidGroupSay(
-				this,
 				fmt::format(
 					"Healing {} with {} [{}].",
 					(tar == this ? "myself" : tar->GetCleanName()),
@@ -888,7 +878,6 @@ bool Bot::AIHealRotation(Mob* tar, bool useFastHeals) {
 
 	if (castedSpell) {
 		RaidGroupSay(
-			this,
 			fmt::format(
 				"Casting {} on {}, please stay in range!",
 				spells[botSpell.SpellId].name,
@@ -912,7 +901,7 @@ std::list<BotSpell> Bot::GetBotSpellsForSpellEffect(Bot* caster, uint16 spell_ty
 	}
 
 	if (caster->AI_HasSpells()) {
-		std::vector<BotSpells_wIndex> bot_spell_list = caster->BotGetSpellsByType(spell_type);
+		const std::vector<BotSpells_wIndex>& bot_spell_list = caster->BotGetSpellsByType(spell_type);
 
 		for (int i = bot_spell_list.size() - 1; i >= 0; i--) {
 			if (!IsValidSpellAndLoS(bot_spell_list[i].spellid, caster->HasLoS())) {
@@ -921,7 +910,7 @@ std::list<BotSpell> Bot::GetBotSpellsForSpellEffect(Bot* caster, uint16 spell_ty
 
 			if (
 				caster->CheckSpellRecastTimer(bot_spell_list[i].spellid) &&
-				(bot_spell_list[i].type == spell_type || bot_spell_list[i].type == caster->GetParentSpellType(spell_type)) &&
+				(bot_spell_list[i].type == spell_type || bot_spell_list[i].type == GetParentSpellType(spell_type)) &&
 				caster->IsValidSpellTypeBySpellID(spell_type, bot_spell_list[i].spellid) &&
 				(IsEffectInSpell(bot_spell_list[i].spellid, spell_effect) || GetSpellTriggerSpellID(bot_spell_list[i].spellid, spell_effect))
 			) {
@@ -950,7 +939,7 @@ std::list<BotSpell> Bot::GetBotSpellsForSpellEffectAndTargetType(Bot* caster, ui
 	}
 
 	if (caster->AI_HasSpells()) {
-		std::vector<BotSpells_wIndex> bot_spell_list = caster->BotGetSpellsByType(spell_type);
+		const std::vector<BotSpells_wIndex>& bot_spell_list = caster->BotGetSpellsByType(spell_type);
 
 		for (int i = bot_spell_list.size() - 1; i >= 0; i--) {
 			if (!IsValidSpellAndLoS(bot_spell_list[i].spellid, caster->HasLoS())) {
@@ -959,7 +948,7 @@ std::list<BotSpell> Bot::GetBotSpellsForSpellEffectAndTargetType(Bot* caster, ui
 
 			if (
 				caster->CheckSpellRecastTimer(bot_spell_list[i].spellid) &&
-				(bot_spell_list[i].type == spell_type || bot_spell_list[i].type == caster->GetParentSpellType(spell_type)) &&
+				(bot_spell_list[i].type == spell_type || bot_spell_list[i].type == GetParentSpellType(spell_type)) &&
 				caster->IsValidSpellTypeBySpellID(spell_type, bot_spell_list[i].spellid) &&
 				(
 					IsEffectInSpell(bot_spell_list[i].spellid, spell_effect) ||
@@ -991,7 +980,7 @@ std::list<BotSpell> Bot::GetBotSpellsBySpellType(Bot* caster, uint16 spell_type)
 	}
 
 	if (caster->AI_HasSpells()) {
-		std::vector<BotSpells_wIndex> bot_spell_list = caster->BotGetSpellsByType(spell_type);
+		const std::vector<BotSpells_wIndex>& bot_spell_list = caster->BotGetSpellsByType(spell_type);
 
 		for (int i = bot_spell_list.size() - 1; i >= 0; i--) {
 			if (!IsValidSpellAndLoS(bot_spell_list[i].spellid, caster->HasLoS())) {
@@ -1000,7 +989,7 @@ std::list<BotSpell> Bot::GetBotSpellsBySpellType(Bot* caster, uint16 spell_type)
 
 			if (
 				caster->CheckSpellRecastTimer(bot_spell_list[i].spellid) &&
-				(bot_spell_list[i].type == spell_type || bot_spell_list[i].type == caster->GetParentSpellType(spell_type)) &&
+				(bot_spell_list[i].type == spell_type || bot_spell_list[i].type == GetParentSpellType(spell_type)) &&
 				caster->IsValidSpellTypeBySpellID(spell_type, bot_spell_list[i].spellid)
 			) {
 				BotSpell bot_spell;
@@ -1020,7 +1009,7 @@ std::vector<BotSpell_wPriority> Bot::GetPrioritizedBotSpellsBySpellType(Bot* cas
 	std::vector<BotSpell_wPriority> result;
 
 	if (caster && caster->AI_HasSpells()) {
-		std::vector<BotSpells_wIndex> bot_spell_list = caster->BotGetSpellsByType(spell_type);
+		const std::vector<BotSpells_wIndex>& bot_spell_list = caster->BotGetSpellsByType(spell_type);
 
 		for (int i = bot_spell_list.size() - 1; i >= 0; i--) {
 			if (!IsValidSpellAndLoS(bot_spell_list[i].spellid, caster->HasLoS())) {
@@ -1035,7 +1024,7 @@ std::vector<BotSpell_wPriority> Bot::GetPrioritizedBotSpellsBySpellType(Bot* cas
 
 			if (
 				caster->CheckSpellRecastTimer(bot_spell_list[i].spellid) &&
-				(bot_spell_list[i].type == spell_type || bot_spell_list[i].type == caster->GetParentSpellType(spell_type)) &&
+				(bot_spell_list[i].type == spell_type || bot_spell_list[i].type == GetParentSpellType(spell_type)) &&
 				caster->IsValidSpellTypeBySpellID(spell_type, bot_spell_list[i].spellid)
 			) {
 				if (
@@ -1109,7 +1098,7 @@ BotSpell Bot::GetFirstBotSpellBySpellType(Bot* caster, uint16 spell_type) {
 	result.ManaCost = 0;
 
 	if (caster && caster->AI_HasSpells()) {
-		std::vector<BotSpells_wIndex> bot_spell_list = caster->BotGetSpellsByType(spell_type);
+		const std::vector<BotSpells_wIndex>& bot_spell_list = caster->BotGetSpellsByType(spell_type);
 
 		for (int i = bot_spell_list.size() - 1; i >= 0; i--) {
 			if (!IsValidSpellAndLoS(bot_spell_list[i].spellid, caster->HasLoS())) {
@@ -1118,7 +1107,7 @@ BotSpell Bot::GetFirstBotSpellBySpellType(Bot* caster, uint16 spell_type) {
 
 			if (
 				caster->CheckSpellRecastTimer(bot_spell_list[i].spellid) &&
-				(bot_spell_list[i].type == spell_type || bot_spell_list[i].type == caster->GetParentSpellType(spell_type)) &&
+				(bot_spell_list[i].type == spell_type || bot_spell_list[i].type == GetParentSpellType(spell_type)) &&
 				caster->IsValidSpellTypeBySpellID(spell_type, bot_spell_list[i].spellid)
 			) {
 				result.SpellId = bot_spell_list[i].spellid;
@@ -1217,14 +1206,14 @@ BotSpell Bot::GetBestBotSpellForPercentageHeal(Bot* caster, Mob* tar, uint16 spe
 	result.ManaCost = 0;
 
 	if (caster && caster->AI_HasSpells()) {
-		std::vector<BotSpells_wIndex> bot_spell_list = caster->BotGetSpellsByType(spell_type);
+		const std::vector<BotSpells_wIndex>& bot_spell_list = caster->BotGetSpellsByType(spell_type);
 		for (int i = bot_spell_list.size() - 1; i >= 0; i--) {
 			if (!IsValidSpell(bot_spell_list[i].spellid)) {
 				continue;
 			}
 
 			if (
-				(bot_spell_list[i].type == spell_type || bot_spell_list[i].type == caster->GetParentSpellType(spell_type)) &&
+				(bot_spell_list[i].type == spell_type || bot_spell_list[i].type == GetParentSpellType(spell_type)) &&
 				caster->IsValidSpellTypeBySpellID(spell_type, bot_spell_list[i].spellid) &&
 				IsCompleteHealSpell(bot_spell_list[i].spellid) &&
 				caster->CastChecks(bot_spell_list[i].spellid, tar, spell_type)
@@ -1305,7 +1294,7 @@ BotSpell Bot::GetBestBotSpellForGroupHeal(Bot* caster, Mob* tar, uint16 spell_ty
 
 		for (std::list<BotSpell>::iterator bot_spell_list_itr = bot_spell_list.begin(); bot_spell_list_itr != bot_spell_list.end(); ++bot_spell_list_itr) {
 			// Assuming all the spells have been loaded into this list by level and in descending order
-			if (IsGroupHealOverTimeSpell(bot_spell_list_itr->SpellId)) {
+			if (IsRegularGroupHealSpell(bot_spell_list_itr->SpellId)) {
 				uint16 spell_id = bot_spell_list_itr->SpellId;
 
 				if (!caster->IsCommandedSpell() && caster->IsValidSpellRange(spell_id, tar)) {
@@ -1379,7 +1368,7 @@ BotSpell Bot::GetBestBotSpellForGroupCompleteHeal(Bot* caster, Mob* tar, uint16 
 
 		for (std::list<BotSpell>::iterator bot_spell_list_itr = bot_spell_list.begin(); bot_spell_list_itr != bot_spell_list.end(); ++bot_spell_list_itr) {
 			// Assuming all the spells have been loaded into this list by level and in descending order
-			if (IsGroupHealOverTimeSpell(bot_spell_list_itr->SpellId)) {
+			if (IsGroupCompleteHealSpell(bot_spell_list_itr->SpellId)) {
 				uint16 spell_id = bot_spell_list_itr->SpellId;
 
 				if (!caster->IsCommandedSpell() && caster->IsValidSpellRange(spell_id, tar)) {
@@ -1925,7 +1914,7 @@ BotSpell Bot::GetDebuffBotSpell(Bot* caster, Mob *tar, uint16 spell_type) {
 		return result;
 
 	if (caster->AI_HasSpells()) {
-		std::vector<BotSpells_wIndex> bot_spell_list = caster->BotGetSpellsByType(spell_type);
+		const std::vector<BotSpells_wIndex>& bot_spell_list = caster->BotGetSpellsByType(spell_type);
 
 		for (int i = bot_spell_list.size() - 1; i >= 0; i--) {
 			if (!IsValidSpellAndLoS(bot_spell_list[i].spellid, caster->HasLoS())) {
@@ -1971,7 +1960,7 @@ BotSpell Bot::GetBestBotSpellForResistDebuff(Bot* caster, Mob *tar, uint16 spell
 	bool needs_disease_resist_debuff = (tar->GetDR() + level_mod) > 100;
 
 	if (caster->AI_HasSpells()) {
-		std::vector<BotSpells_wIndex> bot_spell_list = caster->BotGetSpellsByType(spell_type);
+		const std::vector<BotSpells_wIndex>& bot_spell_list = caster->BotGetSpellsByType(spell_type);
 
 		for (int i = bot_spell_list.size() - 1; i >= 0; i--) {
 			if (!IsValidSpellAndLoS(bot_spell_list[i].spellid, caster->HasLoS())) {
