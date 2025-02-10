@@ -321,6 +321,32 @@ public:
 
 		return all_entries;
 	}
+
+	static Trader GetTraderZoneIdAndInstanceIdByAccountId(Database &db, uint32 account_id)
+	{
+		auto query = fmt::format(
+			"SELECT t.id, t.char_id, t.char_zone_id, t.char_zone_instance_id "
+			"FROM trader AS t "
+			"WHERE t.char_id = (SELECT c.id FROM character_data AS c WHERE c.account_id = '{}' LIMIT 1) "
+			"LIMIT 1;",
+			account_id
+		);
+
+		auto results = db.QueryDatabase(query);
+
+		Trader e{};
+		if (results.RowCount() == 0) {
+			return e;
+		}
+
+		auto row = results.begin();
+		e.id                    = row[0] ? strtoull(row[0], nullptr, 10) : 0;
+		e.char_id               = row[1] ? static_cast<uint32_t>(strtoul(row[1], nullptr, 10)) : 0;
+		e.char_zone_id          = row[2] ? static_cast<uint32_t>(strtoul(row[2], nullptr, 10)) : 0;
+		e.char_zone_instance_id = row[3] ? static_cast<int32_t>(atoi(row[3])) : 0;
+
+		return e;
+	}
 };
 
 #endif //EQEMU_TRADER_REPOSITORY_H

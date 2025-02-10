@@ -4150,7 +4150,6 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 			safe_delete(outapp);
 
 			entity_list.RemoveMob(client->CastToMob()->GetID());
-			// entity_list.RemoveClient(client->GetID());
 
 			auto sp          = new ServerPacket(ServerOP_UsertoWorldCancelOfflineResponse, pack->size);
 			auto out         = reinterpret_cast<UsertoWorldResponse_Struct *>(sp->pBuffer);
