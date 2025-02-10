@@ -1,8 +1,6 @@
 #include "../common/global_define.h"
 #include <iostream>
-#include <string.h>
 #include <stdio.h>
-#include <iomanip>
 #include <stdlib.h>
 #include "../common/version.h"
 #include "../common/servertalk.h"
@@ -20,6 +18,7 @@
 #include "cliententry.h"
 #include "world_config.h"
 #include "../common/repositories/account_repository.h"
+#include "../common/repositories/trader_repository.h"
 
 extern ZSList        zoneserver_list;
 extern ClientList    client_list;
@@ -715,7 +714,7 @@ void LoginServer::ProcessUserToWorldCancelOfflineRequest(uint16_t opcode, EQ::Ne
 	auto   utwr = static_cast<UsertoWorldRequest_Struct *>(p.Data());
 	uint32 id   = database.GetAccountIDFromLSID(utwr->login, utwr->lsaccountid);
 
-	AccountRepository::SetOfflineStatus(database, id, false);
+	//AccountRepository::SetOfflineStatus(database, id, false);
 	int16                     status = database.GetAccountStatus(id);
 
 	LogDebug(
@@ -762,6 +761,16 @@ void LoginServer::ProcessUserToWorldCancelOfflineRequest(uint16_t opcode, EQ::Ne
 		return;
 	}
 
-	server_packet.opcode  = ServerOP_UsertoWorldCancelOfflineRequest;
-	zoneserver_list.SendPacketToBootedZones(&server_packet);
+	auto trader = TraderRepository::GetTraderZoneIdAndInstanceIdByAccountId(database, id);
+
+	if (trader.id && zoneserver_list.IsZoneBootedByZoneIdAndInstanceId(trader.char_zone_id, trader.char_zone_instance_id)) {
+		server_packet.opcode  = ServerOP_UsertoWorldCancelOfflineRequest;
+		zoneserver_list.SendPacketToBootedZones(&server_packet);
+		return;
+	}
+
+	AccountRepository::SetOfflineStatus(database, id, false);
+	TraderRepository::DeleteWhere(database, fmt::format("`char_id` = '{}'", trader.char_id));
+	server_packet.opcode  = ServerOP_UsertoWorldCancelOfflineResponse;
+	SendPacket(&server_packet);
 }
