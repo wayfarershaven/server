@@ -6879,7 +6879,7 @@ CREATE INDEX idx_instance_id ON data_buckets (instance_id);
 		.match       = "",
 		.sql         = R"(
 ALTER TABLE `account`
-	ADD COLUMN `offline` TINYINT(1) UNSIGNED NOT NULL DEFAULT '0' AFTER `expansion`;
+	ADD COLUMN `offline` TINYINT(1) UNSIGNED NOT NULL DEFAULT '0' AFTER `time_creation`;
 )"
 	},
 // -- template; copy/paste this when you need to create a new entry
