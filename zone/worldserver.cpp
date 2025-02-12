@@ -3817,6 +3817,7 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 					.charges              = item ? item->IsStackable() ? 1 : item->GetCharges() : 0,
 					.total_cost           = (in->trader_buy_struct.price * in->trader_buy_struct.quantity),
 					.player_money_balance = trader_pc->GetCarriedMoney(),
+					.offline_purchase     = trader_pc->IsOffline(),
 				};
 				RecordPlayerEventLogWithClient(trader_pc, PlayerEvent::TRADER_SELL, e);
 			}

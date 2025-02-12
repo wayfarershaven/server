@@ -322,7 +322,7 @@ void WorldServer::ProcessUserToWorldResponse(uint16_t opcode, const EQ::Net::Pac
 	else {
 		LogError(
 			"Received User-To-World Response for [{0}] but could not find the client referenced!.",
-			user_to_world_response->lsaccountid
+			res->lsaccountid
 		);
 	}
 }
@@ -344,50 +344,51 @@ void WorldServer::ProcessUserToWorldCancelOfflineResponse(uint16_t opcode, const
 		return;
 	}
 
-	auto user_to_world_response = (UsertoWorldResponse_Struct *) packet.Data();
-	LogDebug("Trying to find client with user id of [{0}]", user_to_world_response->lsaccountid);
+	auto res = (UsertoWorldResponse_Struct *) packet.Data();
+	LogDebug("Trying to find client with user id of [{0}]", res->lsaccountid);
 
-	auto const c = server.client_manager->GetClient(user_to_world_response->lsaccountid, user_to_world_response->login);
+	Client *c = server.client_manager->GetClient(
+		res->lsaccountid,
+		res->login
+	);
 
 	if (c) {
-		LogDebug("Found client with user id of [{0}] and account name of {1}",
-				 user_to_world_response->lsaccountid,
-				 c->GetAccountName().c_str()
+		LogDebug(
+			"Found client with user id of [{}] and account name of {}",
+			res->lsaccountid,
+			c->GetAccountName().c_str()
 		);
 
-		auto client_packet         = EQApplicationPacket(OP_CancelOfflineTraderResponse, sizeof(PlayEverquestResponse_Struct));
-		auto client_packet_payload = reinterpret_cast<PlayEverquestResponse_Struct *>(client_packet.pBuffer);
+		auto client_packet         = EQApplicationPacket(
+			OP_CancelOfflineTraderResponse,
+			sizeof(PlayEverquestResponse)
+		);
+		auto client_packet_payload = reinterpret_cast<PlayEverquestResponse*>(client_packet.pBuffer);
 
-		client_packet_payload->base_header.sequence = c->GetPlaySequence();
-		client_packet_payload->server_number        = c->GetPlayServerID();
+		client_packet_payload->base_header.sequence = c->GetCurrentPlaySequence();
+		client_packet_payload->server_number        = c->GetSelectedPlayServerID();
 
 		c->SendPlayResponse(&client_packet);
 
-		auto outapp = new EQApplicationPacket(OP_PlayEverquestResponse, sizeof(PlayEverquestResponse_Struct));
-		auto r      = reinterpret_cast<PlayEverquestResponse_Struct *>(outapp->pBuffer);
-		r->base_header.sequence = c->GetPlaySequence();
-		r->server_number        = c->GetPlayServerID();
+		auto outapp = new EQApplicationPacket(OP_PlayEverquestResponse, sizeof(PlayEverquestResponse));
+		auto r      = reinterpret_cast<PlayEverquestResponse*>(outapp->pBuffer);
+		r->base_header.sequence = c->GetCurrentPlaySequence();
+		r->server_number        = c->GetSelectedPlayServerID();
 
 		LogDebug(
 			"Found sequence and play of [{0}] [{1}]",
-			c->GetPlaySequence(),
-			c->GetPlayServerID()
+			c->GetCurrentPlaySequence(),
+			c->GetSelectedPlayServerID()
 		);
 
 		LogDebug("[Size: [{0}]] {1}", outapp->size, DumpPacketToString(outapp));
 
-		if (user_to_world_response->response > 0) {
+		if (res->response > 0) {
 			r->base_reply.success = true;
-			SendClientAuth(
-				c->GetConnection()->GetRemoteAddr(),
-				c->GetAccountName(),
-				c->GetKey(),
-				c->GetAccountID(),
-				c->GetLoginServerName()
-			);
+			SendClientAuthToWorld(c);
 		}
 
-		switch (user_to_world_response->response) {
+		switch (res->response) {
 			case UserToWorldStatusSuccess:
 				r->base_reply.error_str_id = LS::ErrStr::ERROR_NONE;
 				break;

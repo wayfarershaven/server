@@ -80,12 +80,12 @@ bool Client::Process()
 				safe_delete_array(app->pBuffer);
 				auto buffer                = new unsigned char[sizeof(PlayEverquestRequest)];
 				auto data                  = (PlayEverquestRequest *) buffer;
-				data->base_header.sequence = GetPlaySequence();
-				data->server_number        = GetPlayServerID();
+				data->base_header.sequence = GetCurrentPlaySequence();
+				data->server_number        = GetSelectedPlayServerID();
 				app->pBuffer               = buffer;
 				app->size                  = sizeof(PlayEverquestRequest);
 
-				Handle_CancelOfflineStatus((const char *) app->pBuffer);
+				SendCancelOfflineStatusToWorld((const char *) app->pBuffer);
 				LogError("Hit CancelOfflineTrader Mode Packet.");
 
 				break;
@@ -283,7 +283,7 @@ void Client::SendPlayToWorld(const char *data)
 	server.server_manager->SendUserLoginToWorldRequest(server_id_in, m_account_id, m_loginserver_name);
 }
 
-void Client::Handle_CancelOfflineStatus(const char *data)
+void Client::SendCancelOfflineStatusToWorld(const char *data)
 {
 	if (m_client_status != cs_logged_in) {
 		LogError("Client sent a play request when they were not logged in, discarding");

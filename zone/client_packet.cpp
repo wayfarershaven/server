@@ -17113,7 +17113,14 @@ void Client::Handle_OP_Offline(const EQApplicationPacket *app)
 		return;
 	}
 
-	SetOffline(true);
+	if (IsThereACustomer()) {
+		auto customer = entity_list.GetClientByID(GetCustomerID());
+		if (customer) {
+			auto end_session = new EQApplicationPacket(OP_ShopEnd);
+			customer->FastQueuePacket(&end_session);
+		}
+	}
+
 	AccountRepository::SetOfflineStatus(database, AccountID(), true);
 
 	EQStreamInterface *eqsi           = nullptr;

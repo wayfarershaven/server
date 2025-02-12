@@ -31,11 +31,13 @@
 #include "entity.h"
 #include "mob.h"
 
+#include <numeric>
+#include "../common/bazaar.h"
 #include "quest_parser_collection.h"
 #include "string_ids.h"
 #include "worldserver.h"
-#include "../common/bazaar.h"
-#include <numeric>
+
+#include "../common/repositories/account_repository.h"
 
 class QueryServ;
 
@@ -1462,6 +1464,7 @@ void Client::BuyTraderItem(TraderBuy_Struct *tbs, Client *Trader, const EQApplic
 			.charges              = buy_item->GetCharges(),
 			.total_cost           = (tbs->price * outtbs->quantity),
 			.player_money_balance = GetCarriedMoney(),
+			.offline_purchase     = Trader->IsOffline(),
 		};
 
 		RecordPlayerEventLog(PlayerEvent::TRADER_PURCHASE, e);
@@ -1484,6 +1487,7 @@ void Client::BuyTraderItem(TraderBuy_Struct *tbs, Client *Trader, const EQApplic
 			.charges              = buy_item->GetCharges(),
 			.total_cost           = (tbs->price * outtbs->quantity),
 			.player_money_balance = Trader->GetCarriedMoney(),
+			.offline_purchase     = Trader->IsOffline(),
 		};
 
 		RecordPlayerEventLogWithClient(Trader, PlayerEvent::TRADER_SELL, e);
@@ -2830,6 +2834,8 @@ void Client::BuyTraderItemOutsideBazaar(TraderBuy_Struct *tbs, const EQApplicati
 {
 	auto in          = (TraderBuy_Struct *) app->pBuffer;
 	auto trader_item = TraderRepository::GetItemBySerialNumber(database, tbs->serial_number, tbs->trader_id);
+	auto offline     = AccountRepository::GetAllOfflineStatus(database, trader_item.char_id);
+
 	if (!trader_item.id || GetTraderTransactionDate() < trader_item.listing_date) {
 		LogTrading("Attempt to purchase an item outside of the Bazaar trader_id <red>[{}] item serial_number "
 				   "<red>[{}] The Traders data was outdated.",
@@ -2972,6 +2978,7 @@ void Client::BuyTraderItemOutsideBazaar(TraderBuy_Struct *tbs, const EQApplicati
 			.charges              = buy_item->IsStackable() ? 1 : charges,
 			.total_cost           = total_cost,
 			.player_money_balance = GetCarriedMoney(),
+			.offline_purchase     = offline,
 		};
 
 		RecordPlayerEventLog(PlayerEvent::TRADER_PURCHASE, e);
