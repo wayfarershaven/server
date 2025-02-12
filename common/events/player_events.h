@@ -884,6 +884,7 @@ namespace PlayerEvent {
 		uint32      charges;
 		uint32      total_cost;
 		uint64      player_money_balance;
+		bool        offline_purchase;
 
 
 		// cereal
@@ -904,7 +905,8 @@ namespace PlayerEvent {
 				CEREAL_NVP(price),
 				CEREAL_NVP(charges),
 				CEREAL_NVP(total_cost),
-				CEREAL_NVP(player_money_balance)
+				CEREAL_NVP(player_money_balance),
+				CEREAL_NVP(offline_purchase)
 			);
 		}
 	};
@@ -924,6 +926,7 @@ namespace PlayerEvent {
 		uint32      charges;
 		uint32      total_cost;
 		uint64      player_money_balance;
+		bool        offline_purchase;
 
 
 		// cereal
@@ -944,7 +947,8 @@ namespace PlayerEvent {
 				CEREAL_NVP(price),
 				CEREAL_NVP(charges),
 				CEREAL_NVP(total_cost),
-				CEREAL_NVP(player_money_balance)
+				CEREAL_NVP(player_money_balance),
+				CEREAL_NVP(offline_purchase)
 			);
 		}
 	};
