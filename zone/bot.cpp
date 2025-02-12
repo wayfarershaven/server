@@ -11174,24 +11174,17 @@ void Bot::SetSpellTypePriority(uint16 spell_type, uint8 priority_type, uint16 pr
 
 std::list<BotSpellTypeOrder> Bot::GetSpellTypesPrioritized(uint8 priority_type) {
 	std::list<BotSpellTypeOrder> cast_order;
-	std::list<BotSpellTypeOrder> temp_cast_order;
-
+	
 	for (uint16 i = BotSpellTypes::START; i <= BotSpellTypes::END; i++) {
 		BotSpellTypeOrder typeSettings = {
 			.spellType = i,
 			.priority = GetSpellTypePriority(i, priority_type)
 		};
 
-		cast_order.emplace_back(typeSettings);
-	}
-
-	for (auto& currentType : cast_order) {
-		if (currentType.priority != 0) {
-			temp_cast_order.emplace_back(currentType);
+		if (typeSettings.priority != 0) {
+			cast_order.emplace_back(typeSettings);
 		}
 	}
-
-	cast_order = temp_cast_order;
 
 	if (cast_order.size() > 1) {
 		cast_order.sort(
@@ -11901,7 +11894,7 @@ bool Bot::PlotBotPositionAroundTarget(Mob* target, float& x_dest, float& y_dest,
 			temp_x = tar_x + zone->random.Real(-max_distance, max_distance);
 			temp_y = tar_y + zone->random.Real(-max_distance, max_distance);
 
-			temp_z_Position.x = temp_z;
+			temp_z_Position.x = temp_x;
 			temp_z_Position.y = temp_y;
 			temp_z_Position.z = temp_z;
 			best_z = GetFixedZ(temp_z_Position);
