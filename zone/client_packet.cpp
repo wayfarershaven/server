@@ -17107,6 +17107,7 @@ void Client::Handle_OP_Offline(const EQApplicationPacket *app)
 	}
 
 	AccountRepository::SetOfflineStatus(database, AccountID(), true);
+	SetOffline(true);
 
 	EQStreamInterface *eqsi           = nullptr;
 	auto               offline_client = new Client(eqsi);
