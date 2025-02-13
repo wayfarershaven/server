@@ -485,7 +485,12 @@ public:
 	inline bool ClientDataLoaded() const { return client_data_loaded; }
 	inline bool Connected() const { return (client_state == CLIENT_CONNECTED); }
 	inline bool InZone() const { return (client_state == CLIENT_CONNECTED || client_state == CLIENT_LINKDEAD); }
-	inline void Disconnect() { eqs->Close(); client_state = DISCONNECTED; }
+	inline void Disconnect() {
+		if (eqs) {
+			eqs->Close();
+			client_state = DISCONNECTED;
+		}
+	}
 	inline bool IsLD() const { return (bool) (client_state == CLIENT_LINKDEAD); }
 	void Kick(const std::string &reason);
 	void WorldKick();
