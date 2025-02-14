@@ -409,7 +409,10 @@ void ClientList::ClientUpdate(ZoneServer *zoneserver, ServerClientList_Struct *s
 		" LFGFromLevel [{}]"
 		" LFGToLevel [{}]"
 		" LFGMatchFilter [{}]"
-		" LFGComments [{}]",
+		" LFGComments [{}]"
+		" Trader [{}]"
+		" Buyer [{}]"
+		" Offline [{}]",
 		scl->remove,
 		scl->wid,
 		scl->IP,
@@ -436,7 +439,10 @@ void ClientList::ClientUpdate(ZoneServer *zoneserver, ServerClientList_Struct *s
 		scl->LFGFromLevel,
 		scl->LFGToLevel,
 		scl->LFGMatchFilter,
-		scl->LFGComments
+		scl->LFGComments,
+		scl->trader,
+		scl->buyer,
+		scl->offline
 	);
 
 	clientlist.Insert(cle);
@@ -713,7 +719,15 @@ void ClientList::SendWhoAll(uint32 fromid,const char* to, int16 admin, Who_All_S
 					rankstring = 0;
 					iterator.Advance();
 					continue;
-				} else if (cle->GetGM()) {
+				} else if (cle->GetTrader())
+				{
+					rankstring = 12315;
+				}
+				else if (cle->GetBuyer())
+				{
+					rankstring = 6056;
+				}
+				else if (cle->GetGM()) {
 					if (cle->Admin() >= AccountStatus::GMImpossible) {
 						rankstring = 5021;
 					} else if (cle->Admin() >= AccountStatus::GMMgmt) {
@@ -804,6 +818,17 @@ void ClientList::SendWhoAll(uint32 fromid,const char* to, int16 admin, Who_All_S
 				char placcount[30]={0};
 				if (admin>=cle->Admin() && admin > AccountStatus::Player) {
 					strcpy(placcount,cle->AccountName());
+				}
+
+				if (cle->GetOffline()) {
+					if (cle->GetTrader()) {
+						pidstring = 0x0430;
+						rankstring = 0xFFFFFFFF;
+					}
+					if (cle->GetBuyer()) {
+						pidstring = 0x0420;
+						rankstring = 0xFFFFFFFF;
+					}
 				}
 
 				memcpy(bufptr,&formatstring, sizeof(uint32));

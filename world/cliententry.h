@@ -121,6 +121,9 @@ public:
 	inline bool GetLFGMatchFilter() const { return pLFGMatchFilter; }
 	inline const char *GetLFGComments() const { return pLFGComments; }
 	inline uint8 GetClientVersion() { return pClientVersion; }
+	bool GetTrader() const { return pTrader; }
+	bool GetBuyer() const { return pBuyer; }
+	bool GetOffline() const { return pOffline; }
 
 	inline bool TellQueueFull() const { return tell_queue.size() >= RuleI(World, TellQueueSize); }
 	inline bool TellQueueEmpty() const { return tell_queue.empty(); }
@@ -172,6 +175,9 @@ private:
 	uint8	pLFGToLevel{};
 	bool	pLFGMatchFilter{};
 	char	pLFGComments[64]{};
+	bool    pTrader  = false;
+	bool    pBuyer   = false;
+	bool    pOffline = false;
 
 	// Tell Queue -- really a vector :D
 	std::vector<ServerChannelMessage_Struct *> tell_queue;

@@ -777,7 +777,9 @@ Client::~Client() {
 	if(isgrouped && !bZoning && is_zone_loaded)
 		LeaveGroup();
 
-	UpdateWho(2);
+	if (!IsOffline()) {
+		UpdateWho(2);
+	}
 
 	if(IsHoveringForRespawn())
 	{
@@ -2085,6 +2087,9 @@ void Client::UpdateWho(uint8 remove)
 	s->race        = GetRace();
 	s->class_      = GetClass();
 	s->level       = GetLevel();
+	s->trader      = IsTrader();
+	s->buyer       = IsBuyer();
+	s->offline     = IsOffline();
 
 	if (m_pp.anon == 0) {
 		s->anon = 0;

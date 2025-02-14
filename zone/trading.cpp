@@ -900,6 +900,9 @@ void Client::TraderStartTrader(const EQApplicationPacket *app)
 	SetTrader(true);
 	SendTraderMode(TraderOn);
 	SendBecomeTraderToWorld(this, TraderOn);
+
+	UpdateWho();
+
 	LogTrading("Trader Mode ON for Player [{}] with client version {}.", GetCleanName(), (uint32) ClientVersion());
 }
 
@@ -920,6 +923,8 @@ void Client::TraderEndTrader()
 
 	WithCustomer(0);
 	SetTrader(false);
+
+	UpdateWho();
 }
 
 void Client::SendTraderItem(uint32 ItemID, uint16 Quantity, TraderRepository::Trader &t) {

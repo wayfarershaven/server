@@ -217,18 +217,21 @@ void ClientListEntry::Update(ZoneServer *iZS, ServerClientList_Struct *scl, CLE_
 		pLSID = scl->LSAccountID;
 		strn0cpy(plskey, scl->lskey, sizeof(plskey));
 	}
-	padmin         = scl->Admin;
-	plevel         = scl->level;
-	pclass_        = scl->class_;
-	prace          = scl->race;
-	panon          = scl->anon;
-	ptellsoff      = scl->tellsoff;
-	pguild_id      = scl->guild_id;
-	pguild_rank    = scl->guild_rank;
+	padmin                = scl->Admin;
+	plevel                = scl->level;
+	pclass_               = scl->class_;
+	prace                 = scl->race;
+	panon                 = scl->anon;
+	ptellsoff             = scl->tellsoff;
+	pguild_id             = scl->guild_id;
+	pguild_rank           = scl->guild_rank;
 	pguild_tribute_opt_in = scl->guild_tribute_opt_in;
-	pLFG           = scl->LFG;
-	gm             = scl->gm;
-	pClientVersion = scl->ClientVersion;
+	pLFG                  = scl->LFG;
+	gm                    = scl->gm;
+	pClientVersion        = scl->ClientVersion;
+	pTrader               = scl->trader;
+	pBuyer                = scl->buyer;
+	pOffline              = scl->offline;
 
 	// Fields from the LFG Window
 	if ((scl->LFGFromLevel != 0) && (scl->LFGToLevel != 0)) {
