@@ -17145,4 +17145,6 @@ void Client::Handle_OP_Offline(const EQApplicationPacket *app)
 	offline_client->CreateSpawnPacket(outapp);
 	entity_list.QueueClients(nullptr, outapp, false);
 	safe_delete(outapp);
+
+	offline_client->UpdateWho();
 }

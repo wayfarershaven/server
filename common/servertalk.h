@@ -559,6 +559,9 @@ struct ServerClientList_Struct {
 	uint8	LFGToLevel;
 	bool	LFGMatchFilter;
 	char	LFGComments[64];
+	bool    trader;
+	bool    buyer;
+	bool    offline;
 };
 
 struct ServerClientListKeepAlive_Struct {

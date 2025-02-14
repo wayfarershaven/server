@@ -2380,26 +2380,29 @@ public:
 
 	void Clone(Client& in)
 	{
-		this->guild_id           = in.guild_id;
-		this->guildrank          = in.guildrank;
-		this->LFG                = in.LFG;
-		this->AFK                = in.AFK;
-		this->trader_id          = in.trader_id;
-		this->m_buyer_id         = in.m_buyer_id;
-		this->race               = in.race;
-		this->class_             = in.class_;
-		this->size               = in.size;
-		this->deity              = in.deity;
-		this->texture            = in.texture;
-		this->m_ClientVersion    = in.m_ClientVersion;
-		this->m_ClientVersionBit = in.m_ClientVersionBit;
-		this->character_id       = in.character_id;
-		this->account_id         = in.account_id;
-		lsaccountid              = in.lsaccountid;
-		m_pp.platinum            = in.m_pp.platinum;
-		m_pp.gold                = in.m_pp.gold;
-		m_pp.silver              = in.m_pp.silver;
-		m_pp.copper              = in.m_pp.copper;
+		WID                = in.WID;
+		admin              = in.admin;
+		guild_id           = in.guild_id;
+		guildrank          = in.guildrank;
+		LFG                = in.LFG;
+		AFK                = in.AFK;
+		trader_id          = in.trader_id;
+		m_buyer_id         = in.m_buyer_id;
+		race               = in.race;
+		class_             = in.class_;
+		size               = in.size;
+		deity              = in.deity;
+		texture            = in.texture;
+		m_ClientVersion    = in.m_ClientVersion;
+		m_ClientVersionBit = in.m_ClientVersionBit;
+		character_id       = in.character_id;
+		account_id         = in.account_id;
+		lsaccountid        = in.lsaccountid;
+		m_pp.platinum      = in.m_pp.platinum;
+		m_pp.gold          = in.m_pp.gold;
+		m_pp.silver        = in.m_pp.silver;
+		m_pp.copper        = in.m_pp.copper;
+		m_pp.gm            = in.m_pp.gm;
 
 		m_inv.SetInventoryVersion(in.m_ClientVersion);
 		this->SetBodyType(in.GetBodyType(), false);

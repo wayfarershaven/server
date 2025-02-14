@@ -4462,6 +4462,7 @@ namespace RoF2
 		*p = nullptr;
 
 		char *InBuffer = (char *)in->pBuffer;
+		std::vector<uint32> p_ids { 0x430, 0x420 };
 
 		WhoAllReturnStruct *wars = (WhoAllReturnStruct*)InBuffer;
 
@@ -4487,8 +4488,9 @@ namespace RoF2
 			x = VARSTRUCT_DECODE_TYPE(uint32, InBuffer);
 			VARSTRUCT_ENCODE_TYPE(uint32, OutBuffer, x);
 
-			InBuffer += 4;
-			VARSTRUCT_ENCODE_TYPE(uint32, OutBuffer, 0);
+			x = VARSTRUCT_DECODE_TYPE(uint32, InBuffer);
+			VARSTRUCT_ENCODE_TYPE(uint32, OutBuffer, std::ranges::find(p_ids.begin(), p_ids.end(), x) == p_ids.end() ? 0 : x);
+
 			VARSTRUCT_ENCODE_TYPE(uint32, OutBuffer, 0xffffffff);
 
 			char Name[64];
