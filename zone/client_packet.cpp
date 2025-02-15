@@ -17183,7 +17183,10 @@ void Client::Handle_OP_Offline(const EQApplicationPacket *app)
 
 	if (IsBuyer()) {
 		offline_client->SetBuyerID(offline_client->CharacterID());
-		BuyerRepository::UpdateBuyerEntityID(database, CharacterID(), GetID(), offline_client->GetID());
+		if (!BuyerRepository::UpdateBuyerEntityID(database, CharacterID(), GetID(), offline_client->GetID())) {
+			entity_list.RemoveMob(offline_client->CastToMob()->GetID());
+			return;
+		}
 	}
 	else {
 		offline_client->SetTrader(true);
