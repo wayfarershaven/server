@@ -156,6 +156,7 @@ public:
 		}
 
 		ReplaceMany(db, results);
+		return true;
 	}
 };
 
