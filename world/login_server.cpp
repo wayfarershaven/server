@@ -760,7 +760,7 @@ void LoginServer::ProcessUserToWorldCancelOfflineRequest(uint16_t opcode, EQ::Ne
 		return;
 	}
 
-	auto trader = TraderRepository::GetTraderZoneIdAndInstanceIdByAccountId(database, id);
+	auto trader = TraderRepository::GetAccountZoneIdAndInstanceIdByAccountId(database, id);
 
 	if (trader.id && zoneserver_list.IsZoneBootedByZoneIdAndInstanceId(trader.char_zone_id, trader.char_zone_instance_id)) {
 		server_packet.opcode  = ServerOP_UsertoWorldCancelOfflineRequest;

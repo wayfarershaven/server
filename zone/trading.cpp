@@ -1895,12 +1895,24 @@ void Client::SellToBuyer(const EQApplicationPacket *app)
 				}
 
 				if (!DoBarterBuyerChecks(sell_line)) {
+					SendBarterBuyerClientMessage(
+						sell_line,
+						Barter_SellerTransactionComplete,
+						Barter_Failure,
+						Barter_Failure
+					);
 					return;
-				};
+				}
 
 				if (!DoBarterSellerChecks(sell_line)) {
+					SendBarterBuyerClientMessage(
+						sell_line,
+						Barter_SellerTransactionComplete,
+						Barter_Failure,
+						Barter_Failure
+					);
 					return;
-				};
+				}
 
 				BuyerRepository::UpdateTransactionDate(database, sell_line.buyer_id, time(nullptr));
 
@@ -1999,6 +2011,18 @@ void Client::SellToBuyer(const EQApplicationPacket *app)
 					e.buyer_name  = buyer->GetCleanName();
 					e.seller_name = GetCleanName();
 					RecordPlayerEventLog(PlayerEvent::BARTER_TRANSACTION, e);
+				}
+
+				if (buyer->IsOffline()) {
+					auto e         = CharacterOfflineTransactionsRepository::NewEntity();
+					e.character_id = buyer->CharacterID();
+					e.item_name    = sell_line.item_name;
+					e.price        = total_cost;
+					e.quantity     = sell_line.seller_quantity;
+					e.type         = BUYER_TRANSACTION;
+					e.buyer_name   = GetCleanName();
+
+					CharacterOfflineTransactionsRepository::InsertOne(database, e);
 				}
 
 				SendWindowUpdatesToSellerAndBuyer(sell_line);
@@ -2140,6 +2164,8 @@ void Client::ToggleBuyerMode(bool status)
 		SetCustomerID(0);
 		SendBuyerMode(true);
 		SendBuyerToBarterWindow(this, Barter_AddToBarterWindow);
+		UpdateWho();
+
 		Message(Chat::Yellow, "Barter Mode ON.");
 	}
 	else {
@@ -2152,6 +2178,9 @@ void Client::ToggleBuyerMode(bool status)
 		if (!IsInBuyerSpace()) {
 			Message(Chat::Red, "You must be in a Barter Stall to start Barter Mode.");
 		}
+
+		UpdateWho();
+
 		Message(Chat::Yellow, fmt::format("Barter Mode OFF. Buy lines deactivated.").c_str());
 	}
 
