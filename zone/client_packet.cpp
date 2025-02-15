@@ -897,7 +897,7 @@ void Client::CompleteConnect()
 			SendGuildMembersList();
 		}
 
-		guild_mgr.SendGuildMemberUpdateToWorld(GetName(), GuildID(), zone->GetZoneID(), time(nullptr));
+		guild_mgr.SendGuildMemberUpdateToWorld(GetName(), GuildID(), zone->GetZoneID(), time(nullptr), 0);
 
 		SendGuildList();
 		if (GetGuildListDirty()) {

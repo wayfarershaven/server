@@ -65,6 +65,7 @@ class CharGuildInfo
 		bool	    alt;
 		std::string	public_note;
 		bool	    online;
+		bool        offline_mode;
 };
 
 //this object holds guild functionality shared between world and zone.

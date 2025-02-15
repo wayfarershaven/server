@@ -179,7 +179,7 @@ bool Client::Process() {
 			}
 			if (IsInAGuild()) {
 				guild_mgr.UpdateDbMemberOnline(CharacterID(), false);
-				guild_mgr.SendGuildMemberUpdateToWorld(GetName(), GuildID(), 0, time(nullptr));
+				guild_mgr.SendGuildMemberUpdateToWorld(GetName(), GuildID(), 0, time(nullptr), 0);
 			}
 
 			SetDynamicZoneMemberStatus(DynamicZoneMemberStatus::Offline);
@@ -208,7 +208,7 @@ bool Client::Process() {
 			Save();
 			if (IsInAGuild()) {
 				guild_mgr.UpdateDbMemberOnline(CharacterID(), false);
-				guild_mgr.SendGuildMemberUpdateToWorld(GetName(), GuildID(), 0, time(nullptr));
+				guild_mgr.SendGuildMemberUpdateToWorld(GetName(), GuildID(), 0, time(nullptr), 0);
 			}
 
 			if (GetMerc())
@@ -590,7 +590,7 @@ bool Client::Process() {
 			}
 			if (IsInAGuild()) {
 				guild_mgr.UpdateDbMemberOnline(CharacterID(), false);
-				guild_mgr.SendGuildMemberUpdateToWorld(GetName(), GuildID(), 0, time(nullptr));
+				guild_mgr.SendGuildMemberUpdateToWorld(GetName(), GuildID(), 0, time(nullptr) ,0);
 			}
 
 			return false;
