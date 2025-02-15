@@ -1845,7 +1845,7 @@ namespace RoF2
 				e->zoneinstance = 0;
 				e->zone_id = htons(emu_e->zone_id);
 				e->unknown_one2 = htonl(1);
-				e->unknown04 = 0;
+				e->offline_mode = htonl(emu_e->offline_mode);
 
 #undef SlideStructString
 #undef PutFieldN
@@ -1862,14 +1862,12 @@ namespace RoF2
 	{
 		SETUP_DIRECT_ENCODE(GuildMemberUpdate_Struct, structs::GuildMemberUpdate_Struct);
 
-		OUT(GuildID);
-		memcpy(eq->MemberName, emu->MemberName, sizeof(eq->MemberName));
-		//OUT(ZoneID);
-		//OUT(InstanceID);
-		eq->InstanceID = emu->InstanceID;
-		eq->ZoneID = emu->ZoneID;
-		OUT(LastSeen);
-		eq->Unknown76 = 0;
+		eq->guild_id     = emu->GuildID;
+		eq->last_seen    = emu->LastSeen;
+		eq->instance_id  = emu->InstanceID;
+		eq->zone_id      = emu->ZoneID;
+		eq->offline_mode = emu->offline_mode;
+		memcpy(eq->member_name, emu->MemberName, sizeof(eq->member_name));
 
 		FINISH_ENCODE();
 	}

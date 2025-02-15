@@ -726,10 +726,12 @@ Client::~Client() {
 		zone->ClearEXPModifier(this);
 	}
 
-	if (!IsZoning()) {
-		if(IsInAGuild()) {
+	if (!IsZoning() && IsInAGuild()) {
 			guild_mgr.UpdateDbMemberOnline(CharacterID(), false);
-			guild_mgr.SendGuildMemberUpdateToWorld(GetName(), GuildID(), 0, time(nullptr));
+		if (IsOffline()) {
+			guild_mgr.SendGuildMemberUpdateToWorld(GetName(), GuildID(), GetZoneID(), time(nullptr), 1);
+		} else {
+			guild_mgr.SendGuildMemberUpdateToWorld(GetName(), GuildID(), 0, time(nullptr), 0);
 		}
 	}
 

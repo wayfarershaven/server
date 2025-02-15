@@ -1041,6 +1041,7 @@ struct ServerGuildMemberUpdate_Struct {
 	char   member_name[64];
 	uint32 zone_id;
 	uint32 last_seen;
+	uint32 offline_mode;
 };
 
 struct ServerGuildPermissionUpdate_Struct {
