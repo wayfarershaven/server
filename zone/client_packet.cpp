@@ -70,9 +70,10 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include "../common/repositories/tradeskill_recipe_entries_repository.h"
 
 #include "../common/events/player_event_logs.h"
+#include "../common/repositories/character_offline_transactions_repository.h"
 #include "../common/repositories/character_stats_record_repository.h"
-#include "dialogue_window.h"
 #include "../common/rulesys.h"
+#include "dialogue_window.h"
 
 extern QueryServ* QServ;
 extern Zone* zone;
@@ -826,6 +827,30 @@ void Client::CompleteConnect()
 
 		if (IsPetNameChangeAllowed() && !RuleB(Pets, AlwaysAllowPetRename)) {
 			InvokeChangePetName(false);
+		}
+
+		auto offline_transactions = CharacterOfflineTransactionsRepository::GetWhere(
+			database, fmt::format("`character_id` = '{}' AND `type` = '{}'", CharacterID(), TRADER_TRANSACTION)
+		);
+		if (offline_transactions.size() > 0) {
+			Message(Chat::Yellow, "You sold the following items while in offline trader mode:");
+
+			for (auto const &t: offline_transactions) {
+				Message(
+					Chat::Yellow,
+					fmt::format("You sold {} {}{} to {} for {}.",
+					t.quantity,
+					t.item_name,
+					t.quantity > 1 ? "s" : "",
+					t.buyer_name,
+					DetermineMoneyString(t.price)
+					).c_str()
+				);
+			}
+
+			CharacterOfflineTransactionsRepository::DeleteWhere(
+				database, fmt::format("`character_id` = '{}' AND `type` = '{}'", CharacterID(), TRADER_TRANSACTION)
+			);
 		}
 	}
 

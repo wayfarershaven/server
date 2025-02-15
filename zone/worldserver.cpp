@@ -63,6 +63,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include "../common/server_reload_types.h"
 #include "queryserv.h"
 #include "../common/repositories/account_repository.h"
+#include "../common/repositories/character_offline_transactions_repository.h"
 
 extern EntityList             entity_list;
 extern Zone                  *zone;
@@ -3820,6 +3821,18 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 					.offline_purchase     = trader_pc->IsOffline(),
 				};
 				RecordPlayerEventLogWithClient(trader_pc, PlayerEvent::TRADER_SELL, e);
+			}
+
+			if (trader_pc->IsOffline()) {
+				auto e         = CharacterOfflineTransactionsRepository::NewEntity();
+				e.character_id = trader_pc->CharacterID();
+				e.item_name    = in->trader_buy_struct.item_name;
+				e.price        = in->trader_buy_struct.price * in->trader_buy_struct.quantity;
+				e.quantity     = in->trader_buy_struct.quantity;
+				e.type         = TRADER_TRANSACTION;
+				e.buyer_name   = in->trader_buy_struct.buyer_name;
+
+				CharacterOfflineTransactionsRepository::InsertOne(database, e);
 			}
 
 			trader_pc->RemoveItemBySerialNumber(item_sn, in->trader_buy_struct.quantity);

@@ -26,6 +26,7 @@
 #include "../common/repositories/trader_repository.h"
 #include "../common/repositories/buyer_repository.h"
 #include "../common/repositories/buyer_buy_lines_repository.h"
+#include "../common/repositories/character_offline_transactions_repository.h"
 
 #include "client.h"
 #include "entity.h"
@@ -1496,6 +1497,18 @@ void Client::BuyTraderItem(TraderBuy_Struct *tbs, Client *Trader, const EQApplic
 		};
 
 		RecordPlayerEventLogWithClient(Trader, PlayerEvent::TRADER_SELL, e);
+	}
+
+	if (Trader->IsOffline()) {
+		auto e         = CharacterOfflineTransactionsRepository::NewEntity();
+		e.character_id = Trader->CharacterID();
+		e.item_name    = buy_item->GetItem()->Name;
+		e.price        = tbs->price * outtbs->quantity;
+		e.quantity     = outtbs->quantity;
+		e.type         = TRADER_TRANSACTION;
+		e.buyer_name   = GetCleanName();
+
+		CharacterOfflineTransactionsRepository::InsertOne(database, e);
 	}
 
 	LogTrading("Trader Received: [{}] Platinum, [{}] Gold, [{}] Silver, [{}] Copper", platinum, gold, silver, copper);
