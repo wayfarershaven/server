@@ -4084,6 +4084,18 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 						RecordPlayerEventLogWithClient(buyer, PlayerEvent::BARTER_TRANSACTION, e);
 					}
 
+					if (buyer->IsOffline()) {
+						auto e         = CharacterOfflineTransactionsRepository::NewEntity();
+						e.character_id = buyer->CharacterID();
+						e.item_name    = sell_line.item_name;
+						e.price        = (uint64) sell_line.item_cost * (uint64) in->seller_quantity;
+						e.quantity     = sell_line.seller_quantity;
+						e.type         = BUYER_TRANSACTION;
+						e.buyer_name   = sell_line.seller_name;
+
+						CharacterOfflineTransactionsRepository::InsertOne(database, e);
+					}
+
 					in->action = Barter_BuyerTransactionComplete;
 					worldserver.SendPacket(pack);
 
@@ -4157,7 +4169,24 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 
 			AccountRepository::SetOfflineStatus(database, client->AccountID(), false);
 
-			client->TraderEndTrader();
+			if (client->IsThereACustomer()) {
+				auto customer = entity_list.GetClientByID(client->GetCustomerID());
+				if (customer) {
+					auto end_session = new EQApplicationPacket(OP_ShopEnd);
+					customer->FastQueuePacket(&end_session);
+				}
+			}
+
+			if (client->IsTrader()) {
+				client->TraderEndTrader();
+			}
+
+			if (client->IsBuyer()) {
+				client->ToggleBuyerMode(false);
+			}
+
+			client->UpdateWho(2);
+
 			auto outapp = new EQApplicationPacket();
 			client->CreateDespawnPacket(outapp, false);
 			entity_list.QueueClients(nullptr, outapp, false);

@@ -322,9 +322,9 @@ public:
 		return all_entries;
 	}
 
-	static Trader GetTraderZoneIdAndInstanceIdByAccountId(Database &db, uint32 account_id)
+	static Trader GetAccountZoneIdAndInstanceIdByAccountId(Database &db, uint32 account_id)
 	{
-		auto query = fmt::format(
+		auto trader_query = fmt::format(
 			"SELECT t.id, t.char_id, t.char_zone_id, t.char_zone_instance_id "
 			"FROM trader AS t "
 			"WHERE t.char_id = (SELECT c.id FROM character_data AS c WHERE c.account_id = '{}' LIMIT 1) "
@@ -332,14 +332,31 @@ public:
 			account_id
 		);
 
-		auto results = db.QueryDatabase(query);
+		auto buyer_query = fmt::format(
+			"SELECT t.id, t.char_id, t.char_zone_id, t.char_zone_instance_id "
+			"FROM buyer AS t "
+			"WHERE t.char_id = (SELECT c.id FROM character_data AS c WHERE c.account_id = '{}' LIMIT 1) "
+			"LIMIT 1;",
+			account_id
+		);
 
 		Trader e{};
-		if (results.RowCount() == 0) {
+
+		auto trader_results = db.QueryDatabase(trader_query);
+		auto buyer_results  = db.QueryDatabase(buyer_query);
+		if (trader_results.RowCount() == 0 && buyer_results.RowCount() == 0) {
 			return e;
 		}
 
-		auto row = results.begin();
+		MySQLRequestRow row;
+		if (trader_results.RowCount() > 0) {
+			row = trader_results.begin();
+		}
+
+		if (buyer_results.RowCount() > 0) {
+			row = buyer_results.begin();
+		}
+
 		e.id                    = row[0] ? strtoull(row[0], nullptr, 10) : 0;
 		e.char_id               = row[1] ? static_cast<uint32_t>(strtoul(row[1], nullptr, 10)) : 0;
 		e.char_zone_id          = row[2] ? static_cast<uint32_t>(strtoul(row[2], nullptr, 10)) : 0;

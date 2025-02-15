@@ -138,6 +138,21 @@ public:
 
 		return true;
 	}
+
+	static bool UpdateBuyerEntityID(Database &db, uint32 char_id, uint32 old_entity_id, uint32 new_entity_id)
+	{
+		auto results = GetWhere(db, fmt::format("`char_id` = '{}' AND `char_entity_id` = '{}' LIMIT 1;", char_id, old_entity_id));
+
+		if (results.empty()) {
+			return false;
+		}
+
+		for (auto &e: results) {
+			e.char_entity_id = new_entity_id;
+		}
+
+		ReplaceMany(db, results);
+	}
 };
 
 #endif //EQEMU_BUYER_REPOSITORY_H

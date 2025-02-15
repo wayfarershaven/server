@@ -829,13 +829,13 @@ void Client::CompleteConnect()
 			InvokeChangePetName(false);
 		}
 
-		auto offline_transactions = CharacterOfflineTransactionsRepository::GetWhere(
+		auto offline_transactions_trader = CharacterOfflineTransactionsRepository::GetWhere(
 			database, fmt::format("`character_id` = '{}' AND `type` = '{}'", CharacterID(), TRADER_TRANSACTION)
 		);
-		if (offline_transactions.size() > 0) {
+		if (offline_transactions_trader.size() > 0) {
 			Message(Chat::Yellow, "You sold the following items while in offline trader mode:");
 
-			for (auto const &t: offline_transactions) {
+			for (auto const &t: offline_transactions_trader) {
 				Message(
 					Chat::Yellow,
 					fmt::format("You sold {} {}{} to {} for {}.",
@@ -850,6 +850,30 @@ void Client::CompleteConnect()
 
 			CharacterOfflineTransactionsRepository::DeleteWhere(
 				database, fmt::format("`character_id` = '{}' AND `type` = '{}'", CharacterID(), TRADER_TRANSACTION)
+			);
+		}
+
+		auto offline_transactions_buyer = CharacterOfflineTransactionsRepository::GetWhere(
+			database, fmt::format("`character_id` = '{}' AND `type` = '{}'", CharacterID(), BUYER_TRANSACTION)
+		);
+		if (offline_transactions_buyer.size() > 0) {
+			Message(Chat::Yellow, "You bought the following items while in offline buyer mode:");
+
+			for (auto const &t: offline_transactions_buyer) {
+				Message(
+					Chat::Yellow,
+					fmt::format("You bought {} {}{} from {} for {}.",
+					t.quantity,
+					t.item_name,
+					t.quantity > 1 ? "s" : "",
+					t.buyer_name,
+					DetermineMoneyString(t.price)
+					).c_str()
+				);
+			}
+
+			CharacterOfflineTransactionsRepository::DeleteWhere(
+				database, fmt::format("`character_id` = '{}' AND `type` = '{}'", CharacterID(), BUYER_TRANSACTION)
 			);
 		}
 	}
@@ -17133,11 +17157,6 @@ void Client::Handle_OP_EvolveItem(const EQApplicationPacket *app)
 
 void Client::Handle_OP_Offline(const EQApplicationPacket *app)
 {
-	if (IsBuyer()) {
-		Message(Chat::Red, "Offline Buyer mode not yet supported.");
-		return;
-	}
-
 	if (IsThereACustomer()) {
 		auto customer = entity_list.GetClientByID(GetCustomerID());
 		if (customer) {
@@ -17158,11 +17177,17 @@ void Client::Handle_OP_Offline(const EQApplicationPacket *app)
 	offline_client->SetPosition(GetX(), GetY(), GetZ());
 	offline_client->SetHeading(GetHeading());
 	offline_client->SetSpawned();
-	offline_client->SetTrader(true);
 	offline_client->SetBecomeNPC(false);
 	offline_client->SetOffline(true);
-
 	entity_list.AddClient(offline_client);
+
+	if (IsBuyer()) {
+		offline_client->SetBuyerID(offline_client->CharacterID());
+		BuyerRepository::UpdateBuyerEntityID(database, CharacterID(), GetID(), offline_client->GetID());
+	}
+	else {
+		offline_client->SetTrader(true);
+	}
 
 	OnDisconnect(true);
 

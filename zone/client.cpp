@@ -747,7 +747,7 @@ Client::~Client() {
 		TraderEndTrader();
 	}
 
-	if(IsBuyer()) {
+	if(IsBuyer() && !IsOffline()) {
 		ToggleBuyerMode(false);
 	}
 
@@ -779,7 +779,7 @@ Client::~Client() {
 	if(isgrouped && !bZoning && is_zone_loaded)
 		LeaveGroup();
 
-	if (!IsOffline()) {
+	if (!IsOffline() && !IsTrader()) {
 		UpdateWho(2);
 	}
 
