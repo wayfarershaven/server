@@ -40,8 +40,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include "client.h"
 #include "command.h"
 #include "corpse.h"
+#include "dynamic_zone.h"
 #include "entity.h"
-#include "expedition.h"
 #include "quest_parser_collection.h"
 #include "guild_mgr.h"
 #include "mob.h"
@@ -3601,20 +3601,10 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 
 		break;
 	}
-	case ServerOP_ExpeditionCreate:
-	case ServerOP_ExpeditionLockout:
-	case ServerOP_ExpeditionLockoutDuration:
-	case ServerOP_ExpeditionLockState:
-	case ServerOP_ExpeditionReplayOnJoin:
-	case ServerOP_ExpeditionDzAddPlayer:
-	case ServerOP_ExpeditionDzMakeLeader:
-	case ServerOP_ExpeditionCharacterLockout:
-	{
-		Expedition::HandleWorldMessage(pack);
-		break;
-	}
 	case ServerOP_DzCreated:
 	case ServerOP_DzDeleted:
+	case ServerOP_DzAddPlayer:
+	case ServerOP_DzMakeLeader:
 	case ServerOP_DzAddRemoveMember:
 	case ServerOP_DzSwapMembers:
 	case ServerOP_DzRemoveAllMembers:
@@ -3628,6 +3618,11 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 	case ServerOP_DzLeaderChanged:
 	case ServerOP_DzExpireWarning:
 	case ServerOP_DzMovePC:
+	case ServerOP_DzLock:
+	case ServerOP_DzReplayOnJoin:
+	case ServerOP_DzLockout:
+	case ServerOP_DzLockoutDuration:
+	case ServerOP_DzCharacterLockout:
 	{
 		DynamicZone::HandleWorldMessage(pack);
 		break;
@@ -4002,21 +3997,23 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 
 			TraderRepository::UpdateActiveTransaction(database, in->id, false);
 
+			auto item = trader_pc->FindTraderItemBySerialNumber(item_sn);
+
 			if (player_event_logs.IsEventEnabled(PlayerEvent::TRADER_SELL)) {
-				auto buy_item = trader_pc->FindTraderItemBySerialNumber(item_sn);
-				auto e        = PlayerEvent::TraderSellEvent{
-					.item_id              = in->trader_buy_struct.item_id,
-					.augment_1_id         = buy_item->GetAugmentItemID(0),
-					.augment_2_id         = buy_item->GetAugmentItemID(1),
-					.augment_3_id         = buy_item->GetAugmentItemID(2),
-					.augment_4_id         = buy_item->GetAugmentItemID(3),
-					.augment_5_id         = buy_item->GetAugmentItemID(4),
-					.augment_6_id         = buy_item->GetAugmentItemID(5),
+				auto e = PlayerEvent::TraderSellEvent{
+					.item_id              = item ? item->GetID() : 0,
+					.augment_1_id         = item->GetAugmentItemID(0),
+					.augment_2_id         = item->GetAugmentItemID(1),
+					.augment_3_id         = item->GetAugmentItemID(2),
+					.augment_4_id         = item->GetAugmentItemID(3),
+					.augment_5_id         = item->GetAugmentItemID(4),
+					.augment_6_id         = item->GetAugmentItemID(5),
 					.item_name            = in->trader_buy_struct.item_name,
 					.buyer_id             = in->buyer_id,
 					.buyer_name           = in->trader_buy_struct.buyer_name,
 					.price                = in->trader_buy_struct.price,
-					.charges              = in->trader_buy_struct.quantity,
+					.quantity             = in->trader_buy_struct.quantity,
+					.charges              = item ? item->IsStackable() ? 1 : item->GetCharges() : 0,
 					.total_cost           = (in->trader_buy_struct.price * in->trader_buy_struct.quantity),
 					.player_money_balance = trader_pc->GetCarriedMoney(),
 				};
@@ -4121,7 +4118,7 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 										 sell_line.seller_quantity,
 										 sell_line.item_name,
 										 buyer->GetCleanName());
-								buyer->AddMoneyToPPWithOverflow(total_cost, true);
+								buyer->AddMoneyToPP(total_cost, true);
 								buyer->RemoveItem(sell_line.item_id, sell_line.seller_quantity);
 
 								buyer->Message(
@@ -4220,7 +4217,7 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 					if (inst->IsStackable()) {
 						if (!buyer->PutItemInInventoryWithStacking(inst.get())) {
 							buyer->Message(Chat::Red, "Error putting item in your inventory.");
-							buyer->AddMoneyToPPWithOverflow(total_cost, true);
+							buyer->AddMoneyToPP(total_cost, true);
 							in->action     = Barter_FailedTransaction;
 							in->sub_action = Barter_FailedBuyerChecks;
 							worldserver.SendPacket(pack);
@@ -4232,7 +4229,7 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 							inst->SetCharges(1);
 							if (!buyer->PutItemInInventoryWithStacking(inst.get())) {
 								buyer->Message(Chat::Red, "Error putting item in your inventory.");
-								buyer->AddMoneyToPPWithOverflow(total_cost, true);
+								buyer->AddMoneyToPP(total_cost, true);
 								in->action     = Barter_FailedTransaction;
 								in->sub_action = Barter_FailedBuyerChecks;
 								worldserver.SendPacket(pack);
@@ -4241,7 +4238,7 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 						}
 					}
 
-					if (!buyer->TakeMoneyFromPPWithOverFlow(total_cost, false)) {
+					if (!buyer->TakeMoneyFromPP(total_cost, false)) {
 						in->action     = Barter_FailedTransaction;
 						in->sub_action = Barter_FailedBuyerChecks;
 						worldserver.SendPacket(pack);
@@ -4306,7 +4303,7 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 
 					uint64 total_cost = (uint64) sell_line.item_cost * (uint64) sell_line.seller_quantity;
 					seller->RemoveItem(in->buy_item_id, in->seller_quantity);
-					seller->AddMoneyToPPWithOverflow(total_cost, false);
+					seller->AddMoneyToPP(total_cost, false);
 					seller->SendBarterBuyerClientMessage(
 						sell_line,
 						Barter_SellerTransactionComplete,

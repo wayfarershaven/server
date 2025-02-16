@@ -745,7 +745,7 @@ namespace BotSpellTypes
 	constexpr uint16	DISCIPLINE_END             = BotSpellTypes::DiscUtility;      // Do not remove this, increment as needed
 }
 
-static std::map<uint16, std::string> spellType_names = {
+static std::map<uint16, std::string> spell_type_names = {
 	{ BotSpellTypes::Nuke,                     "Nuke" },
 	{ BotSpellTypes::RegularHeal,              "Regular Heal" },
 	{ BotSpellTypes::Root,                     "Root" },
@@ -820,7 +820,7 @@ static std::map<uint16, std::string> spellType_names = {
 	{ BotSpellTypes::AELull,                   "AE Lull" }
 };
 
-static std::map<uint16, std::string> spellType_shortNames = {
+static std::map<uint16, std::string> spell_type_short_names = {
 	{ BotSpellTypes::Nuke,                     "nukes" },
 	{ BotSpellTypes::RegularHeal,              "regularheals" },
 	{ BotSpellTypes::Root,                     "roots" },
@@ -902,7 +902,7 @@ const uint32 SPELL_TYPES_INNATE = (SpellType_Nuke | SpellType_Lifetap | SpellTyp
 // Bot related functions
 bool IsBotSpellTypeDetrimental (uint16 spell_type);
 bool IsBotSpellTypeBeneficial (uint16 spell_type);
-bool IsBotSpellTypeOtherBeneficial(uint16 spell_type);
+bool BotSpellTypeUsesTargetSettings(uint16 spell_type);
 bool IsBotSpellTypeInnate (uint16 spell_type);
 bool IsAEBotSpellType(uint16 spell_type);
 bool IsGroupBotSpellType(uint16 spell_type);

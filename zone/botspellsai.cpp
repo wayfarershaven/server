@@ -242,7 +242,7 @@ bool Bot::AICastSpell(Mob* tar, uint8 chance, uint16 spell_type, uint16 sub_targ
 		}
 
 		if (AIDoSpellCast(s.SpellIndex, tar, s.ManaCost)) {
-			if (IsBotSpellTypeOtherBeneficial(spell_type)) {
+			if (BotSpellTypeUsesTargetSettings(spell_type)) {
 				SetCastedSpellType(UINT16_MAX);
 
 				if (!IsCommandedSpell()) {
@@ -288,7 +288,7 @@ bool Bot::BotCastMez(Mob* tar, uint8 bot_class, BotSpell& bot_spell, uint16 spel
 		}
 
 		if (AIDoSpellCast(s.SpellIndex, tar, s.ManaCost)) {
-			if (IsBotSpellTypeOtherBeneficial(spell_type)) {
+			if (BotSpellTypeUsesTargetSettings(spell_type)) {
 				SetCastedSpellType(UINT16_MAX);
 				
 				if (!IsCommandedSpell()) {
@@ -493,6 +493,10 @@ bool Bot::BotCastNuke(Mob* tar, uint8 bot_class, BotSpell& bot_spell, uint16 spe
 }
 
 bool Bot::BotCastHeal(Mob* tar, uint8 bot_class, BotSpell& bot_spell, uint16 spell_type) {
+	if (!TargetValidation(tar)) {
+		return false;
+	}
+
 	bot_spell = GetSpellByHealType(spell_type, tar);
 
 	if (!IsValidSpell(bot_spell.SpellId)) {
@@ -1064,10 +1068,8 @@ std::vector<BotSpell_wPriority> Bot::GetPrioritizedBotSpellsBySpellType(Bot* cas
 				if (
 					caster->IsCommandedSpell() ||
 					!AE ||
-					(
-						BotSpellTypeRequiresAEChecks(spell_type) && 
-						caster->HasValidAETarget(caster, bot_spell_list[i].spellid, spell_type, tar)
-					)
+					!BotSpellTypeRequiresAEChecks(spell_type) ||
+					caster->HasValidAETarget(caster, bot_spell_list[i].spellid, spell_type, tar)
 				) {
 					BotSpell_wPriority bot_spell;
 					bot_spell.SpellId = bot_spell_list[i].spellid;
@@ -1287,30 +1289,32 @@ BotSpell Bot::GetBestBotSpellForGroupHeal(Bot* caster, Mob* tar, uint16 spell_ty
 	result.SpellIndex = 0;
 	result.ManaCost = 0;
 
-	if (caster) {
-		std::list<BotSpell> bot_spell_list = GetBotSpellsForSpellEffect(caster, spell_type, SE_CurrentHP);
-		
-		int target_count = 0;
+	if (!caster->TargetValidation(tar)) {
+		return result;
+	}
 
-		for (std::list<BotSpell>::iterator bot_spell_list_itr = bot_spell_list.begin(); bot_spell_list_itr != bot_spell_list.end(); ++bot_spell_list_itr) {
-			// Assuming all the spells have been loaded into this list by level and in descending order
-			if (IsRegularGroupHealSpell(bot_spell_list_itr->SpellId)) {
-				uint16 spell_id = bot_spell_list_itr->SpellId;
+	std::list<BotSpell> bot_spell_list = GetBotSpellsForSpellEffect(caster, spell_type, SE_CurrentHP);
+	int target_count = 0;
+	int required_count = caster->GetSpellTypeAEOrGroupTargetCount(spell_type);
 
-				if (!caster->IsCommandedSpell() && caster->IsValidSpellRange(spell_id, tar)) {
-					target_count = caster->GetNumberNeedingHealedInGroup(tar, spell_type, spell_id, caster->GetAOERange(spell_id));
+	for (std::list<BotSpell>::iterator bot_spell_list_itr = bot_spell_list.begin(); bot_spell_list_itr != bot_spell_list.end(); ++bot_spell_list_itr) {
+		// Assuming all the spells have been loaded into this list by level and in descending order
+		if (IsRegularGroupHealSpell(bot_spell_list_itr->SpellId)) {
+			uint16 spell_id = bot_spell_list_itr->SpellId;
 
-					if (target_count < caster->GetSpellTypeAEOrGroupTargetCount(spell_type)) {
-						continue;
-					}
+			if (caster->TargetValidation(tar) && !caster->IsCommandedSpell() && caster->IsValidSpellRange(spell_id, tar)) {
+				target_count = caster->GetNumberNeedingHealedInGroup(tar, spell_type, spell_id, caster->GetAOERange(spell_id));
+
+				if (target_count < required_count) {
+					continue;
 				}
-
-				result.SpellId = bot_spell_list_itr->SpellId;
-				result.SpellIndex = bot_spell_list_itr->SpellIndex;
-				result.ManaCost = bot_spell_list_itr->ManaCost;
-
-				break;
 			}
+
+			result.SpellId = bot_spell_list_itr->SpellId;
+			result.SpellIndex = bot_spell_list_itr->SpellIndex;
+			result.ManaCost = bot_spell_list_itr->ManaCost;
+
+			break;
 		}
 	}
 
@@ -1324,30 +1328,32 @@ BotSpell Bot::GetBestBotSpellForGroupHealOverTime(Bot* caster, Mob* tar, uint16 
 	result.SpellIndex = 0;
 	result.ManaCost = 0;
 
-	if (caster) {
-		std::list<BotSpell> bot_spell_list = GetBotSpellsForSpellEffect(caster, spell_type, SE_HealOverTime);
+	if (!caster->TargetValidation(tar)) {
+		return result;
+	}
 
-		int target_count = 0;
+	std::list<BotSpell> bot_spell_list = GetBotSpellsForSpellEffect(caster, spell_type, SE_HealOverTime);
+	int target_count = 0;
+	int required_count = caster->GetSpellTypeAEOrGroupTargetCount(spell_type);
 
-		for (std::list<BotSpell>::iterator bot_spell_list_itr = bot_spell_list.begin(); bot_spell_list_itr != bot_spell_list.end(); ++bot_spell_list_itr) {
-			// Assuming all the spells have been loaded into this list by level and in descending order
-			if (IsGroupHealOverTimeSpell(bot_spell_list_itr->SpellId)) {
-				uint16 spell_id = bot_spell_list_itr->SpellId;
+	for (std::list<BotSpell>::iterator bot_spell_list_itr = bot_spell_list.begin(); bot_spell_list_itr != bot_spell_list.end(); ++bot_spell_list_itr) {
+		// Assuming all the spells have been loaded into this list by level and in descending order
+		if (IsGroupHealOverTimeSpell(bot_spell_list_itr->SpellId)) {
+			uint16 spell_id = bot_spell_list_itr->SpellId;
 
-				if (!caster->IsCommandedSpell() && caster->IsValidSpellRange(spell_id, tar)) {
-					target_count = caster->GetNumberNeedingHealedInGroup(tar, spell_type, spell_id, caster->GetAOERange(spell_id));
+			if (caster->TargetValidation(tar) && !caster->IsCommandedSpell() && caster->IsValidSpellRange(spell_id, tar)) {
+				target_count = caster->GetNumberNeedingHealedInGroup(tar, spell_type, spell_id, caster->GetAOERange(spell_id));
 
-					if (target_count < caster->GetSpellTypeAEOrGroupTargetCount(spell_type)) {
-						continue;
-					}
+				if (target_count < required_count) {
+					continue;
 				}
-
-				result.SpellId = bot_spell_list_itr->SpellId;
-				result.SpellIndex = bot_spell_list_itr->SpellIndex;
-				result.ManaCost = bot_spell_list_itr->ManaCost;
-
-				break;
 			}
+
+			result.SpellId = bot_spell_list_itr->SpellId;
+			result.SpellIndex = bot_spell_list_itr->SpellIndex;
+			result.ManaCost = bot_spell_list_itr->ManaCost;
+
+			break;
 		}
 	}
 
@@ -1361,30 +1367,32 @@ BotSpell Bot::GetBestBotSpellForGroupCompleteHeal(Bot* caster, Mob* tar, uint16 
 	result.SpellIndex = 0;
 	result.ManaCost = 0;
 
-	if (caster) {
-		std::list<BotSpell> bot_spell_list = GetBotSpellsForSpellEffect(caster, spell_type, SE_CompleteHeal);
-		
-		int target_count = 0;
+	if (!caster->TargetValidation(tar)) {
+		return result;
+	}
 
-		for (std::list<BotSpell>::iterator bot_spell_list_itr = bot_spell_list.begin(); bot_spell_list_itr != bot_spell_list.end(); ++bot_spell_list_itr) {
-			// Assuming all the spells have been loaded into this list by level and in descending order
-			if (IsGroupCompleteHealSpell(bot_spell_list_itr->SpellId)) {
-				uint16 spell_id = bot_spell_list_itr->SpellId;
+	std::list<BotSpell> bot_spell_list = GetBotSpellsForSpellEffect(caster, spell_type, SE_CompleteHeal);
+	int target_count = 0;
+	int required_count = caster->GetSpellTypeAEOrGroupTargetCount(spell_type);
 
-				if (!caster->IsCommandedSpell() && caster->IsValidSpellRange(spell_id, tar)) {
-					target_count = caster->GetNumberNeedingHealedInGroup(tar, spell_type, spell_id, caster->GetAOERange(spell_id));
+	for (std::list<BotSpell>::iterator bot_spell_list_itr = bot_spell_list.begin(); bot_spell_list_itr != bot_spell_list.end(); ++bot_spell_list_itr) {
+		// Assuming all the spells have been loaded into this list by level and in descending order
+		if (IsGroupCompleteHealSpell(bot_spell_list_itr->SpellId)) {
+			uint16 spell_id = bot_spell_list_itr->SpellId;
 
-					if (target_count < caster->GetSpellTypeAEOrGroupTargetCount(spell_type)) {
-						continue;
-					}
+			if (caster->TargetValidation(tar) && !caster->IsCommandedSpell() && caster->IsValidSpellRange(spell_id, tar)) {
+				target_count = caster->GetNumberNeedingHealedInGroup(tar, spell_type, spell_id, caster->GetAOERange(spell_id));
+
+				if (target_count < required_count) {
+					continue;
 				}
-
-				result.SpellId = bot_spell_list_itr->SpellId;
-				result.SpellIndex = bot_spell_list_itr->SpellIndex;
-				result.ManaCost = bot_spell_list_itr->ManaCost;
-
-				break;
 			}
+
+			result.SpellId = bot_spell_list_itr->SpellId;
+			result.SpellIndex = bot_spell_list_itr->SpellIndex;
+			result.ManaCost = bot_spell_list_itr->ManaCost;
+
+			break;
 		}
 	}
 
@@ -1423,7 +1431,8 @@ Mob* Bot::GetFirstIncomingMobToMez(Bot* caster, int16 spell_id, uint16 spell_typ
 	Mob* result = nullptr;
 
 	if (caster && caster->GetOwner()) {
-		int spell_range = (!AE ? caster->GetActSpellRange(spell_id, spells[spell_id].range) : caster->GetActSpellRange(spell_id, spells[spell_id].aoe_range));
+		int spell_range = caster->GetActSpellRange(spell_id, spells[spell_id].range);
+		int spell_ae_range = caster->GetAOERange(spell_id);
 		int buff_count = 0;
 		NPC* npc = nullptr;
 
@@ -1454,7 +1463,7 @@ Mob* Bot::GetFirstIncomingMobToMez(Bot* caster, int16 spell_id, uint16 spell_typ
 					}
 
 					if (IsPBAESpell(spell_id)) {
-						if (spell_range < Distance(caster->GetPosition(), m->GetPosition())) {
+						if (spell_ae_range < Distance(caster->GetPosition(), m->GetPosition())) {
 							continue;							
 						}
 					}
@@ -2722,7 +2731,11 @@ bool Bot::IsValidSpellRange(uint16 spell_id, Mob* tar) {
 
 	float range = spells[spell_id].range + GetRangeDistTargetSizeMod(tar);
 
-	if (IsAnyAESpell(spell_id)) {			
+	if (
+		spells[spell_id].target_type != ST_AETargetHateList &&
+		!IsTargetableAESpell(spell_id) &&
+		IsAnyAESpell(spell_id)
+	) {
 		range = GetAOERange(spell_id);
 	}
 	

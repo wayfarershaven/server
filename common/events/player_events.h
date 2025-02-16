@@ -65,6 +65,9 @@ namespace PlayerEvent {
 		BARTER_TRANSACTION,
 		SPEECH,
 		EVOLVE_ITEM,
+		GUILD_BANK_DEPOSIT,
+		GUILD_BANK_WITHDRAWAL,
+		GUILD_BANK_MOVE_TO_BANK_AREA,
 		MAX // dont remove
 	};
 
@@ -130,6 +133,10 @@ namespace PlayerEvent {
 		"Barter Transaction",
 		"Player Speech",
 		"Evolve Item Update"
+		"Barter Transaction",
+		"Guild Bank Item Deposit",
+		"Guild Bank Item Withdrawal",
+		"Guild Bank Move From Deposit Area to Bank Area"
 	};
 
 	// Generic struct used by all events
@@ -875,8 +882,9 @@ namespace PlayerEvent {
 		uint32      trader_id;
 		std::string trader_name;
 		uint32      price;
-		uint32      charges;
-		uint32      total_cost;
+		uint32      quantity;
+		int32       charges;
+		uint64      total_cost;
 		uint64      player_money_balance;
 
 
@@ -896,6 +904,7 @@ namespace PlayerEvent {
 				CEREAL_NVP(trader_id),
 				CEREAL_NVP(trader_name),
 				CEREAL_NVP(price),
+				CEREAL_NVP(quantity),
 				CEREAL_NVP(charges),
 				CEREAL_NVP(total_cost),
 				CEREAL_NVP(player_money_balance)
@@ -915,8 +924,9 @@ namespace PlayerEvent {
 		uint32      buyer_id;
 		std::string buyer_name;
 		uint32      price;
-		uint32      charges;
-		uint32      total_cost;
+		uint32      quantity;
+		int32       charges;
+		uint64      total_cost;
 		uint64      player_money_balance;
 
 
@@ -936,6 +946,7 @@ namespace PlayerEvent {
 				CEREAL_NVP(buyer_id),
 				CEREAL_NVP(buyer_name),
 				CEREAL_NVP(price),
+				CEREAL_NVP(quantity),
 				CEREAL_NVP(charges),
 				CEREAL_NVP(total_cost),
 				CEREAL_NVP(player_money_balance)
@@ -1145,6 +1156,7 @@ namespace PlayerEvent {
 		uint32      augment_5_id;
 		uint32      augment_6_id;
 		uint32      quantity;
+		int32       charges;
 		std::string from_player_name;
 		std::string to_player_name;
 		uint32      sent_date;
@@ -1162,6 +1174,7 @@ namespace PlayerEvent {
 				CEREAL_NVP(augment_5_id),
 				CEREAL_NVP(augment_6_id),
 				CEREAL_NVP(quantity),
+				CEREAL_NVP(charges),
 				CEREAL_NVP(from_player_name),
 				CEREAL_NVP(to_player_name),
 				CEREAL_NVP(sent_date)
@@ -1272,6 +1285,38 @@ namespace PlayerEvent {
 				CEREAL_NVP(type),
 				CEREAL_NVP(message)
 			);
+		}
+	};
+
+	struct GuildBankTransaction {
+		uint32 char_id;
+		uint32 guild_id;
+		uint32 item_id;
+		uint32 aug_slot_one;
+		uint32 aug_slot_two;
+		uint32 aug_slot_three;
+		uint32 aug_slot_four;
+		uint32 aug_slot_five;
+		uint32 aug_slot_six;
+		uint32 quantity;
+		uint32 permission;
+
+		// cereal
+		template<class Archive>
+		void serialize(Archive &ar)
+		{
+			ar(
+				CEREAL_NVP(char_id),
+				CEREAL_NVP(guild_id),
+				CEREAL_NVP(item_id),
+				CEREAL_NVP(aug_slot_one),
+				CEREAL_NVP(aug_slot_two),
+				CEREAL_NVP(aug_slot_three),
+				CEREAL_NVP(aug_slot_four),
+				CEREAL_NVP(aug_slot_five),
+				CEREAL_NVP(aug_slot_six),
+				CEREAL_NVP(quantity)
+				);
 		}
 	};
 }
