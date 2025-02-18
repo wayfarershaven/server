@@ -716,6 +716,7 @@ void LoginServer::ProcessUserToWorldCancelOfflineRequest(uint16_t opcode, EQ::Ne
 	uint32 id            = database.GetAccountIDFromLSID(utwr->login, utwr->lsaccountid);
 	auto   status_record = database.GetAccountStatus(id);
 
+	LogError("Step 4 - In World CancelOfflineRequest");
 	LogDebug(
 		"id [{}] status [{}] account_id [{}] world_id [{}] from_id [{}] to_id [{}] ip [{}]",
 		id,
@@ -763,11 +764,14 @@ void LoginServer::ProcessUserToWorldCancelOfflineRequest(uint16_t opcode, EQ::Ne
 	auto trader = TraderRepository::GetAccountZoneIdAndInstanceIdByAccountId(database, id);
 
 	if (trader.id && zoneserver_list.IsZoneBootedByZoneIdAndInstanceId(trader.char_zone_id, trader.char_zone_instance_id)) {
+		LogError("Step 5 - In World Checking if zone is booted");
+
 		server_packet.opcode  = ServerOP_UsertoWorldCancelOfflineRequest;
 		zoneserver_list.SendPacketToBootedZones(&server_packet);
 		return;
 	}
 
+	LogError("Step 5b - Zone not booted, returning to login server");
 	AccountRepository::SetOfflineStatus(database, id, false);
 	TraderRepository::DeleteWhere(database, fmt::format("`char_id` = '{}'", trader.char_id));
 	server_packet.opcode  = ServerOP_UsertoWorldCancelOfflineResponse;

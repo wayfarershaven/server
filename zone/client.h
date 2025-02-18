@@ -2380,29 +2380,42 @@ public:
 
 	void Clone(Client& in)
 	{
-		WID                = in.WID;
-		admin              = in.admin;
-		guild_id           = in.guild_id;
-		guildrank          = in.guildrank;
-		LFG                = in.LFG;
-		AFK                = in.AFK;
-		trader_id          = in.trader_id;
-		m_buyer_id         = in.m_buyer_id;
-		race               = in.race;
-		class_             = in.class_;
-		size               = in.size;
-		deity              = in.deity;
-		texture            = in.texture;
-		m_ClientVersion    = in.m_ClientVersion;
-		m_ClientVersionBit = in.m_ClientVersionBit;
-		character_id       = in.character_id;
-		account_id         = in.account_id;
-		lsaccountid        = in.lsaccountid;
-		m_pp.platinum      = in.m_pp.platinum;
-		m_pp.gold          = in.m_pp.gold;
-		m_pp.silver        = in.m_pp.silver;
-		m_pp.copper        = in.m_pp.copper;
-		m_pp.gm            = in.m_pp.gm;
+		WID                      = in.WID;
+		admin                    = in.admin;
+		guild_id                 = in.guild_id;
+		guildrank                = in.guildrank;
+		LFG                      = in.LFG;
+		AFK                      = in.AFK;
+		trader_id                = in.trader_id;
+		m_buyer_id               = in.m_buyer_id;
+		race                     = in.race;
+		class_                   = in.class_;
+		size                     = in.size;
+		deity                    = in.deity;
+		texture                  = in.texture;
+		m_ClientVersion          = in.m_ClientVersion;
+		m_ClientVersionBit       = in.m_ClientVersionBit;
+		character_id             = in.character_id;
+		account_id               = in.account_id;
+		lsaccountid              = in.lsaccountid;
+
+		m_pp.platinum            = in.m_pp.platinum;
+		m_pp.gold                = in.m_pp.gold;
+		m_pp.silver              = in.m_pp.silver;
+		m_pp.copper              = in.m_pp.copper;
+		m_pp.platinum_bank       = in.m_pp.platinum_bank;
+		m_pp.gold_bank           = in.m_pp.gold_bank;
+		m_pp.silver_bank         = in.m_pp.silver_bank;
+		m_pp.copper_bank         = in.m_pp.copper_bank;
+		m_pp.platinum_cursor     = in.m_pp.platinum_cursor;
+		m_pp.gold_cursor         = in.m_pp.gold_cursor;
+		m_pp.silver_cursor       = in.m_pp.silver_cursor;
+		m_pp.copper_cursor       = in.m_pp.copper_cursor;
+		m_pp.currentRadCrystals  = in.m_pp.currentRadCrystals;
+		m_pp.careerRadCrystals   = in.m_pp.careerRadCrystals;
+		m_pp.currentEbonCrystals = in.m_pp.currentEbonCrystals;
+		m_pp.careerEbonCrystals  = in.m_pp.careerEbonCrystals;
+		m_pp.gm                  = in.m_pp.gm;
 
 		m_inv.SetInventoryVersion(in.m_ClientVersion);
 		this->SetBodyType(in.GetBodyType(), false);

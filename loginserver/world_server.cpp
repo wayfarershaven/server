@@ -335,6 +335,7 @@ void WorldServer::ProcessUserToWorldCancelOfflineResponse(uint16_t opcode, const
 		packet.Length(),
 		packet.ToString()
 	);
+	LogError("Step 6 - back in Login Server");
 
 	if (packet.Length() < sizeof(UsertoWorldResponse_Struct)) {
 		LogError(
@@ -367,6 +368,8 @@ void WorldServer::ProcessUserToWorldCancelOfflineResponse(uint16_t opcode, const
 
 		client_packet_payload->base_header.sequence = c->GetCurrentPlaySequence();
 		client_packet_payload->server_number        = c->GetSelectedPlayServerID();
+
+		LogError("Step 7 - Send Play Response OPCODE 30");
 
 		c->SendPlayResponse(&client_packet);
 
@@ -423,6 +426,7 @@ void WorldServer::ProcessUserToWorldCancelOfflineResponse(uint16_t opcode, const
 			r->server_number,
 			r->base_reply.error_str_id
 		);
+		LogError("Step 8 - Send Play Response EnterWorld");
 
 		c->SendPlayResponse(outapp);
 		delete outapp;
