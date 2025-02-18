@@ -234,6 +234,7 @@ void WorldServerManager::SendUserToWorldCancelOfflineRequest(
 			r->worldid     = server_id;
 			r->lsaccountid = client_account_id;
 			strncpy(r->login, &client_loginserver[0], 64);
+			LogError("Step 3 - Send to World");
 			(*iter)->GetConnection()->Send(ServerOP_UsertoWorldCancelOfflineRequest, outapp);
 			found = true;
 

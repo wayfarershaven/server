@@ -4367,8 +4367,23 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 			auto in     = reinterpret_cast<UsertoWorldResponse_Struct *>(pack->pBuffer);
 			auto client = entity_list.GetClientByLSID(in->lsaccountid);
 			if (!client) {
+				LogError("Step 5 - 3 - In zone.  Could not find client.  Old Do-Nothing.  Now send back to world.");
+				auto sp          = new ServerPacket(ServerOP_UsertoWorldCancelOfflineResponse, pack->size);
+				auto out         = reinterpret_cast<UsertoWorldResponse_Struct *>(sp->pBuffer);
+				sp->opcode       = ServerOP_UsertoWorldCancelOfflineResponse;
+				out->FromID      = in->FromID;
+				out->lsaccountid = in->lsaccountid;
+				out->response    = in->response;
+				out->ToID        = in->ToID;
+				out->worldid     = in->worldid;
+				strn0cpy(out->login, in->login, 64);
+
+				worldserver.SendPacket(sp);
+				safe_delete(sp);
 				break;
 			}
+
+			LogError("Step 5-1 - In zone");
 
 			AccountRepository::SetOfflineStatus(database, client->AccountID(), false);
 
@@ -4406,6 +4421,8 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 			out->ToID        = in->ToID;
 			out->worldid     = in->worldid;
 			strn0cpy(out->login, in->login, 64);
+
+			LogError("Step 5-2 - Respond back to world");
 
 			worldserver.SendPacket(sp);
 			safe_delete(sp);

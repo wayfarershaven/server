@@ -85,8 +85,8 @@ bool Client::Process()
 				app->pBuffer               = buffer;
 				app->size                  = sizeof(PlayEverquestRequest);
 
+				LogError("Step 1 - Hit CancelOfflineTrader Mode Packet.");
 				SendCancelOfflineStatusToWorld((const char *) app->pBuffer);
-				LogError("Hit CancelOfflineTrader Mode Packet.");
 
 				break;
 			}
@@ -295,7 +295,7 @@ void Client::SendCancelOfflineStatusToWorld(const char *data)
 	auto       sequence_in  = (unsigned int) play->base_header.sequence;
 
 	LogInfo(
-		"[Handle_Play] Cancel Offline Status Request received from client [{}] server number [{}] sequence [{}]",
+		"Step 2 - [Handle_Play] Cancel Offline Status Request received from client [{}] server number [{}] sequence [{}]",
 		GetAccountName(),
 		server_id_in,
 		sequence_in
