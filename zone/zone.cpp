@@ -172,6 +172,8 @@ bool Zone::Bootup(uint32 iZoneID, uint32 iInstanceID, bool is_static) {
 	zone->RequestUCSServerStatus();
 	zone->StartShutdownTimer();
 
+	DataBucket::LoadZoneCache(iZoneID, iInstanceID);
+
 	/*
 	 * Set Logging
 	 */
@@ -876,6 +878,8 @@ void Zone::Shutdown(bool quiet)
 	if (!is_zone_loaded) {
 		return;
 	}
+
+	DataBucket::DeleteCachedBuckets(DataBucketLoadType::Zone, zone->GetZoneID(), zone->GetInstanceID());
 
 	entity_list.StopMobAI();
 
@@ -2601,52 +2605,6 @@ void Zone::LoadNPCEmotes(std::vector<NPC_Emote_Struct*>* v)
 
 }
 
-void Zone::ReloadWorld(uint8 global_repop)
-{
-	entity_list.ClearAreas();
-	parse->ReloadQuests();
-
-	if (global_repop) {
-		if (global_repop == ReloadWorld::ForceRepop) {
-			zone->ClearSpawnTimers();
-		}
-
-		zone->Repop();
-	}
-
-	worldserver.SendEmoteMessage(
-		0,
-		0,
-		AccountStatus::GMAdmin,
-		Chat::Yellow,
-		fmt::format(
-			"Quests reloaded {}for {}{}.",
-			(
-				global_repop ?
-				(
-					global_repop == ReloadWorld::Repop ?
-					"and repopped NPCs " :
-					"and forcefully repopped NPCs "
-				) :
-				""
-			),
-			fmt::format(
-				"{} ({})",
-				GetLongName(),
-				GetZoneID()
-			),
-			(
-				GetInstanceID() ?
-				fmt::format(
-					" (Instance ID {})",
-					GetInstanceID()
-				) :
-				""
-			)
-		).c_str()
-	);
-}
-
 void Zone::ClearSpawnTimers()
 {
 	LinkedListIterator<Spawn2 *> iterator(spawn2_list);
@@ -2855,8 +2813,6 @@ std::string Zone::GetZoneDescription()
 
 void Zone::SendReloadMessage(std::string reload_type)
 {
-	LogInfo("Reloaded [{}]", reload_type);
-
 	worldserver.SendEmoteMessage(
 		0,
 		0,
@@ -3010,12 +2966,7 @@ bool Zone::CompareDataBucket(uint8 comparison_type, const std::string& bucket, c
 
 void Zone::ReloadContentFlags()
 {
-	auto pack = new ServerPacket(ServerOP_ReloadContentFlags, 0);
-	if (pack) {
-		worldserver.SendPacket(pack);
-	}
-
-	safe_delete(pack);
+	worldserver.SendReload(ServerReload::Type::ContentFlags);
 }
 
 void Zone::ClearEXPModifier(Client* c)
@@ -3185,6 +3136,70 @@ bool Zone::DoesAlternateCurrencyExist(uint32 currency_id)
 			return c.id == currency_id;
 		}
 	);
+}
+
+std::string Zone::GetBucket(const std::string& bucket_name)
+{
+	DataBucketKey k = {};
+	k.zone_id     = zoneid;
+	k.instance_id = instanceid;
+	k.key         = bucket_name;
+
+	return DataBucket::GetData(k).value;
+}
+
+void Zone::SetBucket(const std::string& bucket_name, const std::string& bucket_value, const std::string& expiration)
+{
+	DataBucketKey k = {};
+	k.zone_id     = zoneid;
+	k.instance_id = instanceid;
+	k.key         = bucket_name;
+	k.expires     = expiration;
+	k.value       = bucket_value;
+
+	DataBucket::SetData(k);
+}
+
+void Zone::DeleteBucket(const std::string& bucket_name)
+{
+	DataBucketKey k = {};
+	k.zone_id     = zoneid;
+	k.instance_id = instanceid;
+	k.key         = bucket_name;
+
+	DataBucket::DeleteData(k);
+}
+
+std::string Zone::GetBucketExpires(const std::string& bucket_name)
+{
+	DataBucketKey k = {};
+	k.zone_id     = zoneid;
+	k.instance_id = instanceid;
+	k.key         = bucket_name;
+
+	return DataBucket::GetDataExpires(k);
+}
+
+std::string Zone::GetBucketRemaining(const std::string& bucket_name)
+{
+	DataBucketKey k = {};
+	k.zone_id     = zoneid;
+	k.instance_id = instanceid;
+	k.key         = bucket_name;
+
+	return DataBucket::GetDataRemaining(k);
+}
+
+void Zone::DisableRespawnTimers()
+{
+	LinkedListIterator<Spawn2*> e(spawn2_list);
+
+	e.Reset();
+
+	while (e.MoreElements()) {
+		e.GetData()->SetRespawnTimer(std::numeric_limits<uint32_t>::max());
+		e.Advance();
+	}
 }
 
 #include "zone_loot.cpp"

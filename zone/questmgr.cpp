@@ -680,7 +680,7 @@ void QuestManager::stoptimer(const std::string& timer_name, Mob* m)
 		return;
 	}
 
-	for (auto e = QTimerList.begin(); e != QTimerList.end();) {
+	for (auto e = QTimerList.begin(); e != QTimerList.end(); ++e) {
 		if (e->mob && e->mob == m) {
 			parse->EventMob(EVENT_TIMER_STOP, m, nullptr, [&]() { return timer_name; });
 
@@ -890,7 +890,7 @@ void QuestManager::resumetimer(const std::string& timer_name, Mob* m)
 		}
 	}
 
-	QTimerList.emplace_back(QuestTimer(milliseconds, m, timer_name));
+	QTimerList.emplace_back(QuestTimer(milliseconds, mob, timer_name));
 
 	parse->EventMob(EVENT_TIMER_RESUME, mob, nullptr, f);
 

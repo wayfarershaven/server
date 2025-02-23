@@ -37,6 +37,7 @@ public:
 	void Depop();
 	void Depop(bool start_spawn_timers);
 	void Despawn(uint32 spawngroup_id);
+	void DisableRespawnTimers();
 	float GetAAEXPModifier(Lua_Client c);
 	float GetAAEXPModifierByCharacterID(uint32 character_id);
 	std::string GetContentFlags();
@@ -140,6 +141,14 @@ public:
 	void SetInstanceTimeRemaining(uint32 time_remaining);
 	void SetIsHotzone(bool is_hotzone);
 	void ShowZoneGlobalLoot(Lua_Client c);
+
+	// data buckets
+	void SetBucket(const std::string& bucket_name, const std::string& bucket_value);
+	void SetBucket(const std::string& bucket_name, const std::string& bucket_value, const std::string& expiration = "");
+	void DeleteBucket(const std::string& bucket_name);
+	std::string GetBucket(const std::string& bucket_name);
+	std::string GetBucketExpires(const std::string& bucket_name);
+	std::string GetBucketRemaining(const std::string& bucket_name);
 
 };
 
