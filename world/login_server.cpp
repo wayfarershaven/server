@@ -1,3 +1,20 @@
+/*	EQEMu: Everquest Server Emulator
+Copyright (C) 2001-2002 EQEMu Development Team (http://eqemu.org)
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; version 2 of the License.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY except by those people which sell it, which
+are required to give you total support for your newly bought product;
+without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+*/
 #include "../common/global_define.h"
 #include <iostream>
 #include <stdio.h>
@@ -19,6 +36,7 @@
 #include "world_config.h"
 #include "../common/repositories/account_repository.h"
 #include "../common/repositories/trader_repository.h"
+
 
 extern ZSList        zoneserver_list;
 extern ClientList    client_list;
@@ -608,11 +626,11 @@ void LoginServer::SendInfo()
 
 	auto pack = new ServerPacket;
 	pack->opcode  = ServerOP_NewLSInfo;
-	pack->size    = sizeof(LoginserverNewWorldRequest);
+	pack->size    = sizeof(ServerNewLSInfo_Struct);
 	pack->pBuffer = new uchar[pack->size];
 	memset(pack->pBuffer, 0, pack->size);
 
-	auto *l = (LoginserverNewWorldRequest *) pack->pBuffer;
+	auto *l = (ServerNewLSInfo_Struct *) pack->pBuffer;
 	strcpy(l->protocol_version, EQEMU_PROTOCOL_VERSION);
 	strcpy(l->server_version, LOGIN_VERSION);
 	strcpy(l->server_long_name, Config->LongName.c_str());
@@ -656,10 +674,10 @@ void LoginServer::SendStatus()
 
 	auto pack = new ServerPacket;
 	pack->opcode  = ServerOP_LSStatus;
-	pack->size    = sizeof(LoginserverWorldStatusUpdate);
+	pack->size    = sizeof(ServerLSStatus_Struct);
 	pack->pBuffer = new uchar[pack->size];
 	memset(pack->pBuffer, 0, pack->size);
-	auto loginserver_status = (LoginserverWorldStatusUpdate *) pack->pBuffer;
+	auto loginserver_status = (ServerLSStatus_Struct *) pack->pBuffer;
 
 	if (WorldConfig::get()->Locked) {
 		loginserver_status->status = -2;
@@ -677,6 +695,9 @@ void LoginServer::SendStatus()
 	delete pack;
 }
 
+/**
+ * @param pack
+ */
 void LoginServer::SendPacket(ServerPacket *pack)
 {
 	if (m_legacy_client) {
@@ -694,15 +715,15 @@ void LoginServer::SendAccountUpdate(ServerPacket *pack)
 		return;
 	}
 
-	auto *req = (LoginserverAccountUpdate *) pack->pBuffer;
+	auto *ls_account_update = (ServerLSAccountUpdate_Struct *) pack->pBuffer;
 	if (CanUpdate()) {
 		LogInfo(
 			"Sending ServerOP_LSAccountUpdate packet to loginserver: [{0}]:[{1}]",
 			m_loginserver_address,
 			m_loginserver_port
 		);
-		strn0cpy(req->world_account, m_login_account.c_str(), 30);
-		strn0cpy(req->world_password, m_login_password.c_str(), 30);
+		strn0cpy(ls_account_update->worldaccount, m_login_account.c_str(), 30);
+		strn0cpy(ls_account_update->worldpassword, m_login_password.c_str(), 30);
 		SendPacket(pack);
 	}
 }

@@ -1,114 +1,259 @@
 #include "account_management.h"
 #include "login_server.h"
 #include "../common/event/task_scheduler.h"
-#include "../common/repositories/login_accounts_repository.h"
+#include "../common/event/event_loop.h"
+#include "../common/net/dns.h"
+#include "../common/strings.h"
 
+extern LoginServer       server;
 EQ::Event::TaskScheduler task_runner;
 
-uint64 AccountManagement::CreateLoginServerAccount(LoginAccountContext c)
+/**
+ * @param username
+ * @param password
+ * @param email
+ * @param source_loginserver
+ * @param login_account_id
+ * @return
+ */
+int32 AccountManagement::CreateLoginServerAccount(
+	std::string username,
+	std::string password,
+	std::string email,
+	const std::string &source_loginserver,
+	uint32 login_account_id
+)
 {
-	if (LoginAccountsRepository::GetAccountFromContext(database, c).id > 0) {
+	auto mode = server.options.GetEncryptionMode();
+	auto hash = eqcrypt_hash(username, password, mode);
+
+	LogInfo(
+		"Attempting to create local login account for user [{0}] encryption algorithm [{1}] ({2})",
+		username,
+		GetEncryptionByModeId(mode),
+		mode
+	);
+
+	unsigned int db_id = 0;
+	if (server.db->DoesLoginServerAccountExist(username, hash, source_loginserver, 1)) {
 		LogWarning(
-			"Attempting to create local login account for user [{}] but already exists!",
-			c.username
+			"Attempting to create local login account for user [{0}] login [{1}] but already exists!",
+			username,
+			source_loginserver
 		);
 
 		return -1;
 	}
 
-	auto a = LoginAccountsRepository::CreateAccountFromContext(database, c);
-	if (a.id > 0) {
-		return (int64) a.id;
+	uint32 created_account_id = 0;
+	if (login_account_id > 0) {
+		created_account_id = server.db->CreateLoginDataWithID(username, hash, source_loginserver, login_account_id);
+	}
+	else {
+		created_account_id = server.db->CreateLoginAccount(username, hash, source_loginserver, email);
 	}
 
-	LogError("Failed to create local login account for user [{}] !", c.username);
+	if (created_account_id > 0) {
+		LogInfo(
+			"Account creation success for user [{0}] encryption algorithm [{1}] ({2}) id: [{3}]",
+			username,
+			GetEncryptionByModeId(mode),
+			mode,
+			created_account_id
+		);
+
+		return (int32) created_account_id;
+	}
+
+	LogError("Failed to create local login account for user [{0}]!", username);
 
 	return 0;
 }
 
-uint64 AccountManagement::CheckLoginserverUserCredentials(LoginAccountContext c)
+/**
+ * @param username
+ * @param password
+ * @param email
+ * @return
+ */
+bool AccountManagement::CreateLoginserverWorldAdminAccount(
+	const std::string &username,
+	const std::string &password,
+	const std::string &email,
+	const std::string &first_name,
+	const std::string &last_name,
+	const std::string &ip_address
+)
 {
 	auto mode = server.options.GetEncryptionMode();
-	auto a    = LoginAccountsRepository::GetAccountFromContext(database, c);
-	if (!a.id) {
-		LogError(
-			"account [{}] source_loginserver [{}] not found!",
-			c.username,
-			c.source_loginserver
-		);
-
-		return 0;
-	}
-
-	bool validated_credentials = eqcrypt_verify_hash(c.username, c.password, a.account_password, mode);
-	if (!validated_credentials) {
-		LogError(
-			"account [{}] source_loginserver [{}] invalid credentials!",
-			c.username,
-			c.source_loginserver
-		);
-
-		return 0;
-	}
+	auto hash = eqcrypt_hash(username, password, mode);
 
 	LogInfo(
-		"account [{}] source_loginserver [{}] credentials validated success!",
-		c.username,
-		c.source_loginserver
+		"Attempting to create world admin account | username [{0}] encryption algorithm [{1}] ({2})",
+		username,
+		GetEncryptionByModeId(mode),
+		mode
 	);
 
-	return a.id;
-}
-
-bool AccountManagement::UpdateLoginserverUserCredentials(LoginAccountContext c)
-{
-	auto a = LoginAccountsRepository::GetAccountFromContext(database, c);
-	if (!a.id) {
-		LogError(
-			"account [{}] source_loginserver [{}] not found!",
-			c.username,
-			c.source_loginserver
+	if (server.db->DoesLoginserverWorldAdminAccountExist(username)) {
+		LogWarning(
+			"Attempting to create world admin account for user [{0}] but already exists!",
+			username
 		);
 
 		return false;
 	}
 
-	LoginAccountsRepository::UpdateAccountPassword(database, a, c.password);
+	uint32 created_world_admin_id = server.db->CreateLoginserverWorldAdminAccount(
+		username,
+		hash,
+		first_name,
+		last_name,
+		email,
+		ip_address
+	);
+
+	if (created_world_admin_id > 0) {
+		LogInfo(
+			"Account creation success for user [{0}] encryption algorithm [{1}] ({2}) new admin id [{3}]",
+			username,
+			GetEncryptionByModeId(mode),
+			mode,
+			created_world_admin_id
+		);
+		return true;
+	}
+
+	LogError("Failed to create world admin account account for user [{0}]!", username);
+
+	return false;
+}
+
+/**
+ * @param in_account_username
+ * @param in_account_password
+ * @return
+ */
+uint32 AccountManagement::CheckLoginserverUserCredentials(
+	const std::string &in_account_username,
+	const std::string &in_account_password,
+	const std::string &source_loginserver
+)
+{
+	auto mode = server.options.GetEncryptionMode();
+
+	Database::DbLoginServerAccount
+		login_server_admin = server.db->GetLoginServerAccountByAccountName(
+		in_account_username,
+		source_loginserver
+	);
+
+	if (!login_server_admin.loaded) {
+		LogError(
+			"account [{0}] source_loginserver [{1}] not found!",
+			in_account_username,
+			source_loginserver
+		);
+
+		return false;
+	}
+
+	bool validated_credentials = eqcrypt_verify_hash(
+		in_account_username,
+		in_account_password,
+		login_server_admin.account_password,
+		mode
+	);
+
+	if (!validated_credentials) {
+		LogError(
+			"account [{0}] source_loginserver [{1}] invalid credentials!",
+			in_account_username,
+			source_loginserver
+		);
+
+		return 0;
+	}
 
 	LogInfo(
-		"account [{}] source_loginserver [{}] credentials updated!",
-		c.username,
-		c.source_loginserver
+		"account [{0}] source_loginserver [{1}] credentials validated success!",
+		in_account_username,
+		source_loginserver
+	);
+
+	return login_server_admin.id;
+}
+
+
+/**
+ * @param in_account_username
+ * @param in_account_password
+ * @return
+ */
+bool AccountManagement::UpdateLoginserverUserCredentials(
+	const std::string &in_account_username,
+	const std::string &in_account_password,
+	const std::string &source_loginserver
+)
+{
+	auto mode = server.options.GetEncryptionMode();
+
+	Database::DbLoginServerAccount
+		login_server_account = server.db->GetLoginServerAccountByAccountName(
+		in_account_username,
+		source_loginserver
+	);
+
+	if (!login_server_account.loaded) {
+		LogError(
+			"account [{0}] source_loginserver [{1}] not found!",
+			in_account_username,
+			source_loginserver
+		);
+
+		return false;
+	}
+
+	server.db->UpdateLoginserverAccountPasswordHash(
+		in_account_username,
+		source_loginserver,
+		eqcrypt_hash(
+			in_account_username,
+			in_account_password,
+			mode
+		)
+	);
+
+	LogInfo(
+		"account [{0}] source_loginserver [{1}] credentials updated!",
+		in_account_username,
+		source_loginserver
 	);
 
 	return true;
 }
 
-bool AccountManagement::UpdateLoginserverWorldAdminAccountPasswordByName(LoginAccountContext c)
+/**
+ * @param in_account_username
+ * @param in_account_password
+ */
+bool AccountManagement::UpdateLoginserverWorldAdminAccountPasswordByName(
+	const std::string &in_account_username,
+	const std::string &in_account_password
+)
 {
 	auto mode = server.options.GetEncryptionMode();
-	auto hash = eqcrypt_hash(
-		c.username,
-		c.password,
-		mode
+	auto hash = eqcrypt_hash(in_account_username, in_account_password, mode);
+
+	bool updated_account = server.db->UpdateLoginWorldAdminAccountPasswordByUsername(
+		in_account_username,
+		hash
 	);
 
-	auto a = LoginServerAdminsRepository::GetByName(database, c.username);
-	if (!a.id) {
-		LogError(
-			"account_name [{}] not found!",
-			c.username
-		);
-
-		return false;
-	}
-
-	a.account_password = hash;
-	auto updated_account = LoginServerAdminsRepository::UpdateOne(database, a);
-
 	LogInfo(
-		"account_name [{}] status [{}]",
-		c.username,
+		"[{}] account_name [{}] status [{}]",
+		__func__,
+		in_account_username,
 		(updated_account ? "success" : "failed")
 	);
 
@@ -117,7 +262,15 @@ bool AccountManagement::UpdateLoginserverWorldAdminAccountPasswordByName(LoginAc
 
 constexpr int REQUEST_TIMEOUT_MS = 1500;
 
-uint64 AccountManagement::CheckExternalLoginserverUserCredentials(LoginAccountContext c)
+/**
+ * @param in_account_username
+ * @param in_account_password
+ * @return
+ */
+uint32 AccountManagement::CheckExternalLoginserverUserCredentials(
+	const std::string &in_account_username,
+	const std::string &in_account_password
+)
 {
 	auto res = task_runner.Enqueue(
 		[&]() -> uint32 {
@@ -125,11 +278,11 @@ uint64 AccountManagement::CheckExternalLoginserverUserCredentials(LoginAccountCo
 			uint32 ret     = 0;
 
 			EQ::Net::DaybreakConnectionManager           mgr;
-			std::shared_ptr<EQ::Net::DaybreakConnection> conn;
+			std::shared_ptr<EQ::Net::DaybreakConnection> c;
 
 			mgr.OnNewConnection(
 				[&](std::shared_ptr<EQ::Net::DaybreakConnection> connection) {
-					conn = connection;
+					c = connection;
 				}
 			);
 
@@ -143,7 +296,7 @@ uint64 AccountManagement::CheckExternalLoginserverUserCredentials(LoginAccountCo
 						EQ::Net::DynamicPacket p;
 						p.PutUInt16(0, 1); //OP_SessionReady
 						p.PutUInt32(2, 2);
-						conn->QueuePacket(p);
+						c->QueuePacket(p);
 					}
 					else if (EQ::Net::StatusDisconnected == to) {
 						running = false;
@@ -157,12 +310,13 @@ uint64 AccountManagement::CheckExternalLoginserverUserCredentials(LoginAccountCo
 					switch (opcode) {
 						case 0x0017: //OP_ChatMessage
 						{
-							size_t buffer_len = c.username.length() + c.password.length() + 2;
+							size_t buffer_len =
+									   in_account_username.length() + in_account_password.length() + 2;
 
 							std::unique_ptr<char[]> buffer(new char[buffer_len]);
 
-							strcpy(&buffer[0], c.username.c_str());
-							strcpy(&buffer[c.username.length() + 1], c.password.c_str());
+							strcpy(&buffer[0], in_account_username.c_str());
+							strcpy(&buffer[in_account_username.length() + 1], in_account_password.c_str());
 
 							size_t encrypted_len = buffer_len;
 
@@ -176,11 +330,11 @@ uint64 AccountManagement::CheckExternalLoginserverUserCredentials(LoginAccountCo
 							p.PutUInt32(2, 3);
 
 							eqcrypt_block(&buffer[0], buffer_len, (char *) p.Data() + 12, true);
-							conn->QueuePacket(p);
+							c->QueuePacket(p);
 							break;
 						}
 						case 0x0018: {
-							auto encrypt_size = p.Length() - 12;
+							auto encrypt_size                    = p.Length() - 12;
 							if (encrypt_size % 8 > 0) {
 								encrypt_size = (encrypt_size / 8) * 8;
 							}
@@ -240,15 +394,15 @@ uint64 AccountManagement::CheckExternalLoginserverUserCredentials(LoginAccountCo
 	return res.get();
 }
 
-uint64 AccountManagement::HealthCheckUserLogin()
+uint32 AccountManagement::HealthCheckUserLogin()
 {
 	std::string in_account_username = "healthcheckuser";
 	std::string in_account_password = "healthcheckpassword";
 
 	auto res = task_runner.Enqueue(
-		[&]() -> uint64 {
+		[&]() -> uint32 {
 			bool   running = true;
-			uint64 ret     = 0;
+			uint32 ret     = 0;
 
 			EQ::Net::DaybreakConnectionManager           mgr;
 			std::shared_ptr<EQ::Net::DaybreakConnection> c;
@@ -307,7 +461,7 @@ uint64 AccountManagement::HealthCheckUserLogin()
 							break;
 						}
 						case 0x0018: {
-							auto encrypt_size = p.Length() - 12;
+							auto encrypt_size                    = p.Length() - 12;
 							if (encrypt_size % 8 > 0) {
 								encrypt_size = (encrypt_size / 8) * 8;
 							}
@@ -333,11 +487,11 @@ uint64 AccountManagement::HealthCheckUserLogin()
 			mgr.Connect("127.0.0.1", 5999);
 
 			std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
-			auto                                  &loop = EQ::EventLoop::Get();
+			auto &loop = EQ::EventLoop::Get();
 			while (running) {
 				std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
 				if (std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() > 2000) {
-					ret     = 0;
+					ret = 0;
 					running = false;
 				}
 
@@ -349,60 +503,4 @@ uint64 AccountManagement::HealthCheckUserLogin()
 	);
 
 	return res.get();
-}
-
-bool AccountManagement::CreateLoginserverWorldAdminAccount(
-	const std::string &username,
-	const std::string &password,
-	const std::string &email,
-	const std::string &first_name,
-	const std::string &last_name,
-	const std::string &ip_address
-)
-{
-	auto mode = server.options.GetEncryptionMode();
-	auto hash = eqcrypt_hash(username, password, mode);
-
-	LogInfo(
-		"Attempting to create world admin account | username [{}] encryption algorithm [{}] ({})",
-		username,
-		GetEncryptionByModeId(mode),
-		mode
-	);
-
-	auto a = LoginServerAdminsRepository::GetByName(database, username);
-	if (a.id > 0) {
-		LogWarning(
-			"Attempting to create world admin account for user [{}] but already exists!",
-			username
-		);
-
-		return false;
-	}
-
-	a = LoginServerAdminsRepository::NewEntity();
-	a.account_name            = username;
-	a.account_password        = hash;
-	a.first_name              = first_name;
-	a.last_name               = last_name;
-	a.email                   = email;
-	a.registration_ip_address = ip_address;
-	a.registration_date       = std::time(nullptr);
-
-	a = LoginServerAdminsRepository::InsertOne(database, a);
-
-	if (a.id > 0) {
-		LogInfo(
-			"Account creation success for user [{}] encryption algorithm [{}] ({}) new admin id [{}]",
-			username,
-			GetEncryptionByModeId(mode),
-			mode,
-			a.id
-		);
-		return true;
-	}
-
-	LogError("Failed to create world admin account account for user [{}] !", username);
-
-	return false;
 }

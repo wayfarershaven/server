@@ -1,10 +1,9 @@
 #include "loginserver_webserver.h"
-#include "world_server_manager.h"
+#include "server_manager.h"
 #include "login_server.h"
 #include "../common/json/json.h"
 #include "../common/strings.h"
 #include "account_management.h"
-#include "../common/repositories/login_api_tokens_repository.h"
 
 extern LoginServer server;
 
@@ -14,6 +13,9 @@ namespace LoginserverWebserver {
 	constexpr static int HTTP_RESPONSE_BAD_REQUEST  = 400;
 	constexpr static int HTTP_RESPONSE_UNAUTHORIZED = 401;
 
+	/**
+	 * @param api
+	 */
 	void RegisterRoutes(httplib::Server &api)
 	{
 		server.token_manager = new LoginserverWebserver::TokenManager;
@@ -25,21 +27,21 @@ namespace LoginserverWebserver {
 					return;
 				}
 
-				Json::Value     response;
-				auto            iter = server.server_manager->GetWorldServers().begin();
-				for (const auto &s: server.server_manager->GetWorldServers()) {
+				Json::Value response;
+				auto        iter = server.server_manager->getWorldServers().begin();
+				while (iter != server.server_manager->getWorldServers().end()) {
 					Json::Value row;
-					row["server_long_name"]    = s->GetServerLongName();
-					row["server_short_name"]   = s->GetServerShortName();
-					row["server_list_type_id"] = s->GetServerListID();
-					row["server_status"]       = s->GetStatus();
-					row["zones_booted"]        = s->GetZonesBooted();
-					row["local_ip"]            = s->GetLocalIP();
-					row["remote_ip"]           = s->GetRemoteIP();
-					row["players_online"]      = s->GetPlayersOnline();
-					row["world_id"]            = s->GetServerId();
-
+					row["server_long_name"]    = (*iter)->GetServerLongName();
+					row["server_short_name"]   = (*iter)->GetServerShortName();
+					row["server_list_type_id"] = (*iter)->GetServerListID();
+					row["server_status"]       = (*iter)->GetStatus();
+					row["zones_booted"]        = (*iter)->GetZonesBooted();
+					row["local_ip"]            = (*iter)->GetLocalIP();
+					row["remote_ip"]           = (*iter)->GetRemoteIP();
+					row["players_online"]      = (*iter)->GetPlayersOnline();
+					row["world_id"]            = (*iter)->GetServerId();
 					response.append(row);
+					++iter;
 				}
 
 				LoginserverWebserver::SendResponse(response, res);
@@ -52,10 +54,10 @@ namespace LoginserverWebserver {
 					return;
 				}
 
-				Json::Value req      = LoginserverWebserver::ParseRequestBody(request);
-				std::string username = req.get("username", "").asString();
-				std::string password = req.get("password", "").asString();
-				std::string email    = req.get("email", "").asString();
+				Json::Value request_body = LoginserverWebserver::ParseRequestBody(request);
+				std::string username     = request_body.get("username", "").asString();
+				std::string password     = request_body.get("password", "").asString();
+				std::string email        = request_body.get("email", "").asString();
 
 				Json::Value response;
 				if (username.empty() || password.empty()) {
@@ -65,12 +67,7 @@ namespace LoginserverWebserver {
 					return;
 				}
 
-				LoginAccountContext c;
-				c.username = username;
-				c.password = password;
-				c.email    = email;
-
-				int32 account_created_id = AccountManagement::CreateLoginServerAccount(c);
+				int32 account_created_id = AccountManagement::CreateLoginServerAccount(username, password, email);
 				if (account_created_id > 0) {
 					response["message"]            = "Account created successfully!";
 					response["data"]["account_id"] = account_created_id;
@@ -94,11 +91,11 @@ namespace LoginserverWebserver {
 					return;
 				}
 
-				Json::Value req              = LoginserverWebserver::ParseRequestBody(request);
-				std::string username         = req.get("username", "").asString();
-				std::string password         = req.get("password", "").asString();
-				std::string email            = req.get("email", "").asString();
-				uint32      login_account_id = req.get("login_account_id", "").asInt();
+				Json::Value request_body     = LoginserverWebserver::ParseRequestBody(request);
+				std::string username         = request_body.get("username", "").asString();
+				std::string password         = request_body.get("password", "").asString();
+				std::string email            = request_body.get("email", "").asString();
+				uint32      login_account_id = request_body.get("login_account_id", "").asInt();
 
 				Json::Value response;
 				if (username.empty() || password.empty()) {
@@ -108,14 +105,14 @@ namespace LoginserverWebserver {
 					return;
 				}
 
-				LoginAccountContext c;
-				c.username           = username;
-				c.password           = password;
-				c.email              = email;
-				c.source_loginserver = "eqemu";
-				c.login_account_id   = login_account_id;
-
-				int32 account_created_id = AccountManagement::CreateLoginServerAccount(c);
+				std::string source_loginserver = "eqemu";
+				int32       account_created_id = AccountManagement::CreateLoginServerAccount(
+					username,
+					password,
+					email,
+					source_loginserver,
+					login_account_id
+				);
 
 				if (account_created_id > 0) {
 					response["message"]            = "Account created successfully!";
@@ -140,9 +137,9 @@ namespace LoginserverWebserver {
 					return;
 				}
 
-				Json::Value req      = LoginserverWebserver::ParseRequestBody(request);
-				std::string username = req.get("username", "").asString();
-				std::string password = req.get("password", "").asString();
+				Json::Value request_body = LoginserverWebserver::ParseRequestBody(request);
+				std::string username     = request_body.get("username", "").asString();
+				std::string password     = request_body.get("password", "").asString();
 
 				Json::Value response;
 				if (username.empty() || password.empty()) {
@@ -152,11 +149,11 @@ namespace LoginserverWebserver {
 					return;
 				}
 
-				LoginAccountContext c;
-				c.username = username;
-				c.password = password;
+				uint32 login_account_id = AccountManagement::CheckLoginserverUserCredentials(
+					username,
+					password
+				);
 
-				uint32 login_account_id = AccountManagement::CheckLoginserverUserCredentials(c);
 				if (login_account_id > 0) {
 					response["message"]            = "Credentials valid!";
 					response["data"]["account_id"] = login_account_id;
@@ -176,9 +173,9 @@ namespace LoginserverWebserver {
 					return;
 				}
 
-				Json::Value req      = LoginserverWebserver::ParseRequestBody(request);
-				std::string username = req.get("username", "").asString();
-				std::string password = req.get("password", "").asString();
+				Json::Value request_body = LoginserverWebserver::ParseRequestBody(request);
+				std::string username     = request_body.get("username", "").asString();
+				std::string password     = request_body.get("password", "").asString();
 
 				Json::Value response;
 				if (username.empty() || password.empty()) {
@@ -188,20 +185,24 @@ namespace LoginserverWebserver {
 					return;
 				}
 
-				LoginAccountContext c;
-				c.username = username;
-				c.password = password;
+				Database::DbLoginServerAccount
+					login_server_account = server.db->GetLoginServerAccountByAccountName(
+					username
+				);
 
-				auto a = LoginAccountsRepository::GetAccountFromContext(database, c);
-				if (!a.id) {
+				if (!login_server_account.loaded) {
 					res.status = HTTP_RESPONSE_BAD_REQUEST;
 					response["error"] = "Failed to find associated loginserver account!";
 					LoginserverWebserver::SendResponse(response, res);
 					return;
 				}
 
-				bool success = AccountManagement::UpdateLoginserverUserCredentials(c);
-				if (success) {
+				bool credentials_valid = AccountManagement::UpdateLoginserverUserCredentials(
+					username,
+					password
+				);
+
+				if (credentials_valid) {
 					response["message"] = "Loginserver account credentials updated!";
 				}
 				else {
@@ -213,15 +214,16 @@ namespace LoginserverWebserver {
 			}
 		);
 
+
 		api.Post(
 			"/v1/account/credentials/update/external", [](const httplib::Request &request, httplib::Response &res) {
 				if (!LoginserverWebserver::TokenManager::AuthCanWrite(request, res)) {
 					return;
 				}
 
-				Json::Value req      = LoginserverWebserver::ParseRequestBody(request);
-				std::string username = req.get("username", "").asString();
-				std::string password = req.get("password", "").asString();
+				Json::Value request_body = LoginserverWebserver::ParseRequestBody(request);
+				std::string username     = request_body.get("username", "").asString();
+				std::string password     = request_body.get("password", "").asString();
 
 				Json::Value response;
 				if (username.empty() || password.empty()) {
@@ -232,20 +234,25 @@ namespace LoginserverWebserver {
 
 				std::string source_loginserver = "eqemu";
 
-				LoginAccountContext c;
-				c.username           = username;
-				c.password           = password;
-				c.source_loginserver = source_loginserver;
+				Database::DbLoginServerAccount
+					login_server_account = server.db->GetLoginServerAccountByAccountName(
+					username,
+					source_loginserver
+				);
 
-				auto a = LoginAccountsRepository::GetAccountFromContext(database, c);
-				if (!a.id) {
+				if (!login_server_account.loaded) {
 					response["error"] = "Failed to find associated loginserver account!";
 					LoginserverWebserver::SendResponse(response, res);
 					return;
 				}
 
-				bool success = AccountManagement::UpdateLoginserverUserCredentials(c);
-				if (success) {
+				bool credentials_valid = AccountManagement::UpdateLoginserverUserCredentials(
+					username,
+					password,
+					source_loginserver
+				);
+
+				if (credentials_valid) {
 					response["message"] = "Loginserver account credentials updated!";
 				}
 				else {
@@ -262,9 +269,9 @@ namespace LoginserverWebserver {
 					return;
 				}
 
-				Json::Value req      = LoginserverWebserver::ParseRequestBody(request);
-				std::string username = req.get("username", "").asString();
-				std::string password = req.get("password", "").asString();
+				Json::Value request_body = LoginserverWebserver::ParseRequestBody(request);
+				std::string username     = request_body.get("username", "").asString();
+				std::string password     = request_body.get("password", "").asString();
 
 				Json::Value response;
 				if (username.empty() || password.empty()) {
@@ -273,10 +280,10 @@ namespace LoginserverWebserver {
 					return;
 				}
 
-				LoginAccountContext c;
-				c.username = username;
-				c.password = password;
-				uint32 account_id = AccountManagement::CheckExternalLoginserverUserCredentials(c);
+				uint32 account_id = AccountManagement::CheckExternalLoginserverUserCredentials(
+					username,
+					password
+				);
 
 				if (account_id > 0) {
 					response["message"]            = "Credentials valid!";
@@ -294,7 +301,7 @@ namespace LoginserverWebserver {
 		api.Get(
 			"/probes/healthcheck", [](const httplib::Request &request, httplib::Response &res) {
 				Json::Value response;
-				uint32      login_response = AccountManagement::HealthCheckUserLogin();
+				uint32 login_response = AccountManagement::HealthCheckUserLogin();
 
 				response["status"] = login_response;
 				if (login_response == 0) {
@@ -310,6 +317,10 @@ namespace LoginserverWebserver {
 		);
 	}
 
+	/**
+	 * @param payload
+	 * @param res
+	 */
 	void SendResponse(const Json::Value &payload, httplib::Response &res)
 	{
 		if (res.get_header_value("response_set") == "true") {
@@ -331,6 +342,10 @@ namespace LoginserverWebserver {
 		res.set_content(response_payload.str(), "application/json");
 	}
 
+	/**
+	 * @param payload
+	 * @param res
+	 */
 	Json::Value ParseRequestBody(const httplib::Request &request)
 	{
 		Json::Value request_body;
@@ -349,9 +364,13 @@ namespace LoginserverWebserver {
 		return request_body;
 	}
 
+	/**
+	 * @param request
+	 * @param res
+	 */
 	bool LoginserverWebserver::TokenManager::AuthCanRead(const httplib::Request &request, httplib::Response &res)
 	{
-		LoginserverWebserver::TokenManager::Token
+		LoginserverWebserver::TokenManager::token_data
 			user_token = LoginserverWebserver::TokenManager::CheckApiAuthorizationHeaders(request);
 
 		if (!user_token.can_read) {
@@ -365,7 +384,7 @@ namespace LoginserverWebserver {
 			res.set_header("response_set", "true");
 
 			LogWarning(
-				"AuthCanRead access failure remote_address [{}] user_agent [{}]",
+				"AuthCanRead access failure remote_address [{0}] user_agent [{1}]",
 				user_token.remote_address,
 				user_token.user_agent
 			);
@@ -376,9 +395,13 @@ namespace LoginserverWebserver {
 		return true;
 	}
 
+	/**
+	 * @param request
+	 * @param res
+	 */
 	bool LoginserverWebserver::TokenManager::AuthCanWrite(const httplib::Request &request, httplib::Response &res)
 	{
-		LoginserverWebserver::TokenManager::Token
+		LoginserverWebserver::TokenManager::token_data
 			user_token = LoginserverWebserver::TokenManager::CheckApiAuthorizationHeaders(request);
 
 		if (!user_token.can_write) {
@@ -392,7 +415,7 @@ namespace LoginserverWebserver {
 			res.set_header("response_set", "true");
 
 			LogWarning(
-				"AuthCanWrite access failure remote_address [{}] user_agent [{}]",
+				"AuthCanWrite access failure remote_address [{0}] user_agent [{1}]",
 				user_token.remote_address,
 				user_token.user_agent
 			);
@@ -403,16 +426,20 @@ namespace LoginserverWebserver {
 		return true;
 	}
 
-	LoginserverWebserver::TokenManager::Token
+	/**
+	 * @param request
+	 * @return
+	 */
+	LoginserverWebserver::TokenManager::token_data
 	LoginserverWebserver::TokenManager::CheckApiAuthorizationHeaders(
 		const httplib::Request &request
 	)
 	{
 		std::string authorization_key;
 
-		LoginserverWebserver::TokenManager::Token user_token{};
+		LoginserverWebserver::TokenManager::token_data user_token{};
 
-		for (const auto &header: request.headers) {
+		for (const auto &header : request.headers) {
 			auto header_key   = header.first;
 			auto header_value = header.second;
 			if (header_key == "Authorization") {
@@ -433,7 +460,7 @@ namespace LoginserverWebserver {
 		}
 
 		LogDebug(
-			"Authentication Request | remote_address [{}] user_agent [{}] authorization_key [{}] request_path [{}]",
+			"Authentication Request | remote_address [{0}] user_agent [{1}] authorization_key [{2}] request_path [{3}]",
 			user_token.remote_address,
 			user_token.user_agent,
 			authorization_key,
@@ -443,24 +470,43 @@ namespace LoginserverWebserver {
 		return user_token;
 	}
 
+	/**
+	 * Loads API Tokens
+	 */
 	void TokenManager::LoadApiTokens()
 	{
-		int token_count = 0;
+		auto      results     = server.db->GetLoginserverApiTokens();
+		int       token_count = 0;
+		for (auto row         = results.begin(); row != results.end(); ++row) {
+			LoginserverWebserver::TokenManager::token_data token_data;
+			token_data.token     = row[0];
+			token_data.can_write = Strings::ToInt(row[1]) > 0;
+			token_data.can_read  = Strings::ToInt(row[2]) > 0;
 
-		for (auto &t: LoginApiTokensRepository::GetWhere(database, "TRUE ORDER BY id ASC")) {
-			LoginserverWebserver::TokenManager::Token td;
-			td.id        = t.id;
-			td.token     = t.token;
-			td.can_write = t.can_write;
-			td.can_read  = t.can_read;
+			LogDebug(
+				"Inserting api token to internal list [{0}] write {1} read {2}",
+				token_data.token,
+				token_data.can_read,
+				token_data.can_write
+			);
 
-			server.token_manager->loaded_api_tokens.emplace(std::make_pair(td.token, td));
+			server.token_manager->loaded_api_tokens.emplace(
+				std::make_pair(
+					token_data.token,
+					token_data
+				)
+			);
+
 			token_count++;
 		}
 
 		LogInfo("Loaded [{}] API token(s)", token_count);
 	}
 
+	/**
+	 * @param token
+	 * @return
+	 */
 	bool TokenManager::TokenExists(const std::string &token)
 	{
 		auto it = server.token_manager->loaded_api_tokens.find(token);
@@ -468,7 +514,11 @@ namespace LoginserverWebserver {
 		return !(it == server.token_manager->loaded_api_tokens.end());
 	}
 
-	LoginserverWebserver::TokenManager::Token TokenManager::GetToken(
+	/**
+	 * @param token
+	 * @return
+	 */
+	LoginserverWebserver::TokenManager::token_data TokenManager::GetToken(
 		const std::string &token
 	)
 	{

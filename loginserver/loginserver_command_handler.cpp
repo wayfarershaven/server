@@ -5,11 +5,15 @@
 #include "login_server.h"
 #include "loginserver_webserver.h"
 #include "account_management.h"
-#include "../common/repositories/login_api_tokens_repository.h"
 
 extern LoginServer server;
 
 namespace LoginserverCommandHandler {
+
+	/**
+	 * @param argc
+	 * @param argv
+	 */
 	void CommandHandler(int argc, char **argv)
 	{
 		if (argc == 1) { return; }
@@ -18,7 +22,14 @@ namespace LoginserverCommandHandler {
 		cmd.parse(argc, argv, argh::parser::PREFER_PARAM_FOR_UNREG_OPTION);
 		EQEmuCommand::DisplayDebug(cmd);
 
+		/**
+		 * Declare command mapping
+		 */
 		auto function_map = EQEmuCommand::function_map;
+
+		/**
+		 * Register commands
+		 */
 		function_map["login-user:check-credentials"]          = &LoginserverCommandHandler::CheckLoginserverUserCredentials;
 		function_map["login-user:check-external-credentials"] = &LoginserverCommandHandler::CheckExternalLoginserverUserCredentials;
 		function_map["login-user:create"]                     = &LoginserverCommandHandler::CreateLocalLoginserverAccount;
@@ -32,6 +43,12 @@ namespace LoginserverCommandHandler {
 		EQEmuCommand::HandleMenu(function_map, cmd, argc, argv);
 	}
 
+	/**
+	 * @param argc
+	 * @param argv
+	 * @param cmd
+	 * @param description
+	 */
 	void CreateLoginserverApiToken(int argc, char **argv, argh::parser &cmd, std::string &description)
 	{
 		description = "Creates Loginserver API Token";
@@ -52,22 +69,22 @@ namespace LoginserverCommandHandler {
 		bool can_write = cmd[{"-w", "--write"}];
 
 		if (!can_read || !can_write) {
-			LogInfo("--read or --write must be set or both!");
+			LogInfo("[{0}] --read or --write must be set or both!", __func__);
 			exit(1);
 		}
 
-		auto t = LoginApiTokensRepository::NewEntity();
-		t.can_read   = can_read;
-		t.can_write  = can_write;
-		t.token      = EQ::Util::UUID::Generate().ToString();
-		t.created_at = std::time(nullptr);
-
-		auto created = LoginApiTokensRepository::InsertOne(database, t);
-		if (created.id) {
-			LogInfo("Created Loginserver API token [{}] [{}]", created.id, created.token);
+		std::string token = server.db->CreateLoginserverApiToken(can_write, can_read);
+		if (!token.empty()) {
+			LogInfo("[{0}] Created Loginserver API token [{1}]", __func__, token);
 		}
 	}
 
+	/**
+	 * @param argc
+	 * @param argv
+	 * @param cmd
+	 * @param description
+	 */
 	void ListLoginserverApiTokens(int argc, char **argv, argh::parser &cmd, std::string &description)
 	{
 		description = "Lists Loginserver API Tokens";
@@ -79,10 +96,9 @@ namespace LoginserverCommandHandler {
 		server.token_manager = new LoginserverWebserver::TokenManager;
 		server.token_manager->LoadApiTokens();
 
-		for (auto &it: server.token_manager->loaded_api_tokens) {
+		for (auto &it : server.token_manager->loaded_api_tokens) {
 			LogInfo(
-				"token id [{}] [{}] can_write [{}] can_read [{}]",
-				it.second.id,
+				"token [{0}] can_write [{1}] can_read [{2}]",
 				it.second.token,
 				it.second.can_write,
 				it.second.can_read
@@ -90,6 +106,12 @@ namespace LoginserverCommandHandler {
 		}
 	}
 
+	/**
+	 * @param argc
+	 * @param argv
+	 * @param cmd
+	 * @param description
+	 */
 	void CreateLocalLoginserverAccount(int argc, char **argv, argh::parser &cmd, std::string &description)
 	{
 		description = "Creates Local Loginserver Account";
@@ -108,14 +130,19 @@ namespace LoginserverCommandHandler {
 
 		EQEmuCommand::ValidateCmdInput(arguments, options, cmd, argc, argv);
 
-		LoginAccountContext c;
-		c.username = cmd(2).str();
-		c.password = cmd(3).str();
-		c.email    = cmd("--email").str();
-
-		AccountManagement::CreateLoginServerAccount(c);
+		AccountManagement::CreateLoginServerAccount(
+			cmd(2).str(),
+			cmd(3).str(),
+			cmd("--email").str()
+		);
 	}
 
+	/**
+	 * @param argc
+	 * @param argv
+	 * @param cmd
+	 * @param description
+	 */
 	void CreateLoginserverWorldAdminAccount(int argc, char **argv, argh::parser &cmd, std::string &description)
 	{
 		description = "Creates Loginserver World Administrator Account";
@@ -140,6 +167,12 @@ namespace LoginserverCommandHandler {
 		);
 	}
 
+	/**
+	 * @param argc
+	 * @param argv
+	 * @param cmd
+	 * @param description
+	 */
 	void CheckLoginserverUserCredentials(int argc, char **argv, argh::parser &cmd, std::string &description)
 	{
 		description = "Check user login credentials";
@@ -156,15 +189,20 @@ namespace LoginserverCommandHandler {
 
 		EQEmuCommand::ValidateCmdInput(arguments, options, cmd, argc, argv);
 
-		LoginAccountContext c;
-		c.username = cmd(2).str();
-		c.password = cmd(3).str();
+		auto res = AccountManagement::CheckLoginserverUserCredentials(
+			cmd(2).str(),
+			cmd(3).str()
+		);
 
-		auto res = AccountManagement::CheckLoginserverUserCredentials(c);
-
-		LogInfo("Credentials were {}", res != 0 ? "accepted" : "not accepted");
+		LogInfo("Credentials were {0}", res != 0 ? "accepted" : "not accepted");
 	}
 
+	/**
+	 * @param argc
+	 * @param argv
+	 * @param cmd
+	 * @param description
+	 */
 	void UpdateLoginserverUserCredentials(int argc, char **argv, argh::parser &cmd, std::string &description)
 	{
 		description = "Change user login credentials";
@@ -181,12 +219,18 @@ namespace LoginserverCommandHandler {
 
 		EQEmuCommand::ValidateCmdInput(arguments, options, cmd, argc, argv);
 
-		LoginAccountContext c;
-		c.username = cmd(2).str();
-		c.password = cmd(3).str();
-		AccountManagement::UpdateLoginserverUserCredentials(c);
+		AccountManagement::UpdateLoginserverUserCredentials(
+			cmd(2).str(),
+			cmd(3).str()
+		);
 	}
 
+	/**
+	 * @param argc
+	 * @param argv
+	 * @param cmd
+	 * @param description
+	 */
 	void CheckExternalLoginserverUserCredentials(int argc, char **argv, argh::parser &cmd, std::string &description)
 	{
 		description = "Check user external login credentials";
@@ -203,14 +247,20 @@ namespace LoginserverCommandHandler {
 
 		EQEmuCommand::ValidateCmdInput(arguments, options, cmd, argc, argv);
 
-		LoginAccountContext c;
-		c.username = cmd(2).str();
-		c.password = cmd(3).str();
-		auto res = AccountManagement::CheckExternalLoginserverUserCredentials(c);
+		auto res = AccountManagement::CheckExternalLoginserverUserCredentials(
+			cmd(2).str(),
+			cmd(3).str()
+		);
 
-		LogInfo("Credentials were {}", res ? "accepted" : "not accepted");
+		LogInfo("Credentials were {0}", res ? "accepted" : "not accepted");
 	}
 
+	/**
+	 * @param argc
+	 * @param argv
+	 * @param cmd
+	 * @param description
+	 */
 	void UpdateLoginserverWorldAdminAccountPassword(int argc, char **argv, argh::parser &cmd, std::string &description)
 	{
 		description = "Update world admin account password";
@@ -227,12 +277,18 @@ namespace LoginserverCommandHandler {
 
 		EQEmuCommand::ValidateCmdInput(arguments, options, cmd, argc, argv);
 
-		LoginAccountContext c;
-		c.username = cmd(2).str();
-		c.password = cmd(3).str();
-		AccountManagement::UpdateLoginserverWorldAdminAccountPasswordByName(c);
+		AccountManagement::UpdateLoginserverWorldAdminAccountPasswordByName(
+			cmd(2).str(),
+			cmd(3).str()
+		);
 	}
 
+	/**
+	 * @param argc
+	 * @param argv
+	 * @param cmd
+	 * @param description
+	 */
 	void HealthCheckLogin(int argc, char **argv, argh::parser &cmd, std::string &description)
 	{
 		description = "Checks login health using a test user";

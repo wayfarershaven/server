@@ -3,24 +3,29 @@
 
 #include <utility>
 #include "../common/json_config.h"
+#include "database.h"
 #include "encryption.h"
 #include "options.h"
-#include "world_server_manager.h"
+#include "server_manager.h"
 #include "client_manager.h"
 #include "loginserver_webserver.h"
 
-struct LoginServer {
+/**
+ * Login server struct, Contains every variable for the server that needs to exist outside the scope of main()
+ */
+struct LoginServer
+{
 public:
 
-	LoginServer() : server_manager(nullptr)
-	{
+	LoginServer() : db(nullptr), server_manager(nullptr) {
 
 	}
 
 	EQ::JsonConfigFile                 config;
+	Database                           *db;
 	LoginserverWebserver::TokenManager *token_manager{};
 	Options                            options;
-	WorldServerManager                 *server_manager;
+	ServerManager                      *server_manager;
 	ClientManager                      *client_manager{};
 };
 

@@ -652,7 +652,7 @@ struct ServerLSInfo_Struct {
 	uint8	servertype; // 0=world, 1=chat, 2=login, 3=MeshLogin
 };
 
-struct LoginserverNewWorldRequest {
+struct ServerNewLSInfo_Struct {
 	char	server_long_name[201]; // name the worldserver wants
 	char	server_short_name[50]; // shortname the worldserver wants
 	char	remote_ip_address[125];			// DNS address of the server
@@ -664,21 +664,21 @@ struct LoginserverNewWorldRequest {
 	uint8	server_process_type; // 0=world, 1=chat, 2=login, 3=MeshLogin
 };
 
-struct LoginserverAccountUpdate {            // for updating info on login server
-	char   world_account[31];            // account name for the worldserver
-	char   world_password[31];            // password for the name
-	uint32 user_account_id; // player account ID
-	char   user_account_name[31];            // player account name
-	char   user_account_password[51];            // player account password
-	char   user_email[101]; // player account email address
+struct ServerLSAccountUpdate_Struct {			// for updating info on login server
+	char	worldaccount[31];			// account name for the worldserver
+	char	worldpassword[31];			// password for the name
+	uint32	useraccountid; // player account ID
+	char	useraccount[31];			// player account name
+	char	userpassword[51];			// player account password
+	char	user_email[101]; // player account email address
 };
 
-struct LoginserverWorldStatusUpdate {
+struct ServerLSStatus_Struct {
 	int32 status;
 	int32 num_players;
 	int32 num_zones;
 };
-struct LoginserverZoneInfoUpdate {
+struct ZoneInfo_Struct {
 	uint32 zone;
 	uint16 count;
 	uint32 zone_wid;

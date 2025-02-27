@@ -12,23 +12,18 @@
 #include "loginserver_command_handler.h"
 #include "../common/strings.h"
 #include "../common/path_manager.h"
-#include "../common/database.h"
-#include "../common/events/player_event_logs.h"
-#include "../common/zone_store.h"
 #include <time.h>
 #include <stdlib.h>
 #include <string>
 #include <sstream>
 #include <thread>
 
-LoginServer     server;
-EQEmuLogSys     LogSys;
-bool            run_server = true;
-PathManager     path;
-Database        database;
-PlayerEventLogs player_event_logs;
-ZoneStore       zone_store;
+LoginServer server;
+EQEmuLogSys LogSys;
+bool        run_server = true;
+PathManager path;
 
+void ResolveAddresses();
 void CatchSignal(int sig_num)
 {
 }
@@ -37,16 +32,14 @@ void LoadDatabaseConnection()
 {
 	LogInfo("MySQL Database Init");
 
-	if (!database.Connect(
-		server.config.GetVariableString("database", "host", "localhost"),
+	server.db = new Database(
 		server.config.GetVariableString("database", "user", "root"),
 		server.config.GetVariableString("database", "password", ""),
-		server.config.GetVariableString("database", "db", "peq"),
-		server.config.GetVariableInt("database", "port", 3306)
-	)) {
-		LogError("Cannot continue without a database connection");
-		std::exit(1);
-	}
+		server.config.GetVariableString("database", "host", "localhost"),
+		server.config.GetVariableString("database", "port", "3306"),
+		server.config.GetVariableString("database", "db", "peq")
+	);
+
 }
 
 void LoadServerConfig()
@@ -56,6 +49,9 @@ void LoadServerConfig()
 	);
 	LogInfo("Config System Init");
 
+	/**
+	 * Worldservers
+	 */
 	server.options.RejectDuplicateServers(
 		server.config.GetVariableBool(
 			"worldservers",
@@ -86,33 +82,41 @@ void LoadServerConfig()
 		)
 	);
 
+	/**
+	 * Expansion Display Settings
+	 */
 	server.options.DisplayExpansions(
 		server.config.GetVariableBool(
 			"client_configuration",
 			"display_expansions",
 			false
-		)
-	);
+		)); //disable by default
 	server.options.MaxExpansions(
 		server.config.GetVariableInt(
 			"client_configuration",
 			"max_expansions_mask",
 			67108863
+		)); //enable display of all expansions
+
+	/**
+	 * Account
+	 */
+	server.options.AutoCreateAccounts(server.config.GetVariableBool("account", "auto_create_accounts", true));
+	server.options.AutoLinkAccounts(server.config.GetVariableBool("account", "auto_link_accounts", false));
+
+#ifdef LSPX
+	server.options.EQEmuLoginServerAddress(
+		server.config.GetVariableString(
+			"general",
+			"eqemu_loginserver_address",
+			"login.eqemulator.net:5999"
 		)
 	);
+#endif
 
-	server.options.AutoCreateAccounts(server.config.GetVariableBool("account", "auto_create_accounts", true));
-
-	if (std::getenv("LSPX")) {
-		server.options.EQEmuLoginServerAddress(
-			server.config.GetVariableString(
-				"general",
-				"eqemu_loginserver_address",
-				"login.eqemulator.net:5999"
-			)
-		);
-	}
-
+	/**
+	 * Default Loginserver Name (Don't change)
+	 */
 	server.options.DefaultLoginServerName(
 		server.config.GetVariableString(
 			"general",
@@ -121,6 +125,10 @@ void LoadServerConfig()
 		)
 	);
 
+	/**
+	 * Security
+	 */
+
 #ifdef ENABLE_SECURITY
 	server.options.EncryptionMode(server.config.GetVariableInt("security", "mode", 13));
 #else
@@ -128,6 +136,14 @@ void LoadServerConfig()
 #endif
 
 	server.options.AllowTokenLogin(server.config.GetVariableBool("security", "allow_token_login", false));
+	server.options.AllowPasswordLogin(server.config.GetVariableBool("security", "allow_password_login", true));
+	server.options.UpdateInsecurePasswords(
+		server.config.GetVariableBool(
+			"security",
+			"update_insecure_passwords",
+			true
+		)
+	);
 }
 
 void start_web_server()
@@ -135,7 +151,7 @@ void start_web_server()
 	Sleep(1);
 
 	int web_api_port = server.config.GetVariableInt("web_api", "port", 6000);
-	LogInfo("Webserver API now listening on port [{}]", web_api_port);
+	LogInfo("Webserver API now listening on port [{0}]", web_api_port);
 
 	httplib::Server api;
 
@@ -164,7 +180,9 @@ int main(int argc, char **argv)
 
 	path.LoadPaths();
 
-	// command handler
+	/**
+	 * Command handler
+	 */
 	if (argc > 1) {
 		LogSys.SilenceConsoleLogging();
 
@@ -179,23 +197,43 @@ int main(int argc, char **argv)
 	}
 
 	LoadServerConfig();
+
+	/**
+	 * mysql connect
+	 */
 	LoadDatabaseConnection();
 
 	if (argc == 1) {
-		LogSys.SetDatabase(&database)
+		LogSys.SetDatabase(server.db)
 			->SetLogPath("logs")
 			->LoadLogDatabaseSettings()
 			->StartFileLogs();
 	}
 
-	LogInfo("Server Manager Init");
-	server.server_manager = new WorldServerManager();
-	if (!server.server_manager) {
-		LogError("Server Manager Failed to Start");
-		LogInfo("Database System Shutdown");
+	/**
+	 * make sure our database got created okay, otherwise cleanup and exit
+	 */
+	if (!server.db) {
+		LogError("Database Initialization Failure");
+		LogInfo("Log System Shutdown");
 		return 1;
 	}
 
+	/**
+	 * create server manager
+	 */
+	LogInfo("Server Manager Init");
+	server.server_manager = new ServerManager();
+	if (!server.server_manager) {
+		LogError("Server Manager Failed to Start");
+		LogInfo("Database System Shutdown");
+		delete server.db;
+		return 1;
+	}
+
+	/**
+	 * create client manager
+	 */
 	LogInfo("Client Manager Init");
 	server.client_manager = new ClientManager();
 	if (!server.client_manager) {
@@ -204,6 +242,7 @@ int main(int argc, char **argv)
 		delete server.server_manager;
 
 		LogInfo("Database System Shutdown");
+		delete server.db;
 		return 1;
 	}
 
@@ -217,33 +256,37 @@ int main(int argc, char **argv)
 
 	LogInfo("Server Started");
 
+	/**
+	 * Web API
+	 */
 	bool web_api_enabled = server.config.GetVariableBool("web_api", "enabled", true);
 	if (web_api_enabled) {
 		std::thread web_api_thread(start_web_server);
 		web_api_thread.detach();
 	}
 
-	LogInfo("[Config] [Account] CanAutoCreateAccounts [{}]", server.options.CanAutoCreateAccounts());
-	LogInfo("[Config] [ClientConfiguration] DisplayExpansions [{}]", server.options.IsDisplayExpansions());
-	LogInfo("[Config] [ClientConfiguration] MaxExpansions [{}]", server.options.GetMaxExpansions());
+	LogInfo("[Config] [Account] CanAutoCreateAccounts [{0}]", server.options.CanAutoCreateAccounts());
+	LogInfo("[Config] [ClientConfiguration] DisplayExpansions [{0}]", server.options.IsDisplayExpansions());
+	LogInfo("[Config] [ClientConfiguration] MaxExpansions [{0}]", server.options.GetMaxExpansions());
 
-	if (std::getenv("LSPX")) {
-		LogInfo("[Config] [Account] LSPX [on]");
-	}
-
-	LogInfo("[Config] [WorldServer] IsRejectingDuplicateServers [{}]", server.options.IsRejectingDuplicateServers());
-	LogInfo("[Config] [WorldServer] IsUnregisteredAllowed [{}]", server.options.IsUnregisteredAllowed());
-	LogInfo("[Config] [WorldServer] ShowPlayerCount [{}]", server.options.IsShowPlayerCountEnabled());
+#ifdef LSPX
+	LogInfo("[Config] [Account] CanAutoLinkAccounts [{0}]", server.options.CanAutoLinkAccounts());
+#endif
+	LogInfo("[Config] [WorldServer] IsRejectingDuplicateServers [{0}]", server.options.IsRejectingDuplicateServers());
+	LogInfo("[Config] [WorldServer] IsUnregisteredAllowed [{0}]", server.options.IsUnregisteredAllowed());
+	LogInfo("[Config] [WorldServer] ShowPlayerCount [{0}]", server.options.IsShowPlayerCountEnabled());
 	LogInfo(
-		"[Config] [WorldServer] DevAndTestServersListBottom [{}]",
+		"[Config] [WorldServer] DevAndTestServersListBottom [{0}]",
 		server.options.IsWorldDevTestServersListBottom()
 	);
 	LogInfo(
-		"[Config] [WorldServer] SpecialCharactersStartListBottom [{}]",
+		"[Config] [WorldServer] SpecialCharactersStartListBottom [{0}]",
 		server.options.IsWorldSpecialCharacterStartListBottom()
 	);
-	LogInfo("[Config] [Security] GetEncryptionMode [{}]", server.options.GetEncryptionMode());
-	LogInfo("[Config] [Security] IsTokenLoginAllowed [{}]", server.options.IsTokenLoginAllowed());
+	LogInfo("[Config] [Security] GetEncryptionMode [{0}]", server.options.GetEncryptionMode());
+	LogInfo("[Config] [Security] IsTokenLoginAllowed [{0}]", server.options.IsTokenLoginAllowed());
+	LogInfo("[Config] [Security] IsPasswordLoginAllowed [{0}]", server.options.IsPasswordLoginAllowed());
+	LogInfo("[Config] [Security] IsUpdatingInsecurePasswords [{0}]", server.options.IsUpdatingInsecurePasswords());
 
 	Timer keepalive(INTERSERVER_TIMER); // does auto-reconnect
 
@@ -252,7 +295,7 @@ int main(int argc, char **argv)
 
 		if (keepalive.Check()) {
 			keepalive.Start();
-			database.ping();
+			server.db->ping();
 		}
 
 		if (!run_server) {
@@ -275,6 +318,9 @@ int main(int argc, char **argv)
 
 	LogInfo("Server Manager Shutdown");
 	delete server.server_manager;
+
+	LogInfo("Database System Shutdown");
+	delete server.db;
 
 	return 0;
 }

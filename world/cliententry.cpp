@@ -164,9 +164,9 @@ void ClientListEntry::LSUpdate(ZoneServer *iZS)
 	if (WorldConfig::get()->UpdateStats) {
 		auto pack = new ServerPacket;
 		pack->opcode  = ServerOP_LSZoneInfo;
-		pack->size    = sizeof(LoginserverZoneInfoUpdate);
+		pack->size    = sizeof(ZoneInfo_Struct);
 		pack->pBuffer = new uchar[pack->size];
-		auto *zone = (LoginserverZoneInfoUpdate *) pack->pBuffer;
+		ZoneInfo_Struct *zone = (ZoneInfo_Struct *) pack->pBuffer;
 		zone->count    = iZS->NumPlayers();
 		zone->zone     = iZS->GetZoneID();
 		zone->zone_wid = iZS->GetID();
@@ -174,7 +174,6 @@ void ClientListEntry::LSUpdate(ZoneServer *iZS)
 		safe_delete(pack);
 	}
 }
-
 void ClientListEntry::LSZoneChange(ZoneToZone_Struct *ztz)
 {
 	if (WorldConfig::get()->UpdateStats) {
@@ -182,7 +181,7 @@ void ClientListEntry::LSZoneChange(ZoneToZone_Struct *ztz)
 		pack->opcode  = ServerOP_LSPlayerZoneChange;
 		pack->size    = sizeof(ServerLSPlayerZoneChange_Struct);
 		pack->pBuffer = new uchar[pack->size];
-		auto *zonechange = (ServerLSPlayerZoneChange_Struct *) pack->pBuffer;
+		ServerLSPlayerZoneChange_Struct *zonechange = (ServerLSPlayerZoneChange_Struct *) pack->pBuffer;
 		zonechange->lsaccount_id = LSID();
 		zonechange->from         = ztz->current_zone_id;
 		zonechange->to           = ztz->requested_zone_id;
