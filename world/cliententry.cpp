@@ -145,7 +145,7 @@ void ClientListEntry::SetOnline(CLE_Status iOnline)
 	if (iOnline >= CLE_Status::Online && pOnline < CLE_Status::Online) {
 		numplayers++;
 	}
-	else if (iOnline < CLE_Status::Online && pOnline >= CLE_Status::Online) {
+	else if (iOnline < CLE_Status::Online && (pOnline >= CLE_Status::Online && iOnline != CLE_Status::Offline)) {
 		numplayers--;
 	}
 	if (iOnline != CLE_Status::Online || pOnline < CLE_Status::Online) {
@@ -289,6 +289,8 @@ void ClientListEntry::ClearVars(bool iAll)
 	pLFG           = 0;
 	gm             = 0;
 	pClientVersion = 0;
+	pOffline       = false;
+
 	for (auto& elem : tell_queue) {
 		safe_delete_array(elem);
 	}

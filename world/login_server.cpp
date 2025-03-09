@@ -147,6 +147,11 @@ void LoginServer::ProcessUsertoWorldReq(uint16_t opcode, EQ::Net::Packet &p)
 	auto   utwr          = static_cast<UsertoWorldRequest_Struct *>(p.Data());
 	uint32 id            = database.GetAccountIDFromLSID(utwr->login, utwr->lsaccountid);
 	auto   status_record = database.GetAccountStatus(id);
+	auto   client        = client_list.FindCLEByAccountID(id);
+
+	if (client) {
+		client->SetOffline(status_record.offline);
+	}
 
 	LogDebug(
 		"id [{}] status [{}] account_id [{}] world_id [{}] from_id [{}] to_id [{}] ip [{}]",

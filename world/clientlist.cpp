@@ -1358,9 +1358,13 @@ bool ClientList::IsAccountInGame(uint32 iLSID) {
 	LinkedListIterator<ClientListEntry*> iterator(clientlist);
 	iterator.Reset();
 	while (iterator.MoreElements()) {
-		if (iterator.GetData()->LSID() == iLSID && iterator.GetData()->Online() == CLE_Status::InZone) {
+		if (iterator.GetData()->LSID() == iLSID &&
+			iterator.GetData()->Online() == CLE_Status::InZone &&
+			!iterator.GetData()->GetOffline()
+		) {
 			return true;
 		}
+
 		iterator.Advance();
 	}
 

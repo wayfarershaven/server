@@ -124,6 +124,7 @@ public:
 	bool GetTrader() const { return pTrader; }
 	bool GetBuyer() const { return pBuyer; }
 	bool GetOffline() const { return pOffline; }
+	void SetOffline(bool status) { pOffline = status; }
 
 	inline bool TellQueueFull() const { return tell_queue.size() >= RuleI(World, TellQueueSize); }
 	inline bool TellQueueEmpty() const { return tell_queue.empty(); }
