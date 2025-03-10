@@ -551,7 +551,7 @@ void Client::FinishTrade(Mob* tradingWith, bool finalizer, void* event_entry, st
 
 				auto               with   = tradingWith->CastToNPC();
 				const EQ::ItemData *item  = inst->GetItem();
-				const bool         is_pet = with->IsPetOwnerClient() || with->IsCharmedPet();
+				const bool         is_pet = with->IsPetOwnerOfClientBot() || with->IsCharmedPet();
 				if (is_pet && with->CanPetTakeItem(inst)) {
 					// pets need to look inside bags and try to equip items found there
 					if (item->IsClassBag() && item->BagSlots > 0) {
@@ -618,15 +618,35 @@ void Client::FinishTrade(Mob* tradingWith, bool finalizer, void* event_entry, st
 			item_list.emplace_back(inst);
 		}
 
+		auto handin_npc = tradingWith->CastToNPC();
+
 		m_external_handin_money_returned = {};
 		m_external_handin_items_returned = {};
 		bool has_aggro = tradingWith->CheckAggro(this);
 		if (parse->HasQuestSub(tradingWith->GetNPCTypeID(), EVENT_TRADE) && !has_aggro) {
+			// This CheckHandin call enables eq.handin and quest::handin to recognize the hand-in context.
+			// It initializes the first hand-in bucket, which is then reused for the EVENT_TRADE subroutine.
+			std::map<std::string, uint32> handin = {
+				{"copper",   trade->cp},
+				{"silver",   trade->sp},
+				{"gold",     trade->gp},
+				{"platinum", trade->pp}
+			};
+
+			for (EQ::ItemInstance *inst: items) {
+				if (!inst || !inst->GetItem()) {
+					continue;
+				}
+
+				std::string item_id = fmt::format("{}", inst->GetItem()->ID);
+				handin[item_id] += inst->GetCharges();
+			}
+
+			handin_npc->CheckHandin(this, handin, {}, items);
+
 			parse->EventNPC(EVENT_TRADE, tradingWith->CastToNPC(), this, "", 0, &item_list);
 			LogNpcHandinDetail("EVENT_TRADE triggered for NPC [{}]", tradingWith->GetNPCTypeID());
 		}
-
-		auto handin_npc = tradingWith->CastToNPC();
 
 		// this is a catch-all return for items that weren't consumed by the EVENT_TRADE subroutine
 		// it's possible we have a quest NPC that doesn't have an EVENT_TRADE subroutine
@@ -1445,7 +1465,7 @@ void Client::BuyTraderItem(TraderBuy_Struct *tbs, Client *Trader, const EQApplic
 
 	Trader->AddMoneyToPP(copper, silver, gold, platinum, true);
 
-	if (player_event_logs.IsEventEnabled(PlayerEvent::TRADER_PURCHASE)) {
+	if (buy_item && player_event_logs.IsEventEnabled(PlayerEvent::TRADER_PURCHASE)) {
 		auto e = PlayerEvent::TraderPurchaseEvent{
 			.item_id              = buy_item->GetID(),
 			.augment_1_id         = buy_item->GetAugmentItemID(0),
@@ -1467,7 +1487,7 @@ void Client::BuyTraderItem(TraderBuy_Struct *tbs, Client *Trader, const EQApplic
 		RecordPlayerEventLog(PlayerEvent::TRADER_PURCHASE, e);
 	}
 
-	if (player_event_logs.IsEventEnabled(PlayerEvent::TRADER_SELL)) {
+	if (buy_item && player_event_logs.IsEventEnabled(PlayerEvent::TRADER_SELL)) {
 		auto e = PlayerEvent::TraderSellEvent{
 			.item_id              = buy_item->GetID(),
 			.augment_1_id         = buy_item->GetAugmentItemID(0),
@@ -2955,7 +2975,7 @@ void Client::BuyTraderItemOutsideBazaar(TraderBuy_Struct *tbs, const EQApplicati
 	Message(Chat::Red, fmt::format("You paid {} for the parcel delivery.", DetermineMoneyString(fee)).c_str());
 	LogTrading("Customer <green>[{}] Paid: <green>[{}] in Copper", CharacterID(), total_cost);
 
-	if (player_event_logs.IsEventEnabled(PlayerEvent::TRADER_PURCHASE)) {
+	if (buy_item && player_event_logs.IsEventEnabled(PlayerEvent::TRADER_PURCHASE)) {
 		auto e = PlayerEvent::TraderPurchaseEvent{
 			.item_id              = buy_item->GetID(),
 			.augment_1_id         = buy_item->GetAugmentItemID(0),

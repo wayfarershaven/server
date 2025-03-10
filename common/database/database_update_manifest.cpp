@@ -6417,7 +6417,7 @@ ADD COLUMN `guid` bigint(20) UNSIGNED NOT NULL DEFAULT 0 AFTER `ornament_hero_mo
 ADD PRIMARY KEY (`account_id`, `slot_id`);
 )",
 		.content_schema_update = false,
-		.force_interactive = true
+		.force_interactive = false
 	},
 	ManifestEntry{
 		.version = 9298,
@@ -6481,7 +6481,7 @@ UPDATE `sharedbank` SET `slot_id` = ((`slot_id` - 2531) + 11010) WHERE `slot_id`
 UPDATE `sharedbank` SET `slot_id` = ((`slot_id` - 2541) + 11210) WHERE `slot_id` BETWEEN 2541 AND 2550; -- Shared Bank Bag 2
 )",
 		.content_schema_update = false,
-		.force_interactive = true
+		.force_interactive = false
 	},
 	ManifestEntry{
 		.version = 9299,
@@ -6870,6 +6870,85 @@ CREATE UNIQUE INDEX `keys` ON data_buckets (`key`, character_id, npc_id, bot_id,
 CREATE INDEX idx_instance_id ON data_buckets (instance_id);
 )",
 		.content_schema_update = false
+	},
+	ManifestEntry{
+		.version     = 9307,
+		.description = "2025_02_17_zone_state_spawns.sql",
+		.check       = "SHOW TABLES LIKE 'zone_state_spawns'",
+		.condition   = "empty",
+		.match       = "",
+		.sql         = R"(
+CREATE TABLE `zone_state_spawns` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `zone_id` int(11) unsigned DEFAULT NULL,
+  `instance_id` int(11) unsigned DEFAULT NULL,
+  `is_corpse` tinyint(11) DEFAULT 0,
+  `decay_in_seconds` int(11) DEFAULT 0,
+  `npc_id` int(10) unsigned DEFAULT NULL,
+  `spawn2_id` int(10) unsigned NOT NULL,
+  `spawngroup_id` int(10) unsigned NOT NULL,
+  `x` float NOT NULL,
+  `y` float NOT NULL,
+  `z` float NOT NULL,
+  `heading` float NOT NULL,
+  `respawn_time` int(10) unsigned NOT NULL,
+  `variance` int(10) unsigned NOT NULL,
+  `grid` int(10) unsigned DEFAULT 0,
+  `current_waypoint` int(11) DEFAULT 0,
+  `path_when_zone_idle` smallint(6) DEFAULT 0,
+  `condition_id` smallint(5) unsigned DEFAULT 0,
+  `condition_min_value` smallint(6) DEFAULT 0,
+  `enabled` smallint(6) DEFAULT 1,
+  `anim` smallint(5) unsigned DEFAULT 0,
+  `loot_data` text DEFAULT NULL,
+  `entity_variables` text DEFAULT NULL,
+  `buffs` text DEFAULT NULL,
+  `hp` bigint(20) DEFAULT 0,
+  `mana` bigint(20) DEFAULT 0,
+  `endurance` bigint(20) DEFAULT 0,
+  `created_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4
+)",
+		.content_schema_update = false
+	},
+	ManifestEntry{
+		.version = 9308,
+		.description = "2025_add_multivalue_support_to_evolving_subtype.sql",
+		.check = "SHOW COLUMNS FROM `items_evolving_details` LIKE 'sub_type'",
+		.condition = "missing",
+		.match = "varchar(200)",
+		.sql = R"(
+ALTER TABLE `items_evolving_details`
+	CHANGE COLUMN `sub_type` `sub_type` VARCHAR(200) NULL DEFAULT '0' AFTER `type`;
+)",
+		.content_schema_update = true
+	},
+	// this one got missed being added to PEQ dumps so adding it again so it gets added when folks take a new release
+	ManifestEntry{
+		.version = 9309,
+		.description = "2025_03_1_create_pet_names_table_if_not_exist.sql",
+		.check = "SHOW TABLES LIKE 'character_pet_name'",
+		.condition = "empty",
+		.match = "",
+		.sql = R"(
+CREATE TABLE `character_pet_name` (
+    `character_id` INT(11) NOT NULL PRIMARY KEY,
+    `name` VARCHAR(64) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+)",
+	},
+	ManifestEntry{
+		.version = 9310,
+		.description = "2025_03_7_expand_horse_def.sql",
+		.check = "SHOW COLUMNS FROM `horses` LIKE `helmtexture",
+		.condition = "missing",
+		.match = "TINYINT(2)",
+		.sql = R"(
+ALTER TABLE `horses`
+	ADD COLUMN `helmtexture` TINYINT(2) NOT NULL DEFAULT -1 AFTER `texture`;
+)",
+		.content_schema_update = true
 	},
 // -- template; copy/paste this when you need to create a new entry
 //	ManifestEntry{

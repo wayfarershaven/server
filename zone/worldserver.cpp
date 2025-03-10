@@ -591,7 +591,7 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 
 			auto *s = (ServerZoneStateChange_Struct *) pack->pBuffer;
 			LogInfo("Zone shutdown by {}.", s->admin_name);
-			Zone::Shutdown();
+			zone->Shutdown();
 		}
 		break;
 	}
@@ -3799,7 +3799,7 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 
 			auto item = trader_pc->FindTraderItemBySerialNumber(item_sn);
 
-			if (player_event_logs.IsEventEnabled(PlayerEvent::TRADER_SELL)) {
+			if (item && player_event_logs.IsEventEnabled(PlayerEvent::TRADER_SELL)) {
 				auto e = PlayerEvent::TraderSellEvent{
 					.item_id              = item ? item->GetID() : 0,
 					.augment_1_id         = item->GetAugmentItemID(0),
@@ -4500,13 +4500,6 @@ void WorldServer::QueueReload(ServerReload::Request r)
 	m_reload_mutex.lock();
 	int64_t reload_at = r.reload_at_unix - std::time(nullptr);
 
-	// If the reload is set to happen now, process it immediately versus queuing it
-	if (reload_at <= 0) {
-		ProcessReload(r);
-		m_reload_mutex.unlock();
-		return;
-	}
-
 	LogInfo(
 		"Queuing reload for [{}] ({}) to reload in [{}]",
 		ServerReload::GetName(r.type),
@@ -4668,16 +4661,20 @@ void WorldServer::ProcessReload(const ServerReload::Request& request)
 			break;
 
 		case ServerReload::Type::WorldRepop:
-			entity_list.ClearAreas();
 			parse->ReloadQuests();
-			zone->Repop();
+			if (zone && zone->IsLoaded()) {
+				entity_list.ClearAreas();
+				zone->Repop();
+			}
 			break;
 
 		case ServerReload::Type::WorldWithRespawn:
-			entity_list.ClearAreas();
 			parse->ReloadQuests();
-			zone->Repop();
-			zone->ClearSpawnTimers();
+			if (zone && zone->IsLoaded()) {
+				entity_list.ClearAreas();
+				zone->Repop();
+				zone->ClearSpawnTimers();
+			}
 			break;
 
 		case ServerReload::Type::ZonePoints:

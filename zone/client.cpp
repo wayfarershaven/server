@@ -708,6 +708,9 @@ Client::Client(EQStreamInterface *ieqs) : Mob(
 }
 
 Client::~Client() {
+	entity_list.RemoveMobFromCloseLists(this);
+	m_close_mobs.clear();
+
 	if (ClientVersion() == EQ::versions::ClientVersion::RoF2 && RuleB (Parcel, EnableParcelMerchants)) {
 		DoParcelCancel();
 	}
@@ -964,6 +967,10 @@ bool Client::SaveAA()
 	}
 
 	m_pp.aapoints_spent = aa_points_spent + m_epp.expended_aa;
+
+	if (v.empty()) {
+		return true;
+	}
 
 	return CharacterAlternateAbilitiesRepository::ReplaceMany(database, v);
 }
@@ -4622,7 +4629,7 @@ void Client::KeyRingLoad()
 	const auto &l = KeyringRepository::GetWhere(
 		database,
 		fmt::format(
-			"`char_id` = {} ORDER BY `item_id`",
+			"`char_id` = {} ORDER BY `item_id` ASC",
 			character_id
 		)
 	);
@@ -4631,21 +4638,15 @@ void Client::KeyRingLoad()
 		return;
 	}
 
-
-	for (const auto &e : l) {
+	for (const auto& e : l) {
 		keyring.emplace_back(e.item_id);
 	}
 }
 
-void Client::KeyRingAdd(uint32 item_id)
+bool Client::KeyRingAdd(uint32 item_id)
 {
-	if (!item_id) {
-		return;
-	}
-
-	const bool found = KeyRingCheck(item_id);
-	if (found) {
-		return;
+	if (!item_id || KeyRingCheck(item_id)) {
+		return false;
 	}
 
 	auto e = KeyringRepository::NewEntity();
@@ -4656,14 +4657,14 @@ void Client::KeyRingAdd(uint32 item_id)
 	e = KeyringRepository::InsertOne(database, e);
 
 	if (!e.id) {
-		return;
+		return false;
 	}
 
 	keyring.emplace_back(item_id);
 
 	if (!RuleB(World, UseItemLinksForKeyRing)) {
 		Message(Chat::LightBlue, "Added to keyring.");
-		return;
+		return true;
 	}
 
 	const std::string &item_link = database.CreateItemLink(item_id);
@@ -4675,17 +4676,25 @@ void Client::KeyRingAdd(uint32 item_id)
 			item_link
 		).c_str()
 	);
+	return true;
 }
 
 bool Client::KeyRingCheck(uint32 item_id)
 {
-	for (const auto &e : keyring) {
-		if (e == item_id) {
-			return true;
-		}
-	}
+	return std::find(keyring.begin(), keyring.end(), item_id) != keyring.end();
+}
 
-	return false;
+bool Client::KeyRingClear()
+{
+	keyring.clear();
+
+	return KeyringRepository::DeleteWhere(
+		database,
+		fmt::format(
+			"`char_id` = {}",
+			CharacterID()
+		)
+	);
 }
 
 void Client::KeyRingList()
@@ -4694,14 +4703,38 @@ void Client::KeyRingList()
 
 	const EQ::ItemData *item = nullptr;
 
-	for (const auto &e : keyring) {
+	for (const uint32& e : keyring) {
 		item = database.GetItem(e);
 		if (item) {
-			const std::string &item_string = RuleB(World, UseItemLinksForKeyRing) ? database.CreateItemLink(e) : item->Name;
+			const std::string& item_string = (
+				RuleB(World, UseItemLinksForKeyRing) ?
+				database.CreateItemLink(e) :
+				item->Name
+			);
 
 			Message(Chat::LightBlue, item_string.c_str());
 		}
 	}
+}
+
+bool Client::KeyRingRemove(uint32 item_id)
+{
+	keyring.erase(
+		std::remove(
+			keyring.begin(),
+			keyring.end(),
+			item_id
+		)
+	);
+
+	return KeyringRepository::DeleteWhere(
+		database,
+		fmt::format(
+			"`char_id` = {} AND `item_id` = {}",
+			CharacterID(),
+			item_id
+		)
+	);
 }
 
 bool Client::IsPetNameChangeAllowed() {

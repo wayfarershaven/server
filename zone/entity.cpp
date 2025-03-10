@@ -2231,7 +2231,7 @@ Raid* EntityList::GetRaidByBotName(const char* name)
 			}
 		}
 	}
-	
+
 	return nullptr;
 }
 
@@ -2914,7 +2914,7 @@ void EntityList::ScanCloseMobs(Mob *scanning_mob)
 		return;
 	}
 
-	if (scanning_mob->GetID() <= 0) {
+	if (scanning_mob->GetID() <= 0 || scanning_mob->IsZoneController()) {
 		return;
 	}
 
@@ -2933,7 +2933,7 @@ void EntityList::ScanCloseMobs(Mob *scanning_mob)
 	for (auto &e : mob_list) {
 		auto mob = e.second;
 
-		if (mob->GetID() <= 0) {
+		if (mob && (mob->GetID() <= 0 || mob->IsZoneController())) {
 			continue;
 		}
 

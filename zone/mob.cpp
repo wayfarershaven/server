@@ -531,6 +531,9 @@ Mob::Mob(
 
 Mob::~Mob()
 {
+	entity_list.RemoveMobFromCloseLists(this);
+	m_close_mobs.clear();
+
 	quest_manager.stopalltimers(this);
 
 	mMovementManager->RemoveMob(this);
@@ -570,10 +573,7 @@ Mob::~Mob()
 	entity_list.UnMarkNPC(GetID());
 	UninitializeBuffSlots();
 
-	entity_list.RemoveMobFromCloseLists(this);
 	entity_list.RemoveAuraFromMobs(this);
-
-	m_close_mobs.clear();
 
 	ClearDataBucketCache();
 
@@ -1451,6 +1451,10 @@ void Mob::FillSpawnStruct(NewSpawn_Struct* ns, Mob* ForWho)
 		ns->spawn.DestructibleUnk9 = 0x00000002;	// Needs to be 2 for tents?
 
 		ns->spawn.flymode = 0;
+	}
+
+	if (IsZoneController()) {
+		ns->spawn.invis = 255; // gm invis
 	}
 
 	if (RuleB(Character, AllowCrossClassTrainers) && ForWho) {
@@ -8347,7 +8351,7 @@ int Mob::DispatchZoneControllerEvent(
 		RuleB(Zone, UseZoneController) &&
 		(
 			!IsNPC() ||
-			(IsNPC() && GetNPCTypeID() != ZONE_CONTROLLER_NPC_ID)
+			(IsNPC() && !IsZoneController())
 		)
 	) {
 		auto controller = entity_list.GetNPCByNPCTypeID(ZONE_CONTROLLER_NPC_ID);

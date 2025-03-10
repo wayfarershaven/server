@@ -1,3 +1,137 @@
+## [23.3.0] 3/8/2025
+
+### Bots
+
+* Fix buffs not overwriting lesser buffs ([#4756](https://github.com/EQEmu/Server/pull/4756)) @nytmyr 2025-03-06
+* Fix taunting bots positioning ([#4754](https://github.com/EQEmu/Server/pull/4754)) @nytmyr 2025-03-06
+* Move commanded spell map to zone ([#4755](https://github.com/EQEmu/Server/pull/4755)) @nytmyr 2025-03-06
+
+### Code
+
+* Fix typo in GM tradeskill combine message ([#4762](https://github.com/EQEmu/Server/pull/4762)) @nytmyr 2025-03-08
+
+### Crash
+
+* Bot aura crash fix ([#4752](https://github.com/EQEmu/Server/pull/4752)) @nytmyr 2025-03-06
+
+### Databuckets
+
+* Nested Databuckets Protections and Improvements ([#4748](https://github.com/EQEmu/Server/pull/4748)) @Akkadius 2025-03-04
+
+### Feature
+
+* Add Rule for dealing with augments when an item evolves ([#4758](https://github.com/EQEmu/Server/pull/4758)) @neckkola 2025-03-08
+* Allow assigning Helm Texture independently of Body Texture for Horses ([#4759](https://github.com/EQEmu/Server/pull/4759)) @catapultam-habeo 2025-03-08
+
+### Fixes
+
+* Add crash checks for certain PlayerEventLogs ([#4761](https://github.com/EQEmu/Server/pull/4761)) @neckkola 2025-03-07
+* Correct incorrectly calculated stat caps with Heroic Stats ([#4760](https://github.com/EQEmu/Server/pull/4760)) @catapultam-habeo 2025-03-08
+* Fix sigabort crash from invalid JSON  @Akkadius 2025-03-03
+* Forgot to push up some changes for test output  @Akkadius 2025-03-04
+* Parcel Delivery Updates for two edge cases ([#4753](https://github.com/EQEmu/Server/pull/4753)) @neckkola 2025-03-06
+* Remove one port check in world  @Akkadius 2025-03-03
+* Zero out currentnpcid whenever spawn is reset. ([#4763](https://github.com/EQEmu/Server/pull/4763)) @zimp-wow 2025-03-08
+
+### Logging
+
+* Convert JSON Error to Data Buckets Logging Category ([#4747](https://github.com/EQEmu/Server/pull/4747)) @Kinglykrab 2025-03-04
+
+### Pets
+
+* Fix renamed pets loading as blank names ([#4751](https://github.com/EQEmu/Server/pull/4751)) @nytmyr 2025-03-05
+
+### Rules
+
+* Fix EvolvingItems:PercentOfRaidExperience Description ([#4757](https://github.com/EQEmu/Server/pull/4757)) @Kinglykrab 2025-03-07
+
+### Tests
+
+* Cleanup Hand-in Tests ([#4749](https://github.com/EQEmu/Server/pull/4749)) @Akkadius 2025-03-04
+
+### Zone
+
+* Make zone controller less likely to be visible, immune to all forms of combat ([#4750](https://github.com/EQEmu/Server/pull/4750)) @Akkadius 2025-03-06
+* State Save Improvements ([#4765](https://github.com/EQEmu/Server/pull/4765)) @Akkadius 2025-03-08
+
+## [23.2.0] 3/3/2025
+
+### Crash
+
+* Database SetMutex crash fix ([#4741](https://github.com/EQEmu/Server/pull/4741)) @Akkadius 2025-03-03
+* Fix Aura process crash with bots ([#4743](https://github.com/EQEmu/Server/pull/4743)) @Akkadius 2025-03-03
+* Fix crash in add loot code path ([#4745](https://github.com/EQEmu/Server/pull/4745)) @Akkadius 2025-03-03
+* Fix world repop crash ([#4742](https://github.com/EQEmu/Server/pull/4742)) @Akkadius 2025-03-03
+* Potential crash fix in scan close mobs ([#4744](https://github.com/EQEmu/Server/pull/4744)) @Akkadius 2025-03-03
+
+### Fixes
+
+* Cleanup zone buckets on instance purge. ([#4739](https://github.com/EQEmu/Server/pull/4739)) @zimp-wow 2025-03-02
+* Fix an error causing Endurance Regen to not be applied by items. ([#4738](https://github.com/EQEmu/Server/pull/4738)) @catapultam-habeo 2025-03-02
+
+### World
+
+* Check if port in use to avoid double booting mistakes ([#4740](https://github.com/EQEmu/Server/pull/4740)) @Akkadius 2025-03-03
+
+## [23.1.0] 3/1/2025
+
+### Bots
+
+* Fix unresponsive bots in groups upon group wipe ([#4712](https://github.com/EQEmu/Server/pull/4712)) @nytmyr 2025-02-28
+
+### Code
+
+* More login <-> world code cleanup ([#4724](https://github.com/EQEmu/Server/pull/4724)) @Akkadius 2025-02-28
+
+### Crash
+
+* Check for directory existence before traversing in CheckForCompatibleQuestPlugins ([#4730](https://github.com/EQEmu/Server/pull/4730)) @Akkadius 2025-03-02
+* Fix filesystem crash / exception in DatabaseDumpService::RemoveCredentialsFile() ([#4731](https://github.com/EQEmu/Server/pull/4731)) @Akkadius 2025-03-01
+* Fix large file size crash in File::GetContents for windows ([#4735](https://github.com/EQEmu/Server/pull/4735)) @Akkadius 2025-03-02
+* Fix reload concurrency crash when ran from Spire ([#4733](https://github.com/EQEmu/Server/pull/4733)) @Akkadius 2025-03-02
+* Validate item in SE_SummonItemIntoBag ([#4734](https://github.com/EQEmu/Server/pull/4734)) @Akkadius 2025-03-02
+* World CLI validation ([#4728](https://github.com/EQEmu/Server/pull/4728)) @Akkadius 2025-03-01
+
+### Database
+
+* Remove force_interactive from big bag updates ([#4727](https://github.com/EQEmu/Server/pull/4727)) @Akkadius 2025-03-01
+
+### Feature
+
+* Add a rule for spells to bypass stacking rules ([#4716](https://github.com/EQEmu/Server/pull/4716)) @catapultam-habeo 2025-02-28
+* Evolving items Additions ([#4725](https://github.com/EQEmu/Server/pull/4725)) @neckkola 2025-03-01
+
+### Fixes
+
+* Add character_pet_name to player tables schema  @Akkadius 2025-03-02
+* Add client packets to questmanager:setguild ([#4732](https://github.com/EQEmu/Server/pull/4732)) @neckkola 2025-03-01
+* Clear m_completed_shared_tasks before reloading  @Akkadius 2025-02-24
+* Fix AA Reset Error Message ([#4720](https://github.com/EQEmu/Server/pull/4720)) @Kinglykrab 2025-02-28
+* Fix Issue with Suffixes/Prefixes ([#4723](https://github.com/EQEmu/Server/pull/4723)) @Kinglykrab 2025-02-28
+* Fix Trading Items to Bot Pets ([#4721](https://github.com/EQEmu/Server/pull/4721)) @MortimerGreenwald 2025-02-28
+* Refactor ApplyItemBonuses to fix double-counting of ATK and recommended levels not correctly applying ([#4713](https://github.com/EQEmu/Server/pull/4713)) @catapultam-habeo 2025-03-01
+
+### Loginserver
+
+* Minor cleanup ([#4729](https://github.com/EQEmu/Server/pull/4729)) @Akkadius 2025-03-01
+
+### Quest API
+
+* Add Key Ring Methods to Perl and Lua ([#4719](https://github.com/EQEmu/Server/pull/4719)) @Kinglykrab 2025-02-28
+* Implement eq.handin() and quest::handin() ([#4718](https://github.com/EQEmu/Server/pull/4718)) @Akkadius 2025-02-28
+
+### Tasks
+
+* Extend IsTaskCompleted to also be aware of shared task completion ([#4714](https://github.com/EQEmu/Server/pull/4714)) @Akkadius 2025-02-24
+
+### Zone
+
+* Implement Zone State Saving on Shutdown ([#4715](https://github.com/EQEmu/Server/pull/4715)) @Akkadius 2025-02-28
+
+### Zone State
+
+* Wrap all serialization/deserialization in try/catch ([#4726](https://github.com/EQEmu/Server/pull/4726)) @Akkadius 2025-03-01
+
 ## [23.0.2] 2/21/2025
 
 ### Bots

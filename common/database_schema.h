@@ -139,6 +139,7 @@ namespace DatabaseSchema {
 			"character_pet_buffs",
 			"character_pet_info",
 			"character_pet_inventory",
+			"character_pet_name",
 			"character_peqzone_flags",
 			"character_potionbelt",
 			"character_skills",
@@ -350,6 +351,7 @@ namespace DatabaseSchema {
 			"shared_task_dynamic_zones",
 			"shared_task_members",
 			"shared_tasks",
+			"zone_state_spawns",
 		};
 	}
 

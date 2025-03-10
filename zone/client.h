@@ -327,8 +327,10 @@ public:
 //	void TraderPriceUpdate(const EQApplicationPacket *app);
 	uint8 WithCustomer(uint16 NewCustomer);
 	void KeyRingLoad();
-	void KeyRingAdd(uint32 item_id);
+	bool KeyRingAdd(uint32 item_id);
 	bool KeyRingCheck(uint32 item_id);
+	bool KeyRingClear();
+	bool KeyRingRemove(uint32 item_id);
 	void KeyRingList();
 	bool IsPetNameChangeAllowed();
 	void GrantPetNameChange();
@@ -402,6 +404,7 @@ public:
 	void LoadParcels();
 	std::map<uint32, CharacterParcelsRepository::CharacterParcels> GetParcels() { return m_parcels; }
 	int32 FindNextFreeParcelSlot(uint32 char_id);
+	int32 FindNextFreeParcelSlotUsingMemory();
 	void SendParcelIconStatus();
 
 	void SendBecomeTraderToWorld(Client *trader, BazaarTraderBarterActions action);
@@ -1289,6 +1292,29 @@ public:
 	void SendSpellTypePrompts(bool commanded_types = false, bool client_only_types = false);
 
 	// Task System Methods
+	inline void LoadClientSharedCompletedTasks()
+	{
+		std::string query = fmt::format(R"(
+			SELECT
+			cst.task_id
+			FROM completed_shared_task_members cstm
+			JOIN completed_shared_tasks cst ON cstm.shared_task_id = cst.id
+			WHERE cstm.character_id = {}
+			GROUP BY cst.task_id;
+		)", CharacterID());
+
+		auto results = database.QueryDatabase(query);
+		if (!results.Success()) {
+			return;
+		}
+
+		m_completed_shared_tasks.clear();
+
+		for (auto row = results.begin(); row != results.end(); ++row) {
+			m_completed_shared_tasks.push_back(std::stoi(row[0]));
+		}
+	};
+	inline std::vector<uint32_t> GetCompletedSharedTasks() const { return m_completed_shared_tasks; };
 	void LoadClientTaskState();
 	void RemoveClientTaskState();
 	void SendTaskActivityComplete(int task_id, int activity_id, int task_index, TaskType task_type, int task_incomplete=1);
@@ -1459,7 +1485,10 @@ public:
 	{
 		return (task_state ? task_state->EnabledTaskCount(task_set_id) : -1);
 	}
-	inline bool IsTaskCompleted(int task_id) { return (task_state ? task_state->IsTaskCompleted(task_id) : false); }
+	inline bool IsTaskCompleted(int task_id)
+	{
+		return (task_state ? task_state->IsTaskCompleted(task_id, this) : false);
+	}
 	inline bool AreTasksCompleted(std::vector<int> task_ids)
 	{
 		return (task_state ? task_state->AreTasksCompleted(task_ids) : false);
@@ -1872,7 +1901,7 @@ public:
 	void SendEvolvingPacket(int8 action, const CharacterEvolvingItemsRepository::CharacterEvolvingItems &item);
 	void DoEvolveItemToggle(const EQApplicationPacket* app);
 	void DoEvolveItemDisplayFinalResult(const EQApplicationPacket* app);
-	bool DoEvolveCheckProgression(const EQ::ItemInstance &inst);
+	bool DoEvolveCheckProgression(EQ::ItemInstance &inst);
 	void SendEvolveXPWindowDetails(const EQApplicationPacket* app);
 	void DoEvolveTransferXP(const EQApplicationPacket* app);
 	void SendEvolveXPTransferWindow();
@@ -2012,7 +2041,7 @@ private:
 	bool GuildBanker;
 	uint16 duel_target;
 	bool duelaccepted;
-	std::list<uint32> keyring;
+	std::vector<uint32> keyring;
 	bool tellsoff; // GM /toggle
 	bool gm_hide_me;
 	bool LFG;
@@ -2289,6 +2318,8 @@ private:
 	glm::vec3 m_quest_compass;
 	bool m_has_quest_compass = false;
 	std::vector<uint32_t> m_dynamic_zone_ids;
+
+	std::vector<uint32_t> m_completed_shared_tasks;
 
 public:
 	enum BotOwnerOption : size_t {

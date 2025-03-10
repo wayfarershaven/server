@@ -276,6 +276,11 @@ void NPC::AddLootDrop(
 	uint32 augment_six
 )
 {
+	if (m_resumed_from_zone_suspend) {
+		LogZoneState("NPC [{}] is resuming from zone suspend, skipping AddItem", GetCleanName());
+		return;
+	}
+
 	if (!item2) {
 		return;
 	}
@@ -370,6 +375,10 @@ void NPC::AddLootDrop(
 				if (item2->Slots & slots) {
 					if (equipment[i]) {
 						compitem = database.GetItem(equipment[i]);
+						if (!compitem) {
+							continue;
+						}
+
 						if (item2->AC > compitem->AC || (item2->AC == compitem->AC && item2->HP > compitem->HP)) {
 							// item would be an upgrade
 							// check if we're multi-slot, if yes then we have to keep
@@ -380,6 +389,9 @@ void NPC::AddLootDrop(
 							else {
 								// Unequip old item
 								auto *old_item = GetItem(i);
+								if (!old_item) {
+									continue;
+								}
 
 								old_item->equip_slot = EQ::invslot::SLOT_INVALID;
 
@@ -500,6 +512,7 @@ void NPC::AddLootDrop(
 		parse->EventNPC(EVENT_LOOT_ADDED, this, nullptr, "", 0, &args);
 	}
 
+	item->lootdrop_id = loot_drop.lootdrop_id;
 	m_loot_items.push_back(item);
 
 	if (found) {
@@ -671,7 +684,7 @@ LootItem *NPC::GetItem(int slot_id)
 	end = m_loot_items.end();
 	for (; cur != end; ++cur) {
 		LootItem *item = *cur;
-		if (item->equip_slot == slot_id) {
+		if (item && item->equip_slot == slot_id) {
 			return item;
 		}
 	}
