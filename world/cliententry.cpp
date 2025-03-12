@@ -145,7 +145,7 @@ void ClientListEntry::SetOnline(CLE_Status iOnline)
 	if (iOnline >= CLE_Status::Online && pOnline < CLE_Status::Online) {
 		numplayers++;
 	}
-	else if (iOnline < CLE_Status::Online && (pOnline >= CLE_Status::Online && iOnline != CLE_Status::Offline)) {
+	else if (iOnline < CLE_Status::Online && pOnline >= CLE_Status::Online) {
 		numplayers--;
 	}
 	if (iOnline != CLE_Status::Online || pOnline < CLE_Status::Online) {
@@ -248,6 +248,10 @@ void ClientListEntry::LeavingZone(ZoneServer *iZS, CLE_Status iOnline)
 	if (iZS != 0 && iZS != pzoneserver) {
 		return;
 	}
+
+	pOffline = false;
+	pTrader  = false;
+	pBuyer   = false;
 	SetOnline(iOnline);
 
 	shared_task_manager.RemoveActiveInvitationByCharacterID(CharID());

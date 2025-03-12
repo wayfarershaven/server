@@ -15,7 +15,8 @@ typedef enum
 	Online,
 	CharSelect,
 	Zoning,
-	InZone
+	InZone,
+	OfflineMode
 } CLE_Status;
 
 static const char * CLEStatusString[] = {
@@ -24,7 +25,8 @@ static const char * CLEStatusString[] = {
 	"Online",
 	"CharSelect",
 	"Zoning",
-	"InZone"
+	"InZone",
+	"OfflineMode"
 };
 
 class ZoneServer;

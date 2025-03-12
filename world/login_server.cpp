@@ -127,7 +127,7 @@ void LoginServer::ProcessUsertoWorldReqLeg(uint16_t opcode, EQ::Net::Packet &p)
 
 	if (RuleB(World, EnforceCharacterLimitAtLogin)) {
 		if (client_list.IsAccountInGame(utwr->lsaccountid)) {
-			LogDebug("User already online account_id [{0}]", utwr->lsaccountid);
+			LogDebug("User already online account_id [{0}] legacy", utwr->lsaccountid);
 			utwrs->response = UserToWorldStatusAlreadyOnline;
 			SendPacket(&outpack);
 			return;
@@ -221,7 +221,7 @@ void LoginServer::ProcessUsertoWorldReq(uint16_t opcode, EQ::Net::Packet &p)
 
 	if (RuleB(World, EnforceCharacterLimitAtLogin)) {
 		if (client_list.IsAccountInGame(utwr->lsaccountid)) {
-			LogDebug("User already online account_id [{0}]", utwr->lsaccountid);
+			LogDebug("User already online account_id [{0}] non-legacy", utwr->lsaccountid);
 			utwrs->response = UserToWorldStatusAlreadyOnline;
 			SendPacket(&outpack);
 			return;

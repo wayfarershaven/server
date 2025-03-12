@@ -358,7 +358,11 @@ void ClientList::ClientUpdate(ZoneServer *zoneserver, ServerClientList_Struct *s
 	while (iterator.MoreElements()) {
 		if (iterator.GetData()->GetID() == scl->wid) {
 			cle = iterator.GetData();
-			if (scl->remove == 2) {
+			if (scl->remove == 3) {
+				//cle->LeavingZone(zoneserver, CLE_Status::OfflineMode);
+				cle->Update(zoneserver, scl, CLE_Status::OfflineMode);
+			}
+			else if (scl->remove == 2) {
 				cle->LeavingZone(zoneserver, CLE_Status::Offline);
 			}
 			else if (scl->remove == 1) {
@@ -371,7 +375,11 @@ void ClientList::ClientUpdate(ZoneServer *zoneserver, ServerClientList_Struct *s
 		}
 		iterator.Advance();
 	}
-	if (scl->remove == 2) {
+
+	if (scl->remove == 3) {
+		cle = new ClientListEntry(GetNextCLEID(), zoneserver, scl, CLE_Status::OfflineMode);
+	}
+	else if (scl->remove == 2) {
 		cle = new ClientListEntry(GetNextCLEID(), zoneserver, scl, CLE_Status::Online);
 	}
 	else if (scl->remove == 1) {
@@ -1358,9 +1366,12 @@ bool ClientList::IsAccountInGame(uint32 iLSID) {
 	LinkedListIterator<ClientListEntry*> iterator(clientlist);
 	iterator.Reset();
 	while (iterator.MoreElements()) {
+		LogDebug("IsAccountInGame iLSID {} Online {}",
+			iterator.GetData()->LSID(),
+			static_cast<uint32>(iterator.GetData()->Online())
+		);
 		if (iterator.GetData()->LSID() == iLSID &&
-			iterator.GetData()->Online() == CLE_Status::InZone &&
-			!iterator.GetData()->GetOffline()
+			iterator.GetData()->Online() == CLE_Status::InZone
 		) {
 			return true;
 		}
@@ -1608,6 +1619,9 @@ void ClientList::OnTick(EQ::Timer *t)
 		outclient["LFGMatchFilter"] = cle->GetLFGMatchFilter();
 		outclient["LFGComments"] = cle->GetLFGComments();
 		outclient["ClientVersion"] = cle->GetClientVersion();
+		outclient["Trader"] = cle->GetTrader();
+		outclient["Buyer"] = cle->GetBuyer();
+		outclient["OfflineMode"] = cle->GetOffline();
 		out["data"].append(outclient);
 
 		Iterator.Advance();
@@ -1686,6 +1700,9 @@ void ClientList::GetClientList(Json::Value &response)
 		row["race"]             = cle->race();
 		row["tells_off"]        = cle->TellsOff();
 		row["zone"]             = cle->zone();
+		row["Trader"]           = cle->GetTrader();
+		row["Buyer"]            = cle->GetBuyer();
+		row["OfflineMode"]      = cle->GetOffline();
 
 		response.append(row);
 
