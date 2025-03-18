@@ -780,7 +780,7 @@ Client::~Client() {
 		LeaveGroup();
 
 	if (!IsOffline() && !IsTrader()) {
-		UpdateWho();
+		UpdateWho(2);
 	}
 
 	if(IsHoveringForRespawn())
