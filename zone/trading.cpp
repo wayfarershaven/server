@@ -26,6 +26,8 @@
 #include "../common/repositories/trader_repository.h"
 #include "../common/repositories/buyer_repository.h"
 #include "../common/repositories/buyer_buy_lines_repository.h"
+#include "../common/repositories/character_offline_transactions_repository.h"
+#include "../common/repositories/account_repository.h"
 
 #include "client.h"
 #include "entity.h"
@@ -918,6 +920,7 @@ void Client::TraderStartTrader(const EQApplicationPacket *app)
 	SetTrader(true);
 	SendTraderMode(TraderOn);
 	SendBecomeTraderToWorld(this, TraderOn);
+	UpdateWho();
 	LogTrading("Trader Mode ON for Player [{}] with client version {}.", GetCleanName(), (uint32) ClientVersion());
 }
 
@@ -938,6 +941,7 @@ void Client::TraderEndTrader()
 
 	WithCustomer(0);
 	SetTrader(false);
+	UpdateWho();
 }
 
 void Client::SendTraderItem(uint32 ItemID, uint16 Quantity, TraderRepository::Trader &t) {
@@ -1482,6 +1486,7 @@ void Client::BuyTraderItem(TraderBuy_Struct *tbs, Client *Trader, const EQApplic
 			.charges              = buy_item->GetCharges(),
 			.total_cost           = (tbs->price * outtbs->quantity),
 			.player_money_balance = GetCarriedMoney(),
+			.offline_purchase     = Trader->IsOffline(),
 		};
 
 		RecordPlayerEventLog(PlayerEvent::TRADER_PURCHASE, e);
@@ -1504,9 +1509,22 @@ void Client::BuyTraderItem(TraderBuy_Struct *tbs, Client *Trader, const EQApplic
 			.charges              = buy_item->GetCharges(),
 			.total_cost           = (tbs->price * outtbs->quantity),
 			.player_money_balance = Trader->GetCarriedMoney(),
+			.offline_purchase     = Trader->IsOffline(),
 		};
 
 		RecordPlayerEventLogWithClient(Trader, PlayerEvent::TRADER_SELL, e);
+	}
+
+	if (Trader->IsOffline()) {
+		auto e         = CharacterOfflineTransactionsRepository::NewEntity();
+		e.character_id = Trader->CharacterID();
+		e.item_name    = buy_item->GetItem()->Name;
+		e.price        = tbs->price * outtbs->quantity;
+		e.quantity     = outtbs->quantity;
+		e.type         = TRADER_TRANSACTION;
+		e.buyer_name   = GetCleanName();
+
+		CharacterOfflineTransactionsRepository::InsertOne(database, e);
 	}
 
 	LogTrading("Trader Received: [{}] Platinum, [{}] Gold, [{}] Silver, [{}] Copper", platinum, gold, silver, copper);
@@ -1902,12 +1920,18 @@ void Client::SellToBuyer(const EQApplicationPacket *app)
 				}
 
 				if (!DoBarterBuyerChecks(sell_line)) {
+					SendBarterBuyerClientMessage(
+						sell_line, Barter_SellerTransactionComplete, Barter_Failure, Barter_Failure
+					);
 					return;
-				};
+				}
 
 				if (!DoBarterSellerChecks(sell_line)) {
+					SendBarterBuyerClientMessage(
+						sell_line, Barter_SellerTransactionComplete, Barter_Failure, Barter_Failure
+					);
 					return;
-				};
+				}
 
 				BuyerRepository::UpdateTransactionDate(database, sell_line.buyer_id, time(nullptr));
 
@@ -2006,6 +2030,18 @@ void Client::SellToBuyer(const EQApplicationPacket *app)
 					e.buyer_name  = buyer->GetCleanName();
 					e.seller_name = GetCleanName();
 					RecordPlayerEventLog(PlayerEvent::BARTER_TRANSACTION, e);
+				}
+
+				if (buyer->IsOffline()) {
+					auto e         = CharacterOfflineTransactionsRepository::NewEntity();
+					e.character_id = buyer->CharacterID();
+					e.item_name    = sell_line.item_name;
+					e.price        = total_cost;
+					e.quantity     = sell_line.seller_quantity;
+					e.type         = BUYER_TRANSACTION;
+					e.buyer_name   = GetCleanName();
+
+					CharacterOfflineTransactionsRepository::InsertOne(database, e);
 				}
 
 				SendWindowUpdatesToSellerAndBuyer(sell_line);
@@ -2147,6 +2183,7 @@ void Client::ToggleBuyerMode(bool status)
 		SetCustomerID(0);
 		SendBuyerMode(true);
 		SendBuyerToBarterWindow(this, Barter_AddToBarterWindow);
+		UpdateWho();
 		Message(Chat::Yellow, "Barter Mode ON.");
 	}
 	else {
@@ -2159,6 +2196,8 @@ void Client::ToggleBuyerMode(bool status)
 		if (!IsInBuyerSpace()) {
 			Message(Chat::Red, "You must be in a Barter Stall to start Barter Mode.");
 		}
+
+		UpdateWho();
 		Message(Chat::Yellow, fmt::format("Barter Mode OFF. Buy lines deactivated.").c_str());
 	}
 
@@ -2857,6 +2896,7 @@ void Client::BuyTraderItemOutsideBazaar(TraderBuy_Struct *tbs, const EQApplicati
 {
 	auto in          = (TraderBuy_Struct *) app->pBuffer;
 	auto trader_item = TraderRepository::GetItemBySerialNumber(database, tbs->serial_number, tbs->trader_id);
+	auto offline     = AccountRepository::GetAllOfflineStatus(database, trader_item.char_id);
 	if (!trader_item.id || GetTraderTransactionDate() < trader_item.listing_date) {
 		LogTrading("Attempt to purchase an item outside of the Bazaar trader_id <red>[{}] item serial_number "
 				   "<red>[{}] The Traders data was outdated.",
@@ -2999,6 +3039,7 @@ void Client::BuyTraderItemOutsideBazaar(TraderBuy_Struct *tbs, const EQApplicati
 			.charges              = buy_item->IsStackable() ? 1 : charges,
 			.total_cost           = total_cost,
 			.player_money_balance = GetCarriedMoney(),
+			.offline_purchase     = offline,
 		};
 
 		RecordPlayerEventLog(PlayerEvent::TRADER_PURCHASE, e);
@@ -3089,6 +3130,8 @@ void Client::BuyTraderItemOutsideBazaar(TraderBuy_Struct *tbs, const EQApplicati
 	out_data->item_aug_6              = buy_item->GetAugmentItemID(5);
 	out_data->item_quantity_available = trader_item.item_charges;
 	out_data->id                      = trader_item.id;
+	out_data->trader_zone_id          = trader_item.char_zone_id;
+ 	out_data->trader_zone_instance_id = trader_item.char_zone_instance_id;
 	strn0cpy(out_data->trader_buy_struct.buyer_name, GetCleanName(), sizeof(out_data->trader_buy_struct.buyer_name));
 
 	worldserver.SendPacket(out_server.get());

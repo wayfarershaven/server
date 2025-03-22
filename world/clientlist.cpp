@@ -376,7 +376,10 @@ void ClientList::ClientUpdate(ZoneServer *zoneserver, ServerClientList_Struct *s
 	while (iterator.MoreElements()) {
 		if (iterator.GetData()->GetID() == scl->wid) {
 			cle = iterator.GetData();
-			if (scl->remove == 2) {
+			if (scl->remove == 3) {
+				cle->Update(zoneserver, scl, CLE_Status::OfflineMode);
+			}
+			else if (scl->remove == 2) {
 				cle->LeavingZone(zoneserver, CLE_Status::Offline);
 			}
 			else if (scl->remove == 1) {
@@ -389,7 +392,11 @@ void ClientList::ClientUpdate(ZoneServer *zoneserver, ServerClientList_Struct *s
 		}
 		iterator.Advance();
 	}
-	if (scl->remove == 2) {
+
+	if (scl->remove == 3) {
+		cle = new ClientListEntry(GetNextCLEID(), zoneserver, scl, CLE_Status::OfflineMode);
+	}
+	else if (scl->remove == 2) {
 		cle = new ClientListEntry(GetNextCLEID(), zoneserver, scl, CLE_Status::Online);
 	}
 	else if (scl->remove == 1) {
@@ -427,7 +434,10 @@ void ClientList::ClientUpdate(ZoneServer *zoneserver, ServerClientList_Struct *s
 		" LFGFromLevel [{}]"
 		" LFGToLevel [{}]"
 		" LFGMatchFilter [{}]"
-		" LFGComments [{}]",
+		" LFGComments [{}]"
+		" Trader [{}]"
+		" Buyer [{}]"
+		" Offline [{}]",
 		scl->remove,
 		scl->wid,
 		scl->IP,
@@ -454,7 +464,10 @@ void ClientList::ClientUpdate(ZoneServer *zoneserver, ServerClientList_Struct *s
 		scl->LFGFromLevel,
 		scl->LFGToLevel,
 		scl->LFGMatchFilter,
-		scl->LFGComments
+		scl->LFGComments,
+		scl->trader,
+		scl->buyer,
+		scl->offline
 	);
 
 	clientlist.Insert(cle);
@@ -731,7 +744,14 @@ void ClientList::SendWhoAll(uint32 fromid,const char* to, int16 admin, Who_All_S
 					rankstring = 0;
 					iterator.Advance();
 					continue;
-				} else if (cle->GetGM()) {
+				}
+				else if (cle->GetTrader()) {
+					rankstring = 12315;
+				}
+				else if (cle->GetBuyer()) {
+					rankstring = 6056;
+				}
+				else if (cle->GetGM()) {
 					if (cle->Admin() >= AccountStatus::GMImpossible) {
 						rankstring = 5021;
 					} else if (cle->Admin() >= AccountStatus::GMMgmt) {
@@ -822,6 +842,18 @@ void ClientList::SendWhoAll(uint32 fromid,const char* to, int16 admin, Who_All_S
 				char placcount[30]={0};
 				if (admin>=cle->Admin() && admin > AccountStatus::Player) {
 					strcpy(placcount,cle->AccountName());
+				}
+
+				if (cle->GetOfflineMode()) {
+					if (cle->GetTrader()) {
+						pidstring = 0x0430;
+						rankstring = 0xFFFFFFFF;
+					}
+
+					if (cle->GetBuyer()) {
+						pidstring = 0x0420;
+						rankstring = 0xFFFFFFFF;
+					}
 				}
 
 				memcpy(bufptr,&formatstring, sizeof(uint32));
@@ -1578,25 +1610,29 @@ void ClientList::OnTick(EQ::Timer *t)
 			outclient["Server"] = Json::Value();
 		}
 
-		outclient["CharID"] = cle->CharID();
-		outclient["name"] = cle->name();
-		outclient["zone"] = cle->zone();
-		outclient["instance"] = cle->instance();
-		outclient["level"] = cle->level();
-		outclient["class_"] = cle->class_();
-		outclient["race"] = cle->race();
-		outclient["Anon"] = cle->Anon();
+		outclient["CharID"]         = cle->CharID();
+		outclient["name"]           = cle->name();
+		outclient["zone"]           = cle->zone();
+		outclient["instance"]       = cle->instance();
+		outclient["level"]          = cle->level();
+		outclient["class_"]         = cle->class_();
+		outclient["race"]           = cle->race();
+		outclient["Anon"]           = cle->Anon();
 
-		outclient["TellsOff"] = cle->TellsOff();
-		outclient["GuildID"] = cle->GuildID();
-		outclient["LFG"] = cle->LFG();
-		outclient["GM"] = cle->GetGM();
-		outclient["LocalClient"] = cle->IsLocalClient();
-		outclient["LFGFromLevel"] = cle->GetLFGFromLevel();
-		outclient["LFGToLevel"] = cle->GetLFGToLevel();
+		outclient["TellsOff"]       = cle->TellsOff();
+		outclient["GuildID"]        = cle->GuildID();
+		outclient["LFG"]            = cle->LFG();
+		outclient["GM"]             = cle->GetGM();
+		outclient["LocalClient"]    = cle->IsLocalClient();
+		outclient["LFGFromLevel"]   = cle->GetLFGFromLevel();
+		outclient["LFGToLevel"]     = cle->GetLFGToLevel();
 		outclient["LFGMatchFilter"] = cle->GetLFGMatchFilter();
-		outclient["LFGComments"] = cle->GetLFGComments();
-		outclient["ClientVersion"] = cle->GetClientVersion();
+		outclient["LFGComments"]    = cle->GetLFGComments();
+		outclient["ClientVersion"]  = cle->GetClientVersion();
+		outclient["Trader"]         = cle->GetTrader();
+		outclient["Buyer"]          = cle->GetBuyer();
+		outclient["OfflineMode"]    = cle->GetOfflineMode();
+
 		out["data"].append(outclient);
 
 		Iterator.Advance();
@@ -1655,26 +1691,29 @@ void ClientList::GetClientList(Json::Value &response)
 		else {
 			row["server"] = Json::Value();
 		}
-		row["anon"]             = cle->Anon();
-		row["character_id"]     = cle->CharID();
-		row["class"]            = cle->class_();
-		row["client_version"]   = cle->GetClientVersion();
-		row["gm"]               = cle->GetGM();
-		row["guild_id"]         = cle->GuildID();
-		row["guild_rank"]       = cle->GuildRank();
+		row["anon"]                 = cle->Anon();
+		row["character_id"]         = cle->CharID();
+		row["class"]                = cle->class_();
+		row["client_version"]       = cle->GetClientVersion();
+		row["gm"]                   = cle->GetGM();
+		row["guild_id"]             = cle->GuildID();
+		row["guild_rank"]           = cle->GuildRank();
 		row["guild_tribute_opt_in"] = cle->GuildTributeOptIn();
-		row["instance"]         = cle->instance();
-		row["is_local_client"]  = cle->IsLocalClient();
-		row["level"]            = cle->level();
-		row["lfg"]              = cle->LFG();
-		row["lfg_comments"]     = cle->GetLFGComments();
-		row["lfg_from_level"]   = cle->GetLFGFromLevel();
-		row["lfg_match_filter"] = cle->GetLFGMatchFilter();
-		row["lfg_to_level"]     = cle->GetLFGToLevel();
-		row["name"]             = cle->name();
-		row["race"]             = cle->race();
-		row["tells_off"]        = cle->TellsOff();
-		row["zone"]             = cle->zone();
+		row["instance"]             = cle->instance();
+		row["is_local_client"]      = cle->IsLocalClient();
+		row["level"]                = cle->level();
+		row["lfg"]                  = cle->LFG();
+		row["lfg_comments"]         = cle->GetLFGComments();
+		row["lfg_from_level"]       = cle->GetLFGFromLevel();
+		row["lfg_match_filter"]     = cle->GetLFGMatchFilter();
+		row["lfg_to_level"]         = cle->GetLFGToLevel();
+		row["name"]                 = cle->name();
+		row["race"]                 = cle->race();
+		row["tells_off"]            = cle->TellsOff();
+		row["zone"]                 = cle->zone();
+		row["Trader"]               = cle->GetTrader();
+		row["Buyer"]                = cle->GetBuyer();
+		row["OfflineMode"]          = cle->GetOfflineMode();
 
 		response.append(row);
 
