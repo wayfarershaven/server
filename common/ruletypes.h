@@ -231,6 +231,7 @@ RULE_INT(Character, MendAlwaysSucceedValue, 199, "Value at which mend will alway
 RULE_BOOL(Character, SneakAlwaysSucceedOver100, false, "When sneak skill is over 100, always succeed sneak/hide. Default: false")
 RULE_INT(Character, BandolierSwapDelay, 0, "Bandolier swap delay in milliseconds, default is 0")
 RULE_BOOL(Character, EnableHackedFastCampForGM, false, "Enables hacked fast camp for GM clients, if the GM doesn't have a hacked client they'll camp like normal")
+RULE_BOOL(Character, AlwaysAllowNameChange, false, "Enable this option to allow /changename to work without enabling a name change via scripts.")
 RULE_CATEGORY_END()
 
 RULE_CATEGORY(Mercs)
@@ -376,6 +377,7 @@ RULE_BOOL(Zone, AllowCrossZoneSpellsOnPets, false, "Set to true to allow cross z
 RULE_BOOL(Zone, ZoneShardQuestMenuOnly, false, "Set to true if you only want quests to show the zone shard menu")
 RULE_BOOL(Zone, StateSaveEntityVariables, true, "Set to true if you want buffs to be saved on shutdown")
 RULE_BOOL(Zone, StateSaveBuffs, true, "Set to true if you want buffs to be saved on shutdown")
+RULE_INT(Zone, StateSaveClearDays, 7, "Clears state save data older than this many days")
 RULE_BOOL(Zone, StateSavingOnShutdown, true, "Set to true if you want zones to save state on shutdown (npcs, corpses, loot, entity variables, buffs etc.)")
 RULE_CATEGORY_END()
 
@@ -834,7 +836,7 @@ RULE_INT(Bots, MinGroupCureTargets, 3, "Minimum number of targets in valid range
 RULE_INT(Bots, MinTargetsForAESpell, 3, "Minimum number of targets in valid range that are required for an AE spell to cast. Default 3.")
 RULE_INT(Bots, MinTargetsForGroupSpell, 3, "Minimum number of targets in valid range that are required for an group spell to cast. Default 3.")
 RULE_BOOL(Bots, AllowBuffingHealingFamiliars, false, "Determines if bots are allowed to buff and heal familiars. Default false.")
-RULE_BOOL(Bots, RunSpellTypeChecksOnSpawn, false, "This will run a serious of checks on spell types and output errors to LogBotSpellTypeChecks")
+RULE_BOOL(Bots, RunSpellTypeChecksOnBoot, false, "This will run a series of checks to find potential errors in your bot_spells_entries table on boot and output to LogBotSpellTypeChecks")
 RULE_BOOL(Bots, UseParentSpellTypeForChecks, true, "This will check only the parent instead of AE/Group/Pet types (ex: AENukes/AERains/PBAENukes fall under Nukes or PetBuffs fall under buffs) when RunSpellTypeChecksOnSpawn fires")
 RULE_BOOL(Bots, AllowForcedCastsBySpellID, true, "If enabled, players can use ^cast spellid # to cast a specific spell by ID that is in their spell list")
 RULE_BOOL(Bots, AllowCastAAs, true, "If enabled, players can use ^cast aa to cast a clickable AA")

@@ -75,6 +75,9 @@ public:
 	int16 GetConditionMinValue() const { return condition_min_value; }
 	int16 GetAnimation () { return anim; }
 	inline NPC *GetNPC() const { return npcthis; }
+	inline bool IsResumedFromZoneSuspend() const { return m_resumed_from_zone_suspend; }
+	inline void SetResumedFromZoneSuspend(bool resumed) { m_resumed_from_zone_suspend = resumed; }
+	inline void SetEntityVariables(std::map<std::string, std::string> vars) { m_entity_variables = vars; }
 
 protected:
 	friend class Zone;
@@ -101,6 +104,8 @@ private:
 	EmuAppearance anim;
 	bool IsDespawned;
 	uint32  killcount;
+	bool m_resumed_from_zone_suspend = false;
+	std::map<std::string, std::string> m_entity_variables = {};
 };
 
 class SpawnCondition {

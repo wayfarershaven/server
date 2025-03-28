@@ -332,6 +332,10 @@ public:
 	bool KeyRingClear();
 	bool KeyRingRemove(uint32 item_id);
 	void KeyRingList();
+	bool IsNameChangeAllowed();
+	void InvokeChangeNameWindow(bool immediate = true);
+	bool ClearNameChange();
+	void GrantNameChange();
 	bool IsPetNameChangeAllowed();
 	void GrantPetNameChange();
 	void ClearPetNameChange();
@@ -443,6 +447,8 @@ public:
 	int64 ValidateBuyLineCost(std::map<uint32, BuylineItemDetails_Struct>& item_map);
 	bool DoBarterBuyerChecks(BuyerLineSellItem_Struct& sell_line);
 	bool DoBarterSellerChecks(BuyerLineSellItem_Struct& sell_line);
+	void CancelBuyerTradeWindow();
+	void CancelTraderTradeWindow();
 
 	void FillSpawnStruct(NewSpawn_Struct* ns, Mob* ForWho);
 	bool ShouldISpawnFor(Client *c) { return !GMHideMe(c) && !IsHoveringForRespawn(); }
@@ -509,7 +515,8 @@ public:
 	bool AutoAttackEnabled() const { return auto_attack; }
 	bool AutoFireEnabled() const { return auto_fire; }
 
-	bool ChangeFirstName(const char* in_firstname,const char* gmname);
+	bool ChangeFirstName(const std::string in_firstname,const std::string gmname);
+	bool ChangeFirstName(const std::string in_firstname);
 
 	void Duck();
 	void Stand();

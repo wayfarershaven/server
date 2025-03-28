@@ -826,6 +826,10 @@ void Client::CompleteConnect()
 		if (IsPetNameChangeAllowed() && !RuleB(Pets, AlwaysAllowPetRename)) {
 			InvokeChangePetName(false);
 		}
+
+		if (IsNameChangeAllowed() && !RuleB(Character, AlwaysAllowNameChange)) {
+			InvokeChangeNameWindow(false);
+		}
 	}
 
 	if(ClientVersion() == EQ::versions::ClientVersion::RoF2 && RuleB(Parcel, EnableParcelMerchants)) {
@@ -4256,7 +4260,7 @@ void Client::Handle_OP_Camp(const EQApplicationPacket *app)
 		else {
 			OnDisconnect(true);
 		}
-		
+
 		return;
 	}
 
@@ -4548,14 +4552,14 @@ void Client::Handle_OP_ChangePetName(const EQApplicationPacket *app) {
 
 	auto p = (ChangePetName_Struct *) app->pBuffer;
 	if (!IsPetNameChangeAllowed()) {
-		p->response_code = ChangePetNameResponse::NotEligible;
+		p->response_code = ChangeNameResponse::Ineligible;
 		QueuePacket(app);
 		return;
 	}
 
-	p->response_code = ChangePetNameResponse::Denied;
+	p->response_code = ChangeNameResponse::Denied;
 	if (ChangePetName(p->new_pet_name)) {
-		p->response_code = ChangePetNameResponse::Accepted;
+		p->response_code = ChangeNameResponse::Accepted;
 	}
 
 	QueuePacket(app);
@@ -6776,6 +6780,21 @@ void Client::Handle_OP_GMLastName(const EQApplicationPacket *app)
 
 void Client::Handle_OP_GMNameChange(const EQApplicationPacket *app)
 {
+	if (app->size == sizeof(AltChangeName_Struct)) {
+		auto p = (AltChangeName_Struct *) app->pBuffer;
+
+		if (!IsNameChangeAllowed()) {
+			p->response_code = ChangeNameResponse::Ineligible;
+			QueuePacket(app);
+			return;
+		}
+
+		p->response_code = ChangeFirstName(p->new_name) ? ChangeNameResponse::Accepted : ChangeNameResponse::Denied;
+		QueuePacket(app);
+
+		return;
+	}
+
 	if (app->size != sizeof(GMName_Struct)) {
 		LogError("Wrong size: OP_GMNameChange, size=[{}], expected [{}]", app->size, sizeof(GMName_Struct));
 		return;
@@ -7653,7 +7672,11 @@ void Client::Handle_OP_GuildBank(const EQApplicationPacket *app)
 						log.char_id  = CharacterID();
 						log.guild_id = GuildID();
 						log.item_id  = inst->GetID();
-						log.quantity = inst->GetCharges();
+						log.quantity = 1;
+						if (inst->GetCharges() > 0 || inst->IsStackable() || inst->GetItem()->MaxCharges > 0) {
+							log.quantity = inst->GetCharges();
+						}
+
 						if (inst->IsAugmented()) {
 							auto augs          = inst->GetAugmentIDs();
 							log.aug_slot_one   = augs.at(0);
@@ -7737,7 +7760,11 @@ void Client::Handle_OP_GuildBank(const EQApplicationPacket *app)
 			item.guild_id    = GuildID();
 			item.area        = GuildBankDepositArea;
 			item.item_id     = cursor_item->ID;
-			item.quantity    = cursor_item_inst->GetCharges();
+			item.quantity    = 1;
+			if (cursor_item_inst->GetCharges() > 0 || cursor_item_inst->IsStackable() || cursor_item->MaxCharges > 0) {
+				item.quantity = cursor_item_inst->GetCharges();
+			}
+
 			item.donator     = GetCleanName();
 			item.permissions = GuildBankBankerOnly;
 			if (cursor_item_inst->IsAugmented()) {
@@ -7821,12 +7848,9 @@ void Client::Handle_OP_GuildBank(const EQApplicationPacket *app)
 				break;
 			}
 
-			if (inst->GetCharges() > 0) {
+			gbwis->Quantity = 1;
+			if (inst->GetCharges() > 0 || inst->IsStackable() || inst->GetItem()->MaxCharges > 0) {
 				gbwis->Quantity = inst->GetCharges();
-			}
-
-			if (inst->GetCharges() < 0) {
-				gbwis->Quantity = 1;
 			}
 
 			PushItemOnCursor(*inst.get());
@@ -15458,7 +15482,7 @@ void Client::Handle_OP_TraderBuy(const EQApplicationPacket *app)
 			);
 			Message(
 				Chat::Yellow,
-				"Direct inventory delivey is not yet implemented.  Please visit the vendor directly or purchase via parcel delivery."
+				"Direct inventory delivery is not yet implemented.  Please visit the vendor directly or purchase via parcel delivery."
 			);
 			in->method     = BazaarByDirectToInventory;
 			in->sub_action = Failed;

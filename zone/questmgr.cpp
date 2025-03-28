@@ -208,6 +208,15 @@ void QuestManager::write(const char *file, const char *str) {
 }
 
 Mob* QuestManager::spawn2(int npc_id, int grid, int unused, const glm::vec4& position) {
+	QuestManagerCurrentQuestVars();
+	if (owner && owner->IsNPC()) {
+		auto n = owner->CastToNPC();
+		if (n->IsResumedFromZoneSuspend()) {
+			LogZoneState("NPC [{}] is resuming from zone suspend, skipping quest call", n->GetCleanName());
+			return nullptr;
+		}
+	}
+
 	const NPCType* t = 0;
 	if (t = content_db.LoadNPCTypesData(npc_id)) {
 		auto npc = new NPC(t, nullptr, position, GravityBehavior::Water);
@@ -228,6 +237,15 @@ Mob* QuestManager::spawn2(int npc_id, int grid, int unused, const glm::vec4& pos
 }
 
 Mob* QuestManager::unique_spawn(int npc_type, int grid, int unused, const glm::vec4& position) {
+	QuestManagerCurrentQuestVars();
+	if (owner && owner->IsNPC()) {
+		auto n = owner->CastToNPC();
+		if (n->IsResumedFromZoneSuspend()) {
+			LogZoneState("NPC [{}] is resuming from zone suspend, skipping quest call", n->GetCleanName());
+			return nullptr;
+		}
+	}
+
 	Mob *other = entity_list.GetMobByNpcTypeID(npc_type);
 	if(other != nullptr) {
 		return other;
@@ -1292,15 +1310,14 @@ void QuestManager::rename(std::string name) {
 	QuestManagerCurrentQuestVars();
 	if (initiator) {
 		std::string current_name = initiator->GetName();
-		if (initiator->ChangeFirstName(name.c_str(), current_name.c_str())) {
+		if (initiator->ChangeFirstName(name)) {
 			initiator->Message(
 				Chat::White,
 				fmt::format(
-					"Successfully renamed to {}, kicking to character select.",
+					"Successfully renamed to {}.",
 					name
 				).c_str()
 			);
-			initiator->Kick("Name was changed.");
 		} else {
 			initiator->Message(
 				Chat::Red,
