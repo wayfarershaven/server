@@ -336,6 +336,16 @@ inline void LoadNPCState(Zone *zone, NPC *n, ZoneStateSpawnsRepository::ZoneStat
 		n->SetEndurance(s.endurance);
 	}
 
+	// if these are zero for some reason, we need to reset the max hp
+	if (!s.is_corpse) {
+		if (s.hp == 0 || n->GetHP() == 0) {
+			n->SetMaxHP();
+		}
+		if (s.mana == 0 || n->GetMana() == 0) {
+			n->RestoreMana();
+		}
+	}
+
 	if (s.grid) {
 		n->AssignWaypoints(s.grid, s.current_waypoint);
 	}
@@ -355,7 +365,7 @@ inline void LoadNPCState(Zone *zone, NPC *n, ZoneStateSpawnsRepository::ZoneStat
 			n->Depop();
 		}
 	}
-	
+
 	n->SetPosition(s.x, s.y, s.z);
 	n->SetHeading(s.heading);
 	n->SetResumedFromZoneSuspend(true);
@@ -443,12 +453,16 @@ bool Zone::LoadZoneState(
 	zone->initgrids_timer.Trigger();
 	zone->Process();
 
+	// load zone variables first
 	for (auto &s: spawn_states) {
 		if (s.is_zone) {
 			LoadZoneVariables(zone, s.entity_variables);
-			continue;
+			break;
 		}
+	}
 
+	// spawn2
+	for (auto &s: spawn_states) {
 		if (s.spawngroup_id == 0 || s.is_corpse || s.is_zone) {
 			continue;
 		}
