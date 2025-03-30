@@ -81,7 +81,6 @@ WorldServer::WorldServer()
 	cur_groupid = 0;
 	last_groupid = 0;
 	oocmuted = false;
-	m_process_timer = std::make_unique<EQ::Timer>(1000, true, std::bind(&WorldServer::Process, this));
 }
 
 WorldServer::~WorldServer() {
@@ -95,6 +94,7 @@ void WorldServer::Process()
 			if (it->second.reload_at_unix < std::time(nullptr)) {
 				ProcessReload(it->second);
 				it = m_reload_queue.erase(it);
+				break;
 			} else {
 				++it;
 			}
@@ -4597,6 +4597,10 @@ void WorldServer::ProcessReload(const ServerReload::Request& request)
 
 		case ServerReload::Type::Loot:
 			zone->ReloadLootTables();
+			break;
+
+		case ServerReload::Type::Maps:
+			zone->ReloadMaps();
 			break;
 
 		case ServerReload::Type::Merchants:
