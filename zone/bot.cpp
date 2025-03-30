@@ -2287,7 +2287,7 @@ void Bot::AI_Process()
 // COMBAT RANGE CALCS
 		bool  front_mob = InFrontMob(tar, GetX(), GetY());
 		bool  behind_mob = BehindMob(tar, GetX(), GetY());
-		uint8 stop_melee_level = GetStopMeleeLevel();
+		bool  stop_melee_level = GetLevel() >= GetStopMeleeLevel();
 		tar_distance = sqrt(tar_distance); // sqrt this for future calculations
 		// Item variables
 		const EQ::ItemInstance* p_item = GetBotItem(EQ::invslot::slotPrimary);
@@ -2314,7 +2314,7 @@ void Bot::AI_Process()
 		if (PULLING_BOT || RETURNING_BOT) {
 			if (!TargetValidation(tar)) { return; }
 
-			if (!DoLosChecks(tar)) {
+			if (RuleB(Bots, BotsRequireLoS) && !HasLoS()) {
 				return;
 			}
 
@@ -2442,7 +2442,7 @@ void Bot::AI_Process()
 
 				ranged_timer.Start();
 			}
-			else if (!IsBotRanged() && GetLevel() < stop_melee_level) {
+			else if (!IsBotRanged() && !stop_melee_level) {
 				if (
 					IsTaunting() ||
 					!GetMaxMeleeRange() ||
@@ -3128,7 +3128,6 @@ CombatRangeOutput Bot::EvaluateCombatRange(const CombatRangeInput& input) {
 	bool is_two_hander          = input.p_item && input.p_item->GetItem()->IsType2HWeapon();
 	bool is_shield              = input.s_item && input.s_item->GetItem()->IsTypeShield();
 	bool is_backstab_weapon     = input.p_item && input.p_item->GetItemBackstabDamage();
-	bool is_stop_melee_level    = GetLevel() >= input.stop_melee_level;
 
 	if (IsTaunting()) { // Taunting bots
 		o.melee_distance_min    = o.melee_distance_max * RuleR(Bots, LowerTauntingMeleeDistanceMultiplier);
@@ -3143,7 +3142,7 @@ CombatRangeOutput Bot::EvaluateCombatRange(const CombatRangeInput& input) {
 		o.melee_distance_min    = std::max(min_distance, (desired_range / 2));
 		o.melee_distance        = std::min(max_distance, desired_range);
 	}
-	else if (is_stop_melee_level) { // Casters
+	else if (input.stop_melee_level) { // Casters
 		float desired_range     = GetBotDistanceRanged();
 
 		o.melee_distance_min    = std::max(o.melee_distance_max, (desired_range / 2));
@@ -3176,14 +3175,17 @@ bool Bot::IsValidTarget(
 		return false;
 	}
 
+	SetHasLoS(DoLosChecks(tar));
+
 	bool invalid_target_state = false;
+
 	if (HOLDING ||
 		!tar->IsNPC() ||
 		(tar->IsMezzed() && !HasBotAttackFlag(tar)) ||
 		(!Charmed() && tar->GetUltimateOwner()->IsOfClientBotMerc()) ||
 		lo_distance > leash_distance ||
 		tar_distance > leash_distance ||
-		(!GetAttackingFlag() && !CheckLosCheat(tar) && !leash_owner->CheckLosCheat(tar)) ||
+		(!GetAttackingFlag() && !HasLoS()) ||
 		!IsAttackAllowed(tar)
 	) {
 		invalid_target_state = true;
@@ -9534,7 +9536,14 @@ bool Bot::CastChecks(uint16 spell_id, Mob* tar, uint16 spell_type, bool precheck
 		return false;
 	}
 
-	if (!BotHasEnoughMana(spell_id)) {
+	if (
+		!BotHasEnoughMana(spell_id) &&
+		(
+			!RuleB(Bots, FinishBuffing) ||
+			IsEngaged() ||
+			IsBotBuffSpellType(spell_type)
+		)
+	) {
 		LogBotSpellChecksDetail("{} says, 'Cancelling cast of {} due to !BotHasEnoughMana.'", GetCleanName(), GetSpellName(spell_id));
 		return false;
 	}
@@ -11407,7 +11416,7 @@ bool Bot::AttemptForcedCastSpell(Mob* tar, uint16 spell_id, bool is_disc) {
 		return false;
 	}
 
-	if (!DoLosChecks(tar)) {
+	if (!HasLoS() && !DoLosChecks(tar)) {
 		return false;
 	}
 
@@ -12020,74 +12029,53 @@ void Bot::DoCombatPositioning(
 	bool behind_mob,
 	bool front_mob
 ) {
-	if (HasTargetReflection()) {
-		if (tar->IsRooted() && !IsTaunting()) { // Move non-taunters out of range
-			if (tar_distance <= melee_distance_max) {
-				if (PlotBotPositionAroundTarget(tar, Goal.x, Goal.y, Goal.z, (melee_distance_max + 1), (melee_distance_max * 1.25f), GetBehindMob(), false)) {
-					RunToGoalWithJitter(Goal);
+	if (!tar->IsFeared()) {
+		bool is_too_close = tar_distance < melee_distance_min;
+		bool los_adjust = !HasRequiredLoSForPositioning(tar);
 
+		if (tar->IsRooted() && !IsTaunting()) { // Move non-taunting melee out of range
+			bool rooted_adjust = tar_distance <= melee_distance_max && HasTargetReflection();
+
+			if (rooted_adjust) {
+				if (PlotBotPositionAroundTarget(tar, Goal.x, Goal.y, Goal.z, (melee_distance_max + 1), (melee_distance_max * 1.25f), GetBehindMob(), !GetBehindMob())) {
+					RunToGoalWithJitter(Goal);
 					return;
 				}
 			}
 		}
-		else if (
-			tar_distance < melee_distance_min ||
-			(!front_mob && IsTaunting())
-		) { // Back up any bots that are too close or if they're taunting and not in front of the mob
-			if (PlotBotPositionAroundTarget(tar, Goal.x, Goal.y, Goal.z, melee_distance_min, melee_distance, GetBehindMob(), (IsTaunting() || !GetBehindMob()))) {
-				RunToGoalWithJitter(Goal);
-
-				return;
-			}
-		}
-	}
-	else {
-		if (!tar->IsFeared()) {
-			if (
-				tar_distance < melee_distance_min ||
-				(GetBehindMob() && !behind_mob) ||
-				(IsTaunting() && !front_mob) ||
-				!HasRequiredLoSForPositioning(tar)
-			) { // Regular adjustment
-				if (PlotBotPositionAroundTarget(tar, Goal.x, Goal.y, Goal.z, melee_distance_min, melee_distance, GetBehindMob(), (IsTaunting() || !GetBehindMob()))) {
-					RunToGoalWithJitter(Goal);
-
-					return;
-				}
-			}
-			else if (
-				tar->IsEnraged() &&
-				!IsTaunting() &&
-				!stop_melee_level &&
-				!behind_mob
-			) { // Move non-taunting melee bots behind target during enrage
-				if (PlotBotPositionAroundTarget(tar, Goal.x, Goal.y, Goal.z, melee_distance_min, melee_distance, true)) {
-					RunToGoalWithJitter(Goal);
-
-					return;
-				}
-			}
-
+		else {
 			if (IsTaunting()) { // Taunting adjustments
-				Mob* mob_tar = tar->GetTarget();
+				bool taunting_adjust = (!front_mob || is_too_close || los_adjust);
 
-				if (mob_tar) {
-					if (
-						RuleB(Bots, TauntingBotsFollowTopHate) &&
-						(Distance(m_Position, mob_tar->GetPosition()) > RuleI(Bots, DistanceTauntingBotsStickMainHate))
-					) {  // If enabled, taunting bots will stick to top hate
-						Goal = mob_tar->GetPosition();
+				if (taunting_adjust) {
+					if (PlotBotPositionAroundTarget(tar, Goal.x, Goal.y, Goal.z, melee_distance_min, melee_distance, false, true)) {
 						RunToGoalWithJitter(Goal);
 
 						return;
 					}
-					else { // Otherwise, stick to any other bots that are taunting
-						if (
-							mob_tar->IsBot() &&
-							mob_tar->CastToBot()->IsTaunting() &&
-							(Distance(m_Position, mob_tar->GetPosition()) > RuleI(Bots, DistanceTauntingBotsStickMainHate))
-						) {
-							Goal = mob_tar->GetPosition();
+				}
+			}
+			else {
+				if (tar->IsEnraged() && !stop_melee_level && !IsBotRanged()) { // Move non-taunting melee bots behind target during enrage
+					bool enraged_adjust = !behind_mob || is_too_close || los_adjust;
+
+					if (enraged_adjust) {
+						if (PlotBotPositionAroundTarget(tar, Goal.x, Goal.y, Goal.z, melee_distance_min, melee_distance, true)) {
+							RunToGoalWithJitter(Goal);
+
+							return;
+						}
+					}
+				}
+				else { // Regular adjustments
+					bool regular_adjust =
+						is_too_close ||
+						los_adjust ||
+						(!GetBehindMob() && !front_mob) ||
+						(GetBehindMob() && !behind_mob);
+
+					if (regular_adjust) {
+						if (PlotBotPositionAroundTarget(tar, Goal.x, Goal.y, Goal.z, melee_distance_min, melee_distance, GetBehindMob(), !GetBehindMob())) {
 							RunToGoalWithJitter(Goal);
 
 							return;
@@ -12099,8 +12087,6 @@ void Bot::DoCombatPositioning(
 	}
 
 	DoFaceCheckNoJitter(tar);
-
-	return;
 }
 
 bool Bot::PlotBotPositionAroundTarget(Mob* target, float& x_dest, float& y_dest, float& z_dest, float min_distance, float max_distance, bool behind_only, bool front_only, bool bypass_los) {
@@ -12197,7 +12183,11 @@ bool Bot::RequiresLoSForPositioning() {
 	}
 
 	for (uint16 i = BotSpellTypes::START; i <= BotSpellTypes::END; ++i) {
-		if (IsBotSpellTypeDetrimental(i) && !GetSpellTypeHold(i)) {
+		if (IsHealBotSpellType(i) || i == BotSpellTypes::PBAENuke) {
+			continue;
+		}
+
+		if (!GetSpellTypeHold(i)) {
 			return true;
 		}
 	}
@@ -12210,7 +12200,7 @@ bool Bot::HasRequiredLoSForPositioning(Mob* tar) {
 		return true;
 	}
 
-	if (RequiresLoSForPositioning() && !DoLosChecks(tar)) {
+	if (RequiresLoSForPositioning() && !HasLoS()) {
 		return false;
 	}
 
@@ -12224,10 +12214,6 @@ bool Bot::HasValidAETarget(Bot* caster, uint16 spell_id, uint16 spell_type, Mob*
 
 	for (auto& close_mob : caster->m_close_mobs) {
 		Mob* m = close_mob.second;
-
-		if (tar == m) {
-			continue;
-		}
 
 		switch (spell_type) {
 			case BotSpellTypes::AELull:
@@ -12319,8 +12305,6 @@ bool Bot::HasValidAETarget(Bot* caster, uint16 spell_id, uint16 spell_type, Mob*
 	if (target_count < caster->GetSpellTypeAEOrGroupTargetCount(spell_type)) {
 		return false;
 	}
-
-	SetHasLoS(true);
 
 	return true;
 }

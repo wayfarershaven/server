@@ -29,6 +29,7 @@ public:
 	bool SendPacket(ServerPacket *pack);
 	bool SendPacket(uint32 zoneid, ServerPacket *pack);
 	bool SendPacket(uint32 zoneid, uint16 instanceid, ServerPacket *pack);
+	bool SendPacketToZonesWithGuild(uint32 guild_id, ServerPacket *pack);
 	bool SendPacketToBootedZones(ServerPacket* pack);
 	bool SetLockedZone(uint16 iZoneID, bool iLock);
 	bool IsZoneBootedByZoneIdAndInstanceId(uint32 zone_id, uint32 instance_id) const;
