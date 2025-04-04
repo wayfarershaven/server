@@ -5042,6 +5042,8 @@ void Client::Handle_OP_ClientUpdate(const EQApplicationPacket *app) {
 
 	SetMoving(!(cy == m_Position.y && cx == m_Position.x));
 
+	CheckAFK(ppu);
+
 	CheckClientToNpcAggroTimer();
 
 	if (m_mob_check_moving_timer.Check()) {
@@ -17255,4 +17257,70 @@ void Client::Handle_OP_Offline(const EQApplicationPacket *app)
 	safe_delete(outapp);
 
 	offline_client->UpdateWho(3);
+}
+
+bool Client::IsFilteredAFKPacket(const EQApplicationPacket *p)
+{
+	if (p->GetOpcode() == OP_ClientUpdate || p->GetOpcode() == OP_WearChange) {
+		return true;
+	}
+
+	return false;
+}
+
+void Client::CheckAFK(PlayerPositionUpdateClient_Struct *p)
+{
+	bool has_moved = m_Position.x != p->x_pos || m_Position.y != p->y_pos || m_Position.z != p->z_pos;
+	if (!has_moved && !m_is_afk) {
+		auto now           = std::chrono::steady_clock::now();
+		auto idle_duration = now - m_last_moved;
+
+		if (idle_duration > std::chrono::seconds(RuleI(Character, SecondsBeforeAFK))) {
+			LogInfo(
+				"AFK [{}] has been idle for [{}] seconds",
+				GetCleanName(),
+				std::chrono::duration_cast<std::chrono::seconds>(idle_duration).count()
+			);
+			m_is_afk = true;
+		}
+	}
+	else if (has_moved && m_is_afk) {
+		LogInfo("AFK [{}] is no longer idle, syncing positions", GetCleanName());
+		m_is_afk = false;
+		CheckSendBulkNpcPositions(true);
+
+		static EQApplicationPacket outapp(OP_ClientUpdate, sizeof(PlayerPositionUpdateServer_Struct));
+
+		for (auto &e: entity_list.GetClientList()) {
+			auto c = e.second;
+
+			// skip if not in range
+			if (Distance(c->GetPosition(), GetPosition()) > RuleI(Range, ClientPositionUpdates)) {
+				continue;
+			}
+
+			// skip self
+			if (c == this) {
+				continue;
+			}
+
+			auto *spu = (PlayerPositionUpdateServer_Struct *) outapp.pBuffer;
+
+			memset(spu, 0x00, sizeof(PlayerPositionUpdateServer_Struct));
+			spu->spawn_id      = c->GetID();
+			spu->x_pos         = FloatToEQ19(c->GetX());
+			spu->y_pos         = FloatToEQ19(c->GetY());
+			spu->z_pos         = FloatToEQ19(c->GetZ());
+			spu->heading       = FloatToEQ12(c->GetHeading());
+			spu->delta_x       = FloatToEQ13(0);
+			spu->delta_y       = FloatToEQ13(0);
+			spu->delta_z       = FloatToEQ13(0);
+			spu->delta_heading = FloatToEQ10(0);
+			spu->animation     = 0;
+			QueuePacket(&outapp);
+		}
+	}
+	else {
+		m_last_moved = std::chrono::steady_clock::now();
+	}
 }
