@@ -699,7 +699,7 @@ void QuestManager::stoptimer(const std::string& timer_name, Mob* m)
 	}
 
 	for (auto e = QTimerList.begin(); e != QTimerList.end(); ++e) {
-		if (e->mob && e->mob == m) {
+		if (e->mob && e->mob == m && e->name == timer_name) {
 			parse->EventMob(EVENT_TIMER_STOP, m, nullptr, [&]() { return timer_name; });
 
 			QTimerList.erase(e);
@@ -3506,6 +3506,7 @@ void QuestManager::UpdateInstanceTimer(uint16 instance_id, uint32 new_duration)
 
 	e.duration   = new_duration;
 	e.start_time = std::time(nullptr);
+	e.expire_at  = e.start_time + e.duration;
 
 	const int updated = InstanceListRepository::UpdateOne(database, e);
 

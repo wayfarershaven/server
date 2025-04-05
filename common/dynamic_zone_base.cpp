@@ -58,15 +58,16 @@ uint32_t DynamicZoneBase::CreateInstance()
 	insert_instance.start_time = static_cast<int>(std::chrono::system_clock::to_time_t(m_start_time));
 	insert_instance.duration = static_cast<int>(m_duration.count());
 	insert_instance.never_expires = m_never_expires;
+	insert_instance.expire_at = insert_instance.start_time + insert_instance.duration;
 
-	auto instance = InstanceListRepository::InsertOne(GetDatabase(), insert_instance);
-	if (instance.id == 0)
+	auto instance = InstanceListRepository::ReplaceOne(GetDatabase(), insert_instance);
+	if (!instance)
 	{
 		LogDynamicZones("Failed to create instance [{}] for zone [{}]", unused_instance_id, m_zone_id);
 		return 0;
 	}
 
-	m_instance_id = instance.id;
+	m_instance_id = unused_instance_id;
 
 	return m_instance_id;
 }
