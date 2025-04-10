@@ -673,6 +673,7 @@ SET(common_headers
     net/console_server_connection.h
     net/crc32.h
     net/daybreak_connection.h
+    net/daybreak_pooling.h
     net/daybreak_structs.h
     net/dns.h
     net/endian.h
@@ -684,6 +685,7 @@ SET(common_headers
     net/servertalk_server.h
     net/servertalk_server_connection.h
     net/tcp_connection.h
+    net/tcp_connection_pooling.h
     net/tcp_server.h
     net/websocket_server.h
     net/websocket_server_connection.h
@@ -744,6 +746,7 @@ SOURCE_GROUP(Net FILES
     net/crc32.h
     net/daybreak_connection.cpp
     net/daybreak_connection.h
+    net/daybreak_pooling.h
     net/daybreak_structs.h
     net/dns.h
     net/endian.h
@@ -764,6 +767,7 @@ SOURCE_GROUP(Net FILES
     net/servertalk_server_connection.h
     net/tcp_connection.cpp
     net/tcp_connection.h
+    net/tcp_connection_pooling.h
     net/tcp_server.cpp
     net/tcp_server.h
     net/websocket_server.cpp
