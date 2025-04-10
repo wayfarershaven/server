@@ -7072,31 +7072,47 @@ CREATE INDEX `idx_expire_at` ON `respawn_times` (`expire_at`);
 		.content_schema_update = false
 	},
 	ManifestEntry{
-		.version     = 9321,
+		.version = 9321,
+		.description = "2025_03_30_instance_list_add_expire_at.sql",
+		.check = "SHOW COLUMNS FROM `instance_list` LIKE 'expire_at'",
+		.condition = "empty",
+		.match = "",
+		.sql = R"(
+ALTER TABLE `instance_list`
+ADD COLUMN `expire_at` bigint(11) UNSIGNED NOT NULL DEFAULT 0 AFTER `duration`;
+
+UPDATE instance_list set expire_at = `start_time` + `duration`; -- backfill existing data
+
+CREATE INDEX `idx_expire_at` ON `instance_list` (`expire_at`);
+)",
+		.content_schema_update = false
+	},
+	ManifestEntry{
+		.version     = 9322,
 		.description = "2025_01_27_offline_account_status.sql",
 		.check       = "SHOW COLUMNS FROM `account` LIKE 'offline'",
 		.condition   = "empty",
 		.match       = "",
 		.sql         = R"(
- ALTER TABLE `account`
- 	ADD COLUMN `offline` TINYINT(1) UNSIGNED NOT NULL DEFAULT '0' AFTER `time_creation`;
+	ALTER TABLE `account`
+	ADD COLUMN `offline` TINYINT(1) UNSIGNED NOT NULL DEFAULT '0' AFTER `time_creation`;
 
- CREATE TABLE `character_offline_transactions` (
- 	`id` BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
- 	`character_id` INT(10) UNSIGNED NOT NULL DEFAULT '0',
- 	`type` INT(10) UNSIGNED NULL DEFAULT '0',
- 	`item_name` VARCHAR(64) NULL DEFAULT NULL COLLATE 'latin1_swedish_ci',
- 	`quantity` INT(11) NULL DEFAULT '0',
- 	`price` BIGINT(20) UNSIGNED NULL DEFAULT '0',
- 	`buyer_name` VARCHAR(64) NULL DEFAULT NULL COLLATE 'latin1_swedish_ci',
- 	PRIMARY KEY (`id`) USING BTREE,
- 	INDEX `idx_character_id` (`character_id`)
- )
- COLLATE='latin1_swedish_ci'
- ENGINE=InnoDB;
- )",
-		.content_schema_update = false
-		},
+	CREATE TABLE `character_offline_transactions` (
+	`id` BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+	`character_id` INT(10) UNSIGNED NOT NULL DEFAULT '0',
+	`type` INT(10) UNSIGNED NULL DEFAULT '0',
+	`item_name` VARCHAR(64) NULL DEFAULT NULL COLLATE 'latin1_swedish_ci',
+	`quantity` INT(11) NULL DEFAULT '0',
+	`price` BIGINT(20) UNSIGNED NULL DEFAULT '0',
+	`buyer_name` VARCHAR(64) NULL DEFAULT NULL COLLATE 'latin1_swedish_ci',
+	PRIMARY KEY (`id`) USING BTREE,
+	INDEX `idx_character_id` (`character_id`)
+	)
+	COLLATE='latin1_swedish_ci'
+	ENGINE=InnoDB;
+	)",
+	.content_schema_update = false
+	},
 // -- template; copy/paste this when you need to create a new entry
 //	ManifestEntry{
 //		.version = 9228,
