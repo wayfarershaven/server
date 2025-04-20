@@ -1381,7 +1381,7 @@ struct SpecialMesg_Struct
 struct WearChange_Struct{
 /*000*/ uint16 spawn_id;
 /*002*/ uint32 material;
-/*006*/ uint32 unknown06;
+/*006*/ uint32 npc_tint_index;
 /*010*/ uint32 elite_material;	// 1 for Drakkin Elite Material
 /*014*/ uint32 hero_forge_model; // New to VoA
 /*018*/ uint32 unknown18; // New to RoF

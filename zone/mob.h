@@ -91,6 +91,7 @@ struct AppearanceStruct {
 	float  size             = -1.0f;
 	Client *target          = nullptr;
 	uint8  texture          = UINT8_MAX;
+	uint32 npc_tint_index   = UINT32_MAX;
 };
 
 class DataBucketKey;
@@ -328,7 +329,7 @@ public:
 	uint32 GetTextureProfileHeroForgeModel(uint8 material_slot) const;
 
 	virtual void SendArmorAppearance(Client *one_client = nullptr);
-	virtual void SendTextureWC(uint8 slot, uint32 texture, uint32 hero_forge_model = 0, uint32 elite_material = 0, uint32 unknown06 = 0, uint32 unknown18 = 0);
+	virtual void SendTextureWC(uint8 slot, uint32 texture, uint32 hero_forge_model = 0, uint32 elite_material = 0, uint32 npc_tint_index = 0, uint32 unknown18 = 0);
 	virtual void SendWearChange(uint8 material_slot, Client *one_client = nullptr);
 	virtual void SetSlotTint(uint8 material_slot, uint8 red_tint, uint8 green_tint, uint8 blue_tint);
 	virtual void WearChange(uint8 material_slot, uint32 texture, uint32 color = 0, uint32 hero_forge_model = 0);
@@ -1512,6 +1513,9 @@ public:
 	bool IsGuildmaster() const;
 	bool IsDestroying() const { return m_destroying; }
 
+	uint8 GetNPCTintIndex() const { return tint_index_; }
+    void SetNPCTintIndex(uint8 val) { tint_index_ = val; }
+
 protected:
 	void CommonDamage(Mob* other, int64 &damage, const uint16 spell_id, const EQ::skills::SkillType attack_skill, bool &avoidable, const int8 buffslot, const bool iBuffTic, eSpecialAttacks specal = eSpecialAttacks::None);
 	static uint16 GetProcID(uint16 spell_id, uint8 effect_index);
@@ -1542,6 +1546,7 @@ protected:
 	bool israidgrouped;
 	uint16 entity_id_being_looted; //the id of the entity being looted, 0 if not looting.
 	uint8 texture;
+	uint32 npc_tint_index;
 	uint8 helmtexture;
 	uint8 armtexture;
 	uint8 bracertexture;
@@ -1944,6 +1949,8 @@ private:
 
 	void DoSpellInterrupt(uint16 spell_id, int32 mana_cost, int my_curmana);
 	void HandleDoorOpen();
+
+	uint8 tint_index_ = 0;
 };
 
 #endif

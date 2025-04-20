@@ -3673,6 +3673,8 @@ void Mob::SendIllusionPacket(const AppearanceStruct& a)
 	uint32 new_drakkin_heritage = a.drakkin_heritage == UINT32_MAX ? GetDrakkinHeritage() : a.drakkin_heritage;
 	uint32 new_drakkin_tattoo   = a.drakkin_tattoo == UINT32_MAX ? GetDrakkinTattoo() : a.drakkin_tattoo;
 
+	uint32 new_npc_tint_index   = a.npc_tint_index == UINT32_MAX ? GetNPCTintIndex() : a.npc_tint_index;
+
 	// Reset features to Base from the Player Profile
 	if (IsClient() && a.race_id == Race::Doug) {
 		new_beard            = CastToClient()->GetBaseBeard();
@@ -3705,6 +3707,7 @@ void Mob::SendIllusionPacket(const AppearanceStruct& a)
 	haircolor        = new_hair_color;
 	race             = new_race;
 	size             = new_size;
+	npc_tint_index   = new_npc_tint_index;
 
 	// These two should not be modified in base data - it kills db texture
 	// when illusion is only for RandomizeFeatures...

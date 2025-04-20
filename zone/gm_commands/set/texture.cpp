@@ -4,7 +4,11 @@ void SetTexture(Client *c, const Seperator *sep)
 {
 	const auto arguments = sep->argnum;
 	if (arguments < 2 || !sep->IsNumber(2)) {
-		c->Message(Chat::White, "Usage: #set texture [Texture] [Helmet Texture]");
+		c->Message(Chat::White, "Usage: #set texture [Texture] [Helmet Texture] [NPC Tint Index]");
+		c->Message(
+			Chat::White,
+			"Texture: 0-255, Helmet Texture: 0-255, NPC Tint Index: 0-255"
+		);
 		return;
 	}
 
@@ -12,6 +16,11 @@ void SetTexture(Client *c, const Seperator *sep)
 	const uint8 helmet_texture = (
 		sep->IsNumber(3) ?
 		Strings::ToUnsignedInt(sep->arg[3]) :
+		0
+	);
+	const uint8 npc_tint_index = (
+		sep->IsNumber(4) ?
+		Strings::ToUnsignedInt(sep->arg[4]) :
 		0
 	);
 
@@ -29,6 +38,7 @@ void SetTexture(Client *c, const Seperator *sep)
 			t->SendTextureWC(texture_slot, texture);
 		}
 	} else { // Non-Player Races only need Illusion Packets to be sent for texture
+		t->SetNPCTintIndex(npc_tint_index);
 		t->SendIllusionPacket(
 			AppearanceStruct{
 				.gender_id = t->GetGender(),

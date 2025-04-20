@@ -4446,7 +4446,7 @@ namespace RoF2
 
 		OUT(spawn_id);
 		OUT(material);
-		OUT(unknown06);
+		OUT(npc_tint_index);
 		OUT(elite_material);
 		OUT(hero_forge_model);
 		OUT(unknown18);
@@ -4841,7 +4841,7 @@ namespace RoF2
 
 			VARSTRUCT_ENCODE_TYPE(uint8, Buffer, 0); // FindBits MQ2 name
 			VARSTRUCT_ENCODE_TYPE(uint32, Buffer, emu->PlayerState);
-			VARSTRUCT_ENCODE_TYPE(uint32, Buffer, 0); // NpcTintIndex
+			VARSTRUCT_ENCODE_TYPE(uint32, Buffer, emu->npc_tint_index); // NpcTintIndex
 			VARSTRUCT_ENCODE_TYPE(uint32, Buffer, 0); // PrimaryTintIndex
 			VARSTRUCT_ENCODE_TYPE(uint32, Buffer, 0); // SecondaryTintIndex
 			VARSTRUCT_ENCODE_TYPE(uint32, Buffer, 0xffffffff); // These do something with OP_WeaponEquip1

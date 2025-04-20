@@ -3664,7 +3664,7 @@ namespace RoF
 
 		OUT(spawn_id);
 		OUT(material);
-		OUT(unknown06);
+		OUT(npc_tint_index);
 		OUT(elite_material);
 		OUT(hero_forge_model);
 		OUT(unknown18);

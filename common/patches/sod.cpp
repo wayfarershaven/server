@@ -2352,7 +2352,7 @@ namespace SoD
 
 		OUT(spawn_id);
 		OUT(material);
-		OUT(unknown06);
+		OUT(npc_tint_index);
 		OUT(elite_material);
 		OUT(color.Color);
 		OUT(wear_slot_id);
@@ -3558,7 +3558,7 @@ namespace SoD
 
 		IN(spawn_id);
 		IN(material);
-		IN(unknown06);
+		IN(npc_tint_index);
 		IN(elite_material);
 		IN(color.Color);
 		IN(wear_slot_id);

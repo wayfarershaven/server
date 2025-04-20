@@ -387,6 +387,7 @@ void Mob::SendWearChange(uint8 material_slot, Client *one_client)
 
 	w->spawn_id         = GetID();
 	w->material         = static_cast<uint32>(GetEquipmentMaterial(material_slot));
+	w->npc_tint_index   = GetNPCTintIndex();
 	w->elite_material   = IsEliteMaterialItem(material_slot);
 	w->hero_forge_model = static_cast<uint32>(GetHerosForgeModel(material_slot));
 
@@ -413,7 +414,7 @@ void Mob::SendTextureWC(
 	uint32 texture,
 	uint32 hero_forge_model,
 	uint32 elite_material,
-	uint32 unknown06,
+	uint32 npc_tint_index,
 	uint32 unknown18
 )
 {
@@ -424,7 +425,7 @@ void Mob::SendTextureWC(
 	w->spawn_id         = GetID();
 	w->material         = texture;
 	w->wear_slot_id     = slot;
-	w->unknown06        = unknown06;
+	w->npc_tint_index   = npc_tint_index;
 	w->elite_material   = elite_material;
 	w->hero_forge_model = hero_forge_model;
 	w->unknown18        = unknown18;
