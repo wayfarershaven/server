@@ -325,6 +325,7 @@ union
 	bool trader;
 	bool buyer;
 	bool offline;
+	bool untargetable;
 };
 
 struct PlayerState_Struct {
