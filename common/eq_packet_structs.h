@@ -326,6 +326,7 @@ union
 	bool buyer;
 	bool offline;
 	bool untargetable;
+	uint32 npc_tint_id;
 };
 
 struct PlayerState_Struct {
