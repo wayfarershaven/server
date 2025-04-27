@@ -39,8 +39,8 @@
 #include "../common/skills.h"
 #include "../common/spdat.h"
 #include "../common/strings.h"
+#include "dynamic_zone.h"
 #include "event_codes.h"
-#include "expedition.h"
 #include "guild_mgr.h"
 #include "map.h"
 #include "petitions.h"
@@ -122,7 +122,7 @@ bool Client::Process() {
 
 		/* I haven't naturally updated my position in 10 seconds, updating manually */
 		if (!IsMoving() && m_position_update_timer.Check()) {
-			SentPositionPacket(0.0f, 0.0f, 0.0f, 0.0f, 0);
+			BroadcastPositionUpdate();
 		}
 
 		if (mana_timer.Check())
@@ -179,7 +179,7 @@ bool Client::Process() {
 			}
 			if (IsInAGuild()) {
 				guild_mgr.UpdateDbMemberOnline(CharacterID(), false);
-				guild_mgr.SendToWorldSendGuildMembersList(GuildID());
+				guild_mgr.SendGuildMemberUpdateToWorld(GetName(), GuildID(), 0, time(nullptr));
 			}
 
 			SetDynamicZoneMemberStatus(DynamicZoneMemberStatus::Offline);
@@ -193,6 +193,12 @@ bool Client::Process() {
 			return false; //delete client
 		}
 
+		if (RuleB(Bots, Enabled)) {
+			if (bot_camp_timer.Check()) {
+				CampAllBots();
+			}
+		}
+
 		if (camp_timer.Check()) {
 			Raid *myraid = entity_list.GetRaidByClient(this);
 			if (myraid) {
@@ -202,7 +208,7 @@ bool Client::Process() {
 			Save();
 			if (IsInAGuild()) {
 				guild_mgr.UpdateDbMemberOnline(CharacterID(), false);
-				guild_mgr.SendToWorldSendGuildMembersList(GuildID());
+				guild_mgr.SendGuildMemberUpdateToWorld(GetName(), GuildID(), 0, time(nullptr));
 			}
 
 			if (GetMerc())
@@ -211,6 +217,8 @@ bool Client::Process() {
 				GetMerc()->Depop();
 			}
 			instalog = true;
+
+			camp_timer.Disable();
 		}
 
 		if (IsStunned() && stunned_timer.Check())
@@ -294,24 +302,30 @@ bool Client::Process() {
 				}
 			}
 
-			if (m_lazy_load_bank && m_lazy_load_sent_bank_slots <= EQ::invslot::SHARED_BANK_END) {
-				const EQ::ItemInstance *inst = nullptr;
+			int lazy_load_bank_slots = 0;
+			for (int i = 0; i < 5000; i++) {
+				if (m_lazy_load_bank && m_lazy_load_sent_bank_slots <= EQ::invslot::SHARED_BANK_END) {
+					const EQ::ItemInstance *inst = nullptr;
 
-				// Jump the gaps
-				if (m_lazy_load_sent_bank_slots < EQ::invslot::BANK_BEGIN) {
-					m_lazy_load_sent_bank_slots = EQ::invslot::BANK_BEGIN;
-				}
-				else if (m_lazy_load_sent_bank_slots > EQ::invslot::BANK_END &&
-						 m_lazy_load_sent_bank_slots < EQ::invslot::SHARED_BANK_BEGIN) {
-					m_lazy_load_sent_bank_slots = EQ::invslot::SHARED_BANK_BEGIN;
-				}
-				else {
-					m_lazy_load_sent_bank_slots++;
-				}
+					// Jump the gaps
+					if (m_lazy_load_sent_bank_slots < EQ::invslot::BANK_BEGIN) {
+						m_lazy_load_sent_bank_slots = EQ::invslot::BANK_BEGIN;
+					}
+					else if (m_lazy_load_sent_bank_slots > EQ::invslot::BANK_END &&
+							 m_lazy_load_sent_bank_slots < EQ::invslot::SHARED_BANK_BEGIN) {
+						m_lazy_load_sent_bank_slots = EQ::invslot::SHARED_BANK_BEGIN;
+					}
+					else {
+						m_lazy_load_sent_bank_slots++;
+					}
 
-				inst = m_inv[m_lazy_load_sent_bank_slots];
-				if (inst) {
-					SendItemPacket(m_lazy_load_sent_bank_slots, inst, ItemPacketType::ItemPacketTrade);
+					inst = m_inv[m_lazy_load_sent_bank_slots];
+					if (inst) {
+						SendItemPacket(m_lazy_load_sent_bank_slots, inst, ItemPacketType::ItemPacketTrade);
+						lazy_load_bank_slots++;
+					}
+				} else {
+					break;
 				}
 			}
 		}
@@ -578,7 +592,7 @@ bool Client::Process() {
 			}
 			if (IsInAGuild()) {
 				guild_mgr.UpdateDbMemberOnline(CharacterID(), false);
-				guild_mgr.SendToWorldSendGuildMembersList(GuildID());
+				guild_mgr.SendGuildMemberUpdateToWorld(GetName(), GuildID(), 0, time(nullptr));
 			}
 
 			return false;
@@ -691,12 +705,6 @@ void Client::OnDisconnect(bool hard_disconnect) {
 		if (r) {
 			r->MemberZoned(this);
 		}
-
-		/* QS: PlayerLogConnectDisconnect */
-		if (RuleB(QueryServ, PlayerLogConnectDisconnect)) {
-			std::string event_desc = StringFormat("Disconnect :: in zoneid:%i instid:%i", GetZoneID(), GetInstanceID());
-			QServ->PlayerLogEvent(Player_Log_Connect_State, CharacterID(), event_desc);
-		}
 	}
 
 	if (!bZoning) {
@@ -764,7 +772,7 @@ void Client::BulkSendInventoryItems()
 		RemoveNoRent(false);
 	}
 
-	RemoveDuplicateLore(false);
+	RemoveDuplicateLore();
 	MoveSlotNotAllowed(false);
 
 	EQ::OutBuffer ob;
@@ -773,62 +781,64 @@ void Client::BulkSendInventoryItems()
 	// Possessions items
 	for (int16 slot_id = EQ::invslot::POSSESSIONS_BEGIN; slot_id <= EQ::invslot::POSSESSIONS_END; slot_id++) {
 		const EQ::ItemInstance* inst = m_inv[slot_id];
-		if (!inst)
+		if (!inst) {
 			continue;
+		}
 
 		inst->Serialize(ob, slot_id);
 
-		if (ob.tellp() == last_pos)
+		if (ob.tellp() == last_pos) {
 			LogInventory("Serialization failed on item slot [{}] during BulkSendInventoryItems. Item skipped", slot_id);
+		}
 
 		last_pos = ob.tellp();
 	}
 
-    if (!RuleB(Inventory, LazyLoadBank)) {
-        // Bank items
-        for (int16 slot_id = EQ::invslot::BANK_BEGIN; slot_id <= EQ::invslot::BANK_END; slot_id++) {
-            const EQ::ItemInstance* inst = m_inv[slot_id];
-            if (!inst)
-                continue;
+	if (!RuleB(Inventory, LazyLoadBank)) {
+		// Bank items
+		for (int16 slot_id = EQ::invslot::BANK_BEGIN; slot_id <= EQ::invslot::BANK_END; slot_id++) {
+			const EQ::ItemInstance* inst = m_inv[slot_id];
+			if (!inst) {
+				continue;
+			}
 
-            inst->Serialize(ob, slot_id);
+			inst->Serialize(ob, slot_id);
 
-            if (ob.tellp() == last_pos)
-                LogInventory("Serialization failed on item slot [{}] during BulkSendInventoryItems. Item skipped", slot_id);
+			if (ob.tellp() == last_pos) {
+				LogInventory("Serialization failed on item slot [{}] during BulkSendInventoryItems. Item skipped", slot_id);
+			}
 
-            last_pos = ob.tellp();
-        }
+			last_pos = ob.tellp();
+		}
 
-        // SharedBank items
-        for (int16 slot_id = EQ::invslot::SHARED_BANK_BEGIN; slot_id <= EQ::invslot::SHARED_BANK_END; slot_id++) {
-            const EQ::ItemInstance* inst = m_inv[slot_id];
-            if (!inst)
-                continue;
+		// SharedBank items
+		for (int16 slot_id = EQ::invslot::SHARED_BANK_BEGIN; slot_id <= EQ::invslot::SHARED_BANK_END; slot_id++) {
+			const EQ::ItemInstance* inst = m_inv[slot_id];
+			if (!inst) {
+				continue;
+			}
 
-            inst->Serialize(ob, slot_id);
+			inst->Serialize(ob, slot_id);
 
-            if (ob.tellp() == last_pos)
-                LogInventory("Serialization failed on item slot [{}] during BulkSendInventoryItems. Item skipped", slot_id);
+			if (ob.tellp() == last_pos) {
+				LogInventory("Serialization failed on item slot [{}] during BulkSendInventoryItems. Item skipped", slot_id);
+			}
 
-            last_pos = ob.tellp();
-        }
-    }
+			last_pos = ob.tellp();
+		}
+	}
 
-    auto outapp = new EQApplicationPacket(OP_CharInventory);
-    outapp->size = ob.size();
-    outapp->pBuffer = ob.detach();
-    QueuePacket(outapp);
-    safe_delete(outapp);
+	auto outapp = new EQApplicationPacket(OP_CharInventory);
+
+	outapp->size    = ob.size();
+	outapp->pBuffer = ob.detach();
+
+	QueuePacket(outapp);
+	safe_delete(outapp);
 }
 
 void Client::BulkSendMerchantInventory(int merchant_id, int npcid) {
 	const EQ::ItemData* handy_item = nullptr;
-
-	uint32 merchant_slots = 80; //The max number of items passed in the transaction.
-	if (m_ClientVersionBit & EQ::versions::maskRoFAndLater) { // RoF+ can send 200 items
-		merchant_slots = 200;
-	}
-
 	const EQ::ItemData *item = nullptr;
 	auto merchant_list = zone->merchanttable[merchant_id];
 	auto npc = entity_list.GetMobByNpcTypeID(npcid);
@@ -839,6 +849,8 @@ void Client::BulkSendMerchantInventory(int merchant_id, int npcid) {
 			return;
 		}
 	}
+
+	const int16 merchant_slots = (m_ClientVersionBit & EQ::versions::maskRoFAndLater) ? EQ::invtype::MERCHANT_SIZE : 80;
 
 	auto temporary_merchant_list = zone->tmpmerchanttable[npcid];
 	uint32 slot_id = 1;

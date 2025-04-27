@@ -286,6 +286,7 @@
 #define BEGINS_TO_SHINE				1238	//Your %1 begins to shine.
 #define CANT_FIND_PLAYER			1276 	//I can't find a player named %1!
 #define SURNAME_REJECTED			1374	//Your new surname was rejected. Please try a different name.
+#define ALREADY_SOLD				1376	//The item you were interested in has already been sold.
 #define GUILD_DISBANDED				1377    //Your guild has been disbanded!  You are no longer a member of any guild.
 #define DUEL_DECLINE				1383	//%1 has declined your challenge to duel to the death.
 #define DUEL_ACCEPTED				1384	//%1 has already accepted a duel with someone else.
@@ -308,6 +309,7 @@
 #define PLAYER_CHARMED				1461	//You lose control of yourself!
 #define TRADER_BUSY					1468	//That Trader is currently with a customer. Please wait until their transaction is finished.
 #define SENSE_CORPSE_DIRECTION		1563	//You sense a corpse in this direction.
+#define DUPE_LORE_MERCHANT			1573	//%1 tells you, 'You already have the lore item, %2, on your person, on your shroud, in the bank, in a real estate, or as an augment in another item.  You cannot have more than one of a particular lore item at a time.'
 #define QUEUED_TELL					2458	//[queued]
 #define QUEUE_TELL_FULL				2459	//[zoing and queue is full]
 #define TRADER_BUSY_TWO             3192    //Sorry, that action cannot be performed while trading.
@@ -326,42 +328,42 @@
 #define TRADESKILL_LEARN_RECIPE		3457	//You have learned the recipe %1!
 #define TASK_UPDATED                3471    //Your task '%1' has been updated.
 #define YOU_ASSIGNED_TASK           3472    //You have been assigned the task '%1'.
-#define EXPEDITION_YOU_BELONG       3500    //You cannot create this expedition since you already belong to another.
-#define EXPEDITION_YOU_PLAYED_HERE  3501    //You cannot create this expedition for another %1d:%2h:%3m since you have recently played here.
-#define REQUIRED_PLAYER_COUNT       3503    //You do not meet the player count requirement.  You have %1 players.  You must have at least %2 and no more than %3.
-#define EXPEDITION_REPLAY_TIMER     3504    //%1 cannot be added to this expedition for another %2D:%3H:%4M since they have recently played in this area.
-#define EXPEDITION_AVAILABLE        3507    //%1 is now available to you.
+#define DZ_YOU_BELONG               3500    //You cannot create this expedition since you already belong to another.
+#define DZ_REPLAY_YOU               3501    //You cannot create this expedition for another %1d:%2h:%3m since you have recently played here.
+#define DZ_PLAYER_COUNT             3503    //You do not meet the player count requirement.  You have %1 players.  You must have at least %2 and no more than %3.
+#define DZ_REPLAY_OTHER             3504    //%1 cannot be added to this expedition for another %2D:%3H:%4M since they have recently played in this area.
+#define DZ_AVAILABLE                3507    //%1 is now available to you.
 #define DZADD_INVITE                3508    //Sending an invitation to: %1.
 #define DZ_PREVENT_ENTERING         3510    //A strange magical presence prevents you from entering.  It's too dangerous to enter at the moment.
 #define DZADD_INVITE_FAIL           3511    //%1 could not be invited to join you.
-#define UNABLE_RETRIEVE_LEADER      3512    //Unable to retrieve information on the leader to check permissions.
-#define EXPEDITION_NOT_LEADER       3513    //You are not the expedition leader, only %1 can issue this command.
-#define EXPEDITION_NOT_MEMBER       3514    //%1 is not a member of this expedition.
-#define EXPEDITION_REMOVED          3516    //%1 has been removed from %2.
+#define DZ_NO_LEADER_INFO           3512    //Unable to retrieve information on the leader to check permissions.
+#define DZ_NOT_LEADER               3513    //You are not the expedition leader, only %1 can issue this command.
+#define DZ_NOT_MEMBER               3514    //%1 is not a member of this expedition.
+#define DZ_REMOVED                  3516    //%1 has been removed from %2.
 #define DZSWAP_INVITE               3517    //Sending an invitation to: %1.  They must accept in order to swap party members.
-#define DZMAKELEADER_NOT_ONLINE     3518    //%1 is not currently online.  You can only transfer leadership to an online member of the expedition you are in.
-#define DZLIST_REPLAY_TIMER         3519    //You have %1d:%2h:%3m remaining until you may enter %4.
-#define DZMAKELEADER_NAME           3520    //%1 has been made the leader for this expedition.
-#define DZMAKELEADER_YOU            3521    //You have been made the leader of this expedition.
-#define EXPEDITION_INVITE_ACCEPTED  3522    //%1 has accepted your offer to join your expedition.
-#define EXPEDITION_MEMBER_ADDED     3523    //%1 has been added to %2.
-#define EXPEDITION_INVITE_ERROR     3524    //%1 accepted your offer to join your expedition but could not due to error(s).
-#define EXPEDITION_INVITE_DECLINED  3525    //%1 has declined your offer to join your expedition.
-#define EXPEDITION_ASKED_TO_JOIN    3527    //%1 has asked you to join the expedition:  %2.        Would you like to join?
-#define DYNAMICZONE_WAY_IS_BLOCKED  3528    //The way is blocked to you.  Perhaps you would be able to enter if there was a reason to come here.
-#define EXPEDITION_NO_TIMERS        3529    //You have no outstanding timers.
-#define EXPEDITION_MIN_REMAIN       3551    //You only have %1 minutes remaining before this expedition comes to an end.
-#define EXPEDITION_LEADER           3552    //Expedition Leader: %1
-#define EXPEDITION_MEMBERS          3553    //Expedition Members: %1
-#define EXPEDITION_EVENT_TIMER      3561    //%1 cannot be added to this expedition since they have recently experienced %2.  They must wait another %3D:%4H:%5M until they can experience it again.  They may be added to the expedition later, once %2 has been completed.
+#define DZ_LEADER_OFFLINE           3518    //%1 is not currently online.  You can only transfer leadership to an online member of the expedition you are in.
+#define DZ_TIMER                    3519    //You have %1d:%2h:%3m remaining until you may enter %4.
+#define DZ_LEADER_NAME              3520    //%1 has been made the leader for this expedition.
+#define DZ_LEADER_YOU               3521    //You have been made the leader of this expedition.
+#define DZ_INVITE_ACCEPTED          3522    //%1 has accepted your offer to join your expedition.
+#define DZ_ADDED                    3523    //%1 has been added to %2.
+#define DZ_INVITE_ERROR             3524    //%1 accepted your offer to join your expedition but could not due to error(s).
+#define DZ_INVITE_DECLINED          3525    //%1 has declined your offer to join your expedition.
+#define DZ_INVITED                  3527    //%1 has asked you to join the expedition:  %2.        Would you like to join?
+#define DZ_WAY_IS_BLOCKED           3528    //The way is blocked to you.  Perhaps you would be able to enter if there was a reason to come here.
+#define DZ_NO_TIMERS                3529    //You have no outstanding timers.
+#define DZ_MINUTES_REMAIN           3551    //You only have %1 minutes remaining before this expedition comes to an end.
+#define DZ_LEADER                   3552    //Expedition Leader: %1
+#define DZ_MEMBERS                  3553    //Expedition Members: %1
+#define DZ_EVENT_TIMER              3561    //%1 cannot be added to this expedition since they have recently experienced %2.  They must wait another %3D:%4H:%5M until they can experience it again.  They may be added to the expedition later, once %2 has been completed.
 #define LOOT_NOT_ALLOWED			3562	//You are not allowed to loot the item: %1.
 #define DZ_UNABLE_RETRIEVE_LEADER   3583    //Unable to retrieve dynamic zone leader to check permissions.
 #define DZADD_NOT_ALLOWING          3585    //The expedition is not allowing players to be added.
 #define DZADD_NOT_ONLINE            3586    //%1 is not currently online.  A player needs to be online to be added to a Dynamic Zone
 #define DZADD_EXCEED_MAX            3587    //You can not add another player since you currently have the maximum number of players allowed (%1) in this zone.
 #define DZADD_ALREADY_PART          3588    //You can not add %1 since they are already part of this zone.
-#define DZADD_LEAVE_ZONE_FIRST      3589    //You can not add %1 since they first need to leave the zone before being allowed back in.
-#define DZADD_ALREADY_ASSIGNED      3590    //%1 can not be added to this dynamic zone since they are already assigned to another dynamic zone.
+#define DZADD_LEAVE_ZONE            3589    //You can not add %1 since they first need to leave the zone before being allowed back in.
+#define DZADD_ALREADY_OTHER         3590    //%1 can not be added to this dynamic zone since they are already assigned to another dynamic zone.
 #define DZADD_REPLAY_TIMER          3591    //%1 can not be added to this dynamic zone for another %2D:%3H:%4M since they have recently played this zone.
 #define DZADD_EVENT_TIMER           3592    //%1 can not be added to this dynamic zone since they have recently experienced %2.  They must wait for another %3D:%4H:%5M, or until event %2 has occurred.
 #define DZADD_PENDING               3593    //%1 currently has an outstanding invitation to join this Dynamic Zone.
@@ -419,6 +421,11 @@
 #define GUILD_BANK_FULL				6098	// There is no more room in the Guild Bank.
 #define GUILD_BANK_TRANSFERRED  	6100	// '%1' transferred to Guild Bank from Deposits.
 #define GUILD_BANK_EMPTY_HANDS  	6108	// You must empty your hands to withdraw from the Guild Bank.
+#define EVOLVE_ITEM_EVOLVED         6145    //Your %1 has evolved!
+#define EVOLVE_DETAILS              6146    //Evolving: Level %1/%2 %3%% %4
+#define EVOLVE_LEVEL_LIMIT          6147    //Your %1 can not evolve until you reach level %2.
+#define EVOLVE_XP_TXFR_CONFIRM      6148    //Are you sure you want to transfer experience between these two items?
+#define EVOLVE_XP_TXFRD             6149    //Your item's experience has been transferred!
 #define TRADESKILL_COMBINE_LORE 	6199	// Combine would result in a LORE item (%1) you already possess.
 #define TRANSFORM_FAILED			6326	//This mold cannot be applied to your %1.
 #define TRANSFORM_COMPLETE			6327	//You have successfully transformed your %1.

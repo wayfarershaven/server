@@ -953,9 +953,9 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 						auto action_packet =
 						    new EQApplicationPacket(OP_Action, sizeof(Action_Struct));
 						Action_Struct* action = (Action_Struct*) action_packet->pBuffer;
-						auto message_packet =
-						    new EQApplicationPacket(OP_Damage, sizeof(CombatDamage_Struct));
-						CombatDamage_Struct *cd = (CombatDamage_Struct *)message_packet->pBuffer;
+
+						static EQApplicationPacket p(OP_Damage, sizeof(CombatDamage_Struct));
+						auto                       cd = (CombatDamage_Struct *) p.pBuffer;
 
 						action->target = GetID();
 						action->source = caster ? caster->GetID() : GetID();
@@ -978,16 +978,15 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 							caster->CastToClient()->QueuePacket(action_packet);
 						}
 
-						CastToClient()->QueuePacket(message_packet);
+						CastToClient()->QueuePacket(&p);
 
 						if (caster && caster->IsClient() && caster != this) {
-							caster->CastToClient()->QueuePacket(message_packet);
+							caster->CastToClient()->QueuePacket(&p);
 						}
 
 						CastToClient()->SetBindPoint(spells[spell_id].base_value[i] - 1);
 						Save();
 						safe_delete(action_packet);
-						safe_delete(message_packet);
 					} else {
 						if (!zone->CanBind()) {
 							MessageString(Chat::SpellFailure, CANNOT_BIND);
@@ -1002,9 +1001,9 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 								auto action_packet = new EQApplicationPacket(
 								    OP_Action, sizeof(Action_Struct));
 								Action_Struct* action = (Action_Struct*) action_packet->pBuffer;
-								auto message_packet = new EQApplicationPacket(
-								    OP_Damage, sizeof(CombatDamage_Struct));
-								CombatDamage_Struct *cd = (CombatDamage_Struct *)message_packet->pBuffer;
+
+								static EQApplicationPacket p(OP_Damage, sizeof(CombatDamage_Struct));
+								auto                       cd = (CombatDamage_Struct *) p.pBuffer;
 
 								action->target = GetID();
 								action->source = caster ? caster->GetID() : GetID();
@@ -1027,24 +1026,23 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 									caster->CastToClient()->QueuePacket(action_packet);
 								}
 
-								CastToClient()->QueuePacket(message_packet);
+								CastToClient()->QueuePacket(&p);
 
 								if (caster->IsClient() && caster != this) {
-									caster->CastToClient()->QueuePacket(message_packet);
+									caster->CastToClient()->QueuePacket(&p);
 								}
 
 								CastToClient()->SetBindPoint(spells[spell_id].base_value[i] - 1);
 								Save();
 								safe_delete(action_packet);
-								safe_delete(message_packet);
 							}
 						} else {
 							auto action_packet =
 							    new EQApplicationPacket(OP_Action, sizeof(Action_Struct));
 							Action_Struct* action = (Action_Struct*) action_packet->pBuffer;
-							auto message_packet = new EQApplicationPacket(
-							    OP_Damage, sizeof(CombatDamage_Struct));
-							CombatDamage_Struct *cd = (CombatDamage_Struct *)message_packet->pBuffer;
+
+							static EQApplicationPacket p(OP_Damage, sizeof(CombatDamage_Struct));
+							auto                       cd = (CombatDamage_Struct *) p.pBuffer;
 
 							action->target = GetID();
 							action->source = caster ? caster->GetID() : GetID();
@@ -1067,16 +1065,15 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 								caster->CastToClient()->QueuePacket(action_packet);
 							}
 
-							CastToClient()->QueuePacket(message_packet);
+							CastToClient()->QueuePacket(&p);
 
 							if (caster->IsClient() && caster != this) {
-								caster->CastToClient()->QueuePacket(message_packet);
+								caster->CastToClient()->QueuePacket(&p);
 							}
 
 							CastToClient()->SetBindPoint(spells[spell_id].base_value[i] - 1);
 							Save();
 							safe_delete(action_packet);
-							safe_delete(message_packet);
 						}
 					}
 				}
@@ -1246,6 +1243,11 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 			case SE_SummonItemIntoBag:
 			{
 				const EQ::ItemData *item = database.GetItem(spell.base_value[i]);
+				if (!item) {
+					Message(Chat::Red, "Unable to summon item %d. Item not found.", spell.base_value[i]);
+					break;
+				}
+
 #ifdef SPELL_EFFECT_SPAM
 				const char *itemname = item ? item->Name : "*Unknown Item*";
 				snprintf(effect_desc, _EDLEN, "Summon Item In Bag: %s (id %d)", itemname, spell.base_value[i]);
@@ -1483,6 +1485,14 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 #ifdef SPELL_EFFECT_SPAM
 				snprintf(effect_desc, _EDLEN, "Illusion: race %d", effect_value);
 #endif
+				if (caster && caster->IsOfClientBot()) {
+					Mob* target = IsClient() ? static_cast<Mob*>(CastToClient()) : static_cast<Mob*>(CastToBot());
+
+					if (target && target->GetIllusionBlock()) {
+						break;
+					}
+				}
+
 				ApplySpellEffectIllusion(spell_id, caster, buffslot, spells[spell_id].base_value[i], spells[spell_id].limit_value[i], spells[spell_id].max_value[i]);
 				break;
 			}
@@ -1492,6 +1502,14 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 #ifdef SPELL_EFFECT_SPAM
 				snprintf(effect_desc, _EDLEN, "Illusion Copy");
 #endif
+				if (caster && caster->IsOfClientBot()) {
+					Mob* target = IsClient() ? static_cast<Mob*>(CastToClient()) : static_cast<Mob*>(CastToBot());
+
+					if (target && target->GetIllusionBlock()) {
+						break;
+					}
+				}
+
 				if(caster && caster->GetTarget()){
 						SendIllusionPacket
 						(
@@ -4327,9 +4345,14 @@ void Mob::BuffFadeBySlot(int slot, bool iRecalcBonuses)
 			case SE_IllusionCopy:
 			case SE_Illusion:
 			{
-				SendIllusionPacket(AppearanceStruct{});
-				// The GetSize below works because the above setting race to zero sets size back.
-				SendAppearancePacket(AppearanceType::Size, GetSize());
+				SendIllusionPacket(
+					AppearanceStruct{
+						.gender_id = GetBaseGender(),
+						.race_id = GetBaseRace(),
+						.size = GetDefaultRaceSize(GetBaseRace(), GetBaseGender()),
+						.texture = 0
+					}
+				);
 
 				for (int x = EQ::textures::textureBegin; x <= EQ::textures::LastTintableTexture; x++) {
 					SendWearChange(x);
@@ -7442,44 +7465,57 @@ void Mob::DispelMagic(Mob* caster, uint16 spell_id, int effect_value)
 	}
 }
 
-uint16 Mob::GetSpellEffectResistChance(uint16 spell_id)
+bool Mob::TrySpellEffectResist(uint16 spell_id)
 {
+	/*
+		SEResist variable
+		0 = spell effect id to be check if can resist
+		1 = percent chance of resistance
+	*/
 
-	if(!IsValidSpell(spell_id))
-		return 0;
 
-	if (!aabonuses.SEResist[1] && !spellbonuses.SEResist[1] && !itembonuses.SEResist[1])
-		return 0;
+	if (!IsValidSpell(spell_id)) {
+		return false;
+	}
 
-	uint16 resist_chance = 0;
+	if (!aabonuses.SEResist[1] && !spellbonuses.SEResist[1] && !itembonuses.SEResist[1]) {
+		return false;
+	}
+
+	int resist_chance = 0;
 
 	for(int i = 0; i < EFFECT_COUNT; ++i)
 	{
-		bool found = false;
+		if (spells[spell_id].effect_id[i] == SE_Blank) {
+			continue;
+		}
 
 		for(int d = 0; d < MAX_RESISTABLE_EFFECTS*2; d+=2)
 		{
+			resist_chance = 0;
 			if (spells[spell_id].effect_id[i] == aabonuses.SEResist[d]){
 				resist_chance += aabonuses.SEResist[d+1];
-				found = true;
 			}
 
 			if (spells[spell_id].effect_id[i] == itembonuses.SEResist[d]){
 				resist_chance += itembonuses.SEResist[d+1];
-				found = true;
 			}
-
 
 			if (spells[spell_id].effect_id[i] == spellbonuses.SEResist[d]){
 				resist_chance += spellbonuses.SEResist[d+1];
-				found = true;
 			}
 
-			if (found)
-				continue;
+			if (resist_chance) {
+				if (zone->random.Roll(resist_chance)) {
+					LogSpells("Resisted spell from Spell Effect Resistance, had [{}] chance to resist spell effect id [{}]", resist_chance, spells[spell_id].effect_id[i]);
+					return true;
+				}
+
+				break;
+			}
 		}
 	}
-	return resist_chance;
+	return false;
 }
 
 bool Mob::TryDispel(uint8 caster_level, uint8 buff_level, int level_modifier){
@@ -10660,7 +10696,7 @@ int Mob::GetBuffStatValueBySlot(uint8 slot, const char* stat_identifier)
 
 	if (id == "caster_level") { return buffs[slot].casterlevel; }
 	else if (id == "spell_id") { return buffs[slot].spellid; }
-	else if (id == "caster_id") { return buffs[slot].spellid;; }
+	else if (id == "caster_id") { return buffs[slot].spellid; }
 	else if (id == "ticsremaining") { return buffs[slot].ticsremaining; }
 	else if (id == "counters") { return buffs[slot].counters; }
 	else if (id == "hit_number") { return  buffs[slot].hit_number; }

@@ -45,6 +45,7 @@
 #include <type_traits>
 
 #include <fmt/format.h>
+#include <cereal/external/rapidjson/document.h>
 
 #ifndef _WIN32
 // this doesn't appear to affect linux-based systems..need feedback for _WIN64
@@ -186,6 +187,9 @@ public:
 		value = strtod(tmp_str.data(), nullptr);
 		return res;
 	}
+
+	static std::string Slugify(const std::string &input, const std::string &separator = "-");
+	static bool IsValidJson(const std::string& json);
 };
 
 const std::string StringFormat(const char *format, ...);

@@ -4,6 +4,7 @@
 #include <string>
 #include <cereal/cereal.hpp>
 #include "../types.h"
+#include "../rulesys.h"
 #include "../repositories/player_event_logs_repository.h"
 
 namespace PlayerEvent {
@@ -62,6 +63,11 @@ namespace PlayerEvent {
 		PARCEL_RETRIEVE,
 		PARCEL_DELETE,
 		BARTER_TRANSACTION,
+		SPEECH,
+		EVOLVE_ITEM,
+		GUILD_BANK_DEPOSIT,
+		GUILD_BANK_WITHDRAWAL,
+		GUILD_BANK_MOVE_TO_BANK_AREA,
 		MAX // dont remove
 	};
 
@@ -124,7 +130,12 @@ namespace PlayerEvent {
 		"Parcel Item Sent",
 		"Parcel Item Retrieved",
 		"Parcel Prune Routine",
-		"Barter Transaction"
+		"Barter Transaction",
+		"Player Speech",
+		"Evolve Item Update",
+		"Guild Bank Item Deposit",
+		"Guild Bank Item Withdrawal",
+		"Guild Bank Move From Deposit Area to Bank Area"
 	};
 
 	// Generic struct used by all events
@@ -204,12 +215,12 @@ namespace PlayerEvent {
 		std::string item_name;
 		uint16      to_slot;
 		int16       charges;
-		uint32      aug1;
-		uint32      aug2;
-		uint32      aug3;
-		uint32      aug4;
-		uint32      aug5;
-		uint32      aug6;
+		uint32      augment_1_id;
+		uint32      augment_2_id;
+		uint32      augment_3_id;
+		uint32      augment_4_id;
+		uint32      augment_5_id;
+		uint32      augment_6_id;
 		bool        attuned;
 
 		// cereal
@@ -221,55 +232,56 @@ namespace PlayerEvent {
 				CEREAL_NVP(item_name),
 				CEREAL_NVP(to_slot),
 				CEREAL_NVP(charges),
-				CEREAL_NVP(aug1),
-				CEREAL_NVP(aug2),
-				CEREAL_NVP(aug3),
-				CEREAL_NVP(aug4),
-				CEREAL_NVP(aug5),
-				CEREAL_NVP(aug6),
+				CEREAL_NVP(augment_1_id),
+				CEREAL_NVP(augment_2_id),
+				CEREAL_NVP(augment_3_id),
+				CEREAL_NVP(augment_4_id),
+				CEREAL_NVP(augment_5_id),
+				CEREAL_NVP(augment_6_id),
 				CEREAL_NVP(attuned)
 			);
 		}
 	};
 
 	// used in Trade event
-	struct TradeItem {
-		int64       item_id;
-		std::string item_name;
-		int32       slot;
-
-		// cereal
-		template<class Archive>
-		void serialize(Archive &ar)
-		{
-			ar(
-				CEREAL_NVP(item_id),
-				CEREAL_NVP(item_name),
-				CEREAL_NVP(slot)
-			);
-		}
-	};
+	// struct TradeItem {
+	// 	int64       item_id;
+	// 	std::string item_name;
+	// 	int32       slot;
+	//
+	// 	// cereal
+	// 	template<class Archive>
+	// 	void serialize(Archive &ar)
+	// 	{
+	// 		ar(
+	// 			CEREAL_NVP(item_id),
+	// 			CEREAL_NVP(item_name),
+	// 			CEREAL_NVP(slot)
+	// 		);
+	// 	}
+	// };
 
 	// used in Trade event
 	class TradeItemEntry {
 	public:
 		uint16      slot;
 		uint32      item_id;
+		uint32      augment_1_id;
+		std::string augment_1_name;
+		uint32      augment_2_id;
+		std::string augment_2_name;
+		uint32      augment_3_id;
+		std::string augment_3_name;
+		uint32      augment_4_id;
+		std::string augment_4_name;
+		uint32      augment_5_id;
+		std::string augment_5_name;
+		uint32      augment_6_id;
+		std::string augment_6_name;
 		std::string item_name;
 		uint16      charges;
-		uint32      aug_1_item_id;
-		std::string aug_1_item_name;
-		uint32      aug_2_item_id;
-		std::string aug_2_item_name;
-		uint32      aug_3_item_id;
-		std::string aug_3_item_name;
-		uint32      aug_4_item_id;
-		std::string aug_4_item_name;
-		uint32      aug_5_item_id;
-		std::string aug_5_item_name;
-		uint32      aug_6_item_id;
-		std::string aug_6_item_name;
 		bool        in_bag;
+
 
 		// cereal
 		template<class Archive>
@@ -278,12 +290,20 @@ namespace PlayerEvent {
 			ar(
 				CEREAL_NVP(slot),
 				CEREAL_NVP(item_id),
+				CEREAL_NVP(augment_1_id),
+				CEREAL_NVP(augment_1_name),
+				CEREAL_NVP(augment_2_id),
+				CEREAL_NVP(augment_2_name),
+				CEREAL_NVP(augment_3_id),
+				CEREAL_NVP(augment_1_name),
+				CEREAL_NVP(augment_4_id),
+				CEREAL_NVP(augment_4_name),
+				CEREAL_NVP(augment_5_id),
+				CEREAL_NVP(augment_5_name),
+				CEREAL_NVP(augment_6_id),
+				CEREAL_NVP(augment_6_name),
+				CEREAL_NVP(item_name),
 				CEREAL_NVP(charges),
-				CEREAL_NVP(aug_1_item_id),
-				CEREAL_NVP(aug_2_item_id),
-				CEREAL_NVP(aug_3_item_id),
-				CEREAL_NVP(aug_4_item_id),
-				CEREAL_NVP(aug_5_item_id),
 				CEREAL_NVP(in_bag)
 			);
 		}
@@ -397,9 +417,9 @@ namespace PlayerEvent {
 
 	struct AAPurchasedEvent {
 		uint32 aa_id;
-		int32 aa_cost;
-		int32 aa_previous_id;
-		int32 aa_next_id;
+		int32  aa_cost;
+		int32  aa_previous_id;
+		int32  aa_next_id;
 
 		// cereal
 		template<class Archive>
@@ -416,6 +436,12 @@ namespace PlayerEvent {
 
 	struct ForageSuccessEvent {
 		uint32      item_id;
+		uint32      augment_1_id;
+		uint32      augment_2_id;
+		uint32      augment_3_id;
+		uint32      augment_4_id;
+		uint32      augment_5_id;
+		uint32      augment_6_id;
 		std::string item_name;
 
 		// cereal
@@ -424,6 +450,12 @@ namespace PlayerEvent {
 		{
 			ar(
 				CEREAL_NVP(item_id),
+				CEREAL_NVP(augment_1_id),
+				CEREAL_NVP(augment_2_id),
+				CEREAL_NVP(augment_3_id),
+				CEREAL_NVP(augment_4_id),
+				CEREAL_NVP(augment_5_id),
+				CEREAL_NVP(augment_6_id),
 				CEREAL_NVP(item_name)
 			);
 		}
@@ -431,6 +463,12 @@ namespace PlayerEvent {
 
 	struct FishSuccessEvent {
 		uint32      item_id;
+		uint32      augment_1_id;
+		uint32      augment_2_id;
+		uint32      augment_3_id;
+		uint32      augment_4_id;
+		uint32      augment_5_id;
+		uint32      augment_6_id;
 		std::string item_name;
 
 		// cereal
@@ -439,6 +477,12 @@ namespace PlayerEvent {
 		{
 			ar(
 				CEREAL_NVP(item_id),
+				CEREAL_NVP(augment_1_id),
+				CEREAL_NVP(augment_2_id),
+				CEREAL_NVP(augment_3_id),
+				CEREAL_NVP(augment_4_id),
+				CEREAL_NVP(augment_5_id),
+				CEREAL_NVP(augment_6_id),
 				CEREAL_NVP(item_name)
 			);
 		}
@@ -448,6 +492,13 @@ namespace PlayerEvent {
 		uint32      item_id;
 		std::string item_name;
 		int16       charges;
+		uint32      augment_1_id;
+		uint32      augment_2_id;
+		uint32      augment_3_id;
+		uint32      augment_4_id;
+		uint32      augment_5_id;
+		uint32      augment_6_id;
+		bool        attuned;
 		std::string reason;
 
 		// cereal
@@ -457,8 +508,15 @@ namespace PlayerEvent {
 			ar(
 				CEREAL_NVP(item_id),
 				CEREAL_NVP(item_name),
-				CEREAL_NVP(reason),
-				CEREAL_NVP(charges)
+				CEREAL_NVP(charges),
+				CEREAL_NVP(augment_1_id),
+				CEREAL_NVP(augment_2_id),
+				CEREAL_NVP(augment_3_id),
+				CEREAL_NVP(augment_4_id),
+				CEREAL_NVP(augment_5_id),
+				CEREAL_NVP(augment_6_id),
+				CEREAL_NVP(attuned),
+				CEREAL_NVP(reason)
 			);
 		}
 	};
@@ -501,6 +559,12 @@ namespace PlayerEvent {
 		uint32      item_id;
 		std::string item_name;
 		int16       charges;
+		uint32      augment_1_id;
+		uint32      augment_2_id;
+		uint32      augment_3_id;
+		uint32      augment_4_id;
+		uint32      augment_5_id;
+		uint32      augment_6_id;
 		uint32      npc_id;
 		std::string corpse_name;
 
@@ -512,6 +576,12 @@ namespace PlayerEvent {
 				CEREAL_NVP(item_id),
 				CEREAL_NVP(item_name),
 				CEREAL_NVP(charges),
+				CEREAL_NVP(augment_1_id),
+				CEREAL_NVP(augment_2_id),
+				CEREAL_NVP(augment_3_id),
+				CEREAL_NVP(augment_4_id),
+				CEREAL_NVP(augment_5_id),
+				CEREAL_NVP(augment_6_id),
 				CEREAL_NVP(npc_id),
 				CEREAL_NVP(corpse_name)
 			);
@@ -724,6 +794,12 @@ namespace PlayerEvent {
 
 	struct DroppedItemEvent {
 		uint32      item_id;
+		uint32      augment_1_id;
+		uint32      augment_2_id;
+		uint32      augment_3_id;
+		uint32      augment_4_id;
+		uint32      augment_5_id;
+		uint32      augment_6_id;
 		std::string item_name;
 		int16       slot_id;
 		uint32      charges;
@@ -734,6 +810,12 @@ namespace PlayerEvent {
 		{
 			ar(
 				CEREAL_NVP(item_id),
+				CEREAL_NVP(augment_1_id),
+				CEREAL_NVP(augment_2_id),
+				CEREAL_NVP(augment_3_id),
+				CEREAL_NVP(augment_4_id),
+				CEREAL_NVP(augment_5_id),
+				CEREAL_NVP(augment_6_id),
 				CEREAL_NVP(item_name),
 				CEREAL_NVP(slot_id),
 				CEREAL_NVP(charges)
@@ -789,12 +871,19 @@ namespace PlayerEvent {
 
 	struct TraderPurchaseEvent {
 		uint32      item_id;
+		uint32      augment_1_id;
+		uint32      augment_2_id;
+		uint32      augment_3_id;
+		uint32      augment_4_id;
+		uint32      augment_5_id;
+		uint32      augment_6_id;
 		std::string item_name;
 		uint32      trader_id;
 		std::string trader_name;
 		uint32      price;
-		uint32      charges;
-		uint32      total_cost;
+		uint32      quantity;
+		int32       charges;
+		uint64      total_cost;
 		uint64      player_money_balance;
 
 
@@ -804,10 +893,17 @@ namespace PlayerEvent {
 		{
 			ar(
 				CEREAL_NVP(item_id),
+				CEREAL_NVP(augment_1_id),
+				CEREAL_NVP(augment_2_id),
+				CEREAL_NVP(augment_3_id),
+				CEREAL_NVP(augment_4_id),
+				CEREAL_NVP(augment_5_id),
+				CEREAL_NVP(augment_6_id),
 				CEREAL_NVP(item_name),
 				CEREAL_NVP(trader_id),
 				CEREAL_NVP(trader_name),
 				CEREAL_NVP(price),
+				CEREAL_NVP(quantity),
 				CEREAL_NVP(charges),
 				CEREAL_NVP(total_cost),
 				CEREAL_NVP(player_money_balance)
@@ -817,12 +913,19 @@ namespace PlayerEvent {
 
 	struct TraderSellEvent {
 		uint32      item_id;
+		uint32      augment_1_id;
+		uint32      augment_2_id;
+		uint32      augment_3_id;
+		uint32      augment_4_id;
+		uint32      augment_5_id;
+		uint32      augment_6_id;
 		std::string item_name;
 		uint32      buyer_id;
 		std::string buyer_name;
 		uint32      price;
-		uint32      charges;
-		uint32      total_cost;
+		uint32      quantity;
+		int32       charges;
+		uint64      total_cost;
 		uint64      player_money_balance;
 
 
@@ -832,10 +935,17 @@ namespace PlayerEvent {
 		{
 			ar(
 				CEREAL_NVP(item_id),
+				CEREAL_NVP(augment_1_id),
+				CEREAL_NVP(augment_2_id),
+				CEREAL_NVP(augment_3_id),
+				CEREAL_NVP(augment_4_id),
+				CEREAL_NVP(augment_5_id),
+				CEREAL_NVP(augment_6_id),
 				CEREAL_NVP(item_name),
 				CEREAL_NVP(buyer_id),
 				CEREAL_NVP(buyer_name),
 				CEREAL_NVP(price),
+				CEREAL_NVP(quantity),
 				CEREAL_NVP(charges),
 				CEREAL_NVP(total_cost),
 				CEREAL_NVP(player_money_balance)
@@ -962,8 +1072,16 @@ namespace PlayerEvent {
 	};
 
 	struct GuildTributeDonateItem {
-		uint32      item_id;
-		uint32 		guild_favor;
+		uint32 item_id;
+		uint32 augment_1_id;
+		uint32 augment_2_id;
+		uint32 augment_3_id;
+		uint32 augment_4_id;
+		uint32 augment_5_id;
+		uint32 augment_6_id;
+		int16  charges;
+		bool   attuned;
+		uint32 guild_favor;
 
 		// cereal
 		template<class Archive>
@@ -971,14 +1089,20 @@ namespace PlayerEvent {
 		{
 			ar(
 				CEREAL_NVP(item_id),
+				CEREAL_NVP(augment_1_id),
+				CEREAL_NVP(augment_2_id),
+				CEREAL_NVP(augment_3_id),
+				CEREAL_NVP(augment_4_id),
+				CEREAL_NVP(augment_5_id),
+				CEREAL_NVP(augment_6_id),
 				CEREAL_NVP(guild_favor)
 			);
 		}
 	};
 
 	struct GuildTributeDonatePlat {
-		uint32      plat;
-		uint32 		guild_favor;
+		uint32 plat;
+		uint32 guild_favor;
 
 		// cereal
 		template<class Archive>
@@ -993,15 +1117,15 @@ namespace PlayerEvent {
 
 	struct ParcelRetrieve {
 		uint32      item_id;
+		uint32      augment_1_id;
+		uint32      augment_2_id;
+		uint32      augment_3_id;
+		uint32      augment_4_id;
+		uint32      augment_5_id;
+		uint32      augment_6_id;
 		uint32      quantity;
 		std::string from_player_name;
 		uint32      sent_date;
-		uint32      aug_slot_1;
-		uint32      aug_slot_2;
-		uint32      aug_slot_3;
-		uint32      aug_slot_4;
-		uint32      aug_slot_5;
-		uint32      aug_slot_6;
 
 		// cereal
 		template<class Archive>
@@ -1009,31 +1133,32 @@ namespace PlayerEvent {
 		{
 			ar(
 				CEREAL_NVP(item_id),
+				CEREAL_NVP(augment_1_id),
+				CEREAL_NVP(augment_2_id),
+				CEREAL_NVP(augment_3_id),
+				CEREAL_NVP(augment_4_id),
+				CEREAL_NVP(augment_5_id),
+				CEREAL_NVP(augment_6_id),
 				CEREAL_NVP(quantity),
 				CEREAL_NVP(from_player_name),
-				CEREAL_NVP(sent_date),
-				CEREAL_NVP(aug_slot_1),
-				CEREAL_NVP(aug_slot_2),
-				CEREAL_NVP(aug_slot_3),
-				CEREAL_NVP(aug_slot_4),
-				CEREAL_NVP(aug_slot_5),
-				CEREAL_NVP(aug_slot_6)
+				CEREAL_NVP(sent_date)
 			);
 		}
 	};
 
 	struct ParcelSend {
 		uint32      item_id;
+		uint32      augment_1_id;
+		uint32      augment_2_id;
+		uint32      augment_3_id;
+		uint32      augment_4_id;
+		uint32      augment_5_id;
+		uint32      augment_6_id;
 		uint32      quantity;
+		int32       charges;
 		std::string from_player_name;
 		std::string to_player_name;
 		uint32      sent_date;
-		uint32      aug_slot_1;
-		uint32      aug_slot_2;
-		uint32      aug_slot_3;
-		uint32      aug_slot_4;
-		uint32      aug_slot_5;
-		uint32      aug_slot_6;
 
 		// cereal
 		template<class Archive>
@@ -1041,33 +1166,34 @@ namespace PlayerEvent {
 		{
 			ar(
 				CEREAL_NVP(item_id),
+				CEREAL_NVP(augment_1_id),
+				CEREAL_NVP(augment_2_id),
+				CEREAL_NVP(augment_3_id),
+				CEREAL_NVP(augment_4_id),
+				CEREAL_NVP(augment_5_id),
+				CEREAL_NVP(augment_6_id),
 				CEREAL_NVP(quantity),
+				CEREAL_NVP(charges),
 				CEREAL_NVP(from_player_name),
 				CEREAL_NVP(to_player_name),
-				CEREAL_NVP(sent_date),
-				CEREAL_NVP(aug_slot_1),
-				CEREAL_NVP(aug_slot_2),
-				CEREAL_NVP(aug_slot_3),
-				CEREAL_NVP(aug_slot_4),
-				CEREAL_NVP(aug_slot_5),
-				CEREAL_NVP(aug_slot_6)
+				CEREAL_NVP(sent_date)
 			);
 		}
 	};
 
 	struct ParcelDelete {
-		uint32      item_id;
-		uint32      quantity;
 		uint32      char_id;
+		uint32      item_id;
+		uint32      augment_1_id;
+		uint32      augment_2_id;
+		uint32      augment_3_id;
+		uint32      augment_4_id;
+		uint32      augment_5_id;
+		uint32      augment_6_id;
+		uint32      quantity;
+		uint32      sent_date;
 		std::string from_name;
 		std::string note;
-		uint32      sent_date;
-		uint32      aug_slot_1;
-		uint32      aug_slot_2;
-		uint32      aug_slot_3;
-		uint32      aug_slot_4;
-		uint32      aug_slot_5;
-		uint32      aug_slot_6;
 
 		// cereal
 		template<class Archive>
@@ -1075,18 +1201,18 @@ namespace PlayerEvent {
 		{
 			ar(
 				CEREAL_NVP(item_id),
+				CEREAL_NVP(augment_1_id),
+				CEREAL_NVP(augment_2_id),
+				CEREAL_NVP(augment_3_id),
+				CEREAL_NVP(augment_4_id),
+				CEREAL_NVP(augment_5_id),
+				CEREAL_NVP(augment_6_id),
 				CEREAL_NVP(quantity),
 				CEREAL_NVP(char_id),
 				CEREAL_NVP(from_name),
 				CEREAL_NVP(note),
-				CEREAL_NVP(sent_date),
-				CEREAL_NVP(aug_slot_1),
-				CEREAL_NVP(aug_slot_2),
-				CEREAL_NVP(aug_slot_3),
-				CEREAL_NVP(aug_slot_4),
-				CEREAL_NVP(aug_slot_5),
-				CEREAL_NVP(aug_slot_6)
-				);
+				CEREAL_NVP(sent_date)
+			);
 		}
 	};
 
@@ -1115,30 +1241,129 @@ namespace PlayerEvent {
 			);
 		}
 	};
+
+	struct EvolveItem {
+		std::string status;
+		uint32      item_id;
+		uint64      unique_id;
+		std::string item_name;
+		uint32      level;
+		double      progression;
+
+		// cereal
+		template<class Archive>
+		void serialize(Archive &ar)
+		{
+			ar(
+				CEREAL_NVP(status),
+				CEREAL_NVP(item_id),
+				CEREAL_NVP(unique_id),
+				CEREAL_NVP(item_name),
+				CEREAL_NVP(level),
+				CEREAL_NVP(progression)
+			);
+		}
+	};
+
+	struct PlayerSpeech {
+		std::string to;
+		std::string from;
+		uint32      guild_id;
+		int16       min_status;
+		uint32      type;
+		std::string message;
+
+		template<class Archive>
+		void serialize(Archive &ar)
+		{
+			ar(
+				CEREAL_NVP(to),
+				CEREAL_NVP(from),
+				CEREAL_NVP(guild_id),
+				CEREAL_NVP(min_status),
+				CEREAL_NVP(type),
+				CEREAL_NVP(message)
+			);
+		}
+	};
+
+	struct GuildBankTransaction {
+		uint32 char_id;
+		uint32 guild_id;
+		uint32 item_id;
+		uint32 aug_slot_one;
+		uint32 aug_slot_two;
+		uint32 aug_slot_three;
+		uint32 aug_slot_four;
+		uint32 aug_slot_five;
+		uint32 aug_slot_six;
+		uint32 quantity;
+		uint32 permission;
+
+		// cereal
+		template<class Archive>
+		void serialize(Archive &ar)
+		{
+			ar(
+				CEREAL_NVP(char_id),
+				CEREAL_NVP(guild_id),
+				CEREAL_NVP(item_id),
+				CEREAL_NVP(aug_slot_one),
+				CEREAL_NVP(aug_slot_two),
+				CEREAL_NVP(aug_slot_three),
+				CEREAL_NVP(aug_slot_four),
+				CEREAL_NVP(aug_slot_five),
+				CEREAL_NVP(aug_slot_six),
+				CEREAL_NVP(quantity)
+				);
+		}
+	};
 }
 
 #endif //EQEMU_PLAYER_EVENTS_H
 
 #define RecordPlayerEventLog(event_type, event_data) do {\
     if (player_event_logs.IsEventEnabled(event_type)) {\
-        worldserver.SendPacket(\
-            player_event_logs.RecordEvent(\
-                event_type,\
-                GetPlayerEvent(),\
-                event_data\
-            ).get()\
-        );\
+        if (RuleB(Logging, PlayerEventsQSProcess)) {\
+            QServ->SendPacket(\
+                player_event_logs.RecordEvent(\
+                    event_type,\
+                    GetPlayerEvent(),\
+                    event_data\
+                ).get()\
+            );\
+        }                                                                                                          \
+        else {                                                                                                     \
+            worldserver.SendPacket(\
+                player_event_logs.RecordEvent(\
+                    event_type,\
+                    GetPlayerEvent(),\
+                    event_data\
+                ).get()\
+            );\
+        }\
     }\
 } while (0)
 
 #define RecordPlayerEventLogWithClient(c, event_type, event_data) do {\
     if (player_event_logs.IsEventEnabled(event_type)) {\
-        worldserver.SendPacket(\
-            player_event_logs.RecordEvent(\
-                event_type,\
-                (c)->GetPlayerEvent(),\
-                event_data\
-            ).get()\
-        );\
+        if (RuleB(Logging, PlayerEventsQSProcess)) {\
+            QServ->SendPacket(\
+                player_event_logs.RecordEvent(\
+                    event_type,\
+                    (c)->GetPlayerEvent(),\
+                    event_data\
+                ).get()\
+            );\
+        }\
+        else {\
+            worldserver.SendPacket(\
+                player_event_logs.RecordEvent(\
+                    event_type,\
+                    (c)->GetPlayerEvent(),\
+                    event_data\
+                ).get()\
+            );\
+        }\
     }\
 } while (0)

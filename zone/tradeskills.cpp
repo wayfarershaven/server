@@ -1131,7 +1131,7 @@ bool Client::TradeskillExecute(DBTradeskillRecipe_Struct *spec) {
 		zone->random.Roll(aa_chance)
 	) {
 		if (GetGM()) {
-			Message(Chat::White, "Your GM flag gives you a 100% chance to succeed in combining this tradeskill.");
+			Message(Chat::White, "Your GM flag gives you a 100%% chance to succeed in combining this tradeskill.");
 		}
 
 		success_modifier = 1;
@@ -1149,6 +1149,7 @@ bool Client::TradeskillExecute(DBTradeskillRecipe_Struct *spec) {
 
 			item = database.GetItem(itr->first);
 			if (item) {
+				CheckItemDiscoverability(itr->first);
 				SummonItem(itr->first, itr->second);
 				if (GetGroup()) {
 					entity_list.MessageGroup(this, true, Chat::Skills, "%s has successfully fashioned %s!", GetName(), item->Name);
@@ -1170,13 +1171,6 @@ bool Client::TradeskillExecute(DBTradeskillRecipe_Struct *spec) {
 						GetInstanceID()
 					).c_str()
 				);
-			}
-
-			/* QS: Player_Log_Trade_Skill_Events */
-			if (RuleB(QueryServ, PlayerLogTradeSkillEvents)) {
-
-				std::string event_desc = StringFormat("Success :: fashioned recipe_id:%i tskillid:%i trivial:%i chance:%4.2f  in zoneid:%i instid:%i", spec->recipe_id, spec->tradeskill, spec->trivial, chance, GetZoneID(), GetInstanceID());
-				QServ->PlayerLogEvent(Player_Log_Trade_Skill_Events, CharacterID(), event_desc);
 			}
 
 			if (RuleB(TaskSystem, EnableTaskSystem)) {
@@ -1201,12 +1195,6 @@ bool Client::TradeskillExecute(DBTradeskillRecipe_Struct *spec) {
 		{
 			entity_list.MessageGroup(this, true, Chat::Skills,"%s was unsuccessful in %s tradeskill attempt.",GetName(),GetGender() == Gender::Male ? "his" : GetGender() == Gender::Female ? "her" : "its");
 
-		}
-
-		/* QS: Player_Log_Trade_Skill_Events */
-		if (RuleB(QueryServ, PlayerLogTradeSkillEvents)){
-			std::string event_desc = StringFormat("Failed :: recipe_id:%i tskillid:%i trivial:%i chance:%4.2f  in zoneid:%i instid:%i", spec->recipe_id, spec->tradeskill, spec->trivial, chance, GetZoneID(), GetInstanceID());
-			QServ->PlayerLogEvent(Player_Log_Trade_Skill_Events, CharacterID(), event_desc);
 		}
 
 		itr = spec->onfail.begin();

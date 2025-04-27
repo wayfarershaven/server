@@ -142,6 +142,7 @@ bool DatabaseUpdate::UpdateManifest(
 	if (version_low != version_high) {
 
 		LogSys.DisableMySQLErrorLogs();
+		bool force_interactive = false;
 		for (int version = version_low + 1; version <= version_high; ++version) {
 			for (auto &e: entries) {
 				if (e.version == version) {
@@ -163,13 +164,20 @@ bool DatabaseUpdate::UpdateManifest(
 						prefix,
 						e.description
 					);
+
+					if (!has_migration && e.force_interactive) {
+						force_interactive = true;
+					}
 				}
 			}
 		}
 		LogSys.EnableMySQLErrorLogs();
 		LogInfo("{}", Strings::Repeat("-", BREAK_LENGTH));
 
-		if (!missing_migrations.empty()) {
+		if (!missing_migrations.empty() && m_skip_backup) {
+			LogInfo("Skipping database backup");
+		}
+		else if (!missing_migrations.empty()) {
 			LogInfo("Automatically backing up database before applying updates");
 			LogInfo("{}", Strings::Repeat("-", BREAK_LENGTH));
 			auto s = DatabaseDumpService();
@@ -182,6 +190,42 @@ bool DatabaseUpdate::UpdateManifest(
 		if (!missing_migrations.empty()) {
 			LogInfo("Running database migrations. Please wait...");
 			LogInfo("{}", Strings::Repeat("-", BREAK_LENGTH));
+		}
+
+		if (force_interactive && !std::getenv("FORCE_INTERACTIVE")) {
+			LogInfo("{}", Strings::Repeat("-", BREAK_LENGTH));
+			LogInfo("Some migrations require user input. Running interactively");
+			LogInfo("This is usually due to a major change that could cause data loss");
+			LogInfo("Your server is automatically backed up before these updates are applied");
+			LogInfo("but you should also make sure you take a backup prior to running this update");
+			LogInfo("Would you like to run this update? [y/n] (Timeout 60s)");
+			LogInfo("{}", Strings::Repeat("-", BREAK_LENGTH));
+
+			// user input
+			std::string input;
+			bool        gave_input        = false;
+			time_t      start_time        = time(nullptr);
+			time_t      wait_time_seconds = 60;
+
+			// spawn a concurrent thread that waits for input from std::cin
+			std::thread t1(
+				[&]() {
+					std::cin >> input;
+					gave_input = true;
+				}
+			);
+			t1.detach();
+
+			// check the inputReceived flag once every 50ms for 10 seconds
+			while (time(nullptr) < start_time + wait_time_seconds && !gave_input) {
+				std::this_thread::sleep_for(std::chrono::milliseconds(50));
+			}
+
+			// prompt for user skip
+			if (Strings::Trim(input) != "y") {
+				LogInfo("Exiting due to user input");
+				std::exit(1);
+			}
 		}
 
 		for (auto &m: missing_migrations) {
@@ -267,6 +311,13 @@ DatabaseUpdate *DatabaseUpdate::SetDatabase(Database *db)
 DatabaseUpdate *DatabaseUpdate::SetContentDatabase(Database *db)
 {
 	m_content_database = db;
+
+	return this;
+}
+
+DatabaseUpdate *DatabaseUpdate::SetSkipBackup(bool skip)
+{
+	m_skip_backup = skip;
 
 	return this;
 }

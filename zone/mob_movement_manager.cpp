@@ -824,8 +824,8 @@ void MobMovementManager::SendCommandToClients(
 		return;
 	}
 
-	EQApplicationPacket outapp(OP_ClientUpdate, sizeof(PlayerPositionUpdateServer_Struct));
-	auto                *spu = (PlayerPositionUpdateServer_Struct *) outapp.pBuffer;
+	static EQApplicationPacket p(OP_ClientUpdate, sizeof(PlayerPositionUpdateServer_Struct));
+	auto                       *spu = (PlayerPositionUpdateServer_Struct *) p.pBuffer;
 
 	FillCommandStruct(spu, mob, delta_x, delta_y, delta_z, delta_heading, anim);
 
@@ -851,12 +851,24 @@ void MobMovementManager::SendCommandToClients(
 				_impl->Stats.TotalSentPosition++;
 			}
 
-			c->QueuePacket(&outapp, false);
+			if (!mob->IsClient() && c->m_last_seen_mob_position.contains(mob->GetID())) {
+				if (c->m_last_seen_mob_position[mob->GetID()] == mob->GetPosition() && anim == 0) {
+					LogPositionUpdate(
+						"Mob [{}] has already been sent to client [{}] at this position, skipping",
+						mob->GetCleanName(),
+						c->GetCleanName()
+					);
+					continue;
+				}
+			}
+
+			c->QueuePacket(&p, false);
+			c->m_last_seen_mob_position[mob->GetID()] = mob->GetPosition();
 		}
 	}
 	else {
 		float short_range = RuleR(Pathing, ShortMovementUpdateRange);
-		float long_range  = zone->GetNpcPositionUpdateDistance();
+		float long_range  = RuleI(Range, MobCloseScanDistance);
 
 		for (auto &c : _impl->Clients) {
 			if (single_client && c != single_client) {
@@ -901,7 +913,19 @@ void MobMovementManager::SendCommandToClients(
 					_impl->Stats.TotalSentPosition++;
 				}
 
-				c->QueuePacket(&outapp, false);
+				if (!mob->IsClient() && c->m_last_seen_mob_position.contains(mob->GetID())) {
+					if (c->m_last_seen_mob_position[mob->GetID()] == mob->GetPosition() && anim == 0) {
+						LogPositionUpdate(
+							"Mob [{}] has already been sent to client [{}] at this position, skipping",
+							mob->GetCleanName(),
+							c->GetCleanName()
+						);
+						continue;
+					}
+				}
+
+				c->QueuePacket(&p, false);
+				c->m_last_seen_mob_position[mob->GetID()] = mob->GetPosition();
 			}
 		}
 	}
@@ -909,16 +933,11 @@ void MobMovementManager::SendCommandToClients(
 
 float MobMovementManager::FixHeading(float in)
 {
-	auto h = in;
-	while (h > 512.0) {
-		h -= 512.0;
+	int h = static_cast<int>(in) % 512;
+	if (h < 0) {
+		h += 512;
 	}
-
-	while (h < 0.0) {
-		h += 512.0;
-	}
-
-	return h;
+	return static_cast<float>(h);
 }
 
 void MobMovementManager::DumpStats(Client *client)

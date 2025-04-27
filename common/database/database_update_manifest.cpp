@@ -5771,7 +5771,1322 @@ CREATE INDEX idx_character_expires ON data_buckets (character_id, expires);
 CREATE INDEX idx_npc_expires ON data_buckets (npc_id, expires);
 CREATE INDEX idx_bot_expires ON data_buckets (bot_id, expires);
 )"
-	}
+	},
+	ManifestEntry{
+		.version = 9286,
+		.description = "2024_11_26_bazaar_find_trader.sql",
+		.check       = "SHOW COLUMNS FROM `trader` LIKE 'char_zone_instance_id'",
+		.condition   = "empty",
+		.match       = "",
+		.sql         = R"(
+ALTER TABLE `trader`
+	ADD COLUMN `char_zone_instance_id` INT NULL DEFAULT '0' AFTER `char_zone_id`;
+)"
+	},
+	ManifestEntry{
+		.version = 9287,
+		.description = "2024_11_26_bazaar_find_trader.sql",
+		.check       = "SHOW COLUMNS FROM `npc_types` LIKE 'walkspeed'",
+		.condition   = "missing",
+		.match       = "float",
+		.sql         = R"(
+ALTER TABLE `npc_types` MODIFY COLUMN `walkspeed` float NOT NULL DEFAULT 0;
+)",
+		.content_schema_update = true
+	},
+	ManifestEntry{
+		.version = 9288,
+		.description = "2024_11_10_zone_player_partitioning.sql",
+		.check = "SHOW CREATE TABLE `zone`",
+		.condition = "missing",
+		.match = "shard_at_player_count",
+		.sql = R"(
+ALTER TABLE `zone`
+ADD COLUMN `shard_at_player_count` int(11) NULL DEFAULT 0 AFTER `seconds_before_idle`;
+)",
+		.content_schema_update = true
+	},
+	ManifestEntry{
+		.version     = 9289,
+		.description = "2025_01_19_evolving_items__character_evolving_items",
+		.check       = "SHOW TABLES LIKE 'character_evolving_items'",
+		.condition   = "empty",
+		.match       = "",
+		.sql         = R"(
+CREATE TABLE `character_evolving_items` (
+	`id` BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+	`character_id` INT(10) UNSIGNED NULL DEFAULT '0',
+	`item_id` INT(10) UNSIGNED NULL DEFAULT '0',
+	`activated` TINYINT(1) UNSIGNED NULL DEFAULT '0',
+	`equipped` TINYINT(3) UNSIGNED NULL DEFAULT '0',
+	`current_amount` BIGINT(20) NULL DEFAULT '0',
+	`progression` DOUBLE(22,0) NULL DEFAULT '0',
+	`final_item_id` INT(10) UNSIGNED NULL DEFAULT '0',
+	`deleted_at` DATETIME NULL DEFAULT NULL,
+	PRIMARY KEY (`id`) USING BTREE
+)
+COLLATE='latin1_swedish_ci'
+ENGINE=InnoDB
+AUTO_INCREMENT=1
+;
+)"
+	},
+	ManifestEntry{
+		.version     = 9290,
+		.description = "2025_01_19_evolving_items__items_evolving_details",
+		.check       = "SHOW TABLES LIKE 'items_evolving_details'",
+		.condition   = "empty",
+		.match       = "",
+		.sql         = R"(
+CREATE TABLE `items_evolving_details` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `item_evo_id` int(10) unsigned DEFAULT 0 COMMENT 'items.evoid',
+  `item_evolve_level` int(10) unsigned DEFAULT 0 COMMENT 'items.evolvinglevel',
+  `item_id` int(10) unsigned DEFAULT 0 COMMENT 'items.id',
+  `type` int(10) unsigned DEFAULT 0,
+  `sub_type` int(10) unsigned DEFAULT 0,
+  `required_amount` bigint(20) DEFAULT NULL,
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
+INSERT INTO `items_evolving_details` VALUES
+(1,1000,1,86900,99,1,0),
+(2,1000,2,86901,99,1,0),
+(3,1000,3,86902,99,1,0),
+(4,1000,4,86903,99,1,0),
+(5,1000,5,86904,99,1,0),
+(6,1001,1,86910,99,1,0),
+(7,1001,2,86911,99,1,0),
+(8,1001,3,86912,99,1,0),
+(9,1001,4,86913,99,1,0),
+(10,1001,5,86914,99,1,0),
+(11,1001,6,86915,99,1,0),
+(12,1001,7,86916,99,1,0),
+(13,1002,1,86920,99,1,0),
+(14,1002,2,86921,99,1,0),
+(15,1002,3,86922,99,1,0),
+(16,1002,4,86923,99,1,0),
+(17,1002,5,86924,99,1,0),
+(18,1002,6,86925,99,1,0),
+(19,1002,7,86926,99,1,0),
+(20,1003,1,86930,99,1,0),
+(21,1003,2,86931,99,1,0),
+(22,1003,3,86932,99,1,0),
+(23,1003,4,86933,99,1,0),
+(24,1003,5,86934,99,1,0),
+(25,1003,6,86935,99,1,0),
+(26,1004,1,86940,99,1,0),
+(27,1004,2,86941,99,1,0),
+(28,1004,3,86942,99,1,0),
+(29,1004,4,86943,99,1,0),
+(30,1004,5,86944,99,1,0),
+(31,1004,6,86945,99,1,0),
+(32,1005,1,86950,99,1,0),
+(33,1005,2,86951,99,1,0),
+(34,1005,3,86952,99,1,0),
+(35,1005,4,86953,99,1,0),
+(36,1005,5,86954,99,1,0),
+(37,1005,6,86955,99,1,0),
+(38,1005,7,86956,99,1,0),
+(39,1006,1,86960,99,1,0),
+(40,1006,2,86961,99,1,0),
+(41,1006,3,86962,99,1,0),
+(42,1006,4,86963,99,1,0),
+(43,1006,5,86964,99,1,0),
+(44,1006,6,86965,99,1,0),
+(45,1006,7,86966,99,1,0),
+(46,1007,1,86970,99,1,0),
+(47,1007,2,86971,99,1,0),
+(48,1007,3,86972,99,1,0),
+(49,1007,4,86973,99,1,0),
+(50,1007,5,86974,99,1,0),
+(51,1007,6,86975,99,1,0),
+(52,1007,7,86976,99,1,0),
+(53,1008,1,86980,99,1,0),
+(54,1008,2,86981,99,1,0),
+(55,1008,3,86982,99,1,0),
+(56,1008,4,86983,99,1,0),
+(57,1008,5,86984,99,1,0),
+(58,1009,1,86990,99,1,0),
+(59,1009,2,86991,99,1,0),
+(60,1009,3,86992,99,1,0),
+(61,1009,4,86993,99,1,0),
+(62,1009,5,86994,99,1,0),
+(63,1009,6,86995,99,1,0),
+(64,1009,7,86996,99,1,0),
+(65,1009,8,86997,99,1,0),
+(66,1009,9,86998,99,1,0),
+(67,1009,10,86999,99,1,0),
+(68,1010,1,90001,99,1,0),
+(69,1010,2,90002,99,1,0),
+(70,1010,3,90003,99,1,0),
+(71,1010,6,90006,99,1,0),
+(72,1010,7,90007,99,1,0),
+(73,1010,8,90008,99,1,0),
+(74,1010,10,90010,99,1,0),
+(75,1050,1,89270,99,1,0),
+(76,1050,2,89271,99,1,0),
+(77,1050,3,89272,99,1,0),
+(78,1050,4,89273,99,1,0),
+(79,1050,5,89274,99,1,0),
+(80,1050,6,89275,99,1,0),
+(81,1051,1,89280,99,1,0),
+(82,1051,2,89281,99,1,0),
+(83,1051,3,89282,99,1,0),
+(84,1051,4,89283,99,1,0),
+(85,1051,5,89284,99,1,0),
+(86,1052,1,89290,99,1,0),
+(87,1052,2,89291,99,1,0),
+(88,1052,3,89292,99,1,0),
+(89,1052,4,89293,99,1,0),
+(90,1052,5,89294,99,1,0),
+(91,1052,6,89295,99,1,0),
+(92,1052,7,89296,99,1,0),
+(93,1053,1,89300,99,1,0),
+(94,1053,2,89301,99,1,0),
+(95,1053,3,89302,99,1,0),
+(96,1053,4,89303,99,1,0),
+(97,1053,5,89304,99,1,0),
+(98,1053,6,89305,99,1,0),
+(99,1053,7,89306,99,1,0),
+(100,1053,8,89307,99,1,0),
+(101,1053,9,89308,99,1,0),
+(102,1054,1,89310,99,1,0),
+(103,1054,2,89311,99,1,0),
+(104,1054,3,89312,99,1,0),
+(105,1054,4,89313,99,1,0),
+(106,1054,5,89314,99,1,0),
+(107,1054,6,89315,99,1,0),
+(108,1055,1,89320,99,1,0),
+(109,1055,2,89321,99,1,0),
+(110,1055,3,89322,99,1,0),
+(111,1055,4,89323,99,1,0),
+(112,1055,5,89324,99,1,0),
+(113,1055,6,89325,99,1,0),
+(114,1055,7,89326,99,1,0),
+(115,1056,1,89330,99,1,0),
+(116,1056,2,89331,99,1,0),
+(117,1056,3,89332,99,1,0),
+(118,1056,4,89333,99,1,0),
+(119,1056,5,89334,99,1,0),
+(120,1057,1,89340,99,1,0),
+(121,1057,2,89341,99,1,0),
+(122,1057,3,89342,99,1,0),
+(123,1057,4,89343,99,1,0),
+(124,1057,5,89344,99,1,0),
+(125,1057,6,89345,99,1,0),
+(126,1057,7,89346,99,1,0),
+(127,1057,8,89347,99,1,0),
+(128,1058,1,89350,99,1,0),
+(129,1058,2,89351,99,1,0),
+(130,1058,3,89352,99,1,0),
+(131,1058,4,89353,99,1,0),
+(132,1058,5,89354,99,1,0),
+(133,1058,6,89355,99,1,0),
+(134,1058,7,89356,99,1,0),
+(135,1059,1,89360,99,1,0),
+(136,1059,2,89361,99,1,0),
+(137,1059,3,89362,99,1,0),
+(138,1060,1,89490,99,1,0),
+(139,1060,2,89491,99,1,0),
+(140,1060,3,89492,99,1,0),
+(141,1061,1,89500,99,1,0),
+(142,1061,2,89501,99,1,0),
+(143,1061,3,89502,99,1,0),
+(144,1062,1,89510,99,1,0),
+(145,1062,2,89511,99,1,0),
+(146,1062,3,89512,99,1,0),
+(147,1063,1,89520,99,1,0),
+(148,1063,2,89521,99,1,0),
+(149,1063,3,89522,99,1,0),
+(150,1064,1,89530,99,1,0),
+(151,1064,2,89531,99,1,0),
+(152,1064,3,89532,99,1,0),
+(153,1065,1,89540,99,1,0),
+(154,1065,2,89541,99,1,0),
+(155,1065,3,89542,99,1,0),
+(156,1066,1,89550,3,274,500),
+(157,1066,2,89551,3,274,1000),
+(158,1066,3,89552,3,274,2000),
+(159,1067,1,89560,99,1,0),
+(160,1067,2,89561,99,1,0),
+(161,1067,3,89562,99,1,0),
+(162,1069,1,85571,99,1,0),
+(163,1069,2,85572,99,1,0),
+(164,1069,3,85573,99,1,0),
+(165,1200,1,95001,99,1,0),
+(166,1200,2,95002,99,1,0),
+(167,1200,3,95003,99,1,0),
+(168,1200,4,95004,99,1,0),
+(169,1200,5,95005,99,1,0),
+(170,1200,6,95006,99,1,0),
+(171,1200,7,95007,99,1,0),
+(172,1201,1,95008,99,1,0),
+(173,1201,2,95009,99,1,0),
+(174,1201,3,95010,99,1,0),
+(175,1201,4,95011,99,1,0),
+(176,1201,5,95012,99,1,0),
+(177,1201,6,95013,99,1,0),
+(178,1201,7,95014,99,1,0),
+(179,1202,1,95015,99,1,0),
+(180,1202,2,95016,99,1,0),
+(181,1202,3,95017,99,1,0),
+(182,1202,4,95018,99,1,0),
+(183,1202,5,95019,99,1,0),
+(184,1202,6,95020,99,1,0),
+(185,1202,7,95021,99,1,0),
+(186,1203,1,95022,99,1,0),
+(187,1203,2,95023,99,1,0),
+(188,1203,3,95024,99,1,0),
+(189,1203,4,95025,99,1,0),
+(190,1203,5,95026,99,1,0),
+(191,1203,6,95027,99,1,0),
+(192,1203,7,95028,99,1,0),
+(193,1204,1,95029,99,1,0),
+(194,1204,2,95030,99,1,0),
+(195,1204,3,95031,99,1,0),
+(196,1204,4,95032,99,1,0),
+(197,1204,5,95033,99,1,0),
+(198,1204,6,95034,99,1,0),
+(199,1204,7,95035,99,1,0),
+(200,1205,1,95036,99,1,0),
+(201,1205,2,95037,99,1,0),
+(202,1205,3,95038,99,1,0),
+(203,1205,4,95039,99,1,0),
+(204,1205,5,95040,99,1,0),
+(205,1205,6,95041,99,1,0),
+(206,1205,7,95042,99,1,0),
+(207,1206,1,95043,99,1,0),
+(208,1206,2,95044,99,1,0),
+(209,1206,3,95045,99,1,0),
+(210,1206,4,95046,99,1,0),
+(211,1206,5,95047,99,1,0),
+(212,1206,6,95048,99,1,0),
+(213,1206,7,95049,99,1,0),
+(214,1207,1,95050,99,1,0),
+(215,1207,2,95051,99,1,0),
+(216,1207,3,95052,99,1,0),
+(217,1207,4,95053,99,1,0),
+(218,1207,5,95054,99,1,0),
+(219,1207,6,95055,99,1,0),
+(220,1207,7,95056,99,1,0),
+(221,1208,1,95057,99,1,0),
+(222,1208,2,95058,99,1,0),
+(223,1208,3,95059,99,1,0),
+(224,1208,4,95060,99,1,0),
+(225,1208,5,95061,99,1,0),
+(226,1208,6,95062,99,1,0),
+(227,1208,7,95063,99,1,0),
+(228,1209,1,95064,99,1,0),
+(229,1209,2,95065,99,1,0),
+(230,1209,3,95066,99,1,0),
+(231,1209,4,95067,99,1,0),
+(232,1209,5,95068,99,1,0),
+(233,1209,6,95069,99,1,0),
+(234,1209,7,95070,99,1,0),
+(235,1210,1,95071,99,1,0),
+(236,1210,2,95072,99,1,0),
+(237,1210,3,95073,99,1,0),
+(238,1210,4,95074,99,1,0),
+(239,1210,5,95075,99,1,0),
+(240,1210,6,95076,99,1,0),
+(241,1210,7,95077,99,1,0),
+(242,1211,1,85612,1,1,100000),
+(243,1211,2,85613,1,1,200000),
+(244,1211,3,85614,1,1,300000),
+(245,1214,1,80035,99,1,0),
+(246,1301,1,102700,99,1,0),
+(247,1301,4,102703,99,1,0),
+(248,1302,1,102704,99,1,0),
+(249,1302,2,102705,99,1,0),
+(250,1303,1,102706,99,1,0),
+(251,1303,2,102707,99,1,0),
+(252,1303,3,102708,99,1,0),
+(253,1304,1,102709,99,1,0),
+(254,1304,5,102713,99,1,0),
+(255,1305,1,102714,99,1,0),
+(256,1306,1,102716,99,1,0),
+(257,1306,5,102720,99,1,0),
+(258,1307,1,102721,99,1,0),
+(259,1307,3,102723,99,1,0),
+(260,1308,1,102724,99,1,0),
+(261,1309,1,102727,99,1,0),
+(262,1309,2,102728,99,1,0),
+(263,1310,1,102729,99,1,0),
+(264,1310,3,102731,99,1,0),
+(265,1311,1,102732,99,1,0),
+(266,1311,4,102735,99,1,0),
+(267,1312,1,102736,99,1,0),
+(268,1312,3,102738,99,1,0),
+(269,1313,1,102739,99,1,0),
+(270,1314,1,102743,99,1,0),
+(271,1314,2,102744,99,1,0),
+(272,1314,3,102745,99,1,0),
+(273,1315,1,102746,99,1,0),
+(274,1315,2,102747,99,1,0),
+(275,1316,1,102748,99,1,0),
+(276,1316,5,102752,99,1,0),
+(277,1317,1,102753,99,1,0),
+(278,1318,1,102756,99,1,0),
+(279,1319,1,102759,99,1,0),
+(280,1319,3,102761,99,1,0),
+(281,1320,1,102762,99,1,0),
+(282,1321,1,102765,99,1,0),
+(283,1321,2,102766,99,1,0),
+(284,1321,3,102767,99,1,0),
+(285,1322,1,102768,99,1,0),
+(286,1322,2,102769,99,1,0),
+(287,1322,3,102770,99,1,0),
+(288,1323,1,102771,99,1,0),
+(289,1324,1,102774,99,1,0),
+(290,1400,1,102800,99,1,0),
+(291,1401,1,102807,99,1,0),
+(292,1401,7,102813,99,1,0),
+(293,1402,1,102814,99,1,0),
+(294,1402,7,102820,99,1,0),
+(295,1403,1,102821,99,1,0),
+(296,1404,1,102828,99,1,0),
+(297,1405,1,102835,99,1,0),
+(298,1406,1,102842,99,1,0),
+(299,1408,1,109310,99,1,0),
+(300,1408,5,109314,99,1,0),
+(301,1409,1,109315,99,1,0),
+(302,1409,5,109319,99,1,0),
+(303,1410,1,109320,99,1,0),
+(304,1410,5,109324,99,1,0),
+(305,1411,1,109325,99,1,0),
+(306,1411,5,109329,99,1,0),
+(307,1412,1,109330,99,1,0),
+(308,1412,5,109334,99,1,0),
+(309,1413,1,109335,99,1,0),
+(310,1413,5,109339,99,1,0),
+(311,1414,1,109340,99,1,0),
+(312,1414,5,109344,99,1,0),
+(313,1415,1,109345,99,1,0),
+(314,1415,5,109349,99,1,0),
+(315,1416,1,109350,99,1,0),
+(316,1416,2,109351,99,1,0),
+(317,1416,5,109354,99,1,0),
+(318,1417,1,109355,99,1,0),
+(319,1417,5,109359,99,1,0),
+(320,1418,1,109360,99,1,0),
+(321,1418,5,109364,99,1,0),
+(322,1419,1,109365,99,1,0),
+(323,1419,3,109367,99,1,0),
+(324,1419,5,109369,99,1,0),
+(325,1420,1,109370,99,1,0),
+(326,1420,5,109374,99,1,0),
+(327,1421,1,109375,99,1,0),
+(328,1421,5,109379,99,1,0),
+(329,1422,1,109380,99,1,0),
+(330,1422,5,109384,99,1,0),
+(331,1423,1,109385,99,1,0),
+(332,1423,2,109386,99,1,0),
+(333,1423,5,109389,99,1,0),
+(334,1436,1,120378,99,1,0),
+(335,1436,2,120379,99,1,0),
+(336,1436,3,120380,99,1,0),
+(337,1436,4,120381,99,1,0),
+(338,1436,5,120382,99,1,0),
+(339,1436,6,120383,99,1,0),
+(340,1436,7,120384,99,1,0),
+(341,1436,8,120385,99,1,0),
+(342,1436,9,120386,99,1,0),
+(343,1436,10,120387,99,1,0),
+(344,1436,11,120388,99,1,0),
+(345,1436,12,120389,99,1,0),
+(346,1436,13,120390,99,1,0),
+(347,1436,14,120391,99,1,0),
+(348,1436,15,120392,99,1,0),
+(349,1436,16,120393,99,1,0),
+(350,1436,17,120394,99,1,0),
+(351,1436,18,120395,99,1,0),
+(352,1436,19,120396,99,1,0),
+(353,1436,20,120397,99,1,0),
+(354,1440,1,56992,99,1,0),
+(355,1440,2,56993,99,1,0),
+(356,1440,3,56994,99,1,0),
+(357,1440,4,56995,99,1,0),
+(358,1440,5,56996,99,1,0),
+(359,1441,1,132787,99,1,0),
+(360,1441,2,132788,99,1,0),
+(361,1441,3,132789,99,1,0),
+(362,1441,4,132790,99,1,0),
+(363,1441,5,132791,99,1,0),
+(364,1441,6,132792,99,1,0),
+(365,1441,7,132793,99,1,0),
+(366,1441,8,132794,99,1,0),
+(367,1441,9,132795,99,1,0),
+(368,1441,10,132796,99,1,0),
+(369,1441,11,132797,99,1,0),
+(370,1441,13,132799,99,1,0),
+(371,1441,14,132800,99,1,0),
+(372,1441,15,132801,99,1,0),
+(373,1441,16,132802,99,1,0),
+(374,1441,17,132803,99,1,0),
+(375,1441,18,132804,99,1,0),
+(376,1441,19,132805,99,1,0),
+(377,1441,20,132806,99,1,0),
+(378,1442,1,133137,99,1,0),
+(379,1442,2,133138,99,1,0),
+(380,1442,3,133139,99,1,0),
+(381,1442,4,133140,99,1,0),
+(382,1442,10,133146,99,1,0),
+(383,1442,11,133147,99,1,0),
+(384,1442,12,133148,99,1,0),
+(385,1442,13,133149,99,1,0),
+(386,1442,14,133150,99,1,0),
+(387,1442,15,133151,99,1,0),
+(388,1442,16,133152,99,1,0),
+(389,1442,17,133153,99,1,0),
+(390,1442,18,133154,99,1,0),
+(391,1442,19,133155,99,1,0),
+(392,1442,20,133156,99,1,0),
+(393,1443,1,133406,99,1,0),
+(394,1443,2,133407,99,1,0),
+(395,1443,3,133408,99,1,0),
+(396,1443,4,133409,99,1,0),
+(397,1443,5,133410,99,1,0),
+(398,1443,6,133411,99,1,0),
+(399,1443,7,133412,99,1,0),
+(400,1443,8,133413,99,1,0),
+(401,1443,9,133414,99,1,0),
+(402,1443,10,133415,99,1,0),
+(403,1443,11,133416,99,1,0),
+(404,1443,12,133417,99,1,0),
+(405,1443,13,133418,99,1,0),
+(406,1443,14,133419,99,1,0),
+(407,1443,15,133420,99,1,0),
+(408,1443,16,133421,99,1,0),
+(409,1443,17,133422,99,1,0),
+(410,1443,18,133423,99,1,0),
+(411,1443,19,133424,99,1,0),
+(412,1443,20,133425,99,1,0),
+(413,1444,1,94938,99,1,0),
+(414,1444,2,94939,99,1,0),
+(415,1444,3,94940,99,1,0),
+(416,1444,4,94941,99,1,0),
+(417,1444,5,94942,99,1,0),
+(418,1444,6,94943,99,1,0),
+(419,1444,7,94944,99,1,0),
+(420,1444,8,94945,99,1,0),
+(421,1444,9,94946,99,1,0),
+(422,1444,10,94947,99,1,0),
+(423,1444,11,94948,99,1,0),
+(424,1444,12,94949,99,1,0),
+(425,1444,13,94950,99,1,0),
+(426,1444,14,94951,99,1,0),
+(427,1444,15,94952,99,1,0),
+(428,1444,16,94953,99,1,0),
+(429,1444,17,94954,99,1,0),
+(430,1444,18,94955,99,1,0),
+(431,1444,19,94956,99,1,0),
+(432,1444,20,94957,99,1,0),
+(433,1445,1,98858,99,1,0),
+(434,1445,2,98859,99,1,0),
+(435,1445,3,98860,99,1,0),
+(436,1445,4,98861,99,1,0),
+(437,1445,5,98862,99,1,0);
+
+)",
+		.content_schema_update = true
+	},
+	ManifestEntry{
+		.version = 9291,
+		.description = "2025_01_21_add_remove_zone_fields",
+		.check = "SHOW COLUMNS FROM `zone` LIKE 'client_update_range'",
+		.condition = "empty",
+		.match = "",
+		.sql = R"(
+ALTER TABLE zone DROP COLUMN IF EXISTS npc_update_range;
+ALTER TABLE zone DROP COLUMN IF EXISTS max_movement_update_range;
+ALTER TABLE `zone` ADD COLUMN `client_update_range` int(11) NOT NULL DEFAULT 600 AFTER `npc_max_aggro_dist`;
+)",
+		.content_schema_update = true,
+	},
+	ManifestEntry{
+		.version = 9292,
+		.description = "2025_01_21_data_buckets_account_id",
+		.check       = "SHOW COLUMNS FROM `data_buckets` LIKE 'account_id'",
+		.condition   = "empty",
+		.match = "",
+		.sql = R"(
+ALTER TABLE `data_buckets`
+ADD COLUMN `account_id` bigint(11) NULL DEFAULT 0 AFTER `expires`,
+DROP INDEX `keys`,
+ADD UNIQUE INDEX `keys` (`key`, `character_id`, `npc_id`, `bot_id`, `account_id`) USING BTREE;
+
+-- Add the INDEX for character_id and key
+ALTER TABLE `data_buckets` ADD KEY `idx_account_id_key` (`account_id`, `key`);
+)",
+		.content_schema_update = false
+	},
+	ManifestEntry{
+		.version = 9293,
+		.description = "2025_01_10_create_pet_names_table.sql",
+		.check = "SHOW TABLES LIKE 'character_pet_name'",
+		.condition = "empty",
+		.match = "",
+		.sql = R"(
+CREATE TABLE `character_pet_name` (
+    `character_id` INT(11) NOT NULL PRIMARY KEY,
+    `name` VARCHAR(64) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+)",
+	},
+	ManifestEntry{
+		.version = 9294,
+		.description = "2025_01_26_items_table_bazaar_search_indexes.sql",
+		.check = "SHOW CREATE TABLE `items`",
+		.condition = "missing",
+		.match = "idx_slots_reclevel",
+		.sql = R"(
+-- indexes for the `items` table
+CREATE INDEX idx_slots_reclevel ON items (slots, reclevel);
+CREATE INDEX idx_itemclass_itemtype ON items (itemclass, itemtype);
+CREATE INDEX idx_augment_slots ON items (
+    augslot1type,
+    augslot2type,
+    augslot3type,
+    augslot4type,
+    augslot5type,
+    augslot6type
+);
+CREATE INDEX idx_races_classes ON items (races, classes);
+
+-- common stat fields
+CREATE INDEX idx_item_ac ON items (ac);
+CREATE INDEX idx_item_hp ON items (hp);
+CREATE INDEX idx_item_mana ON items (mana);
+CREATE INDEX idx_item_reclevel ON items (reclevel);
+CREATE INDEX idx_item_type_skill ON items (itemtype, skillmodtype);
+)",
+		.content_schema_update = true
+	},
+	ManifestEntry{
+		.version = 9295,
+		.description = "2025_01_26_trader_table_bazaar_search_indexes.sql",
+		.check = "SHOW CREATE TABLE `trader`",
+		.condition = "missing",
+		.match = "idx_trader_item",
+		.sql = R"(
+-- indexes for the `trader` table
+CREATE INDEX idx_trader_item ON trader (item_id, item_cost);
+CREATE INDEX idx_trader_char ON trader (char_id, char_zone_id, char_zone_instance_id);
+CREATE INDEX idx_trader_item_sn ON trader (item_sn);
+CREATE INDEX idx_trader_item_cost ON trader (item_cost);
+CREATE INDEX idx_trader_active_transaction ON trader (active_transaction);
+)",
+		.content_schema_update = false
+	},
+	ManifestEntry{
+		.version = 9296,
+		.description = "2025_02_01_trader_table_listing_date.sql",
+		.check = "SHOW CREATE TABLE `trader`",
+		.condition = "missing",
+		.match = "listing_date",
+		.sql = R"(
+ALTER TABLE `trader`
+	ADD COLUMN `listing_date` DATETIME NULL DEFAULT NULL AFTER `active_transaction`,
+	ADD INDEX `idx_trader_listing_date` (`listing_date`);
+)",
+		.content_schema_update = false
+	},
+	ManifestEntry{
+		.version = 9297,
+		.description = "2024_01_22_sharedbank_guid_primary_key.sql",
+		.check = "SHOW COLUMNS FROM `sharedbank` LIKE 'guid'",
+		.condition = "empty",
+		.match = "",
+		.sql = R"(
+ALTER TABLE `sharedbank`
+CHANGE COLUMN `acctid` `account_id` int(11) UNSIGNED NOT NULL DEFAULT 0 FIRST,
+CHANGE COLUMN `slotid` `slot_id` mediumint(7) UNSIGNED NOT NULL DEFAULT 0 AFTER `account_id`,
+CHANGE COLUMN `itemid` `item_id` int(11) UNSIGNED NOT NULL DEFAULT 0 AFTER `slot_id`,
+CHANGE COLUMN `augslot1` `augment_one` mediumint(7) UNSIGNED NOT NULL DEFAULT 0 AFTER `charges`,
+CHANGE COLUMN `augslot2` `augment_two` mediumint(7) UNSIGNED NOT NULL DEFAULT 0 AFTER `augment_one`,
+CHANGE COLUMN `augslot3` `augment_three` mediumint(7) UNSIGNED NOT NULL DEFAULT 0 AFTER `augment_two`,
+CHANGE COLUMN `augslot4` `augment_four` mediumint(7) UNSIGNED NOT NULL DEFAULT 0 AFTER `augment_three`,
+CHANGE COLUMN `augslot5` `augment_five` mediumint(7) UNSIGNED NOT NULL DEFAULT 0 AFTER `augment_four`,
+CHANGE COLUMN `augslot6` `augment_six` mediumint(7) UNSIGNED NOT NULL DEFAULT 0 AFTER `augment_five`,
+MODIFY COLUMN `charges` smallint(3) UNSIGNED NOT NULL DEFAULT 0 AFTER `item_id`,
+ADD COLUMN `color` int(11) UNSIGNED NOT NULL DEFAULT 0 AFTER `charges`,
+ADD COLUMN `ornament_icon` int(11) UNSIGNED NOT NULL AFTER `custom_data`,
+ADD COLUMN `ornament_idfile` int(11) UNSIGNED NOT NULL AFTER `ornament_icon`,
+ADD COLUMN `ornament_hero_model` int(11) NOT NULL AFTER `ornament_idfile`,
+ADD COLUMN `guid` bigint(20) UNSIGNED NOT NULL DEFAULT 0 AFTER `ornament_hero_model`,
+ADD PRIMARY KEY (`account_id`, `slot_id`);
+)",
+		.content_schema_update = false,
+		.force_interactive = false
+	},
+	ManifestEntry{
+		.version = 9298,
+		.description = "2024_10_24_inventory_changes.sql",
+		.check = "SHOW COLUMNS FROM `inventory` LIKE 'character_id'",
+		.condition = "empty",
+		.match = "",
+		.sql = R"(
+ALTER TABLE `inventory`
+CHANGE COLUMN `charid` `character_id` int(11) UNSIGNED NOT NULL DEFAULT 0 FIRST,
+CHANGE COLUMN `slotid` `slot_id` mediumint(7) UNSIGNED NOT NULL DEFAULT 0 AFTER `character_id`,
+CHANGE COLUMN `itemid` `item_id` int(11) UNSIGNED NULL DEFAULT 0 AFTER `slot_id`,
+CHANGE COLUMN `augslot1` `augment_one` mediumint(7) UNSIGNED NOT NULL DEFAULT 0 AFTER `color`,
+CHANGE COLUMN `augslot2` `augment_two` mediumint(7) UNSIGNED NOT NULL DEFAULT 0 AFTER `augment_one`,
+CHANGE COLUMN `augslot3` `augment_three` mediumint(7) UNSIGNED NOT NULL DEFAULT 0 AFTER `augment_two`,
+CHANGE COLUMN `augslot4` `augment_four` mediumint(7) UNSIGNED NOT NULL DEFAULT 0 AFTER `augment_three`,
+CHANGE COLUMN `augslot5` `augment_five` mediumint(7) UNSIGNED NOT NULL DEFAULT 0 AFTER `augment_four`,
+CHANGE COLUMN `augslot6` `augment_six` mediumint(7) UNSIGNED NOT NULL DEFAULT 0 AFTER `augment_five`,
+CHANGE COLUMN `ornamenticon` `ornament_icon` int(11) UNSIGNED NOT NULL DEFAULT 0 AFTER `custom_data`,
+CHANGE COLUMN `ornamentidfile` `ornament_idfile` int(11) UNSIGNED NOT NULL DEFAULT 0 AFTER `ornament_icon`,
+DROP PRIMARY KEY,
+ADD PRIMARY KEY (`character_id`, `slot_id`) USING BTREE;
+UPDATE `inventory` SET `slot_id` = ((`slot_id` - 251) + 4010) WHERE `slot_id` BETWEEN 251 AND 260; -- Bag 1
+UPDATE `inventory` SET `slot_id` = ((`slot_id` - 261) + 4210) WHERE `slot_id` BETWEEN 261 AND 270; -- Bag 2
+UPDATE `inventory` SET `slot_id` = ((`slot_id` - 271) + 4410) WHERE `slot_id` BETWEEN 271 AND 280; -- Bag 3
+UPDATE `inventory` SET `slot_id` = ((`slot_id` - 281) + 4610) WHERE `slot_id` BETWEEN 281 AND 290; -- Bag 4
+UPDATE `inventory` SET `slot_id` = ((`slot_id` - 291) + 4810) WHERE `slot_id` BETWEEN 291 AND 300; -- Bag 5
+UPDATE `inventory` SET `slot_id` = ((`slot_id` - 301) + 5010) WHERE `slot_id` BETWEEN 301 AND 310; -- Bag 6
+UPDATE `inventory` SET `slot_id` = ((`slot_id` - 311) + 5210) WHERE `slot_id` BETWEEN 311 AND 320; -- Bag 7
+UPDATE `inventory` SET `slot_id` = ((`slot_id` - 321) + 5410) WHERE `slot_id` BETWEEN 321 AND 330; -- Bag 8
+UPDATE `inventory` SET `slot_id` = ((`slot_id` - 331) + 5610) WHERE `slot_id` BETWEEN 331 AND 340; -- Bag 9
+UPDATE `inventory` SET `slot_id` = ((`slot_id` - 341) + 5810) WHERE `slot_id` BETWEEN 341 AND 350; -- Bag 10
+UPDATE `inventory` SET `slot_id` = ((`slot_id` - 8000) + 6010) WHERE `slot_id` BETWEEN 8000 AND 8199; -- Cursor Overflow
+DELETE FROM `inventory` WHERE `slot_id` BETWEEN 8200 AND 8999; -- Extreme Cursor Overflow
+UPDATE `inventory` SET `slot_id` = ((`slot_id` - 351) + 6010) WHERE `slot_id` BETWEEN 351 AND 360; -- Cursor Bag
+UPDATE `inventory` SET `slot_id` = ((`slot_id` - 2031) + 6210) WHERE `slot_id` BETWEEN 2031 AND 2040; -- Bank Bag 1
+UPDATE `inventory` SET `slot_id` = ((`slot_id` - 2041) + 6410) WHERE `slot_id` BETWEEN 2041 AND 2050; -- Bank Bag 2
+UPDATE `inventory` SET `slot_id` = ((`slot_id` - 2051) + 6610) WHERE `slot_id` BETWEEN 2051 AND 2060; -- Bank Bag 3
+UPDATE `inventory` SET `slot_id` = ((`slot_id` - 2061) + 6810) WHERE `slot_id` BETWEEN 2061 AND 2070; -- Bank Bag 4
+UPDATE `inventory` SET `slot_id` = ((`slot_id` - 2071) + 7010) WHERE `slot_id` BETWEEN 2071 AND 2080; -- Bank Bag 5
+UPDATE `inventory` SET `slot_id` = ((`slot_id` - 2081) + 7210) WHERE `slot_id` BETWEEN 2081 AND 2090; -- Bank Bag 6
+UPDATE `inventory` SET `slot_id` = ((`slot_id` - 2091) + 7410) WHERE `slot_id` BETWEEN 2091 AND 2100; -- Bank Bag 7
+UPDATE `inventory` SET `slot_id` = ((`slot_id` - 2101) + 7610) WHERE `slot_id` BETWEEN 2101 AND 2110; -- Bank Bag 8
+UPDATE `inventory` SET `slot_id` = ((`slot_id` - 2111) + 7810) WHERE `slot_id` BETWEEN 2111 AND 2120; -- Bank Bag 9
+UPDATE `inventory` SET `slot_id` = ((`slot_id` - 2121) + 8010) WHERE `slot_id` BETWEEN 2121 AND 2130; -- Bank Bag 10
+UPDATE `inventory` SET `slot_id` = ((`slot_id` - 2131) + 8210) WHERE `slot_id` BETWEEN 2131 AND 2140; -- Bank Bag 11
+UPDATE `inventory` SET `slot_id` = ((`slot_id` - 2141) + 8410) WHERE `slot_id` BETWEEN 2141 AND 2150; -- Bank Bag 12
+UPDATE `inventory` SET `slot_id` = ((`slot_id` - 2151) + 8610) WHERE `slot_id` BETWEEN 2151 AND 2160; -- Bank Bag 13
+UPDATE `inventory` SET `slot_id` = ((`slot_id` - 2161) + 8810) WHERE `slot_id` BETWEEN 2161 AND 2170; -- Bank Bag 14
+UPDATE `inventory` SET `slot_id` = ((`slot_id` - 2171) + 9010) WHERE `slot_id` BETWEEN 2171 AND 2180; -- Bank Bag 15
+UPDATE `inventory` SET `slot_id` = ((`slot_id` - 2181) + 9210) WHERE `slot_id` BETWEEN 2181 AND 2190; -- Bank Bag 16
+UPDATE `inventory` SET `slot_id` = ((`slot_id` - 2191) + 9410) WHERE `slot_id` BETWEEN 2191 AND 2200; -- Bank Bag 17
+UPDATE `inventory` SET `slot_id` = ((`slot_id` - 2201) + 9610) WHERE `slot_id` BETWEEN 2201 AND 2210; -- Bank Bag 18
+UPDATE `inventory` SET `slot_id` = ((`slot_id` - 2211) + 9810) WHERE `slot_id` BETWEEN 2211 AND 2220; -- Bank Bag 19
+UPDATE `inventory` SET `slot_id` = ((`slot_id` - 2221) + 10010) WHERE `slot_id` BETWEEN 2221 AND 2230; -- Bank Bag 20
+UPDATE `inventory` SET `slot_id` = ((`slot_id` - 2231) + 10210) WHERE `slot_id` BETWEEN 2231 AND 2240; -- Bank Bag 21
+UPDATE `inventory` SET `slot_id` = ((`slot_id` - 2241) + 10410) WHERE `slot_id` BETWEEN 2241 AND 2250; -- Bank Bag 22
+UPDATE `inventory` SET `slot_id` = ((`slot_id` - 2251) + 10610) WHERE `slot_id` BETWEEN 2251 AND 2260; -- Bank Bag 23
+UPDATE `inventory` SET `slot_id` = ((`slot_id` - 2261) + 10810) WHERE `slot_id` BETWEEN 2261 AND 2270; -- Bank Bag 24
+UPDATE `sharedbank` SET `slot_id` = ((`slot_id` - 2531) + 11010) WHERE `slot_id` BETWEEN 2531 AND 2540; -- Shared Bank Bag 1
+UPDATE `sharedbank` SET `slot_id` = ((`slot_id` - 2541) + 11210) WHERE `slot_id` BETWEEN 2541 AND 2550; -- Shared Bank Bag 2
+)",
+		.content_schema_update = false,
+		.force_interactive = false
+	},
+	ManifestEntry{
+		.version = 9299,
+		.description = "2024_10_24_merchantlist_temp_uncap.sql",
+		.check = "SHOW CREATE TABLE `merchantlist_temp`",
+		.condition = "contains",
+		.match = "`slot` tinyint(3)",
+		.sql = R"(
+ALTER TABLE `merchantlist_temp`
+MODIFY COLUMN `slot` int UNSIGNED NOT NULL DEFAULT 0 AFTER `npcid`;
+)",
+		.content_schema_update = false
+	},
+	ManifestEntry{
+		.version = 9300,
+		.description = "2024_10_15_npc_types_multiquest_enabled.sql",
+		.check = "SHOW COLUMNS FROM `npc_types` LIKE 'multiquest_enabled'",
+		.condition = "empty",
+		.match = "",
+		.sql = R"(
+ALTER TABLE `npc_types`
+ADD COLUMN `multiquest_enabled` tinyint(1) UNSIGNED NOT NULL DEFAULT 0 AFTER `is_parcel_merchant`;
+)",
+		.content_schema_update = true
+	},
+	ManifestEntry{
+		.version = 9301,
+		.description = "2024_10_08_add_detail_player_event_logging.sql",
+		.check       = "SHOW COLUMNS FROM `player_event_log_settings` LIKE 'etl_enabled'",
+		.condition   = "empty",
+		.match       = "",
+		.sql = R"(
+ALTER TABLE `player_event_log_settings`
+	ADD COLUMN `etl_enabled` TINYINT(1) UNSIGNED NOT NULL DEFAULT '0' AFTER `discord_webhook_id`;
+ALTER TABLE `player_event_logs`
+	ADD COLUMN `etl_table_id` BIGINT(20) NOT NULL DEFAULT '0' AFTER `event_data`;
+UPDATE `player_event_log_settings` SET `etl_enabled` = 1 WHERE `id` = 14;
+CREATE TABLE `player_event_loot_items` (
+	`id` BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+	`item_id` INT(10) UNSIGNED NULL DEFAULT NULL,
+	`item_name` VARCHAR(64) NULL DEFAULT NULL COLLATE 'latin1_swedish_ci',
+	`charges` INT(11) NULL DEFAULT NULL,
+	`augment_1_id` INT UNSIGNED NULL DEFAULT '0',
+	`augment_2_id` INT UNSIGNED NULL DEFAULT '0',
+	`augment_3_id` INT UNSIGNED NULL DEFAULT '0',
+	`augment_4_id` INT UNSIGNED NULL DEFAULT '0',
+	`augment_5_id` INT UNSIGNED NULL DEFAULT '0',
+	`augment_6_id` INT UNSIGNED NULL DEFAULT '0',
+	`npc_id` INT(10) UNSIGNED NULL DEFAULT NULL,
+	`corpse_name` VARCHAR(64) NULL DEFAULT NULL COLLATE 'latin1_swedish_ci',
+	`created_at` DATETIME NULL DEFAULT NULL,
+	PRIMARY KEY (`id`) USING BTREE,
+	INDEX `item_id_npc_id` (`item_id`, `npc_id`) USING BTREE,
+	INDEX `created_at` (`created_at`) USING BTREE
+)
+COLLATE='latin1_swedish_ci'
+ENGINE=InnoDB
+AUTO_INCREMENT=1;
+UPDATE `player_event_log_settings` SET `etl_enabled` = 1 WHERE `id` = 16;
+CREATE TABLE `player_event_merchant_sell` (
+	`id` BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+	`npc_id` INT(10) UNSIGNED NULL DEFAULT '0',
+	`merchant_name` VARCHAR(64) NULL DEFAULT NULL COLLATE 'latin1_swedish_ci',
+	`merchant_type` INT(10) UNSIGNED NULL DEFAULT '0',
+	`item_id` INT(10) UNSIGNED NULL DEFAULT '0',
+	`item_name` VARCHAR(64) NULL DEFAULT NULL COLLATE 'latin1_swedish_ci',
+	`charges` INT(11) NULL DEFAULT '0',
+	`cost` INT(10) UNSIGNED NULL DEFAULT '0',
+	`alternate_currency_id` INT(10) UNSIGNED NULL DEFAULT '0',
+	`player_money_balance` BIGINT(20) UNSIGNED NULL DEFAULT '0',
+	`player_currency_balance` BIGINT(20) UNSIGNED NULL DEFAULT '0',
+	`created_at` DATETIME NULL DEFAULT NULL,
+	PRIMARY KEY (`id`) USING BTREE,
+	INDEX `item_id_npc_id` (`item_id`, `npc_id`) USING BTREE,
+	INDEX `created_at` (`created_at`) USING BTREE
+)
+COLLATE='latin1_swedish_ci'
+ENGINE=InnoDB
+AUTO_INCREMENT=1;
+UPDATE `player_event_log_settings` SET `etl_enabled` = 1 WHERE `id` = 15;
+CREATE TABLE `player_event_merchant_purchase` (
+	`id` BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+	`npc_id` INT(10) UNSIGNED NULL DEFAULT '0',
+	`merchant_name` VARCHAR(64) NULL DEFAULT NULL COLLATE 'latin1_swedish_ci',
+	`merchant_type` INT(10) UNSIGNED NULL DEFAULT '0',
+	`item_id` INT(10) UNSIGNED NULL DEFAULT '0',
+	`item_name` VARCHAR(64) NULL DEFAULT NULL COLLATE 'latin1_swedish_ci',
+	`charges` INT(11) NULL DEFAULT '0',
+	`cost` INT(10) UNSIGNED NULL DEFAULT '0',
+	`alternate_currency_id` INT(10) UNSIGNED NULL DEFAULT '0',
+	`player_money_balance` BIGINT(20) UNSIGNED NULL DEFAULT '0',
+	`player_currency_balance` BIGINT(20) UNSIGNED NULL DEFAULT '0',
+	`created_at` DATETIME NULL DEFAULT NULL,
+	PRIMARY KEY (`id`) USING BTREE,
+	INDEX `item_id_npc_id` (`item_id`, `npc_id`) USING BTREE,
+	INDEX `created_at` (`created_at`) USING BTREE
+)
+COLLATE='latin1_swedish_ci'
+ENGINE=InnoDB
+AUTO_INCREMENT=1;
+UPDATE `player_event_log_settings` SET `etl_enabled` = 1 WHERE `id` = 22;
+CREATE TABLE `player_event_npc_handin` (
+	`id` BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+	`npc_id` INT(10) UNSIGNED NULL DEFAULT '0',
+	`npc_name` VARCHAR(64) NULL DEFAULT NULL COLLATE 'latin1_swedish_ci',
+	`handin_copper` BIGINT(20) UNSIGNED NULL DEFAULT '0',
+	`handin_silver` BIGINT(20) UNSIGNED NULL DEFAULT '0',
+	`handin_gold` BIGINT(20) UNSIGNED NULL DEFAULT '0',
+	`handin_platinum` BIGINT(20) UNSIGNED NULL DEFAULT '0',
+	`return_copper` BIGINT(20) UNSIGNED NULL DEFAULT '0',
+	`return_silver` BIGINT(20) UNSIGNED NULL DEFAULT '0',
+	`return_gold` BIGINT(20) UNSIGNED NULL DEFAULT '0',
+	`return_platinum` BIGINT(20) UNSIGNED NULL DEFAULT '0',
+	`is_quest_handin` TINYINT(3) UNSIGNED NULL DEFAULT '0',
+	`created_at` DATETIME NULL DEFAULT NULL,
+	PRIMARY KEY (`id`) USING BTREE,
+	INDEX `npc_id_is_quest_handin` (`npc_id`, `is_quest_handin`) USING BTREE,
+	INDEX `created_at` (`created_at`) USING BTREE
+)
+COLLATE='latin1_swedish_ci'
+ENGINE=InnoDB
+AUTO_INCREMENT=1;
+CREATE TABLE `player_event_npc_handin_entries` (
+	`id` BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+	`player_event_npc_handin_id` BIGINT(20) UNSIGNED NOT NULL DEFAULT '0',
+	`type` INT(10) UNSIGNED NULL DEFAULT NULL,
+	`item_id` INT(10) UNSIGNED NOT NULL DEFAULT '0',
+	`charges` INT(11) NOT NULL DEFAULT '0',
+	`evolve_level` INT(10) UNSIGNED NOT NULL DEFAULT '0',
+	`evolve_amount` BIGINT(20) UNSIGNED NOT NULL DEFAULT '0',
+	`augment_1_id` INT(10) UNSIGNED NOT NULL DEFAULT '0',
+	`augment_2_id` INT(10) UNSIGNED NOT NULL DEFAULT '0',
+	`augment_3_id` INT(10) UNSIGNED NOT NULL DEFAULT '0',
+	`augment_4_id` INT(10) UNSIGNED NOT NULL DEFAULT '0',
+	`augment_5_id` INT(10) UNSIGNED NOT NULL DEFAULT '0',
+	`augment_6_id` INT(10) UNSIGNED NOT NULL DEFAULT '0',
+	`created_at` DATETIME NULL DEFAULT NULL,
+	PRIMARY KEY (`id`) USING BTREE,
+	INDEX `type_item_id` (`type`, `item_id`) USING BTREE,
+	INDEX `player_event_npc_handin_id` (`player_event_npc_handin_id`) USING BTREE,
+	INDEX `created_at` (`created_at`) USING BTREE
+)
+COLLATE='latin1_swedish_ci'
+ENGINE=InnoDB
+AUTO_INCREMENT=1;
+UPDATE `player_event_log_settings` SET `etl_enabled` = 1 WHERE `id` = 27;
+CREATE TABLE `player_event_trade` (
+	`id` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+	`char1_id` INT(10) UNSIGNED NULL DEFAULT '0',
+	`char2_id` INT(10) UNSIGNED NULL DEFAULT '0',
+	`char1_copper` BIGINT(20) UNSIGNED NULL DEFAULT '0',
+	`char1_silver` BIGINT(20) UNSIGNED NULL DEFAULT '0',
+	`char1_gold` BIGINT(20) UNSIGNED NULL DEFAULT '0',
+	`char1_platinum` BIGINT(20) UNSIGNED NULL DEFAULT '0',
+	`char2_copper` BIGINT(20) UNSIGNED NULL DEFAULT '0',
+	`char2_silver` BIGINT(20) UNSIGNED NULL DEFAULT '0',
+	`char2_gold` BIGINT(20) UNSIGNED NULL DEFAULT '0',
+	`char2_platinum` BIGINT(20) UNSIGNED NULL DEFAULT '0',
+	`created_at` DATETIME NULL DEFAULT NULL,
+	PRIMARY KEY (`id`) USING BTREE,
+	INDEX `char1_id_char2_id` (`char1_id`, `char2_id`) USING BTREE,
+	INDEX `created_at` (`created_at`) USING BTREE
+)
+COLLATE='latin1_swedish_ci'
+ENGINE=InnoDB
+AUTO_INCREMENT=1;
+CREATE TABLE `player_event_trade_entries` (
+	`id` BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+	`player_event_trade_id` BIGINT(20) UNSIGNED NULL DEFAULT '0',
+	`char_id` INT(10) UNSIGNED NULL DEFAULT '0',
+	`slot` SMALLINT(6) NULL DEFAULT '0',
+	`item_id` INT(10) UNSIGNED NULL DEFAULT '0',
+	`charges` SMALLINT(6) NULL DEFAULT '0',
+	`augment_1_id` INT(10) UNSIGNED NULL DEFAULT '0',
+	`augment_2_id` INT(10) UNSIGNED NULL DEFAULT '0',
+	`augment_3_id` INT(10) UNSIGNED NULL DEFAULT '0',
+	`augment_4_id` INT(10) UNSIGNED NULL DEFAULT '0',
+	`augment_5_id` INT(10) UNSIGNED NULL DEFAULT '0',
+	`augment_6_id` INT(10) UNSIGNED NULL DEFAULT '0',
+	`in_bag` TINYINT(4) NULL DEFAULT '0',
+	`created_at` DATETIME NULL DEFAULT NULL,
+	PRIMARY KEY (`id`) USING BTREE,
+	INDEX `player_event_trade_id` (`player_event_trade_id`) USING BTREE,
+	INDEX `created_at` (`created_at`) USING BTREE
+)
+COLLATE='latin1_swedish_ci'
+ENGINE=InnoDB
+AUTO_INCREMENT=1;
+UPDATE `player_event_log_settings` SET `etl_enabled` = 0 WHERE `id` = 54;
+CREATE TABLE `player_event_speech` (
+	`id` BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+	`to_char_id` VARCHAR(64) NULL DEFAULT NULL COLLATE 'latin1_swedish_ci',
+	`from_char_id` VARCHAR(64) NULL DEFAULT NULL COLLATE 'latin1_swedish_ci',
+	`guild_id` INT(10) UNSIGNED NULL DEFAULT '0',
+	`type` INT(10) UNSIGNED NULL DEFAULT '0',
+	`min_status` INT(10) UNSIGNED NULL DEFAULT '0',
+	`message` LONGTEXT NULL DEFAULT NULL COLLATE 'latin1_swedish_ci',
+	`created_at` DATETIME NULL DEFAULT NULL,
+	PRIMARY KEY (`id`) USING BTREE,
+	INDEX `to_char_id_from_char_id` (`to_char_id`, `from_char_id`) USING BTREE,
+	INDEX `created_at` (`created_at`) USING BTREE
+)
+COLLATE='latin1_swedish_ci'
+ENGINE=InnoDB
+AUTO_INCREMENT=1;
+UPDATE `player_event_log_settings` SET `etl_enabled` = 1 WHERE `id` = 44;
+CREATE TABLE `player_event_killed_npc` (
+	`id` BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+	`npc_id` INT(10) UNSIGNED NULL DEFAULT '0',
+	`npc_name` VARCHAR(64) NULL DEFAULT NULL COLLATE 'latin1_swedish_ci',
+	`combat_time_seconds` INT(10) UNSIGNED NULL DEFAULT '0',
+	`total_damage_per_second_taken` BIGINT(20) UNSIGNED NULL DEFAULT '0',
+	`total_heal_per_second_taken` BIGINT(20) UNSIGNED NULL DEFAULT '0',
+	`created_at` DATETIME NULL DEFAULT NULL,
+	PRIMARY KEY (`id`) USING BTREE,
+	INDEX `npc_id` (`npc_id`) USING BTREE,
+	INDEX `created_at` (`created_at`) USING BTREE
+)
+COLLATE='latin1_swedish_ci'
+ENGINE=InnoDB;
+UPDATE `player_event_log_settings` SET `etl_enabled` = 1 WHERE `id` = 45;
+CREATE TABLE `player_event_killed_named_npc` (
+	`id` BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+	`npc_id` INT(10) UNSIGNED NULL DEFAULT '0',
+	`npc_name` VARCHAR(64) NULL DEFAULT NULL COLLATE 'latin1_swedish_ci',
+	`combat_time_seconds` INT(10) UNSIGNED NULL DEFAULT '0',
+	`total_damage_per_second_taken` BIGINT(20) UNSIGNED NULL DEFAULT '0',
+	`total_heal_per_second_taken` BIGINT(20) UNSIGNED NULL DEFAULT '0',
+	`created_at` DATETIME NULL DEFAULT NULL,
+	PRIMARY KEY (`id`) USING BTREE,
+	INDEX `npc_id` (`npc_id`) USING BTREE,
+	INDEX `created_at` (`created_at`) USING BTREE
+)
+COLLATE='latin1_swedish_ci'
+ENGINE=InnoDB;
+UPDATE `player_event_log_settings` SET `etl_enabled` = 1 WHERE `id` = 46;
+CREATE TABLE `player_event_killed_raid_npc` (
+	`id` BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+	`npc_id` INT(10) UNSIGNED NULL DEFAULT '0',
+	`npc_name` VARCHAR(64) NULL DEFAULT NULL COLLATE 'latin1_swedish_ci',
+	`combat_time_seconds` INT(10) UNSIGNED NULL DEFAULT '0',
+	`total_damage_per_second_taken` BIGINT(20) UNSIGNED NULL DEFAULT '0',
+	`total_heal_per_second_taken` BIGINT(20) UNSIGNED NULL DEFAULT '0',
+	`created_at` DATETIME NULL DEFAULT NULL,
+	PRIMARY KEY (`id`) USING BTREE,
+	INDEX `npc_id` (`npc_id`) USING BTREE,
+	INDEX `created_at` (`created_at`) USING BTREE
+)
+COLLATE='latin1_swedish_ci'
+ENGINE=InnoDB;
+UPDATE `player_event_log_settings` SET `etl_enabled` = 1 WHERE `id` = 4;
+CREATE TABLE `player_event_aa_purchase` (
+	`id` BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+	`aa_ability_id` INT(11) NULL DEFAULT '0',
+	`cost` INT(11) NULL DEFAULT '0',
+	`previous_id` INT(11) NULL DEFAULT '0',
+	`next_id` INT(11) NULL DEFAULT '0',
+	`created_at` DATETIME NULL DEFAULT NULL,
+	PRIMARY KEY (`id`) USING BTREE,
+	INDEX `created_at` (`created_at`) USING BTREE
+)
+COLLATE='latin1_swedish_ci'
+ENGINE=InnoDB
+;
+)"
+	},
+	ManifestEntry{
+		.version = 9302,
+		.description = "2025_02_09_illusion_block.sql",
+		.check = "SHOW COLUMNS FROM `character_data` LIKE 'illusion_block'",
+		.condition = "empty",
+		.match = "",
+		.sql = R"(
+ALTER TABLE `character_data`
+	ADD COLUMN `illusion_block` TINYINT(11) UNSIGNED NOT NULL DEFAULT 0 AFTER `deleted_at`;
+
+UPDATE `command_settings`
+SET `aliases` =
+    CASE
+        WHEN LENGTH(`aliases`) > 0 AND `aliases` NOT LIKE '%|ib%'
+            THEN CONCAT(`aliases`, '|ib')
+        WHEN LENGTH(`aliases`) = 0
+            THEN 'ib'
+        ELSE `aliases`
+    END
+WHERE `command` = 'illusionblock'
+AND `aliases` NOT LIKE '%ib%';
+)",
+	},
+	ManifestEntry{
+		.version = 9303,
+		.description = "2025_02_13_corpse_slot_fix.sql",
+		.check = "SELECT * FROM `character_corpse_items` WHERE `equip_slot` BETWEEN 251 AND 350",
+		.condition = "not_empty",
+		.match = "",
+		.sql = R"(
+UPDATE `character_corpse_items` SET `equip_slot` = ((`equip_slot` - 251) + 4010) WHERE `equip_slot` BETWEEN 251 AND 260; -- Bag 1
+UPDATE `character_corpse_items` SET `equip_slot` = ((`equip_slot` - 261) + 4210) WHERE `equip_slot` BETWEEN 261 AND 270; -- Bag 2
+UPDATE `character_corpse_items` SET `equip_slot` = ((`equip_slot` - 271) + 4410) WHERE `equip_slot` BETWEEN 271 AND 280; -- Bag 3
+UPDATE `character_corpse_items` SET `equip_slot` = ((`equip_slot` - 281) + 4610) WHERE `equip_slot` BETWEEN 281 AND 290; -- Bag 4
+UPDATE `character_corpse_items` SET `equip_slot` = ((`equip_slot` - 291) + 4810) WHERE `equip_slot` BETWEEN 291 AND 300; -- Bag 5
+UPDATE `character_corpse_items` SET `equip_slot` = ((`equip_slot` - 301) + 5010) WHERE `equip_slot` BETWEEN 301 AND 310; -- Bag 6
+UPDATE `character_corpse_items` SET `equip_slot` = ((`equip_slot` - 311) + 5210) WHERE `equip_slot` BETWEEN 311 AND 320; -- Bag 7
+UPDATE `character_corpse_items` SET `equip_slot` = ((`equip_slot` - 321) + 5410) WHERE `equip_slot` BETWEEN 321 AND 330; -- Bag 8
+UPDATE `character_corpse_items` SET `equip_slot` = ((`equip_slot` - 331) + 5610) WHERE `equip_slot` BETWEEN 331 AND 340; -- Bag 9
+UPDATE `character_corpse_items` SET `equip_slot` = ((`equip_slot` - 341) + 5810) WHERE `equip_slot` BETWEEN 341 AND 350; -- Bag 10
+)",
+	},
+	ManifestEntry{
+		.version     = 9304,
+		.description = "2024_12_01_update_guild_bank",
+		.check       = "SHOW COLUMNS FROM `guild_bank` LIKE 'augment_one_id'",
+		.condition   = "empty",
+		.match       = "",
+		.sql         = R"(
+ALTER TABLE `guild_bank`
+	DROP INDEX `guildid`,
+	CHANGE COLUMN `guildid` `guild_id` INT(10) UNSIGNED NOT NULL DEFAULT '0' AFTER `id`,
+	CHANGE COLUMN `itemid` `item_id` INT(10) UNSIGNED NOT NULL DEFAULT '0' AFTER `slot`,
+	CHANGE COLUMN `whofor` `who_for` VARCHAR(64) NULL DEFAULT NULL COLLATE 'utf8_general_ci' AFTER `permissions`,
+	ADD COLUMN `augment_one_id` INT UNSIGNED NULL DEFAULT '0' AFTER `item_id`,
+	ADD COLUMN `augment_two_id` INT UNSIGNED NULL DEFAULT '0' AFTER `augment_one_id`,
+	ADD COLUMN `augment_three_id` INT UNSIGNED NULL DEFAULT '0' AFTER `augment_two_id`,
+	ADD COLUMN `augment_four_id` INT UNSIGNED NULL DEFAULT '0' AFTER `augment_three_id`,
+	ADD COLUMN `augment_five_id` INT UNSIGNED NULL DEFAULT '0' AFTER `augment_four_id`,
+	ADD COLUMN `augment_six_id` INT UNSIGNED NULL DEFAULT '0' AFTER `augment_five_id`,
+	CHANGE COLUMN `qty` `quantity` INT(10) NOT NULL DEFAULT '0' AFTER `augment_six_id`;
+ALTER TABLE `guild_bank`
+	ADD INDEX `guild_id` (`guild_id`);
+)"
+	},
+	ManifestEntry{
+		.version = 9305,
+		.description = "2024_12_01_expedition_dz_merge.sql",
+		.check = "SHOW COLUMNS FROM `dynamic_zones` LIKE 'is_locked'",
+		.condition = "empty",
+		.match = "",
+		.sql = R"(
+ALTER TABLE `dynamic_zones`
+	ADD COLUMN `is_locked` TINYINT NOT NULL DEFAULT '0' AFTER `has_zone_in`,
+	ADD COLUMN `add_replay` TINYINT NOT NULL DEFAULT '1' AFTER `is_locked`;
+
+ALTER TABLE `expedition_lockouts`
+	CHANGE COLUMN `expedition_id` `dynamic_zone_id` INT(10) UNSIGNED NOT NULL AFTER `id`,
+	DROP INDEX `expedition_id_event_name`,
+	ADD UNIQUE INDEX `dz_id_event_name` (`dynamic_zone_id`, `event_name`) USING BTREE;
+
+UPDATE expedition_lockouts lockouts
+	INNER JOIN expeditions ON lockouts.dynamic_zone_id = expeditions.id
+	SET lockouts.dynamic_zone_id = expeditions.dynamic_zone_id;
+
+DROP TABLE `expeditions`;
+
+RENAME TABLE `expedition_lockouts` TO `dynamic_zone_lockouts`;
+)"
+	},
+	ManifestEntry{
+		.version = 9306,
+		.description = "2025_02_16_data_buckets_zone_id_instance_id.sql",
+		.check       = "SHOW COLUMNS FROM `data_buckets` LIKE 'zone_id'",
+		.condition   = "empty",
+		.match = "",
+		.sql = R"(
+-- Drop old indexes if exists
+DROP INDEX IF EXISTS `keys` ON `data_buckets`;
+DROP INDEX IF EXISTS `idx_npc_expires` ON `data_buckets`;
+DROP INDEX IF EXISTS `idx_bot_expires` ON `data_buckets`;
+
+-- Add zone_id, instance_id
+ALTER TABLE `data_buckets`
+	MODIFY COLUMN `npc_id` int(11) NOT NULL DEFAULT 0 AFTER `character_id`,
+	MODIFY COLUMN `bot_id` int(11) NOT NULL DEFAULT 0 AFTER `npc_id`,
+	ADD COLUMN `zone_id` smallint(11) UNSIGNED NOT NULL DEFAULT 0 AFTER `bot_id`,
+	ADD COLUMN `instance_id` smallint(11) UNSIGNED NOT NULL DEFAULT 0 AFTER `zone_id`;
+
+ALTER TABLE `data_buckets`
+	MODIFY COLUMN `account_id` bigint(11) UNSIGNED NULL DEFAULT 0 AFTER `expires`,
+	MODIFY COLUMN `character_id` bigint(11) UNSIGNED NOT NULL DEFAULT 0 AFTER `account_id`,
+	MODIFY COLUMN `npc_id` int(11) UNSIGNED NOT NULL DEFAULT 0 AFTER `character_id`,
+	MODIFY COLUMN `bot_id` int(11) UNSIGNED NOT NULL DEFAULT 0 AFTER `npc_id`;
+
+-- Create optimized unique index with `key` first
+CREATE UNIQUE INDEX `keys` ON data_buckets (`key`, character_id, npc_id, bot_id, account_id, zone_id, instance_id);
+
+-- Create indexes for just instance_id (instance deletion)
+CREATE INDEX idx_instance_id ON data_buckets (instance_id);
+)",
+		.content_schema_update = false
+	},
+	ManifestEntry{
+		.version     = 9307,
+		.description = "2025_02_17_zone_state_spawns.sql",
+		.check       = "SHOW TABLES LIKE 'zone_state_spawns'",
+		.condition   = "empty",
+		.match       = "",
+		.sql         = R"(
+CREATE TABLE `zone_state_spawns` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `zone_id` int(11) unsigned DEFAULT NULL,
+  `instance_id` int(11) unsigned DEFAULT NULL,
+  `is_corpse` tinyint(11) DEFAULT 0,
+  `decay_in_seconds` int(11) DEFAULT 0,
+  `npc_id` int(10) unsigned DEFAULT NULL,
+  `spawn2_id` int(10) unsigned NOT NULL,
+  `spawngroup_id` int(10) unsigned NOT NULL,
+  `x` float NOT NULL,
+  `y` float NOT NULL,
+  `z` float NOT NULL,
+  `heading` float NOT NULL,
+  `respawn_time` int(10) unsigned NOT NULL,
+  `variance` int(10) unsigned NOT NULL,
+  `grid` int(10) unsigned DEFAULT 0,
+  `current_waypoint` int(11) DEFAULT 0,
+  `path_when_zone_idle` smallint(6) DEFAULT 0,
+  `condition_id` smallint(5) unsigned DEFAULT 0,
+  `condition_min_value` smallint(6) DEFAULT 0,
+  `enabled` smallint(6) DEFAULT 1,
+  `anim` smallint(5) unsigned DEFAULT 0,
+  `loot_data` text DEFAULT NULL,
+  `entity_variables` text DEFAULT NULL,
+  `buffs` text DEFAULT NULL,
+  `hp` bigint(20) DEFAULT 0,
+  `mana` bigint(20) DEFAULT 0,
+  `endurance` bigint(20) DEFAULT 0,
+  `created_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4
+)",
+		.content_schema_update = false
+	},
+	ManifestEntry{
+		.version = 9308,
+		.description = "2025_03_29_add_multivalue_support_to_evolving_subtype.sql",
+		.check = "SHOW COLUMNS FROM `items_evolving_details` LIKE 'sub_type'",
+		.condition = "missing",
+		.match = "varchar(200)",
+		.sql = R"(
+ALTER TABLE `items_evolving_details`
+	CHANGE COLUMN `sub_type` `sub_type` VARCHAR(200) NULL DEFAULT '0' AFTER `type`;
+)",
+		.content_schema_update = true
+	},
+	// this one got missed being added to PEQ dumps so adding it again so it gets added when folks take a new release
+	ManifestEntry{
+		.version = 9309,
+		.description = "2025_03_1_create_pet_names_table_if_not_exist.sql",
+		.check = "SHOW TABLES LIKE 'character_pet_name'",
+		.condition = "empty",
+		.match = "",
+		.sql = R"(
+CREATE TABLE `character_pet_name` (
+    `character_id` INT(11) NOT NULL PRIMARY KEY,
+    `name` VARCHAR(64) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+)",
+	},
+	ManifestEntry{
+		.version = 9310,
+		.description = "2025_03_7_expand_horse_def.sql",
+		.check = "SHOW COLUMNS FROM `horses` LIKE 'helmtexture'",
+		.condition = "empty",
+		.match = "",
+		.sql = R"(
+ALTER TABLE `horses`
+	ADD COLUMN `helmtexture` TINYINT(2) NOT NULL DEFAULT -1 AFTER `texture`;
+)",
+		.content_schema_update = true
+	},
+	ManifestEntry{
+		.version = 9311,
+		.description = "2025_03_09_add_zone_state_is_zone_field.sql",
+		.check = "SHOW COLUMNS FROM `zone_state_spawns` LIKE 'is_zone'",
+		.condition = "empty",
+		.match = "",
+		.sql = R"(
+ALTER TABLE `zone_state_spawns`
+	ADD COLUMN `is_zone` tinyint(11) NULL DEFAULT 0 AFTER `is_corpse`;
+)",
+		.content_schema_update = false
+	},
+	ManifestEntry{
+		.version = 9312,
+		.description = "2025_03_11_data_bucket_indexes.sql",
+		.check = "SHOW INDEX FROM data_buckets",
+		.condition = "missing",
+		.match = "idx_zone_instance_expires",
+		.sql = R"(
+DROP INDEX IF EXISTS `idx_zone_instance_expires` ON `data_buckets`;
+DROP INDEX IF EXISTS `idx_character_expires` ON `data_buckets`;
+DROP INDEX IF EXISTS `idx_bot_expires` ON `data_buckets`;
+ALTER TABLE data_buckets ADD INDEX idx_zone_instance_expires (zone_id, instance_id, expires);
+ALTER TABLE data_buckets ADD INDEX idx_character_expires (character_id, expires);
+ALTER TABLE data_buckets ADD INDEX idx_bot_expires (bot_id, expires);
+)",
+	.content_schema_update = false
+	},
+	ManifestEntry{
+		.version = 9313,
+		.description = "2025_03_11_zone_state_spawns.sql",
+		.check = "SHOW INDEX FROM zone_state_spawns",
+		.condition = "missing",
+		.match = "idx_zone_instance",
+		.sql = R"(
+ALTER TABLE zone_state_spawns ADD INDEX idx_zone_instance (zone_id, instance_id);
+)",
+	.content_schema_update = false
+	},
+	ManifestEntry{
+		.version = 9314,
+		.description = "2025_03_12_zone_state_spawns_one_time_truncate.sql",
+		.check = "SELECT * FROM db_version WHERE version >= 9314",
+		.condition = "empty",
+		.match = "",
+		.sql = R"(
+TRUNCATE TABLE zone_state_spawns;
+)",
+		.content_schema_update = false
+	},
+	ManifestEntry{
+		.version = 9315,
+		.description = "2025_03_29_character_tribute_index.sql",
+		.check = "SHOW INDEX FROM character_tribute",
+		.condition = "missing",
+		.match = "idx_character_id",
+		.sql = R"(
+ALTER TABLE character_tribute ADD INDEX idx_character_id (character_id);
+)",
+		.content_schema_update = false
+	},
+	ManifestEntry{
+		.version = 9316,
+		.description = "2025_03_29_player_titlesets_index.sql",
+		.check = "SHOW INDEX FROM player_titlesets",
+		.condition = "missing",
+		.match = "idx_char_id",
+		.sql = R"(
+ALTER TABLE player_titlesets ADD INDEX idx_char_id (char_id);
+)",
+		.content_schema_update = false
+	},
+	ManifestEntry{
+		.version = 9317,
+		.description = "2025_03_29_respawn_times_instance_index.sql",
+		.check = "SHOW INDEX FROM respawn_times",
+		.condition = "missing",
+		.match = "idx_instance_id",
+		.sql = R"(
+ALTER TABLE respawn_times ADD INDEX idx_instance_id (instance_id);
+)",
+		.content_schema_update = false
+	},
+	ManifestEntry{
+		.version = 9318,
+		.description = "2025_03_29_zone_state_spawns_instance_index.sql",
+		.check = "SHOW INDEX FROM zone_state_spawns",
+		.condition = "missing",
+		.match = "idx_instance_id",
+		.sql = R"(
+ALTER TABLE zone_state_spawns ADD INDEX idx_instance_id (instance_id);
+)",
+		.content_schema_update = false
+	},
+	ManifestEntry{
+		.version = 9319,
+		.description = "2025_03_29_data_buckets_expires_index.sql",
+		.check = "SHOW INDEX FROM data_buckets",
+		.condition = "missing",
+		.match = "idx_expires",
+		.sql = R"(
+CREATE INDEX idx_expires ON data_buckets (expires);
+)",
+		.content_schema_update = false
+	},
+	ManifestEntry{
+		.version = 9320,
+		.description = "2025_03_23_add_respawn_times_expire_at.sql",
+		.check = "SHOW COLUMNS FROM `respawn_times` LIKE 'expire_at'",
+		.condition = "empty",
+		.match = "",
+		.sql = R"(
+ALTER TABLE `respawn_times`
+ADD COLUMN `expire_at` int(11) UNSIGNED NULL DEFAULT 0 AFTER `duration`;
+
+UPDATE respawn_times set expire_at = `start` + `duration`; -- backfill existing data
+
+CREATE INDEX `idx_expire_at` ON `respawn_times` (`expire_at`);
+)",
+		.content_schema_update = false
+	},
+	ManifestEntry{
+		.version = 9321,
+		.description = "2025_03_30_instance_list_add_expire_at.sql",
+		.check = "SHOW COLUMNS FROM `instance_list` LIKE 'expire_at'",
+		.condition = "empty",
+		.match = "",
+		.sql = R"(
+ALTER TABLE `instance_list`
+ADD COLUMN `expire_at` bigint(11) UNSIGNED NOT NULL DEFAULT 0 AFTER `duration`;
+
+UPDATE instance_list set expire_at = `start_time` + `duration`; -- backfill existing data
+
+CREATE INDEX `idx_expire_at` ON `instance_list` (`expire_at`);
+)",
+		.content_schema_update = false
+	},
 // -- template; copy/paste this when you need to create a new entry
 //	ManifestEntry{
 //		.version = 9228,

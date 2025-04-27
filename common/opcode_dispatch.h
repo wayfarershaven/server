@@ -197,6 +197,7 @@ IN(OP_RecipeDetails, uint32);
 //there is also a complicated OP_RecipeDetails reply struct OUT
 IN(OP_RecipeAutoCombine, RecipeAutoCombine_Struct);
 IN(OP_TradeSkillCombine, NewCombine_Struct);
+IN(OP_TradeSkillRecipeInspect, TradeSkillRecipeInspect_Struct);
 IN(OP_ItemName, ItemNamePacket_Struct);
 IN(OP_AugmentItem, AugmentItem_Struct);
 IN(OP_ClickDoor, ClickDoor_Struct);
@@ -250,6 +251,7 @@ IN(OP_TraderBuy, TraderBuy_Struct);
 IN(OP_Trader, Trader_ShowItems_Struct);
 IN(OP_GMFind, GMSummon_Struct);
 IN(OP_PickPocket, PickPocket_Struct);
+IN(OP_PickZone, PickZone_Struct);
 IN(OP_Bind_Wound, BindWound_Struct);
 INr(OP_TrackTarget);
 INr(OP_Track);

@@ -7,6 +7,9 @@
 #include "npc.h"
 #include "lua_npc.h"
 #include "lua_client.h"
+#include "lua_item.h"
+#include "lua_iteminst.h"
+#include "lua_spawn.h"
 
 struct Lua_NPC_Loot_List {
 	std::vector<uint32> entries;
@@ -597,7 +600,7 @@ bool Lua_NPC::HasItem(uint32 item_id)
 	return self->HasItem(item_id);
 }
 
-uint16 Lua_NPC::CountItem(uint32 item_id)
+uint32 Lua_NPC::CountItem(uint32 item_id)
 {
 	Lua_Safe_Call_Int();
 	return self->CountItem(item_id);
@@ -837,6 +840,111 @@ void Lua_NPC::DescribeSpecialAbilities(Lua_Client c)
 	self->DescribeSpecialAbilities(c);
 }
 
+bool Lua_NPC::IsMultiQuestEnabled()
+{
+	Lua_Safe_Call_Bool();
+	return self->IsMultiQuestEnabled();
+}
+
+void Lua_NPC::MultiQuestEnable()
+{
+	Lua_Safe_Call_Void();
+	self->MultiQuestEnable();
+}
+
+bool Lua_NPC::LuaCheckHandin(
+	Lua_Client c,
+	luabind::adl::object handin_table,
+	luabind::adl::object required_table,
+	luabind::adl::object items_table
+)
+{
+	Lua_Safe_Call_Bool();
+
+	if (
+		luabind::type(handin_table) != LUA_TTABLE ||
+		luabind::type(required_table) != LUA_TTABLE ||
+		luabind::type(items_table) != LUA_TTABLE
+		) {
+		return false;
+	}
+
+	std::map<std::string, uint32>   handin_map;
+	std::map<std::string, uint32>   required_map;
+	std::vector<EQ::ItemInstance *> items;
+
+	for (luabind::iterator i(handin_table), end; i != end; i++) {
+		std::string key;
+		if (luabind::type(i.key()) == LUA_TSTRING) {
+			key = luabind::object_cast<std::string>(i.key());
+		}
+		else if (luabind::type(i.key()) == LUA_TNUMBER) {
+			key = fmt::format("{}", luabind::object_cast<int>(i.key()));
+		}
+		else {
+			LogError("Handin key type [{}] not supported", luabind::type(i.key()));
+		}
+
+		if (!key.empty()) {
+			handin_map[key] = luabind::object_cast<uint32>(handin_table[i.key()]);
+			LogNpcHandinDetail("Handin key [{}] value [{}]", key, handin_map[key]);
+		}
+	}
+
+	for (luabind::iterator i(required_table), end; i != end; i++) {
+		std::string key;
+		if (luabind::type(i.key()) == LUA_TSTRING) {
+			key = luabind::object_cast<std::string>(i.key());
+		}
+		else if (luabind::type(i.key()) == LUA_TNUMBER) {
+			key = fmt::format("{}", luabind::object_cast<int>(i.key()));
+		}
+		else {
+			LogError("Required key type [{}] not supported", luabind::type(i.key()));
+		}
+
+		if (!key.empty()) {
+			required_map[key] = luabind::object_cast<uint32>(required_table[i.key()]);
+			LogNpcHandinDetail("Required key [{}] value [{}]", key, required_map[key]);
+		}
+	}
+
+	for (luabind::iterator i(items_table), end; i != end; i++) {
+		auto item = luabind::object_cast<Lua_ItemInst>(items_table[i.key()]);
+
+		if (item && item.GetItem()) {
+			LogNpcHandinDetail(
+				"Item instance [{}] ({}) UUID ({}) added to handin list",
+				item.GetName(),
+				item.GetID(),
+				item.GetSerialNumber()
+			);
+
+			items.emplace_back(item);
+		}
+	}
+
+	return self->CheckHandin(c, handin_map, required_map, items);
+}
+
+void Lua_NPC::ReturnHandinItems(Lua_Client c)
+{
+	Lua_Safe_Call_Void();
+	self->ReturnHandinItems(c);
+}
+
+Lua_Spawn Lua_NPC::GetSpawn(lua_State* L)
+{
+	Lua_Safe_Call_Class(Lua_Spawn);
+	return Lua_Spawn(self->GetSpawn());
+}
+
+bool Lua_NPC::IsResumedFromZoneSuspend()
+{
+	Lua_Safe_Call_Bool();
+	return self->IsResumedFromZoneSuspend();
+}
+
 luabind::scope lua_register_npc() {
 	return luabind::class_<Lua_NPC, Lua_Mob>("NPC")
 	.def(luabind::constructor<>())
@@ -859,10 +967,11 @@ luabind::scope lua_register_npc() {
 	.def("AssignWaypoints", (void(Lua_NPC::*)(int))&Lua_NPC::AssignWaypoints)
 	.def("CalculateNewWaypoint", (void(Lua_NPC::*)(void))&Lua_NPC::CalculateNewWaypoint)
 	.def("ChangeLastName", (void(Lua_NPC::*)(std::string))&Lua_NPC::ChangeLastName)
+	.def("CheckHandin", (bool(Lua_NPC::*)(Lua_Client,luabind::adl::object,luabind::adl::object,luabind::adl::object))&Lua_NPC::LuaCheckHandin)
 	.def("CheckNPCFactionAlly", (int(Lua_NPC::*)(int))&Lua_NPC::CheckNPCFactionAlly)
 	.def("ClearItemList", (void(Lua_NPC::*)(void))&Lua_NPC::ClearLootItems)
 	.def("ClearLastName", (void(Lua_NPC::*)(void))&Lua_NPC::ClearLastName)
-	.def("CountItem", (uint16(Lua_NPC::*)(uint32))&Lua_NPC::CountItem)
+	.def("CountItem", (uint32(Lua_NPC::*)(uint32))&Lua_NPC::CountItem)
 	.def("CountLoot", (int(Lua_NPC::*)(void))&Lua_NPC::CountLoot)
 	.def("DeleteBucket", (void(Lua_NPC::*)(std::string))&Lua_NPC::DeleteBucket)
 	.def("DescribeSpecialAbilities", (void(Lua_NPC::*)(Lua_Client))&Lua_NPC::DescribeSpecialAbilities)
@@ -913,6 +1022,7 @@ luabind::scope lua_register_npc() {
 	.def("GetSilver", (uint32(Lua_NPC::*)(void))&Lua_NPC::GetSilver)
 	.def("GetSlowMitigation", (int(Lua_NPC::*)(void))&Lua_NPC::GetSlowMitigation)
 	.def("GetSp2", (uint32(Lua_NPC::*)(void))&Lua_NPC::GetSp2)
+	.def("GetSpawn", (Lua_Spawn(Lua_NPC::*)(void))&Lua_NPC::GetSpawn)
 	.def("GetSpawnKillCount", (int(Lua_NPC::*)(void))&Lua_NPC::GetSpawnKillCount)
 	.def("GetSpawnPointH", (float(Lua_NPC::*)(void))&Lua_NPC::GetSpawnPointH)
 	.def("GetSpawnPointID", (int(Lua_NPC::*)(void))&Lua_NPC::GetSpawnPointID)
@@ -932,15 +1042,18 @@ luabind::scope lua_register_npc() {
 	.def("IsLDoNLocked", (bool(Lua_NPC::*)(void))&Lua_NPC::IsLDoNLocked)
 	.def("IsLDoNTrapped", (bool(Lua_NPC::*)(void))&Lua_NPC::IsLDoNTrapped)
 	.def("IsLDoNTrapDetected", (bool(Lua_NPC::*)(void))&Lua_NPC::IsLDoNTrapDetected)
+	.def("IsMultiQuestEnabled", (bool(Lua_NPC::*)(void))&Lua_NPC::IsMultiQuestEnabled)
 	.def("IsOnHatelist", (bool(Lua_NPC::*)(Lua_Mob))&Lua_NPC::IsOnHatelist)
 	.def("IsRaidTarget", (bool(Lua_NPC::*)(void))&Lua_NPC::IsRaidTarget)
 	.def("IsRareSpawn", (bool(Lua_NPC::*)(void))&Lua_NPC::IsRareSpawn)
+	.def("IsResumedFromZoneSuspend",(bool(Lua_NPC::*)(void))&Lua_NPC::IsResumedFromZoneSuspend)
 	.def("IsTaunting", (bool(Lua_NPC::*)(void))&Lua_NPC::IsTaunting)
 	.def("IsUnderwaterOnly", (bool(Lua_NPC::*)(void))&Lua_NPC::IsUnderwaterOnly)
 	.def("MerchantCloseShop", (void(Lua_NPC::*)(void))&Lua_NPC::MerchantCloseShop)
 	.def("MerchantOpenShop", (void(Lua_NPC::*)(void))&Lua_NPC::MerchantOpenShop)
 	.def("ModifyNPCStat", (void(Lua_NPC::*)(std::string,std::string))&Lua_NPC::ModifyNPCStat)
 	.def("MoveTo", (void(Lua_NPC::*)(float,float,float,float,bool))&Lua_NPC::MoveTo)
+	.def("MultiQuestEnable", &Lua_NPC::MultiQuestEnable)
 	.def("NextGuardPosition", (void(Lua_NPC::*)(void))&Lua_NPC::NextGuardPosition)
 	.def("PauseWandering", (void(Lua_NPC::*)(int))&Lua_NPC::PauseWandering)
 	.def("PickPocket", (void(Lua_NPC::*)(Lua_Client))&Lua_NPC::PickPocket)
@@ -953,6 +1066,7 @@ luabind::scope lua_register_npc() {
 	.def("RemoveItem", (void(Lua_NPC::*)(int,int))&Lua_NPC::RemoveItem)
 	.def("RemoveItem", (void(Lua_NPC::*)(int,int,int))&Lua_NPC::RemoveItem)
 	.def("ResumeWandering", (void(Lua_NPC::*)(void))&Lua_NPC::ResumeWandering)
+	.def("ReturnHandinItems", (void(Lua_NPC::*)(Lua_Client))&Lua_NPC::ReturnHandinItems)
 	.def("SaveGuardSpot", (void(Lua_NPC::*)(void))&Lua_NPC::SaveGuardSpot)
 	.def("SaveGuardSpot", (void(Lua_NPC::*)(bool))&Lua_NPC::SaveGuardSpot)
 	.def("SaveGuardSpot", (void(Lua_NPC::*)(float,float,float,float))&Lua_NPC::SaveGuardSpot)

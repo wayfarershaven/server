@@ -50,6 +50,7 @@
 #include "../common/repositories/raid_members_repository.h"
 #include "../common/repositories/reports_repository.h"
 #include "../common/repositories/variables_repository.h"
+#include "../common/repositories/character_pet_name_repository.h"
 #include "../common/events/player_event_logs.h"
 
 // Disgrace: for windows compile
@@ -244,7 +245,7 @@ uint32 Database::CreateAccount(
 		e.password = password;
 	}
 
-	LogInfo("Account Attempting to be created: [{}:{}] status: {}", loginserver, name, status);
+	LogInfo("Account attempting to be created loginserver [{}] name [{}] status [{}]", loginserver, name, status);
 
 	e = AccountRepository::InsertOne(*this, e);
 
@@ -310,6 +311,12 @@ bool Database::ReserveName(uint32 account_id, const std::string& name)
 
 	if (!n.empty()) {
 		LogInfo("Account [{}] requested name [{}] but name is already taken by an NPC", account_id, name);
+		return false;
+	}
+
+	const auto& p = CharacterPetNameRepository::GetWhere(*this, where_filter);
+	if (!p.empty()) {
+		LogInfo("Account [{}] requested name [{}] but name is already taken by an Pet", account_id, name);
 		return false;
 	}
 
@@ -948,6 +955,29 @@ bool Database::UpdateName(const std::string& old_name, const std::string& new_na
 	return CharacterDataRepository::UpdateOne(*this, e);
 }
 
+bool Database::UpdateNameByID(const int character_id, const std::string& new_name)
+{
+	LogInfo("Renaming [{}] to [{}]", character_id, new_name);
+
+	auto l = CharacterDataRepository::GetWhere(
+		*this,
+		fmt::format(
+			"`id` = {}",
+			character_id
+		)
+	);
+
+	if (l.empty()) {
+		return false;
+	}
+
+	auto& e = l.front();
+
+	e.name = new_name;
+
+	return CharacterDataRepository::UpdateOne(*this, e);
+}
+
 bool Database::IsNameUsed(const std::string& name)
 {
 	if (RuleB(Bots, Enabled)) {
@@ -973,6 +1003,20 @@ bool Database::IsNameUsed(const std::string& name)
 	);
 
 	return !character_data.empty();
+}
+
+// Players cannot have the same name as a pet vanity name, or memory corruption occurs.
+bool Database::IsPetNameUsed(const std::string& name)
+{
+	const auto& pet_name_data = CharacterPetNameRepository::GetWhere(
+		*this,
+		fmt::format(
+			"`name` = '{}'",
+			Strings::Escape(name)
+		)
+	);
+
+	return !pet_name_data.empty();
 }
 
 uint32 Database::GetServerType()
@@ -1860,13 +1904,45 @@ bool Database::CopyCharacter(
 
 	const int64 new_character_id = (CharacterDataRepository::GetMaxId(*this) + 1);
 
-	std::vector<std::string> tables_to_zero_id = { "keyring", "data_buckets", "character_instance_safereturns" };
+	// validate destination name doesn't exist already
+	const auto& destination_characters = CharacterDataRepository::GetWhere(
+		*this,
+		fmt::format(
+			"`name` = '{}' AND `deleted_at` IS NULL LIMIT 1",
+			Strings::Escape(destination_character_name)
+		)
+	);
+	if (!destination_characters.empty()) {
+		LogError("Character [{}] already exists", destination_character_name);
+		return false;
+	}
+
+	std::vector<std::string> tables_to_zero_id = {
+		"keyring",
+		"data_buckets",
+		"character_instance_safereturns",
+		"character_expedition_lockouts",
+		"character_instance_lockouts",
+		"character_parcels",
+		"character_tribute",
+		"player_titlesets",
+	};
+
+	std::vector<std::string> ignore_tables = {
+		"guilds",
+	};
+
+	size_t total_rows_copied = 0;
 
 	TransactionBegin();
 
 	for (const auto &t : DatabaseSchema::GetCharacterTables()) {
 		const std::string& table_name               = t.first;
 		const std::string& character_id_column_name = t.second;
+
+		if (Strings::Contains(ignore_tables, table_name)) {
+			continue;
+		}
 
 		auto results = QueryDatabase(
 			fmt::format(
@@ -1918,6 +1994,10 @@ bool Database::CopyCharacter(
 					value = std::to_string(destination_account_id);
 				}
 
+				if (!Strings::IsNumber(value)) {
+					value = Strings::Escape(value);
+				}
+
 				new_values.emplace_back(value);
 			}
 
@@ -1950,6 +2030,11 @@ bool Database::CopyCharacter(
 				)
 			);
 
+			size_t rows_copied = insert_rows.size(); // Rows copied for this table
+			total_rows_copied += rows_copied; // Increment grand total
+
+			LogInfo("Copying table [{}] rows [{}]", table_name, Strings::Commify(rows_copied));
+
 			if (!insert.ErrorMessage().empty()) {
 				TransactionRollback();
 				return false;
@@ -1958,6 +2043,13 @@ bool Database::CopyCharacter(
 	}
 
 	TransactionCommit();
+
+	LogInfo(
+		"Character [{}] copied to [{}] total rows [{}]",
+		source_character_name,
+		destination_character_name,
+		Strings::Commify(total_rows_copied)
+	);
 
 	return true;
 }
@@ -2100,18 +2192,18 @@ void Database::PurgeCharacterParcels()
 	pel.event_type_name = PlayerEvent::EventName[pel.event_type_id];
 	std::stringstream ss;
 	for (auto const   &r: results) {
-		pd.from_name  = r.from_name;
-		pd.item_id    = r.item_id;
-		pd.aug_slot_1 = r.aug_slot_1;
-		pd.aug_slot_2 = r.aug_slot_2;
-		pd.aug_slot_3 = r.aug_slot_3;
-		pd.aug_slot_4 = r.aug_slot_4;
-		pd.aug_slot_5 = r.aug_slot_5;
-		pd.aug_slot_6 = r.aug_slot_6;
-		pd.note       = r.note;
-		pd.quantity   = r.quantity;
-		pd.sent_date  = r.sent_date;
-		pd.char_id    = r.char_id;
+		pd.from_name    = r.from_name;
+		pd.item_id      = r.item_id;
+		pd.augment_1_id = r.aug_slot_1;
+		pd.augment_2_id = r.aug_slot_2;
+		pd.augment_3_id = r.aug_slot_3;
+		pd.augment_4_id = r.aug_slot_4;
+		pd.augment_5_id = r.aug_slot_5;
+		pd.augment_6_id = r.aug_slot_6;
+		pd.note         = r.note;
+		pd.quantity     = r.quantity;
+		pd.sent_date    = r.sent_date;
+		pd.char_id      = r.char_id;
 		{
 			cereal::JSONOutputArchiveSingleLine ar(ss);
 			pd.serialize(ar);
@@ -2146,4 +2238,21 @@ void Database::ClearTraderDetails()
 void Database::ClearBuyerDetails()
 {
 	BuyerRepository::DeleteBuyer(*this, 0);
+}
+
+uint64_t Database::GetNextTableId(const std::string &table_name)
+{
+	auto results = QueryDatabase(fmt::format("SHOW TABLE STATUS LIKE '{}'", table_name));
+
+	for (auto row: results) {
+		for (int row_index = 0; row_index < results.ColumnCount(); row_index++) {
+			std::string field_name = Strings::ToLower(results.FieldName(row_index));
+			if (field_name == "auto_increment") {
+				std::string value = row[row_index] ? row[row_index] : "null";
+				return Strings::ToUnsignedBigInt(value, 1);
+			}
+		}
+	}
+
+	return 1;
 }

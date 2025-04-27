@@ -130,9 +130,11 @@ namespace EQ
 		using RoF2::invtype::MAIL_SIZE;
 		using RoF2::invtype::GUILD_TROPHY_TRIBUTE_SIZE;
 		using RoF2::invtype::KRONO_SIZE;
+		using RoF2::invtype::GUILD_BANK_MAIN_SIZE;
+		using RoF2::invtype::GUILD_BANK_DEPOSIT_SIZE;
 		using RoF2::invtype::OTHER_SIZE;
 
-		using Titanium::invtype::TRADE_NPC_SIZE;
+		using RoF2::invtype::TRADE_NPC_SIZE;
 
 		using RoF2::invtype::TYPE_INVALID;
 		using RoF2::invtype::TYPE_BEGIN;
@@ -159,7 +161,7 @@ namespace EQ
 		using RoF2::invslot::SLOT_INVALID;
 		using RoF2::invslot::SLOT_BEGIN;
 
-		using Titanium::invslot::SLOT_TRADESKILL_EXPERIMENT_COMBINE;
+		using RoF2::invslot::SLOT_TRADESKILL_EXPERIMENT_COMBINE;
 
 		const int16 SLOT_AUGMENT_GENERIC_RETURN = 1001; // clients don't appear to use this method... (internal inventory return value)
 
@@ -179,28 +181,28 @@ namespace EQ
 		using RoF2::invslot::BONUS_STAT_END;
 		using RoF2::invslot::BONUS_SKILL_END;
 
-		using Titanium::invslot::BANK_BEGIN;
-		using SoF::invslot::BANK_END;
+		using RoF2::invslot::BANK_BEGIN;
+		using RoF2::invslot::BANK_END;
 
-		using Titanium::invslot::SHARED_BANK_BEGIN;
-		using Titanium::invslot::SHARED_BANK_END;
+		using RoF2::invslot::SHARED_BANK_BEGIN;
+		using RoF2::invslot::SHARED_BANK_END;
 
-		using Titanium::invslot::TRADE_BEGIN;
-		using Titanium::invslot::TRADE_END;
+		using RoF2::invslot::TRADE_BEGIN;
+		using RoF2::invslot::TRADE_END;
 
-		using Titanium::invslot::TRADE_NPC_END;
+		using RoF2::invslot::TRADE_NPC_END;
 
-		using Titanium::invslot::WORLD_BEGIN;
-		using Titanium::invslot::WORLD_END;
+		using RoF2::invslot::WORLD_BEGIN;
+		using RoF2::invslot::WORLD_END;
 
-		using Titanium::invslot::TRIBUTE_BEGIN;
-		using Titanium::invslot::TRIBUTE_END;
+		using RoF2::invslot::TRIBUTE_BEGIN;
+		using RoF2::invslot::TRIBUTE_END;
 
-		using Titanium::invslot::GUILD_TRIBUTE_BEGIN;
-		using Titanium::invslot::GUILD_TRIBUTE_END;
+		using RoF2::invslot::GUILD_TRIBUTE_BEGIN;
+		using RoF2::invslot::GUILD_TRIBUTE_END;
 
 		const int16 CORPSE_BEGIN = invslot::slotGeneral1;
-		const int16 CORPSE_END = CORPSE_BEGIN + invslot::slotCursor;
+		const int16 CORPSE_END   = CORPSE_BEGIN + invslot::slotCursor;
 
 		using RoF2::invslot::EQUIPMENT_BITMASK;
 		using RoF2::invslot::GENERAL_BITMASK;
@@ -214,38 +216,40 @@ namespace EQ
 	} // namespace invslot
 
 	namespace invbag {
-		using Titanium::invbag::SLOT_INVALID;
-		using Titanium::invbag::SLOT_BEGIN;
-		using Titanium::invbag::SLOT_END;
-		using Titanium::invbag::SLOT_COUNT;
+		using RoF2::invbag::SLOT_INVALID;
+		using RoF2::invbag::SLOT_BEGIN;
+		using RoF2::invbag::SLOT_END;
+		using RoF2::invbag::SLOT_COUNT;
 
-		using Titanium::invbag::GENERAL_BAGS_BEGIN;
+		using RoF2::invslot::WORLD_END;
+
+		const int16 GENERAL_BAGS_BEGIN = WORLD_END + 1;
 		const int16 GENERAL_BAGS_COUNT = invslot::GENERAL_COUNT * SLOT_COUNT;
-		const int16 GENERAL_BAGS_END = (GENERAL_BAGS_BEGIN + GENERAL_BAGS_COUNT) - 1;
+		const int16 GENERAL_BAGS_END   = (GENERAL_BAGS_BEGIN + GENERAL_BAGS_COUNT) - 1;
 
 		const int16 GENERAL_BAGS_8_COUNT = 8 * SLOT_COUNT;
-		const int16 GENERAL_BAGS_8_END = (GENERAL_BAGS_BEGIN + GENERAL_BAGS_8_COUNT) - 1;
+		const int16 GENERAL_BAGS_8_END   = (GENERAL_BAGS_BEGIN + GENERAL_BAGS_8_COUNT) - 1;
 
-		const int16 CURSOR_BAG_BEGIN = 351;
+		const int16 CURSOR_BAG_BEGIN = GENERAL_BAGS_END + 1;
 		const int16 CURSOR_BAG_COUNT = SLOT_COUNT;
-		const int16 CURSOR_BAG_END = (CURSOR_BAG_BEGIN + CURSOR_BAG_COUNT) - 1;
+		const int16 CURSOR_BAG_END   = (CURSOR_BAG_BEGIN + CURSOR_BAG_COUNT) - 1;
 
-		using Titanium::invbag::BANK_BAGS_BEGIN;
+		const int16 BANK_BAGS_BEGIN = CURSOR_BAG_END + 1;
 		const int16 BANK_BAGS_COUNT = (invtype::BANK_SIZE * SLOT_COUNT);
-		const int16 BANK_BAGS_END = (BANK_BAGS_BEGIN + BANK_BAGS_COUNT) - 1;
+		const int16 BANK_BAGS_END   = (BANK_BAGS_BEGIN + BANK_BAGS_COUNT) - 1;
 
 		const int16 BANK_BAGS_16_COUNT = 16 * SLOT_COUNT;
-		const int16 BANK_BAGS_16_END = (BANK_BAGS_BEGIN + BANK_BAGS_16_COUNT) - 1;
+		const int16 BANK_BAGS_16_END   = (BANK_BAGS_BEGIN + BANK_BAGS_16_COUNT) - 1;
 
-		using Titanium::invbag::SHARED_BANK_BAGS_BEGIN;
+		const int16 SHARED_BANK_BAGS_BEGIN = BANK_BAGS_END + 1;
 		const int16 SHARED_BANK_BAGS_COUNT = invtype::SHARED_BANK_SIZE * SLOT_COUNT;
-		const int16 SHARED_BANK_BAGS_END = (SHARED_BANK_BAGS_BEGIN + SHARED_BANK_BAGS_COUNT) - 1;
+		const int16 SHARED_BANK_BAGS_END   = (SHARED_BANK_BAGS_BEGIN + SHARED_BANK_BAGS_COUNT) - 1;
 
-		using Titanium::invbag::TRADE_BAGS_BEGIN;
+		const int16 TRADE_BAGS_BEGIN = SHARED_BANK_BAGS_END + 1;
 		const int16 TRADE_BAGS_COUNT = invtype::TRADE_SIZE * SLOT_COUNT;
-		const int16 TRADE_BAGS_END = (TRADE_BAGS_BEGIN + TRADE_BAGS_COUNT) - 1;
+		const int16 TRADE_BAGS_END   = (TRADE_BAGS_BEGIN + TRADE_BAGS_COUNT) - 1;
 
-		using Titanium::invbag::GetInvBagIndexName;
+		using RoF2::invbag::GetInvBagIndexName;
 
 	} // namespace invbag
 
@@ -351,9 +355,6 @@ namespace EQ
 
 		extern const std::map<uint8, std::string>& GetLanguageMap();
 		std::string GetLanguageName(uint8 language_id);
-
-		extern const std::map<uint32, std::string>& GetLDoNThemeMap();
-		std::string GetLDoNThemeName(uint32 theme_id);
 
 		extern const std::map<int8, std::string>& GetFlyModeMap();
 		std::string GetFlyModeName(int8 flymode_id);
@@ -749,6 +750,35 @@ static std::map<uint32, std::string> stance_names = {
 	{ Stance::Burn,       "Burn" },
 	{ Stance::Efficient2, "Efficient" },
 	{ Stance::AEBurn,     "AE Burn" }
+};
+
+namespace LDoNTheme {
+	constexpr uint32 Unused = 0;
+	constexpr uint32 GUK    = 1;
+	constexpr uint32 MIR    = 2;
+	constexpr uint32 MMC    = 3;
+	constexpr uint32 RUJ    = 4;
+	constexpr uint32 TAK    = 5;
+
+	constexpr uint32 UnusedBit = 0;
+	constexpr uint32 GUKBit    = 1;
+	constexpr uint32 MIRBit    = 2;
+	constexpr uint32 MMCBit    = 4;
+	constexpr uint32 RUJBit    = 8;
+	constexpr uint32 TAKBit    = 16;
+
+	uint32 GetBitmask(uint32 theme_id);
+	std::string GetName(uint32 theme_id);
+	bool IsValid(uint32 theme_id);
+}
+
+static std::map<uint32, std::pair<std::string, uint32>> ldon_theme_names = {
+	{ LDoNTheme::Unused, { "Unused",              LDoNTheme::UnusedBit }, },
+	{ LDoNTheme::GUK,    { "Deepest Guk",         LDoNTheme::GUKBit }, },
+	{ LDoNTheme::MIR,    { "Miragul's Menagerie", LDoNTheme::MIRBit }, },
+	{ LDoNTheme::MMC,    { "Mistmoore Catacombs", LDoNTheme::MMCBit }, },
+	{ LDoNTheme::RUJ,    { "Rujarkian Hills",     LDoNTheme::RUJBit }, },
+	{ LDoNTheme::TAK,    { "Takish-Hiz",          LDoNTheme::TAKBit }, },
 };
 
 namespace PCNPCOnlyFlagType {

@@ -1717,15 +1717,6 @@ void EntityList::QueueClientsByXTarget(Mob *sender, const EQApplicationPacket *a
 	}
 }
 
-/**
- * @param sender
- * @param app
- * @param ignore_sender
- * @param distance
- * @param skipped_mob
- * @param is_ack_required
- * @param filter
- */
 void EntityList::QueueCloseClients(
 	Mob *sender,
 	const EQApplicationPacket *app,
@@ -1742,7 +1733,7 @@ void EntityList::QueueCloseClients(
 	}
 
 	if (distance <= 0) {
-		distance = 600;
+		distance = zone->GetClientUpdateRange();
 	}
 
 	float distance_squared = distance * distance;
@@ -1817,25 +1808,13 @@ void EntityList::DuelMessage(Mob *winner, Mob *loser, bool flee)
 		if (parse->PlayerHasQuestSub(EVENT_DUEL_WIN)) {
 			std::vector<std::any> args = { winner, loser };
 
-			parse->EventPlayer(
-				EVENT_DUEL_WIN,
-				winner->CastToClient(),
-				loser->GetName(),
-				loser->CastToClient()->CharacterID(),
-				&args
-			);
+			parse->EventPlayer(EVENT_DUEL_WIN, winner->CastToClient(), loser->GetName(), loser->CastToClient()->CharacterID(), &args);
 		}
 
 		if (parse->PlayerHasQuestSub(EVENT_DUEL_LOSE)) {
 			std::vector<std::any> args = { winner, loser };
 
-			parse->EventPlayer(
-				EVENT_DUEL_LOSE,
-				loser->CastToClient(),
-				winner->GetName(),
-				winner->CastToClient()->CharacterID(),
-				&args
-			);
+			parse->EventPlayer(EVENT_DUEL_LOSE, loser->CastToClient(), winner->GetName(), winner->CastToClient()->CharacterID(), &args);
 		}
 	}
 
@@ -1912,13 +1891,13 @@ Bot* EntityList::GetRandomBot(const glm::vec3& location, float distance, Bot* ex
 
 	for (const auto& b : bot_list) {
 		if (
-			b != exclude_bot &&
+			b.second != exclude_bot &&
 			(
 				is_whole_zone ||
-				DistanceSquared(static_cast<glm::vec3>(b->GetPosition()), location) <= distance_squared
-			)
+				DistanceSquared(static_cast<glm::vec3>(b.second->GetPosition()), location) <= distance_squared
+				)
 		) {
-			bots_in_range.push_back(b);
+			bots_in_range.push_back(b.second);
 		}
 	}
 
@@ -2245,44 +2224,37 @@ Raid* EntityList::GetRaidByClient(Client* client)
 }
 Raid* EntityList::GetRaidByBotName(const char* name)
 {
-	std::list<RaidMember> rm;
-	auto GetMembersWithNames = [&rm](Raid const* r) -> std::list<RaidMember> {
-		for (const auto& m : r->members) {
-			if (strlen(m.member_name) > 0)
-				rm.push_back(m);
-		}
-		return rm;
-	};
-
 	for (const auto& r : raid_list) {
-		for (const auto& m : GetMembersWithNames(r)) {
-			if (strcmp(m.member_name, name) == 0) {
+		for (const auto& m : r->members) {
+			if (m.is_bot && strcmp(m.member_name, name) == 0) {
 				return r;
 			}
 		}
 	}
+
 	return nullptr;
 }
 
-Raid* EntityList::GetRaidByBot(const Bot* bot)
+Raid* EntityList::GetRaidByBot(Bot* bot)
 {
-	std::list<RaidMember> rm;
-	auto GetMembersWhoAreBots = [&rm](Raid* r) -> std::list<RaidMember> {
-		for (auto const& m : r->members) {
-			if (m.is_bot) {
-				rm.push_back(m);
-			}
-		}
-		return rm;
-	};
-
-	for (const auto& r : raid_list) {
-		for (const auto& m : GetMembersWhoAreBots(r)) {
-			if (m.member->CastToBot() == bot) {
-				return r;
-			}
-		}
+	if (bot->p_raid_instance) {
+		return bot->p_raid_instance;
 	}
+
+	std::list<Raid*>::iterator iterator;
+	iterator = raid_list.begin();
+
+	while (iterator != raid_list.end()) {
+		for (const auto& member : (*iterator)->members) {
+			if (member.member && member.is_bot && member.member->CastToBot() == bot) {
+				bot->p_raid_instance = *iterator;
+				return *iterator;
+			}
+		}
+
+		++iterator;
+	}
+
 	return nullptr;
 }
 
@@ -2360,30 +2332,18 @@ void EntityList::QueueClientsGuild(const EQApplicationPacket *app, uint32 guild_
 	}
 }
 
-void EntityList::QueueClientsGuildBankItemUpdate(const GuildBankItemUpdate_Struct *gbius, uint32 GuildID)
+void EntityList::QueueClientsGuildBankItemUpdate(GuildBankItemUpdate_Struct *gbius, uint32 guild_id)
 {
-	auto outapp = new EQApplicationPacket(OP_GuildBank, sizeof(GuildBankItemUpdate_Struct));
+	auto outapp = std::make_unique<EQApplicationPacket>(OP_GuildBank, sizeof(GuildBankItemUpdate_Struct));
+	auto data   = reinterpret_cast<GuildBankItemUpdate_Struct *>(outapp->pBuffer);
 
-	GuildBankItemUpdate_Struct *outgbius = (GuildBankItemUpdate_Struct*)outapp->pBuffer;
+	memcpy(data, gbius, sizeof(GuildBankItemUpdate_Struct));
 
-	memcpy(outgbius, gbius, sizeof(GuildBankItemUpdate_Struct));
-
-	const EQ::ItemData *Item = database.GetItem(gbius->ItemID);
-
-	auto it = client_list.begin();
-	while (it != client_list.end()) {
-		Client *client = it->second;
-
-		if (client->IsInGuild(GuildID)) {
-			if (Item && (gbius->Permissions == GuildBankPublicIfUsable))
-				outgbius->Useable = Item->IsEquipable(client->GetBaseRace(), client->GetBaseClass());
-
-			client->QueuePacket(outapp);
+	for (auto const &[key, client]: client_list) {
+		if (client->IsInGuild(guild_id)) {
+			client->QueuePacket(outapp.get());
 		}
-
-		++it;
 	}
-	safe_delete(outapp);
 }
 
 void EntityList::MessageStatus(uint32 to_guild_id, int to_minstatus, uint32 type, const char *message, ...)
@@ -2890,6 +2850,8 @@ bool EntityList::RemoveMobFromCloseLists(Mob *mob)
 		);
 
 		it->second->m_close_mobs.erase(entity_id);
+		it->second->m_last_seen_mob_position.erase(entity_id);
+
 		++it;
 	}
 
@@ -2943,17 +2905,22 @@ void EntityList::RemoveAuraFromMobs(Mob *aura)
 // All of the above makes a tremendous impact on the bottom line of cpu cycle performance because we run an order of magnitude
 // less checks by focusing our hot path logic down to a very small subset of relevant entities instead of looping an entire
 // entity list (zone wide)
+
+BenchTimer g_scan_bench_timer;
+
 void EntityList::ScanCloseMobs(Mob *scanning_mob)
 {
 	if (!scanning_mob) {
 		return;
 	}
 
-	if (scanning_mob->GetID() <= 0) {
+	if (scanning_mob->GetID() <= 0 || scanning_mob->IsZoneController()) {
 		return;
 	}
 
-	float scan_range = RuleI(Range, MobCloseScanDistance) * RuleI(Range, MobCloseScanDistance);
+	g_scan_bench_timer.reset();
+
+	float scan_range = RuleI(Range, MobCloseScanDistance);
 
 	// Reserve memory in m_close_mobs to avoid frequent re-allocations if not already reserved.
 	// Assuming mob_list.size() as an upper bound for reservation.
@@ -2965,11 +2932,12 @@ void EntityList::ScanCloseMobs(Mob *scanning_mob)
 
 	for (auto &e : mob_list) {
 		auto mob = e.second;
-		if (mob->GetID() <= 0) {
+
+		if (mob && (mob->GetID() <= 0 || mob->IsZoneController())) {
 			continue;
 		}
 
-		float distance = DistanceSquared(scanning_mob->GetPosition(), mob->GetPosition());
+		float distance = Distance(scanning_mob->GetPosition(), mob->GetPosition());
 		if (distance <= scan_range || mob->GetAggroRange() >= scan_range) {
 			// add mob to scanning_mob's close list and vice versa
 			// check if the mob is already in the close mobs list before inserting
@@ -2981,10 +2949,11 @@ void EntityList::ScanCloseMobs(Mob *scanning_mob)
 	}
 
 	LogAIScanClose(
-		"[{}] Scanning close list > list_size [{}] moving [{}]",
+		"[{}] Scanning close list > list_size [{}] moving [{}] elapsed [{}] us",
 		scanning_mob->GetCleanName(),
 		scanning_mob->m_close_mobs.size(),
-		scanning_mob->IsMoving() ? "true" : "false"
+		scanning_mob->IsMoving() ? "true" : "false",
+		g_scan_bench_timer.elapsedMicroseconds()
 	);
 }
 
@@ -3174,20 +3143,30 @@ void EntityList::Depop(bool StartSpawnTimer)
 {
 	for (auto it = npc_list.begin(); it != npc_list.end(); ++it) {
 		NPC *pnpc = it->second;
+
 		if (pnpc) {
 			Mob *own = pnpc->GetOwner();
-			//do not depop player's pets...
-			if (own && own->IsClient())
+			//do not depop player/bot pets...
+			if (own && own->IsOfClientBot()) {
 				continue;
+			}
 
-			if (pnpc->IsHorse())
+			if (pnpc->IsHorse()) {
 				continue;
+			}
 
-			if (pnpc->IsFindable())
+			if (pnpc->IsFindable()) {
 				UpdateFindableNPCState(pnpc, true);
+			}
+
+			// Depop below will eventually remove this npc from the entity list
+			// but that can happen AFTER we've already tried to spawn its replacement.
+			// So go ahead and remove it from the limits so it doesn't count.
+			if (npc_limit_list.count(pnpc->GetID())) {
+				npc_limit_list.erase(pnpc->GetID());
+			}
 
 			pnpc->WipeHateList();
-
 			pnpc->Depop(StartSpawnTimer);
 		}
 	}
@@ -5149,9 +5128,10 @@ void EntityList::GetClientList(std::list<Client *> &c_list)
 void EntityList::GetBotList(std::list<Bot *> &b_list)
 {
 	b_list.clear();
-
-	for (const auto& b : bot_list) {
-		b_list.push_back(b);
+	auto it = bot_list.begin();
+	while (it != bot_list.end()) {
+		b_list.push_back(it->second);
+		++it;
 	}
 }
 
@@ -5163,14 +5143,13 @@ std::vector<Bot *> EntityList::GetBotListByCharacterID(uint32 character_id, uint
 		return client_bot_list;
 	}
 
-	for (const auto& b : bot_list) {
-		if (
-			b->GetOwner() &&
-			b->GetBotOwnerCharacterID() == character_id &&
-			(!class_id || b->GetClass() == class_id)
-		) {
-			client_bot_list.push_back(b);
+	auto it = bot_list.begin();
+
+	while (it != bot_list.end()) {
+		if (it->second->GetOwner() && it->second->GetBotOwnerCharacterID() == character_id && (!class_id || it->second->GetClass() == class_id)) {
+			client_bot_list.push_back(it->second);
 		}
+		++it;
 	}
 
 	return client_bot_list;
@@ -5184,14 +5163,13 @@ std::vector<Bot *> EntityList::GetBotListByClientName(std::string client_name, u
 		return client_bot_list;
 	}
 
-	for (const auto& b : bot_list) {
-		if (
-			b->GetOwner() &&
-			Strings::ToLower(b->GetOwner()->GetCleanName()) == Strings::ToLower(client_name) &&
-			(!class_id || b->GetClass() == class_id)
-		) {
-			client_bot_list.push_back(b);
+	auto it = bot_list.begin();
+
+	while (it != bot_list.end()) {
+		if (it->second->GetOwner() && Strings::ToLower(it->second->GetOwner()->GetCleanName()) == Strings::ToLower(client_name) && (!class_id || it->second->GetClass() == class_id)) {
+			client_bot_list.push_back(it->second);
 		}
+		++it;
 	}
 
 	return client_bot_list;
@@ -5332,15 +5310,12 @@ void EntityList::SendFindableNPCList(Client *c)
 		return;
 	}
 
-	auto outapp = new EQApplicationPacket(OP_SendFindableNPCs, sizeof(FindableNPC_Struct));
-
-	FindableNPC_Struct *fnpcs = (FindableNPC_Struct *)outapp->pBuffer;
-
-	fnpcs->Unknown109 = 0x16;
-	fnpcs->Unknown110 = 0x06;
-	fnpcs->Unknown111 = 0x24;
-
-	fnpcs->Action = 0;
+	static EQApplicationPacket p(OP_SendFindableNPCs, sizeof(FindableNPC_Struct));
+	auto b = (FindableNPC_Struct*) p.pBuffer;
+	b->Unknown109 = 0x16;
+	b->Unknown110 = 0x06;
+	b->Unknown111 = 0x24;
+	b->Action = 0;
 
 	auto it = npc_list.begin();
 	while (it != npc_list.end()) {
@@ -5348,50 +5323,47 @@ void EntityList::SendFindableNPCList(Client *c)
 			NPC *n = it->second;
 
 			if (n->IsFindable()) {
-				fnpcs->EntityID = n->GetID();
-				strn0cpy(fnpcs->Name, n->GetCleanName(), sizeof(fnpcs->Name));
-				strn0cpy(fnpcs->LastName, n->GetLastName(), sizeof(fnpcs->LastName));
-				fnpcs->Race = n->GetRace();
-				fnpcs->Class = n->GetClass();
+				b->EntityID = n->GetID();
+				strn0cpy(b->Name, n->GetCleanName(), sizeof(b->Name));
+				strn0cpy(b->LastName, n->GetLastName(), sizeof(b->LastName));
+				b->Race = n->GetRace();
+				b->Class = n->GetClass();
 
-				c->QueuePacket(outapp);
+				c->QueuePacket(&p);
 			}
 		}
 		++it;
 	}
-	safe_delete(outapp);
 }
 
 void EntityList::UpdateFindableNPCState(NPC *n, bool Remove)
 {
-	if (!n || !n->IsFindable())
+	if (!n || !n->IsFindable()) {
 		return;
+	}
 
-	auto outapp = new EQApplicationPacket(OP_SendFindableNPCs, sizeof(FindableNPC_Struct));
+	static EQApplicationPacket p(OP_SendFindableNPCs, sizeof(FindableNPC_Struct));
+	auto                       b = (FindableNPC_Struct *) p.pBuffer;
+	b->Unknown109 = 0x16;
+	b->Unknown110 = 0x06;
+	b->Unknown111 = 0x24;
 
-	FindableNPC_Struct *fnpcs = (FindableNPC_Struct *)outapp->pBuffer;
-
-	fnpcs->Unknown109 = 0x16;
-	fnpcs->Unknown110 = 0x06;
-	fnpcs->Unknown111 = 0x24;
-
-	fnpcs->Action = Remove ? 1: 0;
-	fnpcs->EntityID = n->GetID();
-	strn0cpy(fnpcs->Name, n->GetCleanName(), sizeof(fnpcs->Name));
-	strn0cpy(fnpcs->LastName, n->GetLastName(), sizeof(fnpcs->LastName));
-	fnpcs->Race = n->GetRace();
-	fnpcs->Class = n->GetClass();
+	b->Action   = Remove ? 1 : 0;
+	b->EntityID = n->GetID();
+	strn0cpy(b->Name, n->GetCleanName(), sizeof(b->Name));
+	strn0cpy(b->LastName, n->GetLastName(), sizeof(b->LastName));
+	b->Race  = n->GetRace();
+	b->Class = n->GetClass();
 
 	auto it = client_list.begin();
 	while (it != client_list.end()) {
 		Client *c = it->second;
-		if (c && (c->ClientVersion() >= EQ::versions::ClientVersion::SoD))
-			c->QueuePacket(outapp);
+		if (c && (c->ClientVersion() >= EQ::versions::ClientVersion::SoD)) {
+			c->QueuePacket(&p);
+		}
 
 		++it;
 	}
-
-	safe_delete(outapp);
 }
 
 void EntityList::HideCorpses(Client *c, uint8 CurrentMode, uint8 NewMode)
@@ -5544,7 +5516,7 @@ void EntityList::ExpeditionWarning(uint32 minutes_left)
 
 	auto it = client_list.begin();
 	while (it != client_list.end()) {
-		it->second->MessageString(Chat::Yellow, EXPEDITION_MIN_REMAIN, itoa((int)minutes_left));
+		it->second->MessageString(Chat::Yellow, DZ_MINUTES_REMAIN, itoa((int)minutes_left));
 		it->second->QueuePacket(outapp);
 		++it;
 	}
@@ -5569,7 +5541,7 @@ Mob *EntityList::GetClosestMobByBodyType(Mob *sender, uint8 BodyType, bool skip_
 			continue;
 
 		// Do not detect client pets
-		if (skip_client_pets && CurrentMob->IsPet() && CurrentMob->IsPetOwnerClient())
+		if (skip_client_pets && CurrentMob->IsPet() && CurrentMob->IsPetOwnerOfClientBot())
 			continue;
 
 		CurrentDistance = ((CurrentMob->GetY() - sender->GetY()) * (CurrentMob->GetY() - sender->GetY())) +
@@ -5771,10 +5743,6 @@ void EntityList::ReloadMerchants() {
  * then we return the full list
  *
  * See comments @EntityList::ScanCloseMobs for system explanation
- *
- * @param mob
- * @param distance
- * @return
  */
 std::unordered_map<uint16, Mob *> &EntityList::GetCloseMobList(Mob *mob, float distance)
 {
@@ -5979,4 +5947,65 @@ std::vector<NPC*> EntityList::GetExcludedNPCsByIDs(std::vector<uint32> npc_ids)
 	}
 
 	return v;
+}
+
+void EntityList::SendMerchantEnd(Mob* merchant)
+{
+	for (const auto& e : client_list) {
+		Client* c = e.second;
+
+		if (!c) {
+			continue;
+		}
+
+		if (c->GetMerchantSessionEntityID() == merchant->GetID()) {
+			c->SendMerchantEnd();
+		}
+	}
+}
+
+void EntityList::SendMerchantInventory(Mob* m, int32 slot_id, bool is_delete)
+{
+	if (!m || !m->IsNPC()) {
+		return;
+	}
+
+	for (const auto& e : client_list) {
+		Client* c = e.second;
+
+		if (!c) {
+			continue;
+		}
+
+		if (c->GetMerchantSessionEntityID() == m->GetID()) {
+			if (!is_delete) {
+				c->BulkSendMerchantInventory(m->CastToNPC()->MerchantType, m->GetNPCTypeID());
+			} else {
+				auto app = new EQApplicationPacket(OP_ShopDelItem, sizeof(Merchant_DelItem_Struct));
+				auto d   = (Merchant_DelItem_Struct*)app->pBuffer;
+
+				d->itemslot   = slot_id;
+				d->npcid      = m->GetID();
+				d->playerid   = c->GetID();
+
+				app->priority = 6;
+
+				c->QueuePacket(app);
+				safe_delete(app);
+			}
+		}
+	}
+
+	return;
+}
+
+void EntityList::RestoreCorpse(NPC *npc, uint32_t decay_time)
+{
+	uint16 corpse_id = npc->GetID();
+	npc->Death(npc, npc->GetHP() + 1, SPELL_UNKNOWN, EQ::skills::SkillHandtoHand);
+	auto c = entity_list.GetCorpseByID(corpse_id);
+	if (c) {
+		c->UnLock();
+		c->SetDecayTimer(decay_time);
+	}
 }

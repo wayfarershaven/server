@@ -5,12 +5,12 @@
 #include "../common/http/uri.h"
 #include "../common/net/console_server.h"
 #include "../common/net/servertalk_server.h"
+#include "../common/repositories/character_expedition_lockouts_repository.h"
 #include "../common/repositories/character_task_timers_repository.h"
 #include "../common/rulesys.h"
 #include "../common/strings.h"
 #include "adventure_manager.h"
 #include "dynamic_zone_manager.h"
-#include "expedition_database.h"
 #include "login_server_list.h"
 #include "shared_task_manager.h"
 #include "ucs.h"
@@ -27,6 +27,7 @@
 #include "../common/zone_store.h"
 #include "../common/path_manager.h"
 #include "../common/database/database_update.h"
+#include "../common/repositories/zone_state_spawns_repository.h"
 
 extern ZSList      zoneserver_list;
 extern WorldConfig Config;
@@ -99,6 +100,13 @@ bool WorldBoot::HandleCommandInput(int argc, char **argv)
 			std::cout << "Binary Database Version: " << database_version << " : " << bots_database_version << std::endl;
 			return true;
 		}
+	}
+
+	// check if we ran a valid command, this whole CLI handler needs to be improved at a later time
+	std::string arg1 = argc >= 2 ? argv[1] : "";
+	if (argc >= 2 && !Strings::Contains(arg1, ":")) {
+		std::cout << "Invalid command, use --help to see available commands" << std::endl;
+		return true;
 	}
 
 	return false;
@@ -367,9 +375,8 @@ bool WorldBoot::DatabaseLoadRoutines(int argc, char **argv)
 	LogInfo("Purging expired dynamic zones and members");
 	dynamic_zone_manager.PurgeExpiredDynamicZones();
 
-	LogInfo("Purging expired expeditions");
-	ExpeditionDatabase::PurgeExpiredExpeditions();
-	ExpeditionDatabase::PurgeExpiredCharacterLockouts();
+	LogInfo("Purging expired character expedition lockouts");
+	CharacterExpeditionLockoutsRepository::DeleteWhere(database, "expire_time <= NOW()");
 
 	LogInfo("Purging expired character task timers");
 	CharacterTaskTimersRepository::DeleteWhere(database, "expire_time <= NOW()");
@@ -405,6 +412,11 @@ bool WorldBoot::DatabaseLoadRoutines(int argc, char **argv)
 
 	LogInfo("Cleaning up instance corpses");
 	database.CleanupInstanceCorpses();
+
+	if (RuleB(Zone, StateSavingOnShutdown)) {
+		ZoneStateSpawnsRepository::PurgeInvalidZoneStates(database);
+		ZoneStateSpawnsRepository::PurgeOldZoneStates(database);
+	}
 
 	return true;
 }

@@ -27,9 +27,9 @@
 #include "../common/misc_functions.h"
 
 #include "dialogue_window.h"
+#include "dynamic_zone.h"
 #include "embperl.h"
 #include "entity.h"
-#include "expedition.h"
 #include "queryserv.h"
 #include "questmgr.h"
 #include "zone.h"
@@ -278,25 +278,25 @@ int Perl__getinventoryslotid(std::string identifier)
 		else if (identifier == "generalbags.begin")     result = EQ::invbag::GENERAL_BAGS_BEGIN;
 		else if (identifier == "generalbags.end")       result = EQ::invbag::GENERAL_BAGS_END;
 		else if (identifier == "general1bag.begin")     result = EQ::invbag::GENERAL_BAGS_BEGIN;
-		else if (identifier == "general1bag.end")       result = EQ::invbag::GENERAL_BAGS_BEGIN + 9;
-		else if (identifier == "general2bag.begin")     result = EQ::invbag::GENERAL_BAGS_BEGIN + 10;
-		else if (identifier == "general2bag.end")       result = EQ::invbag::GENERAL_BAGS_BEGIN + 19;
-		else if (identifier == "general3bag.begin")     result = EQ::invbag::GENERAL_BAGS_BEGIN + 20;
-		else if (identifier == "general3bag.end")       result = EQ::invbag::GENERAL_BAGS_BEGIN + 29;
-		else if (identifier == "general4bag.begin")     result = EQ::invbag::GENERAL_BAGS_BEGIN + 30;
-		else if (identifier == "general4bag.end")       result = EQ::invbag::GENERAL_BAGS_BEGIN + 39;
-		else if (identifier == "general5bag.begin")     result = EQ::invbag::GENERAL_BAGS_BEGIN + 40;
-		else if (identifier == "general5bag.end")       result = EQ::invbag::GENERAL_BAGS_BEGIN + 49;
-		else if (identifier == "general6bag.begin")     result = EQ::invbag::GENERAL_BAGS_BEGIN + 50;
-		else if (identifier == "general6bag.end")       result = EQ::invbag::GENERAL_BAGS_BEGIN + 59;
-		else if (identifier == "general7bag.begin")     result = EQ::invbag::GENERAL_BAGS_BEGIN + 60;
-		else if (identifier == "general7bag.end")       result = EQ::invbag::GENERAL_BAGS_BEGIN + 69;
-		else if (identifier == "general8bag.begin")     result = EQ::invbag::GENERAL_BAGS_BEGIN + 70;
-		else if (identifier == "general8bag.end")       result = EQ::invbag::GENERAL_BAGS_BEGIN + 79;
-		else if (identifier == "general9bag.begin")     result = EQ::invbag::GENERAL_BAGS_BEGIN + 80;
-		else if (identifier == "general9bag.end")       result = EQ::invbag::GENERAL_BAGS_BEGIN + 89;
-		else if (identifier == "general10bag.begin")    result = EQ::invbag::GENERAL_BAGS_BEGIN + 90;
-		else if (identifier == "general10bag.end")      result = EQ::invbag::GENERAL_BAGS_BEGIN + 99;
+		else if (identifier == "general1bag.end")       result = EQ::invbag::GENERAL_BAGS_BEGIN + (EQ::invbag::SLOT_COUNT - 1);
+		else if (identifier == "general2bag.begin")     result = EQ::invbag::GENERAL_BAGS_BEGIN + EQ::invbag::SLOT_COUNT;
+		else if (identifier == "general2bag.end")       result = EQ::invbag::GENERAL_BAGS_BEGIN + ((EQ::invbag::SLOT_COUNT * 2) - 1);
+		else if (identifier == "general3bag.begin")     result = EQ::invbag::GENERAL_BAGS_BEGIN + (EQ::invbag::SLOT_COUNT * 2);
+		else if (identifier == "general3bag.end")       result = EQ::invbag::GENERAL_BAGS_BEGIN + ((EQ::invbag::SLOT_COUNT * 3) - 1);
+		else if (identifier == "general4bag.begin")     result = EQ::invbag::GENERAL_BAGS_BEGIN + (EQ::invbag::SLOT_COUNT * 3);
+		else if (identifier == "general4bag.end")       result = EQ::invbag::GENERAL_BAGS_BEGIN + ((EQ::invbag::SLOT_COUNT * 4) - 1);
+		else if (identifier == "general5bag.begin")     result = EQ::invbag::GENERAL_BAGS_BEGIN + (EQ::invbag::SLOT_COUNT * 4);
+		else if (identifier == "general5bag.end")       result = EQ::invbag::GENERAL_BAGS_BEGIN + ((EQ::invbag::SLOT_COUNT * 5) - 1);
+		else if (identifier == "general6bag.begin")     result = EQ::invbag::GENERAL_BAGS_BEGIN + (EQ::invbag::SLOT_COUNT * 5);
+		else if (identifier == "general6bag.end")       result = EQ::invbag::GENERAL_BAGS_BEGIN + ((EQ::invbag::SLOT_COUNT * 6) - 1);
+		else if (identifier == "general7bag.begin")     result = EQ::invbag::GENERAL_BAGS_BEGIN + (EQ::invbag::SLOT_COUNT * 6);
+		else if (identifier == "general7bag.end")       result = EQ::invbag::GENERAL_BAGS_BEGIN + ((EQ::invbag::SLOT_COUNT * 7) - 1);
+		else if (identifier == "general8bag.begin")     result = EQ::invbag::GENERAL_BAGS_BEGIN + (EQ::invbag::SLOT_COUNT * 7);
+		else if (identifier == "general8bag.end")       result = EQ::invbag::GENERAL_BAGS_BEGIN + ((EQ::invbag::SLOT_COUNT * 8) - 1);
+		else if (identifier == "general9bag.begin")     result = EQ::invbag::GENERAL_BAGS_BEGIN + (EQ::invbag::SLOT_COUNT * 8);
+		else if (identifier == "general9bag.end")       result = EQ::invbag::GENERAL_BAGS_BEGIN + ((EQ::invbag::SLOT_COUNT * 9) - 1);
+		else if (identifier == "general10bag.begin")    result = EQ::invbag::GENERAL_BAGS_BEGIN + (EQ::invbag::SLOT_COUNT * 9);
+		else if (identifier == "general10bag.end")      result = EQ::invbag::GENERAL_BAGS_BEGIN + ((EQ::invbag::SLOT_COUNT * 10) - 1);
 		else if (identifier == "cursorbag.begin")       result = EQ::invbag::CURSOR_BAG_BEGIN;
 		else if (identifier == "cursorbag.end")         result = EQ::invbag::CURSOR_BAG_END;
 		else if (identifier == "bank.begin")            result = EQ::invslot::BANK_BEGIN;
@@ -754,7 +754,7 @@ void Perl__setsky(uint8 new_sky)
 
 void Perl__setguild(uint32_t guild_id, uint8_t guild_rank_id)
 {
-	quest_manager.setguild(guild_id, guild_rank_id);
+	quest_manager.SetGuild(guild_id, guild_rank_id);
 }
 
 void Perl__createguild(const char* guild_name, const char* leader_name)
@@ -1446,7 +1446,7 @@ int Perl__collectitems(uint32_t item_id, bool remove_item)
 	return quest_manager.collectitems(item_id, remove_item);
 }
 
-int Perl__countitem(uint32_t item_id)
+uint32 Perl__countitem(uint32_t item_id)
 {
 	return quest_manager.countitem(item_id);
 }
@@ -2430,11 +2430,6 @@ void Perl__qs_send_query(std::string query)
 	QServ->SendQuery(std::move(query));
 }
 
-void Perl__qs_player_event(int char_id, std::string message)
-{
-	QServ->PlayerLogEvent(Player_Log_Quest, char_id, message);
-}
-
 void Perl__log(int category, const char* message)
 {
 	if (category < Logs::None || category >= Logs::MaxCategoryID)
@@ -2784,45 +2779,45 @@ void Perl__SetContentFlag(std::string flag_name, bool enabled)
 	zone->ReloadContentFlags();
 }
 
-Expedition* Perl__get_expedition()
+DynamicZone* Perl__get_expedition()
 {
 	if (zone && zone->GetInstanceID() != 0)
 	{
-		return Expedition::FindCachedExpeditionByZoneInstance(zone->GetZoneID(), zone->GetInstanceID());
+		return DynamicZone::FindExpeditionByZone(zone->GetZoneID(), zone->GetInstanceID());
 	}
 
 	return nullptr;
 }
 
-Expedition* Perl__get_expedition_by_char_id(uint32 char_id)
+DynamicZone* Perl__get_expedition_by_char_id(uint32 char_id)
 {
-	return Expedition::FindCachedExpeditionByCharacterID(char_id);
+	return DynamicZone::FindExpeditionByCharacter(char_id);
 }
 
-Expedition* Perl__get_expedition_by_dz_id(uint32 dz_id)
+DynamicZone* Perl__get_expedition_by_dz_id(uint32 dz_id)
 {
-	return Expedition::FindCachedExpeditionByDynamicZoneID(dz_id);
+	return DynamicZone::FindDynamicZoneByID(dz_id, DynamicZoneType::Expedition);
 }
 
-Expedition* Perl__get_expedition_by_zone_instance(uint32 zone_id, uint32 instance_id)
+DynamicZone* Perl__get_expedition_by_zone_instance(uint32 zone_id, uint32 instance_id)
 {
-	return Expedition::FindCachedExpeditionByZoneInstance(zone_id, instance_id);
+	return DynamicZone::FindExpeditionByZone(zone_id, instance_id);
 }
 
 perl::reference Perl__get_expedition_lockout_by_char_id(uint32 char_id, std::string expedition_name, std::string event_name)
 {
 	perl::hash table;
 
-	auto lockouts = Expedition::GetExpeditionLockoutsByCharacterID(char_id);
+	auto lockouts = DynamicZone::GetCharacterLockouts(char_id);
 
-	auto it = std::find_if(lockouts.begin(), lockouts.end(), [&](const ExpeditionLockoutTimer& lockout) {
-		return lockout.IsSameLockout(expedition_name, event_name);
+	auto it = std::find_if(lockouts.begin(), lockouts.end(), [&](const DzLockout& lockout) {
+		return lockout.IsSame(expedition_name, event_name);
 	});
 
 	if (it != lockouts.end())
 	{
 		table["remaining"] = it->GetSecondsRemaining();
-		table["uuid"] = it->GetExpeditionUUID();
+		table["uuid"] = it->UUID();
 	}
 
 	return perl::reference(table);
@@ -2832,23 +2827,23 @@ perl::reference Perl__get_expedition_lockouts_by_char_id(uint32 char_id)
 {
 	perl::hash table;
 
-	auto lockouts = Expedition::GetExpeditionLockoutsByCharacterID(char_id);
+	auto lockouts = DynamicZone::GetCharacterLockouts(char_id);
 	for (const auto& lockout : lockouts)
 	{
-		if (!table.exists(lockout.GetExpeditionName()))
+		if (!table.exists(lockout.DzName()))
 		{
-			table[lockout.GetExpeditionName()] = perl::reference(perl::hash());
+			table[lockout.DzName()] = perl::reference(perl::hash());
 		}
 
-		perl::hash expedition_table = table[lockout.GetExpeditionName()];
-		if (!expedition_table.exists(lockout.GetEventName()))
+		perl::hash expedition_table = table[lockout.DzName()];
+		if (!expedition_table.exists(lockout.Event()))
 		{
-			expedition_table[lockout.GetEventName()] = perl::reference(perl::hash());
+			expedition_table[lockout.Event()] = perl::reference(perl::hash());
 		}
 
-		perl::hash event_table = expedition_table[lockout.GetEventName()];
+		perl::hash event_table = expedition_table[lockout.Event()];
 		event_table["remaining"] = lockout.GetSecondsRemaining();
-		event_table["uuid"] = lockout.GetExpeditionUUID();
+		event_table["uuid"] = lockout.UUID();
 	}
 
 	return perl::reference(table);
@@ -2858,18 +2853,18 @@ perl::reference Perl__get_expedition_lockouts_by_char_id(uint32 char_id, std::st
 {
 	perl::hash table;
 
-	auto lockouts = Expedition::GetExpeditionLockoutsByCharacterID(char_id);
+	auto lockouts = DynamicZone::GetCharacterLockouts(char_id);
 	for (const auto& lockout : lockouts)
 	{
-		if (lockout.GetExpeditionName() == expedition_name)
+		if (lockout.DzName() == expedition_name)
 		{
-			if (!table.exists(lockout.GetEventName()))
+			if (!table.exists(lockout.Event()))
 			{
-				table[lockout.GetEventName()] = perl::reference(perl::hash());
+				table[lockout.Event()] = perl::reference(perl::hash());
 			}
-			perl::hash event_table = table[lockout.GetEventName()];
+			perl::hash event_table = table[lockout.Event()];
 			event_table["remaining"] = lockout.GetSecondsRemaining();
-			event_table["uuid"] = lockout.GetExpeditionUUID();
+			event_table["uuid"] = lockout.UUID();
 		}
 	}
 
@@ -2878,39 +2873,39 @@ perl::reference Perl__get_expedition_lockouts_by_char_id(uint32 char_id, std::st
 
 void Perl__add_expedition_lockout_all_clients(std::string expedition_name, std::string event_name, uint32 seconds)
 {
-	auto lockout = ExpeditionLockoutTimer::CreateLockout(expedition_name, event_name, seconds);
-	Expedition::AddLockoutClients(lockout);
+	auto lockout = DzLockout::Create(expedition_name, event_name, seconds);
+	DynamicZone::AddClientsLockout(lockout);
 }
 
 void Perl__add_expedition_lockout_all_clients(std::string expedition_name, std::string event_name, uint32 seconds, std::string uuid)
 {
-	auto lockout = ExpeditionLockoutTimer::CreateLockout(expedition_name, event_name, seconds, uuid);
-	Expedition::AddLockoutClients(lockout);
+	auto lockout = DzLockout::Create(expedition_name, event_name, seconds, uuid);
+	DynamicZone::AddClientsLockout(lockout);
 }
 
 void Perl__add_expedition_lockout_by_char_id(uint32 char_id, std::string expedition_name, std::string event_name, uint32 seconds)
 {
-	Expedition::AddLockoutByCharacterID(char_id, expedition_name, event_name, seconds);
+	DynamicZone::AddCharacterLockout(char_id, expedition_name, event_name, seconds);
 }
 
 void Perl__add_expedition_lockout_by_char_id(uint32 char_id, std::string expedition_name, std::string event_name, uint32 seconds, std::string uuid)
 {
-	Expedition::AddLockoutByCharacterID(char_id, expedition_name, event_name, seconds, uuid);
+	DynamicZone::AddCharacterLockout(char_id, expedition_name, event_name, seconds, uuid);
 }
 
 void Perl__remove_expedition_lockout_by_char_id(uint32 char_id, std::string expedition_name, std::string event_name)
 {
-	Expedition::RemoveLockoutsByCharacterID(char_id, expedition_name, event_name);
+	DynamicZone::RemoveCharacterLockouts(char_id, expedition_name, event_name);
 }
 
 void Perl__remove_all_expedition_lockouts_by_char_id(uint32 char_id)
 {
-	Expedition::RemoveLockoutsByCharacterID(char_id);
+	DynamicZone::RemoveCharacterLockouts(char_id);
 }
 
 void Perl__remove_all_expedition_lockouts_by_char_id(uint32 char_id, std::string expedition_name)
 {
-	Expedition::RemoveLockoutsByCharacterID(char_id, expedition_name);
+	DynamicZone::RemoveCharacterLockouts(char_id, expedition_name);
 }
 
 EQ::ItemInstance* Perl__createitem(uint32 item_id)
@@ -5653,16 +5648,6 @@ int Perl__GetZoneNPCMaximumAggroDistance(uint32 zone_id, int version)
 	return zone_store.GetZoneNPCMaximumAggroDistance(zone_id, version);
 }
 
-uint32 Perl__GetZoneMaximumMovementUpdateRange(uint32 zone_id)
-{
-	return zone_store.GetZoneMaximumMovementUpdateRange(zone_id);
-}
-
-uint32 Perl__GetZoneMaximumMovementUpdateRange(uint32 zone_id, int version)
-{
-	return zone_store.GetZoneMaximumMovementUpdateRange(zone_id, version);
-}
-
 int8 Perl__GetZoneMinimumExpansion(uint32 zone_id)
 {
 	return zone_store.GetZoneMinimumExpansion(zone_id);
@@ -5988,6 +5973,28 @@ void Perl__SpawnGrid(uint32 npc_id, float x, float y, float z, float heading, fl
 	quest_manager.SpawnGrid(npc_id, glm::vec4(x, y, z, heading), spacing, spawn_count);
 }
 
+bool Perl__handin(perl::reference handin_ref)
+{
+	perl::hash handin = handin_ref;
+
+	std::map<std::string, uint32> handin_map;
+
+	for (auto e: handin) {
+		if (!e.first) {
+			continue;
+		}
+
+		if (Strings::EqualFold(e.first, "0")) {
+			continue;
+		}
+
+		const uint32 count = static_cast<uint32>(handin.at(e.first));
+		handin_map[e.first] = count;
+	}
+
+	return quest_manager.handin(handin_map);
+}
+
 void perl_register_quest()
 {
 	perl::interpreter perl(PERL_GET_THX);
@@ -6112,8 +6119,6 @@ void perl_register_quest()
 	package.add("GetZoneMaximumExpansion", (int8(*)(uint32, int))&Perl__GetZoneMaximumExpansion);
 	package.add("GetZoneMaximumLevel", (uint8(*)(uint32))&Perl__GetZoneMaximumLevel);
 	package.add("GetZoneMaximumLevel", (uint8(*)(uint32, int))&Perl__GetZoneMaximumLevel);
-	package.add("GetZoneMaximumMovementUpdateRange", (uint32(*)(uint32))&Perl__GetZoneMaximumMovementUpdateRange);
-	package.add("GetZoneMaximumMovementUpdateRange", (uint32(*)(uint32, int))&Perl__GetZoneMaximumMovementUpdateRange);
 	package.add("GetZoneMaximumPlayers", (int(*)(uint32))&Perl__GetZoneMaximumPlayers);
 	package.add("GetZoneMaximumPlayers", (int(*)(uint32, int))&Perl__GetZoneMaximumPlayers);
 	package.add("GetZoneMinimumClip", (float(*)(uint32))&Perl__GetZoneMinimumClip);
@@ -6715,6 +6720,7 @@ void perl_register_quest()
 	package.add("gmsay", (void(*)(const char*, int, bool))&Perl__gmsay);
 	package.add("gmsay", (void(*)(const char*, int, bool, int))&Perl__gmsay);
 	package.add("gmsay", (void(*)(const char*, int, bool, int, int))&Perl__gmsay);
+	package.add("handin", &Perl__handin);
 	package.add("has_zone_flag", &Perl__has_zone_flag);
 	package.add("hasrecipelearned", &Perl__hasrecipelearned);
 	package.add("hastimer", &Perl__hastimer);
@@ -6780,7 +6786,6 @@ void perl_register_quest()
 	package.add("popuptablerow", &Perl__popuptablerow);
 	package.add("processmobswhilezoneempty", &Perl__processmobswhilezoneempty);
 	package.add("pvp", &Perl__pvp);
-	package.add("qs_player_event", &Perl__qs_player_event);
 	package.add("qs_send_query", &Perl__qs_send_query);
 	package.add("rain", &Perl__rain);
 	package.add("rebind", (void(*)(int, float, float, float))&Perl__rebind);

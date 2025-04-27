@@ -39,7 +39,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include "../common/zone_store.h"
 #include "dynamic_zone.h"
 #include "dynamic_zone_manager.h"
-#include "expedition_message.h"
 #include "shared_task_world_messaging.h"
 #include "../common/shared_tasks.h"
 #include "shared_task_manager.h"
@@ -50,6 +49,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include "../zone/data_bucket.h"
 #include "../common/repositories/guild_tributes_repository.h"
 #include "../common/skill_caps.h"
+#include "../common/server_reload_types.h"
 
 extern ClientList client_list;
 extern GroupLFPList LFPGroupList;
@@ -571,7 +571,13 @@ void ZoneServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p) {
 						);
 					}
 				}
-				zoneserver_list.SendPacket(pack);
+				if (scm->guilddbid > 0) {
+					zoneserver_list.SendPacketToZonesWithGuild(scm->guilddbid, pack);
+				} else if (scm->chan_num == ChatChannel_GMSAY) {
+					zoneserver_list.SendPacketToZonesWithGMs(pack);
+				} else {
+					zoneserver_list.SendPacket(pack);
+				}
 			}
 
 			break;
@@ -729,13 +735,15 @@ void ZoneServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p) {
 				zs = zoneserver_list.FindByID(s->zone_server_id);
 			} else if (s->zone_id) {
 				zs = zoneserver_list.FindByName(ZoneName(s->zone_id));
+			} else if (s->instance_id) {
+				zs = zoneserver_list.FindByInstanceID(s->instance_id);
 			} else {
 				zoneserver_list.SendEmoteMessage(
 					s->admin_name,
 					0,
 					AccountStatus::Player,
 					Chat::White,
-					"Error: SOP_ZoneShutdown: neither ID nor name specified"
+					"Error: SOP_ZoneShutdown: Zone ID, Instance ID, nor Zone Short Name specified"
 				);
 			}
 
@@ -1353,22 +1361,8 @@ void ZoneServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p) {
 			safe_delete(outapp);
 			break;
 		}
-		case ServerOP_Speech:
-		case ServerOP_QSSendQuery:
-		case ServerOP_QSPlayerLogDeletes:
-		case ServerOP_QSPlayerDropItem:
-		case ServerOP_QSPlayerLogHandins:
-		case ServerOP_QSPlayerLogMerchantTransactions:
-		case ServerOP_QSPlayerLogMoves:
-		case ServerOP_QSPlayerLogNPCKills:
-		case ServerOP_QSPlayerLogTrades:
 		case ServerOP_QueryServGeneric: {
 			QSLink.SendPacket(pack);
-			break;
-		}
-		case ServerOP_ReloadOpcodes: {
-			ReloadAllPatches();
-			zoneserver_list.SendPacket(pack);
 			break;
 		}
 		case ServerOP_CZDialogueWindow:
@@ -1384,10 +1378,6 @@ void ZoneServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p) {
 		case ServerOP_Consent:
 		case ServerOP_DepopAllPlayersCorpses:
 		case ServerOP_DepopPlayerCorpse:
-		case ServerOP_ExpeditionLockState:
-		case ServerOP_ExpeditionLockout:
-		case ServerOP_ExpeditionLockoutDuration:
-		case ServerOP_ExpeditionReplayOnJoin:
 		case ServerOP_GuildRankUpdate:
 		case ServerOP_ItemStatus:
 		case ServerOP_KickPlayer:
@@ -1398,30 +1388,6 @@ void ZoneServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p) {
 		case ServerOP_RaidGroupSay:
 		case ServerOP_RaidSay:
 		case ServerOP_RefreshCensorship:
-		case ServerOP_ReloadAAData:
-		case ServerOP_ReloadAlternateCurrencies:
-		case ServerOP_ReloadBaseData:
-		case ServerOP_ReloadBlockedSpells:
-		case ServerOP_ReloadCommands:
-		case ServerOP_ReloadDoors:
-		case ServerOP_ReloadDataBucketsCache:
-		case ServerOP_ReloadFactions:
-		case ServerOP_ReloadGroundSpawns:
-		case ServerOP_ReloadLevelEXPMods:
-		case ServerOP_ReloadMerchants:
-		case ServerOP_ReloadNPCEmotes:
-		case ServerOP_ReloadNPCSpells:
-		case ServerOP_ReloadObjects:
-		case ServerOP_ReloadPerlExportSettings:
-		case ServerOP_ReloadStaticZoneData:
-		case ServerOP_ReloadTitles:
-		case ServerOP_ReloadTraps:
-		case ServerOP_ReloadVariables:
-		case ServerOP_ReloadVeteranRewards:
-		case ServerOP_ReloadWorld:
-		case ServerOP_ReloadZonePoints:
-		case ServerOP_ReloadZoneData:
-		case ServerOP_ReloadLoot:
 		case ServerOP_RezzPlayerAccept:
 		case ServerOP_SpawnStatusChange:
 		case ServerOP_TraderMessaging:
@@ -1439,14 +1405,9 @@ void ZoneServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p) {
 			zoneserver_list.SendPacket(pack);
 			break;
 		}
-		case ServerOP_ReloadSkillCaps: {
-			zoneserver_list.SendPacket(pack);
-			skill_caps.ReloadSkillCaps();
-			break;
-		}
-		case ServerOP_ReloadRules: {
-			zoneserver_list.SendPacket(pack);
-			RuleManager::Instance()->LoadRules(&database, "default", true);
+		case ServerOP_ServerReloadRequest: {
+			auto o = (ServerReload::Request*) pack->pBuffer;
+			zoneserver_list.SendServerReload((ServerReload::Type) o->type, pack->pBuffer);
 			break;
 		}
 		case ServerOP_IsOwnerOnline: {
@@ -1472,28 +1433,6 @@ void ZoneServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p) {
 			if (zs) {
 				zs->SendPacket(pack);
 			}
-			break;
-		}
-		case ServerOP_ReloadContentFlags: {
-			zoneserver_list.SendPacket(pack);
-			content_service.SetExpansionContext()->ReloadContentFlags();
-			break;
-		}
-		case ServerOP_ReloadLogs: {
-			zoneserver_list.SendPacket(pack);
-			UCSLink.SendPacket(pack);
-			LogSys.LoadLogDatabaseSettings();
-			player_event_logs.ReloadSettings();
-			break;
-		}
-		case ServerOP_ReloadTasks: {
-			shared_task_manager.LoadTaskData();
-			zoneserver_list.SendPacket(pack);
-			break;
-		}
-		case ServerOP_ReloadDzTemplates: {
-			dynamic_zone_manager.LoadTemplates();
-			zoneserver_list.SendPacket(pack);
 			break;
 		}
 		case ServerOP_ChangeSharedMem: {
@@ -1540,33 +1479,29 @@ void ZoneServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p) {
 			SharedTaskWorldMessaging::HandleZoneMessage(pack);
 			break;
 		}
-		case ServerOP_ExpeditionCreate:
-		case ServerOP_ExpeditionDzAddPlayer:
-		case ServerOP_ExpeditionDzMakeLeader:
-		case ServerOP_ExpeditionCharacterLockout:
-		case ServerOP_ExpeditionSaveInvite:
-		case ServerOP_ExpeditionRequestInvite: {
-			ExpeditionMessage::HandleZoneMessage(pack);
-			break;
-		}
 		case ServerOP_DzCreated:
+		case ServerOP_DzAddPlayer:
+		case ServerOP_DzSaveInvite:
+		case ServerOP_DzRequestInvite:
+		case ServerOP_DzMakeLeader:
 		case ServerOP_DzAddRemoveMember:
 		case ServerOP_DzSwapMembers:
 		case ServerOP_DzRemoveAllMembers:
 		case ServerOP_DzGetMemberStatuses:
+		case ServerOP_DzGetBulkMemberStatuses:
 		case ServerOP_DzSetSecondsRemaining:
 		case ServerOP_DzSetCompass:
 		case ServerOP_DzSetSafeReturn:
 		case ServerOP_DzSetZoneIn:
 		case ServerOP_DzSetSwitchID:
 		case ServerOP_DzMovePC:
+		case ServerOP_DzLock:
+		case ServerOP_DzReplayOnJoin:
+		case ServerOP_DzLockout:
+		case ServerOP_DzLockoutDuration:
+		case ServerOP_DzCharacterLockout:
 		case ServerOP_DzUpdateMemberStatus: {
-			DynamicZone::HandleZoneMessage(pack);
-			break;
-		}
-		case ServerOP_DataBucketCacheUpdate: {
-			zoneserver_list.SendPacket(pack);
-
+			dynamic_zone_manager.HandleZoneMessage(pack);
 			break;
 		}
 		case ServerOP_GuildTributeUpdate: {
@@ -1583,7 +1518,7 @@ void ZoneServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p) {
 
 				guild->tribute.timer.Disable();
 
-				zoneserver_list.SendPacketToBootedZones(pack);
+				zoneserver_list.SendPacketToZonesWithGuild(data->guild_id, pack);
 			}
 			break;
 		}
@@ -1626,7 +1561,7 @@ void ZoneServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p) {
 				guild_mgr.UpdateDbGuildFavor(data->guild_id, data->favor);
 				guild_mgr.UpdateDbTributeTimeRemaining(data->guild_id, data->time_remaining);
 
-				zoneserver_list.SendPacketToBootedZones(pack);
+				zoneserver_list.SendPacketToZonesWithGuild(data->guild_id, pack);
 			}
 			break;
 		}
@@ -1660,7 +1595,7 @@ void ZoneServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p) {
 				data->time_remaining      = in->time_remaining;
 				strn0cpy(data->player_name, in->player_name, sizeof(data->player_name));
 
-				zoneserver_list.SendPacketToBootedZones(out);
+				zoneserver_list.SendPacketToZonesWithGuild(in->guild_id, out);
 				safe_delete(out);
 			}
 			break;
@@ -1683,7 +1618,7 @@ void ZoneServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p) {
 				out->tribute_id_2_tier = guild->tribute.id_2_tier;
 				out->time_remaining    = guild_mgr.GetGuildTributeTimeRemaining(in->guild_id);
 
-				zoneserver_list.SendPacketToBootedZones(sp);
+				zoneserver_list.SendPacketToZonesWithGuild(in->guild_id, sp);
 				safe_delete(sp);
 			}
 
@@ -1703,7 +1638,7 @@ void ZoneServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p) {
 				out->tribute_timer = guild_mgr.GetGuildTributeTimeRemaining(in->guild_id);
 				out->trophy_timer  = 0;
 
-				zoneserver_list.SendPacketToBootedZones(sp);
+				zoneserver_list.SendPacketToZonesWithGuild(in->guild_id, sp);
 				safe_delete(sp);
 			}
 
@@ -1727,7 +1662,7 @@ void ZoneServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p) {
 				out->member_time    = in->member_time;
 				strn0cpy(out->player_name, in->player_name, sizeof(out->player_name));
 
-				zoneserver_list.SendPacketToBootedZones(sp);
+				zoneserver_list.SendPacketToZonesWithGuild(out->guild_id, sp);
 				safe_delete(sp)
 			}
 			break;

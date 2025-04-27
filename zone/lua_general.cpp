@@ -18,16 +18,18 @@
 #include "lua_entity_list.h"
 #include "lua_expedition.h"
 #include "lua_spell.h"
+#include "lua_zone.h"
 #include "quest_parser_collection.h"
 #include "questmgr.h"
 #include "qglobals.h"
 #include "encounter.h"
 #include "lua_encounter.h"
 #include "data_bucket.h"
-#include "expedition.h"
 #include "dialogue_window.h"
+#include "dynamic_zone.h"
 #include "../common/events/player_event_logs.h"
 #include "worldserver.h"
+#include "zone.h"
 
 struct Events { };
 struct Factions { };
@@ -466,7 +468,7 @@ void lua_set_sky(int sky) {
 }
 
 void lua_set_guild(int guild_id, int rank) {
-	quest_manager.setguild(guild_id, rank);
+	quest_manager.SetGuild(guild_id, rank);
 }
 
 void lua_create_guild(const char *name, const char *leader) {
@@ -1826,36 +1828,36 @@ void lua_set_content_flag(std::string flag_name, bool enabled){
 Lua_Expedition lua_get_expedition() {
 	if (zone && zone->GetInstanceID() != 0)
 	{
-		return Expedition::FindCachedExpeditionByZoneInstance(zone->GetZoneID(), zone->GetInstanceID());
+		return DynamicZone::FindExpeditionByZone(zone->GetZoneID(), zone->GetInstanceID());
 	}
 	return nullptr;
 }
 
 Lua_Expedition lua_get_expedition_by_char_id(uint32 char_id) {
-	return Expedition::FindCachedExpeditionByCharacterID(char_id);
+	return DynamicZone::FindExpeditionByCharacter(char_id);
 }
 
 Lua_Expedition lua_get_expedition_by_dz_id(uint32 dz_id) {
-	return Expedition::FindCachedExpeditionByDynamicZoneID(dz_id);
+	return DynamicZone::FindDynamicZoneByID(dz_id, DynamicZoneType::Expedition);
 }
 
 Lua_Expedition lua_get_expedition_by_zone_instance(uint32 zone_id, uint32 instance_id) {
-	return Expedition::FindCachedExpeditionByZoneInstance(zone_id, instance_id);
+	return DynamicZone::FindExpeditionByZone(zone_id, instance_id);
 }
 
 luabind::object lua_get_expedition_lockout_by_char_id(lua_State* L, uint32 char_id, std::string expedition_name, std::string event_name) {
 	luabind::adl::object lua_table = luabind::newtable(L);
 
-	auto lockouts = Expedition::GetExpeditionLockoutsByCharacterID(char_id);
+	auto lockouts = DynamicZone::GetCharacterLockouts(char_id);
 
-	auto it = std::find_if(lockouts.begin(), lockouts.end(), [&](const ExpeditionLockoutTimer& lockout) {
-		return lockout.IsSameLockout(expedition_name, event_name);
+	auto it = std::find_if(lockouts.begin(), lockouts.end(), [&](const DzLockout& lockout) {
+		return lockout.IsSame(expedition_name, event_name);
 	});
 
 	if (it != lockouts.end())
 	{
 		lua_table["remaining"] = it->GetSecondsRemaining();
-		lua_table["uuid"] = it->GetExpeditionUUID();
+		lua_table["uuid"] = it->UUID();
 	}
 
 	return lua_table;
@@ -1864,23 +1866,23 @@ luabind::object lua_get_expedition_lockout_by_char_id(lua_State* L, uint32 char_
 luabind::object lua_get_expedition_lockouts_by_char_id(lua_State* L, uint32 char_id) {
 	luabind::adl::object lua_table = luabind::newtable(L);
 
-	auto lockouts = Expedition::GetExpeditionLockoutsByCharacterID(char_id);
+	auto lockouts = DynamicZone::GetCharacterLockouts(char_id);
 	for (const auto& lockout : lockouts)
 	{
-		auto lockout_table = lua_table[lockout.GetExpeditionName()];
+		auto lockout_table = lua_table[lockout.DzName()];
 		if (luabind::type(lockout_table) != LUA_TTABLE)
 		{
 			lockout_table = luabind::newtable(L);
 		}
 
-		auto event_table = lockout_table[lockout.GetEventName()];
+		auto event_table = lockout_table[lockout.Event()];
 		if (luabind::type(event_table) != LUA_TTABLE)
 		{
 			event_table = luabind::newtable(L);
 		}
 
 		event_table["remaining"] = lockout.GetSecondsRemaining();
-		event_table["uuid"] = lockout.GetExpeditionUUID();
+		event_table["uuid"] = lockout.UUID();
 	}
 	return lua_table;
 }
@@ -1888,51 +1890,51 @@ luabind::object lua_get_expedition_lockouts_by_char_id(lua_State* L, uint32 char
 luabind::object lua_get_expedition_lockouts_by_char_id(lua_State* L, uint32 char_id, std::string expedition_name) {
 	luabind::adl::object lua_table = luabind::newtable(L);
 
-	auto lockouts = Expedition::GetExpeditionLockoutsByCharacterID(char_id);
+	auto lockouts = DynamicZone::GetCharacterLockouts(char_id);
 	for (const auto& lockout : lockouts)
 	{
-		if (lockout.GetExpeditionName() == expedition_name)
+		if (lockout.DzName() == expedition_name)
 		{
-			auto event_table = lua_table[lockout.GetEventName()];
+			auto event_table = lua_table[lockout.Event()];
 			if (luabind::type(event_table) != LUA_TTABLE)
 			{
 				event_table = luabind::newtable(L);
 			}
 			event_table["remaining"] = lockout.GetSecondsRemaining();
-			event_table["uuid"] = lockout.GetExpeditionUUID();
+			event_table["uuid"] = lockout.UUID();
 		}
 	}
 	return lua_table;
 }
 
 void lua_add_expedition_lockout_all_clients(std::string expedition_name, std::string event_name, uint32 seconds) {
-	auto lockout = ExpeditionLockoutTimer::CreateLockout(expedition_name, event_name, seconds);
-	Expedition::AddLockoutClients(lockout);
+	auto lockout = DzLockout::Create(expedition_name, event_name, seconds);
+	DynamicZone::AddClientsLockout(lockout);
 }
 
 void lua_add_expedition_lockout_all_clients(std::string expedition_name, std::string event_name, uint32 seconds, std::string uuid) {
-	auto lockout = ExpeditionLockoutTimer::CreateLockout(expedition_name, event_name, seconds, uuid);
-	Expedition::AddLockoutClients(lockout);
+	auto lockout = DzLockout::Create(expedition_name, event_name, seconds, uuid);
+	DynamicZone::AddClientsLockout(lockout);
 }
 
 void lua_add_expedition_lockout_by_char_id(uint32 char_id, std::string expedition_name, std::string event_name, uint32 seconds) {
-	Expedition::AddLockoutByCharacterID(char_id, expedition_name, event_name, seconds);
+	DynamicZone::AddCharacterLockout(char_id, expedition_name, event_name, seconds);
 }
 
 void lua_add_expedition_lockout_by_char_id(uint32 char_id, std::string expedition_name, std::string event_name, uint32 seconds, std::string uuid) {
-	Expedition::AddLockoutByCharacterID(char_id, expedition_name, event_name, seconds, uuid);
+	DynamicZone::AddCharacterLockout(char_id, expedition_name, event_name, seconds, uuid);
 }
 
 void lua_remove_expedition_lockout_by_char_id(uint32 char_id, std::string expedition_name, std::string event_name) {
-	Expedition::RemoveLockoutsByCharacterID(char_id, expedition_name, event_name);
+	DynamicZone::RemoveCharacterLockouts(char_id, expedition_name, event_name);
 }
 
 void lua_remove_all_expedition_lockouts_by_char_id(uint32 char_id) {
-	Expedition::RemoveLockoutsByCharacterID(char_id);
+	DynamicZone::RemoveCharacterLockouts(char_id);
 }
 
 void lua_remove_all_expedition_lockouts_by_char_id(uint32 char_id, std::string expedition_name) {
-	Expedition::RemoveLockoutsByCharacterID(char_id, expedition_name);
+	DynamicZone::RemoveCharacterLockouts(char_id, expedition_name);
 }
 
 std::string lua_seconds_to_time(int duration) {
@@ -4668,16 +4670,6 @@ int lua_get_zone_npc_maximum_aggro_distance(uint32 zone_id, int version)
 	return zone_store.GetZoneNPCMaximumAggroDistance(zone_id, version);
 }
 
-uint32 lua_get_zone_maximum_movement_update_range(uint32 zone_id)
-{
-	return zone_store.GetZoneMaximumMovementUpdateRange(zone_id);
-}
-
-uint32 lua_get_zone_maximum_movement_update_range(uint32 zone_id, int version)
-{
-	return zone_store.GetZoneMaximumMovementUpdateRange(zone_id, version);
-}
-
 int8 lua_get_zone_minimum_expansion(uint32 zone_id)
 {
 	return zone_store.GetZoneMinimumExpansion(zone_id);
@@ -5645,6 +5637,36 @@ void lua_spawn_grid(uint32 npc_id, float x, float y, float z, float heading, flo
 	quest_manager.SpawnGrid(npc_id, glm::vec4(x, y, z, heading), spacing, spawn_count);
 }
 
+Lua_Zone lua_get_zone()
+{
+	return Lua_Zone(zone);
+}
+
+bool lua_handin(luabind::adl::object handin_table)
+{
+	std::map<std::string, uint32> handin_map;
+
+	for (luabind::iterator i(handin_table), end; i != end; i++) {
+		std::string key;
+		if (luabind::type(i.key()) == LUA_TSTRING) {
+			key = luabind::object_cast<std::string>(i.key());
+		}
+		else if (luabind::type(i.key()) == LUA_TNUMBER) {
+			key = fmt::format("{}", luabind::object_cast<int>(i.key()));
+		}
+		else {
+			LogError("Handin key type [{}] not supported", luabind::type(i.key()));
+		}
+
+		if (!key.empty()) {
+			handin_map[key] = luabind::object_cast<uint32>(handin_table[i.key()]);
+			LogNpcHandinDetail("Handin key [{}] value [{}]", key, handin_map[key]);
+		}
+	}
+
+	return quest_manager.handin(handin_map);
+}
+
 #define LuaCreateNPCParse(name, c_type, default_value) do { \
 	cur = table[#name]; \
 	if(luabind::type(cur) != LUA_TNIL) { \
@@ -6287,8 +6309,6 @@ luabind::scope lua_register_general() {
 		luabind::def("get_zone_fast_regen_endurance", (int(*)(uint32,int))&lua_get_zone_fast_regen_endurance),
 		luabind::def("get_zone_npc_maximum_aggro_distance", (int(*)(uint32))&lua_get_zone_npc_maximum_aggro_distance),
 		luabind::def("get_zone_npc_maximum_aggro_distance", (int(*)(uint32,int))&lua_get_zone_npc_maximum_aggro_distance),
-		luabind::def("get_zone_npc_maximum_movement_update_range", (uint32(*)(uint32))&lua_get_zone_maximum_movement_update_range),
-		luabind::def("get_zone_npc_maximum_movement_update_range", (uint32(*)(uint32,int))&lua_get_zone_maximum_movement_update_range),
 		luabind::def("get_zone_minimum_expansion", (int8(*)(uint32))&lua_get_zone_minimum_expansion),
 		luabind::def("get_zone_minimum_expansion", (int8(*)(uint32,int))&lua_get_zone_minimum_expansion),
 		luabind::def("get_zone_maximum_expansion", (int8(*)(uint32))&lua_get_zone_maximum_expansion),
@@ -6454,6 +6474,8 @@ luabind::scope lua_register_general() {
 		luabind::def("are_tasks_completed", &lua_are_tasks_completed),
 		luabind::def("spawn_circle", &lua_spawn_circle),
 		luabind::def("spawn_grid", &lua_spawn_grid),
+		luabind::def("get_zone", &lua_get_zone),
+		luabind::def("handin", &lua_handin),
 		/*
 			Cross Zone
 		*/

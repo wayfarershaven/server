@@ -47,6 +47,7 @@ static const EQ::constants::LookupEntry constants_static_lookup_entries[EQ::vers
 		ClientUnknown::constants::EXPANSION_BIT,
 		ClientUnknown::constants::EXPANSIONS_MASK,
 		ClientUnknown::INULL,
+		ClientUnknown::INULL,
 		ClientUnknown::INULL
 	),
 	/*[ClientVersion::Client62] =*/
@@ -54,6 +55,7 @@ static const EQ::constants::LookupEntry constants_static_lookup_entries[EQ::vers
 		Client62::constants::EXPANSION,
 		Client62::constants::EXPANSION_BIT,
 		Client62::constants::EXPANSIONS_MASK,
+		Client62::INULL,
 		Client62::INULL,
 		Client62::INULL
 	),
@@ -63,7 +65,8 @@ static const EQ::constants::LookupEntry constants_static_lookup_entries[EQ::vers
 		Titanium::constants::EXPANSION_BIT,
 		Titanium::constants::EXPANSIONS_MASK,
 		Titanium::constants::CHARACTER_CREATION_LIMIT,
-		Titanium::constants::SAY_LINK_BODY_SIZE
+		Titanium::constants::SAY_LINK_BODY_SIZE,
+		Titanium::INULL
 	),
 	/*[ClientVersion::SoF] =*/
 	EQ::constants::LookupEntry(
@@ -71,7 +74,8 @@ static const EQ::constants::LookupEntry constants_static_lookup_entries[EQ::vers
 		SoF::constants::EXPANSION_BIT,
 		SoF::constants::EXPANSIONS_MASK,
 		SoF::constants::CHARACTER_CREATION_LIMIT,
-		SoF::constants::SAY_LINK_BODY_SIZE
+		SoF::constants::SAY_LINK_BODY_SIZE,
+		SoF::INULL
 	),
 	/*[ClientVersion::SoD] =*/
 	EQ::constants::LookupEntry(
@@ -79,7 +83,8 @@ static const EQ::constants::LookupEntry constants_static_lookup_entries[EQ::vers
 		SoD::constants::EXPANSION_BIT,
 		SoD::constants::EXPANSIONS_MASK,
 		SoD::constants::CHARACTER_CREATION_LIMIT,
-		SoD::constants::SAY_LINK_BODY_SIZE
+		SoD::constants::SAY_LINK_BODY_SIZE,
+		SoD::INULL
 	),
 	/*[ClientVersion::UF] =*/
 	EQ::constants::LookupEntry(
@@ -87,7 +92,8 @@ static const EQ::constants::LookupEntry constants_static_lookup_entries[EQ::vers
 		UF::constants::EXPANSION_BIT,
 		UF::constants::EXPANSIONS_MASK,
 		UF::constants::CHARACTER_CREATION_LIMIT,
-		UF::constants::SAY_LINK_BODY_SIZE
+		UF::constants::SAY_LINK_BODY_SIZE,
+		UF::INULL
 	),
 	/*[ClientVersion::RoF] =*/
 	EQ::constants::LookupEntry(
@@ -95,7 +101,8 @@ static const EQ::constants::LookupEntry constants_static_lookup_entries[EQ::vers
 		RoF::constants::EXPANSION_BIT,
 		RoF::constants::EXPANSIONS_MASK,
 		RoF::constants::CHARACTER_CREATION_LIMIT,
-		RoF::constants::SAY_LINK_BODY_SIZE
+		RoF::constants::SAY_LINK_BODY_SIZE,
+		RoF::INULL
 	),
 	/*[ClientVersion::RoF2] =*/
 	EQ::constants::LookupEntry(
@@ -103,7 +110,8 @@ static const EQ::constants::LookupEntry constants_static_lookup_entries[EQ::vers
 		RoF2::constants::EXPANSION_BIT,
 		RoF2::constants::EXPANSIONS_MASK,
 		RoF2::constants::CHARACTER_CREATION_LIMIT,
-		RoF2::constants::SAY_LINK_BODY_SIZE
+		RoF2::constants::SAY_LINK_BODY_SIZE,
+		RoF2::constants::MAX_BAZAAR_TRADERS
 	)
 };
 
@@ -165,7 +173,7 @@ static const EQ::inventory::LookupEntry inventory_static_lookup_entries[EQ::vers
 			ClientUnknown::INULL, ClientUnknown::INULL, ClientUnknown::INULL,
 			ClientUnknown::INULL, ClientUnknown::INULL, ClientUnknown::INULL,
 			ClientUnknown::INULL, ClientUnknown::INULL, ClientUnknown::INULL,
-			ClientUnknown::INULL
+			ClientUnknown::INULL, ClientUnknown::INULL, ClientUnknown::INULL
 		),
 
 		ClientUnknown::INULL,
@@ -192,7 +200,7 @@ static const EQ::inventory::LookupEntry inventory_static_lookup_entries[EQ::vers
 			Client62::INULL, Client62::INULL, Client62::INULL,
 			Client62::INULL, Client62::INULL, Client62::INULL,
 			Client62::INULL, Client62::INULL, Client62::INULL,
-			Client62::INULL
+			Client62::INULL, Client62::INULL, Client62::INULL
 		),
 
 		Client62::INULL,
@@ -219,7 +227,7 @@ static const EQ::inventory::LookupEntry inventory_static_lookup_entries[EQ::vers
 			Titanium::invtype::VIEW_MOD_PC_SIZE,	Titanium::invtype::VIEW_MOD_BANK_SIZE,	Titanium::invtype::VIEW_MOD_SHARED_BANK_SIZE,
 			Titanium::invtype::VIEW_MOD_LIMBO_SIZE,	Titanium::invtype::ALT_STORAGE_SIZE,	Titanium::invtype::ARCHIVED_SIZE,
 			Titanium::INULL,						Titanium::INULL,						Titanium::INULL,
-			Titanium::invtype::OTHER_SIZE
+			Titanium::INULL,						Titanium::INULL,						Titanium::invtype::OTHER_SIZE
 		),
 
 		Titanium::invslot::EQUIPMENT_BITMASK,
@@ -246,7 +254,7 @@ static const EQ::inventory::LookupEntry inventory_static_lookup_entries[EQ::vers
 			SoF::invtype::VIEW_MOD_PC_SIZE,		SoF::invtype::VIEW_MOD_BANK_SIZE,	SoF::invtype::VIEW_MOD_SHARED_BANK_SIZE,
 			SoF::invtype::VIEW_MOD_LIMBO_SIZE,	SoF::invtype::ALT_STORAGE_SIZE,		SoF::invtype::ARCHIVED_SIZE,
 			SoF::INULL,							SoF::INULL,							SoF::INULL,
-			SoF::invtype::OTHER_SIZE
+			SoF::INULL,							SoF::INULL,							SoF::invtype::OTHER_SIZE
 		),
 
 		SoF::invslot::EQUIPMENT_BITMASK,
@@ -273,7 +281,7 @@ static const EQ::inventory::LookupEntry inventory_static_lookup_entries[EQ::vers
 			SoD::invtype::VIEW_MOD_PC_SIZE,		SoD::invtype::VIEW_MOD_BANK_SIZE,	SoD::invtype::VIEW_MOD_SHARED_BANK_SIZE,
 			SoD::invtype::VIEW_MOD_LIMBO_SIZE,	SoD::invtype::ALT_STORAGE_SIZE,		SoD::invtype::ARCHIVED_SIZE,
 			SoD::INULL,							SoD::INULL,							SoD::INULL,
-			SoD::invtype::OTHER_SIZE
+			SoD::INULL,							SoD::INULL,							SoD::invtype::OTHER_SIZE
 		),
 
 		SoD::invslot::EQUIPMENT_BITMASK,
@@ -300,7 +308,7 @@ static const EQ::inventory::LookupEntry inventory_static_lookup_entries[EQ::vers
 			UF::invtype::VIEW_MOD_PC_SIZE,		UF::invtype::VIEW_MOD_BANK_SIZE,	UF::invtype::VIEW_MOD_SHARED_BANK_SIZE,
 			UF::invtype::VIEW_MOD_LIMBO_SIZE,	UF::invtype::ALT_STORAGE_SIZE,		UF::invtype::ARCHIVED_SIZE,
 			UF::INULL,							UF::INULL,							UF::INULL,
-			UF::invtype::OTHER_SIZE
+			UF::INULL,							UF::INULL,							UF::invtype::OTHER_SIZE
 		),
 
 		UF::invslot::EQUIPMENT_BITMASK,
@@ -327,7 +335,7 @@ static const EQ::inventory::LookupEntry inventory_static_lookup_entries[EQ::vers
 			RoF::invtype::VIEW_MOD_PC_SIZE,		RoF::invtype::VIEW_MOD_BANK_SIZE,			RoF::invtype::VIEW_MOD_SHARED_BANK_SIZE,
 			RoF::invtype::VIEW_MOD_LIMBO_SIZE,	RoF::invtype::ALT_STORAGE_SIZE,				RoF::invtype::ARCHIVED_SIZE,
 			RoF::invtype::MAIL_SIZE,			RoF::invtype::GUILD_TROPHY_TRIBUTE_SIZE,	RoF::INULL,
-			RoF::invtype::OTHER_SIZE
+			RoF::INULL,RoF::INULL,RoF::invtype::OTHER_SIZE
 		),
 
 		RoF::invslot::EQUIPMENT_BITMASK,
@@ -354,7 +362,7 @@ static const EQ::inventory::LookupEntry inventory_static_lookup_entries[EQ::vers
 			RoF2::invtype::VIEW_MOD_PC_SIZE,	RoF2::invtype::VIEW_MOD_BANK_SIZE,			RoF2::invtype::VIEW_MOD_SHARED_BANK_SIZE,
 			RoF2::invtype::VIEW_MOD_LIMBO_SIZE,	RoF2::invtype::ALT_STORAGE_SIZE,			RoF2::invtype::ARCHIVED_SIZE,
 			RoF2::invtype::MAIL_SIZE,			RoF2::invtype::GUILD_TROPHY_TRIBUTE_SIZE,	RoF2::invtype::KRONO_SIZE,
-			RoF2::invtype::OTHER_SIZE
+			RoF2::invtype::GUILD_BANK_MAIN_SIZE,RoF2::invtype::GUILD_BANK_DEPOSIT_SIZE,     RoF2::invtype::OTHER_SIZE
 		),
 
 		RoF2::invslot::EQUIPMENT_BITMASK,
@@ -381,7 +389,7 @@ static const EQ::inventory::LookupEntry inventory_static_lookup_entries[EQ::vers
 			EntityLimits::NPC::INULL,				EntityLimits::NPC::INULL,	EntityLimits::NPC::INULL,
 			EntityLimits::NPC::INULL,				EntityLimits::NPC::INULL,	EntityLimits::NPC::INULL,
 			EntityLimits::NPC::INULL,				EntityLimits::NPC::INULL,	EntityLimits::NPC::INULL,
-			EntityLimits::NPC::INULL
+			EntityLimits::NPC::INULL,	EntityLimits::NPC::INULL,EntityLimits::NPC::INULL
 		),
 
 		EntityLimits::NPC::INULL,
@@ -408,7 +416,7 @@ static const EQ::inventory::LookupEntry inventory_static_lookup_entries[EQ::vers
 			EntityLimits::NPCMerchant::INULL,								EntityLimits::NPCMerchant::INULL,	EntityLimits::NPCMerchant::INULL,
 			EntityLimits::NPCMerchant::INULL,								EntityLimits::NPCMerchant::INULL,	EntityLimits::NPCMerchant::INULL,
 			EntityLimits::NPCMerchant::INULL,								EntityLimits::NPCMerchant::INULL,	EntityLimits::NPCMerchant::INULL,
-			EntityLimits::NPCMerchant::INULL
+			EntityLimits::NPCMerchant::INULL,								EntityLimits::NPCMerchant::INULL,   EntityLimits::NPCMerchant::INULL
 		),
 
 		EntityLimits::NPCMerchant::INULL,
@@ -435,7 +443,7 @@ static const EQ::inventory::LookupEntry inventory_static_lookup_entries[EQ::vers
 			EntityLimits::Merc::INULL,										EntityLimits::Merc::INULL,	EntityLimits::Merc::INULL,
 			EntityLimits::Merc::INULL,										EntityLimits::Merc::INULL,	EntityLimits::Merc::INULL,
 			EntityLimits::Merc::INULL,										EntityLimits::Merc::INULL,	EntityLimits::Merc::INULL,
-			EntityLimits::Merc::INULL
+			EntityLimits::Merc::INULL,										EntityLimits::Merc::INULL,	EntityLimits::Merc::INULL
 		),
 
 		EntityLimits::Merc::INULL,
@@ -462,7 +470,7 @@ static const EQ::inventory::LookupEntry inventory_static_lookup_entries[EQ::vers
 			EntityLimits::Bot::INULL,										EntityLimits::Bot::INULL,	EntityLimits::Bot::INULL,
 			EntityLimits::Bot::INULL,										EntityLimits::Bot::INULL,	EntityLimits::Bot::INULL,
 			EntityLimits::Bot::INULL,										EntityLimits::Bot::INULL,	EntityLimits::Bot::INULL,
-			EntityLimits::Bot::INULL
+			EntityLimits::Bot::INULL,										EntityLimits::Bot::INULL,	EntityLimits::Bot::INULL
 		),
 
 		EntityLimits::Bot::invslot::EQUIPMENT_BITMASK,
@@ -489,7 +497,7 @@ static const EQ::inventory::LookupEntry inventory_static_lookup_entries[EQ::vers
 			EntityLimits::ClientPet::INULL,									EntityLimits::ClientPet::INULL,	EntityLimits::ClientPet::INULL,
 			EntityLimits::ClientPet::INULL,									EntityLimits::ClientPet::INULL,	EntityLimits::ClientPet::INULL,
 			EntityLimits::ClientPet::INULL,									EntityLimits::ClientPet::INULL,	EntityLimits::ClientPet::INULL,
-			EntityLimits::ClientPet::INULL
+			EntityLimits::ClientPet::INULL,									EntityLimits::ClientPet::INULL,	EntityLimits::ClientPet::INULL
 		),
 
 		EntityLimits::ClientPet::INULL,
@@ -516,7 +524,7 @@ static const EQ::inventory::LookupEntry inventory_static_lookup_entries[EQ::vers
 			EntityLimits::NPCPet::INULL,									EntityLimits::NPCPet::INULL,	EntityLimits::NPCPet::INULL,
 			EntityLimits::NPCPet::INULL,									EntityLimits::NPCPet::INULL,	EntityLimits::NPCPet::INULL,
 			EntityLimits::NPCPet::INULL,									EntityLimits::NPCPet::INULL,	EntityLimits::NPCPet::INULL,
-			EntityLimits::NPCPet::INULL
+			EntityLimits::NPCPet::INULL,									EntityLimits::NPCPet::INULL,	EntityLimits::NPCPet::INULL
 		),
 
 		EntityLimits::NPCPet::INULL,
@@ -543,7 +551,7 @@ static const EQ::inventory::LookupEntry inventory_static_lookup_entries[EQ::vers
 			EntityLimits::MercPet::INULL,									EntityLimits::MercPet::INULL,	EntityLimits::MercPet::INULL,
 			EntityLimits::MercPet::INULL,									EntityLimits::MercPet::INULL,	EntityLimits::MercPet::INULL,
 			EntityLimits::MercPet::INULL,									EntityLimits::MercPet::INULL,	EntityLimits::MercPet::INULL,
-			EntityLimits::MercPet::INULL
+			EntityLimits::MercPet::INULL,									EntityLimits::MercPet::INULL,	EntityLimits::MercPet::INULL
 		),
 
 		EntityLimits::MercPet::INULL,
@@ -570,7 +578,7 @@ static const EQ::inventory::LookupEntry inventory_static_lookup_entries[EQ::vers
 			EntityLimits::BotPet::INULL,									EntityLimits::BotPet::INULL,	EntityLimits::BotPet::INULL,
 			EntityLimits::BotPet::INULL,									EntityLimits::BotPet::INULL,	EntityLimits::BotPet::INULL,
 			EntityLimits::BotPet::INULL,									EntityLimits::BotPet::INULL,	EntityLimits::BotPet::INULL,
-			EntityLimits::BotPet::INULL
+			EntityLimits::BotPet::INULL,									EntityLimits::BotPet::INULL,	EntityLimits::BotPet::INULL
 		),
 
 		EntityLimits::BotPet::INULL,
@@ -597,7 +605,7 @@ static const EQ::inventory::LookupEntry inventory_static_lookup_entries[EQ::vers
 			Titanium::invtype::VIEW_MOD_PC_SIZE,	Titanium::invtype::VIEW_MOD_BANK_SIZE,	Titanium::invtype::VIEW_MOD_SHARED_BANK_SIZE,
 			Titanium::invtype::VIEW_MOD_LIMBO_SIZE,	Titanium::INULL,						Titanium::INULL,
 			Titanium::INULL,						Titanium::INULL,						Titanium::INULL,
-			Titanium::INULL
+			Titanium::INULL,						Titanium::INULL,						Titanium::INULL
 		),
 
 		Titanium::INULL,
@@ -624,7 +632,7 @@ static const EQ::inventory::LookupEntry inventory_static_lookup_entries[EQ::vers
 			SoF::invtype::VIEW_MOD_PC_SIZE,		SoF::invtype::VIEW_MOD_BANK_SIZE,	SoF::invtype::VIEW_MOD_SHARED_BANK_SIZE,
 			SoF::invtype::VIEW_MOD_LIMBO_SIZE,	SoF::INULL,							SoF::INULL,
 			SoF::INULL,							SoF::INULL,							SoF::INULL,
-			SoF::INULL
+			SoF::INULL,							SoF::INULL,							SoF::INULL
 		),
 
 		SoF::INULL,
@@ -651,7 +659,7 @@ static const EQ::inventory::LookupEntry inventory_static_lookup_entries[EQ::vers
 			SoD::invtype::VIEW_MOD_PC_SIZE,		SoD::invtype::VIEW_MOD_BANK_SIZE,	SoD::invtype::VIEW_MOD_SHARED_BANK_SIZE,
 			SoD::invtype::VIEW_MOD_LIMBO_SIZE,	SoD::INULL,							SoD::INULL,
 			SoD::INULL,							SoD::INULL,							SoD::INULL,
-			SoD::INULL
+			SoD::INULL,							SoD::INULL,							SoD::INULL
 		),
 
 		SoD::INULL,
@@ -678,7 +686,7 @@ static const EQ::inventory::LookupEntry inventory_static_lookup_entries[EQ::vers
 			UF::invtype::VIEW_MOD_PC_SIZE,		UF::invtype::VIEW_MOD_BANK_SIZE,	UF::invtype::VIEW_MOD_SHARED_BANK_SIZE,
 			UF::invtype::VIEW_MOD_LIMBO_SIZE,	UF::INULL,							UF::INULL,
 			UF::INULL,							UF::INULL,							UF::INULL,
-			UF::INULL
+			UF::INULL,							UF::INULL,							UF::INULL
 		),
 
 		UF::INULL,
@@ -705,7 +713,7 @@ static const EQ::inventory::LookupEntry inventory_static_lookup_entries[EQ::vers
 			RoF::invtype::VIEW_MOD_PC_SIZE,		RoF::invtype::VIEW_MOD_BANK_SIZE,	RoF::invtype::VIEW_MOD_SHARED_BANK_SIZE,
 			RoF::invtype::VIEW_MOD_LIMBO_SIZE,	RoF::INULL,							RoF::INULL,
 			RoF::INULL,							RoF::INULL,							RoF::INULL,
-			RoF::INULL
+			RoF::INULL,							RoF::INULL,							RoF::INULL
 		),
 
 		RoF::INULL,
@@ -732,7 +740,7 @@ static const EQ::inventory::LookupEntry inventory_static_lookup_entries[EQ::vers
 			RoF2::invtype::VIEW_MOD_PC_SIZE,	RoF2::invtype::VIEW_MOD_BANK_SIZE,	RoF2::invtype::VIEW_MOD_SHARED_BANK_SIZE,
 			RoF2::invtype::VIEW_MOD_LIMBO_SIZE,	RoF2::INULL,						RoF2::INULL,
 			RoF2::INULL,						RoF2::INULL,						RoF2::INULL,
-			RoF2::INULL
+			RoF2::INULL,						RoF2::INULL,						RoF2::INULL
 		),
 
 		RoF2::INULL,

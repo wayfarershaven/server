@@ -18,17 +18,20 @@
 
 #include "../common/global_define.h"
 #include "../common/eqemu_logsys.h"
-#include "expedition.h"
+#include "dynamic_zone.h"
 #include "masterentity.h"
 #include "worldserver.h"
 #include "string_ids.h"
 #include "../common/events/player_event_logs.h"
+#include "../common/repositories/character_expedition_lockouts_repository.h"
 #include "../common/repositories/group_id_repository.h"
 #include "../common/repositories/group_leaders_repository.h"
+#include "queryserv.h"
 
 
-extern EntityList entity_list;
+extern EntityList  entity_list;
 extern WorldServer worldserver;
+extern QueryServ  *QServ;
 
 /*
 note about how groups work:
@@ -1017,6 +1020,27 @@ void Group::GetBotList(std::list<Bot*>& bot_list, bool clear_list)
 	}
 }
 
+std::list<uint32> Group::GetRawBotList()
+{
+	std::list<uint32> bot_list;
+
+	const auto& l = GroupIdRepository::GetWhere(
+		database,
+		fmt::format(
+			"`group_id` = {}",
+			GetID()
+		)
+	);
+
+	for (const auto& e : l) {
+		if (e.bot_id) {
+			bot_list.push_back(e.bot_id);
+		}
+	}
+
+	return bot_list;
+}
+
 bool Group::Process() {
 	if(disbandcheck && !GroupCount())
 		return false;
@@ -1234,30 +1258,48 @@ void Group::GroupMessageString(Mob* sender, uint32 type, uint32 string_id, const
 void Client::LeaveGroup() {
 	Group *g = GetGroup();
 
-	if(g)
-	{
+	if (g) {
 		int32 MemberCount = g->GroupCount();
 		// Account for both client and merc leaving the group
-		if (GetMerc() && g == GetMerc()->GetGroup())
-		{
+		if (GetMerc() && g == GetMerc()->GetGroup()) {
 			MemberCount -= 1;
 		}
 
-		if(MemberCount < 3)
-		{
+		if (RuleB(Bots, Enabled)) {
+			std::list<uint32> sbl = g->GetRawBotList();
+
+			for (auto botID : sbl) {
+				auto b = entity_list.GetBotByBotID(botID);
+
+				if (b) {
+					if (b->GetBotOwnerCharacterID() == CharacterID()) {
+						MemberCount -= 1;
+					}
+				}
+				else {
+					if (database.botdb.GetOwnerID(botID) == CharacterID()) {
+						MemberCount -= 1;
+					}
+				}			
+			}
+		}
+
+		if (MemberCount < 3) {
 			g->DisbandGroup();
 		}
-		else
-		{
+		else {
 			g->DelMember(this);
-			if (GetMerc() != nullptr && g == GetMerc()->GetGroup() )
-			{
+
+			if (GetMerc() != nullptr && g == GetMerc()->GetGroup()) {
 				GetMerc()->RemoveMercFromGroup(GetMerc(), GetMerc()->GetGroup());
+			}
+
+			if (RuleB(Bots, Enabled)) {
+				g->RemoveClientsBots(this);
 			}
 		}
 	}
-	else
-	{
+	else {
 		//force things a little
 		Group::RemoveFromGroup(this);
 
@@ -2222,24 +2264,24 @@ void Group::ClearAllNPCMarks()
 
 }
 
-int8 Group::GetNumberNeedingHealedInGroup(int8 hpr, bool includePets) {
-	int8 needHealed = 0;
+int8 Group::GetNumberNeedingHealedInGroup(int8 hpr, bool include_pets) {
+	int8 need_healed = 0;
 
 	for( int i = 0; i<MAX_GROUP_MEMBERS; i++) {
 		if(members[i] && !members[i]->qglobal) {
 
 			if(members[i]->GetHPRatio() <= hpr)
-				needHealed++;
+				need_healed++;
 
-			if(includePets) {
+			if(include_pets) {
 				if(members[i]->GetPet() && members[i]->GetPet()->GetHPRatio() <= hpr) {
-					needHealed++;
+					need_healed++;
 				}
 			}
 		}
 	}
 
-	return needHealed;
+	return need_healed;
 }
 
 void Group::UpdateGroupAAs()
@@ -2419,7 +2461,7 @@ bool Group::AmIMainAssist(const char *mob_name)
 	if (!mob_name)
 		return false;
 
-	return !((bool)MainTankName.compare(mob_name));
+	return !((bool)MainAssistName.compare(mob_name));
 }
 
 bool Group::AmIPuller(const char *mob_name)
@@ -2474,25 +2516,21 @@ void Group::QueueClients(Mob *sender, const EQApplicationPacket *app, bool ack_r
 	}
 }
 
-bool Group::DoesAnyMemberHaveExpeditionLockout(
-	const std::string& expedition_name, const std::string& event_name, int max_check_count)
+bool Group::AnyMemberHasDzLockout(const std::string& expedition, const std::string& event)
 {
-	if (max_check_count <= 0)
+	std::vector<std::string> names;
+	for (int i = 0; i < MAX_GROUP_MEMBERS; ++i)
 	{
-		max_check_count = MAX_GROUP_MEMBERS;
-	}
-
-	for (int i = 0; i < MAX_GROUP_MEMBERS && i < max_check_count; ++i)
-	{
-		if (membername[i][0])
+		if (!members[i] && membername[i][0])
 		{
-			if (Expedition::HasLockoutByCharacterName(membername[i], expedition_name, event_name))
-			{
-				return true;
-			}
+			names.emplace_back(membername[i]); // out of zone member
+		}
+		else if (members[i] && members[i]->IsClient() && members[i]->CastToClient()->HasDzLockout(expedition, event))
+		{
+			return true;
 		}
 	}
-	return false;
+	return !CharacterExpeditionLockoutsRepository::GetLockouts(database, names, expedition, event).empty();
 }
 
 bool Group::IsLeader(const char* name) {
@@ -2575,4 +2613,77 @@ void Group::AddToGroup(AddToGroupRequest r)
 			.merc_id = merc_id
 		}
 	);
+}
+
+void Group::RemoveClientsBots(Client* c) {
+	std::list<uint32> sbl = GetRawBotList();
+
+	for (auto botID : sbl) {
+		auto b = entity_list.GetBotByBotID(botID);
+
+		if (b) {
+			if (b->GetBotOwnerCharacterID() == c->CharacterID()) {
+				b->RemoveBotFromGroup(b, this);
+			}
+		}
+		else {
+			if (database.botdb.GetOwnerID(botID) == c->CharacterID()) {
+				auto botName = database.botdb.GetBotNameByID(botID);
+
+				for (uint32 i = 0; i < MAX_GROUP_MEMBERS; i++) {
+					if (membername[i] == botName) {
+						members[i] = nullptr;
+						membername[i][0] = '\0';
+						memset(membername[i], 0, 64);
+						MemberRoles[i] = 0;
+						break;
+					}
+				}
+
+				auto pack = new ServerPacket(ServerOP_GroupLeave, sizeof(ServerGroupLeave_Struct));
+				ServerGroupLeave_Struct* gl = (ServerGroupLeave_Struct*)pack->pBuffer;
+				gl->gid = GetID();
+				gl->zoneid = zone->GetZoneID();
+				gl->instance_id = zone->GetInstanceID();
+				strcpy(gl->member_name, botName.c_str());
+				worldserver.SendPacket(pack);
+				safe_delete(pack);
+
+				auto outapp = new EQApplicationPacket(OP_GroupUpdate, sizeof(GroupJoin_Struct));
+				GroupJoin_Struct* gu = (GroupJoin_Struct*)outapp->pBuffer;
+				gu->action = groupActLeave;
+				strcpy(gu->membername, botName.c_str());
+				strcpy(gu->yourname, botName.c_str());
+
+				gu->leader_aas = LeaderAbilities;
+
+				for (uint32 i = 0; i < MAX_GROUP_MEMBERS; i++) {
+					if (members[i] == nullptr) {
+						//if (DEBUG>=5) LogFile->write(EQEMuLog::Debug, "Group::DelMember() null member at slot %i", i);
+						continue;
+					}
+
+					if (membername[i] != botName.c_str()) {
+						strcpy(gu->yourname, members[i]->GetCleanName());
+
+						if (members[i]->IsClient()) {
+							members[i]->CastToClient()->QueuePacket(outapp);
+						}
+					}
+				}
+
+				safe_delete(outapp);
+
+				DelMemberOOZ(botName.c_str());
+
+				GroupIdRepository::DeleteWhere(
+					database,
+					fmt::format(
+						"`bot_id` = {}",
+						botID
+					)
+				);
+			}
+		}
+	}
 }

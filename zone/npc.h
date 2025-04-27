@@ -222,7 +222,7 @@ public:
 	void RemoveLootCash();
 	void QueryLoot(Client *to, bool is_pet_query = false);
 	bool HasItem(uint32 item_id);
-	uint16 CountItem(uint32 item_id);
+	uint32 CountItem(uint32 item_id);
 	uint32 GetLootItemIDBySlot(uint16 loot_slot);
 	uint16 GetFirstLootSlotByItemID(uint32 item_id);
 	std::vector<int> GetLootList();
@@ -248,6 +248,7 @@ public:
 
 	uint16 GetWaypointMax() const { return wp_m; }
 	int32 GetGrid() const { return grid; }
+	Spawn2* GetSpawn() { return respawn2 ? respawn2 : nullptr; }
 	uint32 GetSpawnGroupId() const { return spawn_group_id; }
 	uint32 GetSpawnPointID() const;
 
@@ -559,6 +560,81 @@ public:
 	bool CanPathTo(float x, float y, float z);
 
 	void DoNpcToNpcAggroScan();
+
+	// hand-ins
+	bool CanPetTakeItem(const EQ::ItemInstance *inst);
+
+	struct HandinEntry {
+		std::string      item_id            = "0";
+		uint32           count              = 0;
+		EQ::ItemInstance *item              = nullptr;
+		bool             is_multiquest_item = false; // state
+	};
+
+	struct HandinMoney {
+		uint32 platinum = 0;
+		uint32 gold     = 0;
+		uint32 silver   = 0;
+		uint32 copper   = 0;
+	};
+
+	struct Handin {
+		std::vector<HandinEntry> original_items = {}; // this is what the player originally handed in, never modified
+		std::vector<HandinEntry> items          = {}; // items can be removed from this set as successful handins are made
+		HandinMoney              original_money = {}; // this is what the player originally handed in, never modified
+		HandinMoney              money          = {}; // money can be removed from this set as successful handins are made
+	};
+
+	// NPC Hand-in
+	bool IsMultiQuestEnabled() { return m_multiquest_enabled; }
+	void MultiQuestEnable() { m_multiquest_enabled = true; }
+	bool IsGuildmasterForClient(Client *c);
+	bool CheckHandin(
+		Client *c,
+		std::map<std::string, uint32> handin,
+		std::map<std::string, uint32> required,
+		std::vector<EQ::ItemInstance *> items
+	);
+	Handin ReturnHandinItems(Client *c);
+	void ResetHandin();
+	void ResetMultiQuest();
+	bool HasProcessedHandinReturn() { return m_has_processed_handin_return; }
+	bool HandinStarted() { return m_handin_started; }
+
+	// zone state save
+	inline void SetQueuedToCorpse() { m_queued_for_corpse = true; }
+	inline bool IsQueuedForCorpse() const { return m_queued_for_corpse; }
+	inline void SetResumedFromZoneSuspend(bool state = true) { m_resumed_from_zone_suspend = state; }
+	inline bool IsResumedFromZoneSuspend() const { return m_resumed_from_zone_suspend; }
+
+	inline void LoadBuffsFromState(std::vector<Buffs_Struct> in_buffs) {
+		int i = 0;
+		for (auto &b: in_buffs) {
+			buffs[i].spellid     = b.spellid;
+			buffs[i].casterlevel = b.casterlevel;
+			buffs[i].casterid    = b.casterid;
+			strncpy(buffs[i].caster_name, b.caster_name, 64);
+			buffs[i].ticsremaining     = b.ticsremaining;
+			buffs[i].counters          = b.counters;
+			buffs[i].hit_number        = b.hit_number;
+			buffs[i].melee_rune        = b.melee_rune;
+			buffs[i].magic_rune        = b.magic_rune;
+			buffs[i].dot_rune          = b.dot_rune;
+			buffs[i].caston_x          = b.caston_x;
+			buffs[i].caston_y          = b.caston_y;
+			buffs[i].caston_z          = b.caston_z;
+			buffs[i].ExtraDIChance     = b.ExtraDIChance;
+			buffs[i].RootBreakChance   = b.RootBreakChance;
+			buffs[i].instrument_mod    = b.instrument_mod;
+			buffs[i].virus_spread_time = b.virus_spread_time;
+			buffs[i].persistant_buff   = b.persistant_buff;
+			buffs[i].client            = b.client;
+			buffs[i].UpdateClient      = b.UpdateClient;
+			i++;
+		}
+		CalcBonuses();
+	}
+
 protected:
 
 	void HandleRoambox();
@@ -579,6 +655,15 @@ protected:
 	uint32    m_loot_gold;
 	uint32    m_loot_platinum;
 	LootItems m_loot_items;
+
+	// zone state
+	bool m_resumed_from_zone_suspend = false;
+	bool m_queued_for_corpse         = false; // this is to check for corpse creation on zone state restore
+
+	// this is a timer that protects a NPC from having double assignment of loot
+	// this is to prevent a player from killing a NPC and then zoning out and back in to get loot again
+	// if loot was to be assigned via script again, this protects double assignment for a short time
+	Timer m_resumed_from_zone_suspend_shutoff_timer = {};
 
 	std::list<NpcFactionEntriesRepository::NpcFactionEntries> faction_list;
 
@@ -700,6 +785,17 @@ protected:
 	bool raid_target;
 	bool ignore_despawn; //NPCs with this set to 1 will ignore the despawn value in spawngroup
 
+	// NPC Hand-in
+	bool m_multiquest_enabled          = false;
+	bool m_handin_started              = false;
+	bool m_has_processed_handin_return = false;
+
+	// this is the working handin data from the player
+	// items can be decremented from this as each successful
+	// check is ran in scripts, the remainder is what is returned
+	Handin m_hand_in = {};
+public:
+	const Handin GetHandin() { return m_hand_in; }
 
 private:
 	uint32              m_loottable_id;

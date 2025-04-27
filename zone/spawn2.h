@@ -55,10 +55,10 @@ public:
 	float	GetZ()		{ return z; }
 	float	GetHeading() { return heading; }
 	bool	PathWhenZoneIdle() { return path_when_zone_idle; }
-	void	SetRespawnTimer(uint32 newrespawntime) { respawn_ = newrespawntime; };
+	void	SetRespawnTimer(uint32 newrespawntime) { m_respawn_time = newrespawntime; };
 	void	SetVariance(uint32 newvariance) { variance_ = newvariance; }
 	const uint32 GetVariance() const { return variance_; }
-	uint32	RespawnTimer() { return respawn_; }
+	uint32	RespawnTimer() { return m_respawn_time; }
 	uint32	SpawnGroupID() { return spawngroup_id_; }
 	uint32	CurrentNPCID() { return currentnpcid; }
 	void	SetCurrentNPCID(uint32 nid) { currentnpcid = nid; }
@@ -69,13 +69,24 @@ public:
 	void	SetNPCPointerNull() { npcthis = nullptr; }
 	Timer	GetTimer() { return timer; }
 	void	SetTimer(uint32 duration) { timer.Start(duration); }
-	uint32  GetKillCount() { return killcount; }
+	uint32 GetKillCount() { return killcount; }
+	uint32 GetGrid() const { return grid_; }
+	bool GetPathWhenZoneIdle() const { return path_when_zone_idle; }
+	int16 GetConditionMinValue() const { return condition_min_value; }
+	int16 GetAnimation () { return anim; }
+	inline NPC *GetNPC() const { return npcthis; }
+	inline bool IsResumedFromZoneSuspend() const { return m_resumed_from_zone_suspend; }
+	inline void SetResumedFromZoneSuspend(bool resumed) { m_resumed_from_zone_suspend = resumed; }
+	inline void SetEntityVariables(std::map<std::string, std::string> vars) { m_entity_variables = vars; }
+	inline void SetResumedNPCID(uint32 npc_id) { m_resumed_npc_id = npc_id; }
+	inline void SetStoredLocation(const glm::vec4& loc) { m_stored_location = loc; }
+
 protected:
 	friend class Zone;
 	Timer	timer;
 private:
-	uint32	spawn2_id;
-	uint32	respawn_;
+	uint32 spawn2_id;
+	uint32 m_respawn_time;
 	uint32	resetTimer();
 	uint32	despawnTimer(uint32 despawn_timer);
 
@@ -95,6 +106,10 @@ private:
 	EmuAppearance anim;
 	bool IsDespawned;
 	uint32  killcount;
+	bool m_resumed_from_zone_suspend = false;
+	uint32 m_resumed_npc_id = 0;
+	std::map<std::string, std::string> m_entity_variables = {};
+	glm::vec4 m_stored_location = {0, 0, -1000, 0}; // use -1000 to indicate unset/zero-state
 };
 
 class SpawnCondition {

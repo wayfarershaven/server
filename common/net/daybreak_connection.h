@@ -3,6 +3,7 @@
 #include "../random.h"
 #include "packet.h"
 #include "daybreak_structs.h"
+#include "daybreak_pooling.h"
 #include <uv.h>
 #include <chrono>
 #include <functional>
@@ -180,6 +181,11 @@ namespace EQ
 			size_t m_rolling_ping;
 			Timestamp m_close_time;
 			double m_outgoing_budget;
+
+			// resend tracking
+			size_t m_resend_packets_sent = 0;
+			size_t m_resend_bytes_sent = 0;
+			bool m_acked_since_last_resend = false;
 
 			struct DaybreakSentPacket
 			{

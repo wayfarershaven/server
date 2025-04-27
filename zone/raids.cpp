@@ -18,14 +18,15 @@
 
 #include "../common/strings.h"
 #include "../common/events/player_event_logs.h"
+#include "../common/repositories/character_expedition_lockouts_repository.h"
 #include "../common/repositories/raid_details_repository.h"
 #include "../common/repositories/raid_members_repository.h"
 #include "../common/raid.h"
 
 
 #include "client.h"
+#include "dynamic_zone.h"
 #include "entity.h"
-#include "expedition.h"
 #include "groups.h"
 #include "mob.h"
 #include "raids.h"
@@ -33,9 +34,11 @@
 #include "bot.h"
 
 #include "worldserver.h"
+#include "queryserv.h"
 
-extern EntityList entity_list;
+extern EntityList  entity_list;
 extern WorldServer worldserver;
+extern QueryServ  *QServ;
 
 Raid::Raid(uint32 raidID)
 : GroupIDConsumer(raidID)
@@ -240,8 +243,6 @@ void Raid::AddBot(Bot* b, uint32 group, bool raid_leader, bool group_leader, boo
 	SendRaidAddAll(b->GetName());
 
 	b->SetRaidGrouped(true);
-	b->p_raid_instance = this;
-
 
 	auto pack = new ServerPacket(ServerOP_RaidAdd, sizeof(ServerRaidGeneralAction_Struct));
 	auto* rga = (ServerRaidGeneralAction_Struct*) pack->pBuffer;
@@ -267,6 +268,9 @@ void Raid::RemoveMember(const char *character_name)
 		b->SetFollowID(b->GetOwner()->CastToClient()->GetID());
 		b->SetTarget(nullptr);
 		b->SetRaidGrouped(false);
+		b->p_raid_instance = nullptr;
+		b->SetStoredRaid(nullptr);
+		b->SetVerifiedRaid(false);
 	}
 
 	disbandCheck = true;
@@ -2135,28 +2139,21 @@ std::vector<RaidMember> Raid::GetMembers() const
 	return raid_members;
 }
 
-bool Raid::DoesAnyMemberHaveExpeditionLockout(const std::string& expedition_name, const std::string& event_name, int max_check_count)
+bool Raid::AnyMemberHasDzLockout(const std::string& expedition, const std::string& event)
 {
-	auto raid_members = GetMembers();
-
-	if (max_check_count > 0) {
-		// priority is leader, group number, then ungrouped members
-		std::sort(raid_members.begin(), raid_members.end(),
-			[&](const RaidMember& lhs, const RaidMember& rhs) {
-				if (lhs.is_raid_leader) {
-					return true;
-				} else if (rhs.is_raid_leader) {
-					return false;
-				}
-				return lhs.group_number < rhs.group_number;
-			});
-
-		raid_members.resize(max_check_count);
+	std::vector<std::string> names;
+	for (const auto& mbr : members)
+	{
+		if (!mbr.member && !mbr.is_bot && mbr.member_name[0])
+		{
+			names.emplace_back(mbr.member_name); // out of zone member
+		}
+		else if (mbr.member && !mbr.is_bot && mbr.member->HasDzLockout(expedition, event))
+		{
+			return true;
+		}
 	}
-
-	return std::any_of(raid_members.begin(), raid_members.end(), [&](const RaidMember& raid_member) {
-		return Expedition::HasLockoutByCharacterName(raid_member.member_name, expedition_name, event_name);
-	});
+	return !CharacterExpeditionLockoutsRepository::GetLockouts(database, names, expedition, event).empty();
 }
 
 Mob* Raid::GetRaidMainAssistOne()

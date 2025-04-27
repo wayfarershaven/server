@@ -74,7 +74,7 @@ namespace Logs {
 		Spawns,
 		Spells,
 		Status, // deprecated
-		TCPConnection,
+		TCPConnection, // deprecated
 		Tasks,
 		Tradeskills,
 		Trading,
@@ -142,6 +142,16 @@ namespace Logs {
 		EqTime,
 		Corpses,
 		XTargets,
+		EvolveItem,
+		PositionUpdate,
+		KSM,
+		BotSettings,
+		BotSpellChecks,
+		BotSpellTypeChecks,
+		NpcHandin,
+		ZoneState,
+		NetClient,
+		NetTCP,
 		MaxCategoryID /* Don't Remove this */
 	};
 
@@ -175,7 +185,7 @@ namespace Logs {
 		"Spawns",
 		"Spells",
 		"Status (Deprecated)",
-		"TCP Connection",
+		"TCP Connection (Deprecated)",
 		"Tasks",
 		"Tradeskills",
 		"Trading",
@@ -242,7 +252,17 @@ namespace Logs {
 		"Zoning",
 		"EqTime",
 		"Corpses",
-		"XTargets"
+		"XTargets",
+		"EvolveItem",
+		"PositionUpdate",
+		"KSM", // Kernel Samepage Merging
+		"Bot Settings",
+		"Bot Spell Checks",
+		"Bot Spell Type Checks",
+		"NpcHandin",
+		"ZoneState",
+		"Net Server <-> Client",
+		"Net TCP"
 	};
 }
 
@@ -263,7 +283,7 @@ public:
 	 */
 	void CloseFileLogs();
 	EQEmuLogSys *LoadLogSettingsDefaults();
-	EQEmuLogSys *LoadLogDatabaseSettings();
+	EQEmuLogSys *LoadLogDatabaseSettings(bool silent_load = false);
 
 	/**
 	 * @param directory_name

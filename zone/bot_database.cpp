@@ -22,6 +22,7 @@
 #include "../common/strings.h"
 #include "../common/eqemu_logsys.h"
 
+#include "../common/repositories/bot_blocked_buffs_repository.h"
 #include "../common/repositories/bot_buffs_repository.h"
 #include "../common/repositories/bot_create_combinations_repository.h"
 #include "../common/repositories/bot_data_repository.h"
@@ -35,6 +36,8 @@
 #include "../common/repositories/bot_pet_buffs_repository.h"
 #include "../common/repositories/bot_pet_inventories_repository.h"
 #include "../common/repositories/bot_spell_casting_chances_repository.h"
+#include "../common/repositories/bot_spells_entries_repository.h"
+#include "../common/repositories/bot_settings_repository.h"
 #include "../common/repositories/bot_stances_repository.h"
 #include "../common/repositories/bot_timers_repository.h"
 #include "../common/repositories/character_data_repository.h"
@@ -184,6 +187,7 @@ bool BotDatabase::QueryNameAvailablity(const std::string& bot_name, bool& availa
 	if (
 		bot_name.empty() ||
 		bot_name.size() > 60 ||
+		!database.CheckNameFilter(bot_name) ||
 		database.IsNameUsed(bot_name)
 	) {
 		return false;
@@ -244,6 +248,8 @@ bool BotDatabase::LoadBotsList(const uint32 owner_id, std::list<BotsAvailableLis
 							SELECT `account_id` FROM `character_data` WHERE `id` = {}
 						)
 					)
+					AND 
+					`name` NOT LIKE '%-deleted-%'
 				),
 				owner_id
 			)
@@ -270,7 +276,7 @@ bool BotDatabase::LoadBotsList(const uint32 owner_id, std::list<BotsAvailableLis
 		const auto& l = BotDataRepository::GetWhere(
 			database,
 			fmt::format(
-				"`owner_id` = {}",
+				"`owner_id` = {} AND `name` NOT LIKE '%-deleted-%'",
 				owner_id
 			)
 		);
@@ -317,7 +323,7 @@ bool BotDatabase::LoadBotID(const std::string& bot_name, uint32& bot_id, uint8& 
 	const auto& l = BotDataRepository::GetWhere(
 		database,
 		fmt::format(
-			"`name` = '{}' LIMIT 1",
+			"`name` = '{}' AND `name` NOT LIKE '%-deleted-%' LIMIT 1",
 			Strings::Escape(bot_name)
 		)
 	);
@@ -400,28 +406,13 @@ bool BotDatabase::LoadBot(const uint32 bot_id, Bot*& loaded_bot)
 		e.spells_id,
 		e.time_spawned,
 		e.zone_id,
-		t,
-		e.expansion_bitmask
+		t
 	);
 
 	if (loaded_bot) {
 		loaded_bot->SetSurname(e.last_name);
 		loaded_bot->SetTitle(e.title);
 		loaded_bot->SetSuffix(e.suffix);
-
-		loaded_bot->SetShowHelm(e.show_helm);
-
-		auto bfd = EQ::Clamp(e.follow_distance, static_cast<uint32>(1), BOT_FOLLOW_DISTANCE_DEFAULT_MAX);
-
-		loaded_bot->SetFollowDistance(bfd);
-
-		loaded_bot->SetStopMeleeLevel(e.stop_melee_level);
-
-		loaded_bot->SetBotEnforceSpellSetting(e.enforce_spell_settings);
-
-		loaded_bot->SetBotArcherySetting(e.archery_setting);
-
-		loaded_bot->SetBotCasterRange(e.caster_range);
 	}
 
 	return true;
@@ -476,13 +467,6 @@ bool BotDatabase::SaveNewBot(Bot* b, uint32& bot_id)
 	e.poison                 = b->GetBasePR();
 	e.disease                = b->GetBaseDR();
 	e.corruption             = b->GetBaseCorrup();
-	e.show_helm              = b->GetShowHelm() ? 1 : 0;
-	e.follow_distance        = b->GetFollowDistance();
-	e.stop_melee_level       = b->GetStopMeleeLevel();
-	e.expansion_bitmask      = b->GetExpansionBitmask();
-	e.enforce_spell_settings = b->GetBotEnforceSpellSetting();
-	e.archery_setting        = b->IsBotArcher() ? 1 : 0;
-	e.caster_range           = b->GetBotCasterRange();
 
 	e = BotDataRepository::InsertOne(database, e);
 
@@ -547,12 +531,6 @@ bool BotDatabase::SaveBot(Bot* b)
 	e.poison                 = b->GetBasePR();
 	e.disease                = b->GetBaseDR();
 	e.corruption             = b->GetBaseCorrup();
-	e.show_helm              = b->GetShowHelm() ? 1 : 0;
-	e.follow_distance        = b->GetFollowDistance();
-	e.stop_melee_level       = b->GetStopMeleeLevel();
-	e.expansion_bitmask      = b->GetExpansionBitmask();
-	e.enforce_spell_settings = b->GetBotEnforceSpellSetting();
-	e.archery_setting        = b->IsBotArcher() ? 1 : 0;
 
 	return BotDataRepository::UpdateOne(database, e);
 }
@@ -823,9 +801,9 @@ bool BotDatabase::LoadTimers(Bot* b)
 		)
 	);
 
-	std::vector<BotTimer_Struct> v;
+	std::vector<BotTimer> v;
 
-	BotTimer_Struct t{ };
+	BotTimer t{ };
 
 	for (const auto& e : l) {
 		if (e.timer_value < (Timer::GetCurrentTime() + e.recast_time)) {
@@ -859,7 +837,7 @@ bool BotDatabase::SaveTimers(Bot* b)
 		return false;
 	}
 
-	std::vector<BotTimer_Struct> v = b->GetBotTimers();
+	std::vector<BotTimer> v = b->GetBotTimers();
 
 	if (v.empty()) {
 		return true;
@@ -868,7 +846,7 @@ bool BotDatabase::SaveTimers(Bot* b)
 	std::vector<BotTimersRepository::BotTimers> l;
 
 	if (!v.empty()) {
-		for (auto & bot_timer : v) {
+		for (auto& bot_timer : v) {
 			if (bot_timer.timer_value <= Timer::GetCurrentTime()) {
 				continue;
 			}
@@ -1670,59 +1648,6 @@ bool BotDatabase::SaveAllArmorColors(const uint32 owner_id, const uint32 rgb_val
 	return BotInventoriesRepository::SaveAllArmorColors(database, owner_id, rgb_value);
 }
 
-bool BotDatabase::SaveHelmAppearance(const uint32 bot_id, const bool show_flag)
-{
-	if (!bot_id) {
-		return false;
-	}
-
-	auto e = BotDataRepository::FindOne(database, bot_id);
-
-	e.show_helm = show_flag ? 1 : 0;
-
-	return BotDataRepository::UpdateOne(database, e);
-}
-
-bool BotDatabase::SaveAllHelmAppearances(const uint32 owner_id, const bool show_flag)
-{
-	if (!owner_id) {
-		return false;
-	}
-
-	return BotDataRepository::SaveAllHelmAppearances(database, owner_id, show_flag);
-}
-
-bool BotDatabase::ToggleAllHelmAppearances(const uint32 owner_id)
-{
-	if (!owner_id) {
-		return false;
-	}
-
-	return BotDataRepository::ToggleAllHelmAppearances(database, owner_id);
-}
-
-bool BotDatabase::SaveFollowDistance(const uint32 bot_id, const uint32 follow_distance)
-{
-	if (!bot_id || !follow_distance) {
-		return false;
-	}
-
-	auto e = BotDataRepository::FindOne(database, bot_id);
-
-	e.follow_distance = follow_distance;
-
-	return BotDataRepository::UpdateOne(database, e);
-}
-
-bool BotDatabase::SaveAllFollowDistances(const uint32 owner_id, const uint32 follow_distance)
-{
-	if (!owner_id || !follow_distance) {
-		return false;
-	}
-
-	return BotDataRepository::SaveAllFollowDistances(database, owner_id, follow_distance);
-}
-
 bool BotDatabase::CreateCloneBot(const uint32 bot_id, const std::string& clone_name, uint32& clone_id)
 {
 	if (!bot_id || clone_name.empty()) {
@@ -1769,19 +1694,6 @@ bool BotDatabase::CreateCloneBotInventory(const uint32 bot_id, const uint32 clon
 	}
 
 	return BotInventoriesRepository::InsertMany(database, l);
-}
-
-bool BotDatabase::SaveStopMeleeLevel(const uint32 bot_id, const uint8 sml_value)
-{
-	if (!bot_id) {
-		return false;
-	}
-
-	auto e = BotDataRepository::FindOne(database, bot_id);
-
-	e.stop_melee_level = sml_value;
-
-	return BotDataRepository::UpdateOne(database, e);
 }
 
 bool BotDatabase::LoadOwnerOptions(Client* c)
@@ -2224,74 +2136,6 @@ uint32 BotDatabase::GetRaceClassBitmask(uint32 bot_race)
 	return e.race ? e.classes : 0;
 }
 
-bool BotDatabase::SaveExpansionBitmask(const uint32 bot_id, const int expansion_bitmask)
-{
-	if (!bot_id) {
-		return false;
-	}
-
-	auto e = BotDataRepository::FindOne(database, bot_id);
-
-	if (!e.bot_id) {
-		return false;
-	}
-
-	e.expansion_bitmask = expansion_bitmask;
-
-	return BotDataRepository::UpdateOne(database, e);
-}
-
-bool BotDatabase::SaveEnforceSpellSetting(const uint32 bot_id, const bool enforce_spell_setting)
-{
-	if (!bot_id) {
-		return false;
-	}
-
-	auto e = BotDataRepository::FindOne(database, bot_id);
-
-	if (!e.bot_id) {
-		return false;
-	}
-
-	e.enforce_spell_settings = enforce_spell_setting ? 1 : 0;
-
-	return BotDataRepository::UpdateOne(database, e);
-}
-
-bool BotDatabase::SaveBotArcherSetting(const uint32 bot_id, const bool bot_archer_setting)
-{
-	if (!bot_id) {
-		return false;
-	}
-
-	auto e = BotDataRepository::FindOne(database, bot_id);
-
-	if (!e.bot_id) {
-		return false;
-	}
-
-	e.archery_setting = bot_archer_setting ? 1 : 0;
-
-	return BotDataRepository::UpdateOne(database, e);
-}
-
-bool BotDatabase::SaveBotCasterRange(const uint32 bot_id, const uint32 bot_caster_range_value)
-{
-	if (!bot_id) {
-		return false;
-	}
-
-	auto e = BotDataRepository::FindOne(database, bot_id);
-
-	if (!e.bot_id) {
-		return false;
-	}
-
-	e.caster_range = bot_caster_range_value;
-
-	return BotDataRepository::UpdateOne(database, e);
-}
-
 const uint8 BotDatabase::GetBotClassByID(const uint32 bot_id)
 {
 	const auto& e = BotDataRepository::FindOne(database, bot_id);
@@ -2322,7 +2166,7 @@ std::vector<uint32> BotDatabase::GetBotIDsByCharacterID(const uint32 character_i
 					class_id
 				) :
 				""
-			)
+				)
 		)
 	);
 
@@ -2359,4 +2203,527 @@ const int BotDatabase::GetBotExtraHasteByID(const uint32 bot_id)
 	const auto& e = BotDataRepository::FindOne(database, bot_id);
 
 	return e.bot_id ? e.extra_haste : 0;
+}
+
+bool BotDatabase::LoadBotSettings(Mob* m)
+{
+	if (!m) {
+		return false;
+	}
+
+	if (!m->IsOfClientBot()) {
+		return false;
+	}
+
+	uint32 mob_id = (m->IsClient() ? m->CastToClient()->CharacterID() : m->CastToBot()->GetBotID());
+	uint8 stance_id = (m->IsBot() ? m->CastToBot()->GetBotStance() : 0);
+
+	std::string query = "";
+
+	if (m->IsClient()) {
+		query = fmt::format("`character_id` = {} AND `stance` = {}", mob_id, stance_id);
+	}
+	else {
+		query = fmt::format("`bot_id` = {} AND `stance` = {}", mob_id, stance_id);
+	}
+	
+	if (stance_id == Stance::Passive) {
+		LogBotSettings("{} is currently set to {} [#{}]. No saving or loading required.", m->GetCleanName(), Stance::GetName(Stance::Passive), Stance::Passive);
+		return true;
+	}
+
+	const auto& l = BotSettingsRepository::GetWhere(database, query);
+
+	if (l.empty()) {
+		return true;
+	}
+
+	for (const auto& e : l) {
+		if (e.setting_type == BotSettingCategories::BaseSetting) {
+			LogBotSettings("[{}] says, 'Loading {} [{}] - setting to [{}].",
+				m->GetCleanName(),
+				Bot::GetBotSettingCategoryName(e.setting_type),
+				e.setting_type,
+				e.value
+			);
+		}
+		else {
+			LogBotSettings("[{}] says, 'Loading {} [{}], {} [{}] - setting to [{}].",
+				m->GetCleanName(),
+				Bot::GetBotSpellCategoryShortName(e.setting_type),
+				e.setting_type,
+				Bot::GetSpellTypeNameByID(e.setting_id),
+				e.setting_id,
+				e.value
+			);
+		}
+
+		if (m->IsClient()) {
+			m->CastToClient()->SetBotSetting(e.setting_type, e.setting_id, e.value);
+		}
+		else {
+			m->CastToBot()->SetBotSetting(e.setting_type, e.setting_id, e.value);
+		}
+	}
+
+	return true;
+}
+
+bool BotDatabase::SaveBotSettings(Mob* m)
+{
+	if (!m) {
+		return false;
+	}
+
+	if (!m->IsOfClientBot()) {
+		return false;
+	}
+	
+	uint32 bot_id = (m->IsBot() ? m->CastToBot()->GetBotID() : 0);
+	uint32 character_id = (m->IsClient() ? m->CastToClient()->CharacterID() : 0);
+	uint8 stance_id = (m->IsBot() ? m->CastToBot()->GetBotStance() : 0);
+
+	if (stance_id == Stance::Passive) {
+		LogBotSettings("{} is currently set to {} [#{}]. No saving or loading required.", m->GetCleanName(), Stance::GetName(Stance::Passive), Stance::Passive);
+		return true;
+	}
+
+	std::string query = "";
+	
+	if (m->IsClient()) {
+		query = fmt::format("`character_id` = {} AND `stance` = {}", character_id, stance_id);
+	} 
+	else {
+		query = fmt::format("`bot_id` = {} AND `stance` = {}", bot_id, stance_id);
+	}
+
+	BotSettingsRepository::DeleteWhere(database, query);
+
+	std::vector<BotSettingsRepository::BotSettings> v;
+
+	if (m->IsBot()) {
+		uint8 bot_stance = m->CastToBot()->GetBotStance();
+
+		for (uint16 i = BotBaseSettings::START_ALL; i <= BotBaseSettings::END; ++i) {
+			if (m->CastToBot()->GetBotBaseSetting(i) != m->CastToBot()->GetDefaultBotBaseSetting(i, bot_stance)) {
+				auto e = BotSettingsRepository::BotSettings{
+					.character_id				= character_id,
+					.bot_id						= bot_id,
+					.stance						= stance_id,
+					.setting_id					= static_cast<uint16_t>(i),
+					.setting_type				= static_cast<uint8_t>(BotSettingCategories::BaseSetting),
+					.value						= static_cast<int32_t>(m->CastToBot()->GetBotBaseSetting(i)),
+					.category_name				= Bot::GetBotSpellCategoryShortName(BotSettingCategories::BaseSetting),
+					.setting_name				= Bot::GetBotSettingCategoryName(i)
+				};
+
+				v.emplace_back(e);
+
+				LogBotSettings("{} says, 'Saving {} [{}] - set to [{}] default [{}].'", m->GetCleanName(), Bot::GetBotSettingCategoryName(i), i, e.value, m->CastToBot()->GetDefaultBotBaseSetting(i));
+			}
+		}
+
+		for (uint16 i = BotSettingCategories::START_NO_BASE; i <= BotSettingCategories::END; ++i) {
+			for (uint16 x = BotSpellTypes::START; x <= BotSpellTypes::END; ++x) {
+				if (m->CastToBot()->GetSetting(i, x) != m->CastToBot()->GetDefaultSetting(i, x, bot_stance)) {
+					auto e = BotSettingsRepository::BotSettings{
+						.character_id			= character_id,
+						.bot_id					= bot_id,
+						.stance					= stance_id,
+						.setting_id				= static_cast<uint16_t>(x),
+						.setting_type			= static_cast<uint8_t>(i),
+						.value					= m->CastToBot()->GetSetting(i, x),
+						.category_name			= Bot::GetBotSpellCategoryShortName(i),
+						.setting_name			= Bot::GetSpellTypeNameByID(x)
+					};
+
+					v.emplace_back(e);
+
+					LogBotSettings("{} says, 'Saving {} {} [{}] - set to [{}] default [{}].'", m->GetCleanName(), Bot::GetBotSpellCategoryShortName(i), Bot::GetSpellTypeNameByID(x), x, e.value, m->CastToBot()->GetDefaultSetting(i, x, bot_stance));
+				}
+			}
+		}
+	}
+
+	if (m->IsClient()) {
+		/* Currently unused
+		if (m->CastToClient()->GetDefaultBotSettings(BotSettingCategories::BaseSetting, BotBaseSettings::IllusionBlock) != m->CastToClient()->GetIllusionBlock()) { // Only illusion block supported
+			auto e = BotSettingsRepository::BotSettings{
+						.character_id			= character_id,
+						.bot_id					= bot_id,
+						.stance					= stance_id,
+						.setting_id				= static_cast<uint16_t>(BotBaseSettings::IllusionBlock),
+						.setting_type			= static_cast<uint8_t>(BotSettingCategories::BaseSetting),
+						.value 					= m->CastToClient()->GetIllusionBlock(),
+						.category_name			= Bot::GetBotSpellCategoryShortName(BotSettingCategories::BaseSetting),
+						.setting_name			= Bot::GetBotSettingCategoryName(BotBaseSettings::IllusionBlock)
+			};
+
+			v.emplace_back(e);
+
+			LogBotSettings("{} says, 'Saving {} [{}] - set to [{}] default [{}].'", m->GetCleanName(), Bot::GetBotSettingCategoryName(BotBaseSettings::IllusionBlock), BotBaseSettings::IllusionBlock, e.value, m->CastToClient()->GetIllusionBlock());
+		}
+		*/
+
+		for (uint16 i = BotSettingCategories::START_CLIENT; i <= BotSettingCategories::END_CLIENT; ++i) {
+			for (uint16 x = BotSpellTypes::START; x <= BotSpellTypes::END; ++x) {
+				LogBotSettings("{} says, 'Checking {} {} [{}] - set to [{}] default [{}].'", m->GetCleanName(), Bot::GetBotSpellCategoryShortName(i), Bot::GetSpellTypeNameByID(x), x, m->CastToClient()->GetBotSetting(i, x), m->CastToClient()->GetDefaultBotSettings(i, x));
+				if (m->CastToClient()->GetBotSetting(i, x) != m->CastToClient()->GetDefaultBotSettings(i, x)) {
+					auto e = BotSettingsRepository::BotSettings{
+						.character_id			= character_id,
+						.bot_id					= bot_id,
+						.stance					= stance_id,
+						.setting_id				= static_cast<uint16_t>(x),
+						.setting_type			= static_cast<uint8_t>(i),
+						.value					= m->CastToClient()->GetBotSetting(i, x),
+						.category_name			= Bot::GetBotSpellCategoryShortName(i),
+						.setting_name			= Bot::GetSpellTypeNameByID(x)
+					};
+
+					v.emplace_back(e);
+
+					LogBotSettings("{} says, 'Saving {} {} [{}] - set to [{}] default [{}].'", m->GetCleanName(), Bot::GetBotSpellCategoryShortName(i), Bot::GetSpellTypeNameByID(x), x, e.value, m->CastToClient()->GetDefaultBotSettings(i, x));
+				}
+			}
+		}
+	}
+
+	if (!v.empty()) {
+		const int inserted = BotSettingsRepository::ReplaceMany(database, v);
+
+		if (!inserted) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
+bool BotDatabase::DeleteBotSettings(const uint32 bot_id)
+{
+	if (!bot_id) {
+		return false;
+	}
+
+	BotSettingsRepository::DeleteWhere(
+		database,
+		fmt::format(
+			"`bot_id` = {}",
+			bot_id
+		)
+	);
+
+	return true;
+}
+
+bool BotDatabase::LoadBotBlockedBuffs(Bot* b)
+{
+	if (!b) {
+		return false;
+	}
+
+	const auto& l = BotBlockedBuffsRepository::GetWhere(
+		database,
+		fmt::format(
+			"`bot_id` = {}",
+			b->GetBotID()
+		)
+	);
+
+	std::vector<BotBlockedBuffs> v;
+
+	BotBlockedBuffs t{ };
+
+	for (const auto& e : l) {
+		t.spell_id				= e.spell_id;
+		t.blocked				= e.blocked;
+		t.blocked_pet			= e.blocked_pet;
+
+		v.push_back(t);
+	}
+
+	if (!v.empty()) {
+		b->SetBotBlockedBuffs(v);
+	}
+
+	return true;
+}
+
+bool BotDatabase::SaveBotBlockedBuffs(Bot* b)
+{
+	if (!b) {
+		return false;
+	}
+
+	if (!DeleteBotBlockedBuffs(b->GetBotID())) {
+		return false;
+	}
+
+	std::vector<BotBlockedBuffs> v = b->GetBotBlockedBuffs();
+
+	if (v.empty()) {
+		return true;
+	}
+
+	std::vector<BotBlockedBuffsRepository::BotBlockedBuffs> l;
+
+	if (!v.empty()) {
+		for (auto& blocked_buff : v) {
+			if (blocked_buff.blocked == 0 && blocked_buff.blocked_pet == 0) {
+				continue;
+			}
+
+			auto e = BotBlockedBuffsRepository::BotBlockedBuffs{
+				.bot_id			= b->GetBotID(),
+				.spell_id		= blocked_buff.spell_id,
+				.blocked		= blocked_buff.blocked,
+				.blocked_pet	= blocked_buff.blocked_pet
+			};
+
+			l.push_back(e);
+		}
+
+		if (l.empty()) {
+			return true;
+		}
+
+		BotBlockedBuffsRepository::DeleteWhere(
+			database,
+			fmt::format(
+				"`bot_id` = {}",
+				b->GetBotID()
+			)
+		);
+
+		const int inserted = BotBlockedBuffsRepository::InsertMany(database, l);
+
+		if (!inserted) {
+			DeleteBotBlockedBuffs(b->GetBotID());
+			return false;
+		}
+	}
+
+	return true;
+}
+
+bool BotDatabase::DeleteBotBlockedBuffs(const uint32 bot_id)
+{
+	if (!bot_id) {
+		return false;
+	}
+
+	BotBlockedBuffsRepository::DeleteWhere(
+		database,
+		fmt::format(
+			"`bot_id` = {}",
+			bot_id
+		)
+	);
+
+	return true;
+}
+
+void BotDatabase::CheckBotSpells() {
+	auto spell_list = BotSpellsEntriesRepository::All(content_db);
+	uint16 spell_id;
+	SPDat_Spell_Struct spell;
+
+	for (const auto& s : spell_list) {
+		if (!IsValidSpell(s.spell_id)) {
+			LogBotSpellTypeChecks("{} is an invalid spell", s.spell_id);
+			continue;
+		}
+
+		spell = spells[s.spell_id];
+		spell_id = spell.id;
+
+		if (spell.classes[s.npc_spells_id - (BOT_CLASS_BASE_ID_PREFIX + 1)] >= 255) {
+			LogBotSpellTypeChecks("{} [#{}] is not usable by a {} [#{}].", GetSpellName(spell_id), spell_id, GetClassIDName(s.npc_spells_id - BOT_CLASS_BASE_ID_PREFIX), s.npc_spells_id);
+		}
+		else {
+			if (spell.classes[s.npc_spells_id - (BOT_CLASS_BASE_ID_PREFIX + 1)] > s.minlevel) {
+				LogBotSpellTypeChecks("{} [#{}] is not usable until level {} for a {} [#{}] and the min level is currently set to {}.",
+					GetSpellName(spell_id),
+					spell_id,
+					spell.classes[s.npc_spells_id - (BOT_CLASS_BASE_ID_PREFIX + 1)],
+					GetClassIDName(s.npc_spells_id - BOT_CLASS_BASE_ID_PREFIX),
+					s.npc_spells_id,
+					s.minlevel
+				);
+
+				LogBotSpellTypeChecksDetail("UPDATE bot_spells_entries SET `minlevel` = {} WHERE `spellid` = {} AND `npc_spells_id` = {}; -- {} [#{}] from minlevel {} to {} for {} [#{}]",
+					spell.classes[s.npc_spells_id - (BOT_CLASS_BASE_ID_PREFIX + 1)],
+					spell_id,
+					s.npc_spells_id,
+					GetSpellName(spell_id),
+					spell_id,
+					s.minlevel,
+					spell.classes[s.npc_spells_id - (BOT_CLASS_BASE_ID_PREFIX + 1)],
+					GetClassIDName(s.npc_spells_id - BOT_CLASS_BASE_ID_PREFIX),
+					s.npc_spells_id
+				);
+			}
+
+			if (spell.classes[s.npc_spells_id - (BOT_CLASS_BASE_ID_PREFIX + 1)] < s.minlevel) {
+				LogBotSpellTypeChecks("{} [#{}] could be used starting at level {} for a {} [#{}] instead of the current min level of {}.",
+					GetSpellName(spell_id),
+					spell_id,
+					spell.classes[s.npc_spells_id - (BOT_CLASS_BASE_ID_PREFIX + 1)],
+					GetClassIDName(s.npc_spells_id - BOT_CLASS_BASE_ID_PREFIX),
+					s.npc_spells_id,
+					s.minlevel
+				);
+
+				LogBotSpellTypeChecksDetail("UPDATE bot_spells_entries SET `minlevel` = {} WHERE `spellid` = {} AND `npc_spells_id` = {}; -- {} [#{}] from minlevel {} to {} for {} [#{}]",
+					spell.classes[s.npc_spells_id - (BOT_CLASS_BASE_ID_PREFIX + 1)],
+					spell_id,
+					s.npc_spells_id,
+					GetSpellName(spell_id),
+					spell_id,
+					s.minlevel,
+					spell.classes[s.npc_spells_id - (BOT_CLASS_BASE_ID_PREFIX + 1)],
+					GetClassIDName(s.npc_spells_id - BOT_CLASS_BASE_ID_PREFIX),
+					s.npc_spells_id
+				);
+			}
+
+
+			if (spell.classes[s.npc_spells_id - (BOT_CLASS_BASE_ID_PREFIX + 1)] > s.maxlevel) {
+				LogBotSpellTypeChecks("{} [#{}] is not usable until level {} for a {} [#{}] and the max level is currently set to {}.",
+					GetSpellName(spell_id),
+					spell_id,
+					spell.classes[s.npc_spells_id - (BOT_CLASS_BASE_ID_PREFIX + 1)],
+					GetClassIDName(s.npc_spells_id - BOT_CLASS_BASE_ID_PREFIX),
+					s.npc_spells_id,
+					s.maxlevel
+				);
+			}
+		}
+
+		uint16 correct_type = GetCorrectBotSpellType(s.type, spell_id);
+
+		if (RuleB(Bots, UseParentSpellTypeForChecks)) {
+			uint16 parent_type = Bot::GetParentSpellType(correct_type);
+
+			if (s.type == parent_type || s.type == correct_type) {
+				continue;
+			}
+
+			if (correct_type != parent_type) {
+				correct_type = parent_type;
+			}
+		}
+		else {
+			if (IsPetBotSpellType(s.type)) {
+				correct_type = GetPetBotSpellType(correct_type);
+			}
+		}
+
+		if (IsPetBotSpellType(correct_type) && (spell.target_type != ST_Pet && spell.target_type != ST_SummonedPet)) {
+			correct_type = Bot::GetParentSpellType(correct_type);
+		}
+
+		if (correct_type == s.type) {
+			continue;
+		}
+
+		if (correct_type == UINT16_MAX) {
+				LogBotSpellTypeChecks(
+					"{} [#{}] is incorrect. It is currently set as {} [#{}] but the correct type is unknown.",
+					GetSpellName(spell_id),
+					spell_id,
+					Bot::GetSpellTypeNameByID(s.type),
+					s.type
+				);
+		}
+		else {
+			LogBotSpellTypeChecks("{} [#{}] is incorrect. It is currently set as {} [#{}] and should be {} [#{}]",
+				GetSpellName(spell_id),
+				spell_id,
+				Bot::GetSpellTypeNameByID(s.type),
+				s.type,
+				Bot::GetSpellTypeNameByID(correct_type),
+				correct_type
+			);
+			LogBotSpellTypeChecksDetail("UPDATE bot_spells_entries SET `type` = {} WHERE `spell_id` = {}; -- {} [#{}] from {} [#{}] to {} [#{}]",
+				correct_type,
+				spell_id,
+				GetSpellName(spell_id),
+				spell_id,
+				Bot::GetSpellTypeNameByID(s.type),
+				s.type,
+				Bot::GetSpellTypeNameByID(correct_type),
+				correct_type
+			);
+		}
+	}
+}
+
+void BotDatabase::MapCommandedSpellTypeMinLevels() {
+	commanded_spell_type_min_levels.clear();
+
+	auto start = std::min({ BotSpellTypes::START, BotSpellTypes::COMMANDED_START, BotSpellTypes::DISCIPLINE_START });
+	auto end = std::max({ BotSpellTypes::END, BotSpellTypes::COMMANDED_END, BotSpellTypes::DISCIPLINE_END });
+
+	for (int i = start; i <= end; ++i) {
+		if (!Bot::IsValidBotSpellType(i)) {
+			continue;
+		}
+
+		for (int x = Class::Warrior; x <= Class::Berserker; ++x) {
+			commanded_spell_type_min_levels[i][x] = {UINT8_MAX, "" };
+		}
+	}
+
+	auto spell_list = BotSpellsEntriesRepository::All(content_db);
+
+	for (const auto& s : spell_list) {
+		if (!IsValidSpell(s.spell_id)) {
+			LogBotSpellTypeChecks("{} is an invalid spell", s.spell_id);
+			continue;
+		}
+
+		auto spell = spells[s.spell_id];
+
+		if (spell.target_type == ST_Self) {
+			continue;
+		}
+
+		int32_t bot_class = s.npc_spells_id - BOT_CLASS_BASE_ID_PREFIX;
+
+		if (
+			!EQ::ValueWithin(bot_class, Class::Warrior, Class::Berserker) ||
+			!Bot::IsValidBotSpellType(s.type)
+		) {
+			continue;
+		}
+
+		for (int i = start; i <= end; ++i) {
+			if (s.minlevel > commanded_spell_type_min_levels[i][bot_class].min_level) {
+				continue;
+			}
+
+			if (
+				i > BotSpellTypes::PARENT_TYPE_END &&
+				i != s.type &&
+				Bot::GetParentSpellType(i) != s.type
+			) {
+				continue;
+			}
+
+			if (!Bot::IsValidSpellTypeBySpellID(i, s.spell_id)) {
+				continue;
+			}
+
+			if (s.minlevel < commanded_spell_type_min_levels[i][bot_class].min_level) {
+				commanded_spell_type_min_levels[i][bot_class].min_level   = s.minlevel;
+				commanded_spell_type_min_levels[i][bot_class].description = StringFormat(
+					"%s [#%u] - Level %u",
+					GetClassIDName(bot_class),
+					bot_class,
+					s.minlevel
+				);
+			}
+		}
+	}
 }

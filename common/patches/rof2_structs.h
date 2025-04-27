@@ -1965,41 +1965,39 @@ struct GuildBankWithdrawItem_Struct
 
 struct GuildBankItemUpdate_Struct
 {
-	void Init(uint32 inAction, uint32 inUnknown004, uint16 inSlotID, uint16 inArea, uint16 inUnknown012, uint32 inItemID, uint32 inIcon, uint32 inQuantity,
+	void Init(uint32 inAction, uint32 inUnknown004, uint16 inSlotID, uint16 inArea, uint16 inUnknown016, uint32 inItemID, uint32 inIcon, uint32 inQuantity,
 			uint32 inPermissions, uint32 inAllowMerge, bool inUseable)
 	{
-		Action = inAction;
-		Unknown004 = inUnknown004;
-		SlotID = inSlotID;
-		Area = inArea;
-		Unknown012 = inUnknown012;
-		ItemID = inItemID;
-		Icon = inIcon;
-		Quantity = inQuantity;
-		Permissions = inPermissions;
-		AllowMerge = inAllowMerge;
-		Useable = inUseable;
-		ItemName[0] = '\0';
-		Donator[0] = '\0';
-		WhoFor[0] = '\0';
+		action       = inAction;
+		slot_id      = inSlotID;
+		area         = inArea;
+		display      = inUnknown016;
+		item_id      = inItemID;
+		icon_id      = inIcon;
+		quantity     = inQuantity;
+		permissions  = inPermissions;
+		allow_merge  = inAllowMerge;
+		is_useable   = inUseable;
+		item_name[0] = '\0';
+		donator[0]   = '\0';
+		who_for[0]   = '\0';
 	};
 
-/*000*/	uint32	Action;
-/*004*/	uint32	Unknown004;
-/*008*/	uint32	Unknown08;
-/*012*/	uint16	SlotID;
-/*014*/	uint16	Area;
-/*016*/	uint32	Unknown012;
-/*020*/	uint32	ItemID;
-/*024*/	uint32	Icon;
-/*028*/	uint32	Quantity;
-/*032*/	uint32	Permissions;
-/*036*/	uint8	AllowMerge;
-/*037*/	uint8	Useable;	// Used in conjunction with the Public-if-useable permission.
-/*038*/	char	ItemName[64];
-/*102*/	char	Donator[64];
-/*166*/ char	WhoFor[64];
-/*230*/	uint16	Unknown226;
+/*000*/	uint32	action;
+/*004*/	uint32	not_used004;  //disassemble of client did not use this
+/*008*/	uint32	not_used008;  //disassemble of client did not use this
+/*012*/	uint16	slot_id;
+/*014*/	uint16	area;
+/*016*/	uint32	display;
+/*020*/	uint32	item_id;
+/*024*/	uint32	icon_id;
+/*028*/	uint32	quantity;
+/*032*/	uint32	permissions;
+/*036*/	uint8	allow_merge;
+/*037*/	uint8	is_useable;	// Used in conjunction with the Public-if-useable permission.
+/*038*/	char	item_name[64];
+/*102*/	char	donator[64];
+/*166*/ char	who_for[64];
 };
 
 struct GuildBankClear_Struct
@@ -3119,7 +3117,8 @@ enum RoF2BazaarTraderBuyerActions {
 	BazaarInspect    = 18,
 	ClickTrader      = 28,
 	ItemMove         = 19,
-	ReconcileItems   = 20
+	ReconcileItems   = 20,
+	FirstOpenSearch  = 26
 };
 
 enum RoF2BuyerActions {
@@ -3934,6 +3933,11 @@ struct NewCombine_Struct
 /*24*/
 };
 
+struct TradeSkillRecipeInspect_Struct {
+	uint32 recipe_id;
+	uint32 padding[17];
+};
+
 
 //client requesting favorite recipies
 struct TradeskillFavorites_Struct {
@@ -4735,7 +4739,7 @@ struct ItemSerializationHeader
     /*036*/ uint32 merchant_slot;  // 1 if not a merchant item
     /*040*/ uint32 scaled_value;   // 0
     /*044*/ uint32 instance_id;    // unique instance id if not merchant item, else is merchant slot
-    /*048*/ uint32 parcel_item_id; 
+    /*048*/ uint32 parcel_item_id;
     /*052*/ uint32 last_cast_time; // Unix Time from PP of last cast for this recast type if recast delay > 0
     /*056*/ uint32 charges;        // Total Charges an item has (-1 for unlimited)
     /*060*/ uint32 inst_nodrop;    // 1 if the item is no drop (attuned items)
@@ -4745,16 +4749,13 @@ struct ItemSerializationHeader
     uint8          isEvolving;
 };
 
-struct EvolvingItem {
-	uint8 unknown001;
-	uint8 unknown002;
-	uint8 unknown003;
-	uint8 unknown004;
-	int32 evoLevel;
+struct EvolvingItem_Struct {
+	uint32 final_item_id;
+	int32  evolve_level;
 	double progress;
-	uint8 Activated;
-	int32 evomaxlevel;
-	uint8 unknown005[4];
+	uint8  activated;
+	int32  evolve_max_level;
+	uint8  unknown005[4];
 };
 
 struct ItemSerializationHeaderFinish
@@ -5426,6 +5427,32 @@ struct Parcel_Struct
     /*220*/ uint32                       unknown_220;
 };
 	}; /*structs*/
+
+struct EvolveItemToggle_Struct {
+	uint32 action;
+	uint32 unknown_004;
+	uint64 unique_id;
+	uint32 percentage;
+	uint32 activated;
+};
+
+struct EvolveXPWindowReceive_Struct {
+	uint32 action;
+	uint32 unknown_004;
+	uint64 item1_unique_id;
+	uint64 item2_unique_id;
+};
+
+struct EvolveXPWindowSendDetails_Struct {
+	/*000*/	uint32 action;
+	/*004*/	uint64 item1_unique_id;
+	/*012*/	uint64 item2_unique_id;
+	/*020*/	uint32 compatibility;
+	/*024*/	uint32 max_transfer_level;
+	/*028*/	uint8  item1_present;
+	/*029*/ uint8  item2_present;
+	/*030*/ char   serialize_data[];
+};
 
 }; /*RoF2*/
 

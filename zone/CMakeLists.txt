@@ -17,6 +17,7 @@ SET(zone_sources
     botspellsai.cpp
     cheat_manager.cpp
     client.cpp
+    client_evolving_items.cpp
     client_bot.cpp
     client_mods.cpp
     client_packet.cpp
@@ -35,8 +36,6 @@ SET(zone_sources
     encounter.cpp
     entity.cpp
     exp.cpp
-    expedition.cpp
-    expedition_database.cpp
     expedition_request.cpp
     fastmath.cpp
     fearpath.cpp
@@ -78,6 +77,7 @@ SET(zone_sources
     lua_spawn.cpp
     lua_spell.cpp
     lua_stat_bonuses.cpp
+    lua_zone.cpp
     embperl.cpp
     entity.cpp
     exp.cpp
@@ -130,6 +130,7 @@ SET(zone_sources
     perl_spawn.cpp
     perl_spell.cpp
     perl_stat_bonuses.cpp
+    perl_zone.cpp
     perlpacket.cpp
     petitions.cpp
     pets.cpp
@@ -172,6 +173,7 @@ SET(zone_sources
     zone_event_scheduler.cpp
     zone_npc_factions.cpp
     zone_reload.cpp
+    zone_save_state.cpp
     zoning.cpp
 )
 
@@ -202,8 +204,6 @@ SET(zone_headers
     encounter.h
     entity.h
     event_codes.h
-    expedition.h
-    expedition_database.h
     expedition_request.h
     fastmath.h
     forage.h
@@ -243,6 +243,7 @@ SET(zone_headers
     lua_spawn.h
     lua_spell.h
     lua_stat_bonuses.h
+    lua_zone.h
     map.h
     masterentity.h
     merc.h
@@ -292,6 +293,7 @@ SET(zone_headers
     zonedump.h
     zone_cli.h
     zone_reload.h
+    zone_save_state.h
     zone_cli.cpp)
 
 ADD_EXECUTABLE(zone ${zone_sources} ${zone_headers})

@@ -196,10 +196,11 @@ public:
 	/* Corpse: Loot */
 	void QueryLoot(Client *to);
 	bool HasItem(uint32 item_id);
-	uint16 CountItem(uint32 item_id);
+	uint32 CountItem(uint32 item_id);
 	uint32 GetItemIDBySlot(uint16 loot_slot);
 	uint16 GetFirstLootSlotByItemID(uint32 item_id);
 	std::vector<int> GetLootList();
+	inline const LootItems &GetLootItems() { return m_item_list; }
 	void LootCorpseItem(Client *c, const EQApplicationPacket *app);
 	void EndLoot(Client *c, const EQApplicationPacket *app);
 	void MakeLootRequestPackets(Client *c, const EQApplicationPacket *app);

@@ -14,7 +14,6 @@ void WorldserverCLI::DatabaseDump(int argc, char **argv, argh::parser &cmd, std:
 		"--merc-tables",
 		"--state-tables",
 		"--system-tables",
-		"--query-serv-tables",
 		"--static-instance-data",
 		"--table-structure-only",
 		"--table-lock",
@@ -24,11 +23,11 @@ void WorldserverCLI::DatabaseDump(int argc, char **argv, argh::parser &cmd, std:
 		"--compress"
 	};
 
-	EQEmuCommand::ValidateCmdInput(arguments, options, cmd, argc, argv);
-
 	if (cmd[{"-h", "--help"}]) {
 		return;
 	}
+
+	EQEmuCommand::ValidateCmdInput(arguments, options, cmd, argc, argv);
 
 	auto s        = new DatabaseDumpService();
 	bool dump_all = cmd[{"-a", "--all"}];
@@ -45,7 +44,6 @@ void WorldserverCLI::DatabaseDump(int argc, char **argv, argh::parser &cmd, std:
 	s->SetDumpMercTables(cmd[{"--merc-tables"}] || dump_all);
 	s->SetDumpStateTables(cmd[{"--state-tables"}] || dump_all);
 	s->SetDumpSystemTables(cmd[{"--system-tables"}] || dump_all);
-	s->SetDumpQueryServerTables(cmd[{"--query-serv-tables"}] || dump_all);
 	s->SetDumpAllTables(dump_all);
 	s->SetDumpWithNoData(cmd[{"--table-structure-only"}]);
 	s->SetDumpTableLock(cmd[{"--table-lock"}]);

@@ -25,6 +25,8 @@
 #include "repositories/discord_webhooks_repository.h"
 #include "repositories/logsys_categories_repository.h"
 #include "termcolor/rang.hpp"
+#include "path_manager.h"
+#include "file.h"
 
 #include <iostream>
 #include <string>
@@ -85,6 +87,7 @@ EQEmuLogSys *EQEmuLogSys::LoadLogSettingsDefaults()
 	 * Set Defaults
 	 */
 	log_settings[Logs::Crash].log_to_console                = static_cast<uint8>(Logs::General);
+	log_settings[Logs::Crash].log_to_file                   = static_cast<uint8>(Logs::General);
 	log_settings[Logs::MySQLError].log_to_console           = static_cast<uint8>(Logs::General);
 	log_settings[Logs::NPCScaling].log_to_gmsay             = static_cast<uint8>(Logs::General);
 	log_settings[Logs::HotReload].log_to_gmsay              = static_cast<uint8>(Logs::General);
@@ -102,6 +105,8 @@ EQEmuLogSys *EQEmuLogSys::LoadLogSettingsDefaults()
 	log_settings[Logs::QuestErrors].log_to_console          = static_cast<uint8>(Logs::General);
 	log_settings[Logs::EqTime].log_to_console               = static_cast<uint8>(Logs::General);
 	log_settings[Logs::EqTime].log_to_gmsay                 = static_cast<uint8>(Logs::General);
+	log_settings[Logs::NpcHandin].log_to_console            = static_cast<uint8>(Logs::General);
+	log_settings[Logs::NpcHandin].log_to_gmsay              = static_cast<uint8>(Logs::General);
 
 	/**
 	 * RFC 5424
@@ -532,6 +537,11 @@ void EQEmuLogSys::StartFileLogs(const std::string &log_name)
 {
 	EQEmuLogSys::CloseFileLogs();
 
+	if (!File::Exists(path.GetLogPath())) {
+		LogInfo("Logs directory not found, creating [{}]", path.GetLogPath());
+		File::Makedir(path.GetLogPath());
+	}
+
 	/**
 	 * When loading settings, we must have been given a reason in category based logging to output to a file in order to even create or open one...
 	 */
@@ -591,6 +601,8 @@ void EQEmuLogSys::SilenceConsoleLogging()
 		log_settings[log_index].is_category_enabled = 0;
 	}
 
+	log_settings[Logs::MySQLError].log_to_console = static_cast<uint8>(Logs::MySQLError);
+	log_settings[Logs::Error].log_to_console = static_cast<uint8>(Logs::Error);
 	log_settings[Logs::Crash].log_to_console = static_cast<uint8>(Logs::General);
 }
 
@@ -602,7 +614,7 @@ void EQEmuLogSys::EnableConsoleLogging()
 	std::copy(std::begin(pre_silence_settings), std::end(pre_silence_settings), std::begin(log_settings));
 }
 
-EQEmuLogSys *EQEmuLogSys::LoadLogDatabaseSettings()
+EQEmuLogSys *EQEmuLogSys::LoadLogDatabaseSettings(bool silent_load)
 {
 	InjectTablesIfNotExist();
 
@@ -687,6 +699,10 @@ EQEmuLogSys *EQEmuLogSys::LoadLogDatabaseSettings()
 		return this;
 	}
 
+	if (silent_load) {
+		SilenceConsoleLogging();
+	}
+
 	LogInfo("Loaded [{}] log categories", categories.size());
 
 	auto webhooks = DiscordWebhooksRepository::GetWhere(*m_database, fmt::format("id < {}", MAX_DISCORD_WEBHOOK_ID));
@@ -703,6 +719,10 @@ EQEmuLogSys *EQEmuLogSys::LoadLogDatabaseSettings()
 	log_settings[Logs::Crash].log_to_file    = static_cast<uint8>(Logs::General);
 	log_settings[Logs::Info].log_to_file     = static_cast<uint8>(Logs::General);
 	log_settings[Logs::Info].log_to_console  = static_cast<uint8>(Logs::General);
+
+	if (silent_load) {
+		SilenceConsoleLogging();
+	}
 
 	return this;
 }

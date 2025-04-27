@@ -51,6 +51,7 @@ public:
 	inline uint32 GetDuration() { return(timer_time); }
 
 	static const uint32 SetCurrentTime();
+	static const uint32 RollForward(uint32 seconds);
 	static const uint32 GetCurrentTime();
 	static const uint32 GetTimeSeconds();
 
@@ -86,6 +87,9 @@ struct BenchTimer
 	void reset() { start_time = clock::now(); }
 	// this is seconds
 	double elapsed() { return std::chrono::duration<double> (clock::now() - start_time).count(); }
+	std::chrono::milliseconds::rep elapsedMilliseconds() { return std::chrono::duration_cast<std::chrono::milliseconds>(clock::now() - start_time).count(); }
+	std::chrono::microseconds::rep elapsedMicroseconds() { return std::chrono::duration_cast<std::chrono::microseconds>(clock::now() - start_time).count(); }
+	std::chrono::nanoseconds::rep elapsedNanoseconds() { return std::chrono::duration_cast<std::chrono::nanoseconds>(clock::now() - start_time).count(); }
 private:
 	std::chrono::time_point<std::chrono::high_resolution_clock> start_time;
 };

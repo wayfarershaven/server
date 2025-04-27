@@ -1,23 +1,3 @@
-/**
- * EQEmulator: Everquest Server Emulator
- * Copyright (C) 2001-2019 EQEmulator Development Team (https://github.com/EQEmu/Server)
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY except by those people which sell it, which
- * are required to give you total support for your newly bought product;
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR
- * A PARTICULAR PURPOSE. See the GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
- *
- */
-
 #include <fmt/format.h>
 #include "clientlist.h"
 #include "cliententry.h"
@@ -25,14 +5,19 @@
 #include "zoneserver.h"
 #include "zonelist.h"
 #include "../common/database_schema.h"
+#include "../common/server_reload_types.h"
 #include "../common/zone_store.h"
 #include "worlddb.h"
 #include "wguild_mgr.h"
 #include "world_config.h"
+#include "ucs.h"
+#include "queryserv.h"
 
 extern ZSList            zoneserver_list;
 extern ClientList        client_list;
 extern WorldGuildManager guild_mgr;
+extern UCSConnection UCSLink;
+extern QueryServConnection QSLink;
 
 void callGetZoneList(Json::Value &response)
 {
@@ -47,6 +32,8 @@ void callGetZoneList(Json::Value &response)
 		row["client_address"]       = zone->GetCAddress();
 		row["client_local_address"] = zone->GetCLocalAddress();
 		row["client_port"]          = zone->GetCPort();
+		row["compile_version"]      = zone->GetCurrentVersion();
+		row["compile_date"]         = zone->GetCompileDate();
 		row["compile_time"]         = zone->GetCompileTime();
 		row["id"]                   = zone->GetID();
 		row["instance_id"]          = zone->GetInstanceID();
@@ -124,139 +111,66 @@ void callGetDatabaseSchema(Json::Value &response)
 	response.append(schema);
 }
 
-void callGetClientList(Json::Value &response)
+void callGetClientList(Json::Value &response, const std::vector<std::string> &args)
 {
-	client_list.GetClientList(response);
+	// if args has "full"
+	bool full_list = false;
+	if (args.size() > 1) {
+		if (args[1] == "full") {
+			full_list = true;
+		}
+	}
+
+	client_list.GetClientList(response, full_list);
 }
-
-
-struct Reload {
-	std::string command{};
-	uint16      opcode;
-	std::string desc{};
-};
-
-std::vector<Reload> reload_types = {
-	Reload{.command = "aa", .opcode = ServerOP_ReloadAAData, .desc = "Alternate Advancement"},
-	Reload{.command = "alternate_currencies", .opcode = ServerOP_ReloadAlternateCurrencies, .desc = "Alternate Currencies"},
-	Reload{.command = "base_data", .opcode = ServerOP_ReloadBaseData, .desc = "Base Data"},
-	Reload{.command = "blocked_spells", .opcode = ServerOP_ReloadBlockedSpells, .desc = "Blocked Spells"},
-	Reload{.command = "commands", .opcode = ServerOP_ReloadCommands, .desc = "Commands"},
-	Reload{.command = "content_flags", .opcode = ServerOP_ReloadContentFlags, .desc = "Content Flags"},
-	Reload{.command = "data_buckets_cache", .opcode = ServerOP_ReloadDataBucketsCache, .desc = "Data Buckets Cache"},
-	Reload{.command = "doors", .opcode = ServerOP_ReloadDoors, .desc = "Doors"},
-	Reload{.command = "dztemplates", .opcode = ServerOP_ReloadDzTemplates, .desc = "Dynamic Zone Templates"},
-	Reload{.command = "ground_spawns", .opcode = ServerOP_ReloadGroundSpawns, .desc = "Ground Spawns"},
-	Reload{.command = "level_mods", .opcode = ServerOP_ReloadLevelEXPMods, .desc = "Level Mods"},
-	Reload{.command = "logs", .opcode = ServerOP_ReloadLogs, .desc = "Log Settings"},
-	Reload{.command = "loot", .opcode = ServerOP_ReloadLoot, .desc = "Loot"},
-	Reload{.command = "merchants", .opcode = ServerOP_ReloadMerchants, .desc = "Merchants"},
-	Reload{.command = "npc_emotes", .opcode = ServerOP_ReloadNPCEmotes, .desc = "NPC Emotes"},
-	Reload{.command = "npc_spells", .opcode = ServerOP_ReloadNPCSpells, .desc = "NPC Spells"},
-	Reload{.command = "objects", .opcode = ServerOP_ReloadObjects, .desc = "Objects"},
-	Reload{.command = "opcodes", .opcode = ServerOP_ReloadOpcodes, .desc = "Opcodes"},
-	Reload{.command = "perl_export", .opcode = ServerOP_ReloadPerlExportSettings, .desc = "Perl Event Export Settings"},
-	Reload{.command = "rules", .opcode = ServerOP_ReloadRules, .desc = "Rules"},
-	Reload{.command = "skill_caps", .opcode = ServerOP_ReloadSkillCaps, .desc = "Skill Caps"},
-	Reload{.command = "static", .opcode = ServerOP_ReloadStaticZoneData, .desc = "Static Zone Data"},
-	Reload{.command = "tasks", .opcode = ServerOP_ReloadTasks, .desc = "Tasks"},
-	Reload{.command = "titles", .opcode = ServerOP_ReloadTitles, .desc = "Titles"},
-	Reload{.command = "traps", .opcode = ServerOP_ReloadTraps, .desc = "Traps"},
-	Reload{.command = "variables", .opcode = ServerOP_ReloadVariables, .desc = "Variables"},
-	Reload{.command = "veteran_rewards", .opcode = ServerOP_ReloadVeteranRewards, .desc = "Veteran Rewards"},
-	Reload{.command = "world", .opcode = ServerOP_ReloadWorld, .desc = "World"},
-	Reload{.command = "zone_points", .opcode = ServerOP_ReloadZonePoints, .desc = "Zone Points"},
-};
 
 void getReloadTypes(Json::Value &response)
 {
-	for (auto &c: reload_types) {
+	for (auto &t: ServerReload::GetTypes()) {
 		Json::Value v;
 
-		v["command"]     = c.command;
-		v["opcode"]      = c.opcode;
-		v["description"] = c.desc;
+		v["command"]     = std::to_string(t);
+		v["description"] = ServerReload::GetName(t);
 		response.append(v);
 	}
 }
 
+void getServerCounts(Json::Value &response, const std::vector<std::string> &args)
+{
+	response["zone_count"]   = zoneserver_list.GetServerListCount();
+	response["client_count"] = client_list.GetClientCount();
+}
 
 void EQEmuApiWorldDataService::reload(Json::Value &r, const std::vector<std::string> &args)
 {
 	std::vector<std::string> commands{};
-	commands.reserve(reload_types.size());
-	for (auto &c: reload_types) {
-		commands.emplace_back(c.command);
+	commands.reserve(ServerReload::GetTypes().size());
+	for (auto &c: ServerReload::GetTypes()) {
+		commands.emplace_back(std::to_string(c));
 	}
 
 	std::string command = !args[1].empty() ? args[1] : "";
 	if (command.empty()) {
-		message(r, fmt::format("Need to provide a type to reload. Example(s) [{}]", Strings::Implode("|", commands)));
+		message(r, fmt::format("Need to provide a type ID to reload. Example(s) [{}]", Strings::Implode("|", commands)));
 		return;
 	}
 
 	ServerPacket *pack = nullptr;
 
-	bool      found_command = false;
-	for (auto &c: reload_types) {
-		if (command == c.command) {
-			if (c.command == "world") {
-				uint8 global_repop = ReloadWorld::NoRepop;
+	bool found_command = false;
 
-				if (Strings::IsNumber(args[2])) {
-					global_repop = static_cast<uint8>(Strings::ToUnsignedInt(args[2]));
-
-					if (global_repop > ReloadWorld::ForceRepop) {
-						global_repop = ReloadWorld::ForceRepop;
-					}
-				}
-
-				message(
-					r,
-					fmt::format(
-						"Attempting to reload Quests {}worldwide.",
-						(
-							global_repop ?
-								(
-									global_repop == ReloadWorld::Repop ?
-										"and repop NPCs " :
-										"and forcefully repop NPCs "
-								) :
-								""
-						)
-					)
-				);
-
-				pack = new ServerPacket(ServerOP_ReloadWorld, sizeof(ReloadWorld_Struct));
-				auto RW = (ReloadWorld_Struct *) pack->pBuffer;
-				RW->global_repop = global_repop;
-			}
-			else {
-				pack = new ServerPacket(c.opcode, 0);
-				message(r, fmt::format("Reloading [{}] globally", c.desc));
-
-				if (c.opcode == ServerOP_ReloadLogs) {
-					LogSys.LoadLogDatabaseSettings();
-				}
-				else if (c.opcode == ServerOP_ReloadRules) {
-					RuleManager::Instance()->LoadRules(&database, RuleManager::Instance()->GetActiveRuleset(), true);
-				}
-			}
-
-			found_command = true;
+	for (auto &t: ServerReload::GetTypes()) {
+		if (std::to_string(t) == command || Strings::ToLower(ServerReload::GetName(t)) == command) {
+			message(r, fmt::format("Reloading [{}] globally", ServerReload::GetName(t)));
+			zoneserver_list.SendServerReload(t, nullptr);
 		}
+		found_command = true;
 	}
 
 	if (!found_command) {
 		message(r, fmt::format("Need to provide a type to reload. Example(s) [{}]", Strings::Implode("|", commands)));
 		return;
 	}
-
-	if (pack) {
-		zoneserver_list.SendPacket(pack);
-	}
-
-	safe_delete(pack);
 }
 
 void EQEmuApiWorldDataService::message(Json::Value &r, const std::string &message)
@@ -274,7 +188,7 @@ void EQEmuApiWorldDataService::get(Json::Value &r, const std::vector<std::string
 		callGetDatabaseSchema(r);
 	}
 	if (m == "get_client_list") {
-		callGetClientList(r);
+		callGetClientList(r, args);
 	}
 	if (m == "get_reload_types") {
 		getReloadTypes(r);
@@ -285,6 +199,9 @@ void EQEmuApiWorldDataService::get(Json::Value &r, const std::vector<std::string
 	if (m == "get_guild_details") {
 		callGetGuildDetails(r, args);
 	}
+	if (m == "get_server_counts") {
+		getServerCounts(r, args);
+	}
 	if (m == "lock_status") {
 		r["locked"] = WorldConfig::get()->Locked;
 	}
@@ -292,7 +209,6 @@ void EQEmuApiWorldDataService::get(Json::Value &r, const std::vector<std::string
 
 void EQEmuApiWorldDataService::callGetGuildDetails(Json::Value &response, const std::vector<std::string> &args)
 {
-
 	std::string command = !args[1].empty() ? args[1] : "";
 	if (command.empty()) {
 		return;

@@ -142,7 +142,6 @@ foreach my $table_to_generate (@tables) {
         "guild_bank",
         "inventory_versions",
         "raid_leaders",
-        "sharedbank",
         "trader_audit",
         "eqtime",
         "db_version",
@@ -335,6 +334,10 @@ foreach my $table_to_generate (@tables) {
             elsif ($data_type =~ /int/) {
                 $all_entries      .= sprintf("\t\t\te.%-${longest_column_length}s = row[%s] ? static_cast<%s>(strtoul(row[%s], nullptr, 10)) : %s;\n", $column_name_formatted, $index, $struct_data_type, $index, $default_value);
                 $find_one_entries .= sprintf("\t\t\te.%-${longest_column_length}s = row[%s] ? static_cast<%s>(strtoul(row[%s], nullptr, 10)) : %s;\n", $column_name_formatted, $index, $struct_data_type, $index, $default_value);
+            }
+            elsif ($data_type =~ /float|decimal/) {
+                $all_entries      .= sprintf("\t\t\te.%-${longest_column_length}s = row[%s] ? (strtof(row[%s], nullptr) > 0.0f ? strtof(row[%s], nullptr) : %s) : %s;\n", $column_name_formatted, $index, $index, $index, $default_value, $default_value);
+                $find_one_entries .= sprintf("\t\t\te.%-${longest_column_length}s = row[%s] ? (strtof(row[%s], nullptr) > 0.0f ? strtof(row[%s], nullptr) : %s) : %s;\n", $column_name_formatted, $index, $index, $index, $default_value, $default_value);
             }
         }
         elsif ($data_type =~ /bigint/) {

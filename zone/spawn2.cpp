@@ -16,6 +16,7 @@
 	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 */
 
+#include <cereal/archives/json.hpp>
 #include "../common/global_define.h"
 #include "../common/strings.h"
 
@@ -33,6 +34,7 @@
 #include "../common/repositories/spawn2_repository.h"
 #include "../common/repositories/spawn2_disabled_repository.h"
 #include "../common/repositories/respawn_times_repository.h"
+#include "../common/repositories/zone_state_spawns_repository.h"
 
 extern EntityList entity_list;
 extern Zone* zone;
@@ -85,9 +87,9 @@ Spawn2::Spawn2(uint32 in_spawn2_id, uint32 spawngroup_id,
 	x = in_x;
 	y = in_y;
 	z = in_z;
-	heading = in_heading;
-	respawn_ = respawn;
-	variance_ = variance;
+	heading        = in_heading;
+	m_respawn_time = respawn;
+	variance_      = variance;
 	grid_ = grid;
 	path_when_zone_idle = in_path_when_zone_idle;
 	condition_id = in_cond_id;
@@ -95,6 +97,7 @@ Spawn2::Spawn2(uint32 in_spawn2_id, uint32 spawngroup_id,
 	npcthis = nullptr;
 	enabled = in_enabled;
 	this->anim = anim;
+	currentnpcid = 0;
 
 	if(timeleft == 0xFFFFFFFF) {
 		//special disable timeleft
@@ -115,7 +118,7 @@ Spawn2::~Spawn2()
 
 uint32 Spawn2::resetTimer()
 {
-	uint32 rspawn = respawn_ * 1000;
+	uint32 rspawn = m_respawn_time * 1000;
 
 	if (variance_ != 0) {
 		int var_over_2 = (variance_ * 1000) / 2;
@@ -150,12 +153,12 @@ uint32 Spawn2::despawnTimer(uint32 despawn_timer)
 bool Spawn2::Process() {
 	IsDespawned = false;
 
-	if (!Enabled())
+	if (!Enabled()) {
 		return true;
+	}
 
 	//grab our spawn group
 	SpawnGroup *spawn_group = zone->spawn_group_list.GetSpawnGroup(spawngroup_id_);
-
 	if (NPCPointerValid() && (spawn_group && spawn_group->despawn == 0 || condition_id != 0)) {
 		return true;
 	}
@@ -188,14 +191,24 @@ bool Spawn2::Process() {
 			return false;
 		}
 
-		uint16 condition_value=1;
-
+		uint16 condition_value = 1;
 		if (condition_id > 0) {
-			condition_value = zone->spawn_conditions.GetCondition(zone->GetShortName(), zone->GetInstanceID(), condition_id);
+			condition_value = zone->spawn_conditions.GetCondition(
+				zone->GetShortName(),
+				zone->GetInstanceID(),
+				condition_id
+			);
 		}
 
 		//have the spawn group pick an NPC for us
-		uint32 npcid = spawn_group->GetNPCType(condition_value);
+		uint32 npcid = 0;
+		if (m_resumed_npc_id > 0) {
+			npcid = m_resumed_npc_id;
+			m_resumed_npc_id = 0;
+		} else {
+			npcid = spawn_group->GetNPCType(condition_value);
+		}
+
 		if (npcid == 0) {
 			LogSpawns("Spawn2 [{}]: Spawn group [{}] did not yeild an NPC! not spawning", spawn2_id, spawngroup_id_);
 
@@ -264,13 +277,31 @@ bool Spawn2::Process() {
 			}
 		}
 
-		NPC *npc = new NPC(tmp, this, glm::vec4(x, y, z, heading), GravityBehavior::Water);
+		// zone state restore
+		if (m_stored_location != glm::vec4(0, 0, -1000, 0)) {
+			loc = m_stored_location;
+			m_stored_location = glm::vec4(0, 0, -1000, 0);
+		}
+
+		NPC *npc = new NPC(tmp, this, loc, GravityBehavior::Water);
 
 		npcthis = npc;
+
+		if (!m_entity_variables.empty()) {
+			for (auto &var : m_entity_variables) {
+				npc->SetEntityVariable(var.first, var.second);
+			}
+			m_entity_variables = {};
+		}
+
+		npc->SetResumedFromZoneSuspend(m_resumed_from_zone_suspend);
+		m_resumed_from_zone_suspend = false;
+
 		npc->AddLootTable();
 		if (npc->DropsGlobalLoot()) {
 			npc->CheckGlobalLootTables();
 		}
+
 		npc->SetSpawnGroupId(spawngroup_id_);
 		npc->SaveGuardPointAnim(anim);
 		npc->SetAppearance((EmuAppearance) anim);
@@ -351,6 +382,7 @@ void Spawn2::LoadGrid(int start_wp) {
 void Spawn2::Reset() {
 	timer.Start(resetTimer());
 	npcthis = nullptr;
+	currentnpcid = 0;
 	LogSpawns("Spawn2 [{}]: Spawn reset, repop in [{}] ms", spawn2_id, timer.GetRemainingTime());
 }
 
@@ -358,6 +390,7 @@ void Spawn2::Depop() {
 	timer.Disable();
 	LogSpawns("Spawn2 [{}]: Spawn reset, repop disabled", spawn2_id);
 	npcthis = nullptr;
+	currentnpcid = 0;
 }
 
 void Spawn2::Repop(uint32 delay) {
@@ -369,6 +402,7 @@ void Spawn2::Repop(uint32 delay) {
 		timer.Start(delay);
 	}
 	npcthis = nullptr;
+	currentnpcid = 0;
 }
 
 void Spawn2::ForceDespawn()
@@ -387,12 +421,14 @@ void Spawn2::ForceDespawn()
 				npcthis->Depop(true);
 				IsDespawned = true;
 				npcthis = nullptr;
+				currentnpcid = 0;
 				return;
 			}
 			else
 			{
 				npcthis->Depop(false);
 				npcthis = nullptr;
+				currentnpcid = 0;
 			}
 		}
 	}
@@ -424,6 +460,7 @@ void Spawn2::DeathReset(bool realdeath)
 
 	//zero out our NPC since he is now gone
 	npcthis = nullptr;
+	currentnpcid = 0;
 
 	if(realdeath) { killcount++; }
 
@@ -498,6 +535,14 @@ bool ZoneDatabase::PopulateZoneSpawnList(uint32 zoneid, LinkedList<Spawn2*> &spa
 		);
 	}
 
+	NPC::SpawnZoneController();
+
+	if (RuleB(Zone, StateSavingOnShutdown) && zone->LoadZoneState(spawn_times, disabled_spawns)) {
+		LogZoneState("Loaded zone state for zone [{}] instance_id [{}]", zone_name, zone->GetInstanceID());
+		return true;
+	}
+
+	// normal spawn2 loading
 	for (auto &s: spawns) {
 		uint32 spawn_time_left = 0;
 		if (spawn_times.count(s.id) != 0) {
@@ -533,11 +578,10 @@ bool ZoneDatabase::PopulateZoneSpawnList(uint32 zoneid, LinkedList<Spawn2*> &spa
 		);
 
 		spawn2_list.Insert(new_spawn);
+		new_spawn->Process();
 	}
 
 	LogInfo("Loaded [{}] spawn2 entries", Strings::Commify(l.size()));
-
-	NPC::SpawnZoneController();
 
 	return true;
 }
@@ -631,6 +675,7 @@ void Spawn2::SpawnConditionChanged(const SpawnCondition &c, int16 old_value) {
 			LogSpawns("Spawn2 [{}]: Our npcthis is currently not null. The zone thinks it is [{}]. Forcing a depop", spawn2_id, npcthis->GetName());
 			npcthis->Depop(false);	//remove the current mob
 			npcthis = nullptr;
+			currentnpcid = 0;
 		}
 		if(new_state) { // only get repawn timer remaining when the SpawnCondition is enabled.
 			timer_remaining = database.GetSpawnTimeLeft(spawn2_id,zone->GetInstanceID());

@@ -19,17 +19,17 @@
 #ifndef EQ_PACKET_STRUCTS_H
 #define EQ_PACKET_STRUCTS_H
 
-#include "types.h"
+#include <list>
 #include <string.h>
 #include <string>
-#include <list>
 #include <time.h>
-#include "../common/version.h"
-#include "emu_constants.h"
-#include "textures.h"
 #include "../cereal/include/cereal/archives/binary.hpp"
 #include "../cereal/include/cereal/types/string.hpp"
 #include "../cereal/include/cereal/types/vector.hpp"
+#include "../common/version.h"
+#include "emu_constants.h"
+#include "textures.h"
+#include "types.h"
 
 static const uint32 BUFF_COUNT = 42;
 static const uint32 PET_BUFF_COUNT = 30;
@@ -47,7 +47,7 @@ static const uint32 ADVANCED_LORE_LENGTH = 8192;
 */
 #pragma pack(1)
 
-struct LoginInfo_Struct {
+struct LoginInfo {
 /*000*/	char	login_info[64];
 /*064*/	uint8	unknown064[124];
 /*188*/	uint8	zoning;			// 01 if zoning, 00 if not
@@ -3742,7 +3742,8 @@ struct GetItems_Struct{
 
 struct BecomeTrader_Struct {
 	uint32 action;
-	uint32 zone_id;
+	uint16 zone_id;
+	uint16 zone_instance_id;
 	uint32 trader_id;
 	uint32 entity_id;
 	char   trader_name[64];
@@ -4282,6 +4283,10 @@ struct NewCombine_Struct {
 /*04*/
 };
 
+struct TradeSkillRecipeInspect_Struct {
+	uint32 recipe_id;
+	uint32 padding[17]; // unknown
+};
 
 //client requesting favorite recipies
 struct TradeskillFavorites_Struct {
@@ -5524,56 +5529,65 @@ struct GuildBankWithdrawItem_Struct
 
 struct GuildBankItemUpdate_Struct
 {
-	void Init(uint32 inAction, uint32 inUnknown004, uint16 inSlotID, uint16 inArea, uint16 inUnknown012, uint32 inItemID, uint32 inIcon, uint32 inQuantity,
-			uint32 inPermissions, uint32 inAllowMerge, bool inUseable)
+	void Init(
+		uint32 inAction,
+		uint32 inUnknown004,
+		uint16 inSlotID,
+		uint16 inArea,
+		uint16 inUnknown012,
+		uint32 inItemID,
+		uint32 inIcon,
+		uint32 inQuantity,
+		uint32 inPermissions,
+		uint32 inAllowMerge,
+		bool   inUseable)
 	{
-		Action = inAction;
-		Unknown004 = inUnknown004;
-		SlotID = inSlotID;
-		Area = inArea;
-		Unknown012 = inUnknown012;
-		ItemID = inItemID;
-		Icon = inIcon;
-		Quantity = inQuantity;
-		Permissions = inPermissions;
-		AllowMerge = inAllowMerge;
-		Useable = inUseable;
-		ItemName[0] = '\0';
-		Donator[0] = '\0';
-		WhoFor[0] = '\0';
+		action       = inAction;
+		unknown004   = inUnknown004;
+		slot_id      = inSlotID;
+		area         = inArea;
+		display      = inUnknown012;
+		item_id      = inItemID;
+		icon_id      = inIcon;
+		quantity     = inQuantity;
+		permissions  = inPermissions;
+		allow_merge  = inAllowMerge;
+		is_useable   = inUseable;
+		item_name[0] = '\0';
+		donator[0]   = '\0';
+		who_for[0]   = '\0';
 	};
 
-/*000*/	uint32	Action;
-/*004*/	uint32	Unknown004;
-/*008*/	uint16	SlotID;
-/*010*/	uint16	Area;
-/*012*/	uint32	Unknown012;
-/*016*/	uint32	ItemID;
-/*020*/	uint32	Icon;
-/*024*/	uint32	Quantity;
-/*028*/	uint32	Permissions;
-/*032*/	uint8	AllowMerge;
-/*033*/	uint8	Useable;	// Used in conjunction with the Public-if-useable permission.
-/*034*/	char	ItemName[64];
-/*098*/	char	Donator[64];
-/*162*/ char	WhoFor[64];
-/*226*/	uint16	Unknown226;
+/*000*/	uint32	action;
+/*004*/	uint32	unknown004;
+/*008*/	uint16	slot_id;
+/*010*/	uint16	area;
+/*012*/	uint32	display;
+/*016*/	uint32	item_id;
+/*020*/	uint32	icon_id;
+/*024*/	uint32	quantity;
+/*028*/	uint32	permissions;
+/*032*/	uint8	allow_merge;
+/*033*/	uint8	is_useable;	// Used in conjunction with the Public-if-useable permission.
+/*034*/	char	item_name[64];
+/*098*/	char	donator[64];
+/*162*/ char	who_for[64];
+/*226*/	uint16	unknown226;
 };
 
 // newer clients (RoF+) send a list that contains 240 entries
 // The packets don't actually use all 64 chars in the strings, but we'll just overallocate for these
-struct GuildBankItemListEntry_Struct
-{
-	uint8 vaild;
+struct GuildBankItemListEntry_Struct {
+	uint8  vaild;
 	uint32 permissions;
-	char whofor[64];
-	char donator[64];
+	char   whofor[64];
+	char   donator[64];
 	uint32 item_id;
 	uint32 item_icon;
 	uint32 quantity;
-	uint8 allow_merge; // 1 here for non-full stacks
-	uint8 usable;
-	char item_name[64];
+	uint8  allow_merge; // 1 here for non-full stacks
+	uint8  usable;
+	char   item_name[64];
 };
 
 struct GuildBankClear_Struct
@@ -5816,6 +5830,28 @@ struct ChangeSize_Struct
 /*08*/ uint32 Unknown08;	// Observed 0
 /*12*/ float Unknown12;		// Observed 1.0f
 /*16*/
+};
+
+enum ChangeNameResponse : int {
+	Denied      = 0,  // 5167: "You have requested an invalid name or a Customer Service Representative has denied your name request. Please try another name."
+	Accepted    = 1,  // 5976: "Your request for a name change was successful."
+	Timeout     = -1, // 5977: "Your request for a name change has timed out. Please try again later."
+	ServerError = -2, // 5978: "The server had an error while processing your name request. Please try again later."
+	RateLimited = -3, // 5979: "You must wait longer before submitting another name request. Please try again in a few minutes."
+	Ineligible  = -4, // 5980: "Your character is not eligible for a name change."
+	Pending     = -5  // 5193: "You already have a name change pending. Please wait until it is fully processed before attempting another name change."
+};
+
+struct AltChangeName_Struct {
+/*00*/ char new_name[64];
+/*40*/ char old_name[64];
+/*80*/ int  response_code;
+};
+
+struct ChangePetName_Struct {
+/*00*/ char new_pet_name[64];
+/*40*/ char pet_owner_name[64];
+/*80*/ int  response_code;
 };
 
 // New OpCode/Struct for SoD+
@@ -6347,6 +6383,7 @@ enum BazaarTraderBarterActions {
 	TraderAck2                   = 22,
 	AddTraderToBazaarWindow      = 24,
 	RemoveTraderFromBazaarWindow = 25,
+	FirstOpenSearch              = 26,
 	ClickTrader                  = 28,
 	DeliveryCostUpdate           = 29
 };
@@ -6386,6 +6423,7 @@ struct BazaarSearchResultsFromDB_Struct {
 	uint32      icon_id;
 	uint32      sum_charges;
 	uint32      trader_zone_id;
+	int32       trader_zone_instance_id;
 	uint32      trader_entity_id;
 	uint32      item_stat;
 	bool        stackable;
@@ -6407,6 +6445,7 @@ struct BazaarSearchResultsFromDB_Struct {
 			CEREAL_NVP(icon_id),
 			CEREAL_NVP(sum_charges),
 			CEREAL_NVP(trader_zone_id),
+			CEREAL_NVP(trader_zone_instance_id),
 			CEREAL_NVP(trader_entity_id),
 			CEREAL_NVP(item_stat),
 			CEREAL_NVP(stackable),
@@ -6434,6 +6473,90 @@ struct BazaarSearchMessaging_Struct {
 struct BuylineItemDetails_Struct {
 	uint64      item_cost;
 	uint32      item_quantity;
+};
+
+struct PickZoneEntry_Struct {
+	int16 zone_id;
+	int16 unknown;
+	int32 player_count;
+	int32 instance_id;
+};
+
+struct PickZoneWindow_Struct {
+	char                 padding000[64];
+	int64                session_id;
+	int8                 option_count;
+	char                 padding073[23];
+	PickZoneEntry_Struct entries[10];
+};
+
+struct PickZone_Struct {
+	int64 session_id;
+	int32 selection_id;
+};
+
+struct EvolveItemToggle {
+	uint32 action;
+	uint32 unknown_004;
+	uint64 unique_id;
+	uint32 percentage;
+	uint32 activated;
+};
+
+struct EvolveXPWindowReceive {
+	uint32 action;
+	uint32 unknown_004;
+	uint64 item1_unique_id;
+	uint64 item2_unique_id;
+};
+
+struct EvolveItemMessaging {
+	uint32 action;
+	char   serialized_data[];
+};
+
+struct EvolveXPWindowSend {
+	/*000*/    uint32   action;
+	/*004*/    uint64   item1_unique_id;
+	/*012*/    uint64   item2_unique_id;
+	/*020*/    uint32   compatibility;
+	/*024*/    uint32   max_transfer_level;
+	/*028*/    uint8    item1_present;
+	/*029*/ uint8       item2_present;
+	/*030*/ std::string serialize_item_1;
+	/*034*/ std::string serialize_item_2;
+
+	template<class Archive>
+	void serialize(Archive &archive)
+	{
+		archive(
+			CEREAL_NVP(action),
+			CEREAL_NVP(item1_unique_id),
+			CEREAL_NVP(item2_unique_id),
+			CEREAL_NVP(compatibility),
+			CEREAL_NVP(max_transfer_level),
+			CEREAL_NVP(item1_present),
+			CEREAL_NVP(item2_present),
+			CEREAL_NVP(serialize_item_1),
+			CEREAL_NVP(serialize_item_2)
+		);
+	}
+};
+
+struct EvolveTransfer {
+	uint32 item_from_id;
+	uint32 item_from_current_amount;
+	uint32 item_to_id;
+	uint32 item_to_current_amount;
+	uint32 compatibility;
+	uint32 max_transfer_level;
+};
+
+struct EvolveGetNextItem {
+	uint32 new_item_id;
+	uint64 new_current_amount;
+	uint64 from_current_amount;
+	uint32 max_transfer_level;
 };
 
 // Restore structure packing to default

@@ -114,6 +114,7 @@
 	void Handle_OP_Emote(const EQApplicationPacket *app);
 	void Handle_OP_EndLootRequest(const EQApplicationPacket *app);
 	void Handle_OP_EnvDamage(const EQApplicationPacket *app);
+	void Handle_OP_EvolveItem(const EQApplicationPacket *app);
 	void Handle_OP_FaceChange(const EQApplicationPacket *app);
 	void Handle_OP_FeignDeath(const EQApplicationPacket *app);
 	void Handle_OP_FindPersonRequest(const EQApplicationPacket *app);
@@ -188,6 +189,7 @@
 	void Handle_OP_ItemLinkResponse(const EQApplicationPacket *app);
 	void Handle_OP_ItemName(const EQApplicationPacket *app);
 	void Handle_OP_ItemPreview(const EQApplicationPacket *app);
+	void Handle_OP_ItemPreviewRequest(const EQApplicationPacket *app);
 	void Handle_OP_ItemVerifyRequest(const EQApplicationPacket *app);
 	void Handle_OP_Jump(const EQApplicationPacket *app);
 	void Handle_OP_KeyRing(const EQApplicationPacket *app);
@@ -242,6 +244,7 @@
 	void Handle_OP_PlayerStateAdd(const EQApplicationPacket *app);
 	void Handle_OP_PlayerStateRemove(const EQApplicationPacket *app);
 	void Handle_OP_PickPocket(const EQApplicationPacket *app);
+	void Handle_OP_PickZone(const EQApplicationPacket *app);
 	void Handle_OP_PopupResponse(const EQApplicationPacket *app);
 	void Handle_OP_PotionBelt(const EQApplicationPacket *app);
 	void Handle_OP_PurchaseLeadershipAA(const EQApplicationPacket *app);
@@ -307,6 +310,7 @@
 	void Handle_OP_TradeRequestAck(const EQApplicationPacket *app);
 	void Handle_OP_TraderShop(const EQApplicationPacket *app);
 	void Handle_OP_TradeSkillCombine(const EQApplicationPacket *app);
+	void Handle_OP_TradeSkillRecipeInspect(const EQApplicationPacket* app);
 	void Handle_OP_Translocate(const EQApplicationPacket *app);
 	void Handle_OP_TributeItem(const EQApplicationPacket *app);
 	void Handle_OP_TributeMoney(const EQApplicationPacket *app);

@@ -46,13 +46,13 @@ public:
 	Lua_Mob GetOwner();
 	int16 HasBotItem(uint32 item_id);
 	void OwnerMessage(std::string message);
+	void RaidGroupSay(const char* message);
 	bool ReloadBotDataBuckets();
 	bool ReloadBotOwnerDataBuckets();
 	bool ReloadBotSpells();
 	void ReloadBotSpellSettings();
 	void RemoveBotItem(uint32 item_id);
 	void SetExpansionBitmask(int expansion_bitmask);
-	void SetExpansionBitmask(int expansion_bitmask, bool save);
 	void Signal(int signal_id);
 	bool HasBotSpellEntry(uint16 spellid);
 	void SendPayload(int payload_id);
@@ -127,8 +127,8 @@ public:
 	void SetSpellRecastTimer(uint16 spell_id);
 	void SetSpellRecastTimer(uint16 spell_id, uint32 reuse_timer);
 
-	int CountAugmentEquippedByID(uint32 item_id);
-	int CountItemEquippedByID(uint32 item_id);
+	uint32 CountAugmentEquippedByID(uint32 item_id);
+	uint32 CountItemEquippedByID(uint32 item_id);
 	bool HasAugmentEquippedByID(uint32 item_id);
 	bool HasItemEquippedByID(uint32 item_id);
 	int GetHealAmount();
