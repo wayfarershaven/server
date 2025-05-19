@@ -233,6 +233,7 @@ namespace EQ
 		uint32 GetNewIDFile() const						            { return m_new_id_file; }
 		void SetNewIDFile(uint32 new_id_file)			            { m_new_id_file = new_id_file; }
 		uint32 GetOrnamentHeroModel(int32 material_slot = -1) const;
+		uint32 GetOrnamentRawHeroModel() const { return m_ornament_hero_model; }
 		void SetOrnamentHeroModel(uint32 ornament_hero_model)		{ m_ornament_hero_model = ornament_hero_model; }
 		uint32 GetRecastTimestamp() const							{ return m_recast_timestamp; }
 		void SetRecastTimestamp(uint32 in)							{ m_recast_timestamp = in; }

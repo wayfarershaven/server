@@ -1363,7 +1363,8 @@ void Mob::FillSpawnStruct(NewSpawn_Struct* ns, Mob* ForWho)
 		if (IsPlayerRace(race) || i > EQ::textures::armorFeet) {
 			ns->spawn.equipment.Slot[i].Material        = GetEquipmentMaterial(i);
 			ns->spawn.equipment.Slot[i].EliteModel      = IsEliteMaterialItem(i);
-			ns->spawn.equipment.Slot[i].HerosForgeModel = GetHerosForgeModel(i);
+			ns->spawn.equipment.Slot[i].HerosForgeModel =
+				GetTextureProfileHeroForgeModel(i) > 0 ? GetTextureProfileHeroForgeModel(i) : GetHerosForgeModel(i);
 			ns->spawn.equipment_tint.Slot[i].Color      = GetEquipmentColor(i);
 		}
 	}

@@ -359,6 +359,8 @@ public:
 	void SetTexture(uint8 texture);
 	void SetRace(uint16 race_id);
 	void SetGender(uint8 gender_id);
+	void SetHeroModel(uint32 hero_forge_model);
+	void SetHeroModelByOrnamentIdAndSlot(uint32 ornament_id, uint8 inventory_slot) const;
 	void SendIllusionPacket(luabind::adl::object illusion);
 	void ChangeRace(int in);
 	void ChangeGender(int in);

@@ -25,10 +25,10 @@ void SetHeroModel(Client *c, const Seperator *sep)
 
 	if (arguments > 2) {
 		const uint8 slot = Strings::ToUnsignedInt(sep->arg[3]);
-		c->GetTarget()->SendTextureWC(slot, 0, hero_forge_model, 0, 0, 0);
+		t->SendTextureWC(slot, 0, hero_forge_model, 0, 0, 0);
 	} else {
 		if (!hero_forge_model) {
-			c->Message(Chat::White, "Hero's Forge Model must be greater than 0.");
+			t->Message(Chat::White, "Hero's Forge Model must be greater than 0.");
 			return;
 		}
 
@@ -38,7 +38,7 @@ void SetHeroModel(Client *c, const Seperator *sep)
 		hero_forge_model *= 100;
 
 		for (uint8 slot = 0; slot < 7; slot++) {
-			c->GetTarget()->SendTextureWC(slot, 0, (hero_forge_model + slot), 0, 0, 0);
+			t->SendTextureWC(slot, 0, (hero_forge_model + slot), 0, 0, 0);
 		}
 	}
 }
