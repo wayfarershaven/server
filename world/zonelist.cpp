@@ -37,6 +37,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include "dynamic_zone_manager.h"
 #include "ucs.h"
 #include "clientlist.h"
+#include "../common/repositories/trader_repository.h"
+#include "../common/repositories/buyer_repository.h"
 
 extern uint32 numzones;
 extern EQ::Random emu_random;
@@ -84,6 +86,8 @@ void ZSList::Remove(const std::string &uuid)
 	while (iter != zone_server_list.end()) {
 		if ((*iter)->GetUUID().compare(uuid) == 0) {
 			auto port = (*iter)->GetCPort();
+			(*iter)->CheckToClearTraderAndBuyerTables();
+
 			zone_server_list.erase(iter);
 
 			if (port != 0) {
@@ -127,6 +131,16 @@ void ZSList::Process() {
 				((shutdowntimer->GetRemainingTime() / 1000) / 60)
 			).c_str()
 		);
+	}
+
+	if (!m_queued_reloads.empty()) {
+		m_queued_reloads_mutex.lock();
+		for (auto &type : m_queued_reloads) {
+			LogInfo("Sending reload of type [{}] to zones", ServerReload::GetName(type));
+			SendServerReload(type, nullptr);
+		}
+		m_queued_reloads.clear();
+		m_queued_reloads_mutex.unlock();
 	}
 }
 
@@ -998,4 +1012,11 @@ void ZSList::SendServerReload(ServerReload::Type type, uchar *packet)
 		z->SendPacket(&pack);
 		++counter;
 	}
+}
+
+void ZSList::QueueServerReload(ServerReload::Type &type)
+{
+	m_queued_reloads_mutex.lock();
+	m_queued_reloads.emplace_back(type);
+	m_queued_reloads_mutex.unlock();
 }

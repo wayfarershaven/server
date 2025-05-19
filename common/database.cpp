@@ -1095,13 +1095,13 @@ void Database::SetLFP(uint32 character_id, bool is_lfp)
 	CharacterDataRepository::UpdateOne(*this, e);
 }
 
-void Database::SetLoginFlags(uint32 character_id, bool is_lfp, bool is_lfg, uint8 first_logon)
+void Database::SetLoginFlags(uint32 character_id, bool is_lfp, bool is_lfg, uint8 ingame)
 {
 	auto e = CharacterDataRepository::FindOne(*this, character_id);
 
-	e.firstlogon = first_logon;
-	e.lfg        = is_lfg ? 1 : 0;
-	e.lfp        = is_lfp ? 1 : 0;
+	e.ingame = ingame;
+	e.lfg    = is_lfg ? 1 : 0;
+	e.lfp    = is_lfp ? 1 : 0;
 
 	CharacterDataRepository::UpdateOne(*this, e);
 }
@@ -1115,11 +1115,11 @@ void Database::SetLFG(uint32 character_id, bool is_lfg)
 	CharacterDataRepository::UpdateOne(*this, e);
 }
 
-void Database::SetFirstLogon(uint32 character_id, uint8 first_logon)
+void Database::SetIngame(uint32 character_id, uint8 ingame)
 {
 	auto e = CharacterDataRepository::FindOne(*this, character_id);
 
-	e.firstlogon = first_logon;
+	e.ingame = ingame;
 
 	CharacterDataRepository::UpdateOne(*this, e);
 }
@@ -1920,6 +1920,7 @@ bool Database::CopyCharacter(
 	std::vector<std::string> tables_to_zero_id = {
 		"keyring",
 		"data_buckets",
+		"character_evolving_items",
 		"character_instance_safereturns",
 		"character_expedition_lockouts",
 		"character_instance_lockouts",
@@ -1951,6 +1952,12 @@ bool Database::CopyCharacter(
 			)
 		);
 
+		if (!results.Success()) {
+			LogError("Transaction failed [{}] rolling back", results.ErrorMessage());
+			TransactionRollback();
+			return false;
+		}
+
 		std::vector<std::string> columns      = {};
 		int                      column_count = 0;
 
@@ -1968,6 +1975,12 @@ bool Database::CopyCharacter(
 				source_character_id
 			)
 		);
+
+		if (!results.Success()) {
+			LogError("Transaction failed [{}] rolling back", results.ErrorMessage());
+			TransactionRollback();
+			return false;
+		}
 
 		std::vector<std::vector<std::string>> new_rows;
 
@@ -2036,13 +2049,18 @@ bool Database::CopyCharacter(
 			LogInfo("Copying table [{}] rows [{}]", table_name, Strings::Commify(rows_copied));
 
 			if (!insert.ErrorMessage().empty()) {
+				LogError("Error copying table [{}] [{}]", table_name, insert.ErrorMessage());
 				TransactionRollback();
 				return false;
 			}
 		}
 	}
 
-	TransactionCommit();
+	auto r = TransactionCommit();
+	if (!r.Success()) {
+		LogError("Transaction failed [{}] rolling back", r.ErrorMessage());
+		return false;
+	}
 
 	LogInfo(
 		"Character [{}] copied to [{}] total rows [{}]",

@@ -229,6 +229,12 @@ static std::map<uint16, std::string> botSubType_names = {
 	{ CommandedSubTypes::Selo,                      "Selo" }
 };
 
+namespace BotAnimEmpathy {
+	constexpr uint8 Guard       		= 1;
+	constexpr uint8 Attack           	= 2;
+	constexpr uint8 BackOff             = 3;
+};
+
 class Bot : public NPC {
 	friend class Mob;
 public:
@@ -747,7 +753,7 @@ public:
 	static BotSpell GetBestBotSpellForGroupCompleteHeal(Bot* caster, Mob* tar, uint16 spell_type = BotSpellTypes::RegularHeal);
 	static BotSpell GetBestBotSpellForGroupHeal(Bot* caster, Mob* tar, uint16 spell_type = BotSpellTypes::RegularHeal);
 
-	static Mob* GetFirstIncomingMobToMez(Bot* caster, int16 spell_id, uint16 spell_type, bool AE);
+	static Mob* GetFirstIncomingMobToMez(Bot* caster, uint16 spell_id, uint16 spell_type, bool AE);
 	static BotSpell GetBestBotSpellForMez(Bot* caster, uint16 spell_type = BotSpellTypes::Mez);
 	static BotSpell GetBestBotMagicianPetSpell(Bot* caster, uint16 spell_type = BotSpellTypes::Pet);
 	static std::string GetBotMagicianPetType(Bot* caster);
@@ -786,6 +792,7 @@ public:
 	EQ::ItemInstance* GetBotItem(uint16 slot_id);
 	bool GetSpawnStatus() { return _spawnStatus; }
 	uint8 GetPetChooserID() { return _petChooserID; }
+	bool HasControllablePet(uint8 ranks_required = 0);
 	bool IsBotRanged() { return _botRangedSetting; }
 	bool IsBotCharmer() { return _botCharmer; }
 	bool IsBot() const override { return true; }
@@ -1105,6 +1112,9 @@ public:
 
 	// Public "Refactor" Methods
 	static bool CheckCampSpawnConditions(Client* c);
+	static bool CheckHighEnoughLevelForBots(Client* c, uint8 bot_class = Class::None);
+	static bool CheckCreateLimit(Client* c, uint32 bot_count, uint8 bot_class = Class::None);
+	static bool CheckSpawnLimit(Client* c, uint8 bot_class = Class::None);
 
 protected:
 	void BotMeditate(bool is_sitting);

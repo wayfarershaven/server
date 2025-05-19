@@ -1127,16 +1127,37 @@ void EQ::Net::DaybreakConnection::ProcessResend(int stream)
 		auto time_since_first_sent = std::chrono::duration_cast<std::chrono::milliseconds>(now - first_packet.first_sent).count();
 
 		if (time_since_first_sent >= m_owner->m_options.resend_timeout) {
+			auto now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
+			auto first_sent_ms = std::chrono::duration_cast<std::chrono::milliseconds>(first_packet.first_sent.time_since_epoch()).count();
+			LogNetClient(
+				"Closing connection for m_endpoint [{}] m_port [{}] time_since_first_sent [{}] >= m_owner->m_options.resend_timeout [{}] now [{}] first_packet.first_sent [{}]",
+				m_endpoint,
+				m_port,
+				time_since_first_sent,
+				m_owner->m_options.resend_timeout,
+				now_ms,
+				first_sent_ms
+			);
 			Close();
 			return;
+		}
+
+		if (m_last_ack - now > std::chrono::milliseconds(1000)) {
+			LogNetClient(
+				"Resetting m_acked_since_last_resend flag for m_endpoint [{}] m_port [{}]",
+				m_endpoint,
+				m_port
+			);
+			m_acked_since_last_resend = true;
 		}
 
 		// make sure that the first_packet in the list first_sent time is within the resend_delay and now
 		// if it is not, then we need to resend all packets in the list
 		if (time_since_first_sent <= first_packet.resend_delay && !m_acked_since_last_resend) {
-			LogNetClient(
-				"Not resending packets for stream [{}] packets [{}] time_first_sent [{}] resend_delay [{}] m_acked_since_last_resend [{}]",
-				stream,
+			LogNetClientDetail(
+				"Not resending packets for m_endpoint [{}] m_port [{}] packets [{}] time_first_sent [{}] resend_delay [{}] m_acked_since_last_resend [{}]",
+				m_endpoint,
+				m_port,
 				s->sent_packets.size(),
 				time_since_first_sent,
 				first_packet.resend_delay,
@@ -1146,15 +1167,16 @@ void EQ::Net::DaybreakConnection::ProcessResend(int stream)
 		}
 	}
 
-	if (LogSys.IsLogEnabled(Logs::Detail, Logs::Netcode)) {
+	if (LogSys.IsLogEnabled(Logs::General, Logs::NetClient)) {
 		size_t    total_size = 0;
 		for (auto &e: s->sent_packets) {
 			total_size += e.second.packet.Length();
 		}
 
-		LogNetClient(
-			"Resending packets for stream [{}] packet count [{}] total packet size [{}] m_acked_since_last_resend [{}]",
-			stream,
+		LogNetClientDetail(
+			"Resending packets for m_endpoint [{}] m_port [{}] packet count [{}] total packet size [{}] m_acked_since_last_resend [{}]",
+			m_endpoint,
+			m_port,
 			s->sent_packets.size(),
 			total_size,
 			m_acked_since_last_resend
@@ -1165,9 +1187,12 @@ void EQ::Net::DaybreakConnection::ProcessResend(int stream)
 		if (m_resend_packets_sent >= MAX_CLIENT_RECV_PACKETS_PER_WINDOW ||
 			m_resend_bytes_sent >= MAX_CLIENT_RECV_BYTES_PER_WINDOW) {
 			LogNetClient(
-				"Stopping resend because we hit thresholds m_resend_packets_sent [{}] max [{}] m_resend_bytes_sent [{}] max [{}]",
+				"Stopping resend because we hit thresholds for m_endpoint [{}] m_port [{}]  m_resend_packets_sent [{}] max [{}] in_queue [{}] m_resend_bytes_sent [{}] max [{}]",
+				m_endpoint,
+				m_port,
 				m_resend_packets_sent,
 				MAX_CLIENT_RECV_PACKETS_PER_WINDOW,
+				s->sent_packets.size(),
 				m_resend_bytes_sent,
 				MAX_CLIENT_RECV_BYTES_PER_WINDOW
 			);
@@ -1204,11 +1229,11 @@ void EQ::Net::DaybreakConnection::ProcessResend(int stream)
 	}
 
 	m_acked_since_last_resend = false;
+	m_last_ack = now;
 }
 
 void EQ::Net::DaybreakConnection::Ack(int stream, uint16_t seq)
 {
-
 	auto now = Clock::now();
 	auto s = &m_streams[stream];
 	auto iter = s->sent_packets.begin();
@@ -1224,12 +1249,14 @@ void EQ::Net::DaybreakConnection::Ack(int stream, uint16_t seq)
 			m_rolling_ping = (m_rolling_ping * 2 + round_time) / 3;
 
 			iter = s->sent_packets.erase(iter);
-			m_acked_since_last_resend = true;
 		}
 		else {
 			++iter;
 		}
 	}
+
+	m_acked_since_last_resend = true;
+	m_last_ack = now;
 }
 
 void EQ::Net::DaybreakConnection::OutOfOrderAck(int stream, uint16_t seq)
@@ -1247,6 +1274,9 @@ void EQ::Net::DaybreakConnection::OutOfOrderAck(int stream, uint16_t seq)
 
 		s->sent_packets.erase(iter);
 	}
+
+	m_acked_since_last_resend = true;
+	m_last_ack = now;
 }
 
 void EQ::Net::DaybreakConnection::UpdateDataBudget(double budget_add)

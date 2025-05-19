@@ -49,6 +49,7 @@
 #include "../common/repositories/skill_caps_repository.h"
 #include "../common/repositories/zone_state_spawns_repository.h"
 #include "../common/repositories/spawn2_disabled_repository.h"
+#include "../common/repositories/player_titlesets_repository.h"
 
 struct EXPModifier
 {
@@ -197,7 +198,7 @@ public:
 	int32 MobsAggroCount() { return aggroedmobs; }
 	DynamicZone *GetDynamicZone();
 
-	void ClearVariables();
+	bool ClearVariables();
 	bool DeleteVariable(const std::string& variable_name);
 	std::string GetVariable(const std::string& variable_name);
 	std::vector<std::string> GetVariables();

@@ -1732,6 +1732,7 @@ const NPCType *ZoneDatabase::LoadNPCTypesData(uint32 npc_type_id, bool bulk_load
 		t->attack_count       = n.attack_count;
 		t->is_parcel_merchant = n.is_parcel_merchant ? true : false;
 		t->greed              = n.greed;
+		t->m_npc_tint_id      = n.npc_tint_id;
 
 		if (!n.special_abilities.empty()) {
 			strn0cpy(t->special_abilities, n.special_abilities.c_str(), 512);
@@ -4270,4 +4271,29 @@ void ZoneDatabase::SaveCharacterEXPModifier(Client* c)
 			.exp_modifier = m.exp_modifier
 		}
 	);
+}
+
+void ZoneDatabase::LoadCharacterTitleSets(Client* c)
+{
+	if (!zone || !c) {
+		return;
+	}
+
+	const auto& l = PlayerTitlesetsRepository::GetWhere(
+		*this,
+		fmt::format(
+			"`char_id` = {}",
+			c->CharacterID()
+		)
+	);
+
+	if (l.empty()) {
+		return;
+	}
+
+	const uint32 character_id = c->CharacterID();
+
+	for (const auto& e : l) {
+		c->EnableTitle(e.title_set, false);
+	}
 }

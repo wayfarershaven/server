@@ -186,6 +186,7 @@ namespace EQ
 			size_t m_resend_packets_sent = 0;
 			size_t m_resend_bytes_sent = 0;
 			bool m_acked_since_last_resend = false;
+			Timestamp m_last_ack;
 
 			struct DaybreakSentPacket
 			{
