@@ -973,6 +973,12 @@ bool IsHarmTouchSpell(uint16 spell_id)
 		   spell_id == SPELL_IMP_HARM_TOUCH;
 }
 
+bool IsClericBalanceHeal(uint16 spell_id)
+{
+	return spell_id == SPELL_DIVINE_BALANCE ||
+		   spell_id == SPELL_HARMONIC_BALANCE;
+}
+
 // returns the lowest level of any caster which can use the spell
 uint8 GetSpellMinimumLevel(uint16 spell_id)
 {

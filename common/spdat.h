@@ -214,6 +214,8 @@
 #define SPELL_BLOODTHIRST 8476
 #define SPELL_AMPLIFICATION 2603
 #define SPELL_DIVINE_REZ 2738
+#define SPELL_DIVINE_BALANCE 6265
+#define SPELL_HARMONIC_BALANCE 6233
 #define SPELL_NATURES_RECOVERY 2520
 #define SPELL_MINOR_HEALING 200
 #define SPELL_ADRENALINE_SWELL 14445
@@ -1823,6 +1825,7 @@ bool IsDamageOverTimeSpell(uint16 spell_i);
 bool IsFearSpell(uint16 spell_id);
 bool IsCureSpell(uint16 spell_id);
 bool IsHarmTouchSpell(uint16 spell_id);
+bool IsClericBalanceHeal(uint16 spell_id);
 int GetSpellEffectIndex(uint16 spell_id, int effect_id);
 uint8 GetSpellMinimumLevel(uint16 spell_id);
 uint8 GetSpellLevel(uint16 spell_id, uint8 class_id);

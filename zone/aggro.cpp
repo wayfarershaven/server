@@ -1380,7 +1380,13 @@ int32 Mob::CheckAggroAmount(uint16 spell_id, Mob *target, bool is_proc)
 			case SE_CurrentHPOnce:
 			case SE_CurrentHP: {
 				int64 val = CalcSpellEffectValue_formula(spells[spell_id].formula[o], spells[spell_id].base_value[o], spells[spell_id].max_value[o], mob_level, spell_id);
-				if(val < 0) {
+
+				// If Cleric Balance Heal return a value of 0 for hate
+				if (IsClericBalanceHeal(spell_id)) {
+					val = 0;
+				}
+
+				if (val < 0) {
 					aggro_amount -= val;
 				}
 				break;
@@ -1543,6 +1549,11 @@ int32 Mob::CheckAggroAmount(uint16 spell_id, Mob *target, bool is_proc)
 //healing and buffing aggro
 int32 Mob::CheckHealAggroAmount(uint16 spell_id, Mob *target, uint32 heal_possible)
 {
+	// If Cleric Balance Heal return a value of 0 for hate
+	if (IsClericBalanceHeal(spell_id)) {
+		return 0;
+	}
+
 	int32 AggroAmount = 0;
 	auto target_level = target ? target->GetLevel() : 1;
 	bool ignore_default_buff = false; // rune/hot don't use the default 9, HP buffs that heal (virtue) do use the default
