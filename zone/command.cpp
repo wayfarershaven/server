@@ -113,6 +113,7 @@ int command_init(void)
 		command_add("depopzone", "[Start Spawn Timers] - Depop the zone and optionally start spawn timers (false by default)", AccountStatus::GMAdmin, command_depopzone) ||
 		command_add("devtools", "[menu|window] [enable|disable] - Manages Developer Tools (send no parameter for menu)", AccountStatus::GMMgmt, command_devtools) ||
 		command_add("disablerecipe", "[Recipe ID] - Disables a Recipe", AccountStatus::QuestTroupe, command_disablerecipe) ||
+		command_add("disable_seasonal", "Remove a character from seasonal event.", AccountStatus::Player, command_disable_seasonal) ||
 		command_add("disarmtrap", "Analog for ldon disarm trap for the newer clients since we still don't have it working.", AccountStatus::QuestTroupe, command_disarmtrap) ||
 		command_add("door", "Door editing command", AccountStatus::QuestTroupe, command_door) ||
 		command_add("doanim", "[Animation ID|Animation Name] [Speed] - Send an animation by ID or name at the specified speed to you or your target (Speed is optional)", AccountStatus::Guide, command_doanim) ||
@@ -209,6 +210,7 @@ int command_init(void)
 		command_add("scale", "Handles NPC scaling", AccountStatus::GMLeadAdmin, command_scale) ||
 		command_add("scribespell", "[Spell ID] - Scribe a spell by ID to your or your target's spell book.", AccountStatus::GMCoder, command_scribespell) ||
 		command_add("scribespells", "[Max level] [Min level] - Scribe all spells for you or your player target that are usable by them, up to level specified. (may freeze client for a few seconds)", AccountStatus::GMLeadAdmin, command_scribespells) ||
+		command_add("seasoninfo", "Display info about seasonal event", AccountStatus::Player, command_seasoninfo) ||
 		command_add("sendzonespawns", "Refresh spawn list for all clients in zone", AccountStatus::GMLeadAdmin, command_sendzonespawns) ||
 		command_add("sensetrap", "Analog for ldon sense trap for the newer clients since we still don't have it working.", AccountStatus::Player, command_sensetrap) ||
 		command_add("serverrules", "Show server rules", AccountStatus::Player, command_serverrules) ||
@@ -912,6 +914,7 @@ void command_bot(Client *c, const Seperator *sep)
 #include "gm_commands/spawneditmass.cpp"
 #include "gm_commands/spawnfix.cpp"
 #include "gm_commands/faction_association.cpp"
+#include "gm_commands/seasonal.cpp"
 #include "gm_commands/stun.cpp"
 #include "gm_commands/summon.cpp"
 #include "gm_commands/summonburiedplayercorpse.cpp"

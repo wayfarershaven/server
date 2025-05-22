@@ -283,6 +283,28 @@ void Client::DoParcelSend(const Parcel_Struct *parcel_in)
 		return;
 	}
 
+	if (RuleI(Custom, EnableSeasonalCharacters)) {
+		DataBucketKey db_key = {};
+		db_key.character_id = database.GetCharacterID(parcel_in->send_to);
+		db_key.key = "SeasonalCharacter";
+
+		bool dst_seasonal = (Strings::ToInt(DataBucket::GetData(db_key).value) == RuleI(Seasons,EnableSeasonalCharacters));
+		if (dst_seasonal != IsSeasonal()) {
+			SendParcelIconStatus();
+			Message(
+				Chat::Yellow,
+				fmt::format(
+					"{} tells you, 'Unfortunately, I cannot send your parcel. You must be a participant in the same Season as your intended recipient.'",
+					merchant->GetCleanName(),
+					RuleI(Parcel, ParcelMaxItems)
+				).c_str()
+			);
+			DoParcelCancel();
+			SendParcelAck();
+			return;
+		}
+	}
+
 	if (parcel_in->money_flag && parcel_in->item_slot != INVALID_INDEX) {
 		Message(
 			Chat::Yellow,

@@ -3910,6 +3910,25 @@ bool Mob::SpellOnTarget(
 ) {
 	auto spellOwner = GetOwnerOrSelf();
 
+	if (spellOwner->IsClient() || (spellOwner->IsPet() && spellOwner->GetOwner() && spellOwner->GetOwner()->IsClient())) {
+		if (spelltar->IsClient() || (spelltar->IsPet() && spelltar->GetOwner() && spelltar->GetOwner()->IsClient())) {
+			bool tar_season = spelltar->HasOwner() ? spelltar->GetOwner()->CastToClient()->IsSeasonal() : spelltar->CastToClient()->IsSeasonal();
+			bool own_season = spellOwner->HasOwner() ? spellOwner->GetOwner()->CastToClient()->IsSeasonal() : spellOwner->CastToClient()->IsSeasonal();
+
+			if (tar_season != own_season) {
+				Message(Chat::Red, "Seasonal and non-Seasonal Characters may not affect each other with spells.");
+				return false;
+			}
+		}
+	}
+
+	if (spelltar->IsClient() && spelltar->CastToClient()->IsTrader()) {
+		if (spellOwner->IsClient()) {
+			spellOwner->Message(Chat::SpellFailure, "Your spell would not take hold on your target.");
+		}
+		return false;
+	}
+
 	// well we can't cast a spell on target without a target
 	if (!spelltar) {
 		LogSpells("Unable to apply spell [{}] without a target", spell_id);

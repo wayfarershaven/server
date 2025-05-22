@@ -1409,8 +1409,9 @@ void Client::Handle_Connect_OP_ZoneEntry(const EQApplicationPacket *app)
 		}
 	}
 
-	if (RuleB(Character, SharedBankPlat))
+	if (RuleB(Character, SharedBankPlat) && !IsSeasonal()) {
 		m_pp.platinum_shared = database.GetSharedPlatinum(AccountID());
+	}
 
 	database.ClearOldRecastTimestamps(cid); /* Clear out our old recast timestamps to keep the DB clean */
 	// set to full support in case they're a gm with items in disabled expansion slots...but, have their gm flag off...
@@ -1823,8 +1824,9 @@ void Client::Handle_Connect_OP_ZoneEntry(const EQApplicationPacket *app)
 	entity_list.SendZoneSpawnsBulk(this);
 	entity_list.SendZoneCorpsesBulk(this);
 	entity_list.SendZonePVPUpdates(this);	//hack until spawn struct is fixed.
+	entity_list.SendZoneSeasonalUpdates(this);
 
-											/* Time of Day packet */
+	/* Time of Day packet */
 	outapp = new EQApplicationPacket(OP_TimeOfDay, sizeof(TimeOfDay_Struct));
 	TimeOfDay_Struct* tod = (TimeOfDay_Struct*)outapp->pBuffer;
 	zone->zone_time.GetCurrentEQTimeOfDay(time(0), tod);
@@ -5334,6 +5336,14 @@ void Client::Handle_OP_ConsiderCorpse(const EQApplicationPacket *app)
 		} else {
 			MessageString(Chat::NPCQuestSay, CORPSE_DECAY_NOW);
 		}
+
+		if (t->IsSeasonal()) {
+			Message(Chat::Red, "This is a Seasonal character's kill, and will not unlock to be looted by others.");
+		}
+
+		if (t->IsHardcore()) {
+			Message(Chat::Red, "This is a Discordant character's kill, and will not unlock to be looted by others.");
+		}
 	} else if (t && t->IsPlayerCorpse()) {
 		remaining_time = t->GetRemainingRezTime();
 		if (!t->IsRezzed()) {
@@ -7214,6 +7224,12 @@ void Client::Handle_OP_GroupCancelInvite(const EQApplicationPacket *app)
 	GroupCancel_Struct* gf = (GroupCancel_Struct*)app->pBuffer;
 	Mob* inviter = entity_list.GetClientByName(gf->name1);
 
+	if (inviter && inviter->IsClient() && IsSeasonal() != inviter->CastToClient()->IsSeasonal()) {
+		Message(Chat::Red, "Seasonal characters may only group with other Seasonal characters.");
+		inviter->Message(Chat::Red, "Seasonal characters may only group with other Seasonal characters.");
+		return;
+	}
+
 	if (inviter != nullptr)
 	{
 		if (inviter->IsClient())
@@ -7504,6 +7520,11 @@ void Client::Handle_OP_GroupInvite2(const EQApplicationPacket *app)
 
 	if (invitee == this) {
 		MessageString(Chat::LightGray, GROUP_INVITEE_SELF);
+		return;
+	}
+
+	if (invitee && invitee->IsClient() && IsSeasonal() != invitee->CastToClient()->IsSeasonal()) {
+		Message(Chat::Red, "Seasonal characters may only group with other Seasonal characters.");
 		return;
 	}
 
@@ -7829,6 +7850,17 @@ void Client::Handle_OP_GuildBank(const EQApplicationPacket *app)
 			}
 
 			const auto cursor_item = cursor_item_inst->GetItem();
+
+			if (IsSeasonal()) {
+				Message(Chat::Red, "Seasonal Characters are not allowed to use the Guild Bank.");
+				GuildBankDepositAck(true, sentAction);
+				if (ClientVersion() >= EQ::versions::ClientVersion::RoF) {
+					GetInv().PopItem(EQ::invslot::slotCursor);
+					PushItemOnCursor(cursor_item, true);
+				}
+				return;
+			}
+
 			if (GuildBanks->IsAreaFull(GuildID(), GuildBankDepositArea)) {
 				MessageString(Chat::Red, GUILD_BANK_FULL);
 				GuildBankDepositAck(true, sentAction);
@@ -7920,6 +7952,12 @@ void Client::Handle_OP_GuildBank(const EQApplicationPacket *app)
 		}
 
 		case GuildBankWithdraw: {
+			if (IsSeasonal()) {
+				Message(Chat::Red, "Seasonal Characters are not allowed to use the Guild Bank.");
+				GuildBankAck();
+				break;
+			}
+
 			if (GetInv()[EQ::invslot::slotCursor]) {
 				MessageString(Chat::Red, GUILD_BANK_EMPTY_HANDS);
 				GuildBankAck();
@@ -10369,6 +10407,11 @@ void Client::Handle_OP_LootRequest(const EQApplicationPacket *app)
 	}
 	if (ent->IsCorpse())
 	{
+		if (IsSeasonal() && !ent->CastToCorpse()->IsSeasonal() && !ent->CastToCorpse()->IsPlayerCorpse()) {
+			Message(Chat::Red, "Seasonal Characters may not loot from non-Seasonal kills.");
+			Corpse::SendLootReqErrorPacket(this);
+		}
+
 		SetLooting(ent->GetID()); //store the entity we are looting
 
 		ent->CastToCorpse()->MakeLootRequestPackets(this, app);
@@ -12382,6 +12425,12 @@ void Client::Handle_OP_RaidCommand(const EQApplicationPacket* app)
 
 		} else {
 			Client* player_to_invite = entity_list.GetClientByName(raid_command_packet->player_name);
+
+			if (player_to_invite && IsSeasonal() != player_to_invite->IsSeasonal()) {
+				Message(Chat::Red, "Seasonal characters may only group with other Seasonal characters.");
+				return;
+			}
+
 			if (!player_to_invite) {
 				break;
 			}
@@ -13565,6 +13614,11 @@ void Client::Handle_OP_RequestDuel(const EQApplicationPacket *app)
 	ds->duel_initiator = ds->duel_target;
 	ds->duel_target = duel;
 	Entity* entity = entity_list.GetID(ds->duel_target);
+
+	if (IsSeasonal() != entity->CastToClient()->IsSeasonal()) {
+		Message(Chat::Red, "Seasonal characters may only dual with other Seasonal characters.");
+		return;
+	}
 
 	if (
 		GetID() != ds->duel_target &&
@@ -15540,6 +15594,26 @@ void Client::Handle_OP_TraderBuy(const EQApplicationPacket *app)
 				TradeRequestFailed(app);
 				return;
 			}
+
+			if (RuleI(Seasons, EnableSeasonalCharacters)) {
+				DataBucketKey db_key = {};
+				db_key.character_id = database.GetCharacterID(in->seller_name);
+				db_key.key = "SeasonalCharacter";
+
+				bool dst_seasonal = (Strings::ToInt(DataBucket::GetData(db_key).value) == RuleI(Seasons,EnableSeasonalCharacters));
+				if (dst_seasonal != IsSeasonal()) {
+					SendParcelIconStatus();
+						Message(
+						Chat::Yellow,
+						"You may not purchase from this trader, because they are not a member of the same Season as you are."
+					);
+					in->method     = BazaarByParcel;
+					in->sub_action = Failed;
+					TradeRequestFailed(app);
+					return;
+				}
+			}
+
 			LogTrading("Buy item by parcel delivery <green>[{}] item_id <green>[{}] quantity <green>[{}] "
 					   "serial_number <green>[{}]",
 					   in->trader_id,
@@ -15618,6 +15692,16 @@ void Client::Handle_OP_TradeRequest(const EQApplicationPacket *app)
 			tradee->CastToClient()->SyncWorldPositionsToClient(true);
 		}
 
+		if (IsHardcore() || tradee->CastToClient()->IsHardcore()) {
+			Message(Chat::Red, "A Discordant may not trade with other players.");
+			return;
+		}
+
+		if (IsSeasonal() != tradee->CastToClient()->IsSeasonal()) {
+			Message(Chat::Red, "Seasonal Characters may not trade with other players who are not Seasonal.");
+			return;
+		}
+
 		tradee->CastToClient()->QueuePacket(app);
 	}
 	else if (tradee && (tradee->IsNPC() || tradee->IsBot())) {
@@ -15682,12 +15766,17 @@ void Client::Handle_OP_TraderShop(const EQApplicationPacket *app)
 			auto trader = entity_list.GetClientByID(in->TraderID);
 
 			if (trader) {
-				data->Approval = trader->WithCustomer(GetID());
-				LogTrading("Client::Handle_OP_TraderShop: Shop Request ([{}]) to ([{}]) with Approval: [{}]",
-						   GetCleanName(),
-						   trader->GetCleanName(),
-						   data->Approval
-				);
+				if (trader->IsSeasonal() != IsSeasonal()) {
+					Message(Chat::Red, "Seasonal characters may only buy from Seasonal traders.");
+					data->Approval = 0;
+				} else {
+					data->Approval = trader->WithCustomer(GetID());
+					LogTrading("Client::Handle_OP_TraderShop: Shop Request ([{}]) to ([{}]) with Approval: [{}]",
+						GetCleanName(),
+						trader->GetCleanName(),
+						data->Approval
+					);
+				}
 			}
 			else {
 				LogTrading("Client::Handle_OP_TraderShop: entity_list.GetClientByID(tcs->traderid)"
@@ -15715,7 +15804,9 @@ void Client::Handle_OP_TraderShop(const EQApplicationPacket *app)
 				);
 			}
 			else {
-				MessageString(Chat::Yellow, TRADER_BUSY);
+				if (trader->IsSeasonal() == IsSeasonal()) {
+					MessageString(Chat::Yellow, TRADER_BUSY);
+				}
 				LogTrading("Client::Handle_OP_TraderShop: Trader Busy");
 			}
 

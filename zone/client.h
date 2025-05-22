@@ -1148,6 +1148,42 @@ public:
 	int GetAAEXPPercentage();
 	int GetEXPPercentage();
 
+	// Seasonal Helper Methods
+	bool IsSeasonal() {
+		if (RuleI(Seasons, EnableSeasonalCharacters) <= 0) {
+			return false;
+		} else {
+			return (Strings::ToInt(GetBucket("SeasonalCharacter")) == RuleI(Seasons, EnableSeasonalCharacters));
+		}
+	}
+
+	void DisableSeasonal() {
+		if (RuleI(Seasons, EnableSeasonalCharacters) > 0) {
+			SetBucket("SeasonalCharacter", "0");
+			Message(Chat::Yellow, "You are no longer participating in this Seasonal Event.");
+			SendAppearancePacket(AppearanceType::PVP, false, true, false);
+		}
+	}
+
+	void EnableSeasonal() {
+		if (RuleI(Seasons, EnableSeasonalCharacters) > 0) {
+			SetBucket("SeasonalCharacter", fmt::to_string(RuleI(Seasons, EnableSeasonalCharacters)));
+			Message(Chat::Yellow, "You are participating in this Seasonal Event.");
+			SendAppearancePacket(AppearanceType::PVP, true, true, false);
+		}
+	}
+
+	int  GetSeason() {
+		if (IsSeasonal()) {
+			return Strings::ToInt(GetBucket("SeasonalCharacter"), 0);
+		} else {
+			return 0;
+		}
+	}
+
+	// Hardcore Helper Methods
+	bool IsHardcore() { return Strings::ToBool(GetBucket("DiscordantCharacter")); }
+
 	// Item methods
 	void UseAugmentContainer(int container_slot);
 	uint32 NukeItem(uint32 itemnum, uint8 where_to_check =
@@ -2462,7 +2498,7 @@ public:
  		guild_id                 = in.guild_id;
  		guildrank                = in.guildrank;
  		LFG                      = in.LFG;
- 		AFK                      = in.AFK;
+ 		m_is_afk                 = in.m_is_afk;
  		trader_id                = in.trader_id;
  		m_buyer_id               = in.m_buyer_id;
  		race                     = in.race;

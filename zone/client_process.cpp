@@ -954,21 +954,22 @@ void Client::BulkSendMerchantInventory(int merchant_id, int npcid) {
 		}
 	}
 
-	auto temporary_merchant_list_two = zone->tmpmerchanttable[npcid];
-	temporary_merchant_list.clear();
-	for (auto ml : temporary_merchant_list_two) {
-		if (slot_id > merchant_slots) {
-			break;
-		}
-
-		item = database.GetItem(ml.item);
-		ml.slot = slot_id;
-		if (item) {
-			if (!handy_chance) {
-				handy_item = item;
-			} else {
-				handy_chance--;
+	if (!(IsSeasonal() || IsHardcore())) {
+		auto temporary_merchant_list_two = zone->tmpmerchanttable[npcid];
+		temporary_merchant_list.clear();
+		for (auto ml : temporary_merchant_list_two) {
+			if (slot_id > merchant_slots) {
+				break;
 			}
+
+			item = database.GetItem(ml.item);
+			ml.slot = slot_id;
+			if (item) {
+				if (!handy_chance) {
+					handy_item = item;
+				} else {
+					handy_chance--;
+				}
 
 			auto charges = item->MaxCharges;
 			auto inst = database.CreateItem(item, charges);
@@ -981,21 +982,22 @@ void Client::BulkSendMerchantInventory(int merchant_id, int npcid) {
 					item_price *= RuleR(Merchant, SellCostMod);
 				}
 
-				if (RuleB(Merchant, UsePriceMod)) {
-					item_price *= Client::CalcPriceMod(npc);
+					if (RuleB(Merchant, UsePriceMod)) {
+						item_price *= Client::CalcPriceMod(npc);
+					}
+
+					inst->SetCharges(item_charges);
+					inst->SetMerchantCount(ml.charges);
+					inst->SetMerchantSlot(ml.slot);
+					inst->SetPrice(item_price);
+
+					SendItemPacket(ml.slot - 1, inst, ItemPacketMerchant);
+					safe_delete(inst);
 				}
-
-				inst->SetCharges(item_charges);
-				inst->SetMerchantCount(ml.charges);
-				inst->SetMerchantSlot(ml.slot);
-				inst->SetPrice(item_price);
-
-				SendItemPacket(ml.slot - 1, inst, ItemPacketMerchant);
-				safe_delete(inst);
 			}
+			temporary_merchant_list.push_back(ml);
+			slot_id++;
 		}
-		temporary_merchant_list.push_back(ml);
-		slot_id++;
 	}
 
 	//this resets the slot
@@ -1565,10 +1567,18 @@ void Client::OPMoveCoin(const EQApplicationPacket* app)
 		{
 			if (to_bucket == &m_pp.platinum_shared || from_bucket == &m_pp.platinum_shared)
 			{
-				if (from_bucket == &m_pp.platinum_shared)
-					amount_to_add = 0 - amount_to_take;
+				if (IsSeasonal()) {
+					Message(Chat::Red, "WARNING: Seasonal Characters may not access the Shared Bank. Any deposited platinum visible here is a visual glitch only.");
 
-				database.SetSharedPlatinum(AccountID(),amount_to_add);
+					AddPlatinum(amount_to_add, true);
+					m_pp.platinum_shared = 0;
+					m_pp.platinum_cursor = 0;
+				} else {
+					if (from_bucket == &m_pp.platinum_shared)
+						amount_to_add = 0 - amount_to_take;
+
+					database.SetSharedPlatinum(AccountID(),amount_to_add);
+				}
 			}
 		}
 		else{

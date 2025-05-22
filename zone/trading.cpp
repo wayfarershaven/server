@@ -556,6 +556,26 @@ void Client::FinishTrade(Mob* tradingWith, bool finalizer, void* event_entry, st
 				const bool         is_pet = with->IsPetOwnerOfClientBot() || with->IsCharmedPet();
 				if (is_pet && with->CanPetTakeItem(inst)) {
 					// pets need to look inside bags and try to equip items found there
+
+					if (tradingWith->IsPet() && tradingWith->GetOwner() && tradingWith->GetOwner()->IsClient()) {
+						auto new_loot_drop_entry = LootdropEntriesRepository::NewNpcEntity();
+						new_loot_drop_entry.equip_item = 1;
+						new_loot_drop_entry.item_charges = static_cast<int8>(inst->GetCharges());
+
+						if (IsClient() && CastToClient()->IsSeasonal() == tradingWith->GetOwner()->CastToClient()->IsSeasonal()) {
+							tradingWith->CastToNPC()->AddLootDrop(
+								item,
+								new_loot_drop_entry,
+								true
+							);
+						} else {
+							PushItemOnCursor(*inst, true);
+							if (tradingWith->GetOwner()->CastToClient()->IsSeasonal()) {
+								Message(Chat::Red, "You may not equip the pets of Seasonal Characters unless you are also Seasonal.");
+							}
+						}
+					}
+
 					if (item->IsClassBag() && item->BagSlots > 0) {
 						// if an item inside the bag can't be given to the pet, keep the bag
 						bool       keep_bag   = false;
@@ -567,9 +587,13 @@ void Client::FinishTrade(Mob* tradingWith, bool finalizer, void* event_entry, st
 								auto lde = LootdropEntriesRepository::NewNpcEntity();
 								lde.equip_item   = 1;
 								lde.item_charges = static_cast<int8>(baginst->GetCharges());
-								with->AddLootDrop(baginst->GetItem(), lde, true);
-								inst->DeleteItem(bslot);
-								item_count++;
+								if (tradingWith->IsPet() && tradingWith->GetOwner() && tradingWith->GetOwner()->IsClient()) {
+									if (IsClient() && CastToClient()->IsSeasonal() == tradingWith->GetOwner()->CastToClient()->IsSeasonal()) {
+										with->AddLootDrop(baginst->GetItem(), lde, true);
+										inst->DeleteItem(bslot);
+										item_count++;
+									}
+								}
 							}
 							else {
 								keep_bag = true;
