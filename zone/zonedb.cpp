@@ -378,12 +378,12 @@ void ZoneDatabase::UpdateTraderItemPrice(int char_id, uint32 item_id, uint32 cha
 	}
 
 	if (new_price == 0) {
-		LogTrading("Removing Trader items from the DB for char_id [{}], item_id [{}]", char_id, item_id);
+		LogTrading("Removing Trader items from the DB for character_id [{}], item_id [{}]", char_id, item_id);
 
 		auto results = TraderRepository::DeleteWhere(
 			database,
 			fmt::format(
-				"`char_id` = '{}' AND `item_id` = {}",
+				"`character_id` = '{}' AND `item_id` = {}",
 				char_id,
 				item_id
 			)
@@ -418,48 +418,6 @@ void ZoneDatabase::UpdateTraderItemPrice(int char_id, uint32 item_id, uint32 cha
 			char_id
 		);
 	}
-}
-
-void ZoneDatabase::AddBuyLine(uint32 CharID, uint32 BuySlot, uint32 ItemID, const char* ItemName, uint32 Quantity, uint32 Price) {
-	std::string query = StringFormat("REPLACE INTO buyer VALUES(%i, %i, %i, \"%s\", %i, %i)",
-                                    CharID, BuySlot, ItemID, ItemName, Quantity, Price);
-    auto results = QueryDatabase(query);
-	if (!results.Success())
-		LogDebug("[CLIENT] Failed to save buline item: [{}] for char_id: [{}], the error was: [{}]\n", ItemID, CharID, results.ErrorMessage().c_str());
-
-}
-
-void ZoneDatabase::RemoveBuyLine(uint32 CharID, uint32 BuySlot) {
-	std::string query = StringFormat("DELETE FROM buyer WHERE charid = %i AND buyslot = %i", CharID, BuySlot);
-    auto results = QueryDatabase(query);
-	if (!results.Success())
-		LogDebug("[CLIENT] Failed to delete buyslot [{}] for charid: [{}], the error was: [{}]\n", BuySlot, CharID, results.ErrorMessage().c_str());
-
-}
-
-void ZoneDatabase::UpdateBuyLine(uint32 CharID, uint32 BuySlot, uint32 Quantity) {
-	if(Quantity <= 0) {
-		RemoveBuyLine(CharID, BuySlot);
-		return;
-	}
-
-	std::string query = StringFormat(
-		"UPDATE buyer SET quantity = %i WHERE charid = %i AND buyslot = %i",
-		Quantity,
-		CharID,
-		BuySlot
-	);
-
-	auto results = QueryDatabase(query);
-	if (!results.Success()) {
-		LogTrading(
-			"Failed to update quantity in buyslot [{}] for charid [{}], the error was [{}]\n",
-			BuySlot,
-			CharID,
-			results.ErrorMessage().c_str()
-		);
-	}
-
 }
 
 #define StructDist(in, f1, f2) (uint32(&in->f2)-uint32(&in->f1))
