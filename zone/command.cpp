@@ -113,7 +113,6 @@ int command_init(void)
 		command_add("depopzone", "[Start Spawn Timers] - Depop the zone and optionally start spawn timers (false by default)", AccountStatus::GMAdmin, command_depopzone) ||
 		command_add("devtools", "[menu|window] [enable|disable] - Manages Developer Tools (send no parameter for menu)", AccountStatus::GMMgmt, command_devtools) ||
 		command_add("disablerecipe", "[Recipe ID] - Disables a Recipe", AccountStatus::QuestTroupe, command_disablerecipe) ||
-		command_add("disable_seasonal", "Remove a character from seasonal event.", AccountStatus::Player, command_disable_seasonal) ||
 		command_add("disarmtrap", "Analog for ldon disarm trap for the newer clients since we still don't have it working.", AccountStatus::QuestTroupe, command_disarmtrap) ||
 		command_add("door", "Door editing command", AccountStatus::QuestTroupe, command_door) ||
 		command_add("doanim", "[Animation ID|Animation Name] [Speed] - Send an animation by ID or name at the specified speed to you or your target (Speed is optional)", AccountStatus::Guide, command_doanim) ||

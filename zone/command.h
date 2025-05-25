@@ -69,7 +69,6 @@ void command_depop(Client *c, const Seperator *sep);
 void command_depopzone(Client *c, const Seperator *sep);
 void command_devtools(Client *c, const Seperator *sep);
 void command_disablerecipe(Client *c, const Seperator *sep);
-void command_disable_seasonal(Client *c, const Seperator *sep);
 void command_disarmtrap(Client *c, const Seperator *sep);
 void command_door(Client *c, const Seperator *sep);
 void command_doanim(Client *c, const Seperator *sep);
