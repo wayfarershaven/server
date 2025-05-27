@@ -787,6 +787,22 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 					break;
 				}
 
+				if (caster->CastToClient()->IsSeasonal()) { // Seasonal Caster
+					if (!CastToNPC()->EntityVariableExists("Charm_Locked")) { // Never been charmed
+						CastToNPC()->SetEntityVariable("Seasonal_Charm", "Seasonal"); // Charm Lock to Seasonal
+					} else if (CastToNPC()->GetEntityVariable("Charm_Locked") == "Non-Seasonal") { // Has been charmed by Non-Seasonal
+						caster->CastToClient()->Message(Chat::Red, "Non-Seasonal locked charm pets cannot be charmed by Seasonal players (Exploit prevention)");
+						break;
+					}
+				} else { // Not a Seasonal Caster
+					if (!CastToNPC()->EntityVariableExists("Charm_Locked")) { // Never been charmed
+						CastToNPC()->SetEntityVariable("Seasonal_Charm", "Non-Seasonal"); // Charm Lock to Non-Seasonal
+					} else if (CastToNPC()->GetEntityVariable("Charm_Locked") == "Seasonal") { // Has been charmed by Seasonal
+						caster->CastToClient()->Message(Chat::Red, "Seasonal locked charm pets cannot be charmed by Non-Seasonal players (Exploit prevention)");
+						break;
+					}
+				}
+
 				if (IsNPC()) {
 					CastToNPC()->SaveGuardSpotCharm();
 				}
@@ -833,14 +849,6 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 					safe_delete(app);
 					SendPetBuffsToClient();
 					SendAppearancePacket(AppearanceType::Pet, caster->GetID(), true, true);
-
-					if (caster->CastToClient()->IsSeasonal()) {
-						if (!CastToNPC()->EntityVariableExists("Seasonal_Charm")) {
-							CastToNPC()->SetEntityVariable("Seasonal_Charm", "true");
-						}
-					} else {
-						CastToNPC()->SetEntityVariable("Seasonal_Charm", "false");
-					}
 				}
 
 				if (IsClient())
