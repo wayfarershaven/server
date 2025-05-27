@@ -788,16 +788,22 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 				}
 
 				if (caster->CastToClient()->IsSeasonal()) { // Seasonal Caster
+					LogDebug("Caster is Seasonal");
 					if (!CastToNPC()->EntityVariableExists("Charm_Locked")) { // Never been charmed
-						CastToNPC()->SetEntityVariable("Seasonal_Charm", "Seasonal"); // Charm Lock to Seasonal
+						LogDebug("Entity has never been charmed");
+						CastToNPC()->SetEntityVariable("Charm_Locked", "Seasonal"); // Charm Lock to Seasonal
 					} else if (CastToNPC()->GetEntityVariable("Charm_Locked") == "Non-Seasonal") { // Has been charmed by Non-Seasonal
+						LogDebug("Entity was previously charmed by a Non-Seasonal Character");
 						caster->CastToClient()->Message(Chat::Red, "Non-Seasonal locked charm pets cannot be charmed by Seasonal players (Exploit prevention)");
 						break;
 					}
 				} else { // Not a Seasonal Caster
+					LogDebug("Caster is Non-Seasonal");
 					if (!CastToNPC()->EntityVariableExists("Charm_Locked")) { // Never been charmed
-						CastToNPC()->SetEntityVariable("Seasonal_Charm", "Non-Seasonal"); // Charm Lock to Non-Seasonal
+						LogDebug("Entity has never been charmed");
+						CastToNPC()->SetEntityVariable("Charm_Locked", "Non-Seasonal"); // Charm Lock to Non-Seasonal
 					} else if (CastToNPC()->GetEntityVariable("Charm_Locked") == "Seasonal") { // Has been charmed by Seasonal
+						LogDebug("Entity was previously charmed by a Seasonal Character");
 						caster->CastToClient()->Message(Chat::Red, "Seasonal locked charm pets cannot be charmed by Non-Seasonal players (Exploit prevention)");
 						break;
 					}
