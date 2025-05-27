@@ -10410,6 +10410,7 @@ void Client::Handle_OP_LootRequest(const EQApplicationPacket *app)
 		if (IsSeasonal() && !ent->CastToCorpse()->IsSeasonal() && !ent->CastToCorpse()->IsPlayerCorpse()) {
 			Message(Chat::Red, "Seasonal Characters may not loot from non-Seasonal kills.");
 			Corpse::SendLootReqErrorPacket(this);
+			return;
 		}
 
 		SetLooting(ent->GetID()); //store the entity we are looting
