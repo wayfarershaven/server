@@ -16588,11 +16588,14 @@ void Client::Handle_OP_SharedTaskAddPlayer(const EQApplicationPacket *app)
 		r->player_name
 	);
 
-	if (!GetTaskState()->HasActiveSharedTask()) {
+
+
+	if (IsSeasonal() != entity_list.GetClientByName(r->player_name)->IsSeasonal()) { // Seasonal Check
+		Message(Chat::Red, "Seasonal characters may only be in tasks with other Seasonal characters.");
+	} else if (!GetTaskState()->HasActiveSharedTask()) {
 		// this message is generated client-side in newer clients
 		Message(Chat::System, TaskStr::Get(TaskStr::COULD_NOT_USE_COMMAND));
-	}
-	else {
+	} else {
 		// struct
 		auto p = new ServerPacket(
 			ServerOP_SharedTaskAddPlayer,
