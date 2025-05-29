@@ -16590,7 +16590,7 @@ void Client::Handle_OP_SharedTaskAddPlayer(const EQApplicationPacket *app)
 
 
 
-	if (IsSeasonal() != entity_list.GetClientByName(r->player_name)->IsSeasonal()) { // Seasonal Check
+	if (IsSeasonal() != entity_list.GetClientByName(r->player_name)->CastToClient()->IsSeasonal()) { // Seasonal Check
 		Message(Chat::Red, "Seasonal characters may only be in tasks with other Seasonal characters.");
 	} else if (!GetTaskState()->HasActiveSharedTask()) {
 		// this message is generated client-side in newer clients
