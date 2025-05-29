@@ -1124,6 +1124,11 @@ void Lua_Client::SetTitleSuffix(const char *text) {
 	self->SetTitleSuffix(text);
 }
 
+void Lua_Client::EnableTitleSet(uint32 title_set) {
+	Lua_Safe_Call_Void();
+	self->EnableTitle(title_set);
+}
+
 void Lua_Client::SetAAPoints(int points) {
 	Lua_Safe_Call_Void();
 	self->SetAAPoints(points);
@@ -3705,6 +3710,7 @@ luabind::scope lua_register_client() {
 	.def("EnableAreaHPRegen", &Lua_Client::EnableAreaHPRegen)
 	.def("EnableAreaManaRegen", &Lua_Client::EnableAreaManaRegen)
 	.def("EnableAreaRegens", &Lua_Client::EnableAreaRegens)
+	.def("EnableTitleSet", &Lua_Client::EnableTitleSet)
 	.def("EndSharedTask", (void(Lua_Client::*)(void))&Lua_Client::EndSharedTask)
 	.def("EndSharedTask", (void(Lua_Client::*)(bool))&Lua_Client::EndSharedTask)
 	.def("Escape", (void(Lua_Client::*)(void))&Lua_Client::Escape)
