@@ -16059,6 +16059,12 @@ void Client::Handle_OP_VetClaimRequest(const EQApplicationPacket *app)
 		return;
 	}
 
+	// Hard Return for seasonal characters
+	if (IsSeasonal()) {
+		DumpPacket(app);
+		return;
+	}
+
 	VeteranClaim *vcr = (VeteranClaim *)app->pBuffer;
 
 	if (vcr->claim_id == 0xFFFFFFFF) { // request update packet

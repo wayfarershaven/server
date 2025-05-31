@@ -6126,6 +6126,11 @@ void Client::SendPayload(int payload_id, std::string payload_value)
 
 void Client::SendRewards()
 {
+	// Hard Return rewards if a seasonal toon
+	if (IsSeasonal()) {
+		return;
+	}
+
 	std::vector<ClientReward> rewards;
 	std::string query = StringFormat("SELECT reward_id, amount "
 									"FROM account_rewards "
