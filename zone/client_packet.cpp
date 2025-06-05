@@ -15712,6 +15712,12 @@ void Client::Handle_OP_TradeRequest(const EQApplicationPacket *app)
 				Message(Chat::Red, "Seasonal Locked Charm Pets cannot trade with non Seasonal players.");
 				return;
 			}
+
+			if (tradee->IsPet() && IsSeasonal() != tradee->GetOwner()->CastToClient()->IsSeasonal()) {
+				Message(Chat::Red, "Seasonal Locked Pets cannot trade with non Seasonal players.");
+				return;
+			}
+
             trade->Start(msg->to_mob_id);
             EQApplicationPacket *outapp = new EQApplicationPacket(OP_TradeRequestAck, sizeof(TradeRequest_Struct));
             TradeRequest_Struct *acc = (TradeRequest_Struct *) outapp->pBuffer;
