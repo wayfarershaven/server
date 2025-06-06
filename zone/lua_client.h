@@ -298,6 +298,7 @@ public:
 	uint32 GetClientVersionBit();
 	void SetTitleSuffix(const char *text);
 	void EnableTitleSet(uint32 title_set);
+	void SetGuild(int guild_id, int rank);
 	void SetAAPoints(int points);
 	int GetAAPoints();
 	int GetSpentAA();

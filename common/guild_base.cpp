@@ -449,6 +449,8 @@ bool BaseGuildManager::SetGuild(uint32 charid, uint32 guild_id, uint8 rank)
 		return false;
 	}
 
+	rank = (rank == 0) ? GUILD_NONE : rank;
+
 	//lookup their old guild, if they had one.
 	uint32        old_guild = GUILD_NONE;
 	CharGuildInfo gci;
