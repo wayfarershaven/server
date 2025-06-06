@@ -16,7 +16,6 @@
 #include "../../strings.h"
 #include <ctime>
 
-
 class BaseGuildsRepository {
 public:
 	struct Guilds {
@@ -30,6 +29,7 @@ public:
 		std::string channel;
 		std::string url;
 		uint32_t    favor;
+		int8_t      is_seasonal;
 	};
 
 	static std::string PrimaryKey()
@@ -50,6 +50,7 @@ public:
 			"channel",
 			"url",
 			"favor",
+			"is_seasonal",
 		};
 	}
 
@@ -66,6 +67,7 @@ public:
 			"channel",
 			"url",
 			"favor",
+			"is_seasonal",
 		};
 	}
 
@@ -116,6 +118,7 @@ public:
 		e.channel     = "";
 		e.url         = "";
 		e.favor       = 0;
+		e.is_seasonal = 0;
 
 		return e;
 	}
@@ -162,6 +165,7 @@ public:
 			e.channel     = row[7] ? row[7] : "";
 			e.url         = row[8] ? row[8] : "";
 			e.favor       = row[9] ? static_cast<uint32_t>(strtoul(row[9], nullptr, 10)) : 0;
+			e.is_seasonal = row[10] ? static_cast<int8_t>(atoi(row[10])) : 0;
 
 			return e;
 		}
@@ -204,6 +208,7 @@ public:
 		v.push_back(columns[7] + " = '" + Strings::Escape(e.channel) + "'");
 		v.push_back(columns[8] + " = '" + Strings::Escape(e.url) + "'");
 		v.push_back(columns[9] + " = " + std::to_string(e.favor));
+		v.push_back(columns[10] + " = " + std::to_string(e.is_seasonal));
 
 		auto results = db.QueryDatabase(
 			fmt::format(
@@ -235,6 +240,7 @@ public:
 		v.push_back("'" + Strings::Escape(e.channel) + "'");
 		v.push_back("'" + Strings::Escape(e.url) + "'");
 		v.push_back(std::to_string(e.favor));
+		v.push_back(std::to_string(e.is_seasonal));
 
 		auto results = db.QueryDatabase(
 			fmt::format(
@@ -274,6 +280,7 @@ public:
 			v.push_back("'" + Strings::Escape(e.channel) + "'");
 			v.push_back("'" + Strings::Escape(e.url) + "'");
 			v.push_back(std::to_string(e.favor));
+			v.push_back(std::to_string(e.is_seasonal));
 
 			insert_chunks.push_back("(" + Strings::Implode(",", v) + ")");
 		}
@@ -317,6 +324,7 @@ public:
 			e.channel     = row[7] ? row[7] : "";
 			e.url         = row[8] ? row[8] : "";
 			e.favor       = row[9] ? static_cast<uint32_t>(strtoul(row[9], nullptr, 10)) : 0;
+			e.is_seasonal = row[10] ? static_cast<int8_t>(atoi(row[10])) : 0;
 
 			all_entries.push_back(e);
 		}
@@ -351,6 +359,7 @@ public:
 			e.channel     = row[7] ? row[7] : "";
 			e.url         = row[8] ? row[8] : "";
 			e.favor       = row[9] ? static_cast<uint32_t>(strtoul(row[9], nullptr, 10)) : 0;
+			e.is_seasonal = row[10] ? static_cast<int8_t>(atoi(row[10])) : 0;
 
 			all_entries.push_back(e);
 		}
@@ -435,6 +444,7 @@ public:
 		v.push_back("'" + Strings::Escape(e.channel) + "'");
 		v.push_back("'" + Strings::Escape(e.url) + "'");
 		v.push_back(std::to_string(e.favor));
+		v.push_back(std::to_string(e.is_seasonal));
 
 		auto results = db.QueryDatabase(
 			fmt::format(
@@ -467,6 +477,7 @@ public:
 			v.push_back("'" + Strings::Escape(e.channel) + "'");
 			v.push_back("'" + Strings::Escape(e.url) + "'");
 			v.push_back(std::to_string(e.favor));
+			v.push_back(std::to_string(e.is_seasonal));
 
 			insert_chunks.push_back("(" + Strings::Implode(",", v) + ")");
 		}
