@@ -8288,16 +8288,6 @@ void Client::Handle_OP_GuildInvite(const EQApplicationPacket *app)
 	//ok, the invite is also used for changing rank as well.
 	Mob *invitee = entity_list.GetMob(gc->othername);
 
-	// Seasonal Check
-	if (IsSeasonal() != invitee->CastToClient()->IsSeasonal()) {
-		Message(
-			Chat::Red,
-			"Prospective guild member %s must have the same seasonal status as the guild.",
-			gc->othername
-		);
-		return;
-	}
-
 	if (!invitee) {
 		Message(
 			Chat::Red,
@@ -8309,6 +8299,16 @@ void Client::Handle_OP_GuildInvite(const EQApplicationPacket *app)
 
 	if (invitee->IsClient()) {
 		Client *client = invitee->CastToClient();
+
+		// Seasonal Check
+		if (IsSeasonal() != client->IsSeasonal()) {
+			Message(
+				Chat::Red,
+				"Prospective guild member %s must have the same seasonal status as the guild.",
+				gc->othername
+			);
+			return;
+		}
 
 		//ok, figure out what they are trying to do.
 		if (client && client->GuildID() == GuildID()) {
