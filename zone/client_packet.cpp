@@ -14475,7 +14475,7 @@ void Client::Handle_OP_ShopPlayerSell(const EQApplicationPacket *app)
 
 	int charges = mp->quantity;
 
-	if (vendor->GetKeepsSoldItems()) {
+	if (vendor->GetKeepsSoldItems() && !IsSeasonal()) {
 		int freeslot = 0;
 		if (
 			(freeslot = zone->SaveTempItem(
