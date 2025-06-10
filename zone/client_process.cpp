@@ -1895,8 +1895,11 @@ void Client::OPGMSummon(const EQApplicationPacket *app)
 	Mob* st = entity_list.GetMob(gms->charname);
 
 	if (st && st->IsCorpse()) {
-		if (IsSeasonal() && !st->CastToCorpse()->IsSeasonal()) {
-			Message(Chat::Red, "Seasonal characters may only group with other Seasonal characters.");
+		std::string isSeasonalVar    = st->CastToCorpse()->GetEntityVariable("IsSeasonal");
+		bool        corpseIsSeasonal = (isSeasonalVar == "true");
+
+		if (IsSeasonal() != corpseIsSeasonal) {
+			Message(Chat::Red, "Characters may only may only drag or be dragged by characters of their own season.");
 			return;
 		}
 		st->CastToCorpse()->Summon(this, false, true);

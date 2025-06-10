@@ -2106,6 +2106,12 @@ bool Client::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::Skil
 				}
 			}
 
+			if (IsSeasonal()) {
+				new_corpse->SetEntityVariable("IsSeasonal", "true");
+			} else {
+				new_corpse->SetEntityVariable("IsSeasonal", "false");
+			}
+
 			entity_list.AddCorpse(new_corpse, GetID());
 			SetID(0);
 

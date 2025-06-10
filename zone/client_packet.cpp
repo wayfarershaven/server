@@ -5547,7 +5547,10 @@ void Client::Handle_OP_CorpseDrag(const EQApplicationPacket *app)
 		return;
 	}
 
-	if (IsSeasonal() && !corpse->CastToCorpse()->IsSeasonal()) {
+	std::string isSeasonalVar    = corpse->CastToCorpse()->GetEntityVariable("IsSeasonal");
+	bool        corpseIsSeasonal = (isSeasonalVar == "true");
+
+	if (IsSeasonal() != corpseIsSeasonal) {
 		Message(Chat::Red, "Characters may only may only drag or be dragged by characters of their own season.");
 		return;
 	}
