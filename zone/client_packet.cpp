@@ -5532,8 +5532,7 @@ void Client::Handle_OP_ControlBoat(const EQApplicationPacket *app)
 
 void Client::Handle_OP_CorpseDrag(const EQApplicationPacket *app)
 {
-	if (DraggedCorpses.size() >= (unsigned int)RuleI(Character, MaxDraggedCorpses))
-	{
+	if (DraggedCorpses.size() >= (unsigned int)RuleI(Character, MaxDraggedCorpses))	{
 		MessageString(Chat::Red, CORPSEDRAG_LIMIT);
 		return;
 	}
@@ -5544,23 +5543,29 @@ void Client::Handle_OP_CorpseDrag(const EQApplicationPacket *app)
 
 	Mob* corpse = entity_list.GetMob(cds->CorpseName);
 
-	if (!corpse || !corpse->IsPlayerCorpse() || corpse->CastToCorpse()->IsBeingLooted())
-		return;
-
-	Client *c = entity_list.FindCorpseDragger(corpse->GetID());
-
-	if (c)
-	{
-		if (c == this)
-			MessageString(Chat::DefaultText, CORPSEDRAG_ALREADY, corpse->GetCleanName());
-		else
-			MessageString(Chat::DefaultText, CORPSEDRAG_SOMEONE_ELSE, corpse->GetCleanName());
-
+	if (!corpse || !corpse->IsPlayerCorpse() || corpse->CastToCorpse()->IsBeingLooted()) {
 		return;
 	}
 
-	if (!corpse->CastToCorpse()->Summon(this, false, true))
+	if (IsSeasonal() && !corpse->CastToCorpse()->IsSeasonal()) {
+		Message(Chat::Red, "Characters may only may only drag or be dragged by characters of their own season.");
 		return;
+	}
+
+	Client *c = entity_list.FindCorpseDragger(corpse->GetID());
+
+	if (c) {
+		if (c == this) {
+			MessageString(Chat::DefaultText, CORPSEDRAG_ALREADY, corpse->GetCleanName());
+		} else {
+			MessageString(Chat::DefaultText, CORPSEDRAG_SOMEONE_ELSE, corpse->GetCleanName());
+		}
+		return;
+	}
+
+	if (!corpse->CastToCorpse()->Summon(this, false, true)) {
+		return;
+	}
 
 	DraggedCorpses.emplace_back(std::pair<std::string, uint16>(cds->CorpseName, corpse->GetID()));
 

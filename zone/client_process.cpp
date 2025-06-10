@@ -1894,33 +1894,29 @@ void Client::OPGMSummon(const EQApplicationPacket *app)
 	GMSummon_Struct* gms = (GMSummon_Struct*) app->pBuffer;
 	Mob* st = entity_list.GetMob(gms->charname);
 
-	if(st && st->IsCorpse())
-	{
-		st->CastToCorpse()->Summon(this, false, true);
-	}
-	else
-	{
-		if(admin < AccountStatus::QuestTroupe)
-		{
+	if (st && st->IsCorpse()) {
+		if (IsSeasonal() && !st->CastToCorpse()->IsSeasonal()) {
+			Message(Chat::Red, "Seasonal characters may only group with other Seasonal characters.");
 			return;
 		}
-		if(st)
-		{
-			Message(0, "Local: Summoning %s to %f, %f, %f", gms->charname, gms->x, gms->y, gms->z);
-			if (st->IsClient() && (st->CastToClient()->GetAnon() != 1 || Admin() >= st->CastToClient()->Admin()))
-				st->CastToClient()->MovePC(zone->GetZoneID(), zone->GetInstanceID(), (float)gms->x, (float)gms->y, (float)gms->z, GetHeading(), true);
-			else
-				st->GMMove(GetX(), GetY(), GetZ(),GetHeading());
+		st->CastToCorpse()->Summon(this, false, true);
+	} else {
+		if(admin < AccountStatus::QuestTroupe) {
+			return;
 		}
-		else
-		{
-			uint8 tmp = gms->charname[strlen(gms->charname)-1];
-			if (!worldserver.Connected())
-			{
-				Message(0, "Error: World server disconnected");
+
+		if (st) {
+			Message(0, "Local: Summoning %s to %f, %f, %f", gms->charname, gms->x, gms->y, gms->z);
+			if (st->IsClient() && (st->CastToClient()->GetAnon() != 1 || Admin() >= st->CastToClient()->Admin())) {
+				st->CastToClient()->MovePC(zone->GetZoneID(), zone->GetInstanceID(), (float)gms->x, (float)gms->y, (float)gms->z, GetHeading(), true);
+			} else {
+				st->GMMove(GetX(), GetY(), GetZ(),GetHeading());
 			}
-			else if (tmp < '0' || tmp > '9') // dont send to world if it's not a player's name
-			{
+		} else {
+			uint8 tmp = gms->charname[strlen(gms->charname)-1];
+			if (!worldserver.Connected()) {
+				Message(0, "Error: World server disconnected");
+			} else if (tmp < '0' || tmp > '9') { // dont send to world if it's not a player's name
 				auto pack = new ServerPacket(ServerOP_ZonePlayer, sizeof(ServerZonePlayer_Struct));
 				ServerZonePlayer_Struct* szp = (ServerZonePlayer_Struct*) pack->pBuffer;
 				strcpy(szp->adminname, GetName());
@@ -1933,11 +1929,10 @@ void Client::OPGMSummon(const EQApplicationPacket *app)
 				szp->ignorerestrictions = 2;
 				worldserver.SendPacket(pack);
 				safe_delete(pack);
-			}
-			else {
+			} else {
 				//all options have been exhausted
 				//summon our target...
-				if(GetTarget() && GetTarget()->IsCorpse()){
+				if (GetTarget() && GetTarget()->IsCorpse()) {
 					GetTarget()->CastToCorpse()->Summon(this, false, true);
 				}
 			}
