@@ -32,7 +32,9 @@
 #include "../common/repositories/character_corpse_items_repository.h"
 #include <iostream>
 #include "queryserv.h"
+#include "../common/json/json.hpp"
 
+using json = nlohmann::json;
 
 extern EntityList           entity_list;
 extern Zone                *zone;
@@ -673,6 +675,14 @@ bool Corpse::Save()
 	ce.drakkin_heritage = drakkin_heritage;
 	ce.drakkin_tattoo   = drakkin_tattoo;
 	ce.drakkin_details  = drakkin_details;
+
+	{
+		json j;
+		for (const auto& kv : m_EntityVariables) {
+			j[kv.first] = kv.second;
+		}
+		ce.entity_variables = j.dump();
+	}
 
 	for (auto &item: m_item_list) {
 		CharacterCorpseItemEntry e;
@@ -2430,6 +2440,16 @@ Corpse *Corpse::LoadCharacterCorpse(
 	c->drakkin_details             = cc.drakkin_details;
 	c->m_become_npc                = false;
 	c->m_consented_guild_id        = cc.guild_consent_id;
+
+	if (!cc.entity_variables.empty()) {
+	json j = json::parse(cc.entity_variables, nullptr, false);
+	if (!j.is_discarded()) {
+		for (auto& el : j.items()) {
+			c->SetEntityVariable(el.key(), el.value().get<std::string>());
+			LogCorpses("Restored {} entity variables to corpse [{}]", j.size(), c->GetName());
+			}
+		}
+	}
 
 	c->IsRezzed(cc.is_rezzed);
 
