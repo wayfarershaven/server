@@ -3444,6 +3444,7 @@ uint32 ZoneDatabase::SaveCharacterCorpse(
 	e.killed_by        = c.killed_by;
 	e.rezzable         = c.rezzable;
 	e.rez_time         = c.rez_time;
+	e.entity_variables = c.entity_variables;
 
 	e = CharacterCorpsesRepository::InsertOne(*this, e);
 
