@@ -2463,3 +2463,19 @@ Corpse *Corpse::LoadCharacterCorpse(
 
 	return c;
 }
+
+void Corpse::SyncEntityVariablesToCorpseDB()
+{
+	if (!m_is_player_corpse || m_corpse_db_id == 0) {
+		return;
+	}
+
+	json j;
+	for (const auto& [key, value] : m_EntityVariables) {
+		j[key] = value;
+	}
+
+	std::string serialized = j.dump();
+
+	CharacterCorpsesRepository::UpdateEntityVariables(database, m_corpse_db_id, serialized);
+}

@@ -5767,24 +5767,22 @@ void Mob::SetEntityVariable(std::string variable_name, std::string variable_valu
 		return;
 	}
 
-	std::vector<std::any> args;
+	m_EntityVariables[variable_name] = variable_value;
 
-	// If this is a corpse, mark it dirty
-	if (IsCorpse()) {
-		CastToCorpse()->SetCorpseChanged(true);
-	}
+	std::vector<std::any> args;
 
 	if (!EntityVariableExists(variable_name)) {
 		args = { variable_name, variable_value };
-
 		parse->EventMob(EVENT_ENTITY_VARIABLE_SET, this, nullptr, [&]() { return ""; }, 0, &args);
 	} else {
 		args = { variable_name, GetEntityVariable(variable_name), variable_value };
-
 		parse->EventMob(EVENT_ENTITY_VARIABLE_UPDATE, this, nullptr, [&]() { return ""; }, 0, &args);
 	}
 
-	m_EntityVariables[variable_name] = variable_value;
+	// If this is a corpse, sync to DB
+	if (IsCorpse()) {
+		CastToCorpse()->SyncEntityVariablesToCorpseDB();
+	}
 }
 
 void Mob::SetFlyMode(GravityBehavior in_flymode)
