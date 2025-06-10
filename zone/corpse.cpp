@@ -681,7 +681,13 @@ bool Corpse::Save()
 		for (const auto& kv : m_EntityVariables) {
 			j[kv.first] = kv.second;
 		}
-		ce.entity_variables = j.dump();
+
+		if (!j.empty()) {
+			ce.entity_variables = j.dump();
+		} else {
+			ce.entity_variables = "{}"; // fallback to valid empty object
+		}
+
 		LogCorpses("Corpse entity_variables: %s", ce.entity_variables.c_str());
 	}
 
@@ -2442,12 +2448,11 @@ Corpse *Corpse::LoadCharacterCorpse(
 	c->m_become_npc                = false;
 	c->m_consented_guild_id        = cc.guild_consent_id;
 
-	if (!cc.entity_variables.empty()) {
-	json j = json::parse(cc.entity_variables, nullptr, false);
-	if (!j.is_discarded()) {
-		for (auto& el : j.items()) {
-			c->SetEntityVariable(el.key(), el.value().get<std::string>());
-			LogCorpses("Restored {} entity variables to corpse [{}]", j.size(), c->GetName());
+	if (!cc.entity_variables.empty() && cc.entity_variables != "null") {
+		json j = json::parse(cc.entity_variables, nullptr, false);
+		if (!j.is_discarded()) {
+			for (auto& el : j.items()) {
+				c->SetEntityVariable(el.key(), el.value().get<std::string>());
 			}
 		}
 	}
