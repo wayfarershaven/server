@@ -1316,7 +1316,7 @@ void Mob::FillSpawnStruct(NewSpawn_Struct* ns, Mob* ForWho)
 	ns->spawn.IsMercenary = IsMerc() ? 1 : 0;
 	ns->spawn.targetable_with_hotkey = no_target_hotkey ? 0 : 1; // opposite logic!
 	ns->spawn.untargetable = IsTargetable();
-	
+
 	ns->spawn.petOwnerId	= ownerid;
 
 	ns->spawn.haircolor = haircolor;
@@ -5768,6 +5768,11 @@ void Mob::SetEntityVariable(std::string variable_name, std::string variable_valu
 	}
 
 	std::vector<std::any> args;
+
+	// If this is a corpse, mark it dirty
+	if (IsCorpse()) {
+		CastToCorpse()->SetCorpseChanged(true);
+	}
 
 	if (!EntityVariableExists(variable_name)) {
 		args = { variable_name, variable_value };

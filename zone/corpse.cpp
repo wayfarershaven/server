@@ -682,6 +682,7 @@ bool Corpse::Save()
 			j[kv.first] = kv.second;
 		}
 		ce.entity_variables = j.dump();
+		LogCorpses("Corpse entity_variables: %s", ce.entity_variables.c_str());
 	}
 
 	for (auto &item: m_item_list) {
