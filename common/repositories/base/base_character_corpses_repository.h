@@ -281,7 +281,7 @@ public:
 		e.rez_time         = 0;
 		e.gm_exp           = 0;
 		e.killed_by        = 0;
-		e.rezzable         = 1;
+		e.rezzable         = 0;
 		e.entity_variables = "";
 
 		return e;
@@ -369,7 +369,7 @@ public:
 			e.rez_time         = row[47] ? static_cast<uint32_t>(strtoul(row[47], nullptr, 10)) : 0;
 			e.gm_exp           = row[48] ? static_cast<uint32_t>(strtoul(row[48], nullptr, 10)) : 0;
 			e.killed_by        = row[49] ? static_cast<uint32_t>(strtoul(row[49], nullptr, 10)) : 0;
-			e.rezzable         = row[50] ? static_cast<uint8_t>(strtoul(row[50], nullptr, 10)) : 1;
+			e.rezzable         = row[50] ? static_cast<uint8_t>(strtoul(row[50], nullptr, 10)) : 0;
 			e.entity_variables = row[51] ? row[51] : "";
 
 			return e;
@@ -692,7 +692,7 @@ public:
 			e.rez_time         = row[47] ? static_cast<uint32_t>(strtoul(row[47], nullptr, 10)) : 0;
 			e.gm_exp           = row[48] ? static_cast<uint32_t>(strtoul(row[48], nullptr, 10)) : 0;
 			e.killed_by        = row[49] ? static_cast<uint32_t>(strtoul(row[49], nullptr, 10)) : 0;
-			e.rezzable         = row[50] ? static_cast<uint8_t>(strtoul(row[50], nullptr, 10)) : 1;
+			e.rezzable         = row[50] ? static_cast<uint8_t>(strtoul(row[50], nullptr, 10)) : 0;
 			e.entity_variables = row[51] ? row[51] : "";
 
 			all_entries.push_back(e);
@@ -768,7 +768,7 @@ public:
 			e.rez_time         = row[47] ? static_cast<uint32_t>(strtoul(row[47], nullptr, 10)) : 0;
 			e.gm_exp           = row[48] ? static_cast<uint32_t>(strtoul(row[48], nullptr, 10)) : 0;
 			e.killed_by        = row[49] ? static_cast<uint32_t>(strtoul(row[49], nullptr, 10)) : 0;
-			e.rezzable         = row[50] ? static_cast<uint8_t>(strtoul(row[50], nullptr, 10)) : 1;
+			e.rezzable         = row[50] ? static_cast<uint8_t>(strtoul(row[50], nullptr, 10)) : 0;
 			e.entity_variables = row[51] ? row[51] : "";
 
 			all_entries.push_back(e);
