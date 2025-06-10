@@ -68,7 +68,7 @@ public:
 		uint32_t    wc_9;
 		uint32_t    rez_time;
 		uint32_t    gm_exp;
-		uint8_t     killed_by;
+		uint32_t    killed_by;
 		uint8_t     rezzable;
 		std::string entity_variables;
 	};
@@ -368,7 +368,7 @@ public:
 			e.wc_9             = row[46] ? static_cast<uint32_t>(strtoul(row[46], nullptr, 10)) : 0;
 			e.rez_time         = row[47] ? static_cast<uint32_t>(strtoul(row[47], nullptr, 10)) : 0;
 			e.gm_exp           = row[48] ? static_cast<uint32_t>(strtoul(row[48], nullptr, 10)) : 0;
-			e.killed_by        = row[49] ? static_cast<uint8_t>(strtoul(row[49], nullptr, 10)) : 0;
+			e.killed_by        = row[49] ? static_cast<uint32_t>(strtoul(row[49], nullptr, 10)) : 0;
 			e.rezzable         = row[50] ? static_cast<uint8_t>(strtoul(row[50], nullptr, 10)) : 1;
 			e.entity_variables = row[51] ? row[51] : "";
 
@@ -691,7 +691,7 @@ public:
 			e.wc_9             = row[46] ? static_cast<uint32_t>(strtoul(row[46], nullptr, 10)) : 0;
 			e.rez_time         = row[47] ? static_cast<uint32_t>(strtoul(row[47], nullptr, 10)) : 0;
 			e.gm_exp           = row[48] ? static_cast<uint32_t>(strtoul(row[48], nullptr, 10)) : 0;
-			e.killed_by        = row[49] ? static_cast<uint8_t>(strtoul(row[49], nullptr, 10)) : 0;
+			e.killed_by        = row[49] ? static_cast<uint32_t>(strtoul(row[49], nullptr, 10)) : 0;
 			e.rezzable         = row[50] ? static_cast<uint8_t>(strtoul(row[50], nullptr, 10)) : 1;
 			e.entity_variables = row[51] ? row[51] : "";
 
@@ -767,7 +767,7 @@ public:
 			e.wc_9             = row[46] ? static_cast<uint32_t>(strtoul(row[46], nullptr, 10)) : 0;
 			e.rez_time         = row[47] ? static_cast<uint32_t>(strtoul(row[47], nullptr, 10)) : 0;
 			e.gm_exp           = row[48] ? static_cast<uint32_t>(strtoul(row[48], nullptr, 10)) : 0;
-			e.killed_by        = row[49] ? static_cast<uint8_t>(strtoul(row[49], nullptr, 10)) : 0;
+			e.killed_by        = row[49] ? static_cast<uint32_t>(strtoul(row[49], nullptr, 10)) : 0;
 			e.rezzable         = row[50] ? static_cast<uint8_t>(strtoul(row[50], nullptr, 10)) : 1;
 			e.entity_variables = row[51] ? row[51] : "";
 
