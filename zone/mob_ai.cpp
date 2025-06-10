@@ -1566,6 +1566,20 @@ void NPC::AI_DoMovement() {
 
 		int32 gridno = CastToNPC()->GetGrid();
 
+		if (gridno > 0) {
+			auto &wpList = CastToNPC()->Waypoints;
+			if (wpList.empty()) {
+				auto npcSpawnPoint = CastToNPC()->GetSpawnPoint();
+				wplist spawnPoint;
+				spawnPoint.x         = npcSpawnPoint.x;
+				spawnPoint.y         = npcSpawnPoint.y;
+				spawnPoint.z         = npcSpawnPoint.z;
+				spawnPoint.heading   = npcSpawnPoint.w;
+				spawnPoint.pause     = 0;         // no pause (or your default)
+				wpList.push_back(spawnPoint);
+			}
+		}
+
 		if (gridno > 0 || cur_wp == EQ::WaypointStatus::QuestControlNoGrid) {
 			if (pause_timer_complete == true) { // time to pause at wp is over
 				AI_SetupNextWaypoint();
