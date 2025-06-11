@@ -66,6 +66,15 @@ namespace AppearanceType {
 	constexpr uint32 AntiCheat             = 51; // Sent by the client randomly telling the server how long since last action has occurred
 	constexpr uint32 GuildShow             = 52;
 	constexpr uint32 OfflineMode           = 53; // Offline Mode
+	constexpr uint32 NameColorCustom       = 54;
+}
+
+namespace NameColorPalette {
+    constexpr uint32_t None            = 0;  // No play modes
+    constexpr uint32_t Default         = 1;  // Default Player Color
+    constexpr uint32_t DedicatedTrader = 2;  // Dedicated Trader - Brown
+    constexpr uint32_t Seasonal        = 3;  // Seasons Character - Yellow
+	constexpr uint32_t Hardcore        = 4;  // Hardcore Character - Dark Grey
 }
 
 namespace Animation {

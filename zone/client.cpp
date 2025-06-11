@@ -854,9 +854,11 @@ void Client::SendZoneInPackets()
 		SendAppearancePacket(AppearanceType::PVP, GetPVP(false), true, false);
 	}
 
-	if (IsSeasonal()) {
-		SendAppearancePacket(AppearanceType::PVP, true, true, false);
-	}
+	//if (IsSeasonal()) {
+	//	SendAppearancePacket(AppearanceType::PVP, true, true, false);
+	//}
+
+	SendAppearancePacket(AppearanceType::NameColorCustom, GetPlayModeColorPack(), true, false);
 
 	//Send AA Exp packet:
 	if (GetLevel() >= 51) {

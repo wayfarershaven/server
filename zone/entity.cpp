@@ -1457,6 +1457,18 @@ void EntityList::SendZoneSeasonalUpdates(Client *to)
 	}
 }
 
+void EntityList::SendZonePlaymodeUpdates(Client *to)
+{
+	auto it = client_list.begin();
+	while (it != client_list.end()) {
+		Client *c = it->second;
+		if(c->IsHardcore() || c->IsSeasonal() || c->IsDedicatedTrader()) {
+			c->SendAppearancePacket(AppearanceType::NameColorCustom, c->GetPlayModeColorPack(), true, false, to);
+		}
+		++it;
+	}
+}
+
 void EntityList::SendZoneCorpses(Client *client)
 {
 	EQApplicationPacket *app;

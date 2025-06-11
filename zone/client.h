@@ -1150,12 +1150,18 @@ public:
 
 	// Seasonal Helper Methods
 	bool IsSeasonal() {
-		if (RuleI(Seasons, EnableSeasonalCharacters) <= 0) {
+		if (RuleI(Custom, EnableSeasonalCharacters) <= 0) {
 			return false;
 		} else {
-			return (Strings::ToInt(GetBucket("SeasonalCharacter")) == RuleI(Seasons, EnableSeasonalCharacters));
+			return (Strings::ToInt(GetBucket("SeasonalCharacter")) == RuleI(Custom, EnableSeasonalCharacters));
 		}
 	}
+
+	// Hardcore Helper Methods
+	bool IsHardcore() { return Strings::ToBool(GetBucket("HardcoreCharacter"));}
+
+	// Dedicated Trader Helper Methods
+	bool IsDedicatedTrader() { return Strings::ToBool(GetBucket("DedicatedTraderCharacter"));}
 
 	void DisableSeasonal() {
 		if (RuleI(Seasons, EnableSeasonalCharacters) > 0) {
@@ -1181,8 +1187,23 @@ public:
 		}
 	}
 
-	// Hardcore Helper Methods
-	bool IsHardcore() { return Strings::ToBool(GetBucket("DiscordantCharacter")); }
+	uint32_t GetPlayModeColorPack() {
+		SpawnAppearance_Struct appearance = {0};
+		appearance.colors.color0 = NameColorPalette::Default;
+
+		int colorIndex = 1;
+		if (IsHardcore() && colorIndex < 4) {
+			appearance.color_array[colorIndex++] = NameColorPalette::Hardcore;
+		}
+		if (IsSeasonal() && colorIndex < 4) {
+			appearance.color_array[colorIndex++] = NameColorPalette::Seasonal;
+		}
+		if (IsDedicatedTrader() && colorIndex < 4) {
+			appearance.color_array[colorIndex++] = NameColorPalette::DedicatedTrader;
+		}
+
+		return appearance.parameter;
+	}
 
 	// Item methods
 	void UseAugmentContainer(int container_slot);

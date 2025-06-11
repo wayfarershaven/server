@@ -525,10 +525,18 @@ struct SpawnAppearance_Struct
 {
 /*0000*/ uint16 spawn_id;		// ID of the spawn
 /*0002*/ uint16 type;			// Values associated with the type
-/*0004*/ uint32 parameter;		// Type of data sent
+/*0004*/ union {
+            uint32 parameter;       // Type of data sent (original)
+            struct {
+                uint8 color0;       // Base color index
+                uint8 color1;       // First accent color index
+                uint8 color2;       // Second accent color index
+                uint8 color3;       // Third accent color index
+            } colors;
+            uint8 color_array[4];   // Alternative array access
+         };
 /*0008*/
 };
-
 
 // this is used inside profile
 struct SpellBuff_Struct
