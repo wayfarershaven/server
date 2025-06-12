@@ -13636,7 +13636,7 @@ void Client::Handle_OP_RequestDuel(const EQApplicationPacket *app)
 	Entity* entity = entity_list.GetID(ds->duel_target);
 
 	if (IsSeasonal() != entity->CastToClient()->IsSeasonal()) {
-		Message(Chat::Red, "Seasonal characters may only dual with other Seasonal characters.");
+		Message(Chat::Red, "Seasonal characters may only duel with other Seasonal characters.");
 		return;
 	}
 
@@ -15435,6 +15435,7 @@ void Client::Handle_OP_TradeAcceptClick(const EQApplicationPacket *app)
 	if (with && with->IsClient()) {
 		//finish trade...
 		// Have both accepted?
+		Client* me    = this;
 		Client* other = with->CastToClient();
 		other->QueuePacket(app);
 
@@ -15479,6 +15480,19 @@ void Client::Handle_OP_TradeAcceptClick(const EQApplicationPacket *app)
 				other->trade->Reset();
 				trade->Reset();
 			}
+
+			if (IsSeasonal() && other->IsSeasonal()) {
+				auto lockIfNeeded = [&](Client* c){
+					if (c->GetBucket("SeasonLocked") == "") {
+						c->Message(Chat::Red, "Your character is now seasonal-locked due to a completed trade.");
+						c->SetBucket("SeasonLocked", "true");
+					}
+				};
+
+				lockIfNeeded(me);
+				lockIfNeeded(other);
+			}
+
 			// All done
 			auto outapp = new EQApplicationPacket(OP_FinishTrade, 0);
 			other->QueuePacket(outapp);
@@ -15704,6 +15718,9 @@ void Client::Handle_OP_TradeRequest(const EQApplicationPacket *app)
 
 	// Pass trade request on to recipient
 	if (tradee && tradee->IsClient()) {
+		Client* me       = this;
+		Client* tradeeClient = tradee->CastToClient();
+
 		// if we are idling we need to sync client positions otherwise clients will not be aware of each other
 		if (m_is_idle) {
 			SyncWorldPositionsToClient(true);
@@ -15721,6 +15738,23 @@ void Client::Handle_OP_TradeRequest(const EQApplicationPacket *app)
 		if (IsSeasonal() != tradee->CastToClient()->IsSeasonal()) {
 			Message(Chat::Red, "Seasonal Characters may not trade with other players who are not Seasonal.");
 			return;
+		}
+
+		if (IsSeasonal() && tradeeClient->IsSeasonal()) {
+			static constexpr auto kTradeWarning =
+				"Seasonal characters who complete a trade will be seasonal locked. "
+				"Do not complete any trades if you plan on removing your seasonal status.";
+
+			// helper to warn exactly once per client
+			auto warnClient = [&](Client* c){
+				if (c->GetBucket("SeasonLocked").empty()) {
+					c->Message(Chat::Red, kTradeWarning);
+					c->SetBucket("SeasonLocked", "true");
+				}
+			};
+
+			warnClient(me);
+			warnClient(tradeeClient);
 		}
 
 		tradee->CastToClient()->QueuePacket(app);
