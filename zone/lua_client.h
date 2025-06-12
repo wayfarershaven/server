@@ -647,6 +647,7 @@ public:
 
 	bool			IsSeasonal();
 	bool			IsHardcore();
+	bool            IsDedicatedTrader();
 };
 
 #endif

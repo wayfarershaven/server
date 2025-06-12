@@ -3607,6 +3607,12 @@ bool Lua_Client::IsHardcore()
 	return self->IsHardcore() ? 1 : 0;
 }
 
+bool Lua_Client::IsDedicatedTrader()
+{
+	Lua_Safe_Call_Bool();
+	return self->IsDedicatedTrader() ? 1 : 0;
+}
+
 luabind::scope lua_register_client() {
 	return luabind::class_<Lua_Client, Lua_Mob>("Client")
 	.def(luabind::constructor<>())
@@ -4208,7 +4214,8 @@ luabind::scope lua_register_client() {
 	.def("UseAugmentContainer", (void(Lua_Client::*)(int))&Lua_Client::UseAugmentContainer)
 	.def("WorldKick", (void(Lua_Client::*)(void))&Lua_Client::WorldKick)
 	.def("IsSeasonal", (bool(Lua_Client::*)(void))&Lua_Client::IsSeasonal)
-	.def("IsHardcore", (bool(Lua_Client::*)(void))&Lua_Client::IsHardcore);
+	.def("IsHardcore", (bool(Lua_Client::*)(void))&Lua_Client::IsHardcore)
+	.def("IsDedicatedTrader", (bool(Lua_Client::*)(void))&Lua_Client::IsDedicatedTrader);
 }
 
 luabind::scope lua_register_inventory_where() {
