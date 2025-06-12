@@ -3805,9 +3805,12 @@ void Client::Handle_OP_Barter(const EQApplicationPacket *app)
 
 		case Barter_BuyerModeOn: {
 			if (!IsTrader()) {
+				if (IsSeasonal() && GetBucket("SeasonLocked") == "") {
+					Message(Chat::Red, "You have been seasonal locked because you have entered barter mode.");
+					SetBucket("SeasonLocked", "true");
+				}
 				ToggleBuyerMode(true);
-			}
-			else {
+			} else {
 				ToggleBuyerMode(false);
 				Message(Chat::Red, "You cannot be a Trader and Buyer at the same time.");
 			}
@@ -15556,6 +15559,11 @@ void Client::Handle_OP_Trader(const EQApplicationPacket *app)
 				return;
 			}
 
+			if (IsSeasonal() && GetBucket("SeasonLocked") == "") {
+				Message(Chat::Red, "You have been seasonal locked because you have entered trader mode.");
+				SetBucket("SeasonLocked", "true");
+			}
+
 			TraderStartTrader(app);
 			break;
 		}
@@ -15602,6 +15610,11 @@ void Client::Handle_OP_TraderBuy(const EQApplicationPacket *app)
 	switch (in->method) {
 		case BazaarByVendor: {
 			if (trader) {
+				if (IsSeasonal() && GetBucket("SeasonLocked") == "") {
+					Message(Chat::Red, "You have been seasonal locked because you have purchased an item from a trader.");
+					SetBucket("SeasonLocked", "true");
+				}
+
 				LogTrading("Buy item directly from vendor id <green>[{}] item_id <green>[{}] quantity <green>[{}] "
 						   "serial_number <green>[{}]",
 						   in->trader_id,
@@ -15835,6 +15848,9 @@ void Client::Handle_OP_TraderShop(const EQApplicationPacket *app)
 					Message(Chat::Red, "Seasonal characters may only buy from Seasonal traders.");
 					data->Approval = 0;
 				} else {
+					if (IsSeasonal() && GetBucket("SeasonLocked") == "") {
+						Message(Chat::Red, "If you purchase an item from a trader you will become Seasonal Locked");
+					}
 					data->Approval = trader->WithCustomer(GetID());
 					LogTrading("Client::Handle_OP_TraderShop: Shop Request ([{}]) to ([{}]) with Approval: [{}]",
 						GetCleanName(),
