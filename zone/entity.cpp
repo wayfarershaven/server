@@ -4919,30 +4919,39 @@ void EntityList::ZoneWho(Client *c, Who_All_Struct *Who)
 		++it;
 
 		if (ClientEntry) {
-			if (ClientEntry->GMHideMe(c)) continue;
-			if ((Who->wrace != 0xFFFFFFFF) && (ClientEntry->GetRace() != Who->wrace)) continue;
-			if ((Who->wclass != 0xFFFFFFFF) && (ClientEntry->GetClass() != Who->wclass)) continue;
-			if ((Who->lvllow != 0xFFFFFFFF) && (ClientEntry->GetLevel() < Who->lvllow)) continue;
-			if ((Who->lvlhigh != 0xFFFFFFFF) && (ClientEntry->GetLevel() > Who->lvlhigh)) continue;
+			if (ClientEntry->GMHideMe(c))
+				continue;
+			if ((Who->wrace != 0xFFFFFFFF) && (ClientEntry->GetRace() != Who->wrace))
+				continue;
+			if ((Who->wclass != 0xFFFFFFFF) && (ClientEntry->GetClass() != Who->wclass))
+				continue;
+			if ((Who->lvllow != 0xFFFFFFFF) && (ClientEntry->GetLevel() < Who->lvllow))
+				continue;
+			if ((Who->lvlhigh != 0xFFFFFFFF) && (ClientEntry->GetLevel() > Who->lvlhigh))
+				continue;
 			if (Who->guildid != 0xFFFFFFFF) {
-				if ((Who->guildid == 0xFFFFFFFC) && !ClientEntry->IsTrader()) continue;
-				if ((Who->guildid == 0xFFFFFFFB) && !ClientEntry->IsBuyer()) continue;
-				if (Who->guildid != ClientEntry->GuildID()) continue;
+				if ((Who->guildid == 0xFFFFFFFC) && !ClientEntry->IsTrader())
+					continue;
+				if ((Who->guildid == 0xFFFFFFFB) && !ClientEntry->IsBuyer())
+					continue;
+				if (Who->guildid != ClientEntry->GuildID())
+					continue;
 			}
 			if (WhomLength && strncasecmp(Who->whom, ClientEntry->GetName(), WhomLength) &&
-				strncasecmp(guild_mgr.GetGuildName(ClientEntry->GuildID()), Who->whom, WhomLength)) continue;
+					strncasecmp(guild_mgr.GetGuildName(ClientEntry->GuildID()), Who->whom, WhomLength))
+				continue;
 
 			Entries++;
 			client_sub_list.push_back(ClientEntry);
 
-			PacketLength += strlen(ClientEntry->GetName());
+			PacketLength = PacketLength + strlen(ClientEntry->GetName());
 
 			if (strlen(guild_mgr.GetGuildName(ClientEntry->GuildID())) > 0)
-				PacketLength += strlen(guild_mgr.GetGuildName(ClientEntry->GuildID())) + 2;
+				PacketLength = PacketLength + strlen(guild_mgr.GetGuildName(ClientEntry->GuildID())) + 2;
 		}
 	}
 
-	PacketLength += sizeof(WhoAllReturnStruct) + (47 * Entries);
+	PacketLength = PacketLength + sizeof(WhoAllReturnStruct) + (47 * Entries);
 	auto outapp = new EQApplicationPacket(OP_WhoAllResponse, PacketLength);
 	char *Buffer = (char *)outapp->pBuffer;
 	WhoAllReturnStruct *WARS = (WhoAllReturnStruct *)Buffer;
@@ -4952,10 +4961,15 @@ void EntityList::ZoneWho(Client *c, Who_All_Struct *Who)
 	WARS->unknown35 = 0x0a;
 	WARS->unknown36 = 0;
 
-	switch (Entries) {
-		case 0:  WARS->playersinzonestring = 5029; break;
-		case 1:  WARS->playersinzonestring = 5028; break;
-		default: WARS->playersinzonestring = 5036; break;
+	switch(Entries) {
+		case 0:
+			WARS->playersinzonestring = 5029;
+			break;
+		case 1:
+			WARS->playersinzonestring = 5028;
+			break;
+		default:
+			WARS->playersinzonestring = 5036;
 	}
 
 	WARS->unknown44[0] = 0;
@@ -4965,79 +4979,116 @@ void EntityList::ZoneWho(Client *c, Who_All_Struct *Who)
 	WARS->playercount = Entries;
 	Buffer += sizeof(WhoAllReturnStruct);
 
-	for (auto ClientEntry : client_sub_list) {
-		if (!ClientEntry) continue;
+	auto sit = client_sub_list.begin();
+	while (sit != client_sub_list.end()) {
+		Client *ClientEntry = *sit;
+		++sit;
 
-		std::string GuildName;
-		if ((ClientEntry->GuildID() != GUILD_NONE) && (ClientEntry->GuildID() > 0)) {
-			GuildName = "<" + std::string(guild_mgr.GetGuildName(ClientEntry->GuildID())) + ">";
-		}
+		if (ClientEntry) {
+			if (ClientEntry->GMHideMe(c))
+				continue;
+			if ((Who->wrace != 0xFFFFFFFF) && (ClientEntry->GetRace() != Who->wrace))
+				continue;
+			if ((Who->wclass != 0xFFFFFFFF) && (ClientEntry->GetClass() != Who->wclass))
+				continue;
+			if ((Who->lvllow != 0xFFFFFFFF) && (ClientEntry->GetLevel() < Who->lvllow))
+				continue;
+			if ((Who->lvlhigh != 0xFFFFFFFF) && (ClientEntry->GetLevel() > Who->lvlhigh))
+				continue;
+			if (Who->guildid != 0xFFFFFFFF) {
+				if ((Who->guildid == 0xFFFFFFFC) && !ClientEntry->IsTrader())
+					continue;
+				if ((Who->guildid == 0xFFFFFFFB) && !ClientEntry->IsBuyer())
+					continue;
+				if (Who->guildid != ClientEntry->GuildID())
+					continue;
+			}
+			if (WhomLength && strncasecmp(Who->whom, ClientEntry->GetName(), WhomLength) &&
+					strncasecmp(guild_mgr.GetGuildName(ClientEntry->GuildID()), Who->whom, WhomLength))
+				continue;
 
-		std::string NamePrefix;
-		if (ClientEntry->IsSeasonal()) NamePrefix += "{Seasonal}";
-		if (ClientEntry->IsHardcore()) NamePrefix += "{Hardcore}";
-		if (ClientEntry->IsDedicatedTrader()) NamePrefix += "{Trader}";
-		if (!NamePrefix.empty()) NamePrefix += " ";
+			std::string GuildName;
+			if ((ClientEntry->GuildID() != GUILD_NONE) && (ClientEntry->GuildID() > 0)) {
+				GuildName = "<";
+				GuildName += guild_mgr.GetGuildName(ClientEntry->GuildID());
+				GuildName += ">";
+			}
 
-		std::string FullName = NamePrefix + ClientEntry->GetName();
+			std::string NamePrefix = "";
+			if (ClientEntry->IsSeasonal()) NamePrefix += "{Seasonal}";
+			if (ClientEntry->IsHardcore()) NamePrefix += "{Hardcore}";
+			if (ClientEntry->IsDedicatedTrader()) NamePrefix += "{Trader}";
 
-		uint32 FormatMSGID = 5025;
-		if (ClientEntry->GetAnon() == 1) FormatMSGID = 5024;
-		else if (ClientEntry->GetAnon() == 2) FormatMSGID = 5023;
+			uint32 FormatMSGID = 5025;
+			if (ClientEntry->GetAnon() == 1)
+				FormatMSGID = 5024;
+			else if (ClientEntry->GetAnon() == 2)
+				FormatMSGID = 5023;
 
-		uint32 PlayerClass = Class::None;
-		uint32 PlayerLevel = 0;
-		uint32 PlayerRace = Race::Doug;
-		uint32 ZoneMSGID = 0xFFFFFFFF;
+			uint32 PlayerClass = Class::None;
+			uint32 PlayerLevel = 0;
+			uint32 PlayerRace = Race::Doug;
+			uint32 ZoneMSGID = 0xFFFFFFFF;
 
-		if (ClientEntry->GetAnon() == 0) {
-			PlayerClass = ClientEntry->GetClass();
-			PlayerLevel = ClientEntry->GetLevel();
-			PlayerRace = ClientEntry->GetRace();
-		}
+			if (ClientEntry->GetAnon() == 0) {
+				PlayerClass = ClientEntry->GetClass();
+				PlayerLevel = ClientEntry->GetLevel();
+				PlayerRace = ClientEntry->GetRace();
+			}
 
-		WhoAllPlayerPart1* WAPP1 = (WhoAllPlayerPart1*)Buffer;
-		WAPP1->FormatMSGID = FormatMSGID;
-		WAPP1->PIDMSGID = 0xFFFFFFFF;
-		strcpy(WAPP1->Name, FullName.c_str());
-		Buffer += sizeof(WhoAllPlayerPart1) + FullName.length();
+			WhoAllPlayerPart1* WAPP1 = (WhoAllPlayerPart1*)Buffer;
+			WAPP1->FormatMSGID = FormatMSGID;
+			WAPP1->PIDMSGID = 0xFFFFFFFF;
+			strcpy(WAPP1->Name, (NamePrefix + ClientEntry->GetName()).c_str());
+			Buffer += sizeof(WhoAllPlayerPart1) + strlen(WAPP1->Name);
 
-		WhoAllPlayerPart2* WAPP2 = (WhoAllPlayerPart2*)Buffer;
-		WAPP2->RankMSGID = 0xFFFFFFFF;
-
-		if (ClientEntry->IsOffline()) {
-			if (ClientEntry->IsTrader()) WAPP1->PIDMSGID = 0x0430;
-			if (ClientEntry->IsBuyer()) WAPP1->PIDMSGID = 0x0420;
-		}
-		else {
-			if (ClientEntry->IsTrader()) WAPP2->RankMSGID = 12315;
-			else if (ClientEntry->IsBuyer()) WAPP2->RankMSGID = 6056;
-		}
-
-		if (ClientEntry->Admin() >= AccountStatus::Steward && ClientEntry->GetGM()) {
-			WAPP2->RankMSGID = 12312;
-		}
-		else {
+			WhoAllPlayerPart2* WAPP2 = (WhoAllPlayerPart2*)Buffer;
 			WAPP2->RankMSGID = 0xFFFFFFFF;
+
+			if (ClientEntry->IsOffline()) {
+				if (ClientEntry->IsTrader()) {
+					WAPP1->PIDMSGID = 0x0430;
+				}
+				if (ClientEntry->IsBuyer()) {
+					WAPP1->PIDMSGID = 0x0420;
+				}
+			} else {
+				if (ClientEntry->IsTrader()) {
+					WAPP2->RankMSGID = 12315;
+				} else if (ClientEntry->IsBuyer()) {
+					WAPP2->RankMSGID = 6056;
+				}
+			}
+
+			if (ClientEntry->Admin() >= AccountStatus::Steward && ClientEntry->GetGM()) {
+				WAPP2->RankMSGID = 12312;
+			} else {
+				WAPP2->RankMSGID = 0xFFFFFFFF;
+			}
+
+			strcpy(WAPP2->Guild, GuildName.c_str());
+			Buffer += sizeof(WhoAllPlayerPart2) + strlen(WAPP2->Guild);
+
+			WhoAllPlayerPart3* WAPP3 = (WhoAllPlayerPart3*)Buffer;
+			WAPP3->Unknown80[0] = 0xFFFFFFFF;
+
+			if (ClientEntry->IsLD())
+				WAPP3->Unknown80[1] = 12313;
+			else
+				WAPP3->Unknown80[1] = 0xFFFFFFFF;
+
+			WAPP3->ZoneMSGID = ZoneMSGID;
+			WAPP3->Zone = 0;
+			WAPP3->Class_ = PlayerClass;
+			WAPP3->Level = PlayerLevel;
+			WAPP3->Race = PlayerRace;
+			WAPP3->Account[0] = 0;
+			Buffer += sizeof(WhoAllPlayerPart3);
+
+			WhoAllPlayerPart4* WAPP4 = (WhoAllPlayerPart4*)Buffer;
+			WAPP4->Unknown100 = 0;
+			Buffer += sizeof(WhoAllPlayerPart4);
 		}
-
-		strcpy(WAPP2->Guild, GuildName.c_str());
-		Buffer += sizeof(WhoAllPlayerPart2) + GuildName.length();
-
-		WhoAllPlayerPart3* WAPP3 = (WhoAllPlayerPart3*)Buffer;
-		WAPP3->Unknown80[0] = 0xFFFFFFFF;
-		WAPP3->Unknown80[1] = ClientEntry->IsLD() ? 12313 : 0xFFFFFFFF;
-		WAPP3->ZoneMSGID = ZoneMSGID;
-		WAPP3->Zone = 0;
-		WAPP3->Class_ = PlayerClass;
-		WAPP3->Level = PlayerLevel;
-		WAPP3->Race = PlayerRace;
-		WAPP3->Account[0] = 0;
-		Buffer += sizeof(WhoAllPlayerPart3);
-
-		WhoAllPlayerPart4* WAPP4 = (WhoAllPlayerPart4*)Buffer;
-		WAPP4->Unknown100 = 0;
-		Buffer += sizeof(WhoAllPlayerPart4);
 	}
 
 	c->QueuePacket(outapp);
