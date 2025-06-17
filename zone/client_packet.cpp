@@ -4911,8 +4911,6 @@ void Client::Handle_OP_CAuth(const EQApplicationPacket *app) {
 		LogDebug("Got HAX VALUE from [{}]", GetCleanName());
 	}
 
-	LogDebug("decryptedValue = [{}] - GetPlayerClassBit = [{}] - GetID = [{}]", decryptedValue, GetPlayerClassBit(m_pp.class_), GetID());
-
 	CAuthorized = (decryptedValue == (GetPlayerClassBit(m_pp.class_) * GetID()));
 
 	if (GetGM()) {
