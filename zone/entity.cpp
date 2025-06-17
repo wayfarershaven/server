@@ -4949,8 +4949,7 @@ void EntityList::ZoneWho(Client *c, Who_All_Struct *Who)
 			if (ClientEntry->IsSeasonal()) NamePrefix += "{Seasonal}";
 			if (ClientEntry->IsHardcore()) NamePrefix += "{Hardcore}";
 			if (ClientEntry->IsDedicatedTrader()) NamePrefix += "{Trader}";
-			std::string FullName = NamePrefix + ClientEntry->GetName();
-			PacketLength += FullName.length();
+			PacketLength += NamePrefix.size() + strlen(ClientEntry->GetName());
 
 			if (strlen(guild_mgr.GetGuildName(ClientEntry->GuildID())) > 0)
 				PacketLength = PacketLength + strlen(guild_mgr.GetGuildName(ClientEntry->GuildID())) + 2;
@@ -5002,7 +5001,6 @@ void EntityList::ZoneWho(Client *c, Who_All_Struct *Who)
 			if (ClientEntry->IsSeasonal()) NamePrefix += "{Seasonal}";
 			if (ClientEntry->IsHardcore()) NamePrefix += "{Hardcore}";
 			if (ClientEntry->IsDedicatedTrader()) NamePrefix += "{Trader}";
-			std::string FullName = NamePrefix + ClientEntry->GetName();
 
 			uint32 FormatMSGID = 5025;
 			if (ClientEntry->GetAnon() == 1)
@@ -5024,8 +5022,7 @@ void EntityList::ZoneWho(Client *c, Who_All_Struct *Who)
 			WhoAllPlayerPart1* WAPP1 = (WhoAllPlayerPart1*)Buffer;
 			WAPP1->FormatMSGID = FormatMSGID;
 			WAPP1->PIDMSGID = 0xFFFFFFFF;
-			strncpy(WAPP1->Name, FullName.c_str(), sizeof(WAPP1->Name) - 1);
-			WAPP1->Name[sizeof(WAPP1->Name) - 1] = '\0';
+			strncpy(WAPP1->Name, (NamePrefix + ClientEntry->GetName()).c_str(), sizeof(WAPP1->Name));
 			Buffer += sizeof(WhoAllPlayerPart1) + strlen(WAPP1->Name);
 
 			WhoAllPlayerPart2* WAPP2 = (WhoAllPlayerPart2*)Buffer;
