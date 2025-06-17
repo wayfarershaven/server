@@ -4908,7 +4908,6 @@ void EntityList::SendIllusionWearChange(Client *c)
 
 void EntityList::ZoneWho(Client *c, Who_All_Struct *Who)
 {
-	// This is only called for SoF clients, as regular /who is now handled server-side for that client.
 	uint32 PacketLength = 0;
 	uint32 Entries = 0;
 	uint8 WhomLength = strlen(Who->whom);
@@ -4945,11 +4944,7 @@ void EntityList::ZoneWho(Client *c, Who_All_Struct *Who)
 			Entries++;
 			client_sub_list.push_back(ClientEntry);
 
-			std::string NamePrefix;
-			if (ClientEntry->IsSeasonal()) NamePrefix += "{Seasonal}";
-			if (ClientEntry->IsHardcore()) NamePrefix += "{Hardcore}";
-			if (ClientEntry->IsDedicatedTrader()) NamePrefix += "{Trader}";
-			PacketLength += NamePrefix.size() + strlen(ClientEntry->GetName());
+			PacketLength = PacketLength + strlen(ClientEntry->GetName());
 
 			if (strlen(guild_mgr.GetGuildName(ClientEntry->GuildID())) > 0)
 				PacketLength = PacketLength + strlen(guild_mgr.GetGuildName(ClientEntry->GuildID())) + 2;
@@ -4971,10 +4966,10 @@ void EntityList::ZoneWho(Client *c, Who_All_Struct *Who)
 			WARS->playersinzonestring = 5029;
 			break;
 		case 1:
-			WARS->playersinzonestring = 5028; // 5028 There is %1 player in EverQuest.
+			WARS->playersinzonestring = 5028;
 			break;
 		default:
-			WARS->playersinzonestring = 5036; // 5036 There are %1 players in EverQuest.
+			WARS->playersinzonestring = 5036;
 	}
 
 	WARS->unknown44[0] = 0;
@@ -4990,6 +4985,28 @@ void EntityList::ZoneWho(Client *c, Who_All_Struct *Who)
 		++sit;
 
 		if (ClientEntry) {
+			if (ClientEntry->GMHideMe(c))
+				continue;
+			if ((Who->wrace != 0xFFFFFFFF) && (ClientEntry->GetRace() != Who->wrace))
+				continue;
+			if ((Who->wclass != 0xFFFFFFFF) && (ClientEntry->GetClass() != Who->wclass))
+				continue;
+			if ((Who->lvllow != 0xFFFFFFFF) && (ClientEntry->GetLevel() < Who->lvllow))
+				continue;
+			if ((Who->lvlhigh != 0xFFFFFFFF) && (ClientEntry->GetLevel() > Who->lvlhigh))
+				continue;
+			if (Who->guildid != 0xFFFFFFFF) {
+				if ((Who->guildid == 0xFFFFFFFC) && !ClientEntry->IsTrader())
+					continue;
+				if ((Who->guildid == 0xFFFFFFFB) && !ClientEntry->IsBuyer())
+					continue;
+				if (Who->guildid != ClientEntry->GuildID())
+					continue;
+			}
+			if (WhomLength && strncasecmp(Who->whom, ClientEntry->GetName(), WhomLength) &&
+					strncasecmp(guild_mgr.GetGuildName(ClientEntry->GuildID()), Who->whom, WhomLength))
+				continue;
+
 			std::string GuildName;
 			if ((ClientEntry->GuildID() != GUILD_NONE) && (ClientEntry->GuildID() > 0)) {
 				GuildName = "<";
@@ -4997,7 +5014,7 @@ void EntityList::ZoneWho(Client *c, Who_All_Struct *Who)
 				GuildName += ">";
 			}
 
-			std::string NamePrefix;
+			std::string NamePrefix = "";
 			if (ClientEntry->IsSeasonal()) NamePrefix += "{Seasonal}";
 			if (ClientEntry->IsHardcore()) NamePrefix += "{Hardcore}";
 			if (ClientEntry->IsDedicatedTrader()) NamePrefix += "{Trader}";
@@ -5013,7 +5030,7 @@ void EntityList::ZoneWho(Client *c, Who_All_Struct *Who)
 			uint32 PlayerRace = Race::Doug;
 			uint32 ZoneMSGID = 0xFFFFFFFF;
 
-			if (ClientEntry->GetAnon()==0) {
+			if (ClientEntry->GetAnon() == 0) {
 				PlayerClass = ClientEntry->GetClass();
 				PlayerLevel = ClientEntry->GetLevel();
 				PlayerRace = ClientEntry->GetRace();
@@ -5022,7 +5039,7 @@ void EntityList::ZoneWho(Client *c, Who_All_Struct *Who)
 			WhoAllPlayerPart1* WAPP1 = (WhoAllPlayerPart1*)Buffer;
 			WAPP1->FormatMSGID = FormatMSGID;
 			WAPP1->PIDMSGID = 0xFFFFFFFF;
-			strncpy(WAPP1->Name, (NamePrefix + ClientEntry->GetName()).c_str(), sizeof(WAPP1->Name));
+			strcpy(WAPP1->Name, (NamePrefix + ClientEntry->GetName()).c_str());
 			Buffer += sizeof(WhoAllPlayerPart1) + strlen(WAPP1->Name);
 
 			WhoAllPlayerPart2* WAPP2 = (WhoAllPlayerPart2*)Buffer;
@@ -5035,12 +5052,10 @@ void EntityList::ZoneWho(Client *c, Who_All_Struct *Who)
 				if (ClientEntry->IsBuyer()) {
 					WAPP1->PIDMSGID = 0x0420;
 				}
-			}
-			else {
+			} else {
 				if (ClientEntry->IsTrader()) {
 					WAPP2->RankMSGID = 12315;
-				}
-				else if (ClientEntry->IsBuyer()) {
+				} else if (ClientEntry->IsBuyer()) {
 					WAPP2->RankMSGID = 6056;
 				}
 			}
@@ -5056,7 +5071,12 @@ void EntityList::ZoneWho(Client *c, Who_All_Struct *Who)
 
 			WhoAllPlayerPart3* WAPP3 = (WhoAllPlayerPart3*)Buffer;
 			WAPP3->Unknown80[0] = 0xFFFFFFFF;
-			WAPP3->Unknown80[1] = ClientEntry->IsLD() ? 12313 : 0xFFFFFFFF;
+
+			if (ClientEntry->IsLD())
+				WAPP3->Unknown80[1] = 12313;
+			else
+				WAPP3->Unknown80[1] = 0xFFFFFFFF;
+
 			WAPP3->ZoneMSGID = ZoneMSGID;
 			WAPP3->Zone = 0;
 			WAPP3->Class_ = PlayerClass;
