@@ -912,7 +912,6 @@ void command_bot(Client *c, const Seperator *sep)
 #include "gm_commands/spawneditmass.cpp"
 #include "gm_commands/spawnfix.cpp"
 #include "gm_commands/faction_association.cpp"
-#include "gm_commands/seasonal.cpp"
 #include "gm_commands/stun.cpp"
 #include "gm_commands/summon.cpp"
 #include "gm_commands/summonburiedplayercorpse.cpp"
