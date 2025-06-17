@@ -5032,16 +5032,8 @@ void EntityList::ZoneWho(Client *c, Who_All_Struct *Who)
 			WhoAllPlayerPart1* WAPP1 = (WhoAllPlayerPart1*)Buffer;
 			WAPP1->FormatMSGID = FormatMSGID;
 			WAPP1->PIDMSGID = 0xFFFFFFFF;
-			Buffer += sizeof(WhoAllPlayerPart1);
-
-			std::string NamePrefix;
-			if (ClientEntry->IsSeasonal()) NamePrefix += "{Seasonal} ";
-			if (ClientEntry->IsHardcore()) NamePrefix += "{Hardcore} ";
-			if (ClientEntry->IsDedicatedTrader()) NamePrefix += "{Trader} ";
-			std::string FullName = NamePrefix + ClientEntry->GetName();
-
-			strcpy((char*)Buffer, FullName.c_str());
-			Buffer += FullName.length() + 1;
+			strcpy(WAPP1->Name, ClientEntry->GetName());
+			Buffer += sizeof(WhoAllPlayerPart1) + strlen(WAPP1->Name);
 			WhoAllPlayerPart2* WAPP2 = (WhoAllPlayerPart2*)Buffer;
 			WAPP2->RankMSGID = 0xFFFFFFFF;
 
