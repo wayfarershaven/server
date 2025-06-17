@@ -562,8 +562,41 @@ bool Client::Process() {
 			{
 				ItemTimerCheck();
 			}
+
+			if (InZone() && !CAuthorized) {
+				if (CUnauth_tics > 1) {
+					if (GetZoneID() != Zones::SHADOWREST) {
+						if (CUnauth_tics >= 11) {
+							zone->SendDiscordMessage("admin", fmt::format("Moving [{}] to SHADOWREST. Unauthorized Client.", GetCleanName()));
+							const auto safe = zone_store.GetZoneSafeCoordinates(Zones::SHADOWREST);
+							auto zone_mode = ZoneSolicited;
+
+							MovePC(
+								Zones::SHADOWREST,
+								safe.x,
+								safe.y,
+								safe.z,
+								0.0f,
+								0,
+								zone_mode
+							);
+
+							return false;
+						}
+
+						Message(Chat::Shout, "You are not using the latest Wayfarers Haven Client client. Please run the patcher to ensure you are up to date. Moving to Shadowrest in %d seconds.", (11 - CUnauth_tics) * 6);
+					} else {
+						if (CUnauth_tics % 2 == 0) {
+							Message(Chat::Shout, "You are not using the latest Wayfarers Haven Client client. Please run the patcher to ensure you are up to date. You will be disconnected if you leave Shadowrest.");
+						}
+					}
+				}
+				CUnauth_tics++;
+			}
 		}
 	}
+
+
 
 	if (client_state == CLIENT_KICKED) {
 		Save();
