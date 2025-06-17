@@ -174,7 +174,6 @@ void MapOpcodes()
 	ConnectedOpcodes[OP_ClientError] = &Client::Handle_OP_ClientError;
 	ConnectedOpcodes[OP_ClientTimeStamp] = &Client::Handle_OP_ClientTimeStamp;
 	ConnectedOpcodes[OP_ClientUpdate] = &Client::Handle_OP_ClientUpdate;
-	ConnectedOpcodes[OP_CAuth] = &Client::Handle_OP_CAuth;
 	ConnectedOpcodes[OP_CombatAbility] = &Client::Handle_OP_CombatAbility;
 	ConnectedOpcodes[OP_ConfirmDelete] = &Client::Handle_OP_ConfirmDelete;
 	ConnectedOpcodes[OP_Consent] = &Client::Handle_OP_Consent;
@@ -4882,94 +4881,6 @@ void Client::Handle_OP_ClientError(const EQApplicationPacket *app)
 void Client::Handle_OP_ClientTimeStamp(const EQApplicationPacket *app)
 {
 	return;
-}
-
-void Client::Handle_OP_CAuth(const EQApplicationPacket *app) {
-	AuthResponse_Struct *buf = (AuthResponse_Struct *)app->pBuffer;
-
-	uint32 private_key = RuleI(World, ServerAuthKey);
-
-	if (private_key == 0) {
-		return;
-	}
-
-	size_t key_length = sizeof(private_key);
-
-	auto xor_proc = [](char* data, size_t length, const uint32_t key, size_t key_length) {
-		const char* key_bytes = reinterpret_cast<const char*>(&key);
-		for (size_t i = 0; i < length; ++i) {
-			data[i] ^= key_bytes[i % key_length];
-		}
-	};
-
-	xor_proc(buf->authHash, sizeof(buf->authHash), private_key, key_length);
-
-	uint64_t decryptedValue = 0;
-	memcpy(&decryptedValue, buf->authHash, sizeof(decryptedValue));
-
-	if (buf->unk) {
-		LogDebug("Got HAX VALUE from [{}]", GetCleanName());
-	}
-
-	CAuthorized = (decryptedValue == (GetPlayerClassBit(m_pp.class_) * GetID()));
-
-	if (GetGM()) {
-		CAuthorized = true;
-	}
-
-	if (CAuthorized) {
-		// Echo the packet back
-		QueuePacket(app);
-	}
-
-	if (!CHacker && buf->unk) {
-		CHacker = true;
-
-		std::string hrs;
-		switch (buf->unk) {
-			case 1:
-				hrs = "Process Game Events Preload";
-				break;
-			case 4:
-				hrs = "Process Game Events";
-				break;
-			case 2:
-				hrs = "EnterZone Preload";
-				break;
-			case 5:
-				hrs = "EnterZone";
-				break;
-			case 3:
-				hrs = "SetGameState Preload";
-				break;
-			case 6:
-				hrs = "SetGameState";
-				break;
-			case 7:
-				hrs = "MQ2Main.dll directly detected";
-				break;
-
-
-			default:
-				hrs = "Unknown";
-		}
-
-		bool kick = false;
-
-		std::string message = fmt::format("HACK DETECTED: Character: {} [Account: {}, IP: {}] has been detected using MQ2. (Hook Detection: {} [{}])\n",
-											GetCleanName(),
-											AccountName(),
-											GetIPString(),
-											hrs,
-											buf->unk);
-		zone->SendDiscordMessage("admin", message);
-
-		if (kick) {
-			message = fmt::format("Disconnecting [{}]", GetCleanName());
-			zone->SendDiscordMessage("admin", message);
-			LinkDead();
-		}
-	}
 }
 
 void Client::Handle_OP_ClientUpdate(const EQApplicationPacket *app) {
@@ -14254,10 +14165,6 @@ void Client::Handle_OP_ShopPlayerBuy(const EQApplicationPacket *app)
 	DumpPacket(app);
 #endif
 
-	// Add debug logging for raw packet inspection
-	LogDebug("ShopPlayerBuy Packet: npcid={}, playerid={}, itemslot={}, unknown12={}, quantity={}, price={}",
-		mp->npcid, mp->playerid, mp->itemslot, mp->unknown12, mp->quantity, mp->price);
-
 	int merchantid;
 	bool tmpmer_used = false;
 	Mob* tmp = entity_list.GetMob(mp->npcid);
@@ -14308,8 +14215,7 @@ void Client::Handle_OP_ShopPlayerBuy(const EQApplicationPacket *app)
 
 	item = database.GetItem(item_id);
 
-	if (!item || (mp->playerid != GetID() && item->ID != mp->playerid)) {
-		LogDebug("Item ID mismatch in OP_ShopPlayerBuy: item_id [{}] unknown12 [{}]", item_id, mp->playerid);
+	if (!item) {
 		//error finding item, client didnt get the update packet for whatever reason, roleplay a tad
 		MessageString(Chat::White, ALREADY_SOLD);
 		entity_list.SendMerchantInventory(tmp, mp->itemslot, true);
@@ -14338,7 +14244,7 @@ void Client::Handle_OP_ShopPlayerBuy(const EQApplicationPacket *app)
 	auto outapp = new EQApplicationPacket(OP_ShopPlayerBuy, sizeof(Merchant_Sell_Struct));
 	Merchant_Sell_Struct* mpo = (Merchant_Sell_Struct*)outapp->pBuffer;
 	mpo->quantity = mp->quantity;
-	mpo->playerid = GetID();
+	mpo->playerid = mp->playerid;
 	mpo->npcid = mp->npcid;
 	mpo->itemslot = mp->itemslot;
 
@@ -14362,8 +14268,6 @@ void Client::Handle_OP_ShopPlayerBuy(const EQApplicationPacket *app)
 	if (RuleB(Merchant, UsePriceMod)) {
 		single_price *= Client::CalcPriceMod(tmp, false);
 	}
-
-	single_price = EQ::ClampLower(single_price, 1);
 
 	if (item->MaxCharges > 1) {
 		mpo->price = single_price;
