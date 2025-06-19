@@ -1117,7 +1117,7 @@ bool BotDatabase::SaveItemBySlot(Bot* b, const uint32 slot_id, const EQ::ItemIns
 	e.inst_custom_data    = inst->GetCustomDataString();
 	e.ornament_icon       = inst->GetOrnamentationIcon();
 	e.ornament_id_file    = inst->GetOrnamentationIDFile();
-	e.ornament_hero_model = inst->GetOrnamentHeroModel();
+	e.ornament_hero_model = inst->GetOrnamentRawHeroModel();
 	e.augment_1           = augment_id[0];
 	e.augment_2           = augment_id[1];
 	e.augment_3           = augment_id[2];

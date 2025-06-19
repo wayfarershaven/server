@@ -1445,6 +1445,30 @@ void EntityList::SendZonePVPUpdates(Client *to)
 	}
 }
 
+void EntityList::SendZoneSeasonalUpdates(Client *to)
+{
+	auto it = client_list.begin();
+	while (it != client_list.end()) {
+		Client *c = it->second;
+		if(c->IsSeasonal()) {
+			c->SendAppearancePacket(AppearanceType::PVP, true, true, false, to);
+		}
+		++it;
+	}
+}
+
+void EntityList::SendZonePlaymodeUpdates(Client *to)
+{
+	auto it = client_list.begin();
+	while (it != client_list.end()) {
+		Client *c = it->second;
+		if(c->IsHardcore() || c->IsSeasonal() || c->IsDedicatedTrader()) {
+			c->SendAppearancePacket(AppearanceType::NameColorCustom, c->GetPlayModeColorPack(), true, false, to);
+		}
+		++it;
+	}
+}
+
 void EntityList::SendZoneCorpses(Client *client)
 {
 	EQApplicationPacket *app;
@@ -5011,15 +5035,31 @@ void EntityList::ZoneWho(Client *c, Who_All_Struct *Who)
 			strcpy(WAPP1->Name, ClientEntry->GetName());
 			Buffer += sizeof(WhoAllPlayerPart1) + strlen(WAPP1->Name);
 			WhoAllPlayerPart2* WAPP2 = (WhoAllPlayerPart2*)Buffer;
+			WAPP2->RankMSGID = 0xFFFFFFFF;
 
-			if (ClientEntry->IsTrader())
-				WAPP2->RankMSGID = 12315;
-			else if (ClientEntry->IsBuyer())
-				WAPP2->RankMSGID = 6056;
-			else if (ClientEntry->Admin() >= AccountStatus::Steward && ClientEntry->GetGM())
+			if (ClientEntry->IsOffline()) {
+				if (ClientEntry->IsTrader()) {
+					WAPP1->PIDMSGID = 0x0430;
+				}
+				if (ClientEntry->IsBuyer()) {
+					WAPP1->PIDMSGID = 0x0420;
+				}
+			}
+			else {
+				if (ClientEntry->IsTrader()) {
+					WAPP2->RankMSGID = 12315;
+				}
+				else if (ClientEntry->IsBuyer()) {
+					WAPP2->RankMSGID = 6056;
+				}
+			}
+
+			if (ClientEntry->Admin() >= AccountStatus::Steward && ClientEntry->GetGM()) {
 				WAPP2->RankMSGID = 12312;
-			else
+			}
+			else {
 				WAPP2->RankMSGID = 0xFFFFFFFF;
+			}
 
 			strcpy(WAPP2->Guild, GuildName.c_str());
 			Buffer += sizeof(WhoAllPlayerPart2) + strlen(WAPP2->Guild);

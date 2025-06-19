@@ -297,6 +297,8 @@ public:
 	int GetClientVersion();
 	uint32 GetClientVersionBit();
 	void SetTitleSuffix(const char *text);
+	void EnableTitleSet(uint32 title_set);
+	void SetGuild(int guild_id, int rank);
 	void SetAAPoints(int points);
 	int GetAAPoints();
 	int GetSpentAA();
@@ -642,6 +644,10 @@ public:
 	void            Fling(float value, float target_x, float target_y, float target_z);
 	void            Fling(float value, float target_x, float target_y, float target_z, bool ignore_los);
 	void            Fling(float value, float target_x, float target_y, float target_z, bool ignore_los, bool clip_through_walls);
+
+	bool			IsSeasonal();
+	bool			IsHardcore();
+	bool            IsDedicatedTrader();
 };
 
 #endif

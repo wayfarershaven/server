@@ -2106,6 +2106,8 @@ bool Client::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::Skil
 				}
 			}
 
+			new_corpse->SetEntityVariable("IsSeasonal", IsSeasonal() ? "true" : "false");
+
 			entity_list.AddCorpse(new_corpse, GetID());
 			SetID(0);
 
@@ -2834,6 +2836,37 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 			}
 		}
 
+		// Seasonal Stuff
+		// Find if anyone who is destined to get loot rights is Seasonal or HC
+
+		bool seasonal_killer = false;
+		bool hardcore_killer = false;
+		if (killer && killer->IsClient()) {
+			seasonal_killer = seasonal_killer || killer->CastToClient()->IsSeasonal();
+			hardcore_killer = hardcore_killer || killer->CastToClient()->IsHardcore();
+			if (killer->IsGrouped()) {
+				Group* g = entity_list.GetGroupByClient(killer->CastToClient());
+				if (g) {
+					for (const auto &m : g->members) {
+						if (m) {
+							seasonal_killer = seasonal_killer || m->CastToClient()->IsSeasonal();
+							hardcore_killer = hardcore_killer || m->CastToClient()->IsHardcore();
+						}
+					}
+				}
+			} else if (killer->IsRaidGrouped()) {
+				Raid* r = entity_list.GetRaidByClient(killer->CastToClient());
+				if (r) {
+					for (const auto &m : r->members) {
+						if (m.member) {
+							seasonal_killer = seasonal_killer || m.member->IsSeasonal();
+							hardcore_killer = hardcore_killer || m.member->IsHardcore();
+						}
+					}
+				}
+			}
+		}
+
 		entity_list.RemoveFromAutoXTargets(this);
 
 		corpse = new Corpse(
@@ -2847,6 +2880,16 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 				RuleI(NPC, MinorNPCCorpseDecayTime)
 			)
 		);
+
+		// hard set mobs that were charmed to seasonal/non-seasonal.
+		if (EntityVariableExists("Charm_Locked") && GetEntityVariable("Charm_Locked") == "Seasonal") {
+			seasonal_killer = true;
+		} else if (EntityVariableExists("Charm_Locked") && GetEntityVariable("Charm_Locked") == "Non-Seasonal") {
+			seasonal_killer = false;
+		}
+
+		corpse->SetSeasonal(seasonal_killer);
+		corpse->SetHardcore(hardcore_killer);
 
 		if (killer_mob && emoteid) {
 			DoNPCEmote(EQ::constants::EmoteEventTypes::AfterDeath, emoteid, killer_mob);

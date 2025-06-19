@@ -406,9 +406,26 @@ bool DynamicZone::ProcessAddConflicts(Client* leader, Client* client, bool swapp
 
 void DynamicZone::TryAddClient(Client* client, const std::string& inviter, const std::string& swap_name, Client* leader)
 {
-	if (!client)
-	{
+	if (!client) {
 		return;
+	}
+
+	// Have to do it this way because we cant get a client handle on both inviter and invitee simultaneously
+	if (RuleI(Seasons, EnableSeasonalCharacters)) {
+		int char_id = database.GetCharacterID(inviter);
+		int inviter_season = 0;
+		std::string query = StringFormat("SELECT data_buckets.value FROM data_buckets WHERE data_buckets.character_id = %i AND data_buckets.key = 'SeasonalCharacter'", char_id);
+
+		auto results = database.QueryDatabase(query);
+		if (results.Success()) {
+			auto row = results.begin();
+
+			inviter_season = Strings::ToInt(row[0]);
+		}
+
+		if (client->GetSeason() != inviter_season) {
+			return;
+		}
 	}
 
 	LogExpeditions("Adding [{}] to [{}] by [{}] swap [{}]", client->GetName(), GetID(), inviter, swap_name);
@@ -478,6 +495,12 @@ void DynamicZone::DzAddPlayer(Client* client, const std::string& add_name, const
 
 	if (Client* add_client = entity_list.GetClientByName(add_name.c_str()))
 	{
+		// Block if seasonal
+		if (add_client->IsSeasonal() != client->IsSeasonal()) {
+			client->Message(Chat::Red, "Seasonal characters may only group with other Seasonal characters.");
+			return;
+		}
+
 		// client is online in this zone
 		TryAddClient(add_client, client->GetName(), swap_name, client);
 	}

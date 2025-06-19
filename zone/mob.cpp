@@ -1316,7 +1316,7 @@ void Mob::FillSpawnStruct(NewSpawn_Struct* ns, Mob* ForWho)
 	ns->spawn.IsMercenary = IsMerc() ? 1 : 0;
 	ns->spawn.targetable_with_hotkey = no_target_hotkey ? 0 : 1; // opposite logic!
 	ns->spawn.untargetable = IsTargetable();
-	
+
 	ns->spawn.petOwnerId	= ownerid;
 
 	ns->spawn.haircolor = haircolor;
@@ -1363,7 +1363,8 @@ void Mob::FillSpawnStruct(NewSpawn_Struct* ns, Mob* ForWho)
 		if (IsPlayerRace(race) || i > EQ::textures::armorFeet) {
 			ns->spawn.equipment.Slot[i].Material        = GetEquipmentMaterial(i);
 			ns->spawn.equipment.Slot[i].EliteModel      = IsEliteMaterialItem(i);
-			ns->spawn.equipment.Slot[i].HerosForgeModel = GetHerosForgeModel(i);
+			ns->spawn.equipment.Slot[i].HerosForgeModel =
+				GetTextureProfileHeroForgeModel(i) > 0 ? GetTextureProfileHeroForgeModel(i) : GetHerosForgeModel(i);
 			ns->spawn.equipment_tint.Slot[i].Color      = GetEquipmentColor(i);
 		}
 	}
@@ -5766,19 +5767,22 @@ void Mob::SetEntityVariable(std::string variable_name, std::string variable_valu
 		return;
 	}
 
+	m_EntityVariables[variable_name] = variable_value;
+
 	std::vector<std::any> args;
 
 	if (!EntityVariableExists(variable_name)) {
 		args = { variable_name, variable_value };
-
 		parse->EventMob(EVENT_ENTITY_VARIABLE_SET, this, nullptr, [&]() { return ""; }, 0, &args);
 	} else {
 		args = { variable_name, GetEntityVariable(variable_name), variable_value };
-
 		parse->EventMob(EVENT_ENTITY_VARIABLE_UPDATE, this, nullptr, [&]() { return ""; }, 0, &args);
 	}
 
-	m_EntityVariables[variable_name] = variable_value;
+	// If this is a corpse, sync to DB
+	if (IsCorpse()) {
+		CastToCorpse()->SyncEntityVariablesToCorpseDB();
+	}
 }
 
 void Mob::SetFlyMode(GravityBehavior in_flymode)

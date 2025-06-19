@@ -19,6 +19,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include "../common/eqemu_logsys.h"
 #include "../common/opcodemgr.h"
 #include "../common/raid.h"
+#include "../common/repositories/character_offline_transactions_repository.h"
 
 #include <iomanip>
 #include <iostream>
@@ -324,6 +325,7 @@ void MapOpcodes()
 	ConnectedOpcodes[OP_MoveCoin] = &Client::Handle_OP_MoveCoin;
 	ConnectedOpcodes[OP_MoveItem] = &Client::Handle_OP_MoveItem;
 	ConnectedOpcodes[OP_MoveMultipleItems] = &Client::Handle_OP_MoveMultipleItems;
+	ConnectedOpcodes[OP_Offline] = &Client::Handle_OP_Offline;
 	ConnectedOpcodes[OP_OpenContainer] = &Client::Handle_OP_OpenContainer;
 	ConnectedOpcodes[OP_OpenGuildTributeMaster] = &Client::Handle_OP_OpenGuildTributeMaster;
 	ConnectedOpcodes[OP_OpenInventory] = &Client::Handle_OP_OpenInventory;
@@ -829,7 +831,7 @@ void Client::CompleteConnect()
 
 		if (is_first_login) {
 			e.first_login = time(nullptr);
-			TraderRepository::DeleteWhere(database, fmt::format("`char_id` = '{}'", CharacterID()));
+			TraderRepository::DeleteWhere(database, fmt::format("`character_id` = '{}'", CharacterID()));
 			BuyerRepository::DeleteBuyer(database, CharacterID());
 			LogTradingDetail(
 				"Removed trader abd buyer entries for Character ID {} on first logon to ensure table consistency.",
@@ -851,6 +853,54 @@ void Client::CompleteConnect()
 		if (IsNameChangeAllowed() && !RuleB(Character, AlwaysAllowNameChange)) {
 			InvokeChangeNameWindow(false);
 		}
+	}
+
+	auto offline_transactions_trader = CharacterOfflineTransactionsRepository::GetWhere(
+		database, fmt::format("`character_id` = '{}' AND `type` = '{}'", CharacterID(), TRADER_TRANSACTION)
+	);
+	if (offline_transactions_trader.size() > 0) {
+		Message(Chat::Yellow, "You sold the following items while in offline trader mode:");
+
+		for (auto const &t: offline_transactions_trader) {
+			Message(
+				Chat::Yellow,
+				fmt::format(
+					"You sold {} {}{} to {} for {}.",
+					t.quantity,
+					t.item_name,
+					t.quantity > 1 ? "s" : "",
+					t.buyer_name,
+					DetermineMoneyString(t.price))
+					.c_str());
+		}
+
+		CharacterOfflineTransactionsRepository::DeleteWhere(
+			database, fmt::format("`character_id` = '{}' AND `type` = '{}'", CharacterID(), TRADER_TRANSACTION)
+		);
+	}
+
+	auto offline_transactions_buyer = CharacterOfflineTransactionsRepository::GetWhere(
+		database, fmt::format("`character_id` = '{}' AND `type` = '{}'", CharacterID(), BUYER_TRANSACTION)
+	);
+	if (offline_transactions_buyer.size() > 0) {
+		Message(Chat::Yellow, "You bought the following items while in offline buyer mode:");
+
+		for (auto const &t: offline_transactions_buyer) {
+			Message(
+				Chat::Yellow,
+				fmt::format(
+					"You bought {} {}{} from {} for {}.",
+					t.quantity,
+					t.item_name,
+					t.quantity > 1 ? "s" : "",
+					t.buyer_name,
+					DetermineMoneyString(t.price))
+					.c_str());
+		}
+
+		CharacterOfflineTransactionsRepository::DeleteWhere(
+			database, fmt::format("`character_id` = '{}' AND `type` = '{}'", CharacterID(), BUYER_TRANSACTION)
+		);
 	}
 
 	if(ClientVersion() == EQ::versions::ClientVersion::RoF2 && RuleB(Parcel, EnableParcelMerchants)) {
@@ -896,7 +946,7 @@ void Client::CompleteConnect()
 			SendGuildMembersList();
 		}
 
-		guild_mgr.SendGuildMemberUpdateToWorld(GetName(), GuildID(), zone->GetZoneID(), time(nullptr));
+		guild_mgr.SendGuildMemberUpdateToWorld(GetName(), GuildID(), zone->GetZoneID(), time(nullptr), 0);
 
 		SendGuildList();
 		if (GetGuildListDirty()) {
@@ -1359,8 +1409,9 @@ void Client::Handle_Connect_OP_ZoneEntry(const EQApplicationPacket *app)
 		}
 	}
 
-	if (RuleB(Character, SharedBankPlat))
+	if (RuleB(Character, SharedBankPlat) && !IsSeasonal()) {
 		m_pp.platinum_shared = database.GetSharedPlatinum(AccountID());
+	}
 
 	database.ClearOldRecastTimestamps(cid); /* Clear out our old recast timestamps to keep the DB clean */
 	// set to full support in case they're a gm with items in disabled expansion slots...but, have their gm flag off...
@@ -1773,8 +1824,10 @@ void Client::Handle_Connect_OP_ZoneEntry(const EQApplicationPacket *app)
 	entity_list.SendZoneSpawnsBulk(this);
 	entity_list.SendZoneCorpsesBulk(this);
 	entity_list.SendZonePVPUpdates(this);	//hack until spawn struct is fixed.
+	entity_list.SendZoneSeasonalUpdates(this);
+	entity_list.SendZonePlaymodeUpdates(this);
 
-											/* Time of Day packet */
+	/* Time of Day packet */
 	outapp = new EQApplicationPacket(OP_TimeOfDay, sizeof(TimeOfDay_Struct));
 	TimeOfDay_Struct* tod = (TimeOfDay_Struct*)outapp->pBuffer;
 	zone->zone_time.GetCurrentEQTimeOfDay(time(0), tod);
@@ -3752,9 +3805,12 @@ void Client::Handle_OP_Barter(const EQApplicationPacket *app)
 
 		case Barter_BuyerModeOn: {
 			if (!IsTrader()) {
+				if (IsSeasonal() && GetBucket("SeasonLocked") == "") {
+					Message(Chat::Red, "You have been seasonal locked because you have entered barter mode.");
+					SetBucket("SeasonLocked", "true");
+				}
 				ToggleBuyerMode(true);
-			}
-			else {
+			} else {
 				ToggleBuyerMode(false);
 				Message(Chat::Red, "You cannot be a Trader and Buyer at the same time.");
 			}
@@ -5284,6 +5340,14 @@ void Client::Handle_OP_ConsiderCorpse(const EQApplicationPacket *app)
 		} else {
 			MessageString(Chat::NPCQuestSay, CORPSE_DECAY_NOW);
 		}
+
+		if (t->IsSeasonal()) {
+			Message(Chat::Red, "This is a Seasonal character's kill, and will not unlock to be looted by others.");
+		}
+
+		if (t->IsHardcore()) {
+			Message(Chat::Red, "This is a Discordant character's kill, and will not unlock to be looted by others.");
+		}
 	} else if (t && t->IsPlayerCorpse()) {
 		remaining_time = t->GetRemainingRezTime();
 		if (!t->IsRezzed()) {
@@ -5472,8 +5536,7 @@ void Client::Handle_OP_ControlBoat(const EQApplicationPacket *app)
 
 void Client::Handle_OP_CorpseDrag(const EQApplicationPacket *app)
 {
-	if (DraggedCorpses.size() >= (unsigned int)RuleI(Character, MaxDraggedCorpses))
-	{
+	if (DraggedCorpses.size() >= (unsigned int)RuleI(Character, MaxDraggedCorpses))	{
 		MessageString(Chat::Red, CORPSEDRAG_LIMIT);
 		return;
 	}
@@ -5484,23 +5547,32 @@ void Client::Handle_OP_CorpseDrag(const EQApplicationPacket *app)
 
 	Mob* corpse = entity_list.GetMob(cds->CorpseName);
 
-	if (!corpse || !corpse->IsPlayerCorpse() || corpse->CastToCorpse()->IsBeingLooted())
-		return;
-
-	Client *c = entity_list.FindCorpseDragger(corpse->GetID());
-
-	if (c)
-	{
-		if (c == this)
-			MessageString(Chat::DefaultText, CORPSEDRAG_ALREADY, corpse->GetCleanName());
-		else
-			MessageString(Chat::DefaultText, CORPSEDRAG_SOMEONE_ELSE, corpse->GetCleanName());
-
+	if (!corpse || !corpse->IsPlayerCorpse() || corpse->CastToCorpse()->IsBeingLooted()) {
 		return;
 	}
 
-	if (!corpse->CastToCorpse()->Summon(this, false, true))
+	std::string isSeasonalVar    = corpse->CastToCorpse()->GetEntityVariable("IsSeasonal");
+	bool        corpseIsSeasonal = (isSeasonalVar == "true");
+
+	if (IsSeasonal() != corpseIsSeasonal) {
+		Message(Chat::Red, "Characters may only may only drag or be dragged by characters of their own season.");
 		return;
+	}
+
+	Client *c = entity_list.FindCorpseDragger(corpse->GetID());
+
+	if (c) {
+		if (c == this) {
+			MessageString(Chat::DefaultText, CORPSEDRAG_ALREADY, corpse->GetCleanName());
+		} else {
+			MessageString(Chat::DefaultText, CORPSEDRAG_SOMEONE_ELSE, corpse->GetCleanName());
+		}
+		return;
+	}
+
+	if (!corpse->CastToCorpse()->Summon(this, false, true)) {
+		return;
+	}
 
 	DraggedCorpses.emplace_back(std::pair<std::string, uint16>(cds->CorpseName, corpse->GetID()));
 
@@ -7164,6 +7236,12 @@ void Client::Handle_OP_GroupCancelInvite(const EQApplicationPacket *app)
 	GroupCancel_Struct* gf = (GroupCancel_Struct*)app->pBuffer;
 	Mob* inviter = entity_list.GetClientByName(gf->name1);
 
+	if (inviter && inviter->IsClient() && IsSeasonal() != inviter->CastToClient()->IsSeasonal()) {
+		Message(Chat::Red, "Seasonal characters may only group with other Seasonal characters.");
+		inviter->Message(Chat::Red, "Seasonal characters may only group with other Seasonal characters.");
+		return;
+	}
+
 	if (inviter != nullptr)
 	{
 		if (inviter->IsClient())
@@ -7454,6 +7532,11 @@ void Client::Handle_OP_GroupInvite2(const EQApplicationPacket *app)
 
 	if (invitee == this) {
 		MessageString(Chat::LightGray, GROUP_INVITEE_SELF);
+		return;
+	}
+
+	if (invitee && invitee->IsClient() && IsSeasonal() != invitee->CastToClient()->IsSeasonal()) {
+		Message(Chat::Red, "Seasonal characters may only group with other Seasonal characters.");
 		return;
 	}
 
@@ -7779,6 +7862,17 @@ void Client::Handle_OP_GuildBank(const EQApplicationPacket *app)
 			}
 
 			const auto cursor_item = cursor_item_inst->GetItem();
+
+			if (IsSeasonal()) {
+				Message(Chat::Red, "Seasonal Characters are not allowed to use the Guild Bank.");
+				GuildBankDepositAck(true, sentAction);
+				if (ClientVersion() >= EQ::versions::ClientVersion::RoF) {
+					GetInv().PopItem(EQ::invslot::slotCursor);
+					PushItemOnCursor(cursor_item, true);
+				}
+				return;
+			}
+
 			if (GuildBanks->IsAreaFull(GuildID(), GuildBankDepositArea)) {
 				MessageString(Chat::Red, GUILD_BANK_FULL);
 				GuildBankDepositAck(true, sentAction);
@@ -7870,6 +7964,12 @@ void Client::Handle_OP_GuildBank(const EQApplicationPacket *app)
 		}
 
 		case GuildBankWithdraw: {
+			if (IsSeasonal()) {
+				Message(Chat::Red, "Seasonal Characters are not allowed to use the Guild Bank.");
+				GuildBankAck();
+				break;
+			}
+
 			if (GetInv()[EQ::invslot::slotCursor]) {
 				MessageString(Chat::Red, GUILD_BANK_EMPTY_HANDS);
 				GuildBankAck();
@@ -8211,6 +8311,16 @@ void Client::Handle_OP_GuildInvite(const EQApplicationPacket *app)
 
 	if (invitee->IsClient()) {
 		Client *client = invitee->CastToClient();
+
+		// Seasonal Check
+		if (IsSeasonal() != client->IsSeasonal()) {
+			Message(
+				Chat::Red,
+				"Prospective guild member %s must have the same seasonal status as the guild.",
+				gc->othername
+			);
+			return;
+		}
 
 		//ok, figure out what they are trying to do.
 		if (client && client->GuildID() == GuildID()) {
@@ -10319,6 +10429,12 @@ void Client::Handle_OP_LootRequest(const EQApplicationPacket *app)
 	}
 	if (ent->IsCorpse())
 	{
+		if (IsSeasonal() && !ent->CastToCorpse()->IsSeasonal() && !ent->CastToCorpse()->IsPlayerCorpse()) {
+			Message(Chat::Red, "Seasonal Characters may not loot from non-Seasonal kills.");
+			Corpse::SendLootReqErrorPacket(this);
+			return;
+		}
+
 		SetLooting(ent->GetID()); //store the entity we are looting
 
 		ent->CastToCorpse()->MakeLootRequestPackets(this, app);
@@ -12332,6 +12448,12 @@ void Client::Handle_OP_RaidCommand(const EQApplicationPacket* app)
 
 		} else {
 			Client* player_to_invite = entity_list.GetClientByName(raid_command_packet->player_name);
+
+			if (player_to_invite && IsSeasonal() != player_to_invite->IsSeasonal()) {
+				Message(Chat::Red, "Seasonal characters may only group with other Seasonal characters.");
+				return;
+			}
+
 			if (!player_to_invite) {
 				break;
 			}
@@ -13516,6 +13638,11 @@ void Client::Handle_OP_RequestDuel(const EQApplicationPacket *app)
 	ds->duel_target = duel;
 	Entity* entity = entity_list.GetID(ds->duel_target);
 
+	if (IsSeasonal() != entity->CastToClient()->IsSeasonal()) {
+		Message(Chat::Red, "Seasonal characters may only duel with other Seasonal characters.");
+		return;
+	}
+
 	if (
 		GetID() != ds->duel_target &&
 		entity->IsClient() &&
@@ -14360,7 +14487,7 @@ void Client::Handle_OP_ShopPlayerSell(const EQApplicationPacket *app)
 
 	int charges = mp->quantity;
 
-	if (vendor->GetKeepsSoldItems()) {
+	if (vendor->GetKeepsSoldItems() && !IsSeasonal()) {
 		int freeslot = 0;
 		if (
 			(freeslot = zone->SaveTempItem(
@@ -15311,6 +15438,7 @@ void Client::Handle_OP_TradeAcceptClick(const EQApplicationPacket *app)
 	if (with && with->IsClient()) {
 		//finish trade...
 		// Have both accepted?
+		Client* me    = this;
 		Client* other = with->CastToClient();
 		other->QueuePacket(app);
 
@@ -15355,6 +15483,19 @@ void Client::Handle_OP_TradeAcceptClick(const EQApplicationPacket *app)
 				other->trade->Reset();
 				trade->Reset();
 			}
+
+			if (IsSeasonal() && other->IsSeasonal()) {
+				auto lockIfNeeded = [&](Client* c){
+					if (c->GetBucket("SeasonLocked") == "") {
+						c->Message(Chat::Red, "Your character is now seasonal-locked due to a completed trade.");
+						c->SetBucket("SeasonLocked", "true");
+					}
+				};
+
+				lockIfNeeded(me);
+				lockIfNeeded(other);
+			}
+
 			// All done
 			auto outapp = new EQApplicationPacket(OP_FinishTrade, 0);
 			other->QueuePacket(outapp);
@@ -15418,13 +15559,18 @@ void Client::Handle_OP_Trader(const EQApplicationPacket *app)
 				return;
 			}
 
+			if (IsSeasonal() && GetBucket("SeasonLocked") == "") {
+				Message(Chat::Red, "You have been seasonal locked because you have entered trader mode.");
+				SetBucket("SeasonLocked", "true");
+			}
+
 			TraderStartTrader(app);
 			break;
 		}
-		case PriceUpdate:
-		case ItemMove: {
-			LogTrading("Trader Price Update");
-			TraderPriceUpdate(app);
+		case ItemMove:
+		case PriceUpdate:{
+			LogTrading("Trader item updated - removed, added or price change");
+			TraderUpdateItem(app);
 			break;
 		}
 		case EndTransaction: {
@@ -15443,7 +15589,7 @@ void Client::Handle_OP_Trader(const EQApplicationPacket *app)
 			break;
 		}
 		default: {
-			LogError("Unknown size for OP_Trader: [{}]\n", app->size);
+			//LogTradingDetail("Unknown size for OP_Trader: [{}]", app->size);
 		}
 	}
 }
@@ -15454,40 +15600,29 @@ void Client::Handle_OP_TraderBuy(const EQApplicationPacket *app)
 	//
 	// Client has elected to buy an item from a Trader
 	//
-	auto in     = (TraderBuy_Struct *) app->pBuffer;
 
-	if (RuleB(Bazaar, UseAlternateBazaarSearch) && in->trader_id >= TraderRepository::TRADER_CONVERT_ID) {
-		auto trader = TraderRepository::GetTraderByInstanceAndSerialnumber(
-			database,
-			in->trader_id - TraderRepository::TRADER_CONVERT_ID,
-			in->serial_number
-		);
-
-		if (!trader.trader_id) {
-			LogTrading("Unable to convert trader id for {} and serial number {}.  Trader Buy aborted.",
-				in->trader_id - TraderRepository::TRADER_CONVERT_ID,
-				in->serial_number
-			);
-			return;
-		}
-
-		in->trader_id = trader.trader_id;
-		strn0cpy(in->seller_name, trader.trader_name.c_str(), sizeof(in->seller_name));
-	}
-
-	auto trader = entity_list.GetClientByID(in->trader_id);
+	auto in             = (TraderBuy_Struct *) app->pBuffer;
+	auto item_unique_id = std::string(in->item_unique_id);
+	auto trader_details = TraderRepository::GetTraderByItemUniqueNumber(database, item_unique_id);
+	auto trader         = entity_list.GetClientByID(in->trader_id);
+	strn0cpy(in->seller_name, trader_details.trader_name.c_str(), sizeof(in->seller_name));
 
 	switch (in->method) {
 		case BazaarByVendor: {
 			if (trader) {
+				if (IsSeasonal() && GetBucket("SeasonLocked") == "") {
+					Message(Chat::Red, "You have been seasonal locked because you have purchased an item from a trader.");
+					SetBucket("SeasonLocked", "true");
+				}
+
 				LogTrading("Buy item directly from vendor id <green>[{}] item_id <green>[{}] quantity <green>[{}] "
 						   "serial_number <green>[{}]",
 						   in->trader_id,
 						   in->item_id,
 						   in->quantity,
-						   in->serial_number
+						   in->item_unique_id
 				);
-				BuyTraderItem(in, trader, app);
+				BuyTraderItem(app);
 			}
 			break;
 		}
@@ -15506,14 +15641,34 @@ void Client::Handle_OP_TraderBuy(const EQApplicationPacket *app)
 				TradeRequestFailed(app);
 				return;
 			}
+
+			if (RuleI(Seasons, EnableSeasonalCharacters)) {
+				DataBucketKey db_key = {};
+				db_key.character_id = database.GetCharacterID(in->seller_name);
+				db_key.key = "SeasonalCharacter";
+
+				bool dst_seasonal = (Strings::ToInt(DataBucket::GetData(db_key).value) == RuleI(Seasons,EnableSeasonalCharacters));
+				if (dst_seasonal != IsSeasonal()) {
+					SendParcelIconStatus();
+						Message(
+						Chat::Yellow,
+						"You may not purchase from this trader, because they are not a member of the same Season as you are."
+					);
+					in->method     = BazaarByParcel;
+					in->sub_action = Failed;
+					TradeRequestFailed(app);
+					return;
+				}
+			}
+
 			LogTrading("Buy item by parcel delivery <green>[{}] item_id <green>[{}] quantity <green>[{}] "
 					   "serial_number <green>[{}]",
 					   in->trader_id,
 					   in->item_id,
 					   in->quantity,
-					   in->serial_number
+					   in->item_unique_id
 			);
-			BuyTraderItemOutsideBazaar(in, app);
+			BuyTraderItemFromBazaarWindow(app);
 			break;
 		}
 		case BazaarByDirectToInventory: {
@@ -15536,7 +15691,7 @@ void Client::Handle_OP_TraderBuy(const EQApplicationPacket *app)
 					   in->trader_id,
 					   in->item_id,
 					   in->quantity,
-					   in->serial_number
+					   in->item_unique_id
 			);
 			Message(
 				Chat::Yellow,
@@ -15546,6 +15701,9 @@ void Client::Handle_OP_TraderBuy(const EQApplicationPacket *app)
 			in->sub_action = Failed;
 			TradeRequestFailed(app);
 			break;
+		}
+		default: {
+
 		}
 	}
 }
@@ -15573,18 +15731,59 @@ void Client::Handle_OP_TradeRequest(const EQApplicationPacket *app)
 
 	// Pass trade request on to recipient
 	if (tradee && tradee->IsClient()) {
+		Client* me       = this;
+		Client* tradeeClient = tradee->CastToClient();
+
 		// if we are idling we need to sync client positions otherwise clients will not be aware of each other
 		if (m_is_idle) {
 			SyncWorldPositionsToClient(true);
 		}
+
 		if (tradee->CastToClient()->IsIdle()) {
 			tradee->CastToClient()->SyncWorldPositionsToClient(true);
+		}
+
+		if (IsHardcore() || tradee->CastToClient()->IsHardcore()) {
+			Message(Chat::Red, "A Discordant may not trade with other players.");
+			return;
+		}
+
+		if (IsSeasonal() != tradee->CastToClient()->IsSeasonal()) {
+			Message(Chat::Red, "Seasonal Characters may not trade with other players who are not Seasonal.");
+			return;
+		}
+
+		if (IsSeasonal() && tradeeClient->IsSeasonal()) {
+			static constexpr auto kTradeWarning =
+				"Seasonal characters who complete a trade will be seasonal locked. "
+				"Do not complete any trades if you plan on removing your seasonal status.";
+
+			// helper to warn exactly once per client
+			auto warnClient = [&](Client* c){
+				if (c->GetBucket("SeasonLocked").empty()) {
+					c->Message(Chat::Red, kTradeWarning);
+					c->SetBucket("SeasonLocked", "true");
+				}
+			};
+
+			warnClient(me);
+			warnClient(tradeeClient);
 		}
 
 		tradee->CastToClient()->QueuePacket(app);
 	}
 	else if (tradee && (tradee->IsNPC() || tradee->IsBot())) {
         if (!tradee->IsEngaged()) {
+			if ((!IsSeasonal() && tradee->GetEntityVariable("Charm_Locked") == "Seasonal") || (IsSeasonal() && tradee->GetEntityVariable("Charm_Locked") == "Non-Seasonal")) {
+				Message(Chat::Red, "Seasonal Locked Charm Pets cannot trade with non Seasonal players.");
+				return;
+			}
+
+			if (tradee->IsPet() && IsSeasonal() != tradee->GetOwner()->CastToClient()->IsSeasonal()) {
+				Message(Chat::Red, "Seasonal Locked Pets cannot trade with non Seasonal players.");
+				return;
+			}
+
             trade->Start(msg->to_mob_id);
             EQApplicationPacket *outapp = new EQApplicationPacket(OP_TradeRequestAck, sizeof(TradeRequest_Struct));
             TradeRequest_Struct *acc = (TradeRequest_Struct *) outapp->pBuffer;
@@ -15637,24 +15836,36 @@ void Client::Handle_OP_TraderShop(const EQApplicationPacket *app)
 	switch (in->Code) {
 		case ClickTrader: {
 			LogTrading("Handle_OP_TraderShop case ClickTrader [{}]", in->Code);
-			auto outapp =
-				std::make_unique<EQApplicationPacket>(OP_TraderShop, static_cast<uint32>(sizeof(TraderClick_Struct))
+			auto outapp        = std::make_unique<EQApplicationPacket>(
+				OP_TraderShop,
+				static_cast<uint32>(sizeof(TraderClick_Struct))
 			);
 			auto data          = (TraderClick_Struct *) outapp->pBuffer;
-			auto trader_client = entity_list.GetClientByID(in->TraderID);
+			auto trader = entity_list.GetClientByID(in->TraderID);
 
-			if (trader_client) {
-				data->Approval = trader_client->WithCustomer(GetID());
-				LogTrading("Client::Handle_OP_TraderShop: Shop Request ([{}]) to ([{}]) with Approval: [{}]",
-						   GetCleanName(),
-						   trader_client->GetCleanName(),
-						   data->Approval
-				);
+			if (trader) {
+				if (trader->IsSeasonal() != IsSeasonal()) {
+					Message(Chat::Red, "Seasonal characters may only buy from Seasonal traders.");
+					data->Approval = 0;
+				} else {
+					if (IsSeasonal() && GetBucket("SeasonLocked") == "") {
+						Message(Chat::Red, "If you purchase an item from a trader you will become Seasonal Locked");
+					}
+					data->Approval = trader->WithCustomer(GetID());
+					LogTrading("Client::Handle_OP_TraderShop: Shop Request ([{}]) to ([{}]) with Approval: [{}]",
+						GetCleanName(),
+						trader->GetCleanName(),
+						data->Approval
+					);
+				}
 			}
 			else {
 				LogTrading("Client::Handle_OP_TraderShop: entity_list.GetClientByID(tcs->traderid)"
 						   " returned a nullptr pointer"
 				);
+				auto outapp = new EQApplicationPacket(OP_ShopEndConfirm);
+				QueuePacket(outapp);
+				safe_delete(outapp);
 				return;
 			}
 
@@ -15664,8 +15875,9 @@ void Client::Handle_OP_TraderShop(const EQApplicationPacket *app)
 			QueuePacket(outapp.get());
 
 			if (data->Approval) {
-				BulkSendTraderInventory(trader_client->CharacterID());
-				trader_client->Trader_CustomerBrowsing(this);
+				ClearTraderMerchantList();
+				BulkSendTraderInventory(trader->CharacterID());
+				trader->Trader_CustomerBrowsing(this);
 				SetTraderID(in->TraderID);
 				LogTrading("Client::Handle_OP_TraderShop: Trader Inventory Sent to [{}] from [{}]",
 						   GetID(),
@@ -15673,7 +15885,9 @@ void Client::Handle_OP_TraderShop(const EQApplicationPacket *app)
 				);
 			}
 			else {
-				MessageString(Chat::Yellow, TRADER_BUSY);
+				if (trader->IsSeasonal() == IsSeasonal()) {
+					MessageString(Chat::Yellow, TRADER_BUSY);
+				}
 				LogTrading("Client::Handle_OP_TraderShop: Trader Busy");
 			}
 
@@ -15916,6 +16130,12 @@ void Client::Handle_OP_VetClaimRequest(const EQApplicationPacket *app)
 {
 	if (app->size < sizeof(VeteranClaim)) {
 		LogDebug("OP_VetClaimRequest size lower than expected: got [{}] expected at least [{}]", app->size, sizeof(VeteranClaim));
+		DumpPacket(app);
+		return;
+	}
+
+	// Hard Return for seasonal characters
+	if (IsSeasonal()) {
 		DumpPacket(app);
 		return;
 	}
@@ -16449,11 +16669,14 @@ void Client::Handle_OP_SharedTaskAddPlayer(const EQApplicationPacket *app)
 		r->player_name
 	);
 
-	if (!GetTaskState()->HasActiveSharedTask()) {
+
+
+	if (IsSeasonal() != entity_list.GetClientByName(r->player_name)->CastToClient()->IsSeasonal()) { // Seasonal Check
+		Message(Chat::Red, "Seasonal characters may only be in tasks with other Seasonal characters.");
+	} else if (!GetTaskState()->HasActiveSharedTask()) {
 		// this message is generated client-side in newer clients
 		Message(Chat::System, TaskStr::Get(TaskStr::COULD_NOT_USE_COMMAND));
-	}
-	else {
+	} else {
 		// struct
 		auto p = new ServerPacket(
 			ServerOP_SharedTaskAddPlayer,
@@ -17203,6 +17426,53 @@ void Client::Handle_OP_EvolveItem(const EQApplicationPacket *app)
 		default: {
 		}
 	}
+}
+
+void Client::Handle_OP_Offline(const EQApplicationPacket *app)
+{
+	if (IsThereACustomer()) {
+		auto customer = entity_list.GetClientByID(GetCustomerID());
+		if (customer) {
+			auto end_session = new EQApplicationPacket(OP_ShopEnd);
+			customer->FastQueuePacket(&end_session);
+		}
+	}
+
+	AccountRepository::SetOfflineStatus(database, AccountID(), true);
+	SetOffline(true);
+
+	EQStreamInterface *eqsi           = nullptr;
+	auto               offline_client = new Client(eqsi);
+
+	database.LoadCharacterData(CharacterID(), &offline_client->GetPP(), &offline_client->GetEPP());
+	offline_client->Clone(*this);
+	offline_client->GetInv().SetGMInventory(true);
+	offline_client->SetPosition(GetX(), GetY(), GetZ());
+	offline_client->SetHeading(GetHeading());
+	offline_client->SetSpawned();
+	offline_client->SetBecomeNPC(false);
+	offline_client->SetOffline(true);
+	entity_list.AddClient(offline_client);
+
+	if (IsBuyer()) {
+		offline_client->SetBuyerID(offline_client->CharacterID());
+		if (!BuyerRepository::UpdateBuyerEntityID(database, CharacterID(), GetID(), offline_client->GetID())) {
+			entity_list.RemoveMob(offline_client->CastToMob()->GetID());
+			return;
+		}
+	}
+	else {
+		offline_client->SetTrader(true);
+	}
+
+	OnDisconnect(true);
+
+	auto outapp = new EQApplicationPacket();
+	offline_client->CreateSpawnPacket(outapp);
+	entity_list.QueueClients(nullptr, outapp, false);
+	safe_delete(outapp);
+
+	offline_client->UpdateWho(3);
 }
 
 bool Client::IsFilteredAFKPacket(const EQApplicationPacket *p)

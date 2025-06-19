@@ -449,6 +449,8 @@ bool BaseGuildManager::SetGuild(uint32 charid, uint32 guild_id, uint8 rank)
 		return false;
 	}
 
+	rank = (rank == 0) ? GUILD_NONE : rank;
+
 	//lookup their old guild, if they had one.
 	uint32        old_guild = GUILD_NONE;
 	CharGuildInfo gci;
@@ -844,8 +846,10 @@ bool BaseGuildManager::QueryWithLogging(std::string query, const char *errmsg)
 #define GuildMemberBaseQuery \
 "SELECT c.`id`, c.`name`, c.`class`, c.`level`, c.`last_login`, c.`zone_id`," \
 " g.`guild_id`, g.`rank`, g.`tribute_enable`, g.`total_tribute`, g.`last_tribute`," \
-" g.`banker`, g.`public_note`, g.`alt`, g.`online` " \
-" FROM `character_data` AS c LEFT JOIN `guild_members` AS g ON c.`id` = g.`char_id` "
+" g.`banker`, g.`public_note`, g.`alt`, g.`online`, a.`offline` " \
+" FROM `character_data` AS c LEFT JOIN `guild_members` AS g ON c.`id` = g.`char_id` " \
+" LEFT JOIN `account` AS a ON a.`id` = c.`account_id` "
+
 static void ProcessGuildMember(MySQLRequestRow row, CharGuildInfo &into)
 {
 	//fields from `characer_`
@@ -866,6 +870,7 @@ static void ProcessGuildMember(MySQLRequestRow row, CharGuildInfo &into)
 	into.public_note    = row[12] ? row[12] : "";
 	into.alt            = row[13] ? (row[13][0] == '0' ? false : true) : false;
 	into.online         = row[14] ? (row[14][0] == '0' ? false : true) : false;
+	into.offline_mode   = row[15] ? (row[15][0] == '0' ? false : true) : false;
 
 	//a little sanity checking/cleanup
 	if (into.guild_id == 0) {

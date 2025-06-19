@@ -6,6 +6,7 @@
 #include "client.h"
 #include "dynamic_zone.h"
 #include "expedition_request.h"
+#include "guild_mgr.h"
 #include "lua_client.h"
 #include "lua_expedition.h"
 #include "lua_npc.h"
@@ -1122,6 +1123,16 @@ uint32 Lua_Client::GetClientVersionBit() {
 void Lua_Client::SetTitleSuffix(const char *text) {
 	Lua_Safe_Call_Void();
 	self->SetTitleSuffix(text);
+}
+
+void Lua_Client::EnableTitleSet(uint32 title_set) {
+	Lua_Safe_Call_Void();
+	self->EnableTitle(title_set);
+}
+
+void Lua_Client::SetGuild(int guild_id, int rank) {
+	Lua_Safe_Call_Void();
+	guild_mgr.SetGuild(self, static_cast<uint32>(guild_id), static_cast<uint8>(rank));
 }
 
 void Lua_Client::SetAAPoints(int points) {
@@ -3584,6 +3595,24 @@ bool Lua_Client::KeyRingRemove(uint32 item_id)
 	return self->KeyRingRemove(item_id);
 }
 
+bool Lua_Client::IsSeasonal()
+{
+	Lua_Safe_Call_Bool();
+	return self->IsSeasonal() ? 1 : 0;
+}
+
+bool Lua_Client::IsHardcore()
+{
+	Lua_Safe_Call_Bool();
+	return self->IsHardcore() ? 1 : 0;
+}
+
+bool Lua_Client::IsDedicatedTrader()
+{
+	Lua_Safe_Call_Bool();
+	return self->IsDedicatedTrader() ? 1 : 0;
+}
+
 luabind::scope lua_register_client() {
 	return luabind::class_<Lua_Client, Lua_Mob>("Client")
 	.def(luabind::constructor<>())
@@ -3693,6 +3722,7 @@ luabind::scope lua_register_client() {
 	.def("EnableAreaHPRegen", &Lua_Client::EnableAreaHPRegen)
 	.def("EnableAreaManaRegen", &Lua_Client::EnableAreaManaRegen)
 	.def("EnableAreaRegens", &Lua_Client::EnableAreaRegens)
+	.def("EnableTitleSet", &Lua_Client::EnableTitleSet)
 	.def("EndSharedTask", (void(Lua_Client::*)(void))&Lua_Client::EndSharedTask)
 	.def("EndSharedTask", (void(Lua_Client::*)(bool))&Lua_Client::EndSharedTask)
 	.def("Escape", (void(Lua_Client::*)(void))&Lua_Client::Escape)
@@ -4083,6 +4113,7 @@ luabind::scope lua_register_client() {
 	.def("SetFeigned", (void(Lua_Client::*)(bool))&Lua_Client::SetFeigned)
 	.def("SetGM", (void(Lua_Client::*)(bool))&Lua_Client::SetGM)
 	.def("SetGMStatus", (void(Lua_Client::*)(int))&Lua_Client::SetGMStatus)
+	.def("SetGuild", (void(Lua_Client::*)(int,int))&Lua_Client::SetGuild)
 	.def("SetHideMe", (void(Lua_Client::*)(bool))&Lua_Client::SetHideMe)
 	.def("SetHorseId", (void(Lua_Client::*)(int))&Lua_Client::SetHorseId)
 	.def("SetHunger", (void(Lua_Client::*)(int))&Lua_Client::SetHunger)
@@ -4181,7 +4212,10 @@ luabind::scope lua_register_client() {
 	.def("UpdateTaskActivity", (void(Lua_Client::*)(int,int,int))&Lua_Client::UpdateTaskActivity)
 	.def("UseDiscipline", (bool(Lua_Client::*)(int,int))&Lua_Client::UseDiscipline)
 	.def("UseAugmentContainer", (void(Lua_Client::*)(int))&Lua_Client::UseAugmentContainer)
-	.def("WorldKick", (void(Lua_Client::*)(void))&Lua_Client::WorldKick);
+	.def("WorldKick", (void(Lua_Client::*)(void))&Lua_Client::WorldKick)
+	.def("IsSeasonal", (bool(Lua_Client::*)(void))&Lua_Client::IsSeasonal)
+	.def("IsHardcore", (bool(Lua_Client::*)(void))&Lua_Client::IsHardcore)
+	.def("IsDedicatedTrader", (bool(Lua_Client::*)(void))&Lua_Client::IsDedicatedTrader);
 }
 
 luabind::scope lua_register_inventory_where() {

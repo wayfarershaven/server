@@ -2540,6 +2540,33 @@ bool Perl_Mob_HasTwoHanderEquipped(Mob* self) // @categories Stats and Attribute
 	return self->HasTwoHanderEquipped();
 }
 
+void Perl_Mob_SetHeroModel(Mob *self, uint32 hero_forge_model)
+{
+	hero_forge_model *= 100;
+
+	if (self->GetTarget()) {
+		for (uint8 slot = 0; slot < 7; slot++) {
+			self->GetTarget()->SendTextureWC(slot, 0, (hero_forge_model + slot), 0, 0, 0);
+		}
+
+		return;
+	}
+
+	for (uint8 slot = 0; slot < 7; slot++) {
+		self->SendTextureWC(slot, 0, (hero_forge_model + slot), 0, 0, 0);
+	}
+}
+
+void Perl_Mob_SetHeroModelByOrnamentIdAndSlot(Mob *self, uint32 ornament_id, uint8 inventory_slot)
+{
+	const auto item = database.GetItem(ornament_id);
+	if (item) {
+		self->SendTextureWC(
+			EQ::InventoryProfile::CalcMaterialFromSlot(inventory_slot), 0, item->HerosForgeModel, 0, 0, 0
+		);
+	}
+}
+
 int32_t Perl_Mob_GetHerosForgeModel(Mob* self, uint8_t material_slot) // @categories Stats and Attributes
 {
 	return self->GetHerosForgeModel(material_slot);
@@ -4149,6 +4176,8 @@ void perl_register_mob()
 	package.add("SetHate", (void(*)(Mob*, Mob*, int64_t))&Perl_Mob_SetHate);
 	package.add("SetHate", (void(*)(Mob*, Mob*, int64_t, int64_t))&Perl_Mob_SetHate);
 	package.add("SetHeading", &Perl_Mob_SetHeading);
+	package.add("SetHeroModel", &Perl_Mob_SetHeroModel);
+	package.add("SetHeroModelByOrnamentIdAndSlot", &Perl_Mob_SetHeroModelByOrnamentIdAndSlot);
 	package.add("SetInvisible", &Perl_Mob_SetInvisible);
 	package.add("SetInvul", &Perl_Mob_SetInvul);
 	package.add("SetLD", &Perl_Mob_SetLD);

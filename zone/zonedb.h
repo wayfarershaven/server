@@ -336,6 +336,7 @@ struct CharacterCorpseEntry
 	uint32 drakkin_tattoo;
 	uint32 drakkin_details;
 	std::vector<CharacterCorpseItemEntry> items;
+	std::string entity_variables;
 };
 
 namespace BeastlordPetData {
@@ -393,15 +394,9 @@ public:
 	void	DeleteTraderItem(uint32 char_id);
 	void	DeleteTraderItem(uint32 char_id,uint16 slot_id);
 
-	std::unique_ptr<EQ::ItemInstance> LoadSingleTraderItem(uint32 char_id, int serial_number);
+	std::unique_ptr<EQ::ItemInstance> LoadSingleTraderItem(uint32 char_id, const std::string &serial_number);
 	Trader_Struct* LoadTraderItem(uint32 char_id);
 	TraderCharges_Struct* LoadTraderItemWithCharges(uint32 char_id);
-
-	/* Buyer/Barter  */
-	void AddBuyLine(uint32 CharID, uint32 BuySlot, uint32 ItemID, const char *ItemName, uint32 Quantity, uint32 Price);
-	void RemoveBuyLine(uint32 CharID, uint32 BuySlot);
-	void UpdateBuyLine(uint32 CharID, uint32 BuySlot, uint32 Quantity);
-
 
 	void UpdateGMStatus(uint32 account_id, int new_status);
 

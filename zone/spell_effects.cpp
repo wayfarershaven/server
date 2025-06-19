@@ -787,6 +787,28 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 					break;
 				}
 
+				if (caster->CastToClient()->IsSeasonal()) { // Seasonal Caster
+					LogDebug("Caster is Seasonal");
+					if (!CastToNPC()->EntityVariableExists("Charm_Locked")) { // Never been charmed
+						LogDebug("Entity has never been charmed");
+						CastToNPC()->SetEntityVariable("Charm_Locked", "Seasonal"); // Charm Lock to Seasonal
+					} else if (CastToNPC()->GetEntityVariable("Charm_Locked") == "Non-Seasonal") { // Has been charmed by Non-Seasonal
+						LogDebug("Entity was previously charmed by a Non-Seasonal Character");
+						caster->CastToClient()->Message(Chat::Red, "Non-Seasonal locked charm pets cannot be charmed by Seasonal players (Exploit prevention)");
+						break;
+					}
+				} else { // Not a Seasonal Caster
+					LogDebug("Caster is Non-Seasonal");
+					if (!CastToNPC()->EntityVariableExists("Charm_Locked")) { // Never been charmed
+						LogDebug("Entity has never been charmed");
+						CastToNPC()->SetEntityVariable("Charm_Locked", "Non-Seasonal"); // Charm Lock to Non-Seasonal
+					} else if (CastToNPC()->GetEntityVariable("Charm_Locked") == "Seasonal") { // Has been charmed by Seasonal
+						LogDebug("Entity was previously charmed by a Seasonal Character");
+						caster->CastToClient()->Message(Chat::Red, "Seasonal locked charm pets cannot be charmed by Non-Seasonal players (Exploit prevention)");
+						break;
+					}
+				}
+
 				if (IsNPC()) {
 					CastToNPC()->SaveGuardSpotCharm();
 				}
@@ -1703,8 +1725,14 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 #endif
 				// This is handled by the client prior to SoD.
 				//
-				if (IsClient() && (CastToClient()->ClientVersionBit() & EQ::versions::maskSoDAndLater))
+				if (CastToCorpse()->IsSeasonal() != caster->CastToClient()->IsSeasonal()) {
+					caster->Message(Chat::Red, "Seasonal and non-Seasonal Characters may not affect each other with spells, including corpses.");
+					break;
+				}
+
+				if (IsClient() && (CastToClient()->ClientVersionBit() & EQ::versions::maskSoDAndLater)) {
 					CastToClient()->LocateCorpse();
+				}
 
 				break;
 			}
@@ -1716,10 +1744,15 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 				snprintf(effect_desc, _EDLEN, "Revive");	// heh the corpse won't see this
 #endif
 				if (IsCorpse() && CastToCorpse()->IsPlayerCorpse()) {
-
-					if(caster)
+					if(caster) {
 						LogSpells("corpse being rezzed using spell [{}] by [{}]",
 							spell_id, caster->GetName());
+						}
+
+					if (CastToCorpse()->IsSeasonal() != caster->CastToClient()->IsSeasonal()) {
+						caster->Message(Chat::Red, "Seasonal and non-Seasonal Characters may not affect each other with spells, including corpses.");
+						break;
+					}
 
 					CastToCorpse()->CastRezz(spell_id, caster);
 				}

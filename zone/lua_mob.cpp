@@ -17,6 +17,8 @@
 #include "lua_stat_bonuses.h"
 #include "npc.h"
 
+extern ZoneDatabase database;
+
 struct SpecialAbilities { };
 
 struct Lua_Mob_List {
@@ -2247,6 +2249,35 @@ bool Lua_Mob::HasTwoHanderEquipped() {
 	return self->HasTwoHanderEquipped();
 }
 
+void Lua_Mob::SetHeroModel(uint32 hero_forge_model)
+{
+	Lua_Safe_Call_Void();
+	hero_forge_model *= 100;
+
+	if (self->GetTarget()) {
+		for (uint8 slot = 0; slot < 7; slot++) {
+			self->GetTarget()->SendTextureWC(slot, 0, (hero_forge_model + slot), 0, 0, 0);
+		}
+
+		return;
+	}
+
+	for (uint8 slot = 0; slot < 7; slot++) {
+		self->SendTextureWC(slot, 0, (hero_forge_model + slot), 0, 0, 0);
+	}
+}
+
+void Lua_Mob::SetHeroModelByOrnamentIdAndSlot(uint32 ornament_id, uint8 inventory_slot) const
+{
+	Lua_Safe_Call_Void();
+	const auto item = database.GetItem(ornament_id);
+	if (item) {
+		self->SendTextureWC(
+			EQ::InventoryProfile::CalcMaterialFromSlot(inventory_slot), 0, item->HerosForgeModel, 0, 0, 0
+		);
+	}
+}
+
 uint32 Lua_Mob::GetHerosForgeModel(uint8 material_slot) {
 	Lua_Safe_Call_Int();
 	return self->GetHerosForgeModel(material_slot);
@@ -4010,6 +4041,8 @@ luabind::scope lua_register_mob() {
 	.def("SetHate", (void(Lua_Mob::*)(Lua_Mob,int64))&Lua_Mob::SetHate)
 	.def("SetHate", (void(Lua_Mob::*)(Lua_Mob,int64,int64))&Lua_Mob::SetHate)
 	.def("SetHeading", (void(Lua_Mob::*)(double))&Lua_Mob::SetHeading)
+	.def("SetHeroModel", (void(Lua_Mob::*)(uint32))&Lua_Mob::SetHeroModel)
+	.def("SetHeroModelByOrnamentIdAndSlot", (void(Lua_Mob::*)(uint32, uint8))&Lua_Mob::SetHeroModelByOrnamentIdAndSlot)
 	.def("SetInvisible", &Lua_Mob::SetInvisible)
 	.def("SetInvul", (void(Lua_Mob::*)(bool))&Lua_Mob::SetInvul)
 	.def("SetLevel", (void(Lua_Mob::*)(int))&Lua_Mob::SetLevel)

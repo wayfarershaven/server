@@ -179,7 +179,7 @@ bool Client::Process() {
 			}
 			if (IsInAGuild()) {
 				guild_mgr.UpdateDbMemberOnline(CharacterID(), false);
-				guild_mgr.SendGuildMemberUpdateToWorld(GetName(), GuildID(), 0, time(nullptr));
+				guild_mgr.SendGuildMemberUpdateToWorld(GetName(), GuildID(), 0, time(nullptr), 0);
 			}
 
 			SetDynamicZoneMemberStatus(DynamicZoneMemberStatus::Offline);
@@ -208,7 +208,7 @@ bool Client::Process() {
 			Save();
 			if (IsInAGuild()) {
 				guild_mgr.UpdateDbMemberOnline(CharacterID(), false);
-				guild_mgr.SendGuildMemberUpdateToWorld(GetName(), GuildID(), 0, time(nullptr));
+				guild_mgr.SendGuildMemberUpdateToWorld(GetName(), GuildID(), 0, time(nullptr), 0);
 			}
 
 			if (GetMerc())
@@ -585,7 +585,7 @@ bool Client::Process() {
 		return false;
 	}
 
-	if (client_state != CLIENT_LINKDEAD && !eqs->CheckState(ESTABLISHED)) {
+	if (eqs && client_state != CLIENT_LINKDEAD && !eqs->CheckState(ESTABLISHED)) {
 		OnDisconnect(true);
 		LogInfo("Client linkdead: {}", name);
 
@@ -596,7 +596,7 @@ bool Client::Process() {
 			}
 			if (IsInAGuild()) {
 				guild_mgr.UpdateDbMemberOnline(CharacterID(), false);
-				guild_mgr.SendGuildMemberUpdateToWorld(GetName(), GuildID(), 0, time(nullptr));
+				guild_mgr.SendGuildMemberUpdateToWorld(GetName(), GuildID(), 0, time(nullptr), 0);
 			}
 
 			return false;
@@ -614,7 +614,7 @@ bool Client::Process() {
 
 	/************ Get all packets from packet manager out queue and process them ************/
 	EQApplicationPacket *app = nullptr;
-	if (!eqs->CheckState(CLOSING))
+	if (eqs && !eqs->CheckState(CLOSING))
 	{
 		while (app = eqs->PopPacket()) {
 			HandlePacket(app);
@@ -624,7 +624,7 @@ bool Client::Process() {
 
 	ClientToNpcAggroProcess();
 
-	if (client_state != CLIENT_LINKDEAD && (client_state == CLIENT_ERROR || client_state == DISCONNECTED || client_state == CLIENT_KICKED || !eqs->CheckState(ESTABLISHED)))
+	if (eqs && client_state != CLIENT_LINKDEAD && (client_state == CLIENT_ERROR || client_state == DISCONNECTED || client_state == CLIENT_KICKED || !eqs->CheckState(ESTABLISHED)))
 	{
 		//client logged out or errored out
 		//ResetTrade();
@@ -954,21 +954,22 @@ void Client::BulkSendMerchantInventory(int merchant_id, int npcid) {
 		}
 	}
 
-	auto temporary_merchant_list_two = zone->tmpmerchanttable[npcid];
-	temporary_merchant_list.clear();
-	for (auto ml : temporary_merchant_list_two) {
-		if (slot_id > merchant_slots) {
-			break;
-		}
-
-		item = database.GetItem(ml.item);
-		ml.slot = slot_id;
-		if (item) {
-			if (!handy_chance) {
-				handy_item = item;
-			} else {
-				handy_chance--;
+	if (!(IsSeasonal() || IsHardcore())) {
+		auto temporary_merchant_list_two = zone->tmpmerchanttable[npcid];
+		temporary_merchant_list.clear();
+		for (auto ml : temporary_merchant_list_two) {
+			if (slot_id > merchant_slots) {
+				break;
 			}
+
+			item = database.GetItem(ml.item);
+			ml.slot = slot_id;
+			if (item) {
+				if (!handy_chance) {
+					handy_item = item;
+				} else {
+					handy_chance--;
+				}
 
 			auto charges = item->MaxCharges;
 			auto inst = database.CreateItem(item, charges);
@@ -981,21 +982,22 @@ void Client::BulkSendMerchantInventory(int merchant_id, int npcid) {
 					item_price *= RuleR(Merchant, SellCostMod);
 				}
 
-				if (RuleB(Merchant, UsePriceMod)) {
-					item_price *= Client::CalcPriceMod(npc);
+					if (RuleB(Merchant, UsePriceMod)) {
+						item_price *= Client::CalcPriceMod(npc);
+					}
+
+					inst->SetCharges(item_charges);
+					inst->SetMerchantCount(ml.charges);
+					inst->SetMerchantSlot(ml.slot);
+					inst->SetPrice(item_price);
+
+					SendItemPacket(ml.slot - 1, inst, ItemPacketMerchant);
+					safe_delete(inst);
 				}
-
-				inst->SetCharges(item_charges);
-				inst->SetMerchantCount(ml.charges);
-				inst->SetMerchantSlot(ml.slot);
-				inst->SetPrice(item_price);
-
-				SendItemPacket(ml.slot - 1, inst, ItemPacketMerchant);
-				safe_delete(inst);
 			}
+			temporary_merchant_list.push_back(ml);
+			slot_id++;
 		}
-		temporary_merchant_list.push_back(ml);
-		slot_id++;
 	}
 
 	//this resets the slot
@@ -1565,10 +1567,18 @@ void Client::OPMoveCoin(const EQApplicationPacket* app)
 		{
 			if (to_bucket == &m_pp.platinum_shared || from_bucket == &m_pp.platinum_shared)
 			{
-				if (from_bucket == &m_pp.platinum_shared)
-					amount_to_add = 0 - amount_to_take;
+				if (IsSeasonal()) {
+					Message(Chat::Red, "WARNING: Seasonal Characters may not access the Shared Bank. Any deposited platinum visible here is a visual glitch only.");
 
-				database.SetSharedPlatinum(AccountID(),amount_to_add);
+					AddPlatinum(amount_to_add, true);
+					m_pp.platinum_shared = 0;
+					m_pp.platinum_cursor = 0;
+				} else {
+					if (from_bucket == &m_pp.platinum_shared)
+						amount_to_add = 0 - amount_to_take;
+
+					database.SetSharedPlatinum(AccountID(),amount_to_add);
+				}
 			}
 		}
 		else{
@@ -1884,33 +1894,32 @@ void Client::OPGMSummon(const EQApplicationPacket *app)
 	GMSummon_Struct* gms = (GMSummon_Struct*) app->pBuffer;
 	Mob* st = entity_list.GetMob(gms->charname);
 
-	if(st && st->IsCorpse())
-	{
-		st->CastToCorpse()->Summon(this, false, true);
-	}
-	else
-	{
-		if(admin < AccountStatus::QuestTroupe)
-		{
+	if (st && st->IsCorpse()) {
+		std::string isSeasonalVar    = st->CastToCorpse()->GetEntityVariable("IsSeasonal");
+		bool        corpseIsSeasonal = (isSeasonalVar == "true");
+
+		if (IsSeasonal() != corpseIsSeasonal) {
+			Message(Chat::Red, "Characters may only may only drag or be dragged by characters of their own season.");
 			return;
 		}
-		if(st)
-		{
-			Message(0, "Local: Summoning %s to %f, %f, %f", gms->charname, gms->x, gms->y, gms->z);
-			if (st->IsClient() && (st->CastToClient()->GetAnon() != 1 || Admin() >= st->CastToClient()->Admin()))
-				st->CastToClient()->MovePC(zone->GetZoneID(), zone->GetInstanceID(), (float)gms->x, (float)gms->y, (float)gms->z, GetHeading(), true);
-			else
-				st->GMMove(GetX(), GetY(), GetZ(),GetHeading());
+		st->CastToCorpse()->Summon(this, false, true);
+	} else {
+		if(admin < AccountStatus::QuestTroupe) {
+			return;
 		}
-		else
-		{
-			uint8 tmp = gms->charname[strlen(gms->charname)-1];
-			if (!worldserver.Connected())
-			{
-				Message(0, "Error: World server disconnected");
+
+		if (st) {
+			Message(0, "Local: Summoning %s to %f, %f, %f", gms->charname, gms->x, gms->y, gms->z);
+			if (st->IsClient() && (st->CastToClient()->GetAnon() != 1 || Admin() >= st->CastToClient()->Admin())) {
+				st->CastToClient()->MovePC(zone->GetZoneID(), zone->GetInstanceID(), (float)gms->x, (float)gms->y, (float)gms->z, GetHeading(), true);
+			} else {
+				st->GMMove(GetX(), GetY(), GetZ(),GetHeading());
 			}
-			else if (tmp < '0' || tmp > '9') // dont send to world if it's not a player's name
-			{
+		} else {
+			uint8 tmp = gms->charname[strlen(gms->charname)-1];
+			if (!worldserver.Connected()) {
+				Message(0, "Error: World server disconnected");
+			} else if (tmp < '0' || tmp > '9') { // dont send to world if it's not a player's name
 				auto pack = new ServerPacket(ServerOP_ZonePlayer, sizeof(ServerZonePlayer_Struct));
 				ServerZonePlayer_Struct* szp = (ServerZonePlayer_Struct*) pack->pBuffer;
 				strcpy(szp->adminname, GetName());
@@ -1923,11 +1932,10 @@ void Client::OPGMSummon(const EQApplicationPacket *app)
 				szp->ignorerestrictions = 2;
 				worldserver.SendPacket(pack);
 				safe_delete(pack);
-			}
-			else {
+			} else {
 				//all options have been exhausted
 				//summon our target...
-				if(GetTarget() && GetTarget()->IsCorpse()){
+				if (GetTarget() && GetTarget()->IsCorpse()) {
 					GetTarget()->CastToCorpse()->Summon(this, false, true);
 				}
 			}

@@ -235,6 +235,12 @@ public:
 
 	virtual void UpdateEquipmentLight();
 
+	/* Custom Seasonal\Hardcore */
+	bool IsHardcore() { return m_hardcore; }
+	bool IsSeasonal() { return m_seasonal; }
+	void SetHardcore(bool val) { m_hardcore = val; }
+	void SetSeasonal(bool val) { m_seasonal = val; }
+
 	void CheckIsOwnerOnline();
 	void SetOwnerOnline(bool value) { m_is_owner_online = value; }
 	bool GetOwnerOnline() { return m_is_owner_online; }
@@ -243,6 +249,8 @@ public:
 		const CharacterCorpsesRepository::CharacterCorpses &cc,
 		const glm::vec4 &position
 	);
+
+	void SyncEntityVariablesToCorpseDB();
 
 protected:
 	void MoveItemToCorpse(Client *client, EQ::ItemInstance *inst, int16 equipSlot, std::list<uint32> &removedList);
@@ -285,6 +293,8 @@ private:
 	std::vector<std::string> m_consented_player_names;
 	LootRequestType          m_loot_request_type;
 	uint32                   m_account_id;
+	bool					 m_seasonal;
+	bool					 m_hardcore;
 };
 
 #endif
