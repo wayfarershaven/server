@@ -726,58 +726,148 @@ void Client::SetEXP(ExpSource exp_source, uint64 set_exp, uint64 set_aaxp, bool 
 
     // --- BEGIN: EXP GAIN/LOSS LOGIC ---
     if (total_add_exp > total_current_exp) {
-        uint64 exp_gained = set_exp > current_exp ? set_exp - current_exp : 0;
-        uint64 aa_exp_gained = set_aaxp > current_aa_exp ? set_aaxp - current_aa_exp : 0;
-        LogError("[SetEXP] GAINED: exp [{}], aa_exp [{}]", exp_gained, aa_exp_gained);
+		uint64 exp_gained = set_exp > current_exp ? set_exp - current_exp : 0;
+		uint64 aa_exp_gained = set_aaxp > current_aa_exp ? set_aaxp - current_aa_exp : 0;
 
-        float exp_percent = 0.0f, aa_exp_percent = 0.0f;
-        if (exp_gained > 0) {
-            exp_percent = (float)((float)exp_gained / (float)(GetEXPForLevel(GetLevel() + 1) - GetEXPForLevel(GetLevel()))) * 100.0f;
-        }
-        if (aa_exp_gained > 0) {
-            aa_exp_percent = (float)((float)aa_exp_gained / (float)RuleI(AA, ExpPerPoint)) * 100.0f;
-        }
+		// Build amount message if needed
+		std::string exp_amount_message;
+		if (RuleI(Character, ShowExpValues) >= 1) {
+			if (exp_gained > 0 && aa_exp_gained > 0) {
+				exp_amount_message = fmt::format("({}) ({})", exp_gained, aa_exp_gained);
+			} else if (exp_gained > 0) {
+				exp_amount_message = fmt::format("({})", exp_gained);
+			} else if (aa_exp_gained > 0) {
+				exp_amount_message = fmt::format("({}) AA", aa_exp_gained);
+			}
+		}
 
-        LogError("[SetEXP] Percent gained: exp [{:.3f}%%], aa_exp [{:.3f}%%]", exp_percent, aa_exp_percent);
+		// Build percent message if needed
+		std::string exp_percent_message;
+		if (RuleI(Character, ShowExpValues) >= 2) {
+			float exp_percent = 0.0f;
+			float aa_exp_percent = 0.0f;
+			if (exp_gained > 0) {
+				exp_percent = 100.0f * (float)(exp_gained) / (float)(GetEXPForLevel(GetLevel() + 1) - GetEXPForLevel(GetLevel()));
+			}
+			if (aa_exp_gained > 0) {
+				aa_exp_percent = 100.0f * (float)(aa_exp_gained) / (float)RuleI(AA, ExpPerPoint);
+			}
 
-        if (isrezzexp) {
-            LogError("[SetEXP] Resurrection EXP");
-            // ... (Message logic)
-        } else {
-            if (membercount > 1) {
-                LogError("[SetEXP] Group EXP gain");
-            } else if (IsRaidGrouped()) {
-                LogError("[SetEXP] Raid EXP gain");
-            } else {
-                LogError("[SetEXP] Solo EXP gain");
-            }
-        }
-        ProcessEvolvingItem(exp_gained, npc);
-        LogError("[SetEXP] Called ProcessEvolvingItem with exp_gained [{}]", exp_gained);
+			if (exp_gained > 0 && aa_exp_gained > 0) {
+				exp_percent_message = StringFormat("(%.3f%%, %.3f%%AA)", exp_percent, aa_exp_percent);
+			} else if (exp_gained > 0) {
+				exp_percent_message = StringFormat("(%.3f%%)", exp_percent);
+			} else if (aa_exp_gained > 0) {
+				exp_percent_message = StringFormat("(%.3f%%AA)", aa_exp_percent);
+			}
+		}
 
-    } else if (total_add_exp < total_current_exp) {
-        uint64 exp_lost = current_exp > set_exp ? current_exp - set_exp : 0;
-        float exp_percent = (float)((float)exp_lost / (float)(GetEXPForLevel(GetLevel() + 1) - GetEXPForLevel(GetLevel()))) * 100.0f;
-        LogError("[SetEXP] LOST: exp [{}] ({:.3f}%%)", exp_lost, exp_percent);
-        // ... (Message logic)
-    } else {
-        LogError("[SetEXP] No EXP change detected (set_exp [{}] == current_exp [{}] and set_aaxp [{}] == current_aa_exp [{}])",
-            set_exp, current_exp, set_aaxp, current_aa_exp);
-    }
+		if (isrezzexp) {
+			// Resurrection experience gain
+			if (RuleI(Character, ShowExpValues) > 0) {
+				Message(Chat::Experience, "You regain %s experience from resurrection. %s", exp_amount_message.c_str(), exp_percent_message.c_str());
+			} else {
+				MessageString(Chat::Experience, REZ_REGAIN);
+			}
+		} else {
+			// Non-resurrection XP gain
+			if (membercount > 1) {
+				// Group
+				if (RuleI(Character, ShowExpValues) > 0) {
+					Message(Chat::Experience, "You have gained %s party experience! %s", exp_amount_message.c_str(), exp_percent_message.c_str());
+				} else if (zone->IsHotzone()) {
+					Message(Chat::Experience, "You gain party experience (with a bonus)!");
+				} else {
+					MessageString(Chat::Experience, GAIN_GROUPXP);
+				}
+			} else if (IsRaidGrouped()) {
+				// Raid
+				if (RuleI(Character, ShowExpValues) > 0) {
+					Message(Chat::Experience, "You have gained %s raid experience! %s", exp_amount_message.c_str(), exp_percent_message.c_str());
+				} else if (zone->IsHotzone()) {
+					Message(Chat::Experience, "You gained raid experience (with a bonus)!");
+				} else {
+					MessageString(Chat::Experience, GAIN_RAIDEXP);
+				}
+			} else {
+				// Solo
+				if (RuleI(Character, ShowExpValues) > 0) {
+					Message(Chat::Experience, "You have gained %s experience! %s", exp_amount_message.c_str(), exp_percent_message.c_str());
+				} else if (zone->IsHotzone()) {
+					Message(Chat::Experience, "You gain experience (with a bonus)!");
+				} else {
+					MessageString(Chat::Experience, GAIN_XP);
+				}
+			}
+		}
+		ProcessEvolvingItem(exp_gained, npc);
+	} else if (total_add_exp < total_current_exp) {
+		// Only message if experience is lost
+		uint64 exp_lost = current_exp > set_exp ? current_exp - set_exp : 0;
+		float exp_percent = 0.0f;
+		if (exp_lost > 0) {
+			exp_percent = 100.0f * (float)(exp_lost) / (float)(GetEXPForLevel(GetLevel() + 1) - GetEXPForLevel(GetLevel()));
+		}
+
+		if (RuleI(Character, ShowExpValues) == 1 && exp_lost > 0) {
+			Message(Chat::Yellow, "You have lost %llu experience.", exp_lost);
+		} else if (RuleI(Character, ShowExpValues) == 2 && exp_lost > 0) {
+			Message(Chat::Yellow, "You have lost %llu experience. (%.3f%%)", exp_lost, exp_percent);
+		} else if (exp_lost > 0) {
+			Message(Chat::Yellow, "You have lost experience.");
+		}
+	}
     // --- END: EXP GAIN/LOSS LOGIC ---
 
-    // --- BEGIN: AA LOGIC ---
-    if (set_aaxp >= max_AAXP) {
-        LogError("[SetEXP] set_aaxp [{}] >= max_AAXP [{}] -- calculating AA point gain", set_aaxp, max_AAXP);
-        uint32 last_unspentAA = m_pp.aapoints;
-        m_pp.aapoints = set_aaxp / max_AAXP;
-        set_aaxp = set_aaxp - (max_AAXP * m_pp.aapoints);
-        m_pp.aapoints += last_unspentAA;
-        uint32 gained = m_pp.aapoints - last_unspentAA;
-        LogError("[SetEXP] AA points awarded: [{}], total now [{}], leftover aaxp [{}]", gained, m_pp.aapoints, set_aaxp);
-        // ... (Message, sound, log, etc.)
-    }
-    // --- END: AA LOGIC ---
+	// --- BEGIN: AA LOGIC ---
+	if (set_aaxp >= max_AAXP) {
+		LogError("[SetEXP] set_aaxp [{}] >= max_AAXP [{}] -- calculating AA point gain", set_aaxp, max_AAXP);
+		uint32 last_unspentAA = m_pp.aapoints;
+
+		// How many new AA points from this grant
+		m_pp.aapoints = set_aaxp / max_AAXP;
+		set_aaxp = set_aaxp - (max_AAXP * m_pp.aapoints);
+		m_pp.aapoints += last_unspentAA;
+
+		uint32 gained = m_pp.aapoints - last_unspentAA;
+		LogError("[SetEXP] AA points awarded: [{}], total now [{}], leftover aaxp [{}]", gained, m_pp.aapoints, set_aaxp);
+
+		// Messaging for AA points gained
+		char val1[20] = {0};
+		char val2[20] = {0};
+
+		if (gained == 1 && m_pp.aapoints == 1) {
+			// You have gained an ability point!  You now have %1 ability point.
+			MessageString(Chat::Experience, GAIN_SINGLE_AA_SINGLE_AA, ConvertArray(m_pp.aapoints, val1));
+		} else if (gained == 1 && m_pp.aapoints > 1) {
+			// You have gained an ability point!  You now have %1 ability points.
+			MessageString(Chat::Experience, GAIN_SINGLE_AA_MULTI_AA, ConvertArray(m_pp.aapoints, val1));
+		} else if (gained > 1) {
+			// You have gained %1 ability point(s)!  You now have %2 ability point(s).
+			MessageString(Chat::Experience, GAIN_MULTI_AA_MULTI_AA, ConvertArray(gained, val1), ConvertArray(m_pp.aapoints, val2));
+		}
+
+		if (RuleB(AA, SoundForAAEarned)) {
+			SendSound();
+		}
+
+		if (parse->PlayerHasQuestSub(EVENT_AA_GAIN)) {
+			parse->EventPlayer(EVENT_AA_GAIN, this, std::to_string(gained), 0);
+		}
+
+		RecordPlayerEventLog(PlayerEvent::AA_GAIN, PlayerEvent::AAGainedEvent{gained});
+
+		/* QS: PlayerLogAARate */
+		if (RuleB(QueryServ, PlayerLogAARate)) {
+			int add_points = gained;
+			std::string query = StringFormat(
+				"INSERT INTO `qs_player_aa_rate_hourly` (char_id, aa_count, hour_time) VALUES (%i, %i, UNIX_TIMESTAMP() - MOD(UNIX_TIMESTAMP(), 3600)) ON DUPLICATE KEY UPDATE `aa_count` = `aa_count` + %i",
+				CharacterID(), add_points, add_points
+			);
+			QServ->SendQuery(query.c_str());
+		}
+	}
+	// --- END: AA LOGIC ---
 
     // --- BEGIN: LEVEL UP/DOWN LOGIC ---
     if ((GetLevel() != check_level) && !(check_level >= max_level)) {
