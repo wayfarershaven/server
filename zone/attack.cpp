@@ -2921,6 +2921,8 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 		corpse->SetSeasonal(seasonal_killer);
 		corpse->SetHardcore(hardcore_killer);
 
+		corpse->SetEntityVariable("IsSeasonal", seasonal_killer ? "true" : "false");
+
 		if (killer_mob && emoteid) {
 			LogError("[NPC::Death] DoNPCEmote AfterDeath [{}]", emoteid);
 			DoNPCEmote(EQ::constants::EmoteEventTypes::AfterDeath, emoteid, killer_mob);
