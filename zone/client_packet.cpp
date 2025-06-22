@@ -16669,9 +16669,24 @@ void Client::Handle_OP_SharedTaskAddPlayer(const EQApplicationPacket *app)
 		r->player_name
 	);
 
+	// Have to do it this way because we cant get a client handle on both inviter and invitee simultaneously
+	bool invitee_is_seasonal = false;
+	if (RuleI(Seasons, EnableSeasonalCharacters)) {
+		int char_id = database.GetCharacterID(r->player_name);
+		std::string query = StringFormat("SELECT data_buckets.value FROM data_buckets WHERE data_buckets.character_id = %i AND data_buckets.key = 'SeasonalCharacter'", char_id);
 
+		auto results = database.QueryDatabase(query);
+		if (results.Success()) {
+			auto row = results.begin();
+			if (Strings::ToInt(row[0]) > 0) {
+				invitee_is_seasonal = true;
+			} else {
+				invitee_is_seasonal = false;
+			}
+		}
+	}
 
-	if (IsSeasonal() != entity_list.GetClientByName(r->player_name)->CastToClient()->IsSeasonal()) { // Seasonal Check
+	if (IsSeasonal() != invitee_is_seasonal) { // Seasonal Check
 		Message(Chat::Red, "Seasonal characters may only be in tasks with other Seasonal characters.");
 	} else if (!GetTaskState()->HasActiveSharedTask()) {
 		// this message is generated client-side in newer clients

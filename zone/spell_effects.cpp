@@ -1725,7 +1725,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 #endif
 				// This is handled by the client prior to SoD.
 				//
-				if (CastToCorpse()->IsSeasonal() != caster->CastToClient()->IsSeasonal()) {
+				if (Strings::ToBool(CastToCorpse()->GetEntityVariable("IsSeasonal")) != caster->CastToClient()->IsSeasonal()) {
 					caster->Message(Chat::Red, "Seasonal and non-Seasonal Characters may not affect each other with spells, including corpses.");
 					break;
 				}
@@ -1749,7 +1749,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 							spell_id, caster->GetName());
 						}
 
-					if (CastToCorpse()->IsSeasonal() != caster->CastToClient()->IsSeasonal()) {
+					if (Strings::ToBool(CastToCorpse()->GetEntityVariable("IsSeasonal")) != caster->CastToClient()->IsSeasonal()) {
 						caster->Message(Chat::Red, "Seasonal and non-Seasonal Characters may not affect each other with spells, including corpses.");
 						break;
 					}
