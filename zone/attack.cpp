@@ -2481,12 +2481,10 @@ void NPC::Damage(Mob* other, int64 damage, uint16 spell_id, EQ::skills::SkillTyp
 
 bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillType attack_skill, KilledByTypes killed_by, bool is_buff_tic)
 {
-	LogCombat(
-		"Fatal blow dealt by [{}] with [{}] damage, spell [{}], skill [{}]",
-		(killer_mob ? killer_mob->GetName() : "[nullptr]"),
-		damage,
-		spell,
-		attack_skill
+	LogError("[NPC::Death] ENTER: mob [{}] killed by [{}], damage [{}], spell [{}], skill [{}], killed_by [{}], is_buff_tic [{}]",
+		GetCleanName(),
+		killer_mob ? killer_mob->GetCleanName() : "nullptr",
+		damage, spell, static_cast<int>(attack_skill), static_cast<int>(killed_by), is_buff_tic
 	);
 
 	Mob* owner_or_self = killer_mob ? killer_mob->GetOwnerOrSelf() : nullptr;
@@ -2501,22 +2499,24 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 		);
 	};
 
+	// Early parse event
 	if (parse->EventBotMercNPC(EVENT_DEATH, this, owner_or_self, exports) != 0) {
+		LogError("[NPC::Death] Early EventBotMercNPC handled event, aborting Death logic for [{}]", GetCleanName());
 		if (GetHP() < 0) {
 			SetHP(0);
 		}
-
 		return false;
 	}
 
 	if (m_resumed_from_zone_suspend && !IsQueuedForCorpse()) {
-		LogInfo("NPC [{}] is resumed from zone suspend, cannot kill until zone resume is complete.", GetCleanName());
+		LogError("[NPC::Death] Resumed from zone suspend, cannot kill until resume complete [{}]", GetCleanName());
 		SetHP(0);
 		return false;
 	}
 
 	if (IsMultiQuestEnabled()) {
-		for (auto &i: m_hand_in.items) {
+		LogError("[NPC::Death] Handling MultiQuest items for [{}]", GetCleanName());
+		for (auto &i : m_hand_in.items) {
 			if (i.is_multiquest_item && i.item->GetItem()->NoDrop != 0) {
 				auto lde = LootdropEntriesRepository::NewNpcEntity();
 				lde.equip_item   = 0;
@@ -2527,23 +2527,18 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 	}
 
 	if (killer_mob && killer_mob->IsOfClientBot() && IsValidSpell(spell) && damage > 0) {
+		LogError("[NPC::Death] Non-melee damage from client bot [{}]", killer_mob->GetCleanName());
 		char val1[20] = { 0 };
 
 		entity_list.MessageCloseString(
-			this, /* Sender */
-			false, /* Skip Sender */
-			RuleI(Range, DamageMessages),
-			Chat::NonMelee, /* 283 */
-			HIT_NON_MELEE, /* %1 hit %2 for %3 points of non-melee damage. */
-			killer_mob->GetCleanName(), /* Message1 */
-			GetCleanName(), /* Message2 */
-			ConvertArray(damage, val1) /* Message3 */
+			this, false, RuleI(Range, DamageMessages), Chat::NonMelee, HIT_NON_MELEE,
+			killer_mob->GetCleanName(), GetCleanName(), ConvertArray(damage, val1)
 		);
 	}
 
 	if (IsEngaged()) {
 		zone->DelAggroMob();
-		LogAttackDetail("{} Mob{} currently aggroed.", zone->MobsAggroCount(), zone->MobsAggroCount() != 1 ? "s" : "");
+		LogError("[NPC::Death] DelAggroMob: Mob was engaged at time of death. AggroCount after: [{}]", zone->MobsAggroCount());
 	}
 
 	ShieldAbilityClearVariables();
@@ -2554,6 +2549,7 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 	if (GetSwarmOwner()) {
 		Mob* owner = entity_list.GetMobID(GetSwarmOwner());
 		if (owner) {
+			LogError("[NPC::Death] Decrementing temp pet count for swarm owner [{}]", owner->GetCleanName());
 			owner->SetTempPetCount(owner->GetTempPetCount() - 1);
 		}
 	}
@@ -2563,6 +2559,7 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 	entity_list.RemoveFromTargets(this, p_depop);
 
 	if (p_depop) {
+		LogError("[NPC::Death] Early depop set, returning false [{}]", GetCleanName());
 		return false;
 	}
 
@@ -2574,7 +2571,8 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 
 	const uint8 killed_level = GetLevel();
 
-	if (GetClass() == Class::LDoNTreasure) { // open chest
+	if (GetClass() == Class::LDoNTreasure) {
+		LogError("[NPC::Death] Open chest animation for LDoN treasure [{}]", GetCleanName());
 		static EQApplicationPacket p(OP_Animation, sizeof(Animation_Struct));
 		auto a = (Animation_Struct*) p.pBuffer;
 		a->spawnid = GetID();
@@ -2584,75 +2582,84 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 	}
 
 	auto app = new EQApplicationPacket(OP_Death, sizeof(Death_Struct));
-
 	auto d = (Death_Struct*) app->pBuffer;
 
-	// Convert last message to color to avoid duplicate damage messages
-	// that occur in these rare cases when this is the death blow.
 	if (IsValidSpell(spell) &&
 		(attack_skill == EQ::skills::SkillTigerClaw ||
-        (IsDamageSpell(spell) && IsDiscipline(spell)) ||
-		!is_buff_tic)) {
-			d->attack_skill = DamageTypeSpell;
-			d->spell_id = (is_buff_tic) ? UINT32_MAX : spell;
-	}
-	else {
+		 (IsDamageSpell(spell) && IsDiscipline(spell)) ||
+		 !is_buff_tic)) {
+		d->attack_skill = DamageTypeSpell;
+		d->spell_id = (is_buff_tic) ? UINT32_MAX : spell;
+		LogError("[NPC::Death] OP_Death: Using DamageTypeSpell");
+	} else {
 		d->attack_skill = SkillDamageTypes[attack_skill];
 		d->spell_id = UINT32_MAX;
+		LogError("[NPC::Death] OP_Death: Using SkillDamageTypes [{}]", static_cast<int>(attack_skill));
 	}
 
 	d->spawn_id     = GetID();
 	d->killer_id    = killer_mob ? killer_mob->GetID() : 0;
 	d->bindzoneid   = 0;
 	d->damage       = damage;
-	d->corpseid		= GetID();
+	d->corpseid     = GetID();
 
 	app->priority = 1;
 
 	entity_list.QueueClients(killer_mob, app, false);
-
 	safe_delete(app);
 
 	if (respawn2) {
+		LogError("[NPC::Death] Respawn2 DeathReset [{}]", GetCleanName());
 		respawn2->DeathReset(1);
 	}
 
 	if (killer_mob && GetClass() != Class::LDoNTreasure) {
+		LogError("[NPC::Death] AddEntToHateList [{}]", killer_mob->GetCleanName());
 		hate_list.AddEntToHateList(killer_mob, damage);
 	}
 
 	Mob* give_exp = hate_list.GetDamageTopOnHateList(this);
-
 	if (give_exp) {
+		LogError("[NPC::Death] Initial give_exp resolved to [{}]", give_exp->GetCleanName());
 		give_exp = killer;
+		if (give_exp) {
+			LogError("[NPC::Death] give_exp forcibly set to killer [{}]", give_exp->GetCleanName());
+		}
 	}
 
+	// Pet/owner XP logic
 	if (give_exp && give_exp->HasOwner()) {
 		auto owner = give_exp->GetOwner();
+		LogError("[NPC::Death] give_exp has owner [{}]", owner ? owner->GetCleanName() : "nullptr");
 
 		if (owner) {
-			Mob* ulimate_owner = give_exp->GetUltimateOwner();
+			Mob* ultimate_owner = give_exp->GetUltimateOwner();
 			bool pet_owner_is_client = give_exp->IsPet() && owner->IsClient();
 			bool pet_owner_is_bot = give_exp->IsPet() && owner->IsBot();
 			bool owner_is_client = owner->IsClient();
-
-			bool is_in_same_group_or_raid = (
+			bool is_in_same_group_or_raid =
 				pet_owner_is_client ||
-				(pet_owner_is_bot && owner->IsInGroupOrRaid(ulimate_owner)) ||
-				(owner_is_client && give_exp->IsInGroupOrRaid(ulimate_owner))
-			);
+				(pet_owner_is_bot && owner->IsInGroupOrRaid(ultimate_owner)) ||
+				(owner_is_client && give_exp->IsInGroupOrRaid(ultimate_owner));
+
+			LogError("[NPC::Death] Owner info: pet_owner_is_client [{}], pet_owner_is_bot [{}], owner_is_client [{}], is_in_same_group_or_raid [{}]",
+				pet_owner_is_client, pet_owner_is_bot, owner_is_client, is_in_same_group_or_raid);
 
 			give_exp = (is_in_same_group_or_raid ? give_exp->GetUltimateOwner() : nullptr);
-		}
-		else {
+			LogError("[NPC::Death] Resolved give_exp to ultimate_owner [{}]", give_exp ? give_exp->GetCleanName() : "nullptr");
+		} else {
+			LogError("[NPC::Death] Owner pointer is null, give_exp set to nullptr");
 			give_exp = nullptr;
 		}
 	}
 
+	// Swarm pet logic
 	if (give_exp && give_exp->IsTempPet() && give_exp->IsPetOwnerOfClientBot()) {
+		LogError("[NPC::Death] give_exp is temp pet, checking swarm owner...");
 		if (give_exp->IsNPC() && give_exp->CastToNPC()->GetSwarmOwner()) {
 			Mob* temp_owner = entity_list.GetMobID(give_exp->CastToNPC()->GetSwarmOwner());
 			if (temp_owner) {
+				LogError("[NPC::Death] Temp swarm owner resolved: [{}]", temp_owner->GetCleanName());
 				give_exp = temp_owner;
 			}
 		}
@@ -2663,35 +2670,40 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 	Client* give_exp_client = nullptr;
 	if (give_exp && give_exp->IsClient()) {
 		give_exp_client = give_exp->CastToClient();
+		LogError("[NPC::Death] Final give_exp_client resolved: [{}]", give_exp_client->GetCleanName());
+	} else {
+		LogError("[NPC::Death] No valid give_exp_client (give_exp was [{}])", give_exp ? give_exp->GetCleanName() : "nullptr");
 	}
 
-	//do faction hits even if we are a merchant, so long as a player killed us
+	// Faction hits (skip if charmed or EnableMeritBasedFaction)
 	if (!IsCharmed() && give_exp_client && !RuleB(NPC, EnableMeritBasedFaction)) {
+		LogError("[NPC::Death] Doing faction hits for [{}]", give_exp_client->GetCleanName());
 		hate_list.DoFactionHits(GetNPCFactionID(), GetPrimaryFaction(), GetFactionAmount());
 	}
 
 	const bool is_ldon_treasure = GetClass() == Class::LDoNTreasure;
 
 	if (give_exp_client && !IsCorpse()) {
+		LogError("[NPC::Death] give_exp_client [{}] is eligible for XP, checking group/raid status...", give_exp_client->GetCleanName());
+
 		Group* killer_group = entity_list.GetGroupByClient(give_exp_client);
 		Raid*  killer_raid  = entity_list.GetRaidByClient(give_exp_client);
 
 		int64 final_exp = give_exp_client->GetExperienceForKill(this);
+		LogError("[NPC::Death] final_exp calculated: [{}]", final_exp);
 
-		// handle task credit on behalf of the killer
+		// Task credit
 		if (RuleB(TaskSystem, EnableTaskSystem)) {
-			LogTasksDetail(
-				"Triggering HandleUpdateTasksOnKill for [{}] npc [{}]",
-				give_exp_client->GetCleanName(),
-				GetNPCTypeID()
-			);
+			LogError("[NPC::Death] Task system: HandleUpdateTasksOnKill for [{}] npc [{}]", give_exp_client->GetCleanName(), GetNPCTypeID());
 			task_manager->HandleUpdateTasksOnKill(give_exp_client, this);
 		}
 
+		// Raid XP
 		if (killer_raid) {
+			LogError("[NPC::Death] Killer is in raid. is_ldon_treasure [{}], MerchantType [{}]", is_ldon_treasure, MerchantType);
 			if (!is_ldon_treasure && MerchantType == 0) {
+				LogError("[NPC::Death] Splitting raid XP: final_exp [{}]", final_exp);
 				killer_raid->SplitExp(ExpSource::Kill, final_exp, this);
-
 				if (
 					killer_mob &&
 					(
@@ -2699,18 +2711,16 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 						killer_raid->IsRaidMember(killer_mob->GetUltimateOwner()->GetName())
 					)
 				) {
+					LogError("[NPC::Death] Raid TrySpellOnKill for [{}]", killer_mob->GetCleanName());
 					killer_mob->TrySpellOnKill(killed_level, spell);
 				}
 			}
-
-			/* Send the EVENT_KILLED_MERIT event for all raid members */
+			// Faction for all raid members
 			for (const auto& m : killer_raid->members) {
-				if (m.is_bot) {
-					continue;
-				}
-
+				if (m.is_bot) continue;
 				if (m.member) {
 					if (RuleB(NPC, EnableMeritBasedFaction)) {
+						LogError("[NPC::Death] Raid merit-based faction for [{}]", m.member->GetCleanName());
 						m.member->SetFactionLevel(
 							m.member->CharacterID(),
 							GetNPCFactionID(),
@@ -2719,14 +2729,14 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 							m.member->GetDeity()
 						);
 					}
-
 					player_count++;
 				}
 			}
 		} else if (give_exp_client->IsGrouped() && killer_group) {
+			LogError("[NPC::Death] Killer is in group. is_ldon_treasure [{}], MerchantType [{}]", is_ldon_treasure, MerchantType);
 			if (!is_ldon_treasure && MerchantType == 0) {
-					killer_group->SplitExp(ExpSource::Kill, final_exp, this);
-
+				LogError("[NPC::Death] Splitting group XP: final_exp [{}]", final_exp);
+				killer_group->SplitExp(ExpSource::Kill, final_exp, this);
 				if (
 					killer_mob &&
 					(
@@ -2734,16 +2744,15 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 						killer_group->IsGroupMember(killer_mob->GetUltimateOwner()->GetName())
 					)
 				) {
+					LogError("[NPC::Death] Group TrySpellOnKill for [{}]", killer_mob->GetCleanName());
 					killer_mob->TrySpellOnKill(killed_level, spell);
 				}
 			}
-
-			/* Update kill tasks for all group members */
 			for (const auto& m : killer_group->members) {
 				if (m && m->IsClient()) {
 					Client* c = m->CastToClient();
-
 					if (RuleB(NPC, EnableMeritBasedFaction)) {
+						LogError("[NPC::Death] Group merit-based faction for [{}]", c->GetCleanName());
 						c->SetFactionLevel(
 							c->CharacterID(),
 							GetNPCFactionID(),
@@ -2752,32 +2761,56 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 							c->GetDeity()
 						);
 					}
-
 					player_count++;
 				}
 			}
 		} else {
+			LogError("[NPC::Death] Killer is solo. is_ldon_treasure [{}], MerchantType [{}]", is_ldon_treasure, MerchantType);
 			if (!is_ldon_treasure && !MerchantType) {
 				const uint32 con_level = give_exp->GetLevelCon(GetLevel());
+				LogError(
+					"[NPC::Death] Solo XP: con_level [{}], give_exp [{}], give_exp_client [{}], has_owner [{}], owner_is_bot [{}], final_exp [{}]",
+					con_level,
+					give_exp ? give_exp->GetCleanName() : "nullptr",
+					give_exp_client ? give_exp_client->GetCleanName() : "nullptr",
+					GetOwner() ? "true" : "false",
+					(GetOwner() && GetOwner()->IsOfClientBot()) ? "true" : "false",
+					final_exp
+				);
+				if (con_level == ConsiderColor::Gray) {
+					LogError("[NPC::Death] SKIP: con_level is gray ({}). No XP awarded.", con_level);
+				} else if (GetOwner() && GetOwner()->IsOfClientBot()) {
+					LogError("[NPC::Death] SKIP: owner is bot client.");
+				} else if (!give_exp_client) {
+					LogError("[NPC::Death] SKIP: give_exp_client is null.");
+				} else {
+					LogError(
+						"[NPC::Death] CALLING AddEXP: [{}] will receive [{}] EXP (ExpSource::Kill), con_level [{}], resexp [false], npc [{}]",
+						give_exp_client->GetCleanName(),
+						final_exp,
+						con_level,
+						GetCleanName()
+					);
+					give_exp_client->AddEXP(ExpSource::Kill, final_exp, con_level, false, this);
 
-				if (con_level != ConsiderColor::Gray) {
-					if (!GetOwner() || (GetOwner() && !GetOwner()->IsOfClientBot())) {
-						give_exp_client->AddEXP(ExpSource::Kill, final_exp, con_level, false, this);
-
-						if (
-							killer_mob &&
-							(
-								killer_mob->GetID() == give_exp_client->GetID() ||
-								killer_mob->GetUltimateOwner()->GetID() == give_exp_client->GetID()
-							)
-						) {
-							killer_mob->TrySpellOnKill(killed_level, spell);
-						}
+					if (
+						killer_mob &&
+						(
+							killer_mob->GetID() == give_exp_client->GetID() ||
+							killer_mob->GetUltimateOwner()->GetID() == give_exp_client->GetID()
+						)
+					) {
+						LogError("[NPC::Death] Solo TrySpellOnKill for [{}]", killer_mob->GetCleanName());
+						killer_mob->TrySpellOnKill(killed_level, spell);
 					}
 				}
+			} else {
+				LogError("[NPC::Death] SKIP: mob [{}] is_ldon_treasure [{}] or MerchantType [{}] -- not awarding XP.",
+					GetCleanName(), is_ldon_treasure, MerchantType
+				);
 			}
-
 			if (RuleB(NPC, EnableMeritBasedFaction)) {
+				LogError("[NPC::Death] Solo merit-based faction for [{}]", give_exp_client->GetCleanName());
 				give_exp_client->SetFactionLevel(
 					give_exp_client->CharacterID(),
 					GetNPCFactionID(),
@@ -2790,10 +2823,9 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 	}
 
 	const bool allow_merchant_corpse = RuleB(Merchant, AllowCorpse);
-	const bool is_merchant           = (class_ == Class::Merchant || class_ == Class::AdventureMerchant || MerchantType != 0);
+	const bool is_merchant = (class_ == Class::Merchant || class_ == Class::AdventureMerchant || MerchantType != 0);
 
 	Corpse* corpse = nullptr;
-
 	const uint16 entity_id = GetID();
 
 	if (
@@ -2826,19 +2858,19 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 		)
 		|| IsQueuedForCorpse()
 		) {
+		LogError("[NPC::Death] Creating corpse for [{}]", GetCleanName());
 		if (killer) {
 			if (killer->GetOwner() != 0 && killer->GetOwner()->IsClient()) {
+				LogError("[NPC::Death] Corpse owner override to [{}]", killer->GetOwner()->GetCleanName());
 				killer = killer->GetOwner();
 			}
-
 			if (killer->IsClient() && !killer->CastToClient()->GetGM()) {
+				LogError("[NPC::Death] CheckTrivialMinMaxLevelDrop for killer [{}]", killer->GetCleanName());
 				CheckTrivialMinMaxLevelDrop(killer);
 			}
 		}
 
-		// Seasonal Stuff
-		// Find if anyone who is destined to get loot rights is Seasonal or HC
-
+		// Seasonal/HC loot logic
 		bool seasonal_killer = false;
 		bool hardcore_killer = false;
 		if (killer && killer->IsClient()) {
@@ -2847,7 +2879,7 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 			if (killer->IsGrouped()) {
 				Group* g = entity_list.GetGroupByClient(killer->CastToClient());
 				if (g) {
-					for (const auto &m : g->members) {
+					for (const auto& m : g->members) {
 						if (m) {
 							seasonal_killer = seasonal_killer || m->CastToClient()->IsSeasonal();
 							hardcore_killer = hardcore_killer || m->CastToClient()->IsHardcore();
@@ -2857,7 +2889,7 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 			} else if (killer->IsRaidGrouped()) {
 				Raid* r = entity_list.GetRaidByClient(killer->CastToClient());
 				if (r) {
-					for (const auto &m : r->members) {
+					for (const auto& m : r->members) {
 						if (m.member) {
 							seasonal_killer = seasonal_killer || m.member->IsSeasonal();
 							hardcore_killer = hardcore_killer || m.member->IsHardcore();
@@ -2874,17 +2906,15 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 			&m_loot_items,
 			GetNPCTypeID(),
 			&NPCTypedata,
-			(
-				level > 54 ?
-				RuleI(NPC, MajorNPCCorpseDecayTime) :
-				RuleI(NPC, MinorNPCCorpseDecayTime)
-			)
+			(level > 54 ? RuleI(NPC, MajorNPCCorpseDecayTime) : RuleI(NPC, MinorNPCCorpseDecayTime))
 		);
 
-		// hard set mobs that were charmed to seasonal/non-seasonal.
+		// Charm locked logic
 		if (EntityVariableExists("Charm_Locked") && GetEntityVariable("Charm_Locked") == "Seasonal") {
+			LogError("[NPC::Death] Corpse set seasonal due to Charm_Locked var");
 			seasonal_killer = true;
 		} else if (EntityVariableExists("Charm_Locked") && GetEntityVariable("Charm_Locked") == "Non-Seasonal") {
+			LogError("[NPC::Death] Corpse set non-seasonal due to Charm_Locked var");
 			seasonal_killer = false;
 		}
 
@@ -2892,16 +2922,13 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 		corpse->SetHardcore(hardcore_killer);
 
 		if (killer_mob && emoteid) {
+			LogError("[NPC::Death] DoNPCEmote AfterDeath [{}]", emoteid);
 			DoNPCEmote(EQ::constants::EmoteEventTypes::AfterDeath, emoteid, killer_mob);
 		}
 
 		entity_list.LimitRemoveNPC(this);
-
 		entity_list.AddCorpse(corpse, GetID());
 
-		// The client sees NPC corpses as name's_corpse.  The server uses
-		// name`s_corpse so that %T works on corpses (client workaround)
-		// Rename the new corpse on client side.
 		std::string old_name = Strings::Replace(corpse->GetName(), "`s_corpse", "'s_corpse");
 		SendRename(killer_mob, old_name.c_str(), corpse->GetName());
 
@@ -2913,17 +2940,17 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 		ApplyIllusionToCorpse(illusion_spell_id, corpse);
 
 		if (killer && killer->IsClient()) {
+			LogError("[NPC::Death] Allowing player loot for killer [{}]", killer->GetCleanName());
 			corpse->AllowPlayerLoot(killer, 0);
 			if (killer->IsGrouped()) {
 				Group* g = entity_list.GetGroupByClient(killer->CastToClient());
 				if (g) {
 					uint8 slot_id = 0;
-
-					for (const auto &m : g->members) {
+					for (const auto& m : g->members) {
 						if (m) {
+							LogError("[NPC::Death] Allowing player loot for group member [{}]", m->GetCleanName());
 							corpse->AllowPlayerLoot(m, slot_id);
 						}
-
 						slot_id++;
 					}
 				}
@@ -2931,27 +2958,26 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 				Raid* r = entity_list.GetRaidByClient(killer->CastToClient());
 				if (r) {
 					uint8 slot_id = 0;
-
-					for (const auto &m : r->members) {
-						if (m.is_bot) {
-							continue;
-						}
-
+					for (const auto& m : r->members) {
+						if (m.is_bot) continue;
 						switch (r->GetLootType()) {
 							case RaidLootType::LeaderOnly:
 								if (m.member && m.is_raid_leader) {
+									LogError("[NPC::Death] Allowing loot for raid leader [{}]", m.member->GetCleanName());
 									corpse->AllowPlayerLoot(m.member, slot_id);
 									slot_id++;
 								}
 								break;
 							case RaidLootType::LeaderAndGroupLeadersOnly:
 								if (m.member && (m.is_raid_leader || m.is_group_leader)) {
+									LogError("[NPC::Death] Allowing loot for raid/group leader [{}]", m.member->GetCleanName());
 									corpse->AllowPlayerLoot(m.member, slot_id);
 									slot_id++;
 								}
 								break;
 							case RaidLootType::LeaderSelected:
 								if (m.member && m.is_looter) {
+									LogError("[NPC::Death] Allowing loot for raid looter [{}]", m.member->GetCleanName());
 									corpse->AllowPlayerLoot(m.member, slot_id);
 									slot_id++;
 								}
@@ -2959,6 +2985,7 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 							case RaidLootType::EntireRaid:
 							default:
 								if (m.member) {
+									LogError("[NPC::Death] Allowing loot for raid member [{}]", m.member->GetCleanName());
 									corpse->AllowPlayerLoot(m.member, slot_id);
 									slot_id++;
 								}
@@ -2970,28 +2997,36 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 		} else if (killer_mob && is_ldon_treasure) {
 			Mob* ultimate_owner = killer_mob->GetUltimateOwner();
 			if (ultimate_owner->IsClient()) {
+				LogError("[NPC::Death] Allowing player loot for LDoN treasure killer [{}]", ultimate_owner->GetCleanName());
 				corpse->AllowPlayerLoot(ultimate_owner, 0);
 			}
 		}
 
 		if (zone && zone->adv_data) {
-			auto sr = (ServerZoneAdventureDataReply_Struct *) zone->adv_data;
+			auto sr = (ServerZoneAdventureDataReply_Struct*)zone->adv_data;
 			if (sr->type == Adventure_Kill) {
+				LogError("[NPC::Death] Adventure_Kill count increase");
 				zone->DoAdventureCountIncrease();
 			} else if (sr->type == Adventure_Assassinate) {
 				if (sr->data_id == GetNPCTypeID()) {
+					LogError("[NPC::Death] Adventure_Assassinate count increase (matching data_id)");
 					zone->DoAdventureCountIncrease();
 				} else {
+					LogError("[NPC::Death] Adventure_AssassinationCountIncrease (not matching data_id)");
 					zone->DoAdventureAssassinationCountIncrease();
 				}
 			}
 		}
 	} else {
+		LogError("[NPC::Death] No corpse generated for [{}] (HasOwner [{}], IsMerc [{}], GetSwarmInfo [{}], is_merchant [{}], allow_merchant_corpse [{}])",
+			GetCleanName(), HasOwner(), IsMerc(), GetSwarmInfo() ? "true" : "false", is_merchant, allow_merchant_corpse
+		);
 		entity_list.RemoveFromXTargets(this);
 	}
 
 	if (IsNPC()) {
 		if (emoteid) {
+			LogError("[NPC::Death] DoNPCEmote OnDeath [{}]", emoteid);
 			DoNPCEmote(EQ::constants::EmoteEventTypes::OnDeath, emoteid, killer_mob);
 		}
 	}
@@ -2999,23 +3034,25 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 	if (owner_or_self) {
 		if (owner_or_self->IsNPC()) {
 			if (parse->HasQuestSub(owner_or_self->GetNPCTypeID(), EVENT_NPC_SLAY)) {
+				LogError("[NPC::Death] Parse event: EVENT_NPC_SLAY for [{}]", owner_or_self->GetCleanName());
 				parse->EventNPC(EVENT_NPC_SLAY, owner_or_self->CastToNPC(), this, "", 0);
 			}
-
 			const uint32 emote_id = owner_or_self->GetEmoteID();
 			if (emote_id) {
+				LogError("[NPC::Death] DoNPCEmote KilledNPC [{}]", emote_id);
 				owner_or_self->CastToNPC()->DoNPCEmote(EQ::constants::EmoteEventTypes::KilledNPC, emote_id, this);
 			}
-
 			if (killer_mob) {
+				LogError("[NPC::Death] TrySpellOnKill for owner_or_self [{}]", killer_mob->GetCleanName());
 				killer_mob->TrySpellOnKill(killed_level, spell);
 			}
 		}
 	}
 
 	if (killer_mob) {
+		LogError("[NPC::Death] Parse event: EVENT_NPC_SLAY for killer_mob [{}]", killer_mob->GetCleanName());
 		parse->EventBotMerc(EVENT_NPC_SLAY, killer_mob, this);
-
+		LogError("[NPC::Death] TrySpellOnKill for killer_mob [{}]", killer_mob->GetCleanName());
 		killer_mob->TrySpellOnKill(killed_level, spell);
 	}
 
@@ -3023,7 +3060,8 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 
 	p_depop = true;
 
-	if (killer_mob && killer_mob->GetTarget() == this) { // We can kill things without having them targeted
+	if (killer_mob && killer_mob->GetTarget() == this) {
+		LogError("[NPC::Death] killer_mob [{}] cleared target on death", killer_mob->GetCleanName());
 		killer_mob->SetTarget(nullptr);
 	}
 
@@ -3032,11 +3070,13 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 	m_combat_record.Stop();
 
 	if (give_exp_client && !IsCorpse()) {
+		LogError("[NPC::Death] RecordKilledNPCEvent/EventNPC for give_exp_client [{}]", give_exp_client->GetCleanName());
 		const auto& v = give_exp_client->GetRaidOrGroupOrSelf(true);
 		for (const auto& m : v) {
 			m->CastToClient()->RecordKilledNPCEvent(this);
 
 			if (parse->HasQuestSub(GetNPCTypeID(), EVENT_KILLED_MERIT)) {
+				LogError("[NPC::Death] Parse event: EVENT_KILLED_MERIT for [{}]", m->GetCleanName());
 				parse->EventNPC(EVENT_KILLED_MERIT, this, m, "killed", 0);
 			}
 		}
@@ -3062,7 +3102,6 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 		0, &args
 	);
 
-	// Zone controller process EVENT_DEATH_ZONE (Death events)
 	if (parse->HasQuestSub(ZONE_CONTROLLER_NPC_ID, EVENT_DEATH_ZONE)) {
 		const auto& export_string = fmt::format(
 			"{} {} {} {} {} {} {} {} {}",
@@ -3079,9 +3118,11 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 
 		std::vector<std::any> args = { corpse, this };
 
+		LogError("[NPC::Death] DispatchZoneControllerEvent: EVENT_DEATH_ZONE for NPC [{}]", GetCleanName());
 		DispatchZoneControllerEvent(EVENT_DEATH_ZONE, owner_or_self, export_string, 0, &args);
 	}
 
+	LogError("[NPC::Death] EXIT: mob [{}]", GetCleanName());
 	return true;
 }
 
