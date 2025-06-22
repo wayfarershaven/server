@@ -10429,7 +10429,10 @@ void Client::Handle_OP_LootRequest(const EQApplicationPacket *app)
 	}
 	if (ent->IsCorpse())
 	{
-		if (IsSeasonal() && !ent->CastToCorpse()->IsSeasonal() && !ent->CastToCorpse()->IsPlayerCorpse()) {
+		std::string isSeasonalVar    = ent->CastToCorpse()->GetEntityVariable("IsSeasonal");
+		bool        corpseIsSeasonal = (isSeasonalVar == "true");
+
+		if (IsSeasonal() && !corpseIsSeasonal && !ent->CastToCorpse()->IsPlayerCorpse()) {
 			Message(Chat::Red, "Seasonal Characters may not loot from non-Seasonal kills.");
 			Corpse::SendLootReqErrorPacket(this);
 			return;
