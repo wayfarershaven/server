@@ -271,56 +271,64 @@ void Client::CalculateNormalizedAAExp(uint64 &add_aaxp, uint8 conlevel, bool res
 
 void Client::CalculateStandardAAExp(uint64 &add_aaxp, uint8 conlevel, bool resexp)
 {
-	if (!resexp)
-	{
-		//if XP scaling is based on the con of a monster, do that now.
-		if (RuleB(Character, UseXPConScaling))
-		{
-			if (conlevel != 0xFF && !resexp)
-			{
-				add_aaxp *= GetConLevelModifierPercent(conlevel);
-			}
-		}
-	}	//end !resexp
+    if (!resexp)
+    {
+        //if XP scaling is based on the con of a monster, do that now.
+        if (RuleB(Character, UseXPConScaling))
+        {
+            if (conlevel != 0xFF && !resexp)
+            {
+                add_aaxp *= GetConLevelModifierPercent(conlevel);
+            }
+        }
+    }	//end !resexp
 
-	float aatotalmod = 1.0;
-	if (zone->newzone_data.zone_exp_multiplier >= 0) {
-		aatotalmod *= zone->newzone_data.zone_exp_multiplier;
-	}
+    float aatotalmod = 1.0;
+    if (zone->newzone_data.zone_exp_multiplier >= 0) {
+        aatotalmod *= zone->newzone_data.zone_exp_multiplier;
+    }
 
-	// Shouldn't race not affect AA XP?
-	if (RuleB(Character, UseRaceClassExpBonuses))
-	{
-		if (GetBaseRace() == HALFLING) {
-			aatotalmod *= 1.05;
-		}
+    // Shouldn't race not affect AA XP?
+    if (RuleB(Character, UseRaceClassExpBonuses))
+    {
+        if (GetBaseRace() == HALFLING) {
+            aatotalmod *= 1.05;
+        }
 
-		if (GetClass() == Class::Rogue || GetClass() == Class::Warrior) {
-			aatotalmod *= 1.05;
-		}
-	}
+        if (GetClass() == Class::Rogue || GetClass() == Class::Warrior) {
+            aatotalmod *= 1.05;
+        }
+    }
 
-	// why wasn't this here? Where should it be?
-	if (zone->IsHotzone())
-	{
-		aatotalmod += RuleR(Zone, HotZoneBonus);
-	}
+    // why wasn't this here? Where should it be?
+    if (zone->IsHotzone())
+    {
+        aatotalmod += RuleR(Zone, HotZoneBonus);
+    }
 
-	if (RuleB(Zone, LevelBasedEXPMods)) {
-		if (zone->level_exp_mod[GetLevel()].ExpMod) {
-			add_aaxp *= zone->level_exp_mod[GetLevel()].AAExpMod;
-		}
-	}
+    if (RuleB(Zone, LevelBasedEXPMods)) {
+        if (zone->level_exp_mod[GetLevel()].ExpMod) {
+            add_aaxp *= zone->level_exp_mod[GetLevel()].AAExpMod;
+        }
+    }
 
-	if (RuleR(Character, FinalExpMultiplier) >= 0) {
-		add_aaxp *= RuleR(Character, FinalExpMultiplier);
-	}
+    if (RuleR(Character, FinalExpMultiplier) >= 0) {
+        add_aaxp *= RuleR(Character, FinalExpMultiplier);
+    }
 
-	if (RuleB(Character, EnableCharacterEXPMods)) {
-		add_aaxp *= zone->GetAAEXPModifier(this);
-	}
+    // PATCH: Add safety and logging for AAEXP modifier
+    if (RuleB(Character, EnableCharacterEXPMods)) {
+        float aa_mod = zone->GetAAEXPModifier(this);
+        if (aa_mod <= 0.0f) {
+            LogError("[AAEXP] zone->GetAAEXPModifier returned [{}] for [{}] (character_id: {}), defaulting to 1.0!", aa_mod, GetCleanName(), CharacterID());
+            aa_mod = 1.0f;
+        } else {
+            LogError("[AAEXP] zone->GetAAEXPModifier returned [{}] for [{}] (character_id: {})", aa_mod, GetCleanName(), CharacterID());
+        }
+        add_aaxp *= aa_mod;
+    }
 
-	add_aaxp = (uint64)(RuleR(Character, AAExpMultiplier) * add_aaxp * aatotalmod);
+    add_aaxp = (uint64)(RuleR(Character, AAExpMultiplier) * add_aaxp * aatotalmod);
 }
 
 void Client::CalculateLeadershipExp(uint64 &add_exp, uint8 conlevel)
