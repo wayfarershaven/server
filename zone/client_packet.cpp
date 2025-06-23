@@ -16679,12 +16679,10 @@ void Client::Handle_OP_SharedTaskAddPlayer(const EQApplicationPacket *app)
 		std::string query = StringFormat("SELECT data_buckets.value FROM data_buckets WHERE data_buckets.character_id = %i AND data_buckets.key = 'SeasonalCharacter'", char_id);
 
 		auto results = database.QueryDatabase(query);
-		if (results.Success()) {
+		if (results.Success() && results.RowCount() > 0) {
 			auto row = results.begin();
-			if (Strings::ToInt(row[0]) > 0) {
+			if (row[0] && strcmp(row[0], "true") == 0) {
 				invitee_is_seasonal = true;
-			} else {
-				invitee_is_seasonal = false;
 			}
 		}
 	}
